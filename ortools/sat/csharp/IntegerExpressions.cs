@@ -22,27 +22,17 @@ namespace Google.OrTools.Sat
   // IntVar[] helper class.
   public static class IntVarArrayHelper
   {
-    public static SumArray Sum(this IntVar[] vars)
+    public static LinearExpr Sum(this IntVar[] vars)
     {
-      return new SumArray(vars);
+      return LinearExpr.Sum(vars);
     }
-    public static SumArray ScalProd(this IntVar[] vars, int[] coeffs)
+    public static LinearExpr ScalProd(this IntVar[] vars, int[] coeffs)
     {
-      LinearExpression[] exprs = new LinearExpression[vars.Length];
-      for (int i = 0; i < vars.Length; ++i)
-      {
-        exprs[i] = vars[i] * coeffs[i];
-      }
-      return new SumArray(exprs);
+      return LinearExpr.ScalProd(vars, coeffs);
     }
-    public static SumArray ScalProd(this IntVar[] vars, long[] coeffs)
+    public static LinearExpr ScalProd(this IntVar[] vars, long[] coeffs)
     {
-      LinearExpression[] exprs = new LinearExpression[vars.Length];
-      for (int i = 0; i < vars.Length; ++i)
-      {
-        exprs[i] = vars[i] * coeffs[i];
-      }
-      return new SumArray(exprs);
+      return LinearExpr.ScalProd(vars, coeffs);
     }
   }
 
@@ -53,8 +43,22 @@ namespace Google.OrTools.Sat
   }
 
   // Holds an linear expression.
-  public class LinearExpression
+  public class LinearExpr
   {
+
+    public static LinearExpr Sum(IEnumerable<IntVar> vars)
+    {
+      return new SumArray(vars);
+    }
+
+    public static LinearExpr ScalProd(IEnumerable<IntVar> vars, IEnumerable<int> coeffs)
+    {
+      return new SumArray(vars, coeffs);
+    }
+    public static LinearExpr ScalProd(IEnumerable<IntVar> vars, IEnumerable<long> coeffs)
+    {
+      return new SumArray(vars, coeffs);
+    }
 
     public int Index
     {
@@ -71,148 +75,132 @@ namespace Google.OrTools.Sat
       return ToString();
     }
 
-    public static LinearExpression operator +(LinearExpression a,
-                                              LinearExpression b)
+    public static LinearExpr operator +(LinearExpr a, LinearExpr b)
     {
       return new SumArray(a, b);
     }
 
-    public static LinearExpression operator +(LinearExpression a, long v)
+    public static LinearExpr operator +(LinearExpr a, long v)
     {
       return new SumArray(a, v);
     }
 
-    public static LinearExpression operator +(long v, LinearExpression a)
+    public static LinearExpr operator +(long v, LinearExpr a)
     {
       return new SumArray(a, v);
     }
 
-    public static LinearExpression operator -(LinearExpression a,
-                                              LinearExpression b)
+    public static LinearExpr operator -(LinearExpr a, LinearExpr b)
     {
       return new SumArray(a, Prod(b, -1));
     }
 
-    public static LinearExpression operator -(LinearExpression a, long v)
+    public static LinearExpr operator -(LinearExpr a, long v)
     {
       return new SumArray(a, -v);
     }
 
-    public static LinearExpression operator -(long v, LinearExpression a)
+    public static LinearExpr operator -(long v, LinearExpr a)
     {
       return new SumArray(Prod(a, -1), v);
     }
 
-    public static LinearExpression operator *(LinearExpression a, long v)
+    public static LinearExpr operator *(LinearExpr a, long v)
     {
       return Prod(a, v);
     }
 
-    public static LinearExpression operator *(long v, LinearExpression a)
+    public static LinearExpr operator *(long v, LinearExpr a)
     {
       return Prod(a, v);
     }
 
-    public static LinearExpression operator -(LinearExpression a)
+    public static LinearExpr operator -(LinearExpr a)
     {
       return Prod(a, -1);
     }
 
-    public static BoundedLinearExpression operator ==(LinearExpression a,
-                                                      LinearExpression b)
+    public static BoundedLinearExpression operator ==(LinearExpr a, LinearExpr b)
     {
       return new BoundedLinearExpression(a, b, true);
     }
 
-    public static BoundedLinearExpression operator !=(LinearExpression a,
-                                                      LinearExpression b)
+    public static BoundedLinearExpression operator !=(LinearExpr a, LinearExpr b)
     {
       return new BoundedLinearExpression(a, b, false);
     }
 
-    public static BoundedLinearExpression operator ==(LinearExpression a,
-                                                     long v)
+    public static BoundedLinearExpression operator ==(LinearExpr a, long v)
     {
       return new BoundedLinearExpression(a, v, true);
     }
 
-    public static BoundedLinearExpression operator !=(LinearExpression a,
-                                                     long v)
+    public static BoundedLinearExpression operator !=(LinearExpr a, long v)
     {
       return new BoundedLinearExpression(a, v, false);
     }
 
-    public static BoundedLinearExpression operator >=(LinearExpression a,
-                                                     long v)
+    public static BoundedLinearExpression operator >=(LinearExpr a, long v)
     {
       return new BoundedLinearExpression(v, a, Int64.MaxValue);
     }
 
-    public static BoundedLinearExpression operator >=(long v,
-                                                     LinearExpression a)
+    public static BoundedLinearExpression operator >=(long v, LinearExpr a)
     {
       return a <= v;
     }
 
-    public static BoundedLinearExpression operator >(LinearExpression a,
-                                                    long v)
+    public static BoundedLinearExpression operator >(LinearExpr a, long v)
     {
       return new BoundedLinearExpression(v + 1, a, Int64.MaxValue);
     }
 
-    public static BoundedLinearExpression operator >(long v, LinearExpression a)
+    public static BoundedLinearExpression operator >(long v, LinearExpr a)
     {
       return a < v;
     }
 
-    public static BoundedLinearExpression operator <=(LinearExpression a,
-                                                     long v)
+    public static BoundedLinearExpression operator <=(LinearExpr a, long v)
     {
       return new BoundedLinearExpression(Int64.MinValue, a, v);
     }
 
-    public static BoundedLinearExpression operator <=(long v,
-                                                     LinearExpression a)
+    public static BoundedLinearExpression operator <=(long v, LinearExpr a)
     {
       return a >= v;
     }
 
-    public static BoundedLinearExpression operator <(LinearExpression a,
-                                                    long v)
+    public static BoundedLinearExpression operator <(LinearExpr a, long v)
     {
       return new BoundedLinearExpression(Int64.MinValue, a, v - 1);
     }
 
-    public static BoundedLinearExpression operator <(long v, LinearExpression a)
+    public static BoundedLinearExpression operator <(long v, LinearExpr a)
     {
       return a > v;
     }
 
-    public static BoundedLinearExpression operator >=(LinearExpression a,
-                                                     LinearExpression b)
+    public static BoundedLinearExpression operator >=(LinearExpr a, LinearExpr b)
     {
       return new BoundedLinearExpression(0, a - b, Int64.MaxValue);
     }
 
-    public static BoundedLinearExpression operator >(LinearExpression a,
-                                                    LinearExpression b)
+    public static BoundedLinearExpression operator >(LinearExpr a, LinearExpr b)
     {
       return new BoundedLinearExpression(1, a - b, Int64.MaxValue);
     }
 
-    public static BoundedLinearExpression operator <=(LinearExpression a,
-                                                     LinearExpression b)
+    public static BoundedLinearExpression operator <=(LinearExpr a, LinearExpr b)
     {
       return new BoundedLinearExpression(Int64.MinValue, a - b, 0);
     }
 
-    public static BoundedLinearExpression operator <(LinearExpression a,
-                                                    LinearExpression b)
+    public static BoundedLinearExpression operator <(LinearExpr a, LinearExpr b)
     {
       return new BoundedLinearExpression(Int64.MinValue, a - b, -1);
     }
 
-    public static LinearExpression Prod(LinearExpression e, long v)
+    public static LinearExpr Prod(LinearExpr e, long v)
     {
       if (v == 1)
       {
@@ -229,11 +217,11 @@ namespace Google.OrTools.Sat
       }
     }
 
-    public static long GetVarValueMap(LinearExpression e,
+    public static long GetVarValueMap(LinearExpr e,
                                       long initial_coeff,
                                       Dictionary<IntVar, long> dict)
     {
-      List<LinearExpression> exprs = new List<LinearExpression>();
+      List<LinearExpr> exprs = new List<LinearExpr>();
       List<long> coeffs = new List<long>();
       exprs.Add(e);
       coeffs.Add(initial_coeff);
@@ -241,7 +229,7 @@ namespace Google.OrTools.Sat
 
       while (exprs.Count > 0)
       {
-        LinearExpression expr = exprs[0];
+        LinearExpr expr = exprs[0];
         exprs.RemoveAt(0);
         long coeff = coeffs[0];
         coeffs.RemoveAt(0);
@@ -260,10 +248,13 @@ namespace Google.OrTools.Sat
         {
           SumArray a = (SumArray)expr;
           constant += coeff * a.Constant;
-          foreach (LinearExpression sub in a.Expressions)
+          foreach (LinearExpr sub in a.Expressions)
           {
             exprs.Add(sub);
-            coeffs.Add(coeff);
+          }
+          foreach (long c in a.Coefficients)
+          {
+            coeffs.Add(coeff * c);
           }
         }
         else if (expr is IntVar)
@@ -294,15 +285,15 @@ namespace Google.OrTools.Sat
     }
   }
 
-  public class ProductCst : LinearExpression
+  public class ProductCst : LinearExpr
   {
-    public ProductCst(LinearExpression e, long v)
+    public ProductCst(LinearExpr e, long v)
     {
       expr_ = e;
       coeff_ = v;
     }
 
-    public LinearExpression Expr
+    public LinearExpr Expr
     {
       get { return expr_; }
     }
@@ -312,62 +303,158 @@ namespace Google.OrTools.Sat
       get { return coeff_; }
     }
 
-    private LinearExpression expr_;
+    private LinearExpr expr_;
     private long coeff_;
 
   }
 
-  public class SumArray : LinearExpression
+  public class SumArray : LinearExpr
   {
-    public SumArray(LinearExpression a, LinearExpression b)
+    public SumArray(LinearExpr a, LinearExpr b)
     {
-      expressions_ = new List<LinearExpression>();
-      expressions_.Add(a);
-      expressions_.Add(b);
+      Init(2);
+      AddExpr(a, 0);
+      AddExpr(b, 1);
       constant_ = 0L;
     }
 
-    public SumArray(LinearExpression a, long b)
+    public SumArray(LinearExpr a, long b)
     {
-      expressions_ = new List<LinearExpression>();
-      expressions_.Add(a);
+      Init(1);
+      AddExpr(a, 0);
       constant_ = b;
     }
 
-    public SumArray(IEnumerable<LinearExpression> exprs)
+    public SumArray(IEnumerable<LinearExpr> exprs)
     {
-      expressions_ = new List<LinearExpression>();
-      foreach (LinearExpression e in exprs)
+      int count = FindLength(exprs);
+      Init(count);
+      int index = 0;
+      foreach (LinearExpr e in exprs)
       {
-        if (e != null)
-        {
-          expressions_.Add(e);
-        }
+        AddExpr(e, index);
+        index++;
       }
       constant_ = 0L;
     }
 
-    public SumArray(IEnumerable<LinearExpression> exprs, long cte)
+    public SumArray(IEnumerable<IntVar> vars)
     {
-      expressions_ = new List<LinearExpression>();
-      foreach (LinearExpression e in exprs)
+      int count = FindLength(vars);
+      Init(count);
+      int index = 0;
+      foreach (IntVar v in vars)
       {
-        if (e != null)
-        {
-          expressions_.Add(e);
-        }
+        AddExpr(v, index);
+        index++;
       }
-      constant_ = cte;
+      constant_ = 0L;
+    }
+    
+    public SumArray(IEnumerable<IntVar> vars, IEnumerable<long> coeffs)
+    {
+      int count = FindLength(vars);
+      Init(count);
+      // Fill the coefficients;
+      int index = 0;
+      foreach (int c in coeffs)
+      {
+        coefficients_[index] = c;
+        index++;
+      }
+      // Add terms, reading the filled coefficients.
+      index = 0;
+      foreach (LinearExpr v in vars)
+      {
+         AddTerm(v, coefficients_[index], index);
+         index++;
+      }
+      constant_ = 0L;
+    }
+    
+    public SumArray(IEnumerable<IntVar> vars, IEnumerable<int> coeffs)
+    {
+      int count = FindLength(vars);
+      Init(count);
+      // Fill the coefficients;
+      int index = 0;
+      foreach (int c in coeffs)
+      {
+        coefficients_[index] = c;
+        index++;
+      }
+      // Add terms, reading the filled coefficients.
+      index = 0;
+      foreach (LinearExpr v in vars)
+      {
+         AddTerm(v, coefficients_[index], index);
+         index++;
+      }
+      constant_ = 0L;
     }
 
-    public List<LinearExpression> Expressions
+    public void AddExpr(LinearExpr expr, int index) {
+      if (expr is ProductCst)
+      {
+        ProductCst p = (ProductCst)expr;
+        expressions_[index] = p.Expr;
+        coefficients_[index] = p.Coeff;
+      }
+      else
+      {
+        expressions_[index] = expr;
+        coefficients_[index] = 1;
+      }
+    }
+
+    public void AddTerm(LinearExpr expr, long coeff, int index) {
+      if (expr is ProductCst)
+      {
+        ProductCst p = (ProductCst)expr;
+        expressions_[index] = p.Expr;
+        coefficients_[index] = p.Coeff * coeff;
+      }
+      else
+      {
+        expressions_[index] = expr;
+        coefficients_[index] = coeff;
+      }
+    }    
+
+    public LinearExpr[] Expressions
     {
       get { return expressions_; }
     }
 
+    public long[] Coefficients
+    {
+      get { return coefficients_; }
+    }
+    
     public long Constant
     {
       get { return constant_; }
+    }
+
+    void Init(int size) {
+      expressions_ = new LinearExpr[size];
+      coefficients_ = new long[size];
+    }
+
+    int FindLength(IEnumerable<LinearExpr> exprs) {
+      int count = 0;
+      foreach (LinearExpr e in exprs) {
+        count++;
+      }
+      return count;
+    }
+
+    int FindLength(IEnumerable<IntVar> vars) {
+      int count = 0;
+      foreach (IntVar v in vars) {
+        count++;
+      }
+      return count;
     }
 
     public override string ShortString()
@@ -378,16 +465,16 @@ namespace Google.OrTools.Sat
     public override string ToString()
     {
       string result = "";
-      for (int i = 0; i < expressions_.Count; ++i)
+      for (int i = 0; i < expressions_.Length; ++i)
       {
-        bool negated = false;
-        LinearExpression expr = expressions_[i];
+        LinearExpr expr = expressions_[i];
+        long coeff = coefficients_[i];
         if (i != 0)
         {
-          if (expr is ProductCst && ((ProductCst)expr).Coeff < 0)
+          if (coeff < 0)
           {
             result += String.Format(" - ");
-            negated = true;
+            coeff = -coeff;
           }
           else
           {
@@ -395,42 +482,29 @@ namespace Google.OrTools.Sat
           }
         }
 
-        if (expr is IntVar)
+        if (coeff == 1)
         {
           result += expr.ShortString();
         }
-        else if (expr is ProductCst)
+        else if (coeff == -1)
         {
-          ProductCst p = (ProductCst)expr;
-          long coeff = negated ? -p.Coeff : p.Coeff;
-          LinearExpression sub = p.Expr;
-          if (coeff == 1)
-          {
-            result += sub.ShortString();
-          }
-          else if (coeff == -1)
-          {
-            result += String.Format("-{0}", coeff, sub.ShortString());
-          }
-          else
-          {
-            result += String.Format("{0}*{1}", coeff, sub.ShortString());
-          }
+          result += String.Format("-{0}", expr);
         }
         else
         {
-          result += String.Format("({0})", expr.ShortString());
+          result += String.Format("{0}*{1}", coeff, expr);
         }
       }
       return result;
     }
 
-    private List<LinearExpression> expressions_;
+    private LinearExpr[] expressions_;
+    private long[] coefficients_;
     private long constant_;
 
   }
 
-  public class IntVar : LinearExpression, ILiteral
+  public class IntVar : LinearExpr, ILiteral
   {
     public IntVar(CpModelProto model, Domain domain, string name)
     {
@@ -506,7 +580,7 @@ namespace Google.OrTools.Sat
     private NotBooleanVariable negation_;
   }
 
-  public class NotBooleanVariable : LinearExpression, ILiteral
+  public class NotBooleanVariable : LinearExpr, ILiteral
   {
     public NotBooleanVariable(IntVar boolvar)
     {
@@ -542,7 +616,7 @@ namespace Google.OrTools.Sat
       VarDiffCst,
     }
 
-    public BoundedLinearExpression(long lb, LinearExpression expr, long ub)
+    public BoundedLinearExpression(long lb, LinearExpr expr, long ub)
     {
       left_ = expr;
       right_ = null;
@@ -551,7 +625,7 @@ namespace Google.OrTools.Sat
       type_ = Type.BoundExpression;
     }
 
-    public BoundedLinearExpression(LinearExpression left, LinearExpression right,
+    public BoundedLinearExpression(LinearExpr left, LinearExpr right,
                                   bool equality)
     {
       left_ = left;
@@ -561,7 +635,7 @@ namespace Google.OrTools.Sat
       type_ = equality ? Type.VarEqVar : Type.VarDiffVar;
     }
 
-    public BoundedLinearExpression(LinearExpression left, long v, bool equality)
+    public BoundedLinearExpression(LinearExpr left, long v, bool equality)
     {
       left_ = left;
       right_ = null;
@@ -656,12 +730,12 @@ namespace Google.OrTools.Sat
       return new BoundedLinearExpression(v + 1, a.Left, a.Ub);
     }
 
-    public LinearExpression Left
+    public LinearExpr Left
     {
       get { return left_; }
     }
 
-    public LinearExpression Right
+    public LinearExpr Right
     {
       get { return right_; }
     }
@@ -681,8 +755,8 @@ namespace Google.OrTools.Sat
       get { return type_; }
     }
 
-    private LinearExpression left_;
-    private LinearExpression right_;
+    private LinearExpr left_;
+    private LinearExpr right_;
     private long lb_;
     private long ub_;
     private Type type_;

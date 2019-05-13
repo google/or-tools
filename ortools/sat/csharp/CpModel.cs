@@ -69,16 +69,16 @@ namespace Google.OrTools.Sat
       return new IntVar(model_, new Domain(0, 1), name);
     }
 
-    public Constraint AddLinearConstraint(LinearExpression linear_expr, long lb,
+    public Constraint AddLinearConstraint(LinearExpr linear_expr, long lb,
                                           long ub)
     {
       return AddLinearExpressionInDomain(linear_expr, new Domain(lb, ub));
     }
 
-    public Constraint AddLinearExpressionInDomain(LinearExpression linear_expr, Domain domain)
+    public Constraint AddLinearExpressionInDomain(LinearExpr linear_expr, Domain domain)
     {
       Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
-      long constant = LinearExpression.GetVarValueMap(linear_expr, 1L, dict);
+      long constant = LinearExpr.GetVarValueMap(linear_expr, 1L, dict);
       Constraint ct = new Constraint(model_);
       LinearConstraintProto linear = new LinearConstraintProto();
       foreach (KeyValuePair<IntVar, long> term in dict)
@@ -580,12 +580,12 @@ namespace Google.OrTools.Sat
 
 
     // Objective.
-    public void Minimize(LinearExpression obj)
+    public void Minimize(LinearExpr obj)
     {
       SetObjective(obj, true);
     }
 
-    public void Maximize(LinearExpression obj)
+    public void Maximize(LinearExpr obj)
     {
       SetObjective(obj, false);
     }
@@ -613,7 +613,7 @@ namespace Google.OrTools.Sat
 
     // Internal methods.
 
-    void SetObjective(LinearExpression obj, bool minimize)
+    void SetObjective(LinearExpr obj, bool minimize)
     {
       CpObjectiveProto objective = new CpObjectiveProto();
       if (obj is IntVar)
@@ -634,7 +634,7 @@ namespace Google.OrTools.Sat
       else
       {
         Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
-        long constant = LinearExpression.GetVarValueMap(obj, 1L, dict);
+        long constant = LinearExpr.GetVarValueMap(obj, 1L, dict);
         if (minimize)
         {
           objective.ScalingFactor = 1L;

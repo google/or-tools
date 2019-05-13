@@ -78,7 +78,7 @@ public class BinPackingProblemSat
       {
         tmp[b] = x[i, b];
       }
-      model.Add(tmp.Sum() == items[i, 1]);
+      model.Add(LinearExpr.Sum(tmp) == items[i, 1]);
     }
 
     // Links load and slack.
@@ -92,7 +92,7 @@ public class BinPackingProblemSat
     }
 
     // Maximize sum of slacks.
-    model.Maximize(slacks.Sum());
+    model.Maximize(LinearExpr.Sum(slacks));
 
     // Solves and prints out the solution.
     CpSolver solver = new CpSolver();

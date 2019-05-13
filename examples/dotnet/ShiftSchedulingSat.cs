@@ -151,7 +151,7 @@ public class ShiftSchedulingSat
                     temp[s] = work[e, s, d];
                 }
 
-                model.Add(temp.Sum() == 1);
+                model.Add(LinearExpr.Sum(temp) == 1);
             }
         }
 
@@ -261,7 +261,7 @@ public class ShiftSchedulingSat
                     // Ignore off shift
                     var minDemand = weeklyCoverDemands[d][s - 1];
                     var worked = model.NewIntVar(minDemand, numEmployees, "");
-                    model.Add(works.Sum() == worked);
+                    model.Add(LinearExpr.Sum(works) == worked);
 
                     var overPenalty = excessCoverPenalties[s - 1];
                     if (overPenalty > 0)
@@ -277,8 +277,8 @@ public class ShiftSchedulingSat
         }
 
         // Objective
-        var objBoolSum = objBoolVars.ToArray().ScalProd(objBoolCoeffs.ToArray());
-        var objIntSum = objIntVars.ToArray().ScalProd(objIntCoeffs.ToArray());
+        var objBoolSum = LinearExpr.ScalProd(objBoolVars, objBoolCoeffs);
+        var objIntSum = LinearExpr.ScalProd(objIntVars, objIntCoeffs);
 
         model.Minimize(objBoolSum + objIntSum);
 
@@ -494,7 +494,7 @@ public class ShiftSchedulingSat
         var costCoefficients = new List<int>();
         var sumVar = model.NewIntVar(hardMin, hardMax, "");
         // This adds the hard constraints on the sum.
-        model.Add(sumVar == works.Sum());
+        model.Add(sumVar == LinearExpr.Sum(works));
 
         var zero = model.NewIntVar(0, 0, "");
 

@@ -156,7 +156,7 @@ class JobshopSat
     // Adds no_overkap constraints on unary resources.
     for (int machineId = 0; machineId < machinesCount; ++machineId)
     {
-      model.AddNoOverlap(machinesToTasks[machineId].ToArray());
+      model.AddNoOverlap(machinesToTasks[machineId]);
     }
 
     // Creates array of end_times of jobs.

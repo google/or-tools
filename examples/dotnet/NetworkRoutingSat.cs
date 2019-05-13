@@ -701,7 +701,7 @@ public class NetworkRoutingSat
                     pathCount++;
                 }
 
-                var pathCt = cpModel.AddAllowedAssignments(pathVars[demandIndex].ToArray(), tuples);
+                var pathCt = cpModel.AddAllowedAssignments(pathVars[demandIndex], tuples);
             }
 
             var trafficVars = new List<IntVar>(numArcs);
@@ -724,14 +724,14 @@ public class NetworkRoutingSat
                     traffics.Add(_demands[i].Traffic);
                 }
 
-                var sum = vars.ToArray().ScalProd(traffics.ToArray());
+                var sum = LinearExpr.ScalProd(vars, traffics);
                 var trafficVar = cpModel.NewIntVar(0, sumOfTraffic, $"trafficVar{arcIndex}");
                 trafficVars.Add(trafficVar);
                 cpModel.Add(sum == trafficVar);
 
                 var capacity = _arcCapacity[arcIndex];
                 var scaledTraffic = cpModel.NewIntVar(0, sumOfTraffic * 1000, $"scaledTrafficVar{arcIndex}");
-                var scaledTrafficVar = new[] {trafficVar}.ScalProd(new[] {1000});
+                var scaledTrafficVar = traffic_var * 1000);
                 cpModel.Add(scaledTrafficVar == scaledTraffic);
 
                 var normalizedTraffic =
@@ -752,7 +752,7 @@ public class NetworkRoutingSat
 
             var obj = new List<IntVar>() {maxUsageCost};
             obj.AddRange(comfortableTrafficVars);
-            cpModel.Minimize(obj.ToArray().Sum());
+            cpModel.Minimize(LinearExpr.Sum(obj));
 
             CpSolver solver = new CpSolver();
             solver.StringParameters = parameters;

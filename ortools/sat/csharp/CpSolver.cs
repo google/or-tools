@@ -93,9 +93,9 @@ namespace Google.OrTools.Sat
       get { return response_; }
     }
 
-    public long Value(LinearExpression e)
+    public long Value(LinearExpr e)
     {
-      List<LinearExpression> exprs = new List<LinearExpression>();
+      List<LinearExpr> exprs = new List<LinearExpr>();
       List<long> coeffs = new List<long>();
       exprs.Add(e);
       coeffs.Add(1L);
@@ -103,7 +103,7 @@ namespace Google.OrTools.Sat
 
       while (exprs.Count > 0)
       {
-        LinearExpression expr = exprs[0];
+        LinearExpr expr = exprs[0];
         exprs.RemoveAt(0);
         long coeff = coeffs[0];
         coeffs.RemoveAt(0);
@@ -122,7 +122,7 @@ namespace Google.OrTools.Sat
         {
           SumArray a = (SumArray)expr;
           constant += coeff * a.Constant;
-          foreach (LinearExpression sub in a.Expressions)
+          foreach (LinearExpr sub in a.Expressions)
           {
             exprs.Add(sub);
             coeffs.Add(coeff);

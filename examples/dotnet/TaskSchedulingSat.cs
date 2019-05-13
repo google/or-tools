@@ -154,11 +154,11 @@ class TaskSchedulingSat {
           tasksToEquipment[t.Equipment] = new List<IntervalVar>();
         tasksToEquipment[t.Equipment].Add(tasks[ti]);
       }
-      model.Add(tmp.Sum() == 1);
+      model.Add(LinearExpr.Sum(tmp) == 1);
     }
 
     foreach (KeyValuePair<long, List<IntervalVar>> pair in tasksToEquipment) {
-      model.AddNoOverlap(pair.Value.ToArray());
+      model.AddNoOverlap(pair.Value);
     }
 
     IntVar makespan = model.NewIntVar(0, 100000, "makespan");
