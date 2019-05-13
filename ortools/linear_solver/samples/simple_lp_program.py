@@ -30,7 +30,7 @@ def main():
     x = solver.NumVar(0, 1, 'x')
     y = solver.NumVar(0, 2, 'y')
 
-    print(('Number of variables = %d' % solver.NumVariables()))
+    print('Number of variables = ', solver.NumVariables())
     # [END variables]
 
     # [START constraints]
@@ -39,7 +39,7 @@ def main():
     ct.SetCoefficient(x, 1)
     ct.SetCoefficient(y, 1)
 
-    print(('Number of constraints = ', solver.NumConstraints()))
+    print('Number of constraints = ', solver.NumConstraints())
     # [END constraints]
 
     # [START objective]
