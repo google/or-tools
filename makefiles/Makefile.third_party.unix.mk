@@ -210,7 +210,7 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo "UNIX_GUROBI_DIR=/opt/gurobi800" >> Makefile.local
 	@echo "GUROBI_LIB_VERSION=80" >> Makefile.local
 	@echo "UNIX_CPLEX_DIR=/opt/CPLEX_Studio_Community128" >> Makefile.local
-	@echo "UNIX_SCIP_DIR=/opt/scipoptsuite-5.0.1/scip" >> Makefile.local
+	@echo "UNIX_SCIP_DIR=/opt/scipoptsuite-6.0.1/scip" >> Makefile.local
 	@echo "# i.e. you define all UNIX_GTEST_DIR, UNIX_GFLAGS_DIR, UNIX_GLOG_DIR, UNIX_PROTOBUF_DIR and UNIX_CBC_DIR" >> Makefile.local
 
 ##############
@@ -244,6 +244,15 @@ fftw_packages :
 	if [ -z "$(INDENT_INSTALLED_VERSION)" ]; then $(INSTALL) $(UNIX_INDENT_PACKAGE); fi
 	if [ -z "$(FIG2DEV_INSTALLED_VERSION)" ]; then $(INSTALL) $(UNIX_FIG2DEV_PACKAGE); fi
 	if [ -z "$(TEXINFO_INSTALLED_VERSION)" ]; then $(INSTALL) $(UNIX_TEXINFO_PACKAGE); fi
+
+FFTW_INC = -I$(UNIX_FFTW_DIR)/include
+FFTW_SWIG = $(FFTW_INC)
+STATIC_FFTW_LNK = $(UNIX_FFTW_DIR)/lib/libfftw3.a
+DYNAMIC_FFTW_LNK = -L$(UNIX_FFTW_DIR)/lib -lfftw3
+
+FFTW_LNK = $(DYNAMIC_FFTW_LNK)
+#DEPENDENCIES_LNK += $(FFTW_LNK)
+#OR_TOOLS_LNK += $(FFTW_LNK)
 
 ##############
 ##  GTEST  ##
