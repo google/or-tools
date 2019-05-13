@@ -12,8 +12,10 @@
 // limitations under the License.
 
 // [START program]
+// [START import]
 using System;
 using Google.OrTools.LinearSolver;
+// [END import]
 
 public class SimpleMipProgram
 {

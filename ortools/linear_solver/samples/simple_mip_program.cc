@@ -13,7 +13,9 @@
 
 // Mixed Integer programming example that shows how to use the API.
 // [START program]
+// [START import]
 #include "ortools/linear_solver/linear_solver.h"
+// [END import]
 
 namespace operations_research {
 void simple_mip_program() {
