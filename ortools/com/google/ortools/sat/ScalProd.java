@@ -19,6 +19,7 @@ public final class ScalProd implements LinearExpr {
   private final long[] coefficients;
 
   public ScalProd(IntVar[] variables, long[] coefficients) {
+    assert (variables.length == coefficients.length);
     this.variables = variables;
     this.coefficients = coefficients;
   }
@@ -30,11 +31,15 @@ public final class ScalProd implements LinearExpr {
 
   @Override
   public IntVar getVariable(int index) {
+    assert (index >= 0);
+    assert (index < variables.length);
     return variables[index];
   }
 
   @Override
   public long getCoefficient(int index) {
+    assert (index >= 0);
+    assert (index < coefficients.length);
     return coefficients[index];
   }
 }

@@ -28,6 +28,8 @@ public final class SumOfVariables implements LinearExpr {
 
   @Override
   public IntVar getVariable(int index) {
+    assert (index >= 0);
+    assert (index < variables.length);
     return variables[index];
   }
 
