@@ -13,10 +13,12 @@
 
 // Minimal example to call the MIP solver.
 // [START program]
+// [START import]
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
+// [END import]
 
 /** Minimal Mixed Integer Programming example to showcase calling the solver. */
 public class SimpleMipProgram {
