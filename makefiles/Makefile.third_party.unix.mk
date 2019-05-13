@@ -22,7 +22,6 @@ UNIX_OCAML_PACKAGE ?= ocaml
 UNIX_OCAMLBUILD_PACKAGE ?= ocamlbuild
 UNIX_INDENT_PACKAGE ?= indent
 UNIX_FIG2DEV_PACKAGE ?= fig2dev
-UNIX_MAKEINFO_PACKAGE ?= makeinfo
 UNIX_TEXINFO_PACKAGE ?= texinfo
 
 # Tags of dependencies to checkout.
@@ -229,27 +228,22 @@ dependencies/sources/fftw-$(FFTW_TAG) : | dependencies/sources
 	-$(DELREC) dependencies/sources/fftw-$(FFTW_TAG)
 	git clone --quiet -b fftw-$(FFTW_TAG) --single-branch https://github.com/FFTW/fftw3.git dependencies/sources/fftw-$(FFTW_TAG)
 
-fftw_packages :
-	if [ -z "$($(DPKGLIST) $(UNIX_OCAML_PACKAGE) $(STDERR_OFF) | $(GREP) $(UNIX_OCAML_PACKAGE) | $(AWK) '{ print $3 }')" ]; then $(INSTALL) $(UNIX_OCAML_PACKAGE); fi
-#	ifeq ($(OCAML_VERSION),) \
-#    $(INSTALL) $(UNIX_OCAML_PACKAGE) \
-#  endif
-#	ifeq ($(OCAMLBUILD_PRESENT),) \
-#$(INSTALL) $(UNIX_OCAMLBUILD_PACKAGE) \
-#endif
-#	ifeq ($(INDENT_PRESENT),) \
-#$(INSTALL) $(UNIX_INDENT_PACKAGE) \
-#endif
-#	ifeq ($(FIG2DEV_PRESENT),) \
-#$(INSTALL) $(UNIX_FIG2DEV_PACKAGE) \
-#endif
-#	ifeq ($(MAKEINFO_PRESENT),) \
-#$(INSTALL) $(UNIX_MAKEINFO_PACKAGE) \
-#endif
-#	ifeq ($(TEXINFO_PRESENT),) \
-#$(INSTALL) $(UNIX_TEXINFO_PACKAGE) \
-#endif
+OCAML_INSTALLED_VERSION = $(shell $(APTLISTINSTALLED) $(UNIX_OCAML_PACKAGE) $(STDERR_OFF) | $(GREP) $(UNIX_OCAML_PACKAGE) | $(AWK) '{ print $2 }')
 
+OCAMLBUILD_INSTALLED_VERSION = $(shell $(APTLISTINSTALLED) $(UNIX_OCAMLBUILD_PACKAGE) $(STDERR_OFF) | $(GREP) $(UNIX_OCAMLBUILD_PACKAGE) | $(AWK) '{ print $2 }')
+
+INDENT_INSTALLED_VERSION = $(shell $(APTLISTINSTALLED) $(UNIX_INDENT_PACKAGE) $(STDERR_OFF) | $(GREP) $(UNIX_INDENT_PACKAGE) | $(AWK) '{ print $2 }')
+
+FIG2DEV_INSTALLED_VERSION = $(shell $(APTLISTINSTALLED) $(UNIX_FIG2DEV_PACKAGE) $(STDERR_OFF) | $(GREP) $(UNIX_FIG2DEV_PACKAGE) | $(AWK) '{ print $2 }')
+
+TEXINFO_INSTALLED_VERSION = $(shell $(APTLISTINSTALLED) $(UNIX_TEXINFO_PACKAGE) $(STDERR_OFF) | $(GREP) $(UNIX_TEXINFO_PACKAGE) | $(AWK) '{ print $2 }')
+
+fftw_packages :
+	if [ -z "$(OCAML_INSTALLED_VERSION)" ]; then $(INSTALL) $(UNIX_OCAML_PACKAGE); fi
+	if [ -z "$(OCAMLBUILD_INSTALLED_VERSION)" ]; then $(INSTALL) $(UNIX_OCAMLBUILD_PACKAGE); fi
+	if [ -z "$(INDENT_INSTALLED_VERSION)" ]; then $(INSTALL) $(UNIX_INDENT_PACKAGE); fi
+	if [ -z "$(FIG2DEV_INSTALLED_VERSION)" ]; then $(INSTALL) $(UNIX_FIG2DEV_PACKAGE); fi
+	if [ -z "$(TEXINFO_INSTALLED_VERSION)" ]; then $(INSTALL) $(UNIX_TEXINFO_PACKAGE); fi
 
 ##############
 ##  GTEST  ##
