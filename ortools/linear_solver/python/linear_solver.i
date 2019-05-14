@@ -276,6 +276,11 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
 %unignore operations_research::MPSolver::FIXED_VALUE;  // No unit test
 %unignore operations_research::MPSolver::BASIC;
 
+// MPVariable: writer API.
+%unignore operations_research::MPVariable::SetLB;
+%unignore operations_research::MPVariable::SetUB;
+%unignore operations_research::MPVariable::SetBounds;
+
 // MPVariable: reader API.
 %unignore operations_research::MPVariable::solution_value;
 %unignore operations_research::MPVariable::lb;  // No unit test
