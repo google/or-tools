@@ -119,6 +119,9 @@ $(OBJ_DIR)/graph: | $(OBJ_DIR)
 $(OBJ_DIR)/linear_solver: | $(OBJ_DIR)
 	-$(MKDIR_P) $(OBJ_DIR)$Slinear_solver
 
+$(OBJ_DIR)/forecaster: | $(OBJ_DIR)
+	-$(MKDIR_P) $(OBJ_DIR)$Sforecaster
+
 $(OBJ_DIR)/lp_data: | $(OBJ_DIR)
 	-$(MKDIR_P) $(OBJ_DIR)$Slp_data
 

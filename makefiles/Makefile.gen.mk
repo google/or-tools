@@ -3002,6 +3002,8 @@ CP_LIB_OBJS = \
  $(OBJ_DIR)/constraint_solver/tree_monitor.$O \
  $(OBJ_DIR)/constraint_solver/utilities.$O \
  $(OBJ_DIR)/constraint_solver/visitor.$O \
+ $(OBJ_DIR)/forecaster/forecaster.$O \
+ $(OBJ_DIR)/forecaster/fourier_forecaster.$O \
  $(OBJ_DIR)/constraint_solver/assignment.pb.$O \
  $(OBJ_DIR)/constraint_solver/demon_profiler.pb.$O \
  $(OBJ_DIR)/constraint_solver/model.pb.$O \
@@ -3924,6 +3926,15 @@ objs/constraint_solver/visitor.$O: ortools/constraint_solver/visitor.cc \
  ortools/gen/ortools/constraint_solver/search_limit.pb.h \
  ortools/util/vector_map.h | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sconstraint_solver$Svisitor.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Svisitor.$O
+
+
+objs/forecaster/forecaster.$O: ortools/forecaster/forecaster.h | $(OBJ_DIR)/forecaster
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sforecaster$Sforecaster.cc $(OBJ_OUT)$(OBJ_DIR)$Sforecaster$Sforecaster.$O
+
+objs/forecaster/fourier_forecaster.$O: ortools/forecaster/forecaster.cc \
+ ortools/forecaster/fourier_forecaster.h \
+ ortools/forecaster/forecaster.h | $(OBJ_DIR)/forecaster
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sforecaster$Sfourier_forecaster.cc $(OBJ_OUT)$(OBJ_DIR)$Sforecaster$Sfourier_forecaster.$O
 
 ortools/constraint_solver/assignment.proto: ;
 
