@@ -23,7 +23,8 @@ public class Knapsack
   {
     // [START solver]
     KnapsackSolver solver = new KnapsackSolver(
-        KnapsackSolver.SolverType.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER, "test");
+        KnapsackSolver.SolverType.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+        "KnapsackExample");
     // [END solver]
 
     // [START data]
@@ -44,14 +45,14 @@ public class Knapsack
     long[] capacities = { 850 };
     // [END data]
 
-    // [START print_solution]
-    Console.WriteLine("Solving knapsack with " + values.Length +
-                      " items, and " + weights.GetLength(0) + " dimension");
+    // [START solve]
     solver.Init(values, weights, capacities);
     long computedValue = solver.Solve();
+    // [END solve]
 
+    // [START print_solution]
     Console.WriteLine("Optimal Value = " + computedValue);
-   // [END print_solution]
+    // [END print_solution]
   }
 }
 // [END program]

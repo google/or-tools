@@ -10,9 +10,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# [START program]
 """A simple knapsack problem."""
-
+# [START program]
 # [START import]
 from __future__ import print_function
 from ortools.algorithms import pywrapknapsack_solver
@@ -23,8 +22,8 @@ def main():
     # Create the solver.
     # [START solver]
     solver = pywrapknapsack_solver.KnapsackSolver(
-        pywrapknapsack_solver.KnapsackSolver.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
-        'KnapsackExample')
+        pywrapknapsack_solver.KnapsackSolver.
+        KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER, 'KnapsackExample')
     # [END solver]
 
     # [START data]
@@ -42,14 +41,14 @@ def main():
     capacities = [850]
     # [END data]
 
-    # [START solver]
+    # [START solve]
     solver.Init(values, weights, capacities)
     computed_profit = solver.Solve()
-    # [END solver]
-
-    # [START solve]
-    print('optimal profit = ' + str(computed_profit))
     # [END solve]
+
+    # [START print_solution]
+    print('optimal profit =', computed_profit)
+    # [END print_solution]
 
 
 if __name__ == '__main__':

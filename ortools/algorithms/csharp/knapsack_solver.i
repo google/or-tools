@@ -25,9 +25,6 @@
 #include "ortools/algorithms/knapsack_solver.h"
 %}
 
-typedef int64_t int64;
-typedef uint64_t uint64;
-
 // See the comment in
 // ../../constraint_solver/csharp/constraint_solver.i about naming
 // the template instantiation of std::vector<> differently.

@@ -14,7 +14,7 @@
 // Java wrapping of ../knapsack_solver.h. See that file.
 //
 // USAGE EXAMPLE (which is also used as unit test):
-// - java/com/google/ortools/samples/Knapsack.java
+// - java/com/google/ortools/algorithms/samples/Knapsack.java
 //
 // TODO(user): test all lines marked "untested".
 

@@ -42,6 +42,8 @@ void RunKnapsackExample() {
        7,  29, 93, 44, 71, 3,  86, 66, 31, 65, 0,  79, 20, 65, 52, 13}};
 
   std::vector<int64> capacities = {850};
+  // [END data]
+
   // [START solve]
   solver.Init(values, weights, capacities);
   int64 computed_value = solver.Solve();
@@ -83,3 +85,4 @@ int main(int argc, char **argv) {
   operations_research::RunKnapsackExample();
   return EXIT_SUCCESS;
 }
+// [END program]
