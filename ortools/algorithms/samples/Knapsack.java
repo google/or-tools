@@ -45,13 +45,11 @@ public class Knapsack {
 
     // [START solve]
     solver.init(values, weights, capacities);
-
     final long computedValue = solver.solve();
     // [END solve]
 
     // [START print_solution]
     System.out.println("Solving knapsack with " + values.length + " items");
-
     System.out.println("Optimal Value = " + computedValue);
     // [END print_solution]
   }
