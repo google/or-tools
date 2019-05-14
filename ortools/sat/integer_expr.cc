@@ -294,6 +294,7 @@ AbsPropagator::AbsPropagator(IntegerVariable var, IntegerVariable abs_var,
 
 #define RETURN_IF_FALSE(x) \
   if (!(x)) return false;
+
 bool AbsPropagator::Propagate() {
   const IntegerValue var_lb = integer_trail_->LowerBound(var_);
   const IntegerValue var_ub = integer_trail_->UpperBound(var_);

@@ -15,10 +15,12 @@
 
 #include "absl/container/flat_hash_set.h"
 #include "ortools/base/iterator_adaptors.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_programming_constraint.h"
+#include "ortools/sat/sat_base.h"
 
 namespace operations_research {
 namespace sat {
@@ -225,6 +227,24 @@ void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
   }
 }
 
+namespace {
+// Adds enforcing_lit => target <= bounding_var to relaxation.
+void AppendEnforcedUpperBound(const Literal enforcing_lit,
+                              const IntegerVariable target,
+                              const IntegerVariable bounding_var, Model* model,
+                              LinearRelaxation* relaxation) {
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  const IntegerValue max_target_value = integer_trail->UpperBound(target);
+  const IntegerValue min_var_value = integer_trail->LowerBound(bounding_var);
+  const IntegerValue max_term_value = max_target_value - min_var_value;
+  LinearConstraintBuilder lc(model, kMinIntegerValue, max_term_value);
+  lc.AddTerm(target, IntegerValue(1));
+  lc.AddTerm(bounding_var, IntegerValue(-1));
+  CHECK(lc.AddLiteralTerm(enforcing_lit, max_term_value));
+  relaxation->linear_constraints.push_back(lc.Build());
+}
+}  // namespace
+
 // Add a linear relaxation of the CP constraint to the set of linear
 // constraints. The highest linearization_level is, the more types of constraint
 // we encode. This method should be called only for linearization_level > 0.
@@ -393,26 +413,79 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
     lc.AddTerm(size, IntegerValue(1));
     lc.AddTerm(end, IntegerValue(-1));
     relaxation->linear_constraints.push_back(lc.Build());
+  } else if (ct.constraint_case() ==
+             ConstraintProto::ConstraintCase::kNoOverlap) {
+    AppendNoOverlapRelaxation(model_proto, ct, linearization_level, model,
+                              relaxation);
   }
 }
 
-namespace {
-// Adds enforcing_lit => target <= bounding_var to relaxation.
-void AppendEnforcedUpperBound(const Literal enforcing_lit,
-                              const IntegerVariable target,
-                              const IntegerVariable bounding_var, Model* model,
-                              LinearRelaxation* relaxation) {
+// TODO(user,user): Support optional interval in the relaxation.
+void AppendNoOverlapRelaxation(const CpModelProto& model_proto,
+                               const ConstraintProto& ct,
+                               int linearization_level, Model* model,
+                               LinearRelaxation* relaxation) {
+  CHECK(ct.has_no_overlap());
+  if (linearization_level < 3) return;
+  if (HasEnforcementLiteral(ct)) return;
+  if (ct.no_overlap().intervals_size() < 2) return;
+  auto* mapping = model->GetOrCreate<CpModelMapping>();
+  const int64 num_intervals = ct.no_overlap().intervals_size();
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  const IntegerValue max_target_value = integer_trail->UpperBound(target);
-  const IntegerValue min_var_value = integer_trail->LowerBound(bounding_var);
-  const IntegerValue max_term_value = max_target_value - min_var_value;
-  LinearConstraintBuilder lc(model, kMinIntegerValue, max_term_value);
-  lc.AddTerm(target, IntegerValue(1));
-  lc.AddTerm(bounding_var, IntegerValue(-1));
-  CHECK(lc.AddLiteralTerm(enforcing_lit, max_term_value));
-  relaxation->linear_constraints.push_back(lc.Build());
+  IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+  for (int index1 = 0; index1 < num_intervals; ++index1) {
+    if (HasEnforcementLiteral(model_proto.constraints(index1))) continue;
+    const IntervalConstraintProto interval1 =
+        model_proto.constraints(index1).interval();
+    const IntegerVariable start1 = mapping->Integer(interval1.start());
+    const IntegerVariable end1 = mapping->Integer(interval1.end());
+    for (int index2 = index1 + 1; index2 < num_intervals; ++index2) {
+      if (HasEnforcementLiteral(model_proto.constraints(index2))) continue;
+      const IntervalConstraintProto interval2 =
+          model_proto.constraints(index2).interval();
+      const IntegerVariable start2 = mapping->Integer(interval2.start());
+      const IntegerVariable end2 = mapping->Integer(interval2.end());
+      // Encode only the interesting pairs.
+      if (integer_trail->UpperBound(end1) <=
+              integer_trail->LowerBound(start2) ||
+          integer_trail->UpperBound(end2) <=
+              integer_trail->LowerBound(start1)) {
+        continue;
+      }
+
+      const bool interval_1_can_preceed_2 =
+          integer_trail->LowerBound(end1) <= integer_trail->UpperBound(start2);
+      const bool interval_2_can_preceed_1 =
+          integer_trail->LowerBound(end2) <= integer_trail->UpperBound(start1);
+
+      if (interval_1_can_preceed_2 && interval_2_can_preceed_1) {
+        const IntegerVariable interval1_preceeds_interval2 =
+            model->Add(NewIntegerVariable(0, 1));
+        const Literal interval1_preceeds_interval2_lit =
+            encoder->GetOrCreateLiteralAssociatedToEquality(
+                interval1_preceeds_interval2, IntegerValue(1));
+        // interval1_preceeds_interval2 => interval1.end <= interval2.start
+        // ~interval1_preceeds_interval2 => interval2.end <= interval1.start
+        AppendEnforcedUpperBound(interval1_preceeds_interval2_lit, end1, start2,
+                                 model, relaxation);
+        AppendEnforcedUpperBound(interval1_preceeds_interval2_lit.Negated(),
+                                 end2, start1, model, relaxation);
+      } else if (interval_1_can_preceed_2) {
+        // interval1.end <= interval2.start
+        LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
+        lc.AddTerm(end1, IntegerValue(1));
+        lc.AddTerm(start2, IntegerValue(-1));
+        relaxation->linear_constraints.push_back(lc.Build());
+      } else if (interval_2_can_preceed_1) {
+        // interval2.end <= interval1.start
+        LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
+        lc.AddTerm(end2, IntegerValue(1));
+        lc.AddTerm(start1, IntegerValue(-1));
+        relaxation->linear_constraints.push_back(lc.Build());
+      }
+    }
+  }
 }
-}  // namespace
 
 void AppendMaxRelaxation(IntegerVariable target,
                          const std::vector<IntegerVariable>& vars,

@@ -1288,38 +1288,12 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
     return RemoveConstraint(ct, context);
   }
 
-  // Abort if intersection is empty.
-  const Domain restricted_rhs = rhs.IntersectionWith(implied_rhs);
-  if (restricted_rhs.IsEmpty()) {
+  // Incorporate the implied rhs information.
+  rhs = rhs.SimplifyUsingImpliedDomain(implied_rhs);
+  if (rhs.IsEmpty()) {
     context->UpdateRuleStats("linear: infeasible");
     return MarkConstraintAsFalse(ct, context);
   }
-
-  // Relax the constraint rhs for faster propagation.
-  // This will minimize the number of intervals in the rhs.
-  {
-    std::vector<ClosedInterval> rhs_intervals;
-    for (const ClosedInterval i :
-         restricted_rhs.UnionWith(implied_rhs.Complement())) {
-      // TODO(user): add an IntersectionIsEmpty() function.
-      if (!Domain::FromIntervals({i})
-               .IntersectionWith(restricted_rhs)
-               .IsEmpty()) {
-        rhs_intervals.push_back(i);
-      }
-    }
-
-    // Restrict the bound of each intervals as much as possible. This should
-    // improve the linear relaxation.
-    for (ClosedInterval& interval : rhs_intervals) {
-      const Domain d =
-          restricted_rhs.IntersectionWith(Domain(interval.start, interval.end));
-      interval.start = d.Min();
-      interval.end = d.Max();
-    }
-    rhs = Domain::FromIntervals(rhs_intervals);
-  }
-
   if (rhs != ReadDomainFromProto(ct->linear())) {
     context->UpdateRuleStats("linear: simplified rhs");
   }
@@ -1665,8 +1639,8 @@ bool PresolveLinearOnBooleans(ConstraintProto* ct, PresolveContext* context) {
           copy.coeffs(i) > 0 ? NegatedRef(copy.vars(i)) : copy.vars(i));
     }
     return true;
-  } else if (!HasEnforcementLiteral(*ct) &&
-             rhs_domain.intervals().size() == 1 && min_sum < rhs_domain.Min() &&
+  } else if (!HasEnforcementLiteral(*ct) && rhs_domain.NumIntervals() == 1 &&
+             min_sum < rhs_domain.Min() &&
              min_sum + min_coeff >= rhs_domain.Min() &&
              min_sum + 2 * min_coeff > rhs_domain.Max() &&
              min_sum + max_coeff <= rhs_domain.Max()) {
@@ -1681,8 +1655,8 @@ bool PresolveLinearOnBooleans(ConstraintProto* ct, PresolveContext* context) {
     }
     context->UpdateNewConstraintsVariableUsage();
     return RemoveConstraint(ct, context);
-  } else if (!HasEnforcementLiteral(*ct) &&
-             rhs_domain.intervals().size() == 1 && max_sum > rhs_domain.Max() &&
+  } else if (!HasEnforcementLiteral(*ct) && rhs_domain.NumIntervals() == 1 &&
+             max_sum > rhs_domain.Max() &&
              max_sum - min_coeff <= rhs_domain.Max() &&
              max_sum - 2 * min_coeff < rhs_domain.Min() &&
              max_sum - max_coeff >= rhs_domain.Min()) {
@@ -3090,6 +3064,29 @@ void MaybeDivideByGcd(std::map<int, int64>* objective_map, int64* divisor) {
 void ExpandObjective(PresolveContext* context) {
   if (context->ModelIsUnsat()) return;
 
+  // Start by simplifying the objective domain using the implied domain of the
+  // initial linear objective.
+  {
+    Domain implied_domain(0);
+    for (int i = 0; i < context->working_model->objective().vars_size(); ++i) {
+      const int ref = context->working_model->objective().vars(i);
+      const int64 coeff = context->working_model->objective().coeffs(i);
+      implied_domain =
+          implied_domain
+              .AdditionWith(context->DomainOf(ref).MultiplicationBy(coeff))
+              .RelaxIfTooComplex();
+    }
+
+    CpObjectiveProto* const mutable_objective =
+        context->working_model->mutable_objective();
+    Domain old_domain = Domain::AllValues();
+    if (!mutable_objective->domain().empty()) {
+      old_domain = ReadDomainFromProto(*mutable_objective);
+    }
+    FillDomainInProto(old_domain.SimplifyUsingImpliedDomain(implied_domain),
+                      mutable_objective);
+  }
+
   // Convert the objective linear expression to a map for ease of use below.
   // We also only use affine representative.
   std::map<int, int64> objective_map;
@@ -3301,32 +3298,35 @@ void ExpandObjective(PresolveContext* context) {
     }
   }
 
-  // Re-write the objective.
-  CpObjectiveProto* const mutable_objective =
-      context->working_model->mutable_objective();
-  mutable_objective->clear_coeffs();
-  mutable_objective->clear_vars();
-  Domain objective_domain(0);
+  // Compute the implied domain from the new objective linear expression.
+  Domain implied_domain(0);
   for (const auto& entry : objective_map) {
-    context->var_to_constraints[PositiveRef(entry.first)].insert(-1);
-    mutable_objective->add_vars(entry.first);
-    mutable_objective->add_coeffs(entry.second);
-    objective_domain =
-        objective_domain
+    implied_domain =
+        implied_domain
             .AdditionWith(
                 context->DomainOf(entry.first).MultiplicationBy(entry.second))
             .RelaxIfTooComplex();
   }
 
-  // Tricky, the domain in the proto do not include the offset.
-  const Domain old_domain =
-      ReadDomainFromProto(context->working_model->objective());
-  if (!old_domain.IsEmpty()) {
-    objective_domain = objective_domain.IntersectionWith(
-        old_domain.AdditionWith(Domain(-objective_offset_change))
-            .InverseMultiplicationBy(objective_divisor));
+  // Re-write the objective.
+  CpObjectiveProto* const mutable_objective =
+      context->working_model->mutable_objective();
+  mutable_objective->clear_coeffs();
+  mutable_objective->clear_vars();
+  for (const auto& entry : objective_map) {
+    context->var_to_constraints[PositiveRef(entry.first)].insert(-1);
+    mutable_objective->add_vars(entry.first);
+    mutable_objective->add_coeffs(entry.second);
   }
-  FillDomainInProto(objective_domain, mutable_objective);
+  Domain old_domain = Domain::AllValues();
+  if (!mutable_objective->domain().empty()) {
+    // Tricky, the domain in the proto do not include the offset.
+    old_domain = ReadDomainFromProto(*mutable_objective)
+                     .AdditionWith(Domain(-objective_offset_change))
+                     .InverseMultiplicationBy(objective_divisor);
+  }
+  FillDomainInProto(old_domain.SimplifyUsingImpliedDomain(implied_domain),
+                    mutable_objective);
   mutable_objective->set_offset(mutable_objective->offset() +
                                 objective_offset_change);
   if (objective_divisor > 1) {
@@ -4017,7 +4017,7 @@ void RemoveUnusedEquivalentVariables(PresolveContext* context) {
                                         &domain_modified)) {
         return;
       }
-      if (domain_modified && VLOG_IS_ON(1)) {
+      if (domain_modified) {
         LOG(WARNING) << "Domain of " << r.representative
                      << " was not fully propagated using the affine relation "
                      << "(var = " << var

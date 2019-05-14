@@ -289,7 +289,10 @@ Domain Domain::AdditionWith(const Domain& domain) const {
     }
   }
 
-  std::sort(result.intervals_.begin(), result.intervals_.end());
+  // The copy is not needed if one of the list is of size 1.
+  if (a.size() > 1 && b.size() > 1) {
+    std::sort(result.intervals_.begin(), result.intervals_.end());
+  }
   UnionOfSortedIntervals(&result.intervals_);
   return result;
 }
@@ -371,6 +374,20 @@ Domain Domain::InverseMultiplicationBy(const int64 coeff) const {
   result.intervals_.shrink_to_fit();
   DCHECK(IntervalsAreSortedAndNonAdjacent(result.intervals_));
   return coeff > 0 ? result : result.Negation();
+}
+
+// TODO(user): This could be computed more efficiently with a dedicated code
+// like for the intersection.
+Domain Domain::SimplifyUsingImpliedDomain(const Domain& implied_domain) const {
+  Domain result;
+  for (const ClosedInterval i : UnionWith(implied_domain.Complement())) {
+    const Domain d = implied_domain.IntersectionWith(Domain(i.start, i.end));
+    if (!d.IsEmpty()) {
+      result.intervals_.push_back({d.Min(), d.Max()});
+    }
+  }
+  DCHECK(IntervalsAreSortedAndNonAdjacent(result.intervals_));
+  return result;
 }
 
 std::vector<int64> Domain::FlattenedIntervals() const {

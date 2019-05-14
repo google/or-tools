@@ -158,6 +158,26 @@ class Domain {
   // For instance Domain(1, 7).InverseMultiplicationBy(2) == Domain(1, 3).
   Domain InverseMultiplicationBy(const int64 coeff) const;
 
+  // Advanced usage. Given some "implied" information on this domain that is
+  // assumed to be always true (i.e. only values in the intersection with
+  // implied domain matter), this function will simplify the current domain
+  // without changing the set of "possible values".
+  //
+  // More precisely, this will:
+  //  - Take the intersection with implied_domain.
+  //  - Minimize the number of intervals. That is, if the
+  //    domain is like [1,2][4] and implied is [1][4], then the domain can be
+  //    relaxed to [1, 4] to simplify its complexity without changing the set
+  //    of admissible value assuming only implied values can be seen.
+  //  - Restrict as much as possible the bounds of the remaining intervals.
+  //    I.e if the input is [1,2] and implied is [0,4], then the domain will
+  //    not be changed.
+  //
+  // Note that domain.SimplifyUsingImpliedDomain(domain) will just return
+  // [domain.Min(), domain.Max()]. This is meant to be applied to the rhs of a
+  // constraint to make its propagation more efficient.
+  Domain SimplifyUsingImpliedDomain(const Domain& implied_domain) const;
+
   // Returns a compact std::string of a vector of intervals like
   // "[1,4][6][10,20]"
   std::string ToString() const;
@@ -176,10 +196,6 @@ class Domain {
   // Basic read-only std::vector<> wrapping to view a Domain as a sorted list of
   // non-adjacent intervals. Note that we don't expose size() which might be
   // confused with the number of values in the domain.
-  //
-  // Note(user): I used to provide a Domain::intervals() function instead that
-  // returned a reference to the underlying intervals_, but this was bug-prone
-  // with temporary like "domain.Negation().intervals()".
   int NumIntervals() const { return intervals_.size(); }
   ClosedInterval front() const { return intervals_.front(); }
   ClosedInterval back() const { return intervals_.back(); }
@@ -191,7 +207,10 @@ class Domain {
     return intervals_.end();
   }
 
-  // Deprecated. TODO(user): remove, this makes a copy.
+  // Deprecated.
+  //
+  // TODO(user): remove, this makes a copy and is of a different type that our
+  // internal InlinedVector() anyway.
   std::vector<ClosedInterval> intervals() const {
     return {intervals_.begin(), intervals_.end()};
   }
