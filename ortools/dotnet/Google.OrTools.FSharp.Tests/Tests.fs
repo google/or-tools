@@ -48,7 +48,7 @@ module Tests =
 
       let resultStatus = svr.Solve()
 
-      Assert.Equal(resultStatus, Solver.OPTIMAL)
+      Assert.Equal(resultStatus, Solver.ResultStatus.OPTIMAL)
       Assert.Equal(svr.Objective().Value(), 45.0)
       Assert.Equal(x1.SolutionValue(), 5.0/4.0)
       Assert.Equal(x2.SolutionValue(), 35.0/4.0)
