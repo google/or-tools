@@ -125,7 +125,10 @@ namespace Google.OrTools.Sat
           foreach (LinearExpr sub in a.Expressions)
           {
             exprs.Add(sub);
-            coeffs.Add(coeff);
+          }
+          foreach (long c in a.Coefficients)
+          {
+            coeffs.Add(coeff * c);
           }
         }
         else if (expr is IntVar)

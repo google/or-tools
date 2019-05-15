@@ -153,7 +153,7 @@ namespace Google.OrTools.Tests {
         IntVar v2 = model.NewIntVar(-10, 10, "v2");
         model.Add(-100000 <= v1 + 2 * v2 <= 100000);
         model.Minimize(v1 - 2 * v2);
-        Console.WriteLine("model = " + model.Model.ToString());
+        //Console.WriteLine("model = " + model.Model.ToString());
 
         CpSolver solver = new CpSolver();
         CpSolverStatus status = solver.Solve(model);
