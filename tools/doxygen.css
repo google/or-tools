@@ -1,566 +1,378 @@
-/* The standard CSS for doxygen 
 
-	modified by RossCairns.com
-*/
+/* Google's standard stylesheet for publishing to developers.google.com        */
+/* Settings in this file add to or override settings in the default stylesheet */
+/* Specify this filename with the HTML_EXTRA_STYLESHEET setting in Doxyfile    */
 
-body, table, div, p, dl {
-	font-family: Lucida Grande, Verdana, Geneva, Arial, sans-serif;
-	font-size: 12px;
+/* author: doog@google.com */
+
+/* Limitations due to HTML and id design:                                    */
+/*  * The paramtype and param padding styles affect both the top and bottom  */
+/*    spacing of method prototypes that have no parameters                   */
+/*    (e.g. closeActiveNativeShareDialog in Google+ API), and also spacing   */
+/*    in between parameters (e.g. handleURL).  I would like to make the      */
+/*    shaded rectangle slightly larger for prototypes with no parameter,     */
+/*    but keep the parameter lines withini a single prototype tight.         */
+/*                                                                           */
+/*  * Property detail prototype has a one-cell table for the name            */
+/*    (e.g. delegate) instead of a two-cell table for both the name and      */
+/*    arguments.  This makes the style definitions complicated.              */
+
+
+/* OVERVIEW PAGE (index.html) */
+
+.icon, .icona {
+    display: none;
 }
 
-p, div, dl {
-	color:#3E3E3E;
+.directory {
+    margin-top: 1em;
 }
 
-div.contents p {
-	
-	font-family:Monaco, courier;
-	
+/* Set gray background on all rows (not just even) but does NOT work */
+.directory tr.even, .directory td.entry, .directory td.desc {
 }
 
-/* @group Heading Levels */
-
-h1 {
-	margin-bottom: 10px;
-	font-size: 30px;
-	padding: 0px 0px 20px 0px ;
-	
-	border-bottom:1px dotted #E0E0E0;
-}
-
-h2 {
-	padding-top: 30px;
-	font-size: 17px;
-	color:#42657B;
-	font-family: Lucida Grande, Verdana, Geneva, Arial, sans-serif;
-}
-
-h3 {
-	font-size: 17px;
-	font-family: Lucida Grande, Verdana, Geneva, Arial, sans-serif;
-}
-
-dt {
-	font-weight: bold;
-}
-
-div.multicol {
-	-moz-column-gap: 1em;
-	-webkit-column-gap: 1em;
-	-moz-column-count: 3;
-	-webkit-column-count: 3;
-}
-
-p.startli, p.startdd, p.starttd {
-	margin-top: 2px;
-}
-
-p.endli {
-	margin-bottom: 0px;
-}
-
-p.enddd {
-	margin-bottom: 4px;
-}
-
-p.endtd {
-	margin-bottom: 2px;
-}
-
-/* @end */
-
-caption {
-	font-weight: bold;
-}
-
-span.legend {
-        font-size: 70%;
-        text-align: center;
-}
-
-h3.version {
-        font-size: 90%;
-		padding-bottom:10px;
-		border-bottom:1px dotted #E0E0E0;
-}
-
-div.qindex, div.navtab{
-	background-color: #e8eef2;
-	border: 1px solid #84b0c7;
-	text-align: center;
-	margin: 2px;
-	padding: 2px;
-}
-
-div.qindex, div.navpath {
-	width: 100%;
-	line-height: 140%;
-}
-
-div.navtab {
-	margin-right: 15px;
-}
-
-/* @group Link Styling */
-
-a {
-	color: #153788;
-	font-weight: normal;
-	text-decoration: none;
-}
-
-.contents a:visited {
-	color: #1b77c5;
-}
-
-a:hover {
-	text-decoration: underline;
-}
-
-a.qindex {
-	font-weight: bold;
-}
-
-a.qindexHL {
-	font-weight: bold;
-	background-color: #6666cc;
-	color: #ffffff;
-	border: 1px double #9295C2;
-}
-
-.contents a.qindexHL:visited {
-        color: #ffffff;
-}
-
-a.el {
-	font-weight: bold;
-}
-
-a.elRef {
-}
-
-a.code {
-	color: #3030f0;
-}
-
-a.codeRef {
-	color: #3030f0;
-}
-
-/* @end */
-
-dl.el {
-	margin-left: -1cm;
+.directory td.entry {
+    font-weight: bold;
+    white-space: nowrap;
 }
 
 .fragment {
-	font-family: monospace, fixed;
-	font-size: 105%;
+    white-space: pre;
+    font: 14px/20px Roboto Mono,monospace;
+    color: #37474f;
+    background: #f7f7f7;
+    margin: 16px 0;
+    padding: 8px;
+    overflow-x: auto;
 }
 
-pre.fragment {
-	border: 1px solid #CCCCCC;
-	background-color: #f5f5f5;
-	padding: 4px 6px;
-	margin: 4px 8px 4px 2px;
-	overflow: auto;
-	word-wrap: break-word;
-	font-size:  9pt;
-	line-height: 125%;
-}
-
-div.ah {
-	background-color: black;
-	font-weight: bold;
-	color: #ffffff;
-	margin-bottom: 3px;
-	margin-top: 3px
-}
+/* TOP OF CLASS PAGES */
 
-div.groupHeader {
-	margin-left: 16px;
-	margin-top: 12px;
-	margin-bottom: 6px;
-	font-weight: bold;
+div.summary {
+    margin-top: -1em;
+    margin-bottom: 1em;
 }
 
-div.groupText {
-	margin-left: 16px;
-	font-style: italic;
+div.headertitle {
+    display: none;
 }
 
-body {
-	background: white;
-	color: black;
-	margin-right: 20px;
-	margin-left: 20px;
+div.textblock p {
+    margin-bottom: 0.6em;
 }
 
-td.indexkey {
-	background-color: #F1F5F9;
-	font-weight: bold;
-	border: 1px solid #CCCCCC;
-	margin: 2px 0px 2px 0;
-	padding: 2px 10px;
-}
-
-td.indexvalue {
-	background-color: #F1F5F9;
-	border: 1px solid #CCCCCC;
-	padding: 2px 10px;
-	margin: 2px 0px;
-}
+/* ALL TABLES */
 
-tr.memlist {
-	background-color: #f0f0f0;
+table {
+    border-collapse: collapse;
+    border: none;
 }
 
-p.formulaDsp {
-	text-align: center;
+table tr.heading {
+    border: none;
 }
 
-img.formulaDsp {
-	
+table tr.heading td {
+    border: none;
+    padding-left: 0;
 }
 
-img.formulaInl {
-	vertical-align: middle;
+table td.memSeparator {
+    display: none;
 }
 
-div.center {
-	text-align: center;
-        margin-top: 0px;
-        margin-bottom: 0px;
-        padding: 0px;
+table td {
+    border: none;
 }
 
-div.center img {
-	border: 0px;
+table {
+    margin-bottom: 0;
 }
 
-img.footer {
-	border: 0px;
-	vertical-align: middle;
-}
 
-/* @group Code Colorization */
+/* CLASS PAGE - SUMMARY TABLES  */
 
-span.keyword {
-	color: #008000
+.groupheader {
+    padding-left: 8px;
 }
 
-span.keywordtype {
-	color: #604020
+table td.memItemLeft {
+    width: 10%;
+    text-align: right;
+    padding-top: 7px;
+    padding-right: 3px;
+    padding-bottom: 0;
+    padding-left: 10px;
+    white-space: nowrap;
 }
 
-span.keywordflow {
-	color: #e08000
+table td.memItemRight {
+    font-weight: bold;
+    padding-top: 7px;
+    padding-right: 3px;
+    padding-bottom: 0;
+    padding-left: 9px;
 }
 
-span.comment {
-	color: #800000
+table td.mdescLeft {
+    padding-top: 0;
+    padding-bottom: 10px;
 }
 
-span.preprocessor {
-	color: #806020
+table td.mdescRight {
+    padding-left: 20px;
+    padding-top: 0;
+    padding-bottom: 6px;
 }
 
-span.stringliteral {
-	color: #002080
+table.memberdecls tr {
+    border: none;
 }
 
-span.charliteral {
-	color: #008080
+table.memberdecls h2 {
+    font: 400 24px/32px Roboto,sans-serif;
 }
 
-span.vhdldigit { 
-	color: #ff00ff 
-}
 
-span.vhdlchar { 
-	color: #000000 
-}
+/* CLASS PAGE - DETAILED SECTION */
 
-span.vhdlkeyword { 
-	color: #700070 
+div.memproto {
+    margin-top: 22px;
+    margin-bottom: 12px;
 }
 
-span.vhdllogic { 
-	color: #ff0000 
+table.memname {
+    border: none;
 }
-
-/* @end */
 
-.search {
-	color: #003399;
-	font-weight: bold;
+table.memname tr {
+    border: none;
 }
 
-form.search {
-	margin-bottom: 0px;
-	margin-top: 0px;
+table.memname td {
+    font: 400 16px/24px Roboto,sans-serif;
+    border: none;
 }
 
-input.search {
-	font-size: 75%;
-	color: #000080;
-	font-weight: normal;
-	background-color: #F1F5F9;
+table.memname td.memname,
+table.memname td.paramkey {
+    font-size: 17px;
+    font-weight: bold;
+    text-align: right;
+    padding-top: 0px;
+    padding-right: 0px;
+    padding-bottom: 2px;
+    white-space: nowrap;
+    width: 85px;
 }
 
-td.tiny {
-	font-size: 75%;
+table.memname td.paramtype {
+    padding-left: 0;
+    padding-top: 0;
+    width: 85px;
+    white-space: nowrap;
 }
 
-.dirtab {
-	padding: 4px;
-	border-collapse: collapse;
-	border: 1px solid #84b0c7;
+table.memname td.paramname {
+    min-width: 170px;
+    padding-top: 0;
 }
 
-th.dirtab {
-	background: #F1F5F9;
-	font-weight: bold;
+table.memname tr:first-child td.memname {
+    text-align: left;
 }
 
-hr {
-	height: 0;
-	border: none;
-	border-top: 1px solid #666;
+table.memname tr:first-child td.memname,
+table.memname tr:first-child td.paramtype,
+table.memname tr:first-child td.paramname {
+    padding-top: 10px;
+    padding-bottom: 10px;
 }
 
-/* @group Member Descriptions */
-
-.mdescLeft, .mdescRight,
-.memItemLeft, .memItemRight,
-.memTemplItemLeft, .memTemplItemRight, .memTemplParams {
-	background-color: #FAFAFA;
-	border: none;
-	margin: 4px;
-	padding: 1px 0 0 8px;
+div.memdoc p {
+    margin-left: 35px;
+    margin-bottom: 0.7em;
 }
 
-.mdescLeft, .mdescRight {
-	padding: 0px 8px 4px 8px;
-	color: #555;
+div.memdoc dl.since {
+    margin-left: 35px;
 }
 
-.memItemLeft, .memItemRight, .memTemplParams {
-	border-top: 1px solid #ccc;
-	background-color: #F9F9F9;
+dl.since dt,
+dl.since dd {
+    display: inline;
 }
 
-.memItemLeft, .memTemplItemLeft {
-        white-space: nowrap;
+dl.deprecated {
+    padding-left: 35px;
+    font-weight: 500;
 }
 
-.memTemplParams {
-	color: #606060;
-        white-space: nowrap;
+dl.deprecated dt,
+dl.deprecated dd {
+    display: inline;
 }
-
-/* @end */
-
-/* @group Member Details */
-
-/* Styles for detailed member documentation */
 
-.memtemplate {
-	font-size: 80%;
-	color: #606060;
-	font-weight: normal;
-	margin-left: 3px;
+dl.deprecated dd {
+    padding-left: 12px;
+    font-weight: normal;
 }
 
-.memnav {
-	background-color: #F1F5F9;
-	border: 1px solid #84b0c7;
-	text-align: center;
-	margin: 2px;
-	margin-right: 15px;
-	padding: 2px;
+/* Make unneeded links black in detail tables */
+td.memname a.el,
+td.memname a:visited.el {
+   color: #000;
 }
 
-.memitem {
-	padding: 0;
-	margin-bottom: 30px;
+dl.params, dl.return {
+    padding-left: 35px;
 }
 
-.memname {
-	white-space: nowrap;
-	font-weight: bold;
-	color:#42657B;
-	padding:3px 5px;
+dl.params dt, dl.return dt {
+    font-weight: 500;
 }
 
-.memproto, .memdoc {
-	border: 1px dotted #E0E0E0;
+dl.params dd, dl.return dd {
+    padding-left: 0px;
 }
 
-.memproto {
-	padding: 0;
-	background-color: #F9F9F9;
-	font-weight: bold;
-        -webkit-box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.15);
-        -moz-box-shadow: rgba(0, 0, 0, 0.15) 5px 5px 5px;
+/* CLASS FILE - PROPERTY DETAILS */
 
+td.mlabels-left td.memname {
+    padding-left: 0;
 }
 
-.memdoc {
-	padding: 2px 20px 20px;
-	background-color: #FFFFFF;
-	border-top-width: 0;
-        -webkit-box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.15);
-        -moz-box-shadow: rgba(0, 0, 0, 0.15) 5px 5px 5px;
+table.memname {
+    margin-top: 12px;
 }
 
-.paramkey {
-	text-align: right;
+table.mlabels {
+    margin-top: 10px;
 }
 
-.paramtype {
-	white-space: nowrap;
+table.mlabels, table.memname {
+    margin-bottom: 0;
 }
 
-.paramname {
-	color: #885656;
-	white-space: nowrap;
+table.mlabels tr {
+    border: 0;
 }
-.paramname em {
-	font-style: normal;
-}
-
-/* @end */
-
-/* @group Directory (tree) */
-
-/* for the tree view */
-
-.ftvtree {
-	font-family: sans-serif;
-	margin: 0.5em;
-}
-
-/* these are for tree view when used as main index */
 
-.directory {
-	font-size: 9pt;
-	font-weight: bold;
+table.mlabels td.mlabels-left {
+    font-size: 17px/24px;
+    padding-top: 0;
+    padding-bottom: 0;
+    width: 125px;
 }
 
-.directory h3 {
-	margin: 0px;
-	margin-top: 1em;
-	font-size: 11pt;
+table.mlabels td.mlabels-right {
+    font-size: 17px/24px;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    vertical-align: middle;
+    width: 600px;
 }
 
-/*
-The following two styles can be used to replace the root node title
-with an image of your choice.  Simply uncomment the next two styles,
-specify the name of your image and be sure to set 'height' to the
-proper pixel height of your image.
-*/
-
-/*
-.directory h3.swap {
-	height: 61px;
-	background-repeat: no-repeat;
-	background-image: url("yourimage.gif");
-}
-.directory h3.swap span {
-	display: none;
+table.mlabels span.mlabel {
+    padding-left: 2px;
+    padding-right: 8px;
 }
-*/
 
-.directory > h3 {
-	margin-top: 0;
-}
+/* OLD DESIGN COMPATIBILITY */
 
-.directory p {
-	margin: 0px;
-	white-space: nowrap;
+body.docs table {
+    border-collapse: collapse;
+    border: none;
 }
 
-.directory div {
-	display: none;
-	margin: 0px;
+body.docs table tr.heading td {
+    border: none;
+    padding-left: 0;
 }
 
-.directory img {
-	vertical-align: -30%;
+body.docs table td.memSeparator {
+    display: none;
 }
-
-/* these are for tree view when not used as main index */
 
-.directory-alt {
-	font-size: 100%;
-	font-weight: bold;
+body.docs table td {
+    border: none;
 }
 
-.directory-alt h3 {
-	margin: 0px;
-	margin-top: 1em;
-	font-size: 11pt;
+body.docs table {
+    margin-bottom: 0;
 }
 
-.directory-alt > h3 {
-	margin-top: 0;
+body.docs table td.memItemLeft {
+    background-color: #F9FAFC;
+    width: 10%;
+    text-align: right;
+    padding-top: 7px;
+    padding-right: 3px;
+    padding-bottom: 0;
+    padding-left: 10px;
+    white-space: nowrap;
 }
 
-.directory-alt p {
-	margin: 0px;
-	white-space: nowrap;
+body.docs table td.memItemRight {
+    background-color: #F9FAFC;
+    font-weight: bold;
+    padding-top: 7px;
+    padding-right: 3px;
+    padding-bottom: 0;
+    padding-left: 9px;
 }
 
-.directory-alt div {
-	display: none;
-	margin: 0px;
+body.docs table td.mdescLeft {
+    background-color: #F9FAFC;
+    padding-top: 0;
+    padding-bottom: 10px;
 }
 
-.directory-alt img {
-	vertical-align: -30%;
+body.docs table td.mdescRight {
+    background-color: #F9FAFC;
+    padding-left: 20px;
+    padding-top: 0;
+    padding-bottom: 6px;
 }
 
-/* @end */
-
-address {
-	font-style: normal;
-	color: #333;
+body.docs table.memname {
+    border: none;
 }
 
-table.doxtable {
-	border-collapse:collapse;
+body.docs table.memname td {
+    background-color: #E2E8F2;
+    border: none;
 }
 
-table.doxtable td, table.doxtable th {
-	border: 1px solid #153788;
-	padding: 3px 7px 2px;
+body.docs table.memname td.memname,
+body.docs table.memname td.paramkey {
+    font-weight: bold;
+    text-align: right;
+    padding-top: 0px;
+    padding-right: 0px;
+    padding-bottom: 2px;
+    white-space: nowrap;
+    width: 85px;
 }
 
-table.doxtable th {
-	background-color: #254798;
-	color: #FFFFFF;
-	font-size: 110%;
-	padding-bottom: 4px;
-	padding-top: 5px;
-	text-align:left;
+body.docs table.memname td.paramtype {
+    padding-left: 0;
+    padding-top: 0px;
+    padding-bottom: 2px;
+    width: 85px;
+    white-space: nowrap;
 }
-
 
-hr {
-	border-top:1px dotted #E0E0E0;
-	border-bottom:1px dotted #E0E0E0;
-	margin-top:30px;
-	padding-top:10px;
+body.docs table.memname td.paramname {
+    min-width: 330px;
+    padding-top: 0px;
+    padding-bottom: 2px;
 }
 
-.contents {
-	padding-top: 30px;
+body.docs td.mlabels-left td.memname {
+    padding-left: 0;
 }
 
-h1 {
-	margin-top:0;
-}
-.contents .dynsection {
-	margin-top:10px;
-}
+/* END OF OLD DESIGN COMPATIBILITY */
