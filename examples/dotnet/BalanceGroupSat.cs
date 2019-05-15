@@ -80,7 +80,7 @@ public class BalanceGroupSat
         foreach (var item in allItems)
         {
             var groupsForItem = allGroups.Select(x => itemInGroup[item, x]).ToArray();
-            model.AddLinearConstraint(LinearExpr.Sum(groupsForItem, 1, 1);
+            model.AddLinearConstraint(LinearExpr.Sum(groupsForItem, 1, 1));
         }
 
         // The deviation of the sum of each items in a group against the average.
@@ -123,7 +123,7 @@ public class BalanceGroupSat
             {
                 var literal = colorInGroup[color, @group];
                 var items = itemsPerColor[color].Select(x => itemInGroup[x, @group]).ToArray();
-                model.Add(LinearExpr.Sum(items >= minItemsOfSameColorPerGroup).OnlyEnforceIf(literal);
+                model.Add(LinearExpr.Sum(items) >= minItemsOfSameColorPerGroup).OnlyEnforceIf(literal);
             }
         }
 
