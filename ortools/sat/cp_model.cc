@@ -727,29 +727,6 @@ void CpModelBuilder::AddDecisionStrategy(
   proto->set_domain_reduction_strategy(domain_strategy);
 }
 
-CpSolverResponse Solve(const CpModelProto& model_proto) {
-  Model model;
-  return SolveCpModel(model_proto, &model);
-}
-
-CpSolverResponse SolveWithModel(const CpModelProto& model_proto, Model* model) {
-  return SolveCpModel(model_proto, model);
-}
-
-CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
-                                     const SatParameters& params) {
-  Model model;
-  model.Add(NewSatParameters(params));
-  return SolveCpModel(model_proto, &model);
-}
-
-CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
-                                     const std::string& params) {
-  Model model;
-  model.Add(NewSatParameters(params));
-  return SolveCpModel(model_proto, &model);
-}
-
 int64 SolutionIntegerValue(const CpSolverResponse& r, const LinearExpr& expr) {
   int64 result = expr.constant();
   for (int i = 0; i < expr.variables().size(); ++i) {

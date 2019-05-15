@@ -309,6 +309,7 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
 
     if (--index == 0) {
       new_params.set_search_branching(SatParameters::PSEUDO_COST_SEARCH);
+      new_params.set_exploit_best_solution(true);
       *name = "pseudo_cost";
       return new_params;
     }

@@ -3118,6 +3118,14 @@ void ExpandObjective(PresolveContext* context) {
   }
   MaybeDivideByGcd(&objective_map, &objective_divisor);
 
+  // If the objective is a single variable with a "simple" domain [lb, ub], then
+  // we can usually remove this variable if it is only used in one linear
+  // equality constraint and we do just one expansion.
+  int unique_expanded_constraint = -1;
+  bool objective_was_a_single_simple_variable =
+      objective_map.size() == 1 &&
+      context->DomainOf(objective_map.begin()->first).NumIntervals() == 1;
+
   // To avoid a bad complexity, we need to compute the number of relevant
   // constraints for each variables.
   const int num_variables = context->working_model->variables_size();
@@ -3269,7 +3277,7 @@ void ExpandObjective(PresolveContext* context) {
       //
       // TODO(user): It should be possible to refactor the code so this is
       // automatically done by the linear constraint singleton presolve rule.
-      if (context->var_to_constraints[objective_var].empty()) {
+      if (context->var_to_constraints[objective_var].size() == 1) {
         // Compute implied domain on objective_var.
         Domain implied_domain = ReadDomainFromProto(ct.linear());
         for (int i = 0; i < num_terms; ++i) {
@@ -3292,10 +3300,26 @@ void ExpandObjective(PresolveContext* context) {
           context->working_model->mutable_constraints(expanded_linear_index)
               ->Clear();
           context->UpdateConstraintVariableUsage(expanded_linear_index);
+        } else {
+          unique_expanded_constraint = expanded_linear_index;
         }
       }
+
       ++num_expansions;
     }
+  }
+
+  // Special case: If we just did one expansion of a single variable with a
+  // simple domain, then we can remove the expanded constraints if the objective
+  // wasn't used elsewhere.
+  if (num_expansions == 1 && objective_was_a_single_simple_variable &&
+      unique_expanded_constraint != -1) {
+    context->UpdateRuleStats("objective: removed unique objective constraint.");
+    ConstraintProto* mutable_ct =
+        context->working_model->mutable_constraints(unique_expanded_constraint);
+    *(context->mapping_model->add_constraints()) = *mutable_ct;
+    mutable_ct->Clear();
+    context->UpdateConstraintVariableUsage(unique_expanded_constraint);
   }
 
   // Compute the implied domain from the new objective linear expression.

@@ -37,7 +37,7 @@ void SolveWithTimeLimitSampleSat() {
   model.Add(NewSatParameters(parameters));
 
   // Solve.
-  const CpSolverResponse response = SolveWithModel(cp_model.Build(), &model);
+  const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
   LOG(INFO) << CpSolverResponseStats(response);
 
   if (response.status() == CpSolverStatus::FEASIBLE) {

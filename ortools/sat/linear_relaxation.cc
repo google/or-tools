@@ -434,15 +434,20 @@ void AppendNoOverlapRelaxation(const CpModelProto& model_proto,
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
   for (int index1 = 0; index1 < num_intervals; ++index1) {
-    if (HasEnforcementLiteral(model_proto.constraints(index1))) continue;
+    const int interval_index1 = ct.no_overlap().intervals(index1);
+    if (HasEnforcementLiteral(model_proto.constraints(interval_index1)))
+      continue;
     const IntervalConstraintProto interval1 =
-        model_proto.constraints(index1).interval();
+        model_proto.constraints(interval_index1).interval();
     const IntegerVariable start1 = mapping->Integer(interval1.start());
     const IntegerVariable end1 = mapping->Integer(interval1.end());
     for (int index2 = index1 + 1; index2 < num_intervals; ++index2) {
-      if (HasEnforcementLiteral(model_proto.constraints(index2))) continue;
+      const int interval_index2 = ct.no_overlap().intervals(index2);
+      if (HasEnforcementLiteral(model_proto.constraints(interval_index2))) {
+        continue;
+      }
       const IntervalConstraintProto interval2 =
-          model_proto.constraints(index2).interval();
+          model_proto.constraints(interval_index2).interval();
       const IntegerVariable start2 = mapping->Integer(interval2.start());
       const IntegerVariable end2 = mapping->Integer(interval2.end());
       // Encode only the interesting pairs.
@@ -504,6 +509,7 @@ void AppendMaxRelaxation(IntegerVariable target,
   }
 
   // Part 2: Encode upper bound on X.
+  if (linearization_level < 2) return;
   // For size = 2, we do this with 1 less variable.
   IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
   if (vars.size() == 2) {
@@ -515,27 +521,25 @@ void AppendMaxRelaxation(IntegerVariable target,
                              relaxation);
     return;
   }
-  if (linearization_level >= 2) {
-    // For each X_i, we encode y_i => X <= X_i. And at least one of the y_i
-    // is true. Note that the correct y_i will be chosen because of the first
-    // part in linearlization (X >= X_i).
-    // TODO(user): Only lower bound is needed, experiment.
-    LinearConstraintBuilder lc_exactly_one(model, IntegerValue(1),
-                                           IntegerValue(1));
-    for (const IntegerVariable var : vars) {
-      if (target == var) continue;
-      // y => X <= X_i.
-      // <=> max_term_value * y + X - X_i <= max_term_value.
-      // where max_tern_value is X_ub - X_i_lb.
-      IntegerVariable y = model->Add(NewIntegerVariable(0, 1));
-      const Literal y_lit =
-          encoder->GetOrCreateLiteralAssociatedToEquality(y, IntegerValue(1));
-      AppendEnforcedUpperBound(y_lit, target, var, model, relaxation);
+  // For each X_i, we encode y_i => X <= X_i. And at least one of the y_i is
+  // true. Note that the correct y_i will be chosen because of the first part in
+  // linearlization (X >= X_i).
+  // TODO(user): Only lower bound is needed, experiment.
+  LinearConstraintBuilder lc_exactly_one(model, IntegerValue(1),
+                                         IntegerValue(1));
+  for (const IntegerVariable var : vars) {
+    if (target == var) continue;
+    // y => X <= X_i.
+    // <=> max_term_value * y + X - X_i <= max_term_value.
+    // where max_tern_value is X_ub - X_i_lb.
+    IntegerVariable y = model->Add(NewIntegerVariable(0, 1));
+    const Literal y_lit =
+        encoder->GetOrCreateLiteralAssociatedToEquality(y, IntegerValue(1));
+    AppendEnforcedUpperBound(y_lit, target, var, model, relaxation);
 
-      CHECK(lc_exactly_one.AddLiteralTerm(y_lit, IntegerValue(1)));
-    }
-    relaxation->linear_constraints.push_back(lc_exactly_one.Build());
+    CHECK(lc_exactly_one.AddLiteralTerm(y_lit, IntegerValue(1)));
   }
+  relaxation->linear_constraints.push_back(lc_exactly_one.Build());
 }
 
 void AppendLinearConstraintRelaxation(const ConstraintProto& constraint_proto,

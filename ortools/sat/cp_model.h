@@ -708,23 +708,6 @@ class CpModelBuilder {
   absl::flat_hash_map<int, int> bool_to_integer_index_map_;
 };
 
-// Solves the current cp_model and returns an instance of CpSolverResponse.
-CpSolverResponse Solve(const CpModelProto& model_proto);
-
-// Solves the current cp_model within the given model, and returns an
-// instance of CpSolverResponse.
-CpSolverResponse SolveWithModel(const CpModelProto& model_proto, Model* model);
-
-// Solves the current cp_model with the give sat parameters, and returns an
-// instance of CpSolverResponse.
-CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
-                                     const SatParameters& params);
-
-// Solves the current cp_model with the given sat parameters as std::string in
-// JSon format, and returns an instance of CpSolverResponse.
-CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
-                                     const std::string& params);
-
 // Evaluates the value of an linear expression in a solver response.
 int64 SolutionIntegerValue(const CpSolverResponse& r, const LinearExpr& expr);
 

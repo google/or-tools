@@ -1156,13 +1156,25 @@ void LoadCpModel(const CpModelProto& model_proto,
   // Create the objective definition inside the Model so that it can be accessed
   // by the heuristics than needs it.
   if (objective_var != kNoIntegerVariable) {
-    ObjectiveDefinition* objective = model->GetOrCreate<ObjectiveDefinition>();
-    objective->scaling_factor = model_proto.objective().scaling_factor();
-    if (objective->scaling_factor == 0.0) {
-      objective->scaling_factor = 1.0;
+    const CpObjectiveProto& objective_proto = model_proto.objective();
+    auto* objective_definition = model->GetOrCreate<ObjectiveDefinition>();
+
+    objective_definition->scaling_factor = objective_proto.scaling_factor();
+    if (objective_definition->scaling_factor == 0.0) {
+      objective_definition->scaling_factor = 1.0;
     }
-    objective->offset = model_proto.objective().offset();
-    objective->objective_var = objective_var;
+    objective_definition->offset = objective_proto.offset();
+    objective_definition->objective_var = objective_var;
+
+    // Fill the objective heuristics data.
+    for (int i = 0; i < objective_proto.vars_size(); ++i) {
+      const int ref = objective_proto.vars(i);
+      if (mapping->IsInteger(ref)) {
+        const IntegerVariable var = mapping->Integer(objective_proto.vars(i));
+        objective_definition->objective_impacting_variables.insert(
+            objective_proto.coeffs(i) > 0 ? var : NegationOf(var));
+      }
+    }
   }
 
   // Intersect the objective domain with the given one if any.
@@ -2240,6 +2252,27 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   response.set_user_time(user_timer.Get());
   return response;
 }
+
+CpSolverResponse Solve(const CpModelProto& model_proto) {
+  Model model;
+  return SolveCpModel(model_proto, &model);
+}
+
+CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
+                                     const SatParameters& params) {
+  Model model;
+  model.Add(NewSatParameters(params));
+  return SolveCpModel(model_proto, &model);
+}
+
+#if !defined(__PORTABLE_PLATFORM__)
+CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
+                                     const std::string& params) {
+  Model model;
+  model.Add(NewSatParameters(params));
+  return SolveCpModel(model_proto, &model);
+}
+#endif  // !__PORTABLE_PLATFORM__
 
 }  // namespace sat
 }  // namespace operations_research

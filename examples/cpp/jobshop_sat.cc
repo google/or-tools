@@ -338,7 +338,7 @@ void Solve(const JsspInputProblem& problem) {
   Model model;
   model.Add(NewSatParameters(FLAGS_params));
 
-  const CpSolverResponse response = SolveWithModel(cp_model.Build(), &model);
+  const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
   LOG(INFO) << CpSolverResponseStats(response);
 
   // Abort if we don't have any solution.

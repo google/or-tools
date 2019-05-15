@@ -69,7 +69,7 @@ void EarlinessTardinessCostSampleSat() {
     LOG(INFO) << "x=" << SolutionIntegerValue(r, x) << " expr"
               << SolutionIntegerValue(r, expr);
   }));
-  SolveWithModel(cp_model.Build(), &model);
+  SolveCpModel(cp_model.Build(), &model);
 }
 
 }  // namespace sat

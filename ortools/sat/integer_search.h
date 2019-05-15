@@ -62,6 +62,11 @@ struct ObjectiveDefinition {
   double offset = 0.0;
   IntegerVariable objective_var = kNoIntegerVariable;
 
+  // List of variable that when set to their lower bound should help getting a
+  // better objective. This is used by some search heuristic to preferably
+  // assign any of the variable here to their lower bound first.
+  absl::flat_hash_set<IntegerVariable> objective_impacting_variables;
+
   double ScaleIntegerObjective(IntegerValue value) const {
     return (ToDouble(value) + offset) * scaling_factor;
   }
@@ -167,14 +172,9 @@ std::function<LiteralIndex()> SequentialValueSelection(
         value_selection_heuristics,
     std::function<LiteralIndex()> var_selection_heuristic, Model* model);
 
-// Changes the value of the given decision by 'var_selection_heuristic'. The new
-// value is chosen in the following way:
-// 1) If the LP part is large and the LP solution is exploitable, change the
-//    value to LP solution value.
-// 2) Else if there is at least one solution found, change the value to the best
-//    solution value.
-// If none of the above heuristics are applicable then it uses the default value
-// given in the decision.
+// Changes the value of the given decision by 'var_selection_heuristic'
+// according to various value selection heuristics. Looks at the code to know
+// exactly what heuristic we use.
 std::function<LiteralIndex()> IntegerValueSelectionHeuristic(
     std::function<LiteralIndex()> var_selection_heuristic, Model* model);
 
@@ -185,28 +185,8 @@ std::function<LiteralIndex()> SatSolverHeuristic(Model* model);
 // for branching.
 std::function<LiteralIndex()> PseudoCost(Model* model);
 
-// Uses the given heuristics, but when the LP relaxation has a solution, use it
-// to change the polarity of the next decision. This is only done for integer
-// solutions unless 'exploit_all_lp_solution' parameter is set to true. For
-// integer solution the solver will check if this integer LP solution satisfy
-// all the constraints.
-//
-// Note that we only do this if a big enough percentage of the problem variables
-// appear in the LP relaxation.
-std::function<LiteralIndex()> ExploitLpSolution(
-    std::function<LiteralIndex()> heuristic, Model* model);
-
-// Similar to ExploitLpSolution(). Takes LiteralIndex as base decision and
-// changes change the returned decision to AtLpValue() of the underlying integer
-// variable if LP solution is exploitable.
-LiteralIndex ExploitLpSolution(const LiteralIndex decision, Model* model);
-
-// Returns true if we currently have an available LP solution that is
-// "exploitable" according to the current parameters.
-bool LpSolutionIsExploitable(Model* model);
-
-// Returns true if the number of variables in the linearized part is at least
-// 0.5 times the total number of variables.
+// Returns true if the number of variables in the linearized part represent
+// a large enough proportion of all the problem variables.
 bool LinearizedPartIsLarge(Model* model);
 
 // A restart policy that restarts every k failures.
@@ -228,8 +208,8 @@ std::vector<std::function<LiteralIndex()>> CompleteHeuristics(
 
 // Prints out a new optimization solution in a fixed format.
 void LogNewSolution(const std::string& event_or_solution_count,
-                    double time_in_seconds, double obj_lb, double obj_ub,
-                    const std::string& solution_info);
+                    double time_in_seconds, double obj_best, double obj_lb,
+                    double obj_ub, const std::string& solution_info);
 
 // Prints out a new satisfiability solution in a fixed format.
 void LogNewSatSolution(const std::string& event_or_solution_count,

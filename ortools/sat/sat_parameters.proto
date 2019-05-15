@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 130
+// NEXT TAG: 132
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -580,6 +580,14 @@ message SatParameters {
   }
   optional SearchBranching search_branching = 82 [default = AUTOMATIC_SEARCH];
 
+  // All the "exploit_*" parameters below work in the same way: when branching
+  // on an IntegerVariable, these parameters affect the value the variable is
+  // branched on. Currently the first heuristic that triggers win in the order
+  // in which they appear below.
+  //
+  // TODO(user): Maybe do like for the restart algorithm, introduce an enum
+  // and a repeated field that control the order on which these are applied?
+
   // If true and the Lp relaxation of the problem has an integer optimal
   // solution, try to exploit it. Note that since the LP relaxation may not
   // contain all the constraints, such a solution is not necessarily a solution
@@ -590,6 +598,13 @@ message SatParameters {
   // it. This is same as above except in this case the lp solution might not be
   // an integer solution.
   optional bool exploit_all_lp_solution = 116 [default = true];
+
+  // When branching on a variable, follow the last best solution value.
+  optional bool exploit_best_solution = 130 [default = false];
+
+  // When branching an a variable that directly affect the objective,
+  // branch on the value that lead to the best objective first.
+  optional bool exploit_objective = 131 [default = true];
 
   // The solver ignores the pseudo costs of variables with number of recordings
   // less than this threshold.

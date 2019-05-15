@@ -59,12 +59,15 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
   }
   if (log_updates_ && change) {
     const CpObjectiveProto& obj = model_proto_.objective();
+    const double best =
+        ScaleObjectiveValue(obj, best_solution_objective_value_);
     double new_lb = ScaleObjectiveValue(obj, inner_objective_lower_bound_);
     double new_ub = ScaleObjectiveValue(obj, inner_objective_upper_bound_);
     if (model_proto_.objective().scaling_factor() < 0) {
       std::swap(new_lb, new_ub);
     }
-    LogNewSolution("Bound", wall_timer_.Get(), new_lb, new_ub, worker_info);
+    LogNewSolution("Bound", wall_timer_.Get(), best, new_lb, new_ub,
+                   worker_info);
   }
 }
 
@@ -212,13 +215,15 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
 
     if (model_proto_.has_objective()) {
       const CpObjectiveProto& obj = model_proto_.objective();
+      const double best =
+          ScaleObjectiveValue(obj, best_solution_objective_value_);
       double lb = ScaleObjectiveValue(obj, inner_objective_lower_bound_);
-      double ub = ScaleObjectiveValue(obj, objective_value);
+      double ub = ScaleObjectiveValue(obj, inner_objective_upper_bound_);
       if (model_proto_.objective().scaling_factor() < 0) {
         std::swap(lb, ub);
       }
-      LogNewSolution(absl::StrCat(num_solutions_), wall_timer_.Get(), lb, ub,
-                     solution_info);
+      LogNewSolution(absl::StrCat(num_solutions_), wall_timer_.Get(), best, lb,
+                     ub, solution_info);
     } else {
       LogNewSatSolution(absl::StrCat(num_solutions_), wall_timer_.Get(),
                         solution_info);
