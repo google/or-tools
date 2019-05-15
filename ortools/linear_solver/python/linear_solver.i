@@ -146,6 +146,7 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
 
   static double Infinity() { return operations_research::MPSolver::infinity(); }
   void SetTimeLimit(int64 x) { $self->set_time_limit(x); }
+  void SetNumThreads(int x) { $self->SetNumThreads(x); }
   int64 WallTime() const { return $self->wall_time(); }
   int64 Iterations() const { return $self->iterations(); }
 }  // extend MPSolver
