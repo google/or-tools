@@ -197,7 +197,7 @@ public class ShiftSchedulingSat
             {
                 foreach (int w in Range(numWeeks))
                 {
-                    var works = new IntVar[numDays];
+                    var works = new IntVar[7];
 
                     foreach (int d in Range(7))
                     {
@@ -284,10 +284,9 @@ public class ShiftSchedulingSat
 
         // Solve model
         var solver = new CpSolver();
-	solver.StringParameters = "num_search_workers:8";
+	    solver.StringParameters = "num_search_workers:8, log_search_progress: true";
 
-        var solutionPrinter = new ObjectiveSolutionPrinter();
-        var status = solver.SolveWithSolutionCallback(model, solutionPrinter);
+        var status = solver.Solve(model);
 
         // Print solution
         if (status == CpSolverStatus.Optimal || status == CpSolverStatus.Feasible)

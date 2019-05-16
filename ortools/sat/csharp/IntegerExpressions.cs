@@ -223,8 +223,10 @@ namespace Google.OrTools.Sat
     {
       List<LinearExpr> exprs = new List<LinearExpr>();
       List<long> coeffs = new List<long>();
-      exprs.Add(e);
-      coeffs.Add(initial_coeff);
+      if ((Object)e != null) {
+        exprs.Add(e);
+        coeffs.Add(initial_coeff);
+      }
       long constant = 0;
 
       while (exprs.Count > 0)
@@ -233,7 +235,7 @@ namespace Google.OrTools.Sat
         exprs.RemoveAt(0);
         long coeff = coeffs[0];
         coeffs.RemoveAt(0);
-        if (coeff == 0) continue;
+        if (coeff == 0 || (Object)expr == null) continue;
 
         if (expr is ProductCst)
         {
@@ -468,6 +470,7 @@ namespace Google.OrTools.Sat
       for (int i = 0; i < expressions_.Length; ++i)
       {
         LinearExpr expr = expressions_[i];
+        if ((Object)expr == null) continue;
         long coeff = coefficients_[i];
         if (i != 0)
         {
