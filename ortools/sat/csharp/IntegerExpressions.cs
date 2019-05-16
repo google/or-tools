@@ -253,10 +253,7 @@ namespace Google.OrTools.Sat
           foreach (LinearExpr sub in a.Expressions)
           {
             exprs.Add(sub);
-          }
-          foreach (long c in a.Coefficients)
-          {
-            coeffs.Add(coeff * c);
+            coeffs.Add(coeff);
           }
         }
         else if (expr is IntVar)
@@ -314,149 +311,97 @@ namespace Google.OrTools.Sat
   {
     public SumArray(LinearExpr a, LinearExpr b)
     {
-      Init(2);
-      AddExpr(a, 0);
-      AddExpr(b, 1);
+      AddExpr(a);
+      AddExpr(b);
       constant_ = 0L;
     }
 
     public SumArray(LinearExpr a, long b)
     {
-      Init(1);
-      AddExpr(a, 0);
+      AddExpr(a);
       constant_ = b;
     }
 
     public SumArray(IEnumerable<LinearExpr> exprs)
     {
-      int count = FindLength(exprs);
-      Init(count);
-      int index = 0;
       foreach (LinearExpr e in exprs)
       {
-        AddExpr(e, index);
-        index++;
+        AddExpr(e);
       }
       constant_ = 0L;
     }
 
     public SumArray(IEnumerable<IntVar> vars)
     {
-      int count = FindLength(vars);
-      Init(count);
-      int index = 0;
       foreach (IntVar v in vars)
       {
-        AddExpr(v, index);
-        index++;
+        AddExpr(v);
       }
       constant_ = 0L;
     }
     
     public SumArray(IEnumerable<IntVar> vars, IEnumerable<long> coeffs)
     {
-      int count = FindLength(vars);
-      Init(count);
-      // Fill the coefficients;
-      int index = 0;
-      foreach (int c in coeffs)
+      List<IntVar> tmp_vars = new List<IntVar>();
+      foreach (IntVar v in vars)
       {
-        coefficients_[index] = c;
-        index++;
+        tmp_vars.Add(v);
       }
-      // Add terms, reading the filled coefficients.
-      index = 0;
-      foreach (LinearExpr v in vars)
+      List<long> tmp_coeffs = new List<long>();
+      foreach (long c in coeffs)
       {
-         AddTerm(v, coefficients_[index], index);
-         index++;
+        tmp_coeffs.Add(c);
+      }
+      if (tmp_vars.Count != tmp_coeffs.Count)
+      {
+        throw new ArgumentException(
+          "in SumArray(vars, coeffs), the two lists do not have the same length");
+      }
+      IntVar[] flat_vars = tmp_vars.ToArray();
+      long[] flat_coeffs = tmp_coeffs.ToArray();
+      for (int i = 0; i < flat_vars.Length; ++i) {
+        expressions_.Add(Prod(flat_vars[i], flat_coeffs[i]));
       }
       constant_ = 0L;
     }
     
     public SumArray(IEnumerable<IntVar> vars, IEnumerable<int> coeffs)
     {
-      int count = FindLength(vars);
-      Init(count);
-      // Fill the coefficients;
-      int index = 0;
+      List<IntVar> tmp_vars = new List<IntVar>();
+      foreach (IntVar v in vars)
+      {
+        tmp_vars.Add(v);
+      }
+      List<long> tmp_coeffs = new List<long>();
       foreach (int c in coeffs)
       {
-        coefficients_[index] = c;
-        index++;
+        tmp_coeffs.Add(c);
       }
-      // Add terms, reading the filled coefficients.
-      index = 0;
-      foreach (LinearExpr v in vars)
+      if (tmp_vars.Count != tmp_coeffs.Count)
       {
-         AddTerm(v, coefficients_[index], index);
-         index++;
+        throw new ArgumentException(
+          "in SumArray(vars, coeffs), the two lists do not have the same length");
+      }
+      IntVar[] flat_vars = tmp_vars.ToArray();
+      long[] flat_coeffs = tmp_coeffs.ToArray();
+      for (int i = 0; i < flat_vars.Length; ++i) {
+        expressions_.Add(Prod(flat_vars[i], flat_coeffs[i]));
       }
       constant_ = 0L;
     }
 
-    public void AddExpr(LinearExpr expr, int index) {
-      if (expr is ProductCst)
-      {
-        ProductCst p = (ProductCst)expr;
-        expressions_[index] = p.Expr;
-        coefficients_[index] = p.Coeff;
-      }
-      else
-      {
-        expressions_[index] = expr;
-        coefficients_[index] = 1;
-      }
+    public void AddExpr(LinearExpr expr) {
+      expressions_.Add(expr);
     }
 
-    public void AddTerm(LinearExpr expr, long coeff, int index) {
-      if (expr is ProductCst)
-      {
-        ProductCst p = (ProductCst)expr;
-        expressions_[index] = p.Expr;
-        coefficients_[index] = p.Coeff * coeff;
-      }
-      else
-      {
-        expressions_[index] = expr;
-        coefficients_[index] = coeff;
-      }
-    }    
-
-    public LinearExpr[] Expressions
+    public List<LinearExpr> Expressions
     {
       get { return expressions_; }
     }
 
-    public long[] Coefficients
-    {
-      get { return coefficients_; }
-    }
-    
     public long Constant
     {
       get { return constant_; }
-    }
-
-    void Init(int size) {
-      expressions_ = new LinearExpr[size];
-      coefficients_ = new long[size];
-    }
-
-    int FindLength(IEnumerable<LinearExpr> exprs) {
-      int count = 0;
-      foreach (LinearExpr e in exprs) {
-        count++;
-      }
-      return count;
-    }
-
-    int FindLength(IEnumerable<IntVar> vars) {
-      int count = 0;
-      foreach (IntVar v in vars) {
-        count++;
-      }
-      return count;
     }
 
     public override string ShortString()
@@ -467,44 +412,21 @@ namespace Google.OrTools.Sat
     public override string ToString()
     {
       string result = "";
-      for (int i = 0; i < expressions_.Length; ++i)
+      foreach (LinearExpr expr in expressions_)
       {
-        LinearExpr expr = expressions_[i];
         if ((Object)expr == null) continue;
-        long coeff = coefficients_[i];
-        if (i != 0)
+        if (!String.IsNullOrEmpty(result)) 
         {
-          if (coeff < 0)
-          {
-            result += String.Format(" - ");
-            coeff = -coeff;
-          }
-          else
-          {
-            result += String.Format(" + ");
-          }
+          result += String.Format(" + ");
         }
 
-        if (coeff == 1)
-        {
-          result += expr.ShortString();
-        }
-        else if (coeff == -1)
-        {
-          result += String.Format("-{0}", expr);
-        }
-        else
-        {
-          result += String.Format("{0}*{1}", coeff, expr);
-        }
+        result += expr.ShortString();
       }
       return result;
     }
 
-    private LinearExpr[] expressions_;
-    private long[] coefficients_;
+    private List<LinearExpr> expressions_;
     private long constant_;
-
   }
 
   public class IntVar : LinearExpr, ILiteral
