@@ -731,7 +731,7 @@ public class NetworkRoutingSat
 
                 var capacity = _arcCapacity[arcIndex];
                 var scaledTraffic = cpModel.NewIntVar(0, sumOfTraffic * 1000, $"scaledTrafficVar{arcIndex}");
-                var scaledTrafficVar = traffic_var * 1000);
+                var scaledTrafficVar = trafficVar * 1000;
                 cpModel.Add(scaledTrafficVar == scaledTraffic);
 
                 var normalizedTraffic =
@@ -757,7 +757,6 @@ public class NetworkRoutingSat
             CpSolver solver = new CpSolver();
             solver.StringParameters = parameters;
 
-            int numSolutions = 0;
             CpSolverStatus status = solver.SearchAllSolutions(cpModel,
                 new FeasibleSolutionChecker2(maxUsageCost, comfortableTrafficVars, trafficVars));
 
