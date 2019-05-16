@@ -51,6 +51,11 @@ namespace Google.OrTools.Sat
       return new SumArray(vars);
     }
 
+    public static LinearExpr Sum(IEnumerable<LinearExpr> exprs)
+    {
+      return new SumArray(exprs);
+    }
+
     public static LinearExpr ScalProd(IEnumerable<IntVar> vars, IEnumerable<int> coeffs)
     {
       return new SumArray(vars, coeffs);
