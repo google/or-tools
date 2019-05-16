@@ -21,9 +21,9 @@ public class BinPackingProblemSat
     // Data.
     int bin_capacity = 100;
     int slack_capacity = 20;
-    int num_bins = 10;
+    int num_bins = 5;
 
-    int[,] items = new int[,] { { 20, 12 }, { 15, 12 }, { 30, 8 }, { 45, 5 } };
+    int[,] items = new int[,] { { 20, 6 }, { 15, 6 }, { 30, 4 }, { 45, 3 } };
     int num_items = items.GetLength(0);
 
     // Model.
