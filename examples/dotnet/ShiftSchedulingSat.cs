@@ -495,7 +495,7 @@ public class ShiftSchedulingSat
         // This adds the hard constraints on the sum.
         model.Add(sumVar == LinearExpr.Sum(works));
 
-        var zero = model.NewIntVar(0, 0, "");
+        var zero = model.NewConstant(0);
 
         // Penalize sums below the soft_min target.
 
