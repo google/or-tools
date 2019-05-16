@@ -22,14 +22,17 @@ namespace Google.OrTools.Sat
   // IntVar[] helper class.
   public static class IntVarArrayHelper
   {
+    [Obsolete("This Sum method is deprecated, please use LinearExpr.Sum() instead.")]
     public static LinearExpr Sum(this IntVar[] vars)
     {
       return LinearExpr.Sum(vars);
     }
+    [Obsolete("This ScalProd method is deprecated, please use LinearExpr.ScalProd() instead.")]
     public static LinearExpr ScalProd(this IntVar[] vars, int[] coeffs)
     {
       return LinearExpr.ScalProd(vars, coeffs);
     }
+    [Obsolete("This ScalProd method is deprecated, please use LinearExpr.ScalProd() instead.")]
     public static LinearExpr ScalProd(this IntVar[] vars, long[] coeffs)
     {
       return LinearExpr.ScalProd(vars, coeffs);

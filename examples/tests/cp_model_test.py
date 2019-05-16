@@ -4,6 +4,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+
+import unittest
 from ortools.sat import cp_model_pb2
 from ortools.sat.python import cp_model
 from ortools.sat.python import cp_model_helper
@@ -23,19 +25,7 @@ class SolutionCounter(cp_model.CpSolverSolutionCallback):
         return self.__solution_count
 
 
-class CpModelTest(object):
-    def assertEqual(self, a, b):
-        if isinstance(a, cp_model.LinearExpr) and hasattr(
-                a.__class__, 'Index'):
-            if a.Index() != b.Index():
-                print('Error: ' + repr(a) + ' != ' + repr(b) + '|' +
-                      str(a.Index()) + " <-> " + str(b.Index()))
-        elif a != b:
-            print('Error: ' + str(a) + ' != ' + str(b))
-
-    def assertTrue(self, a, msg):
-        if not a:
-            print('Error:', msg)
+class CpModelTest(unittest.TestCase):
 
     def testDomainFromValues(self):
         print('testDomainFromValues')
@@ -595,51 +585,5 @@ class CpModelTest(object):
 
 
 if __name__ == '__main__':
-    cp_model_test = CpModelTest()
-    cp_model_test.testDomainFromValues()
-    cp_model_test.testDomainFromIntervals()
-    cp_model_test.testCreateIntegerVariable()
-    cp_model_test.testNegation()
-    cp_model_test.testLinear()
-    cp_model_test.testCstLeVar()
-    cp_model_test.testLinearNonEqual()
-    cp_model_test.testEq()
-    cp_model_test.testGe()
-    cp_model_test.testGt()
-    cp_model_test.testLe()
-    cp_model_test.testLt()
-    cp_model_test.testEqVar()
-    cp_model_test.testGeVar()
-    cp_model_test.testGtVar()
-    cp_model_test.testLeVar()
-    cp_model_test.testLtVar()
-    cp_model_test.testSimplification1()
-    cp_model_test.testSimplification2()
-    cp_model_test.testSimplification3()
-    cp_model_test.testSimplification4()
-    cp_model_test.testLinearNonEqualWithConstant()
-    cp_model_test.testLinearWithEnforcement()
-    cp_model_test.testNaturalApiMinimize()
-    cp_model_test.testNaturalApiMaximize()
-    cp_model_test.testSum()
-    cp_model_test.testAllDifferent()
-    cp_model_test.testMaxEquality()
-    cp_model_test.testMinEquality()
-    cp_model_test.testMinEqualityWithConstant()
-    cp_model_test.testAbs()
-    cp_model_test.testDivision()
-    cp_model_test.testModulo()
-    cp_model_test.testProdEquality()
-    cp_model_test.testBoolOr()
-    cp_model_test.testBoolAnd()
-    cp_model_test.testBoolXOr()
-    cp_model_test.testAssertIsInt64()
-    cp_model_test.testCapInt64()
-    cp_model_test.testCapSub()
-    cp_model_test.testGetOrMakeIndexFromConstant()
-    cp_model_test.testStr()
-    cp_model_test.testRepr()
-    cp_model_test.testDisplayBounds()
-    cp_model_test.testIntegerExpressionErrors()
-    cp_model_test.testLinearizedBoolAndEqual()
-    cp_model_test.testSequentialSolve()
+    unittest.main()
+ 
