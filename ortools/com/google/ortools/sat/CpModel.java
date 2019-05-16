@@ -174,6 +174,16 @@ public final class CpModel {
     return addLinearExpressionInDomain(new Difference(left, right), new Domain(Long.MIN_VALUE, 0));
   }
 
+  /** Adds {@code expr < value}. */
+  public Constraint addLessThan(LinearExpr expr, long value) {
+    return addLinearExpressionInDomain(expr, new Domain(Long.MIN_VALUE, value - 1));
+  }
+
+  /** Adds {@code left < right}. */
+  public Constraint addLessThan(LinearExpr left, LinearExpr right) {
+    return addLinearExpressionInDomain(new Difference(left, right), new Domain(Long.MIN_VALUE, -1));
+  }
+
   /** Adds {@code left + offset <= right}. */
   public Constraint addLessOrEqualWithOffset(LinearExpr left, LinearExpr right, long offset) {
     return addLinearExpressionInDomain(
@@ -188,6 +198,16 @@ public final class CpModel {
   /** Adds {@code left >= right}. */
   public Constraint addGreaterOrEqual(LinearExpr left, LinearExpr right) {
     return addLinearExpressionInDomain(new Difference(left, right), new Domain(0, Long.MAX_VALUE));
+  }
+
+  /** Adds {@code expr > value}. */
+  public Constraint addGreaterThan(LinearExpr expr, long value) {
+    return addLinearExpressionInDomain(expr, new Domain(value + 1, Long.MAX_VALUE));
+  }
+
+  /** Adds {@code left > right}. */
+  public Constraint addGreaterThan(LinearExpr left, LinearExpr right) {
+    return addLinearExpressionInDomain(new Difference(left, right), new Domain(1, Long.MAX_VALUE));
   }
 
   /** Adds {@code left + offset >= right}. */
