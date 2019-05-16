@@ -316,6 +316,7 @@ namespace Google.OrTools.Sat
   {
     public SumArray(LinearExpr a, LinearExpr b)
     {
+      expressions_ = new List<LinearExpr>();
       AddExpr(a);
       AddExpr(b);
       constant_ = 0L;
@@ -323,12 +324,14 @@ namespace Google.OrTools.Sat
 
     public SumArray(LinearExpr a, long b)
     {
+      expressions_ = new List<LinearExpr>();
       AddExpr(a);
       constant_ = b;
     }
 
     public SumArray(IEnumerable<LinearExpr> exprs)
     {
+      expressions_ = new List<LinearExpr>();
       foreach (LinearExpr e in exprs)
       {
         AddExpr(e);
@@ -338,6 +341,7 @@ namespace Google.OrTools.Sat
 
     public SumArray(IEnumerable<IntVar> vars)
     {
+      expressions_ = new List<LinearExpr>();
       foreach (IntVar v in vars)
       {
         AddExpr(v);
@@ -364,6 +368,7 @@ namespace Google.OrTools.Sat
       }
       IntVar[] flat_vars = tmp_vars.ToArray();
       long[] flat_coeffs = tmp_coeffs.ToArray();
+      expressions_ = new List<LinearExpr>();
       for (int i = 0; i < flat_vars.Length; ++i) {
         expressions_.Add(Prod(flat_vars[i], flat_coeffs[i]));
       }
@@ -389,6 +394,7 @@ namespace Google.OrTools.Sat
       }
       IntVar[] flat_vars = tmp_vars.ToArray();
       long[] flat_coeffs = tmp_coeffs.ToArray();
+      expressions_ = new List<LinearExpr>();
       for (int i = 0; i < flat_vars.Length; ++i) {
         expressions_.Add(Prod(flat_vars[i], flat_coeffs[i]));
       }
@@ -396,7 +402,9 @@ namespace Google.OrTools.Sat
     }
 
     public void AddExpr(LinearExpr expr) {
-      expressions_.Add(expr);
+      if ((Object)expr != null) {
+        expressions_.Add(expr);
+      }
     }
 
     public List<LinearExpr> Expressions
