@@ -284,7 +284,8 @@ public class ShiftSchedulingSat
 
         // Solve model
         var solver = new CpSolver();
-	    solver.StringParameters = "num_search_workers:8, log_search_progress: true";
+	    solver.StringParameters = 
+            "num_search_workers:8, log_search_progress: true, max_time_in_seconds:30";
 
         var status = solver.Solve(model);
 
