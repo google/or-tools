@@ -263,6 +263,7 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
 %unignore operations_research::MPSolver::NextSolution;
 %unignore operations_research::MPSolver::ExportModelAsLpFormat;
 %unignore operations_research::MPSolver::ExportModelAsMpsFormat;
+%unignore operations_research::MPSolver::SetNumThreads;
 
 // Expose very advanced parts of the MPSolver API. For expert users only.
 %unignore operations_research::MPSolver::ComputeConstraintActivities;
