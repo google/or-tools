@@ -28,7 +28,7 @@ take on any value between 0 and 10, inclusive:
 
 ### Non-contiguous domain
 
-An instance of the Domain class is needed to create variables with
+An instance of the Domain class is needed to create variables with 
 non-contiguous domains. Here, the variable can be any of 1, 3, 4, or 6:
 
 -   **C++**: `model.NewIntVar(Domain::FromValues({1, 3, 4, 6});`
@@ -74,7 +74,7 @@ To create a variable with a single value domain, use the `NewConstant()` API (or
 ### C++ and Java linear constraints and linear expressions
 
 **C++** and **Java** APIs do not use arithmetic operators (+, \*, -, <=...).
-Linear constraints are created using a method of the model factory, such as
+Linear constraints are created using a method of the model factory, such as 
 `cp_model.AddEquality(x, 3)` in C++, or `cp_model.addGreaterOrEqual(x, 10)` in
 Java.
 
@@ -437,7 +437,7 @@ void EarlinessTardinessCostSampleSat() {
     LOG(INFO) << "x=" << SolutionIntegerValue(r, x) << " expr"
               << SolutionIntegerValue(r, expr);
   }));
-  SolveWithModel(cp_model.Build(), &model);
+  SolveCpModel(cp_model.Build(), &model);
 }
 
 }  // namespace sat
@@ -805,7 +805,7 @@ void StepFunctionSampleSat() {
     LOG(INFO) << "x=" << SolutionIntegerValue(r, x) << " expr"
               << SolutionIntegerValue(r, expr);
   }));
-  SolveWithModel(cp_model.Build(), &model);
+  SolveCpModel(cp_model.Build(), &model);
 }
 
 }  // namespace sat

@@ -89,7 +89,11 @@
       "fstream": "cpp",
       "future": "cpp",
       "new": "cpp",
-      "valarray": "cpp"
+      "valarray": "cpp",
+      "*.tcc": "cpp",
+      "hash_map": "cpp",
+      "hash_set": "cpp",
+      "slist": "cpp"
     },
 		"C_Cpp.clang_format_fallbackStyle": "Google",
 		"C_Cpp.default.includePath": [

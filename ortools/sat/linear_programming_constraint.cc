@@ -333,10 +333,7 @@ bool LinearProgrammingConstraint::SolveLp() {
 
   const auto status = simplex_.Solve(lp_data_, time_limit_);
   if (!status.ok()) {
-    if (VLOG_IS_ON(1)) {
-      LOG(WARNING) << "The LP solver encountered an error: "
-                   << status.error_message();
-    }
+    VLOG(1) << "The LP solver encountered an error: " << status.error_message();
     simplex_.ClearStateForNextSolve();
     return false;
   }
