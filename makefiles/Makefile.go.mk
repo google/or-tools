@@ -12,7 +12,7 @@ endif
 
 # Detect go
 GO_BIN = $(shell $(WHICH) go)
-GO_PATH = $(shell [ -z "${GOPATH}" ] || echo $(GOPATH))
+GO_PATH = $(shell "$(GO_BIN)" env GOPATH)
 GO_OR_TOOLS_NATIVE_LIBS := $(LIB_DIR)/$(LIB_PREFIX)goortools.$(SWIG_GO_LIB_SUFFIX)
 SET_GOPATH = CGO_LDFLAGS="-L$(OR_TOOLS_TOP)/lib -lgoortools -v" DYLD_LIBRARY_PATH="$(OR_TOOLS_TOP)/dependencies/install/lib:$(OR_TOOLS_TOP)/lib:"
 SWIG_GO_FLAG = -cgo -intgosize 64 -v
