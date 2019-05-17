@@ -12,13 +12,13 @@
 # limitations under the License.
 """Simple unit tests for python/linear_solver.swig. Not exhaustive."""
 
-import types
+from __future__ import print_function
 
+from google.protobuf import text_format
 from ortools.linear_solver import linear_solver_pb2
 from ortools.linear_solver import pywraplp
-
+import types
 import unittest
-from google.protobuf import text_format
 
 TEXT_MODEL = """
 variable {
