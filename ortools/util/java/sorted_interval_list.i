@@ -28,9 +28,11 @@
 %ignoreall
 
 %unignore operations_research;
+
 %unignore operations_research::SortedDisjointIntervalList;
 %unignore operations_research::SortedDisjointIntervalList::SortedDisjointIntervalList;
 %unignore operations_research::SortedDisjointIntervalList::~SortedDisjointIntervalList;
+
 %rename (insertInterval) operations_research::SortedDisjointIntervalList::InsertInterval;
 %rename (insertIntervals) operations_research::SortedDisjointIntervalList::InsertIntervals;
 %rename (numIntervals) operations_research::SortedDisjointIntervalList::NumIntervals;
@@ -38,8 +40,6 @@
 %rename (toString) operations_research::SortedDisjointIntervalList::DebugString;
 
 // Wrap the domain class here.
-%unignore operations_research;
-
 %unignore operations_research::Domain;
 %unignore operations_research::Domain::Domain;
 
@@ -57,7 +57,7 @@
 %rename (min) operations_research::Domain::Min;
 %rename (negation) operations_research::Domain::Negation;
 %rename (size) operations_research::Domain::Size;
-%rename (toString) operations_research::Domain::DebugString;
+%rename (toString) operations_research::Domain::ToString;
 %rename (unionWith) operations_research::Domain::UnionWith;
 
 %include "ortools/util/sorted_interval_list.h"

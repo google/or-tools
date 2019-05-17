@@ -49,4 +49,3 @@
 %include "ortools/util/sorted_interval_list.h"
 
 %unignoreall
-

@@ -59,6 +59,7 @@ JAGGED_MATRIX_AS_CSHARP_ARRAY(int64, int64, long, UtilInt64VectorVector);
 %unignore operations_research::Domain::Min;
 %unignore operations_research::Domain::Negation;
 %unignore operations_research::Domain::Size;
+%unignore operations_research::Domain::ToString;
 %unignore operations_research::Domain::UnionWith;
 
 %include "ortools/util/sorted_interval_list.h"
