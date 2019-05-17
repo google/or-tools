@@ -84,6 +84,7 @@ include $(OR_ROOT)makefiles/Makefile.cpp.mk
 include $(OR_ROOT)makefiles/Makefile.python.mk
 include $(OR_ROOT)makefiles/Makefile.java.mk
 include $(OR_ROOT)makefiles/Makefile.dotnet.mk
+include $(OR_ROOT)makefiles/Makefile.go.mk
 include $(OR_ROOT)makefiles/Makefile.archive.mk
 
 # Finally include user makefile if it exists
@@ -105,22 +106,22 @@ else
 endif
 
 .PHONY: help_all
-help_all: help_usage help_third_party help_cc help_python help_java help_dotnet help_archive
+help_all: help_usage help_third_party help_cc help_python help_java help_dotnet help_archive help_go
 
 .PHONY: build_all
-build_all: cc python java dotnet
+build_all: cc python java dotnet go
 	@echo Or-tools have been built for $(BUILT_LANGUAGES)
 
 .PHONY: check_all
-check_all: check_cc check_python check_java check_dotnet
+check_all: check_cc check_python check_java check_dotnet check_go
 	@echo Or-tools have been built and checked for $(BUILT_LANGUAGES)
 
 .PHONY: test_all
-test_all: test_cc test_python test_java test_dotnet
+test_all: test_cc test_python test_java test_dotnet test_go
 	@echo Or-tools have been built and tested for $(BUILT_LANGUAGES)
 
 .PHONY: clean_all
-clean_all: clean_cc clean_python clean_java clean_dotnet clean_compat clean_archive
+clean_all: clean_cc clean_python clean_java clean_dotnet clean_compat clean_archive clean_go
 	-$(DELREC) $(BIN_DIR)
 	-$(DELREC) $(LIB_DIR)
 	-$(DELREC) $(OBJ_DIR)
@@ -128,7 +129,7 @@ clean_all: clean_cc clean_python clean_java clean_dotnet clean_compat clean_arch
 	@echo Or-tools have been cleaned for $(BUILT_LANGUAGES)
 
 .PHONY: detect_all
-detect_all: detect_port detect_third_party detect_cc detect_python detect_java detect_dotnet detect_archive
+detect_all: detect_port detect_third_party detect_cc detect_python detect_java detect_dotnet detect_archive detect_go
 	@echo SOURCE = $(SOURCE)
 	@echo SOURCE_PATH = $(SOURCE_PATH)
 	@echo SOURCE_NAME = $(SOURCE_NAME)
