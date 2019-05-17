@@ -50,9 +50,6 @@ class MPSolutionResponse;
 #include "ortools/linear_solver/model_exporter_swig_helper.h"
 %}
 
-typedef int64_t int64;
-typedef uint64_t uint64;
-
 namespace operations_research {
 
 %pythoncode {
@@ -190,6 +187,14 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
 }  // namespace operations_research
 
 
+PY_PROTO_TYPEMAP(ortools.linear_solver.linear_solver_pb2,
+                 MPModelProto,
+                 operations_research::MPModelProto);
+
+PY_PROTO_TYPEMAP(ortools.linear_solver.linear_solver_pb2,
+                 MPSolutionResponse,
+                 operations_research::MPSolutionResponse);
+
 %ignoreall
 
 %unignore operations_research;
@@ -246,6 +251,12 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
 %unignore operations_research::MPSolver::infinity;
 %unignore operations_research::MPSolver::set_time_limit;  // No unit test
 
+// Proto-based API of the MPSolver. Use is encouraged.
+%unignore operations_research::MPSolver::SolveWithProto;
+%unignore operations_research::MPSolver::ExportModelToProto;
+%unignore operations_research::MPSolver::FillSolutionResponseProto;
+// LoadModelFromProto() is also visible: it's overridden by an %extend, above.
+%unignore operations_research::MPSolver::LoadSolutionFromProto;  // No test
 
 // Expose some of the more advanced MPSolver API.
 %unignore operations_research::MPSolver::InterruptSolve;
@@ -278,14 +289,14 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
 %unignore operations_research::MPSolver::BASIC;
 
 // MPVariable: writer API.
-%unignore operations_research::MPVariable::SetLB;
-%unignore operations_research::MPVariable::SetUB;
+%unignore operations_research::MPVariable::SetLb;
+%unignore operations_research::MPVariable::SetUb;
 %unignore operations_research::MPVariable::SetBounds;
 
 // MPVariable: reader API.
 %unignore operations_research::MPVariable::solution_value;
-%unignore operations_research::MPVariable::lb;  // No unit test
-%unignore operations_research::MPVariable::ub;  // No unit test
+%unignore operations_research::MPVariable::lb;
+%unignore operations_research::MPVariable::ub;
 %unignore operations_research::MPVariable::integer;  // No unit test
 %unignore operations_research::MPVariable::name;  // No unit test
 %unignore operations_research::MPVariable::index;  // No unit test
@@ -294,8 +305,8 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
 
 // MPConstraint: writer API.
 %unignore operations_research::MPConstraint::SetCoefficient;
-%unignore operations_research::MPConstraint::SetLB;
-%unignore operations_research::MPConstraint::SetUB;
+%unignore operations_research::MPConstraint::SetLb;
+%unignore operations_research::MPConstraint::SetUb;
 %unignore operations_research::MPConstraint::SetBounds;
 %unignore operations_research::MPConstraint::set_is_lazy;
 
@@ -323,6 +334,7 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
 %unignore operations_research::MPObjective::minimization;
 %unignore operations_research::MPObjective::maximization;
 %unignore operations_research::MPObjective::offset;
+%unignore operations_research::MPObjective::Offset;
 %unignore operations_research::MPObjective::BestBound;
 
 // MPSolverParameters API. For expert users only.
