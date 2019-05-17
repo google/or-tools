@@ -634,7 +634,10 @@ test_python_tests: \
  rpy_sorted_interval_list_test \
  rpy_test_cp_api \
  rpy_test_routing_api \
- rpy_test_lp_api
+ rpy_test_lp_api \
+ rpy_pywrapcp_test \
+ rpy_pywraplp_test \
+ rpy_pywraprouting_test
 
 .PHONY: test_python_contrib # Run all Python Contrib (located in examples/python and examples/contrib)
 test_python_contrib: \
