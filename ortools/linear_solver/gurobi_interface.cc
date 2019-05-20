@@ -175,7 +175,6 @@ class GurobiInterface : public MPSolverInterface {
   GRBenv* env_;
   bool mip_;
   int current_solution_index_;
-  MPCallback* callback_ = nullptr;
 };
 
 namespace {
