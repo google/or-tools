@@ -441,6 +441,13 @@ class IntVar(LinearExpr):
         return self.__var
 
     def __str__(self):
+        if not self.__var.name:
+            if len(self.__var.domain
+                  ) == 2 and self.__var.domain[0] == self.__var.domain[1]:
+                # Special case for constants.
+                return str(self.__var.domain[0])
+            else:
+                return 'unnamed_var_%i' % self.__index
         return self.__var.name
 
     def __repr__(self):
@@ -678,6 +685,10 @@ class CpModel(object):
     def NewBoolVar(self, name):
         """Creates a 0-1 variable with the given name."""
         return IntVar(self.__model, Domain(0, 1), name)
+
+    def NewConstant(self, value):
+        """Creates a constant integer variable."""
+        return IntVar(self.__model, Domain(value, value), '')
 
     # Linear constraints.
 
