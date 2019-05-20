@@ -374,7 +374,8 @@ std::string CpModelStats(const CpModelProto& model_proto) {
     if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
       if (ct.linear().vars_size() == 1) name += "1";
       if (ct.linear().vars_size() == 2) name += "2";
-      if (ct.linear().vars_size() > 2) name += "N";
+      if (ct.linear().vars_size() == 3) name += "3";
+      if (ct.linear().vars_size() > 3) name += "N";
     }
 
     num_constraints_by_name[name]++;
@@ -435,7 +436,7 @@ std::string CpModelStats(const CpModelProto& model_proto) {
           : "";
   absl::StrAppend(&result, "#Variables: ", model_proto.variables_size(),
                   objective_string, "\n");
-  if (num_vars_per_domains.size() < 50) {
+  if (num_vars_per_domains.size() < 100) {
     for (const auto& entry : num_vars_per_domains) {
       const std::string temp = absl::StrCat(" - ", entry.second, " in ",
                                             entry.first.ToString(), "\n");
@@ -2072,18 +2073,6 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   wall_timer.Start();
   user_timer.Start();
 
-  // Validate model_proto.
-  // TODO(user): provide an option to skip this step for speed?
-  {
-    const std::string error = ValidateCpModel(model_proto);
-    if (!error.empty()) {
-      VLOG(1) << error;
-      CpSolverResponse response;
-      response.set_status(CpSolverStatus::MODEL_INVALID);
-      return response;
-    }
-  }
-
 #if !defined(__PORTABLE_PLATFORM__)
   // Dump?
   if (!FLAGS_cp_model_dump_file.empty()) {
@@ -2101,16 +2090,31 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                                                         &flag_params));
     params.MergeFrom(flag_params);
     model->Add(NewSatParameters(params));
-    LOG(INFO) << "Parameters: " << params.ShortDebugString();
   }
 #endif  // __PORTABLE_PLATFORM__
+
+  const SatParameters& params = *model->GetOrCreate<SatParameters>();
+  const bool log_search = params.log_search_progress() || VLOG_IS_ON(1);
+  LOG_IF(INFO, log_search) << "Parameters: " << params.ShortDebugString();
+
+  // Validate model_proto.
+  // TODO(user): provide an option to skip this step for speed?
+  {
+    const std::string error = ValidateCpModel(model_proto);
+    if (!error.empty()) {
+      VLOG(1) << error;
+      CpSolverResponse response;
+      response.set_status(CpSolverStatus::MODEL_INVALID);
+      LOG_IF(INFO, log_search) << CpSolverResponseStats(response);
+      return response;
+    }
+  }
+  LOG_IF(INFO, log_search) << CpModelStats(model_proto);
 
   // Special case for pure-sat problem.
   // TODO(user): improve the normal presolver to do the same thing.
   // TODO(user): Support solution hint, but then the first TODO will make it
   // automatic.
-  const SatParameters& params = *model->GetOrCreate<SatParameters>();
-  const bool log_search = params.log_search_progress() || VLOG_IS_ON(1);
   if (!model_proto.has_objective() && !model_proto.has_solution_hint() &&
       !params.enumerate_all_solutions() && !params.use_lns()) {
     bool is_pure_sat = true;
@@ -2129,7 +2133,12 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
         }
       }
     }
-    if (is_pure_sat) return SolvePureSatModel(model_proto, &wall_timer, model);
+    if (is_pure_sat) {
+      const CpSolverResponse response =
+          SolvePureSatModel(model_proto, &wall_timer, model);
+      LOG_IF(INFO, log_search) << CpSolverResponseStats(response);
+      return response;
+    }
   }
 
   // Starts by expanding some constraints if needed.
@@ -2158,6 +2167,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       LOG(ERROR) << "Error while presolving, likely due to integer overflow.";
       CpSolverResponse response;
       response.set_status(CpSolverStatus::MODEL_INVALID);
+      LOG_IF(INFO, log_search) << CpSolverResponseStats(response);
       return response;
     }
     LOG_IF(INFO, log_search) << CpModelStats(new_cp_model_proto);
@@ -2250,6 +2260,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // Fix the timing information before returning the response.
   response.set_wall_time(wall_timer.Get());
   response.set_user_time(user_timer.Get());
+  LOG_IF(INFO, log_search) << CpSolverResponseStats(response);
   return response;
 }
 
