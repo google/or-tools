@@ -341,6 +341,25 @@ Domain Domain::ContinuousMultiplicationBy(int64 coeff) const {
   return coeff > 0 ? result : result.Negation();
 }
 
+Domain Domain::ContinuousMultiplicationBy(const Domain& domain) const {
+  Domain result;
+  for (const ClosedInterval& i : this->intervals_) {
+    for (const ClosedInterval& j : domain.intervals_) {
+      ClosedInterval new_interval;
+      const int64 a = CapProd(i.start, j.start);
+      const int64 b = CapProd(i.end, j.end);
+      const int64 c = CapProd(i.start, j.end);
+      const int64 d = CapProd(i.end, j.start);
+      new_interval.start = std::min({a, b, c, d});
+      new_interval.end = std::max({a, b, c, d});
+      result.intervals_.push_back(new_interval);
+    }
+  }
+  std::sort(result.intervals_.begin(), result.intervals_.end());
+  UnionOfSortedIntervals(&result.intervals_);
+  return result;
+}
+
 Domain Domain::DivisionBy(int64 coeff) const {
   CHECK_NE(coeff, 0);
   Domain result = *this;

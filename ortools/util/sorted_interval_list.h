@@ -147,6 +147,7 @@ class Domain {
   // look for {x ∈ Int64, ∃ e ∈ D, x / coeff = e}, then we will get [2, 201] in
   // the case above.
   Domain ContinuousMultiplicationBy(int64 coeff) const;
+  Domain ContinuousMultiplicationBy(const Domain& domain) const;
 
   // Returns {x ∈ Int64, ∃ e ∈ D, x = e / coeff}.
   //

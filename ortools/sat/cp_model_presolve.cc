@@ -894,6 +894,59 @@ bool PresolveIntProd(ConstraintProto* ct, PresolveContext* context) {
   if (context->ModelIsUnsat()) return false;
   if (HasEnforcementLiteral(*ct)) return false;
 
+  bool changed = false;
+
+  // Replace any affine relation without offset.
+  int64 constant = 1;
+  for (int i = 0; i < ct->int_prod().vars().size(); ++i) {
+    const int ref = ct->int_prod().vars(i);
+    const AffineRelation::Relation& r = context->GetAffineRelation(ref);
+    if (r.representative != ref && r.offset == 0) {
+      changed = true;
+      ct->mutable_int_prod()->set_vars(i, r.representative);
+      constant *= r.coeff;
+    }
+  }
+  if (constant != 1) {
+    context->UpdateRuleStats("int_prod: extracted product by constant.");
+
+    const int old_target = ct->int_prod().target();
+    const int new_target = context->working_model->variables_size();
+    IntegerVariableProto* var_proto = context->working_model->add_variables();
+    FillDomainInProto(
+        context->DomainOf(old_target).InverseMultiplicationBy(constant),
+        var_proto);
+    context->InitializeNewDomains();
+    if (context->ModelIsUnsat()) return false;
+
+    ct->mutable_int_prod()->set_target(new_target);
+
+    ConstraintProto* new_ct = context->working_model->add_constraints();
+    LinearConstraintProto* lin = new_ct->mutable_linear();
+    lin->add_vars(old_target);
+    lin->add_coeffs(1);
+    lin->add_vars(new_target);
+    lin->add_coeffs(-constant);
+    lin->add_domain(0);
+    lin->add_domain(0);
+    context->UpdateNewConstraintsVariableUsage();
+    context->StoreAffineRelation(*new_ct, old_target, new_target, constant, 0);
+  }
+
+  // Restrict the target domain if possible.
+  Domain implied(1);
+  for (const int ref : ct->int_prod().vars()) {
+    implied = implied.ContinuousMultiplicationBy(context->DomainOf(ref));
+  }
+  bool modified = false;
+  if (!context->IntersectDomainWith(ct->int_prod().target(), implied,
+                                    &modified)) {
+    return false;
+  }
+  if (modified) {
+    context->UpdateRuleStats("int_prod: reduced target domain.");
+  }
+
   if (ct->int_prod().vars_size() == 2) {
     int a = ct->int_prod().vars(0);
     int b = ct->int_prod().vars(1);
@@ -935,11 +988,11 @@ bool PresolveIntProd(ConstraintProto* ct, PresolveContext* context) {
 
   // For now, we only presolve the case where all variables are Booleans.
   const int target_ref = ct->int_prod().target();
-  if (!RefIsPositive(target_ref)) return false;
+  if (!RefIsPositive(target_ref)) return changed;
   for (const int var : ct->int_prod().vars()) {
-    if (!RefIsPositive(var)) return false;
-    if (context->MinOf(var) < 0) return false;
-    if (context->MaxOf(var) > 1) return false;
+    if (!RefIsPositive(var)) return changed;
+    if (context->MinOf(var) < 0) return changed;
+    if (context->MaxOf(var) > 1) return changed;
   }
 
   // This is a bool constraint!
@@ -2286,6 +2339,18 @@ bool PresolveAllDiff(ConstraintProto* ct, PresolveContext* context) {
   return false;
 }
 
+namespace {
+bool IntervalsCanIntersect(const IntervalConstraintProto& interval1,
+                           const IntervalConstraintProto& interval2,
+                           PresolveContext* context) {
+  if (context->MaxOf(interval1.end()) <= context->MinOf(interval2.start()) ||
+      context->MaxOf(interval2.end()) <= context->MinOf(interval1.start())) {
+    return false;
+  }
+  return true;
+}
+}  // namespace
+
 bool PresolveNoOverlap(ConstraintProto* ct, PresolveContext* context) {
   if (context->ModelIsUnsat()) return false;
 
@@ -2302,6 +2367,38 @@ bool PresolveNoOverlap(ConstraintProto* ct, PresolveContext* context) {
     ct->mutable_no_overlap()->set_intervals(new_size++, interval_index);
   }
   ct->mutable_no_overlap()->mutable_intervals()->Truncate(new_size);
+
+  // TODO(user): This can be done without quadratic scan. Revisit if needed.
+  if (proto.intervals_size() < 10000) {
+    std::vector<bool> redundant_intervals(proto.intervals_size(), true);
+    for (int i = 0; i + 1 < proto.intervals_size(); ++i) {
+      for (int j = i + 1; j < proto.intervals_size(); ++j) {
+        const int interval_1_index = proto.intervals(i);
+        const int interval_2_index = proto.intervals(j);
+
+        const IntervalConstraintProto interval1 =
+            context->working_model->constraints(interval_1_index).interval();
+        const IntervalConstraintProto interval2 =
+            context->working_model->constraints(interval_2_index).interval();
+
+        if (IntervalsCanIntersect(interval1, interval2, context)) {
+          redundant_intervals[i] = false;
+          redundant_intervals[j] = false;
+        }
+      }
+    }
+
+    new_size = 0;
+    for (int i = 0; i < proto.intervals_size(); ++i) {
+      if (redundant_intervals[i]) {
+        context->UpdateRuleStats("no_overlap: removed redundant intervals");
+        continue;
+      }
+      const int interval_index = proto.intervals(i);
+      ct->mutable_no_overlap()->set_intervals(new_size++, interval_index);
+    }
+    ct->mutable_no_overlap()->mutable_intervals()->Truncate(new_size);
+  }
 
   if (proto.intervals_size() == 1) {
     context->UpdateRuleStats("no_overlap: only one interval");
@@ -4093,6 +4190,11 @@ void RemoveUnusedEquivalentVariables(PresolveContext* context) {
 bool PresolveCpModel(const PresolveOptions& options,
                      CpModelProto* presolved_model, CpModelProto* mapping_model,
                      std::vector<int>* postsolve_mapping) {
+  if (!presolved_model->name().empty()) {
+    presolved_model->set_name(
+        absl::StrCat(presolved_model->name(), " [presolved]"));
+  }
+
   PresolveContext context;
   context.working_model = presolved_model;
   context.mapping_model = mapping_model;
