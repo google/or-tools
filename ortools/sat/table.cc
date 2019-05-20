@@ -57,8 +57,7 @@ void ProcessOneColumn(
     const absl::flat_hash_map<IntegerValue, Literal>& encoding,
     const std::vector<Literal>& tuples_with_any, Model* model) {
   CHECK_EQ(line_literals.size(), values.size());
-  absl::flat_hash_map<IntegerValue, std::vector<Literal>>
-      value_to_list_of_line_literals;
+  std::vector<std::pair<IntegerValue, Literal>> pairs;
 
   // If a value is false (i.e not possible), then the tuple with this value
   // is false too (i.e not possible). Conversely, if the tuple is selected,
@@ -68,17 +67,26 @@ void ProcessOneColumn(
     if (!encoding.contains(v)) {
       model->Add(ClauseConstraint({line_literals[i].Negated()}));
     } else {
-      value_to_list_of_line_literals[v].push_back(line_literals[i]);
+      pairs.emplace_back(v, line_literals[i]);
       model->Add(Implication(line_literals[i], gtl::FindOrDie(encoding, v)));
     }
   }
 
-  // If all the tuples containing a value are false, then this value must be
-  // false too.
-  for (const auto& entry : value_to_list_of_line_literals) {
-    std::vector<Literal> clause = entry.second;
-    clause.insert(clause.end(), tuples_with_any.begin(), tuples_with_any.end());
-    clause.push_back(gtl::FindOrDie(encoding, entry.first).Negated());
+  // Regroup literal with the same value and add for each the clause: If all the
+  // tuples containing a value are false, then this value must be false too.
+  std::sort(pairs.begin(), pairs.end());
+  std::vector<Literal> clause = tuples_with_any;
+  for (int i = 0; i < pairs.size();) {
+    // We always keep the tuples_with_any at the beginning of the clause.
+    clause.resize(tuples_with_any.size());
+
+    const IntegerValue value = pairs[i].first;
+    for (; i < pairs.size() && pairs[i].first == value; ++i) {
+      clause.push_back(pairs[i].second);
+    }
+
+    // And the "value" literal and load the clause.
+    clause.push_back(gtl::FindOrDie(encoding, value).Negated());
     model->Add(ClauseConstraint(clause));
   }
 }
@@ -241,20 +249,19 @@ void CompressTuples(absl::Span<const int64> domain_sizes, int64 any_value,
   const int num_vars = (*tuples)[0].size();
 
   std::vector<int> to_remove;
+  std::vector<int64> tuple_minus_var_i(num_vars - 1);
   for (int i = 0; i < num_vars; ++i) {
     const int domain_size = domain_sizes[i];
     if (domain_size == 1) continue;
     absl::flat_hash_map<const std::vector<int64>, std::vector<int>>
         masked_tuples_to_indices;
     for (int t = 0; t < tuples->size(); ++t) {
-      CHECK_NE((*tuples)[t][i], any_value);
-      std::vector<int64> masked_copy;
-      masked_copy.reserve(num_vars - 1);
+      int out = 0;
       for (int j = 0; j < num_vars; ++j) {
         if (i == j) continue;
-        masked_copy.push_back((*tuples)[t][j]);
+        tuple_minus_var_i[out++] = (*tuples)[t][j];
       }
-      masked_tuples_to_indices[masked_copy].push_back(t);
+      masked_tuples_to_indices[tuple_minus_var_i].push_back(t);
     }
     to_remove.clear();
     for (const auto& it : masked_tuples_to_indices) {
