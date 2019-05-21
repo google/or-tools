@@ -1,19 +1,19 @@
 #include "gtest/gtest.h"
-#include "ortools/linear_solver/simplemath.h"
+#include "ortools/forecaster/fourier_forecaster.h"
 
 namespace {
 
 // The fixture for testing class Foo.
-class FooTest : public ::testing::Test {
+class FourierForecasterTest : public ::testing::Test {
  protected:
   // You can remove any or all of the following functions if its body
   // is empty.
 
-  FooTest() {
+  FourierForecasterTest() {
      // You can do set-up work for each test here.
   }
 
-  ~FooTest() override {
+  ~FourierForecasterTest() override {
      // You can do clean-up work that doesn't throw exceptions here.
   }
 
@@ -35,7 +35,7 @@ class FooTest : public ::testing::Test {
 
 
 // Tests that the Foo::Bar() method does Abc.
-TEST_F(FooTest, calcCube) {
+TEST_F(FourierForecasterTest, SimpleDFT) {
     EXPECT_EQ(1000, cubic(10));
 }
 

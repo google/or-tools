@@ -18,6 +18,7 @@ TEST_PATH = $(subst /,$S,$(TEST_DIR))
 GTEST_TESTS_DIR = $(OR_ROOT)tests
 GTEST_TESTS_PATH = $(subst /,$S,$(GTEST_TESTS_DIR))
 GTEST_PATH = $(subst /,$S,$(GTEST_INC))
+FFTW_PATH = $(subst /,$S,$(FFTW_INC))
 CC_EX_DIR  = $(OR_ROOT)examples/cpp
 CC_EX_PATH = $(subst /,$S,$(CC_EX_DIR))
 FZ_EX_DIR  = $(OR_ROOT)examples/flatzinc

@@ -313,6 +313,15 @@ $(OBJ_DIR)/my_first_test.$O: $(GTEST_TESTS_PATH)$Smy_first_test.cc $(GTEST_TESTS
 $(BIN_DIR)/my_first_test$E: $(OBJ_DIR)/my_first_test.$O | $(BIN_DIR)
 	$(CCC) $(CLFAGS) $(OBJ_DIR)$Smy_first_test.$O $(GTEST_LNK) $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Smy_first_test$E
 
+FOURIER_FORECASTER_CC_TESTS = \
+fourier_forecaster_test
+
+$(OBJ_DIR)/fourier_forecaster_test.$O: $(GTEST_TESTS_PATH)$Sfourier_forecaster_test.cc $(GTEST_TESTS_DEP) | $(OBJ_DIR)
+	$(CCC) $(CFLAGS) -I$(GTEST_PATH) -I$(FFTW_PATH) -c $(GTEST_TESTS_PATH)$Sfourier_forecaster_test.cc $(OBJ_OUT)$(OBJ_DIR)$Sfourier_forecaster_test.$O
+
+$(BIN_DIR)/fourier_forecaster_test$E: $(OBJ_DIR)/fourier_forecaster_test.$O | $(BIN_DIR)
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sfourier_forecaster_test.$O $(GTEST_LNK) $(FFTW_LNK) $(OR_TOOLS_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sfourer_forecaster_test$E
+
 .PHONY: build_test # Builds C++ gtests
 build_test: \
 $(addsuffix $E, $(addprefix $(BIN_DIR)/, $(LINEAR_SOLVER_CC_TESTS)))

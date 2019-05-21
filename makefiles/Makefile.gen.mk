@@ -3934,7 +3934,7 @@ objs/forecaster/forecaster.$O: ortools/forecaster/forecaster.h | $(OBJ_DIR)/fore
 objs/forecaster/fourier_forecaster.$O: ortools/forecaster/forecaster.cc \
  ortools/forecaster/fourier_forecaster.h \
  ortools/forecaster/forecaster.h | $(OBJ_DIR)/forecaster
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sforecaster$Sfourier_forecaster.cc $(OBJ_OUT)$(OBJ_DIR)$Sforecaster$Sfourier_forecaster.$O
+	$(CCC) $(CFLAGS) -I$(FFTW_PATH) -c $(SRC_DIR)$Sortools$Sforecaster$Sfourier_forecaster.cc $(OBJ_OUT)$(OBJ_DIR)$Sforecaster$Sfourier_forecaster.$O
 
 ortools/constraint_solver/assignment.proto: ;
 

@@ -15,6 +15,11 @@ FourierForecaster::~FourierForecaster() {
 
 }
 
+FFT1DTransform::FFT1DTransform() {
+
+}
+
+
 
 } // ns: forecaster
 
