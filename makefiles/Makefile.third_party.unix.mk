@@ -222,7 +222,7 @@ build_fftw: dependencies/install/lib/libfftw3.$L
 dependencies/install/lib/libfftw3.$L: dependencies/sources/fftw-$(FFTW_TAG) fftw_packages | dependencies/install
 	cd dependencies/sources/fftw-$(FFTW_TAG) && \
   ./bootstrap.sh --prefix=$(shell pwd)/dependencies/install && \
-  $(MAKE) install
+  $(MAKE) CFLAGS="-fPIC" install
 
 dependencies/sources/fftw-$(FFTW_TAG) : | dependencies/sources
 	-$(DELREC) dependencies/sources/fftw-$(FFTW_TAG)

@@ -18,57 +18,66 @@ FourierForecaster::~FourierForecaster() {
 
 }
 
+FFT1DTransform::FFT1DTransform() :
+   need_to_clear_(false), in_(nullptr), out_(nullptr) 
+{
+   
+}
+
 //TODO (dpg): 
-FFT1DTransform::FFT1DTransform() : 
-    need_to_execute_(false) 
+Forward1DTransform::Forward1DTransform()  
 {
 
 }
 
 
 //TODO (dpg): 
-FFT1DTransform::~FFT1DTransform() {
+Forward1DTransform::~Forward1DTransform() {
  //if (in_ != nullptr)
  //    fftw_free(in_);
 }
 
 
-void FFT1DTransform::clear() {
-   need_to_execute_ = false;
+void Forward1DTransform::clear() {
+   need_to_clear_ = false;
 }
 
-const fftw_complex * FFT1DTransform::get_result() {
+const fftw_complex * Forward1DTransform::get_result() {
    return out_;
 }
 
-void FFT1DTransform::execute(fftw_complex* in, int N) {
-   in_ = in; 
+void Forward1DTransform::execute(std::unordered_map<int,double> data, int N) {
    //TODO (dpg): execute here
    //
-   need_to_execute_ = false;
+   need_to_clear_ = true;
 }
 
 //TODO (dpg): 
-IFFT1DTransform::IFFT1DTransform() {
+Inverse1DTransform::Inverse1DTransform() {
 
 }
 
 //TODO (dpg):
-IFFT1DTransform::~IFFT1DTransform() {
+Inverse1DTransform::~Inverse1DTransform() {
 
 }
 
-const fftw_complex * IFFT1DTransform::get_result() {
+const fftw_complex * Inverse1DTransform::get_result() {
    return out_;
 }
 
-void IFFT1DTransform::execute(fftw_complex* in, int N) {
-   in_ = in;
+void Inverse1DTransform::execute(std::unordered_map<int,double> data, int N) {
    //TODO (dpg): execute here
    //
-   need_to_execute_ = false;
+   in_ = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
+   out_ = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
+   plan_ = fftw_plan_dft_1d(N, in_, out_, FFTW_FORWARD, FFTW_ESTIMATE);
+   fftw_execute(plan_);
+   need_to_clear_ = true;
 
 }
+
+
 
 } // ns: forecaster
 

@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include <map>
+#include <unordered_map>
 #include <complex.h>
 #include "forecaster.h"
 #include "fftw3.h"
@@ -11,7 +11,7 @@
 namespace operations_research {
 namespace forecaster {
 
-class Abstract1DTransform; 
+class FFT1DTransform; 
 
 class FourierForecaster : public Forecaster {
   public:
@@ -19,11 +19,11 @@ class FourierForecaster : public Forecaster {
      ForecasterType GetType();
      ~FourierForecaster();
   protected:
-     std::unique_ptr<Abstract1DTransform> m_ifft_transform;
-     std::unique_ptr<Abstract1DTransform> m_fft_transform;
+     //std::unique_ptr<FFT1DTransform> m_ifft_transform;
+     //std::unique_ptr<FFT1DTransform> m_fft_transform;
 };
 
-class Abstract1DTransform {
+class FFT1DTransform {
   public:
     enum TransformError {
       SUCCESS=0,
@@ -31,40 +31,34 @@ class Abstract1DTransform {
       INTERNAL_ERROR=2,
       UNSPECIFIED=4
     };
-
-    virtual void execute(fftw_complex* in, int N) = 0;
+    FFT1DTransform();
+    virtual void execute(std::unordered_map<int,double> data, int N) = 0;
     virtual const fftw_complex* get_result() = 0;
     virtual void clear() = 0; 
-
+  protected:
+    fftw_complex * in_;
+    fftw_complex * out_; 
+    fftw_plan plan_;
+    bool need_to_clear_;
 
 };
 
-class FFT1DTransform : public Abstract1DTransform {
+class Forward1DTransform : public FFT1DTransform {
   public:
-      FFT1DTransform();
-      ~FFT1DTransform();
-      void execute(fftw_complex* in, int N) override;
+      Forward1DTransform();
+      ~Forward1DTransform();
+      void execute(std::unordered_map<int,double> data, int N) override;
       const fftw_complex* get_result() override;
       void clear() override;
-  protected:
-      fftw_complex * in_;
-      fftw_complex * out_;
-  private:
-      bool need_to_execute_;
 };
 
-class IFFT1DTransform : public Abstract1DTransform {
+class Inverse1DTransform : public FFT1DTransform {
   public:
-      IFFT1DTransform();
-      ~IFFT1DTransform();
-      void execute(fftw_complex* in, int N) override;
+      Inverse1DTransform();
+      ~Inverse1DTransform();
+      void execute(std::unordered_map<int,double>, int N) override;
       const fftw_complex* get_result() override;
       void clear() override;
-  protected:
-      fftw_complex * in_;
-      fftw_complex * out_;
-  private:
-      bool need_to_execute_;
 };
 
 } // ns: forecaster
