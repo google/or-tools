@@ -32,10 +32,6 @@ FFT1DTransform::~FFT1DTransform() {
  //    fftw_free(in_);
 }
 
-void FFT1DTransform::execute() {
-
-   need_to_execute_ = true;
-}
 
 void FFT1DTransform::clear() {
    need_to_execute_ = false;
@@ -45,8 +41,11 @@ const fftw_complex * FFT1DTransform::get_result() {
    return out_;
 }
 
-void FFT1DTransform::set_input(fftw_complex* in, int N) {
+void FFT1DTransform::execute(fftw_complex* in, int N) {
    in_ = in; 
+   //TODO (dpg): execute here
+   //
+   need_to_execute_ = false;
 }
 
 //TODO (dpg): 
@@ -59,15 +58,17 @@ IFFT1DTransform::~IFFT1DTransform() {
 
 }
 
-void IFFT1DTransform::set_input(fftw_complex* in, int N) {
-   in_ = in;
-}
-
 const fftw_complex * IFFT1DTransform::get_result() {
    return out_;
 }
 
+void IFFT1DTransform::execute(fftw_complex* in, int N) {
+   in_ = in;
+   //TODO (dpg): execute here
+   //
+   need_to_execute_ = false;
 
+}
 
 } // ns: forecaster
 
