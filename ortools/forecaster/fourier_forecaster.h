@@ -4,7 +4,7 @@
 #include <string>
 #include <memory>
 #include <map>
-#include <complex>
+#include <complex.h>
 #include "forecaster.h"
 #include "fftw3.h"
 
@@ -31,8 +31,8 @@ class Abstract1DTransform {
       UNSPECIFIED=4
     };
 
-    virtual void set_input(fftw_complex* in) = 0;
-    virtual void execute(fftw_complex* in, int N) = 0;
+    virtual void set_input(fftw_complex* in, int N) = 0;
+    virtual void execute() = 0;
     virtual const fftw_complex* get_result() = 0;
     virtual void clear() = 0; 
 
@@ -43,21 +43,30 @@ class FFT1DTransform : public Abstract1DTransform {
   public:
       FFT1DTransform();
       ~FFT1DTransform();
-      void set_input(fftw_complex* in) override;
-      void execute(fftw_complex* in, int N) override;
+      void set_input(fftw_complex* in, int N) override;
+      void execute() override;
       const fftw_complex* get_result() override;
       void clear() override;
   protected:
       fftw_complex * in_;
       fftw_complex * out_;
-
+  private:
+      bool need_to_execute_;
 };
 
-class IFFT1DTransform {
+class IFFT1DTransform : public Abstract1DTransform {
   public:
       IFFT1DTransform();
       ~IFFT1DTransform();
-
+      void set_input(fftw_complex* in, int N) override;
+      void execute() override;
+      const fftw_complex* get_result() override;
+      void clear() override;
+  protected:
+      fftw_complex * in_;
+      fftw_complex * out_;
+  private:
+      bool need_to_execute_;
 };
 
 } // ns: forecaster
