@@ -19,8 +19,8 @@ class FourierForecaster : public Forecaster {
      ForecasterType GetType();
      ~FourierForecaster();
   protected:
-     //std::unique_ptr<FFT1DTransform> m_ifft_transform;
-     //std::unique_ptr<FFT1DTransform> m_fft_transform;
+     std::unique_ptr<FFT1DTransform> m_ifft_transform;
+     std::unique_ptr<FFT1DTransform> m_fft_transform;
 };
 
 class FFT1DTransform {
@@ -36,6 +36,7 @@ class FFT1DTransform {
     virtual const fftw_complex* get_result() = 0;
     virtual void clear() = 0; 
   protected:
+    int N_;
     fftw_complex * in_;
     fftw_complex * out_; 
     fftw_plan plan_;

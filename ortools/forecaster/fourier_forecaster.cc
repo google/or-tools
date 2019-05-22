@@ -69,6 +69,7 @@ const fftw_complex * Inverse1DTransform::get_result() {
 void Inverse1DTransform::execute(std::unordered_map<int,double> data, int N) {
    //TODO (dpg): execute here
    //
+   N_ = N;
    in_ = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
    out_ = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * N);
    plan_ = fftw_plan_dft_1d(N, in_, out_, FFTW_FORWARD, FFTW_ESTIMATE);
@@ -77,6 +78,13 @@ void Inverse1DTransform::execute(std::unordered_map<int,double> data, int N) {
 
 }
 
+void Inverse1DTransform::clear() {
+   fftw_destroy_plan(plan_);
+   fftw_free(in_);
+   fftw_free(out_); 
+   N_ = 0;
+   need_to_clear_ = false;
+}
 
 
 } // ns: forecaster
