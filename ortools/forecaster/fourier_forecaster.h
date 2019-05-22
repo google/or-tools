@@ -11,8 +11,7 @@
 namespace operations_research {
 namespace forecaster {
 
-class FFT1DTransform;
-class IFFT1DTransform;
+class Abstract1DTransform; 
 
 class FourierForecaster : public Forecaster {
   public:
@@ -20,10 +19,10 @@ class FourierForecaster : public Forecaster {
      ForecasterType GetType();
      ~FourierForecaster();
   protected:
-     std::unique_ptr<IFFT1DTransform> m_fft1d_transform;
+     std::unique_ptr<Abstract1DTransform> m_ifft_transform;
 };
 
-class AbstractTransform {
+class Abstract1DTransform {
   public:
     enum TransformError {
       SUCCESS=0,
@@ -40,7 +39,7 @@ class AbstractTransform {
 
 };
 
-class FFT1DTransform : public AbstractTransform {
+class FFT1DTransform : public Abstract1DTransform {
   public:
       FFT1DTransform();
       ~FFT1DTransform();

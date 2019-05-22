@@ -25,7 +25,8 @@ FFT1DTransform::FFT1DTransform() {
 
 //TODO (dpg): 
 FFT1DTransform::~FFT1DTransform() {
-
+ if (in_ != nullptr)
+     fftw_free(in_);
 }
 
 const fftw_complex * FFT1DTransform::get_result() {
