@@ -131,12 +131,19 @@ bool PresolveContext::VariableIsUniqueAndRemovable(int ref) const {
 }
 
 Domain PresolveContext::DomainOf(int ref) const {
-  if (RefIsPositive(ref)) return domains[ref];
-  return domains[PositiveRef(ref)].Negation();
+  Domain result;
+  if (RefIsPositive(ref)) {
+    result = domains[ref];
+  } else {
+    result = domains[PositiveRef(ref)].Negation();
+  }
+  return result;
 }
 
 bool PresolveContext::DomainContains(int ref, int64 value) const {
-  if (!RefIsPositive(ref)) return DomainContains(NegatedRef(ref), -value);
+  if (!RefIsPositive(ref)) {
+    return domains[PositiveRef(ref)].Contains(-value);
+  }
   return domains[ref].Contains(value);
 }
 
@@ -797,9 +804,9 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
   // infered_domain ∩ [kint64min, target_ub] ⊂ target_domain
   // then the constraint is really max(...) <= target_ub and we can simplify it.
   if (context->VariableIsUniqueAndRemovable(target_ref)) {
-    const Domain target_domain = context->DomainOf(target_ref);
+    const Domain& target_domain = context->DomainOf(target_ref);
     if (infered_domain.IntersectionWith(Domain(kint64min, target_domain.Max()))
-            .IsIncludedIn(context->DomainOf(target_ref))) {
+            .IsIncludedIn(target_domain)) {
       if (infered_domain.Max() <= target_domain.Max()) {
         // The constraint is always satisfiable.
         context->UpdateRuleStats("int_max: always true");
@@ -1783,21 +1790,19 @@ bool PresolveInterval(int c, ConstraintProto* ct, PresolveContext* context) {
 
   if (!ct->enforcement_literal().empty()) return false;
   bool changed = false;
+  const Domain start_domain = context->DomainOf(start);
+  const Domain end_domain = context->DomainOf(end);
+  const Domain size_domain = context->DomainOf(size);
+  if (!context->IntersectDomainWith(end, start_domain.AdditionWith(size_domain),
+                                    &changed)) {
+    return false;
+  }
   if (!context->IntersectDomainWith(
-          end, context->DomainOf(start).AdditionWith(context->DomainOf(size)),
-          &changed)) {
+          start, end_domain.AdditionWith(size_domain.Negation()), &changed)) {
     return false;
   }
-  if (!context->IntersectDomainWith(start,
-                                    context->DomainOf(end).AdditionWith(
-                                        context->DomainOf(size).Negation()),
-                                    &changed)) {
-    return false;
-  }
-  if (!context->IntersectDomainWith(size,
-                                    context->DomainOf(end).AdditionWith(
-                                        context->DomainOf(start).Negation()),
-                                    &changed)) {
+  if (!context->IntersectDomainWith(
+          size, end_domain.AdditionWith(start_domain.Negation()), &changed)) {
     return false;
   }
   if (changed) {
@@ -1844,14 +1849,14 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
     // Filter possible index values. Accumulate variable domains to build
     // a possible target domain.
     Domain infered_domain;
-    const Domain initial_index_domain = context->DomainOf(index_ref);
-    Domain target_domain = context->DomainOf(target_ref);
+    const Domain& initial_index_domain = context->DomainOf(index_ref);
+    const Domain& target_domain = context->DomainOf(target_ref);
     for (const ClosedInterval interval : initial_index_domain) {
       for (int value = interval.start; value <= interval.end; ++value) {
         CHECK_GE(value, 0);
         CHECK_LT(value, ct->element().vars_size());
         const int ref = ct->element().vars(value);
-        const Domain domain = context->DomainOf(ref);
+        const Domain& domain = context->DomainOf(ref);
         if (domain.IntersectionWith(target_domain).IsEmpty()) {
           bool domain_modified = false;
           if (!context->IntersectDomainWith(
@@ -2000,7 +2005,7 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
       // Eventually, domain sizes will be synchronized.
       bool changed_values = false;
       std::vector<int64> valid_index_values;
-      const Domain index_domain = context->DomainOf(index_ref);
+      const Domain& index_domain = context->DomainOf(index_ref);
       for (const ClosedInterval interval : index_domain) {
         for (int i = interval.start; i <= interval.end; ++i) {
           const int64 value = context->MinOf(ct->element().vars(i));
@@ -2035,10 +2040,8 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
   }
 
   if (context->IsFixed(target_ref)) {
-    const Domain index_domain = context->DomainOf(index_ref);
     const int64 target_value = context->MinOf(target_ref);
-
-    for (const ClosedInterval& interval : index_domain) {
+    for (const ClosedInterval& interval : context->DomainOf(index_ref)) {
       for (int64 v = interval.start; v <= interval.end; ++v) {
         const int var = ct->element().vars(v);
         const int index_lit =
@@ -2054,8 +2057,8 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
 
   if (target_ref == index_ref) {
     // Filter impossible index values.
-    Domain index_domain = context->DomainOf(index_ref);
     std::vector<int64> possible_indices;
+    const Domain& index_domain = context->DomainOf(index_ref);
     for (const ClosedInterval& interval : index_domain) {
       for (int64 value = interval.start; value <= interval.end; ++value) {
         const int ref = ct->element().vars(value);
@@ -2077,7 +2080,6 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
   }
 
   if (all_constants) {
-    const Domain index_domain = context->DomainOf(index_ref);
     absl::flat_hash_map<int, std::vector<int>> supports;
 
     // Help linearization.
@@ -2087,7 +2089,7 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
     lin->add_coeffs(-1);
     int64 rhs = 0;
 
-    for (const ClosedInterval& interval : index_domain) {
+    for (const ClosedInterval& interval : context->DomainOf(index_ref)) {
       for (int64 v = interval.start; v <= interval.end; ++v) {
         const int64 value = context->MinOf(ct->element().vars(v));
         const int index_lit =
@@ -2184,7 +2186,7 @@ bool PresolveTable(ConstraintProto* ct, PresolveContext* context) {
         v = inverse_value;
       }
       tuple[j] = v;
-      if (!context->DomainOf(r.representative).Contains(v)) {
+      if (!context->DomainContains(r.representative, v)) {
         delete_row = true;
         break;
       }

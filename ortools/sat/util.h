@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_SAT_UTIL_H_
 #define OR_TOOLS_SAT_UTIL_H_
 
+#include <deque>
+
 #include "ortools/base/random.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -142,6 +144,31 @@ class ExponentialMovingAverage {
   double average_ = 0.0;
   int64 num_records_ = 0;
   const double decaying_factor_;
+};
+
+// Utility to calculate percentile (First variant) for limited number of
+// records. Reference: https://en.wikipedia.org/wiki/Percentile
+//
+// After the vector is sorted, we assume that the element with index i
+// correspond to the percentile 100*(i+0.5)/size. For percentiles before the
+// first element (resp. after the last one) we return the first element (resp.
+// the last). And otherwise we do a linear interpolation between the two element
+// around the asked percentile.
+class Percentile {
+ public:
+  explicit Percentile(int record_limit) : record_limit_(record_limit) {}
+
+  void AddRecord(double record);
+
+  // Returns number of stored records.
+  int64 NumRecords() const { return records_.size(); }
+
+  // Note that this is not fast and runs in O(n log n) for n records.
+  double GetPercentile(double percent);
+
+ private:
+  std::deque<double> records_;
+  const int record_limit_;
 };
 
 }  // namespace sat

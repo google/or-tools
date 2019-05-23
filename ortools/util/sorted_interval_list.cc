@@ -185,12 +185,15 @@ int64 Domain::Max() const {
   return intervals_.back().end;
 }
 
-// TODO(user): binary search if size is large?
 bool Domain::Contains(int64 value) const {
-  for (const ClosedInterval& interval : intervals_) {
-    if (interval.start <= value && interval.end >= value) return true;
-  }
-  return false;
+  // Because we only compare by start and there is no duplicate starts, this
+  // should be the next interval after the one that has a chance to contains
+  // value.
+  auto it = std::upper_bound(intervals_.begin(), intervals_.end(),
+                             ClosedInterval(value, value));
+  if (it == intervals_.begin()) return false;
+  --it;
+  return value <= it->end;
 }
 
 bool Domain::IsIncludedIn(const Domain& domain) const {

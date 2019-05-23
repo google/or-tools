@@ -14,6 +14,7 @@
 #include "ortools/sat/util.h"
 
 #include <algorithm>
+#include <cmath>
 
 namespace operations_research {
 namespace sat {
@@ -72,6 +73,38 @@ void ExponentialMovingAverage::AddData(double new_record) {
   average_ = (num_records_ == 1)
                  ? new_record
                  : (new_record + decaying_factor_ * (average_ - new_record));
+}
+
+void Percentile::AddRecord(double record) {
+  records_.push_front(record);
+  if (records_.size() > record_limit_) {
+    records_.pop_back();
+  }
+}
+
+double Percentile::GetPercentile(double percent) {
+  CHECK_GT(records_.size(), 0);
+  CHECK_LE(percent, 100.0);
+  CHECK_GE(percent, 0.0);
+  std::vector<double> sorted_records(records_.begin(), records_.end());
+  std::sort(sorted_records.begin(), sorted_records.end());
+  const int num_records = sorted_records.size();
+
+  const double percentile_rank =
+      static_cast<double>(num_records) * percent / 100.0 - 0.5;
+  if (percentile_rank <= 0) {
+    return sorted_records.front();
+  } else if (percentile_rank >= num_records - 1) {
+    return sorted_records.back();
+  }
+  // Interpolate.
+  DCHECK_GE(num_records, 2);
+  DCHECK_LT(percentile_rank, num_records - 1);
+  const int lower_rank = static_cast<int>(std::floor(percentile_rank));
+  DCHECK_LT(lower_rank, num_records - 1);
+  return sorted_records[lower_rank] +
+         (percentile_rank - lower_rank) *
+             (sorted_records[lower_rank + 1] - sorted_records[lower_rank]);
 }
 
 }  // namespace sat

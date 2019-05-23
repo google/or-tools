@@ -27,8 +27,8 @@ namespace operations_research {
 
 // Represents a closed interval [start, end]. We must have start <= end.
 struct ClosedInterval {
-  int64 start;  // Inclusive.
-  int64 end;    // Inclusive.
+  ClosedInterval() {}
+  ClosedInterval(int64 s, int64 e) : start(s), end(e) {}
 
   std::string DebugString() const;
   bool operator==(const ClosedInterval& other) const {
@@ -41,6 +41,9 @@ struct ClosedInterval {
   bool operator<(const ClosedInterval& other) const {
     return start < other.start;
   }
+
+  int64 start = 0;  // Inclusive.
+  int64 end = 0;    // Inclusive.
 };
 
 std::ostream& operator<<(std::ostream& out, const ClosedInterval& interval);
