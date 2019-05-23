@@ -287,6 +287,10 @@ class SatSolver {
   // reached or the model was proven UNSAT. Returns IsModelUnsat().
   bool FinishPropagation();
 
+  // Like Backtrack(0) but make sure the propagation is finished and return
+  // false if unsat was detected. This also removes any assumptions level.
+  bool ResetToLevelZero();
+
   // Changes the assumptions level and the current solver assumptions. Returns
   // false if the model is UNSAT or ASSUMPTION_UNSAT, true otherwise.
   bool ResetWithGivenAssumptions(const std::vector<Literal>& assumptions);

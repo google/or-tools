@@ -707,6 +707,8 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
 SatSolver::Status ResetAndSolveIntegerProblem(
     const std::vector<Literal>& assumptions, Model* model) {
   SatSolver* const solver = model->GetOrCreate<SatSolver>();
+
+  // Add the assumptions if any and solve.
   if (!solver->ResetWithGivenAssumptions(assumptions)) {
     return solver->UnsatStatus();
   }

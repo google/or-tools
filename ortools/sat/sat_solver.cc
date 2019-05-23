@@ -500,14 +500,16 @@ bool SatSolver::FinishPropagation() {
   return true;
 }
 
-bool SatSolver::ResetWithGivenAssumptions(
-    const std::vector<Literal>& assumptions) {
+bool SatSolver::ResetToLevelZero() {
   if (is_model_unsat_) return false;
   assumption_level_ = 0;
   Backtrack(0);
-  if (!FinishPropagation()) {
-    return false;
-  }
+  return FinishPropagation();
+}
+
+bool SatSolver::ResetWithGivenAssumptions(
+    const std::vector<Literal>& assumptions) {
+  if (!ResetToLevelZero()) return false;
   assumption_level_ = assumptions.size();
   for (int i = 0; i < assumptions.size(); ++i) {
     decisions_[i].literal = assumptions[i];

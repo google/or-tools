@@ -349,27 +349,31 @@ void RegisterVariableBoundsLevelZeroExport(
     const CpModelProto& model_proto, SharedBoundsManager* shared_bounds_manager,
     Model* model) {
   CHECK(shared_bounds_manager != nullptr);
+  int saved_trail_index = 0;
   const auto broadcast_level_zero_bounds =
-      [&model_proto, model, shared_bounds_manager](
-          const std::vector<IntegerVariable>& modified_vars) {
-        auto* integer_trail = model->Get<IntegerTrail>();
-        const WorkerInfo* const worker_info = model->GetOrCreate<WorkerInfo>();
+      [&model_proto, saved_trail_index, model, shared_bounds_manager](
+          const std::vector<IntegerVariable>& modified_vars) mutable {
         CpModelMapping* const mapping = model->GetOrCreate<CpModelMapping>();
 
         std::vector<int> model_variables;
         std::vector<int64> new_lower_bounds;
         std::vector<int64> new_upper_bounds;
         absl::flat_hash_set<int> visited_variables;
+
+        // Inspect the modified IntegerVariables.
+        auto* integer_trail = model->Get<IntegerTrail>();
         for (const IntegerVariable& var : modified_vars) {
           const IntegerVariable positive_var = PositiveVariable(var);
           const int model_var =
               mapping->GetProtoVariableFromIntegerVariable(positive_var);
-          if (model_var == -1 ||
-              gtl::ContainsKey(visited_variables, model_var)) {
+          if (model_var == -1 || visited_variables.contains(model_var)) {
+            // TODO(user): I don't think we should see the same model_var twice
+            // here so maybe we don't need the visited_variables.contains()
+            // part.
             continue;
-          } else {
-            visited_variables.insert(model_var);
           }
+
+          visited_variables.insert(model_var);
           const int64 new_lb =
               integer_trail->LevelZeroLowerBound(positive_var).value();
           const int64 new_ub =
@@ -380,7 +384,34 @@ void RegisterVariableBoundsLevelZeroExport(
           new_lower_bounds.push_back(new_lb);
           new_upper_bounds.push_back(new_ub);
         }
+
+        // Inspect the newly modified Booleans.
+        auto* trail = model->Get<Trail>();
+        for (; saved_trail_index < trail->Index(); ++saved_trail_index) {
+          const Literal fixed_literal = (*trail)[saved_trail_index];
+          const int model_var = mapping->GetProtoVariableFromBooleanVariable(
+              fixed_literal.Variable());
+          if (model_var == -1 || visited_variables.contains(model_var)) {
+            // If the variable is already visited, it should mean that this
+            // Boolean also has an IntegerVariable view, and we should already
+            // have set its bound correctly.
+            continue;
+          }
+
+          visited_variables.insert(model_var);
+          model_variables.push_back(model_var);
+          if (fixed_literal.IsPositive()) {
+            new_lower_bounds.push_back(1);
+            new_upper_bounds.push_back(1);
+          } else {
+            new_lower_bounds.push_back(0);
+            new_upper_bounds.push_back(0);
+          }
+        }
+
         if (!model_variables.empty()) {
+          const WorkerInfo* const worker_info =
+              model->GetOrCreate<WorkerInfo>();
           shared_bounds_manager->ReportPotentialNewBounds(
               model_proto, worker_info->worker_id, worker_info->worker_name,
               model_variables, new_lower_bounds, new_upper_bounds);

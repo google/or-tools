@@ -427,7 +427,7 @@ void LinearProgrammingConstraint::AddCutFromConstraints(
   if (std::abs(ComputeActivity(cut, expanded_lp_solution_) - ToDouble(cut.ub)) /
           std::max(1.0, std::abs(ToDouble(cut.ub))) >
       1e-2) {
-    VLOG(1) << "Not tight " << ComputeActivity(cut, expanded_lp_solution_)
+    VLOG(1) << "Cut not tight " << ComputeActivity(cut, expanded_lp_solution_)
             << " " << ToDouble(cut.ub);
     return;
   }
@@ -632,6 +632,41 @@ void LinearProgrammingConstraint::AddMirCuts() {
   }
 }
 
+void LinearProgrammingConstraint::UpdateSimplexIterationLimit(
+    const int64 min_iter, const int64 max_iter) {
+  if (sat_parameters_.linearization_level() < 2) return;
+  const int64 num_degenerate_columns = CalculateDegeneracy();
+  const int64 num_cols = simplex_.GetProblemNumCols().value();
+  const bool high_degeneracy = num_degenerate_columns >= 0.5 * num_cols;
+  const bool medium_degeneracy = num_degenerate_columns >= 0.3 * num_cols;
+  if (simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_FEASIBLE) {
+    // We reached here probably because we predicted wrong. We use this as a
+    // signal to increase the iterations or punish less for degeneracy compare
+    // to the other part.
+    // TODO(user): Derive a formula to update the limit using degeneracy to
+    // simplify the code.
+    if (high_degeneracy) {
+      next_simplex_iter_ /= 5;
+    } else if (medium_degeneracy) {
+      next_simplex_iter_ /= 2;
+    } else {
+      next_simplex_iter_ *= 2;
+    }
+  } else if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
+    if (high_degeneracy) {
+      next_simplex_iter_ /= 10;
+    } else if (medium_degeneracy) {
+      next_simplex_iter_ /= 5;
+    } else {
+      // This is the most common case. We use the size of the problem to
+      // determine the limit and ignore the previous limit.
+      next_simplex_iter_ = num_cols / 40;
+    }
+  }
+  next_simplex_iter_ =
+      std::max(min_iter, std::min(max_iter, next_simplex_iter_));
+}
+
 bool LinearProgrammingConstraint::Propagate() {
   UpdateBoundsOfLpVariables();
 
@@ -655,9 +690,11 @@ bool LinearProgrammingConstraint::Propagate() {
   // that because we are "incremental", even if we don't solve it this time we
   // will make progress towards a solve in the lower node of the tree search.
   if (trail_->CurrentDecisionLevel() == 0) {
+    // TODO(user): Dynamically change the iteration limit for root node as
+    // well.
     parameters.set_max_number_of_iterations(2000);
   } else {
-    parameters.set_max_number_of_iterations(500);
+    parameters.set_max_number_of_iterations(next_simplex_iter_);
   }
   if (sat_parameters_.use_exact_lp_reason()) {
     parameters.set_change_status_to_imprecise(false);
@@ -729,6 +766,9 @@ bool LinearProgrammingConstraint::Propagate() {
     }
     return integer_trail_->ReportConflict(integer_reason_);
   }
+
+  // TODO(user): Update limits for DUAL_UNBOUNDED status as well.
+  UpdateSimplexIterationLimit(/*min_iter=*/10, /*max_iter=*/1000);
 
   // Optimality deductions if problem has an objective.
   if (objective_is_defined_ &&

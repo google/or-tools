@@ -158,9 +158,12 @@ struct PresolveContext {
   CpModelProto* working_model;
   CpModelProto* mapping_model;
 
-  // Indicate if we are enumerating all solutions. This disable some presolve
-  // rules.
-  bool enumerate_all_solutions = false;
+  // Indicate if we are allowed to remove irrelevant feasible solution from the
+  // set of feasible solution. For example, if a variable is unused, can we fix
+  // it to an arbitrary value (or its mimimum objective one)? This must be true
+  // if the client wants to enumerate all solutions or wants correct tightened
+  // bounds in the response.
+  bool keep_all_feasible_solutions = false;
 
   // Just used to display statistics on the presolve rules that were used.
   absl::flat_hash_map<std::string, int> stats_by_rule_name;

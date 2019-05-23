@@ -2134,8 +2134,16 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       }
     }
     if (is_pure_sat) {
-      const CpSolverResponse response =
+      // TODO(user): All this duplication will go away when we are fast enough
+      // on pure-sat model with the CpModel presolve...
+      CpSolverResponse response =
           SolvePureSatModel(model_proto, &wall_timer, model);
+      response.set_wall_time(wall_timer.Get());
+      response.set_user_time(user_timer.Get());
+      const SatParameters& params = *model->GetOrCreate<SatParameters>();
+      if (params.fill_tightened_domains_in_response()) {
+        *response.mutable_tightened_variables() = model_proto.variables();
+      }
       LOG_IF(INFO, log_search) << CpSolverResponseStats(response);
       return response;
     }
@@ -2149,8 +2157,11 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   options.log_info = log_search;
   ExpandCpModel(&new_cp_model_proto, options);
 
-  // Presolve?
+  // This function will be called before any CpSolverResponse is returned
+  // to the user (at the end and in callbacks).
   std::function<void(CpSolverResponse * response)> postprocess_solution;
+
+  // Presolve?
   if (params.cp_model_presolve()) {
     LOG_IF(INFO, log_search) << absl::StrFormat(
         "*** starting model presolve at %.2fs", wall_timer.Get());
@@ -2171,8 +2182,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       return response;
     }
     LOG_IF(INFO, log_search) << CpModelStats(new_cp_model_proto);
-    postprocess_solution = [&model_proto, mapping_proto, postsolve_mapping,
-                            &wall_timer](CpSolverResponse* response) {
+    postprocess_solution = [&model_proto, &params, mapping_proto,
+                            postsolve_mapping, &wall_timer,
+                            &user_timer](CpSolverResponse* response) {
       // Note that it is okay to use the initial model_proto in the postsolve
       // even though we called PresolveCpModel() on the expanded proto. This is
       // because PostsolveResponse() only use the proto to known the number of
@@ -2180,17 +2192,31 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       // of these variables.
       PostsolveResponse(model_proto, mapping_proto, postsolve_mapping,
                         &wall_timer, response);
+      if (params.fill_tightened_domains_in_response()) {
+        // TODO(user): for now, we just use the domain infered during presolve.
+        for (int i = 0; i < model_proto.variables().size(); ++i) {
+          *response->add_tightened_variables() = mapping_proto.variables(i);
+        }
+      }
+      response->set_wall_time(wall_timer.Get());
+      response->set_user_time(user_timer.Get());
     };
   } else {
-    const int initial_size = model_proto.variables_size();
-    postprocess_solution = [initial_size](CpSolverResponse* response) {
+    postprocess_solution = [&model_proto, &params, &wall_timer,
+                            &user_timer](CpSolverResponse* response) {
       // Truncate the solution in case model expansion added more variables.
+      const int initial_size = model_proto.variables_size();
       if (response->solution_size() > 0) {
         response->mutable_solution()->Truncate(initial_size);
       } else if (response->solution_lower_bounds_size() > 0) {
         response->mutable_solution_lower_bounds()->Truncate(initial_size);
         response->mutable_solution_upper_bounds()->Truncate(initial_size);
       }
+      if (params.fill_tightened_domains_in_response()) {
+        *response->mutable_tightened_variables() = model_proto.variables();
+      }
+      response->set_wall_time(wall_timer.Get());
+      response->set_user_time(user_timer.Get());
     };
   }
 
@@ -2212,8 +2238,6 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
             }
           }
 
-          response.set_wall_time(wall_timer.Get());
-          response.set_user_time(user_timer.Get());
           for (const auto& observer : observers) {
             observer(response);
           }
@@ -2256,10 +2280,6 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                              std::vector<int64>(response.solution().begin(),
                                                 response.solution().end())));
   }
-
-  // Fix the timing information before returning the response.
-  response.set_wall_time(wall_timer.Get());
-  response.set_user_time(user_timer.Get());
   LOG_IF(INFO, log_search) << CpSolverResponseStats(response);
   return response;
 }

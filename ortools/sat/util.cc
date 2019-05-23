@@ -13,6 +13,8 @@
 
 #include "ortools/sat/util.h"
 
+#include <algorithm>
+
 namespace operations_research {
 namespace sat {
 
@@ -63,6 +65,13 @@ void IncrementalAverage::Reset(double reset_value) {
 void IncrementalAverage::AddData(double new_record) {
   num_records_++;
   average_ += (new_record - average_) / num_records_;
+}
+
+void ExponentialMovingAverage::AddData(double new_record) {
+  num_records_++;
+  average_ = (num_records_ == 1)
+                 ? new_record
+                 : (new_record + decaying_factor_ * (average_ - new_record));
 }
 
 }  // namespace sat

@@ -1051,10 +1051,13 @@ class GenericLiteralWatcher : public SatPropagator {
 
   // Set a callback for new variable bounds at level 0.
   //
-  // This will be called (only at level zero) with the list
-  // of IntegerVariable with changed lower bounds. Note that it
-  // might be called more than once during the same propagation
-  // cycle if we fix variables in "stages".
+  // This will be called (only at level zero) with the list of IntegerVariable
+  // with changed lower bounds. Note that it might be called more than once
+  // during the same propagation cycle if we fix variables in "stages".
+  //
+  // Also note that this will be called if some BooleanVariable where fixed even
+  // if no IntegerVariable are changed, so the passed vector to the function
+  // might be empty.
   void RegisterLevelZeroModifiedVariablesCallback(
       const std::function<void(const std::vector<IntegerVariable>&)> cb) {
     level_zero_modified_variable_callback_.push_back(cb);

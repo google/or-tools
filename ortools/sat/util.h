@@ -118,6 +118,32 @@ class IncrementalAverage {
   int64 num_records_ = 0;
 };
 
+// Manages exponential moving averages defined as
+// new_average = decaying_factor * old_average
+//               + (1 - decaying_factor) * new_record.
+// where 0 < decaying_factor < 1.
+class ExponentialMovingAverage {
+ public:
+  explicit ExponentialMovingAverage(double decaying_factor)
+      : decaying_factor_(decaying_factor) {
+    DCHECK_GE(decaying_factor, 0.0);
+    DCHECK_LE(decaying_factor, 1.0);
+  }
+
+  // Returns exponential moving average for all the added data so far.
+  double CurrentAverage() const { return average_; }
+
+  // Returns the total number of added records so far.
+  int64 NumRecords() const { return num_records_; }
+
+  void AddData(double new_record);
+
+ private:
+  double average_ = 0.0;
+  int64 num_records_ = 0;
+  const double decaying_factor_;
+};
+
 }  // namespace sat
 }  // namespace operations_research
 

@@ -127,7 +127,7 @@ int64 PresolveContext::MaxOf(int ref) const {
 bool PresolveContext::VariableIsUniqueAndRemovable(int ref) const {
   return var_to_constraints[PositiveRef(ref)].size() == 1 &&
          affine_relations.ClassSize(PositiveRef(ref)) == 1 &&
-         !enumerate_all_solutions;
+         !keep_all_feasible_solutions;
 }
 
 Domain PresolveContext::DomainOf(int ref) const {
@@ -3010,8 +3010,8 @@ void Probe(TimeLimit* global_time_limit, PresolveContext* context) {
 
 void PresolvePureSatPart(PresolveContext* context) {
   // TODO(user,user): Reenable some SAT presolve with
-  // enumerate_all_solutions set to true.
-  if (context->ModelIsUnsat() || context->enumerate_all_solutions) return;
+  // keep_all_feasible_solutions set to true.
+  if (context->ModelIsUnsat() || context->keep_all_feasible_solutions) return;
 
   const int num_variables = context->working_model->variables_size();
   SatPostsolver postsolver(num_variables);
@@ -4098,7 +4098,7 @@ void PresolveToFixPoint(PresolveContext* context, TimeLimit* time_limit) {
 }
 
 void RemoveUnusedEquivalentVariables(PresolveContext* context) {
-  if (context->ModelIsUnsat() || context->enumerate_all_solutions) return;
+  if (context->ModelIsUnsat() || context->keep_all_feasible_solutions) return;
 
   // Remove all affine constraints (they will be re-added later if
   // needed) in the presolved model.
@@ -4198,8 +4198,9 @@ bool PresolveCpModel(const PresolveOptions& options,
   PresolveContext context;
   context.working_model = presolved_model;
   context.mapping_model = mapping_model;
-  context.enumerate_all_solutions =
-      options.parameters.enumerate_all_solutions();
+  context.keep_all_feasible_solutions =
+      options.parameters.enumerate_all_solutions() ||
+      options.parameters.fill_tightened_domains_in_response();
 
   // We copy the search strategy to the mapping_model.
   for (const auto& decision_strategy : presolved_model->search_strategy()) {
@@ -4392,7 +4393,7 @@ bool PresolveCpModel(const PresolveOptions& options,
   std::vector<int> mapping(presolved_model->variables_size(), -1);
   for (int i = 0; i < presolved_model->variables_size(); ++i) {
     if (context.var_to_constraints[i].empty() &&
-        !context.enumerate_all_solutions) {
+        !context.keep_all_feasible_solutions) {
       continue;
     }
     mapping[i] = postsolve_mapping->size();

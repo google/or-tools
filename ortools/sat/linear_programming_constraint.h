@@ -283,6 +283,14 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Callback underlying LPReducedCostAverageBranching().
   LiteralIndex LPReducedCostAverageDecision();
 
+  // Updates the simplex iteration limit for the next visit.
+  // As per current algorithm, we use a limit which is dependent on size of the
+  // problem and drop it significantly if degeneracy is detected. We use
+  // DUAL_FEASIBLE status as a signal to correct the prediction. The next limit
+  // is capped by 'min_iter' and 'max_iter'. Note that this is enabled only for
+  // linearization level 2 and above.
+  void UpdateSimplexIterationLimit(const int64 min_iter, const int64 max_iter);
+
   // This epsilon is related to the precision of the value/reduced_cost returned
   // by the LP once they have been scaled back into the CP domain. So for large
   // domain or cost coefficient, we may have some issues.
@@ -310,6 +318,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Underlying LP solver API.
   glop::LinearProgram lp_data_;
   glop::RevisedSimplex simplex_;
+  int64 next_simplex_iter_ = 500;
 
   // For the scaling.
   glop::SparseMatrixScaler scaler_;

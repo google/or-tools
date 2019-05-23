@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 132
+// NEXT TAG: 133
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -647,6 +647,13 @@ message SatParameters {
   // TODO(user): Activate the presolve but with just the rules that do not
   // change the set of feasible solutions.
   optional bool enumerate_all_solutions = 87 [default = false];
+
+  // If true, add information about the derived variable domains to the
+  // CpSolverResponse. It is an option because it makes the response slighly
+  // bigger and there is a bit more work involved during the postsolve to
+  // construct it, but it should still have a low overhead. See the
+  // tightened_variables field in CpSolverResponse for more details.
+  optional bool fill_tightened_domains_in_response = 132 [default = false];
 
   // If true, the solver will add a default integer branching strategy to the
   // already defined search strategy.
