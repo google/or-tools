@@ -264,13 +264,15 @@ class IntegerEncoder {
   // IntegerValue and we filter values associated to false literals.
   //
   // Performance note: This function is not particularly fast, however it should
-  // only be required during domain creation, so it should be ok. This allow us
-  // to not waste memory.
+  // only be required during domain creation.
   struct ValueLiteralPair {
+    ValueLiteralPair() {}
     ValueLiteralPair(IntegerValue v, Literal l) : value(v), literal(l) {}
+
     bool operator==(const ValueLiteralPair& o) const {
       return value == o.value && literal == o.literal;
     }
+    bool operator<(const ValueLiteralPair& o) const { return value < o.value; }
     IntegerValue value;
     Literal literal;
   };
@@ -453,6 +455,11 @@ class IntegerEncoder {
   // the first one that was added.
   absl::flat_hash_map<std::pair<IntegerVariable, IntegerValue>, Literal>
       equality_to_associated_literal_;
+
+  // Mutable because this is lazily cleaned-up by PartialDomainEncoding().
+  const std::vector<ValueLiteralPair> empty_value_literal_vector_;
+  mutable gtl::ITIVector<IntegerVariable, std::vector<ValueLiteralPair>>
+      equality_by_var_;
 
   // Variables that are fully encoded.
   gtl::ITIVector<IntegerVariable, bool> is_fully_encoded_;

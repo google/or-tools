@@ -100,7 +100,7 @@ void AppendPartialEncodingRelaxation(IntegerVariable var, const Model& model,
   const auto* integer_trail = model.Get<IntegerTrail>();
   if (encoder == nullptr || integer_trail == nullptr) return;
 
-  const std::vector<IntegerEncoder::ValueLiteralPair> encoding =
+  const std::vector<IntegerEncoder::ValueLiteralPair>& encoding =
       encoder->PartialDomainEncoding(var);
   if (encoding.empty()) return;
 

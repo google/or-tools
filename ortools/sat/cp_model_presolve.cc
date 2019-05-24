@@ -3217,13 +3217,12 @@ void ExpandObjective(PresolveContext* context) {
   }
   MaybeDivideByGcd(&objective_map, &objective_divisor);
 
-  // If the objective is a single variable with a "simple" domain [lb, ub], then
-  // we can usually remove this variable if it is only used in one linear
-  // equality constraint and we do just one expansion.
+  // If the objective is a single variable, then we can usually remove this
+  // variable if it is only used in one linear equality constraint and we do
+  // just one expansion. This is because the domain of the variable will be
+  // transfered to our objective_domain.
   int unique_expanded_constraint = -1;
-  bool objective_was_a_single_simple_variable =
-      objective_map.size() == 1 &&
-      context->DomainOf(objective_map.begin()->first).NumIntervals() == 1;
+  const bool objective_was_a_single_variable = objective_map.size() == 1;
 
   // To avoid a bad complexity, we need to compute the number of relevant
   // constraints for each variables.
@@ -3408,10 +3407,9 @@ void ExpandObjective(PresolveContext* context) {
     }
   }
 
-  // Special case: If we just did one expansion of a single variable with a
-  // simple domain, then we can remove the expanded constraints if the objective
-  // wasn't used elsewhere.
-  if (num_expansions == 1 && objective_was_a_single_simple_variable &&
+  // Special case: If we just did one expansion of a single variable, then we
+  // can remove the expanded constraints if the objective wasn't used elsewhere.
+  if (num_expansions == 1 && objective_was_a_single_variable &&
       unique_expanded_constraint != -1) {
     context->UpdateRuleStats("objective: removed unique objective constraint.");
     ConstraintProto* mutable_ct =

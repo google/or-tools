@@ -49,11 +49,9 @@ void IntegerEncoder::FullyEncodeVariable(IntegerVariable var) {
   }
 
   // Mark var and Negation(var) as fully encoded.
-  {
-    const int required_size = std::max(var, NegationOf(var)).value() + 1;
-    if (required_size > is_fully_encoded_.size()) {
-      is_fully_encoded_.resize(required_size, false);
-    }
+  const int required_size = std::max(var, NegationOf(var)).value() + 1;
+  if (required_size > is_fully_encoded_.size()) {
+    is_fully_encoded_.resize(required_size, false);
   }
   is_fully_encoded_[var] = true;
   is_fully_encoded_[NegationOf(var)] = true;
@@ -62,58 +60,29 @@ void IntegerEncoder::FullyEncodeVariable(IntegerVariable var) {
 std::vector<IntegerEncoder::ValueLiteralPair>
 IntegerEncoder::FullDomainEncoding(IntegerVariable var) const {
   CHECK(VariableIsFullyEncoded(var));
-  std::vector<ValueLiteralPair> encoding;
-  for (const ClosedInterval interval : (*domains_)[var]) {
-    for (IntegerValue value(interval.start); value <= interval.end; ++value) {
-      const std::pair<IntegerVariable, IntegerValue> key{var, value};
-      const Literal literal =
-          gtl::FindOrDieNoPrint(equality_to_associated_literal_, key);
-      if (sat_solver_->Assignment().LiteralIsTrue(literal)) {
-        return {{value, literal}};
-      } else if (!sat_solver_->Assignment().LiteralIsFalse(literal)) {
-        encoding.push_back({value, literal});
-      }
-    }
-  }
-  return encoding;
+  return PartialDomainEncoding(var);
 }
 
 std::vector<IntegerEncoder::ValueLiteralPair>
 IntegerEncoder::PartialDomainEncoding(IntegerVariable var) const {
-  std::vector<ValueLiteralPair> encoding;
+  CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
+  if (var >= equality_by_var_.size()) return {};
 
-  // Because the domain of var can be arbitrary large, we use the fact that
-  // when (var == value) is created, then we have (var >= value && var <= value)
-  // too. Except for the min/max of the initial domain.
-  if (var >= encoding_by_var_.size()) return encoding;
-
-  std::vector<IntegerValue> possible_values;
-  {
-    const IntegerValue min_value((*domains_)[var].Min());
-    const IntegerValue max_value((*domains_)[var].Max());
-    possible_values.push_back(min_value);
-    for (const auto entry : encoding_by_var_[var]) {
-      if (entry.first >= max_value) break;
-      if (entry.first > min_value) {
-        possible_values.push_back(entry.first);
-      }
+  int new_size = 0;
+  std::vector<ValueLiteralPair>& ref = equality_by_var_[var];
+  for (int i = 0; i < ref.size(); ++i) {
+    const ValueLiteralPair pair = ref[i];
+    if (sat_solver_->Assignment().LiteralIsFalse(pair.literal)) continue;
+    if (sat_solver_->Assignment().LiteralIsTrue(pair.literal)) {
+      ref.clear();
+      ref.push_back(pair);
+      return ref;
     }
-    possible_values.push_back(max_value);
-    DCHECK(std::is_sorted(possible_values.begin(), possible_values.end()));
+    ref[new_size++] = pair;
   }
-
-  for (const IntegerValue value : possible_values) {
-    const std::pair<IntegerVariable, IntegerValue> key{var, value};
-    const auto it = equality_to_associated_literal_.find(key);
-    if (it == equality_to_associated_literal_.end()) continue;
-    const Literal literal = it->second;
-    if (sat_solver_->Assignment().LiteralIsTrue(literal)) {
-      return {{value, literal}};
-    } else if (!sat_solver_->Assignment().LiteralIsFalse(literal)) {
-      encoding.push_back({value, literal});
-    }
-  }
-  return encoding;
+  ref.resize(new_size);
+  std::sort(ref.begin(), ref.end());
+  return ref;
 }
 
 // Note that by not inserting the literal in "order" we can in the worst case
@@ -308,11 +277,24 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
   gtl::InsertOrDieNoPrint(&equality_to_associated_literal_,
                           {{NegationOf(var), -value}, literal});
 
-  // Fix literal for value outside the domain or for singleton domain.
+  // Fix literal for value outside the domain.
   if (!domain.Contains(value.value())) {
     sat_solver_->AddUnitClause(literal.Negated());
     return;
   }
+
+  // Update equality_by_var. Note that due to the
+  // equality_to_associated_literal_ hash table, there should never be any
+  // duplicate values for a given variable.
+  const int needed_size = std::max(var.value(), NegationOf(var).value()) + 1;
+  if (needed_size > equality_by_var_.size()) {
+    equality_by_var_.resize(needed_size);
+  }
+  equality_by_var_[var].push_back(ValueLiteralPair(value, literal));
+  equality_by_var_[NegationOf(var)].push_back(
+      ValueLiteralPair(-value, literal));
+
+  // Fix literal for constant domain.
   if (value == domain.Min() && value == domain.Max()) {
     sat_solver_->AddUnitClause(literal);
     return;
@@ -559,16 +541,13 @@ const Domain& IntegerTrail::InitialVariableDomain(IntegerVariable var) const {
 bool IntegerTrail::UpdateInitialDomain(IntegerVariable var, Domain domain) {
   CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
 
-  // TODO(user): A bit inefficient as this recreate a vector for no reason.
-  // The IntersectionOfSortedDisjointIntervals() should take a Span<> instead.
   const Domain& old_domain = InitialVariableDomain(var);
   domain = domain.IntersectionWith(old_domain);
   if (old_domain == domain) return true;
-  if (domain.IsEmpty()) return false;
 
+  if (domain.IsEmpty()) return false;
   (*domains_)[var] = domain;
   (*domains_)[NegationOf(var)] = domain.Negation();
-
   if (domain.NumIntervals() > 1) {
     var_to_current_lb_interval_index_.Set(var, 0);
     var_to_current_lb_interval_index_.Set(NegationOf(var), 0);
@@ -584,15 +563,12 @@ bool IntegerTrail::UpdateInitialDomain(IntegerVariable var, Domain domain) {
                 {}, {}));
 
   // Set to false excluded literals.
-  // TODO(user): This is only needed to propagate holes and is a bit slow, I am
-  // not sure it is worthwhile.
   int i = 0;
   int num_fixed = 0;
-  const auto encoding = encoder_->PartialDomainEncoding(var);
-  for (const auto pair : encoding) {
+  for (const IntegerEncoder::ValueLiteralPair pair :
+       encoder_->PartialDomainEncoding(var)) {
     while (i < domain.NumIntervals() && pair.value > domain[i].end) ++i;
     if (i == domain.NumIntervals() || pair.value < domain[i].start) {
-      // Set the literal to false;
       ++num_fixed;
       if (trail_->Assignment().LiteralIsTrue(pair.literal)) return false;
       if (!trail_->Assignment().LiteralIsFalse(pair.literal)) {
@@ -601,8 +577,9 @@ bool IntegerTrail::UpdateInitialDomain(IntegerVariable var, Domain domain) {
     }
   }
   if (num_fixed > 0) {
-    VLOG(1) << "Domain intersection removed " << num_fixed << " values "
-            << "(out of " << encoding.size() << ").";
+    VLOG(1)
+        << "Domain intersection fixed " << num_fixed
+        << " equality literal corresponding to values outside the new domain.";
   }
 
   return true;
