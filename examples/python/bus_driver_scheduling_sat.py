@@ -300,6 +300,11 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
 
     # Redundant constraints: sum of driving times = sum of shift driving times
     model.Add(sum(driving_times) == total_driving_time)
+    if not minimize_drivers:
+        model.Add(
+            sum(working_times) == total_driving_time +
+            num_drivers * (setup_time + cleanup_time) +
+            cp_model.LinearExpr.ScalProd(delay_literals, delay_weights))
 
     if minimize_drivers:
         # Minimize the number of working drivers
