@@ -93,7 +93,8 @@ SAMPLE_SHIFTS = [
 def bus_driver_scheduling(minimize_drivers, max_num_drivers):
     """Optimize the bus driver scheduling problem.
 
-    This model has to modes.
+    This model has two modes.
+
     If minimize_drivers == True, the objective will be to find the minimal
     number of drivers, independently of the working times of each drivers.
 
@@ -213,6 +214,12 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
             model.Add(no_break_driving[d, s] == 0).OnlyEnforceIf(
                 visit_node.Not())
             arcs.append([s + 1, s + 1, visit_node.Not()])
+
+            # Node performed:
+            #    - add upper bound on start_time
+            #    - add lower bound on end_times
+            model.Add(start_times[d] <= shift[3]).OnlyEnforceIf(visit_node)
+            model.Add(end_times[d] >= shift[4]).OnlyEnforceIf(visit_node)
 
             for o in range(num_shifts):
                 other = SAMPLE_SHIFTS[o]
