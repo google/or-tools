@@ -157,7 +157,7 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
     driving_times = []
     working_drivers = []
 
-    # Objective
+    # Weighted Objective 
     delay_literals = []
     delay_weights = []
 
@@ -186,7 +186,7 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
             visit_node = performed[d, s]
 
             # Arc from source to shift.
-            #    - sets the start time of the driver
+            #    - set the start time of the driver
             #    - increase driving time and driving time since break
             source_lit = model.NewBoolVar('%i from source to %i' % (d, s))
             arcs.append([0, s + 1, source_lit])
@@ -198,8 +198,8 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
             starting_shifts[d, s] = source_lit
 
             # Arc from shift to sink
-            #    - sets the end time of the driver
-            #    - sets the driving times of the driver
+            #    - set the end time of the driver
+            #    - set the driving times of the driver
             sink_lit = model.NewBoolVar('%i from %i to sink' % (d, s))
             arcs.append([s + 1, 0, sink_lit])
             model.Add(end_times[d] == shift[4]).OnlyEnforceIf(sink_lit)
@@ -207,8 +207,8 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
                 sink_lit)
 
             # Node not performed
-            #    - sets both driving time to 0
-            #    - adds a looping arc on the node
+            #    - set both driving times to 0
+            #    - add a looping arc on the node
             model.Add(total_driving[d, s] == 0).OnlyEnforceIf(visit_node.Not())
             model.Add(no_break_driving[d, s] == 0).OnlyEnforceIf(
                 visit_node.Not())
@@ -250,13 +250,13 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
             model.Add(driving_times[d] == 0).OnlyEnforceIf(working.Not())
             working_drivers.append(working)
             arcs.append([0, 0, working.Not()])
-            # conditional working time constraints
+            # Conditional working time constraints
             model.Add(end_times[d] - start_times[d] + setup_time + cleanup_time
                       <= max_working_time)  # no need for enforcement
             model.Add(end_times[d] - start_times[d] + setup_time + cleanup_time
                       >= min_working_time).OnlyEnforceIf(working)
         else:
-            # working time constraints
+            # Working time constraints
             model.Add(end_times[d] - start_times[d] <=
                       max_working_time - setup_time - cleanup_time)
             model.Add(end_times[d] - start_times[d] >=
