@@ -298,10 +298,10 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
     # Solve model.
     solver = cp_model.CpSolver()
     solver.parameters.log_search_progress = not minimize_drivers
-    solver.parameters.num_search_workers = 8
+    solver.parameters.num_search_workers = 24
     status = solver.Solve(model)
 
-    if status != cp_model.OPTIMAL or status != cp_model.FEASIBLE:
+    if status != cp_model.OPTIMAL and status != cp_model.FEASIBLE:
         return -1
 
     # Display solution
