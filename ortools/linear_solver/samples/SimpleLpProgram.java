@@ -29,9 +29,8 @@ public class SimpleLpProgram {
   public static void main(String[] args) throws Exception {
     // [START solver]
     // Create the linear solver with the GLOP backend.
-    MPSolver solver = new MPSolver(
-        "SimpleLpProgram",
-        MPSolver.OptimizationProblemType.GLOP_LINEAR_PROGRAMMING);
+    MPSolver solver =
+        new MPSolver("SimpleLpProgram", MPSolver.OptimizationProblemType.GLOP_LINEAR_PROGRAMMING);
     // [END solver]
 
     // [START variables]

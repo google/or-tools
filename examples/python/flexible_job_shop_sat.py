@@ -14,7 +14,7 @@
 
 from __future__ import print_function
 
-from collections import defaultdict
+import collections
 from ortools.sat.python import cp_model
 
 
@@ -60,7 +60,7 @@ def flexible_jobshop():
     print('Horizon = %i' % horizon)
 
     # Global storage of variables.
-    intervals_per_resources = defaultdict(list)
+    intervals_per_resources = collections.defaultdict(list)
     starts = {}  # indexed by (job_id, task_id).
     presences = {}  # indexed by (job_id, task_id, alt_id).
     job_ends = []

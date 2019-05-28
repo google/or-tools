@@ -83,7 +83,8 @@ int64 Travel(const Coordinates* const coords,
   const int xd = coords->at(from.value()).first - coords->at(to.value()).first;
   const int yd =
       coords->at(from.value()).second - coords->at(to.value()).second;
-  return static_cast<int64>(kScalingFactor * sqrt(1.0L * xd * xd + yd * yd));
+  return static_cast<int64>(kScalingFactor *
+                            std::sqrt(1.0L * xd * xd + yd * yd));
 }
 
 // Returns the scaled service time at a given node, service_times holding the
