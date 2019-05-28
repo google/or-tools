@@ -40,17 +40,22 @@ class DimensionCumulOptimizerCore {
                            glop::LinearProgram* linear_program,
                            glop::LPSolver* lp_solver,
                            std::vector<int64>* cumul_values, int64* cost,
-                           int64* transit_cost);
+                           int64* transit_cost, bool clear_lp = true);
 
   bool Optimize(const std::function<int64(int64)>& next_accessor,
                 glop::LinearProgram* linear_program, glop::LPSolver* lp_solver,
                 std::vector<int64>* cumul_values, int64* cost,
-                int64* transit_cost);
+                int64* transit_cost, bool clear_lp = true);
 
   bool OptimizeAndPack(const std::function<int64(int64)>& next_accessor,
                        glop::LinearProgram* linear_program,
                        glop::LPSolver* lp_solver,
                        std::vector<int64>* cumul_values);
+
+  bool OptimizeAndPackSingleRoute(
+      int vehicle, const std::function<int64(int64)>& next_accessor,
+      glop::LinearProgram* linear_program, glop::LPSolver* lp_solver,
+      std::vector<int64>* cumul_values);
 
   const RoutingDimension* dimension() const { return dimension_; }
 
@@ -85,6 +90,16 @@ class DimensionCumulOptimizerCore {
                             int64 offset, const glop::LPSolver& lp_solver,
                             std::vector<int64>* cumul_values);
 
+  // This function packs the routes of the given vehicles while keeping the cost
+  // of the LP lower than its current (supposed optimal) objective value.
+  // It does so by setting the current objective variables' coefficient to 0 and
+  // setting the coefficient of the route ends to 1, to first minimize the route
+  // ends' cumuls, and then maximizes the starts' cumuls without increasing the
+  // ends.
+  bool PackRoutes(std::vector<int> vehicles,
+                  glop::LinearProgram* linear_program,
+                  glop::LPSolver* lp_solver);
+
   const RoutingDimension* const dimension_;
   std::vector<glop::ColIndex> current_route_cumul_variables_;
   std::vector<glop::ColIndex> index_to_cumul_variable_;
@@ -101,6 +116,7 @@ class DimensionCumulOptimizerCore {
 class LocalDimensionCumulOptimizer {
  public:
   explicit LocalDimensionCumulOptimizer(const RoutingDimension* dimension);
+
   // If feasible, computes the optimal cost of the route performed by a vehicle,
   // minimizing cumul soft lower and upper bound costs and vehicle span costs,
   // and stores it in "optimal_cost" (if not null).
@@ -108,11 +124,13 @@ class LocalDimensionCumulOptimizer {
   bool ComputeRouteCumulCost(int vehicle,
                              const std::function<int64(int64)>& next_accessor,
                              int64* optimal_cost);
+
   // Same as ComputeRouteCumulCost, but the cost computed does not contain
   // the part of the vehicle span cost due to fixed transits.
   bool ComputeRouteCumulCostWithoutFixedTransits(
       int vehicle, const std::function<int64(int64)>& next_accessor,
       int64* optimal_cost_without_transits);
+
   // If feasible, computes the optimal cumul values of the route performed by a
   // vehicle, minimizing cumul soft lower and upper bound costs and vehicle span
   // costs, stores them in "optimal_cumuls" (if not null), and returns true.
@@ -120,6 +138,13 @@ class LocalDimensionCumulOptimizer {
   bool ComputeRouteCumuls(int vehicle,
                           const std::function<int64(int64)>& next_accessor,
                           std::vector<int64>* optimal_cumuls);
+
+  // Similar to ComputeRouteCumuls, but also tries to pack the cumul values on
+  // the route, such that the cost remains the same, the cumul of route end is
+  // minimized, and then the cumul of the start of the route is maximized.
+  bool ComputePackedRouteCumuls(
+      int vehicle, const std::function<int64(int64)>& next_accessor,
+      std::vector<int64>* packed_cumuls);
 
   const RoutingDimension* dimension() const {
     return optimizer_core_.dimension();

@@ -488,14 +488,18 @@ class RoutingModel {
       const std::function<int64(int64)>& f, int64 domain_start,
       int64 domain_end);
 
-  // For every vehicle of the routing model, if total_slacks[vehicle] is not
-  // nullptr, constrains it to be the sum of slacks on that vehicle, that is:
-  // dimension->CumulVar(end) - dimension->CumulVar(start) -
-  // sum_{node in path of vehicle} dimension->FixedTransitVar(node).
+  // For every vehicle of the routing model:
+  // - if total_slacks[vehicle] is not nullptr, constrains it to be the sum of
+  //   slacks on that vehicle, that is,
+  //   dimension->CumulVar(end) - dimension->CumulVar(start) -
+  //   sum_{node in path of vehicle} dimension->FixedTransitVar(node).
+  // - if spans[vehicle] is not nullptr, constrains it to be
+  //   dimension->CumulVar(end) - dimension->CumulVar(start)
   // This does stronger propagation than a decomposition, and takes breaks into
   // account.
-  Constraint* MakePathSlacks(const RoutingDimension* dimension,
-                             std::vector<IntVar*> total_slacks);
+  Constraint* MakePathSpansAndTotalSlacks(const RoutingDimension* dimension,
+                                          std::vector<IntVar*> spans,
+                                          std::vector<IntVar*> total_slacks);
 
   // Outputs the names of all dimensions added to the routing engine.
   // TODO(user): rename.
@@ -696,6 +700,8 @@ class RoutingModel {
   int GetVisitType(int64 index) const;
   // This function should be called once all node visit types have been set and
   // prior to adding any incompatibilities/requirements.
+  // TODO(user): Reconsider the logic and potentially remove the need to
+  // "close" types.
   void CloseVisitTypes();
   int GetNumberOfVisitTypes() const { return num_visit_types_; }
   // Incompatibilities:
@@ -718,22 +724,35 @@ class RoutingModel {
     return has_temporal_type_incompatibilities_;
   }
   // Requirements:
-  // If type_D temporally depends on type_R, any non-delivery node_D of type_D
-  // requires at least one non-delivered node of type_R on its vehicle at the
-  // time node_D is visited.
   // NOTE: As of 2019-04, cycles in the requirement graph are not supported,
   // and lead to the dependent nodes being skipped if possible (otherwise
   // the model is considered infeasible).
-  // The following function specifies that "dependent_type" requires at least
+  // The following functions specify that "dependent_type" requires at least
   // one of the types in "required_type_alternatives".
+  //
+  // For same-vehicle requirements, a node of dependent type type_D requires at
+  // least one node of type type_R among the required alternatives on the same
+  // route.
+  void AddSameVehicleRequiredTypeAlternatives(
+      int dependent_type, absl::flat_hash_set<int> required_type_alternatives);
+  // If type_D temporally depends on type_R, any non-delivery node_D of type_D
+  // requires at least one non-delivered node of type_R on its vehicle at the
+  // time node_D is visited.
   void AddTemporalRequiredTypeAlternatives(
       int dependent_type, absl::flat_hash_set<int> required_type_alternatives);
   // clang-format off
-  // Returns all sets of requirement alternatives for the given type.
+  // Returns the sets of same-vehicle/temporal requirement alternatives for the
+  // given type.
+  const std::vector<absl::flat_hash_set<int> >&
+      GetSameVehicleRequiredTypeAlternativesOfType(int type) const;
   const std::vector<absl::flat_hash_set<int> >&
       GetTemporalRequiredTypeAlternativesOfType(int type) const;
   // clang-format on
-  // Returns true iff any type requirements have been added to the model.
+  // Returns true iff any same-route (resp. temporal) type requirements have
+  // been added to the model.
+  bool HasSameVehicleTypeRequirements() const {
+    return has_same_vehicle_type_requirements_;
+  }
   bool HasTemporalTypeRequirements() const {
     return has_temporal_type_requirements_;
   }
@@ -742,7 +761,8 @@ class RoutingModel {
   // on node types.
   bool HasTypeRegulations() const {
     return HasTemporalTypeIncompatibilities() ||
-           HasHardTypeIncompatibilities() || HasTemporalTypeRequirements();
+           HasHardTypeIncompatibilities() || HasSameVehicleTypeRequirements() ||
+           HasTemporalTypeRequirements();
   }
 
   // Get the "unperformed" penalty of a node. This is only well defined if the
@@ -982,8 +1002,8 @@ class RoutingModel {
   // Adds an extra variable to the vehicle routing assignment.
   void AddToAssignment(IntVar* const var);
   void AddIntervalToAssignment(IntervalVar* const interval);
-  // For every dimension in the model's dimensions_for_global_optimizer_, this
-  // method tries to pack the cumul values of the dimension, such that:
+  // For every dimension in the model's dimensions_for_local/global_optimizer_,
+  // this method tries to pack the cumul values of the dimension, such that:
   // - The cumul costs (span costs, soft lower and upper bound costs, etc) are
   //   minimized.
   // - The cumuls of the ends of the routes are minimized for this given minimal
@@ -991,7 +1011,7 @@ class RoutingModel {
   // - Given these minimal end cumuls, the route start cumuls are maximized.
   // Returns the assignment resulting from allocating these packed cumuls with
   // the solver, and nullptr if these cumuls could not be set by the solver.
-  const Assignment* PackCumulsOfGlobalOptimizerDimensionsFromAssignment(
+  const Assignment* PackCumulsOfOptimizerDimensionsFromAssignment(
       const Assignment* original_assignment, absl::Duration duration_limit);
 #ifndef SWIG
   // TODO(user): Revisit if coordinates are added to the RoutingModel class.
@@ -1058,19 +1078,20 @@ class RoutingModel {
   IntVar* CostVar() const { return cost_; }
   // Returns the cost of the transit arc between two nodes for a given vehicle.
   // Input are variable indices of node. This returns 0 if vehicle < 0.
-  int64 GetArcCostForVehicle(int64 from_index, int64 to_index, int64 vehicle);
+  int64 GetArcCostForVehicle(int64 from_index, int64 to_index,
+                             int64 vehicle) const;
   // Whether costs are homogeneous across all vehicles.
   bool CostsAreHomogeneousAcrossVehicles() const {
     return costs_are_homogeneous_across_vehicles_;
   }
   // Returns the cost of the segment between two nodes supposing all vehicle
   // costs are the same (returns the cost for the first vehicle otherwise).
-  int64 GetHomogeneousCost(int64 from_index, int64 to_index) {
+  int64 GetHomogeneousCost(int64 from_index, int64 to_index) const {
     return GetArcCostForVehicle(from_index, to_index, /*vehicle=*/0);
   }
   // Returns the cost of the arc in the context of the first solution strategy.
   // This is typically a simplification of the actual cost; see the .cc.
-  int64 GetArcCostForFirstSolution(int64 from_index, int64 to_index);
+  int64 GetArcCostForFirstSolution(int64 from_index, int64 to_index) const;
   // Returns the cost of the segment between two nodes for a given cost
   // class. Input are variable indices of nodes and the cost class.
   // Unlike GetArcCostForVehicle(), if cost_class is kNoCost, then the
@@ -1078,7 +1099,7 @@ class RoutingModel {
   // of the cost that depend on the cost class will be omited. See the code
   // for details.
   int64 GetArcCostForClass(int64 from_index, int64 to_index,
-                           int64 /*CostClassIndex*/ cost_class_index);
+                           int64 /*CostClassIndex*/ cost_class_index) const;
   // Get the cost class index of the given vehicle.
   CostClassIndex GetCostClassIndexOfVehicle(int64 vehicle) const {
     DCHECK(closed_);
@@ -1332,7 +1353,7 @@ class RoutingModel {
   void ComputeCostClasses(const RoutingSearchParameters& parameters);
   void ComputeVehicleClasses();
   int64 GetArcCostForClassInternal(int64 from_index, int64 to_index,
-                                   CostClassIndex cost_class_index);
+                                   CostClassIndex cost_class_index) const;
   void AppendHomogeneousArcCosts(const RoutingSearchParameters& parameters,
                                  int node_index,
                                  std::vector<IntVar*>* cost_elements);
@@ -1468,7 +1489,7 @@ class RoutingModel {
   // - IsEnd(i) is true
   // - or nexts_[i] is bound and is_bound_to_end_[nexts_[i].Value()] is true.
   std::vector<IntVar*> is_bound_to_end_;
-  RevSwitch is_bound_to_end_ct_added_;
+  mutable RevSwitch is_bound_to_end_ct_added_;
   // Dimensions
   absl::flat_hash_map<std::string, DimensionIndex> dimension_name_to_index_;
   gtl::ITIVector<DimensionIndex, RoutingDimension*> dimensions_;
@@ -1498,7 +1519,7 @@ class RoutingModel {
 #endif  // SWIG
   bool costs_are_homogeneous_across_vehicles_;
   bool cache_callbacks_;
-  std::vector<CostCacheElement> cost_cache_;  // Index by source index.
+  mutable std::vector<CostCacheElement> cost_cache_;  // Index by source index.
   std::vector<VehicleClassIndex> vehicle_class_index_of_vehicle_;
 #ifndef SWIG
   gtl::ITIVector<VehicleClassIndex, VehicleClass> vehicle_classes_;
@@ -1543,9 +1564,12 @@ class RoutingModel {
   bool has_temporal_type_incompatibilities_;
 
   std::vector<std::vector<absl::flat_hash_set<int> > >
+      same_vehicle_required_type_alternatives_per_type_index_;
+  bool has_same_vehicle_type_requirements_;
+  std::vector<std::vector<absl::flat_hash_set<int> > >
       temporal_required_type_alternatives_per_type_index_;
-  absl::flat_hash_set<int> trivially_infeasible_visit_types_;
   bool has_temporal_type_requirements_;
+  absl::flat_hash_set<int> trivially_infeasible_visit_types_;
   // clang-format on
   int num_visit_types_;
   // Two indices are equivalent if they correspond to the same node (as given to
@@ -1655,6 +1679,18 @@ class DisjunctivePropagator {
     std::vector<bool> is_preemptible;
     std::vector<const SortedDisjointIntervalList*> forbidden_intervals;
     std::vector<std::pair<int64, int64>> distance_duration;
+
+    void Clear() {
+      start_min.clear();
+      start_max.clear();
+      duration_min.clear();
+      duration_max.clear();
+      end_min.clear();
+      end_max.clear();
+      is_preemptible.clear();
+      forbidden_intervals.clear();
+      distance_duration.clear();
+    }
   };
 
   // Computes new bounds for all tasks, returns false if infeasible.
@@ -1685,6 +1721,19 @@ class DisjunctivePropagator {
   std::vector<int> event_of_task_;
   std::vector<int> nonchain_tasks_by_start_max_;
 };
+
+void AppendTasksFromPath(const std::vector<int64>& path,
+                         const std::vector<int64>& min_travels,
+                         const std::vector<int64>& max_travels,
+                         const std::vector<int64>& pre_travels,
+                         const std::vector<int64>& post_travels,
+                         const RoutingDimension& dimension,
+                         DisjunctivePropagator::Tasks* tasks);
+void AppendTasksFromIntervals(const std::vector<IntervalVar*>& intervals,
+                              DisjunctivePropagator::Tasks* tasks);
+void FillPathEvaluation(const std::vector<int64>& path,
+                        const RoutingModel::TransitCallback2& evaluator,
+                        std::vector<int64>* values);
 #endif  // !defined(SWIG)
 
 // GlobalVehicleBreaksConstraint ensures breaks constraints are enforced on
@@ -1697,11 +1746,6 @@ class DisjunctivePropagator {
 // between two consecutive nodes of a route to do transit and vehicle breaks,
 // i.e. if Next(nodeA) = nodeB, CumulVar(nodeA) = tA and CumulVar(nodeB) = tB,
 // then SlackVar(nodeA) >= sum_{breaks \subseteq [tA, tB)} duration(break).
-// TODO(user): This does not enforce vehicle breaks to be nonoverlapping,
-//   and supposes travel/service times to be feasible (e.g. with a PathCumul).
-//   This is probably the desired behaviour, because vehicle breaks will most
-//   likely be constrained with precedence relations that are stronger than
-//   a resource constraint.
 class GlobalVehicleBreaksConstraint : public Constraint {
  public:
   explicit GlobalVehicleBreaksConstraint(const RoutingDimension* dimension);
@@ -1717,31 +1761,45 @@ class GlobalVehicleBreaksConstraint : public Constraint {
   const RoutingModel* model_;
   const RoutingDimension* const dimension_;
   std::vector<Demon*> vehicle_demons_;
+  std::vector<int64> path_;
+
+  // Sets path_ to be the longest sequence such that
+  // _ path_[0] is the start of the vehicle
+  // _ Next(path_[i-1]) is Bound() and has value path_[i],
+  // followed by the end of the vehicle if the last node was not an end.
+  void FillPartialPathOfVehicle(int vehicle);
+  void FillPathTravels(const std::vector<int64>& path);
 
   // This translates pruning information to solver variables.
+  // If constructed with an IntervalVar*, it follows the usual semantics of
+  // IntervalVars. If constructed with an IntVar*, before_start and after_start,
+  // operations are translated to simulate an interval that starts at
+  // start - before_start and ends and start + after_start.
+  // If constructed with nothing, the TaskTranslator will do nothing.
   // This class should have been an interface + subclasses,
   // but that would force pointers in the user's task vector,
-  // which means dynamic allocation. Here such a vector's reserved size will
-  // adjust to usage and eventually no more dynamic allocation will be made.
+  // which means dynamic allocation. With this union-like structure,
+  // a vector's reserved size will adjust to usage and eventually no more
+  // dynamic allocation will be made.
   class TaskTranslator {
    public:
-    TaskTranslator(IntVar* start, int64 duration_min, int64 group_delay)
+    TaskTranslator(IntVar* start, int64 before_start, int64 after_start)
         : start_(start),
-          duration_min_(duration_min),
-          group_delay_(group_delay) {}
+          before_start_(before_start),
+          after_start_(after_start) {}
     explicit TaskTranslator(IntervalVar* interval) : interval_(interval) {}
     TaskTranslator() {}
 
     void SetStartMin(int64 value) {
       if (start_ != nullptr) {
-        start_->SetMin(CapAdd(group_delay_, value));
+        start_->SetMin(CapAdd(before_start_, value));
       } else if (interval_ != nullptr) {
         interval_->SetStartMin(value);
       }
     }
     void SetStartMax(int64 value) {
       if (start_ != nullptr) {
-        start_->SetMax(CapAdd(group_delay_, value));
+        start_->SetMax(CapAdd(before_start_, value));
       } else if (interval_ != nullptr) {
         interval_->SetStartMax(value);
       }
@@ -1753,14 +1811,14 @@ class GlobalVehicleBreaksConstraint : public Constraint {
     }
     void SetEndMin(int64 value) {
       if (start_ != nullptr) {
-        start_->SetMin(CapSub(value, duration_min_));
+        start_->SetMin(CapSub(value, after_start_));
       } else if (interval_ != nullptr) {
         interval_->SetEndMin(value);
       }
     }
     void SetEndMax(int64 value) {
       if (start_ != nullptr) {
-        start_->SetMax(value - duration_min_);
+        start_->SetMax(CapSub(value, after_start_));
       } else if (interval_ != nullptr) {
         interval_->SetEndMax(value);
       }
@@ -1768,8 +1826,8 @@ class GlobalVehicleBreaksConstraint : public Constraint {
 
    private:
     IntVar* start_ = nullptr;
-    int64 duration_min_;
-    int64 group_delay_;
+    int64 before_start_;
+    int64 after_start_;
     IntervalVar* interval_ = nullptr;
   };
 
@@ -1780,8 +1838,11 @@ class GlobalVehicleBreaksConstraint : public Constraint {
   DisjunctivePropagator disjunctive_propagator_;
   DisjunctivePropagator::Tasks tasks_;
 
-  std::vector<IntVar*> cumuls_;
-  std::vector<int64> fixed_transits_;
+  // Fields used to help build tasks_ at each propagation.
+  std::vector<int64> min_travel_;
+  std::vector<int64> max_travel_;
+  std::vector<int64> pre_travel_;
+  std::vector<int64> post_travel_;
 };
 
 class TypeRegulationsChecker {
@@ -1806,7 +1867,9 @@ class TypeRegulationsChecker {
   int GetNonDeliveredCount(int type) const;
 
   virtual bool HasRegulationsToCheck() const = 0;
-  virtual bool CheckTypeRegulations(int type) const = 0;
+  virtual void InitializeCheck() {}
+  virtual bool CheckTypeRegulations(int type) = 0;
+  virtual bool FinalizeCheck() const { return true; }
 
   const RoutingModel& model_;
 
@@ -1824,7 +1887,7 @@ class TypeIncompatibilityChecker : public TypeRegulationsChecker {
 
  private:
   bool HasRegulationsToCheck() const override;
-  bool CheckTypeRegulations(int type) const override;
+  bool CheckTypeRegulations(int type) override;
   // NOTE(user): As temporal incompatibilities are always verified with this
   // checker, we only store 1 boolean indicating whether or not hard
   // incompatibilities are also verified.
@@ -1840,7 +1903,13 @@ class TypeRequirementChecker : public TypeRegulationsChecker {
 
  private:
   bool HasRegulationsToCheck() const override;
-  bool CheckTypeRegulations(int type) const override;
+  void InitializeCheck() override {
+    types_with_same_vehicle_requirements_on_route_.clear();
+  }
+  bool CheckTypeRegulations(int type) override;
+  bool FinalizeCheck() const override;
+
+  absl::flat_hash_set<int> types_with_same_vehicle_requirements_on_route_;
 };
 
 // The following constraint ensures that incompatibilities and requirements
@@ -1856,9 +1925,10 @@ class TypeRequirementChecker : public TypeRegulationsChecker {
 // p1 --> d1 --> n --> p2 --> d2 is acceptable, whereas any configurations
 // with p1 --> p2 --> d1 --> ..., or p1 --> n --> d1 --> ... is not feasible.
 //
-// It also verifies temporal type requirements.
-// In the above example, if T1 is a requirement for T2, p2 must be visited
-// between p1 and d1.
+// It also verifies same-vehicle and temporal type requirements.
+// In the above example, if T1 is a requirement for T2:
+// - For a same-vehicle requirement, p1/d1 must be on the same vehicle as p2/d2.
+// - For a temporal requirement, p2 must be visited between p1 and d1.
 class TypeRegulationsConstraint : public Constraint {
  public:
   explicit TypeRegulationsConstraint(const RoutingModel& model);
@@ -1875,6 +1945,37 @@ class TypeRegulationsConstraint : public Constraint {
   TypeRequirementChecker requirement_checker_;
   std::vector<Demon*> vehicle_demons_;
 };
+#if !defined SWIG
+// A structure meant to store soft bounds and associated violation constants.
+// It is 'Simple' because it has one BoundCost per element,
+// in contrast to 'Multiple'. Design notes:
+// - it is meant to store model information to be shared through pointers,
+//   so it disallows copy and assign to avoid accidental duplication.
+// - it keeps soft bounds as an array of structs to help cache,
+//   because code that uses such bounds typically use both bound and cost.
+// - soft bounds are named pairs, prevents some mistakes.
+// - using operator[] to access elements is not interesting,
+//   because the structure will be accessed through pointers, moreover having
+//   to type bound_cost reminds the user of the order if they do a copy
+//   assignment of the element.
+class SimpleBoundCosts {
+ public:
+  struct BoundCost {
+    int64 bound;
+    int64 cost;
+  };
+  SimpleBoundCosts(int num_bounds, BoundCost default_bound_cost)
+      : bound_costs_(num_bounds, default_bound_cost) {}
+  BoundCost& bound_cost(int element) { return bound_costs_[element]; }
+  BoundCost bound_cost(int element) const { return bound_costs_[element]; }
+  int Size() { return bound_costs_.size(); }
+  SimpleBoundCosts(const SimpleBoundCosts&) = delete;
+  SimpleBoundCosts operator=(const SimpleBoundCosts&) = delete;
+
+ private:
+  std::vector<BoundCost> bound_costs_;
+};
+#endif  // !defined SWIG
 
 // Dimensions represent quantities accumulated at nodes along the routes. They
 // represent quantities such as weights or volumes carried along the route, or
@@ -2030,36 +2131,51 @@ class RoutingDimension {
   int64 GetCumulVarSoftLowerBoundCoefficient(int64 index) const;
   // Sets the breaks for a given vehicle. Breaks are represented by
   // IntervalVars. They may interrupt transits between nodes and increase
-  // the value of corresponding slack variables. However a break interval cannot
-  // overlap the transit interval of a node, which is
-  // [CumulVar(node), CumulVar(node) + node_visit_transits[node]), i.e. the
-  // break interval must either end before CumulVar(node) or start after
-  // CumulVar(node) + node_visit_transits[node].
-  // In the case where the route entails some group delay on a visit, the break
-  // cannot overlap that delay either, so the time window it cannot overlap is
-  // [CumulVar(node) - delay, CumulVar(node) + node_visit_transits[node]).
+  // the value of corresponding slack variables.
+  // A break may take place before the start of a vehicle, after the end of
+  // a vehicle, or during a travel i -> j.
+  // In that case, the interval [break.Start(), break.End()) must be a subset of
+  // [CumulVar(i) + pre_travel(i, j), CumulVar(j) - post_travel(i, j)).
+  // In other words, a break may not overlap any node n's visit, given by
+  // [CumulVar(n) - post_travel(_, n), CumulVar(n) + pre_travel(n, _)).
+  // This formula considers post_travel(_, start) and pre_travel(end, _) to be
+  // 0; pre_travel will never be called on any (_, start) and post_travel will
+  // never we called on any (end, _). If pre_travel_evaluator or
+  // post_travel_evaluator is -1, it will be taken as a function that always
+  // returns 0.
+  // TODO(user): Remove if !defined when routing.i is repaired.
+#if !defined(SWIGPYTHON)
+  void SetBreakIntervalsOfVehicle(std::vector<IntervalVar*> breaks, int vehicle,
+                                  int pre_travel_evaluator,
+                                  int post_travel_evaluator);
+#endif  // !defined(SWIGPYTHON)
+
+  // Deprecated, sets pre_travel(i, j) = node_visit_transit[i].
   void SetBreakIntervalsOfVehicle(std::vector<IntervalVar*> breaks, int vehicle,
                                   std::vector<int64> node_visit_transits);
+
   // With breaks supposed to be consecutive, this forces the distance between
   // breaks of size at least minimum_break_duration to be at least distance.
   // This supposes that the time until route start and after route end are
   // infinite breaks.
   void SetBreakDistanceDurationOfVehicle(int64 distance, int64 duration,
                                          int vehicle);
+  // Sets up vehicle_break_intervals_, vehicle_break_distance_duration_,
+  // pre_travel_evaluators and post_travel_evaluators.
+  void InitializeBreaks();
+  // Returns true if any break interval or break distance was defined.
+  bool HasBreakConstraints() const;
 #if !defined(SWIGPYTHON)
+  // Deprecated, sets pre_travel(i, j) = node_visit_transit[i]
+  // and post_travel(i, j) = group_delays(i, j).
   void SetBreakIntervalsOfVehicle(
       std::vector<IntervalVar*> breaks, int vehicle,
       std::vector<int64> node_visit_transits,
-      std::function<int64(int64 from_index, int64 to_index)> group_delay);
-  // Returns true if the vehicle has break intervals.
-  bool VehicleHasBreakIntervals(int vehicle) const;
-  // Returns true iff some break distance constraint was set for this vehicle.
-  bool HasBreakDistanceDurationOfVehicle(int vehicle) const;
+      std::function<int64(int64, int64)> group_delays);
+
   // Returns the break intervals set by SetBreakIntervalsOfVehicle().
   const std::vector<IntervalVar*>& GetBreakIntervalsOfVehicle(
       int vehicle) const;
-  // Returns the amount of visit transit set by SetBreakIntervalsOfVehicle().
-  const std::vector<int64>& GetNodeVisitTransitsOfVehicle(int vehicle) const;
   // Returns the pairs (distance, duration) specified by break distance
   // constraints.
   // clang-format off
@@ -2067,6 +2183,8 @@ class RoutingDimension {
       GetBreakDistanceDurationOfVehicle(int vehicle) const;
   // clang-format on
 #endif  // !defined(SWIGPYTHON)
+  int GetPreTravelEvaluatorOfVehicle(int vehicle) const;
+  int GetPostTravelEvaluatorOfVehicle(int vehicle) const;
 
   // Returns the parent in the dependency tree if any or nullptr otherwise.
   const RoutingDimension* base_dimension() const { return base_dimension_; }
@@ -2146,11 +2264,6 @@ class RoutingDimension {
     return global_span_cost_coefficient_;
   }
 
-  int64 GetGroupDelay(int vehicle, int64 from_index, int64 to_index) const {
-    DCHECK_LT(vehicle, vehicle_group_delays_.size());
-    return vehicle_group_delays_[vehicle](from_index, to_index);
-  }
-
   int64 GetGlobalOptimizerOffset() const {
     DCHECK_GE(global_optimizer_offset_, 0);
     return global_optimizer_offset_;
@@ -2162,6 +2275,26 @@ class RoutingDimension {
     DCHECK_GE(local_optimizer_offset_for_vehicle_[vehicle], 0);
     return local_optimizer_offset_for_vehicle_[vehicle];
   }
+#if !defined SWIG
+  // If the span of vehicle on this dimension is larger than bound,
+  // the cost will be increased by cost * (span - bound).
+  void SetSoftSpanUpperBoundForVehicle(SimpleBoundCosts::BoundCost bound_cost,
+                                       int vehicle) {
+    if (!HasSoftSpanUpperBounds()) {
+      vehicle_soft_span_upper_bound_ = absl::make_unique<SimpleBoundCosts>(
+          model_->vehicles(), SimpleBoundCosts::BoundCost{kint64max, 0});
+    }
+    vehicle_soft_span_upper_bound_->bound_cost(vehicle) = bound_cost;
+  }
+  bool HasSoftSpanUpperBounds() const {
+    return vehicle_soft_span_upper_bound_ != nullptr;
+  }
+  SimpleBoundCosts::BoundCost GetSoftSpanUpperBoundForVehicle(
+      int vehicle) const {
+    DCHECK(HasSoftSpanUpperBounds());
+    return vehicle_soft_span_upper_bound_->bound_cost(vehicle);
+  }
+#endif  // !defined SWIG
 
  private:
   struct SoftBound {
@@ -2252,14 +2385,17 @@ class RoutingDimension {
       pickup_to_delivery_limits_per_pair_index_;
 
   // Used if some vehicle has breaks in this dimension, typically time.
+  bool break_constraints_are_initialized_ = false;
   // clang-format off
   std::vector<std::vector<IntervalVar*> > vehicle_break_intervals_;
-  std::vector<std::vector<int64> > vehicle_node_visit_transits_;
-  std::vector<std::function<int64(int64 from_index, int64 to_index)> >
-      vehicle_group_delays_;
   std::vector<std::vector<std::pair<int64, int64> > >
       vehicle_break_distance_duration_;
   // clang-format on
+  // For each vehicle, stores the part of travel that is made directly
+  // after (before) the departure (arrival) node of the travel.
+  // These parts of the travel are non-interruptible, in particular by a break.
+  std::vector<int> vehicle_pre_travel_evaluators_;
+  std::vector<int> vehicle_post_travel_evaluators_;
 
   std::vector<IntVar*> slacks_;
   std::vector<IntVar*> dependent_transits_;
@@ -2273,7 +2409,8 @@ class RoutingDimension {
   const std::string name_;
   int64 global_optimizer_offset_;
   std::vector<int64> local_optimizer_offset_for_vehicle_;
-
+  // nullptr if not defined.
+  std::unique_ptr<SimpleBoundCosts> vehicle_soft_span_upper_bound_;
   friend class RoutingModel;
   friend class RoutingModelInspector;
 
@@ -3001,6 +3138,12 @@ class ChristofidesFilteredDecisionBuilder
   }
 };
 
+// Attempts to solve the model using the cp-sat solver. As of 5/2019, will solve
+// the TSP corresponding to the model if it has a single vehicle. Therefore the
+// resulting solution might not actually be feasible. Will return false if a
+// solution could not be found.
+bool SolveModelWithSat(RoutingModel* model, Assignment* solution);
+
 // Generic path-based filter class.
 
 class BasePathFilter : public IntVarLocalSearchFilter {
@@ -3101,14 +3244,14 @@ IntVarLocalSearchFilter* MakeTypeRegulationsFilter(
     const RoutingModel& routing_model);
 std::vector<IntVarLocalSearchFilter*> MakeCumulFilters(
     const RoutingDimension& dimension,
-    Solver::ObjectiveWatcher objective_callback, bool filter_objective);
+    Solver::ObjectiveWatcher objective_callback, bool filter_objective_cost);
 IntVarLocalSearchFilter* MakePathCumulFilter(
     const RoutingDimension& dimension,
     Solver::ObjectiveWatcher objective_callback,
-    bool propagate_own_objective_value);
+    bool propagate_own_objective_value, bool filter_objective_cost);
 IntVarLocalSearchFilter* MakeGlobalLPCumulFilter(
     const RoutingDimension& dimension,
-    Solver::ObjectiveWatcher objective_callback);
+    Solver::ObjectiveWatcher objective_callback, bool filter_objective_cost);
 IntVarLocalSearchFilter* MakePickupDeliveryFilter(
     const RoutingModel& routing_model, const RoutingModel::IndexPairs& pairs,
     const std::vector<RoutingModel::PickupAndDeliveryPolicy>& vehicle_policies);

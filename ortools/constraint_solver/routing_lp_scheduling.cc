@@ -56,6 +56,7 @@ bool SetVariableBounds(glop::LinearProgram* linear_program,
   // lp_min > lp_max case, so we must detect infeasibility here.
   return false;
 }
+
 }  // namespace
 
 LocalDimensionCumulOptimizer::LocalDimensionCumulOptimizer(
@@ -106,10 +107,19 @@ bool LocalDimensionCumulOptimizer::ComputeRouteCumuls(
       lp_solver_[vehicle].get(), optimal_cumuls, nullptr, nullptr);
 }
 
+bool LocalDimensionCumulOptimizer::ComputePackedRouteCumuls(
+    int vehicle, const std::function<int64(int64)>& next_accessor,
+    std::vector<int64>* packed_cumuls) {
+  return optimizer_core_.OptimizeAndPackSingleRoute(
+      vehicle, next_accessor, linear_program_[vehicle].get(),
+      lp_solver_[vehicle].get(), packed_cumuls);
+}
+
 bool DimensionCumulOptimizerCore::OptimizeSingleRoute(
     int vehicle, const std::function<int64(int64)>& next_accessor,
     glop::LinearProgram* linear_program, glop::LPSolver* lp_solver,
-    std::vector<int64>* cumul_values, int64* cost, int64* transit_cost) {
+    std::vector<int64>* cumul_values, int64* cost, int64* transit_cost,
+    bool clear_lp) {
   InitOptimizer(linear_program);
 
   const RoutingModel* const model = dimension()->model();
@@ -133,14 +143,17 @@ bool DimensionCumulOptimizerCore::OptimizeSingleRoute(
     *cost = CapAdd(cost_offset, std::round(lp_solver->GetObjectiveValue()));
   }
 
-  linear_program->Clear();
+  if (clear_lp) {
+    linear_program->Clear();
+  }
   return true;
 }
 
 bool DimensionCumulOptimizerCore::Optimize(
     const std::function<int64(int64)>& next_accessor,
     glop::LinearProgram* linear_program, glop::LPSolver* lp_solver,
-    std::vector<int64>* cumul_values, int64* cost, int64* transit_cost) {
+    std::vector<int64>* cumul_values, int64* cost, int64* transit_cost,
+    bool clear_lp) {
   InitOptimizer(linear_program);
 
   // If both "cumul_values" and "cost" parameters are null, we don't try to
@@ -186,7 +199,9 @@ bool DimensionCumulOptimizerCore::Optimize(
         CapAdd(std::round(lp_solver->GetObjectiveValue()), total_cost_offset);
   }
 
-  linear_program->Clear();
+  if (clear_lp) {
+    linear_program->Clear();
+  }
   return true;
 }
 
@@ -194,27 +209,53 @@ bool DimensionCumulOptimizerCore::OptimizeAndPack(
     const std::function<int64(int64)>& next_accessor,
     glop::LinearProgram* linear_program, glop::LPSolver* lp_solver,
     std::vector<int64>* cumul_values) {
-  InitOptimizer(linear_program);
-
-  const int64 cumul_offset = dimension_->GetGlobalOptimizerOffset();
-  const RoutingModel* model = dimension()->model();
-  bool has_vehicles_being_optimized = false;
-  for (int vehicle = 0; vehicle < model->vehicles(); vehicle++) {
-    const bool optimize_vehicle_costs =
-        !model->IsEnd(next_accessor(model->Start(vehicle))) ||
-        model->AreEmptyRouteCostsConsideredForVehicle(vehicle);
-    if (!SetRouteCumulConstraints(vehicle, next_accessor, cumul_offset,
-                                  optimize_vehicle_costs, linear_program,
-                                  nullptr, nullptr)) {
-      return false;
-    }
-    has_vehicles_being_optimized |= optimize_vehicle_costs;
-  }
-  SetGlobalConstraints(has_vehicles_being_optimized, linear_program);
-
-  if (!FinalizeAndSolve(linear_program, lp_solver)) {
+  // Note: We pass a non-nullptr cost to the Optimize() method so the costs are
+  // optimized by the LP.
+  int64 cost = 0;
+  if (!Optimize(next_accessor, linear_program, lp_solver,
+                /*cumul_values=*/nullptr, &cost, /*transit_cost=*/nullptr,
+                /*clear_lp=*/false)) {
     return false;
   }
+
+  std::vector<int> vehicles(dimension()->model()->vehicles());
+  std::iota(vehicles.begin(), vehicles.end(), 0);
+  if (!PackRoutes(std::move(vehicles), linear_program, lp_solver)) {
+    return false;
+  }
+
+  SetCumulValuesFromLP(index_to_cumul_variable_,
+                       dimension_->GetGlobalOptimizerOffset(), *lp_solver,
+                       cumul_values);
+  linear_program->Clear();
+  return true;
+}
+
+bool DimensionCumulOptimizerCore::OptimizeAndPackSingleRoute(
+    int vehicle, const std::function<int64(int64)>& next_accessor,
+    glop::LinearProgram* linear_program, glop::LPSolver* lp_solver,
+    std::vector<int64>* cumul_values) {
+  // Note: We pass a non-nullptr cost to the OptimizeSingleRoute() method so the
+  // costs are optimized by the LP.
+  int64 cost = 0;
+  if (!OptimizeSingleRoute(vehicle, next_accessor, linear_program, lp_solver,
+                           /*cumul_values=*/nullptr, &cost,
+                           /*transit_cost=*/nullptr,
+                           /*clear_lp=*/false) ||
+      !PackRoutes({vehicle}, linear_program, lp_solver)) {
+    return false;
+  }
+  SetCumulValuesFromLP(current_route_cumul_variables_,
+                       dimension_->GetLocalOptimizerOffsetForVehicle(vehicle),
+                       *lp_solver, cumul_values);
+  linear_program->Clear();
+  return true;
+}
+
+bool DimensionCumulOptimizerCore::PackRoutes(
+    std::vector<int> vehicles, glop::LinearProgram* linear_program,
+    glop::LPSolver* lp_solver) {
+  const RoutingModel* model = dimension_->model();
 
   // Minimize the route end times without increasing the cost.
   glop::RowIndex objective_ct = linear_program->CreateNewConstraint();
@@ -231,7 +272,7 @@ bool DimensionCumulOptimizerCore::OptimizeAndPack(
       linear_program->SetObjectiveCoefficient(variable, 0);
     }
   }
-  for (int vehicle = 0; vehicle < model->vehicles(); vehicle++) {
+  for (int vehicle : vehicles) {
     linear_program->SetObjectiveCoefficient(
         index_to_cumul_variable_[model->End(vehicle)], 1);
   }
@@ -242,7 +283,7 @@ bool DimensionCumulOptimizerCore::OptimizeAndPack(
 
   // Maximize the route start times without increasing the cost or the route end
   // times.
-  for (int vehicle = 0; vehicle < model->vehicles(); vehicle++) {
+  for (int vehicle : vehicles) {
     const glop::ColIndex end_cumul_var =
         index_to_cumul_variable_[model->End(vehicle)];
     // end_cumul_var <= lp_solver.variable_values()[end_cumul_var]
@@ -259,9 +300,6 @@ bool DimensionCumulOptimizerCore::OptimizeAndPack(
     return false;
   }
 
-  SetCumulValuesFromLP(index_to_cumul_variable_, cumul_offset, *lp_solver,
-                       cumul_values);
-  linear_program->Clear();
   return true;
 }
 
