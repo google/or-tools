@@ -648,13 +648,13 @@ void LinearProgrammingConstraint::UpdateSimplexIterationLimit(
     // signal to increase the iterations or punish less for degeneracy compare
     // to the other part.
     if (is_degenerate) {
-      next_simplex_iter_ /= std::max({int64}1, decrease_factor);
+      next_simplex_iter_ /= std::max(int64{1}, decrease_factor);
     } else {
       next_simplex_iter_ *= 2;
     }
   } else if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
     if (is_degenerate) {
-      next_simplex_iter_ /= std::max({int64}1, 2 * decrease_factor);
+      next_simplex_iter_ /= std::max(int64{1}, 2 * decrease_factor);
     } else {
       // This is the most common case. We use the size of the problem to
       // determine the limit and ignore the previous limit.
