@@ -712,6 +712,7 @@ bool PresolveAtMostOne(ConstraintProto* ct, PresolveContext* context) {
 bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
   if (context->ModelIsUnsat()) return false;
   if (ct->int_max().vars().empty()) {
+    context->UpdateRuleStats("int_max: no variables!");
     return MarkConstraintAsFalse(ct, context);
   }
   const int target_ref = ct->int_max().target();
@@ -866,6 +867,7 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
   }
 
   if (new_size == 0) {
+    context->UpdateRuleStats("int_max: no variables!");
     return MarkConstraintAsFalse(ct, context);
   }
   if (new_size == 1) {
@@ -2925,7 +2927,7 @@ void ExtractClauses(const ClauseContainer& container, CpModelProto* proto) {
   }
 }
 
-void Probe(TimeLimit* global_time_limit, PresolveContext* context) {
+void Probe(PresolveOptions options, PresolveContext* context) {
   if (context->ModelIsUnsat()) return;
 
   // Update the domain in the current CpModelProto.
@@ -2943,7 +2945,8 @@ void Probe(TimeLimit* global_time_limit, PresolveContext* context) {
   // TODO(user): Maybe do not load slow to propagate constraints? for instance
   // we do not use any linear relaxation here.
   Model model;
-  model.GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(global_time_limit);
+  *(model.GetOrCreate<SatParameters>()) = options.parameters;
+  model.GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(options.time_limit);
   auto* encoder = model.GetOrCreate<IntegerEncoder>();
   encoder->DisableImplicationBetweenLiteral();
   auto* mapping = model.GetOrCreate<CpModelMapping>();
@@ -3496,7 +3499,7 @@ void MergeNoOverlapConstraints(PresolveContext* context) {
     graph->AddAtMostOne(clique);
   }
   CHECK(graph->DetectEquivalences());
-  graph->TransformIntoMaxCliques(&cliques);
+  graph->TransformIntoMaxCliques(&cliques, /*max_num_explored_nodes=*/1e10);
 
   // Replace each no-overlap with an extended version, or remove if empty.
   int new_num_no_overlaps = 0;
@@ -3978,7 +3981,8 @@ void TryToSimplifyDomains(PresolveContext* context) {
   context->UpdateNewConstraintsVariableUsage();
 }
 
-void PresolveToFixPoint(PresolveContext* context, TimeLimit* time_limit) {
+void PresolveToFixPoint(const PresolveOptions& options,
+                        PresolveContext* context) {
   if (context->ModelIsUnsat()) return;
 
   // This is used for constraint having unique variables in them (i.e. not
@@ -3987,6 +3991,7 @@ void PresolveToFixPoint(PresolveContext* context, TimeLimit* time_limit) {
   absl::flat_hash_set<std::pair<int, int>> var_constraint_pair_already_called;
 
   // The queue of "active" constraints, initialized to all of them.
+  TimeLimit* time_limit = options.time_limit;
   std::vector<bool> in_queue(context->working_model->constraints_size(), true);
   std::deque<int> queue(context->working_model->constraints_size());
   std::iota(queue.begin(), queue.end(), 0);
@@ -4000,6 +4005,11 @@ void PresolveToFixPoint(PresolveContext* context, TimeLimit* time_limit) {
 
       const int old_num_constraint = context->working_model->constraints_size();
       const bool changed = PresolveOneConstraint(c, context);
+      if (context->ModelIsUnsat() && options.log_info) {
+        LOG(INFO) << "Unsat after presolving constraint #" << c
+                  << " (warning, dump might be inconsistent): "
+                  << context->working_model->constraints(c).ShortDebugString();
+      }
 
       // Add to the queue any newly created constraints.
       const int new_num_constraints =
@@ -4166,6 +4176,23 @@ void RemoveUnusedEquivalentVariables(PresolveContext* context) {
   context->UpdateNewConstraintsVariableUsage();
 }
 
+void LogInfoFromContext(const PresolveContext& context) {
+  LOG(INFO) << "- " << context.affine_relations.NumRelations()
+            << " affine relations were detected.";
+  LOG(INFO) << "- " << context.var_equiv_relations.NumRelations()
+            << " variable equivalence relations were detected.";
+  std::map<std::string, int> sorted_rules(context.stats_by_rule_name.begin(),
+                                          context.stats_by_rule_name.end());
+  for (const auto& entry : sorted_rules) {
+    if (entry.second == 1) {
+      LOG(INFO) << "- rule '" << entry.first << "' was applied 1 time.";
+    } else {
+      LOG(INFO) << "- rule '" << entry.first << "' was applied " << entry.second
+                << " times.";
+    }
+  }
+}
+
 }  // namespace.
 
 // =============================================================================
@@ -4223,14 +4250,14 @@ bool PresolveCpModel(const PresolveOptions& options,
   }
 
   // Main propagation loop.
-  PresolveToFixPoint(&context, options.time_limit);
+  PresolveToFixPoint(options, &context);
 
   // Runs the probing.
   // TODO(user): do that and the pure-SAT part below more than once.
   if (options.parameters.cp_model_probing_level() > 0) {
     if (options.time_limit == nullptr || !options.time_limit->LimitReached()) {
-      Probe(options.time_limit, &context);
-      PresolveToFixPoint(&context, options.time_limit);
+      Probe(options, &context);
+      PresolveToFixPoint(options, &context);
     }
   }
 
@@ -4276,10 +4303,12 @@ bool PresolveCpModel(const PresolveOptions& options,
 
     // Call the main presolve to remove the fixed variables and do more
     // deductions.
-    PresolveToFixPoint(&context, options.time_limit);
+    PresolveToFixPoint(options, &context);
   }
 
   if (context.ModelIsUnsat()) {
+    if (options.log_info) LogInfoFromContext(context);
+
     // Set presolved_model to the simplest UNSAT problem (empty clause).
     presolved_model->Clear();
     presolved_model->add_constraints()->mutable_bool_or();
@@ -4402,22 +4431,7 @@ bool PresolveCpModel(const PresolveOptions& options,
   ApplyVariableMapping(mapping, presolved_model);
 
   // Stats and checks.
-  if (options.log_info) {
-    LOG(INFO) << "- " << context.affine_relations.NumRelations()
-              << " affine relations were detected.";
-    LOG(INFO) << "- " << context.var_equiv_relations.NumRelations()
-              << " variable equivalence relations were detected.";
-    std::map<std::string, int> sorted_rules(context.stats_by_rule_name.begin(),
-                                            context.stats_by_rule_name.end());
-    for (const auto& entry : sorted_rules) {
-      if (entry.second == 1) {
-        LOG(INFO) << "- rule '" << entry.first << "' was applied 1 time.";
-      } else {
-        LOG(INFO) << "- rule '" << entry.first << "' was applied "
-                  << entry.second << " times.";
-      }
-    }
-  }
+  if (options.log_info) LogInfoFromContext(context);
 
   // One possible error that is difficult to avoid here: because of our
   // objective expansion, we might detect a possible overflow...

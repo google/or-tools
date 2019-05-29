@@ -637,22 +637,24 @@ void LinearProgrammingConstraint::UpdateSimplexIterationLimit(
   if (sat_parameters_.linearization_level() < 2) return;
   const int64 num_degenerate_columns = CalculateDegeneracy();
   const int64 num_cols = simplex_.GetProblemNumCols().value();
+  if (num_cols <= 0) {
+    return;
+  }
+  CHECK_GT(num_cols, 0);
   const bool is_degenerate = num_degenerate_columns >= 0.3 * num_cols;
-  const int64 decrease_factor = 10 * num_degenerate_columns / num_cols;
+  const int64 decrease_factor = (10 * num_degenerate_columns) / num_cols;
   if (simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_FEASIBLE) {
     // We reached here probably because we predicted wrong. We use this as a
     // signal to increase the iterations or punish less for degeneracy compare
     // to the other part.
-    // TODO(user): Derive a formula to update the limit using degeneracy to
-    // simplify the code.
     if (is_degenerate) {
-      next_simplex_iter_ /= decrease_factor;
+      next_simplex_iter_ /= std::max(1LL, decrease_factor);
     } else {
       next_simplex_iter_ *= 2;
     }
   } else if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
     if (is_degenerate) {
-      next_simplex_iter_ /= 2 * decrease_factor;
+      next_simplex_iter_ /= std::max(1LL, 2 * decrease_factor);
     } else {
       // This is the most common case. We use the size of the problem to
       // determine the limit and ignore the previous limit.

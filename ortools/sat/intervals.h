@@ -92,6 +92,15 @@ class IntervalsRepository {
     return integer_trail_->UpperBound(size_var);
   }
 
+  // Utility function that returns a vector will all intervals.
+  std::vector<IntervalVariable> AllIntervals() const {
+    std::vector<IntervalVariable> result;
+    for (IntervalVariable i(0); i < NumIntervals(); ++i) {
+      result.push_back(i);
+    }
+    return result;
+  }
+
  private:
   // External classes needed.
   IntegerTrail* integer_trail_;
@@ -396,6 +405,7 @@ inline void SchedulingConstraintHelper::ClearReason() {
 }
 
 inline void SchedulingConstraintHelper::AddPresenceReason(int t) {
+  DCHECK(IsPresent(t));
   AddOtherReason(t);
   if (reason_for_presence_[t] != kNoLiteralIndex) {
     literal_reason_.push_back(Literal(reason_for_presence_[t]).Negated());

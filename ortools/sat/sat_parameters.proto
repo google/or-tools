@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 133
+// NEXT TAG: 134
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -711,6 +711,11 @@ message SatParameters {
   // compute EXACT propagation on the IP. So with this option, there is no
   // numerical imprecision issues.
   optional bool use_exact_lp_reason = 109 [default = true];
+
+  // This can be beneficial if there is a lot of no-overlap constraints but a
+  // relatively low number of different intervals in the problem. Like 1000
+  // intervals, but 1M intervals in the no-overlap constraints covering them.
+  optional bool use_combined_no_overlap = 133 [default = false];
 
   // ==========================================================================
   // MIP -> CP-SAT (i.e. IP with integer coeff) conversion parameters that are
