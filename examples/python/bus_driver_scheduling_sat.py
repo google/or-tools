@@ -23,6 +23,7 @@ Constraints:
 """
 from __future__ import print_function
 
+import collections
 import math
 
 from ortools.sat.python import cp_model
@@ -175,7 +176,10 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
         working_times.append(
             model.NewIntVar(0, max_working_time, 'working_times_%i' % d))
 
-        arcs = []
+        incoming_literals = collections.defaultdict(list)
+        outgoing_literals = collections.defaultdict(list)
+        outgoing_source_literals = []
+        incoming_sink_literals = []
 
         # Create all the shift variables before iterating on the transitions
         # between these shifts.
@@ -194,7 +198,8 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
             #    - set the start time of the driver
             #    - increase driving time and driving time since break
             source_lit = model.NewBoolVar('%i from source to %i' % (d, s))
-            arcs.append([0, s + 1, source_lit])
+            outgoing_source_literals.append(source_lit)
+            incoming_literals[s].append(source_lit)
             model.Add(start_times[d] == shift[3] -
                       setup_time).OnlyEnforceIf(source_lit)
             model.Add(
@@ -207,7 +212,8 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
             #    - set the end time of the driver
             #    - set the driving times of the driver
             sink_lit = model.NewBoolVar('%i from %i to sink' % (d, s))
-            arcs.append([s + 1, 0, sink_lit])
+            outgoing_literals[s].append(sink_lit)
+            incoming_sink_literals.append(sink_lit)
             model.Add(end_times[d] == shift[4] +
                       cleanup_time).OnlyEnforceIf(sink_lit)
             model.Add(driving_times[d] == total_driving[d, s]).OnlyEnforceIf(
@@ -220,7 +226,8 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
                 performed[d, s].Not())
             model.Add(no_break_driving[d, s] == 0).OnlyEnforceIf(
                 performed[d, s].Not())
-            arcs.append([s + 1, s + 1, performed[d, s].Not()])
+            incoming_literals[s].append(performed[d, s].Not())
+            outgoing_literals[s].append(performed[d, s].Not())
 
             # Node performed:
             #    - add upper bound on start_time
@@ -251,7 +258,8 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
                         other[5]).OnlyEnforceIf(lit)
 
                 # Add arc
-                arcs.append([s + 1, o + 1, lit])
+                outgoing_literals[s].append(lit)
+                incoming_literals[o].append(lit)
 
                 # Cost part
                 delay_literals.append(lit)
@@ -268,7 +276,8 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
                 working.Not())
             model.Add(driving_times[d] == 0).OnlyEnforceIf(working.Not())
             working_drivers.append(working)
-            arcs.append([0, 0, working.Not()])
+            outgoing_source_literals.append(working.Not())
+            incoming_sink_literals.append(working.Not())
             # Conditional working time constraints
             model.Add(
                 working_times[d] >= min_working_time).OnlyEnforceIf(working)
@@ -278,7 +287,11 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
             model.Add(working_times[d] >= min_working_time)
 
         # Create circuit constraint.
-        model.AddCircuit(arcs)
+        model.Add(sum(outgoing_source_literals) == 1)
+        for s in range(num_shifts):
+            model.Add(sum(outgoing_literals[s]) == 1)
+            model.Add(sum(incoming_literals[s]) == 1)
+        model.Add(sum(incoming_sink_literals) == 1)
 
     # Each shift is covered.
     for s in range(num_shifts):
@@ -317,7 +330,7 @@ def bus_driver_scheduling(minimize_drivers, max_num_drivers):
 
     # Solve model.
     solver = cp_model.CpSolver()
-    solver.parameters.log_search_progress = not minimize_drivers
+    solver.parameters.log_search_progress = True  #not minimize_drivers
     solver.parameters.num_search_workers = 8
     status = solver.Solve(model)
 
