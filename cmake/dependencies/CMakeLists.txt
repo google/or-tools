@@ -40,7 +40,7 @@ if(BUILD_ZLIB)
     TAG
       "v1.2.11"
     APPLY_PATCH
-      "${CMAKE_SOURCE_DIR}/patches/ZLIB.patch"
+      "${CMAKE_CURRENT_SOURCE_DIR}/../../patches/ZLIB.patch"
  )
 endif()
 
