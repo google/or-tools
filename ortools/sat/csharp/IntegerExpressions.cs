@@ -231,7 +231,8 @@ namespace Google.OrTools.Sat
     {
       List<LinearExpr> exprs = new List<LinearExpr>();
       List<long> coeffs = new List<long>();
-      if ((Object)e != null) {
+      if ((Object)e != null)
+      {
         exprs.Add(e);
         coeffs.Add(initial_coeff);
       }
@@ -260,8 +261,38 @@ namespace Google.OrTools.Sat
           constant += coeff * a.Constant;
           foreach (LinearExpr sub in a.Expressions)
           {
-            exprs.Add(sub);
-            coeffs.Add(coeff);
+            if (sub is IntVar)
+            {
+              IntVar i = (IntVar)sub;
+              if (dict.ContainsKey(i))
+              {
+                dict[i] += coeff;
+              }
+              else
+              {
+                dict.Add(i, coeff);
+              }
+            }
+            else if (sub is ProductCst && ((ProductCst)sub).Expr is IntVar)
+            {
+              ProductCst sub_prod = (ProductCst)sub;
+              IntVar i = (IntVar)sub_prod.Expr;
+              long sub_coeff = sub_prod.Coeff;
+
+              if (dict.ContainsKey(i))
+              {
+                dict[i] += coeff * sub_coeff;
+              }
+              else
+              {
+                dict.Add(i, coeff * sub_coeff);
+              }
+            }
+            else
+            {
+              exprs.Add(sub);
+              coeffs.Add(coeff);
+            }
           }
         }
         else if (expr is IntVar)
@@ -275,12 +306,19 @@ namespace Google.OrTools.Sat
           {
             dict.Add(i, coeff);
           }
-
         }
         else if (expr is NotBooleanVariable)
         {
-          throw new ArgumentException(
-              "Cannot interpret a literal in an integer expression.");
+          IntVar i = ((NotBooleanVariable)expr).NotVar();
+          if (dict.ContainsKey(i))
+          {
+            dict[i] -= coeff;
+          }
+          else
+          {
+            dict.Add(i, -coeff);
+          }
+          constant += coeff;
         }
         else
         {
@@ -334,24 +372,29 @@ namespace Google.OrTools.Sat
 
     public SumArray(IEnumerable<LinearExpr> exprs)
     {
-      expressions_ = new List<LinearExpr>();
-      foreach (LinearExpr e in exprs)
-      {
-        AddExpr(e);
-      }
+      expressions_ = new List<LinearExpr>(exprs);
       constant_ = 0L;
     }
 
     public SumArray(IEnumerable<IntVar> vars)
     {
-      expressions_ = new List<LinearExpr>();
+      expressions_ = new List<LinearExpr>(vars);
       foreach (IntVar v in vars)
       {
         AddExpr(v);
       }
       constant_ = 0L;
     }
-    
+
+    public SumArray(IntVar[] vars, long[] coeffs)
+    {
+      expressions_ = new List<LinearExpr>(vars.Length);
+      for (int i = 0; i < vars.Length; ++i)
+      {
+        AddExpr(Prod(vars[i], coeffs[i]));
+      }
+      constant_ = 0L;
+    }
     public SumArray(IEnumerable<IntVar> vars, IEnumerable<long> coeffs)
     {
       List<IntVar> tmp_vars = new List<IntVar>();
@@ -371,13 +414,14 @@ namespace Google.OrTools.Sat
       }
       IntVar[] flat_vars = tmp_vars.ToArray();
       long[] flat_coeffs = tmp_coeffs.ToArray();
-      expressions_ = new List<LinearExpr>();
-      for (int i = 0; i < flat_vars.Length; ++i) {
+      expressions_ = new List<LinearExpr>(flat_vars.Length);
+      for (int i = 0; i < flat_vars.Length; ++i)
+      {
         expressions_.Add(Prod(flat_vars[i], flat_coeffs[i]));
       }
       constant_ = 0L;
     }
-    
+
     public SumArray(IEnumerable<IntVar> vars, IEnumerable<int> coeffs)
     {
       List<IntVar> tmp_vars = new List<IntVar>();
@@ -397,15 +441,18 @@ namespace Google.OrTools.Sat
       }
       IntVar[] flat_vars = tmp_vars.ToArray();
       long[] flat_coeffs = tmp_coeffs.ToArray();
-      expressions_ = new List<LinearExpr>();
-      for (int i = 0; i < flat_vars.Length; ++i) {
+      expressions_ = new List<LinearExpr>(flat_vars.Length);
+      for (int i = 0; i < flat_vars.Length; ++i)
+      {
         expressions_.Add(Prod(flat_vars[i], flat_coeffs[i]));
       }
       constant_ = 0L;
     }
 
-    public void AddExpr(LinearExpr expr) {
-      if ((Object)expr != null) {
+    public void AddExpr(LinearExpr expr)
+    {
+      if ((Object)expr != null)
+      {
         expressions_.Add(expr);
       }
     }
@@ -431,7 +478,7 @@ namespace Google.OrTools.Sat
       foreach (LinearExpr expr in expressions_)
       {
         if ((Object)expr == null) continue;
-        if (!String.IsNullOrEmpty(result)) 
+        if (!String.IsNullOrEmpty(result))
         {
           result += String.Format(" + ");
         }
@@ -534,6 +581,11 @@ namespace Google.OrTools.Sat
     }
 
     public ILiteral Not()
+    {
+      return boolvar_;
+    }
+
+    public IntVar NotVar()
     {
       return boolvar_;
     }

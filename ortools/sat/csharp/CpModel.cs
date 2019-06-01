@@ -590,6 +590,30 @@ namespace Google.OrTools.Sat
       SetObjective(obj, false);
     }
 
+    public void Minimize()
+    {
+      SetObjective(null, true);
+    }
+
+    public void Maximize()
+    {
+      SetObjective(null, false);
+    }
+
+    public void AddVarToObjective(IntVar var)
+    {
+      if ((Object)var == null) return;
+      model_.Objective.Vars.Add(var.Index);
+      model_.Objective.Coeffs.Add(model_.Objective.ScalingFactor > 0 ? 1 : -1);
+    }
+
+    public void AddTermToObjective(IntVar var, long coeff)
+    {
+      if (coeff == 0 || (Object)var == null) return;
+      model_.Objective.Vars.Add(var.Index);
+      model_.Objective.Coeffs.Add(model_.Objective.ScalingFactor > 0 ? coeff : -coeff);
+    }
+
     bool HasObjective()
     {
       return model_.Objective == null;
@@ -616,18 +640,23 @@ namespace Google.OrTools.Sat
     void SetObjective(LinearExpr obj, bool minimize)
     {
       CpObjectiveProto objective = new CpObjectiveProto();
-      if (obj is IntVar)
+      if (obj == null)
       {
-        objective.Coeffs.Add(1L);
         objective.Offset = 0L;
+        objective.ScalingFactor = minimize ? 1L : -1;
+      }
+      else if (obj is IntVar)
+      {
+        objective.Offset = 0L;
+        objective.Vars.Add(obj.Index);
         if (minimize)
         {
-          objective.Vars.Add(obj.Index);
+          objective.Coeffs.Add(1L);
           objective.ScalingFactor = 1L;
         }
         else
         {
-          objective.Vars.Add(Negated(obj.Index));
+          objective.Coeffs.Add(-1L);
           objective.ScalingFactor = -1L;
         }
       }
@@ -647,15 +676,8 @@ namespace Google.OrTools.Sat
         }
         foreach (KeyValuePair<IntVar, long> it in dict)
         {
-          objective.Coeffs.Add(it.Value);
-          if (minimize)
-          {
-            objective.Vars.Add(it.Key.Index);
-          }
-          else
-          {
-            objective.Vars.Add(Negated(it.Key.Index));
-          }
+          objective.Vars.Add(it.Key.Index);          
+          objective.Coeffs.Add(minimize ? it.Value : -it.Value);
         }
       }
       model_.Objective = objective;
