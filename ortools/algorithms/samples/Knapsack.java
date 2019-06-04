@@ -14,6 +14,7 @@
 // [START program]
 // [START import]
 import com.google.ortools.algorithms.KnapsackSolver;
+import java.util.ArrayList;
 // [END import]
 
 /**
@@ -49,8 +50,20 @@ public class Knapsack {
     // [END solve]
 
     // [START print_solution]
-    System.out.println("Solving knapsack with " + values.length + " items");
-    System.out.println("Optimal Value = " + computedValue);
+    ArrayList<Integer> packedItems = new ArrayList<Integer>();
+    ArrayList<Long> packedWeights = new ArrayList<Long>();
+    int totalWeight = 0;
+    System.out.println("Total value = " + computedValue);
+    for (int i = 0; i < values.length; i++) {
+      if (solver.bestSolutionContains(i)) {
+        packedItems.add(i);
+        packedWeights.add(weights[0][i]);
+        totalWeight = (int) (totalWeight + weights[0][i]);
+      }
+    }
+    System.out.println("Total weight: " + totalWeight);
+    System.out.println("Packed items: " + packedItems);
+    System.out.println("Packed weights: " + packedWeights);
     // [END print_solution]
   }
 
