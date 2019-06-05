@@ -1,7 +1,6 @@
 | [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Reference manual](reference.md) |
 | ----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | -------------------------------- |
 
-
 # Model manipulation
 
 
@@ -11,12 +10,12 @@
 In all languages, the CpModel class is a thin wrapper around a
 [cp_model.proto](../cp_model.proto).
 
-Some functionalities can require going back to the cp_model protobuf. To write
-code that manipulate this protobuf, one must understand how modeling objects
-(variables, constraints) are mapped to onto the protobuf.
+Some functionalities require using the cp_model protobuf directly. To write code
+that manipulates this protobuf, one must understand how modeling objects
+(variables, constraints) are mapped onto the protobuf.
 
 The fundamental idea is that the cp_model protobuf object contains a list of
-variables and a list of a constraints. Constraints are build with variables and
+variables and a list of constraints. Constraints are built with variables and
 reference them using their indices in the list of variables.
 
 In all languages, the `IntVar` class has a method to query their index in the
@@ -30,23 +29,27 @@ model list of variables:
 The implementation of Boolean literals differs across languages.
 
 -   **C++**: The `BoolVar` class is a separate class from the `IntVar` class. A
-    `BoolVar` object can implicitely be casted into a `IntVar` object. A
-    `BoolVar` object has two important methods: `index()` and `Not()`. `Not()`
-    returns another `BoolVar` with a different index: `b.Not().index() =
-    -b.index() - 1`.
--   **Python**: There is no `BoolVar` class. Boolean variables are defined as an
+    `BoolVar` object can implicitly be cast to an `IntVar` object. A `BoolVar`
+    object has two important methods: `index()` and `Not()`. `Not()` returns
+    another `BoolVar` with a different index: `b.Not().index() = -b.index() -
+    1`.
+-   **Python**: There is no `BoolVar` class. A Boolean variable is defined as an
     `IntVar` with a Boolean domain (0 or 1). The `Not()` method returns a
-    different class. Both the `IntVar` class and the negation class implements
+    different class. Both the `IntVar` class and the negation class implement
     `Index()` and `Not()`.
--   **Java**: There is no `BoolVar` class. Boolean variables are defined as an
+-   **Java**: There is no `BoolVar` class. A Boolean variable is defined as an
     `IntVar` with a Boolean domain (0 or 1). Boolean variables and their
-    negation implement the `Literal` interface. This interface defines the
-    `getIndex()` and the `not()` method.
+    negation implement the `Literal` interface. This interface defines
+    `getIndex()` and `not()` methods.
 -   **C#**: Boolean variables are defined as an `IntVar` with a Boolean domain
-    (0 or 1). Boolean variables and their negation implement the `ILiteral`
-    interface. This interface defines the `GetIndex()` and the `Not()` method.
+    (0 or 1). Boolean variables and their negations implement the `ILiteral`
+    interface. This interface defines `GetIndex()` and `Not()` methods.
 
 ## Solution hinting
+
+A solution is a partial assignment of variables to values that the search will
+try to stick to. It is meant to guide the search with external knowledge towards
+good solutions.
 
 The `CpModelProto` message has a `solution_hint` field. This field is a
 `PartialVariableAssignment` message that contains two parallel vectors (variable
@@ -57,12 +60,13 @@ Adding solution hinting to a model implies filling these two fields.
 Some remarks:
 
 -   A solution hint is not a hard constraint. The solver will try to use it in
-    search for a while, then will gradually revert to its default search.
--   An infeasible solution hint is not an issue. It can be helpful in some
-    repair procedure where one want to look for a solution close to the previous
-    violated state.
--   Solution hinting does not need to use all variables. Partial solution
-    hinting is perfectly valid.
+    search for a while, and then gradually revert to its default search
+    technique.
+-   It's OK to have an infeasible solution hint. It can still be helpful in some
+    repair procedures, where one wants to identify a solution close to a
+    previously violated state.
+-   Solution hints don't need to use all variables: partial solution hints are
+    fine.
 
 ### Python code
 
