@@ -51,26 +51,29 @@ POSSIBLE_CAPACITIES = [4000, 5000, 6000, 7000, 8000]
 
 
 def regroup_and_count(raw_input):
+    """Regroup all equal capacities in a multiset."""
     grouped = collections.defaultdict(int)
     for i in raw_input:
         grouped[i] += 1
     output = []
     for size, count in grouped.items():
         output.append([size, count])
-    output.sort(reverse=True)
+    output.sort(reverse=False)
     return output
 
 
-def price_capacity(capacity, capacities):
+def price_usage(usage, capacities):
+    """Compute the best price for a given usage and possible capacities."""
     price = max(capacities)
-    for c in capacities:
-        if c < capacity:
+    for capacity in capacities:
+        if capacity < usage:
             continue
-        price = min(c - capacity, price)
+        price = min(capacity - usage, price)
     return price
 
 
 def create_state_graph(items, max_capacity):
+    """Create a state graph from a multiset of items, and a maximum capacity."""
     states = []
     state_to_index = {}
     states.append(0)
@@ -81,11 +84,11 @@ def create_state_graph(items, max_capacity):
         size, count = size_and_count
         num_states = len(states)
         for state_index in range(num_states):
-            previous_state = states[state_index]
-            previous_state_index = state_index
+            current_state = states[state_index]
+            current_state_index = state_index
 
-            for _ in range(count):
-                new_state = previous_state + size
+            for card in range(count):
+                new_state = current_state + size * (card + 1)
                 if new_state > max_capacity:
                     break
                 new_state_index = -1
@@ -96,15 +99,15 @@ def create_state_graph(items, max_capacity):
                     states.append(new_state)
                     state_to_index[new_state] = new_state_index
                 # Add the transition
-                transitions.append(
-                    [previous_state_index, new_state_index, item_index])
-                # And update counters
-                previous_state_index = new_state_index
-                previous_state = new_state
+                transitions.append([
+                    current_state_index, new_state_index, item_index, card + 1
+                ])
+
     return states, transitions
 
 
-def solve_cutting_stock_with_arc_flow_with_sat(output_proto):
+def solve_cutting_stock_with_arc_flow_and_sat(output_proto):
+    """Solve the cutting stock with arc-flow and the CP-SAT solver."""
     items = regroup_and_count(DESIRED_LENGTHS)
     print('Items:', items)
     num_items = len(DESIRED_LENGTHS)
@@ -119,19 +122,25 @@ def solve_cutting_stock_with_arc_flow_with_sat(output_proto):
     outgoing_vars = collections.defaultdict(list)
     incoming_sink_vars = []
     item_vars = collections.defaultdict(list)
+    item_coeffs = collections.defaultdict(list)
+    transition_vars = []
 
     model = cp_model.CpModel()
 
     objective_vars = []
     objective_coeffs = []
 
-    for outgoing, incoming, item_index in transitions:
+    for outgoing, incoming, item_index, card in transitions:
         count = items[item_index][1]
+        max_count = count // card
         count_var = model.NewIntVar(
-            0, count, 'i%i_f%i_t%i' % (item_index, incoming, outgoing))
+            0, max_count,
+            'i%i_f%i_t%i_C%s' % (item_index, incoming, outgoing, card))
         incoming_vars[incoming].append(count_var)
         outgoing_vars[outgoing].append(count_var)
         item_vars[item_index].append(count_var)
+        item_coeffs[item_index].append(card)
+        transition_vars.append(count_var)
 
     for state_index, state in enumerate(states):
         if state_index == 0:
@@ -139,7 +148,7 @@ def solve_cutting_stock_with_arc_flow_with_sat(output_proto):
         exit_var = model.NewIntVar(0, num_items, 'e%i' % state_index)
         outgoing_vars[state_index].append(exit_var)
         incoming_sink_vars.append(exit_var)
-        price = price_capacity(state, POSSIBLE_CAPACITIES)
+        price = price_usage(state, POSSIBLE_CAPACITIES)
         objective_vars.append(exit_var)
         objective_coeffs.append(price)
 
@@ -153,8 +162,10 @@ def solve_cutting_stock_with_arc_flow_with_sat(output_proto):
 
     # Items must be placed
     for item_index, size_and_count in enumerate(items):
-        size, count = size_and_count
-        model.Add(sum(item_vars[item_index]) == count)
+        num_arcs = len(item_vars[item_index])
+        model.Add(
+            sum(item_vars[item_index][i] * item_coeffs[item_index][i]
+                for i in range(num_arcs)) == size_and_count[1])
 
     # Objective is the sum of waste
     model.Minimize(
@@ -175,7 +186,8 @@ def solve_cutting_stock_with_arc_flow_with_sat(output_proto):
     print(solver.ResponseStats())
 
 
-def solve_cutting_stock_with_arc_flow_with_mip():
+def solve_cutting_stock_with_arc_flow_and_mip():
+    """Solve the cutting stock with arc-flow and a MIP solver."""
     items = regroup_and_count(DESIRED_LENGTHS)
     print('Items:', items)
     num_items = len(DESIRED_LENGTHS)
@@ -189,6 +201,7 @@ def solve_cutting_stock_with_arc_flow_with_mip():
     outgoing_vars = collections.defaultdict(list)
     incoming_sink_vars = []
     item_vars = collections.defaultdict(list)
+    item_coeffs = collections.defaultdict(list)
 
     start_time = time.time()
     solver = pywraplp.Solver('Steel',
@@ -198,15 +211,16 @@ def solve_cutting_stock_with_arc_flow_with_mip():
     objective_coeffs = []
 
     var_index = 0
-    for outgoing, incoming, item_index in transitions:
+    for outgoing, incoming, item_index, card in transitions:
         count = items[item_index][1]
         count_var = solver.IntVar(
-            0, count,
-            'a%i_i%i_f%i_t%i' % (var_index, item_index, incoming, outgoing))
+            0, count, 'a%i_i%i_f%i_t%i_c%i' % (var_index, item_index, incoming,
+                                               outgoing, card))
         var_index += 1
         incoming_vars[incoming].append(count_var)
         outgoing_vars[outgoing].append(count_var)
         item_vars[item_index].append(count_var)
+        item_coeffs[item_index].append(card)
 
     for state_index, state in enumerate(states):
         if state_index == 0:
@@ -214,7 +228,7 @@ def solve_cutting_stock_with_arc_flow_with_mip():
         exit_var = solver.IntVar(0, num_items, 'e%i' % state_index)
         outgoing_vars[state_index].append(exit_var)
         incoming_sink_vars.append(exit_var)
-        price = price_capacity(state, POSSIBLE_CAPACITIES)
+        price = price_usage(state, POSSIBLE_CAPACITIES)
         objective_vars.append(exit_var)
         objective_coeffs.append(price)
 
@@ -228,8 +242,10 @@ def solve_cutting_stock_with_arc_flow_with_mip():
 
     # Items must be placed
     for item_index, size_and_count in enumerate(items):
-        size, count = size_and_count
-        solver.Add(sum(item_vars[item_index]) == count)
+        num_arcs = len(item_vars[item_index])
+        solver.Add(
+            sum(item_vars[item_index][i] * item_coeffs[item_index][i]
+                for i in range(num_arcs)) == size_and_count[1])
 
     # Objective is the sum of waste
     solver.Minimize(
@@ -250,9 +266,9 @@ def solve_cutting_stock_with_arc_flow_with_mip():
 def main(args):
     """Main function"""
     if args.solver == 'sat':
-        solve_cutting_stock_with_arc_flow_with_sat(args.output_proto)
+        solve_cutting_stock_with_arc_flow_and_sat(args.output_proto)
     else:  # 'mip'
-        solve_cutting_stock_with_arc_flow_with_mip()
+        solve_cutting_stock_with_arc_flow_and_mip()
 
 
 if __name__ == '__main__':
