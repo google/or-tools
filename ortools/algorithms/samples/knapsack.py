@@ -44,11 +44,22 @@ def main():
 
     # [START solve]
     solver.Init(values, weights, capacities)
-    computed_profit = solver.Solve()
+    computed_value = solver.Solve()
     # [END solve]
 
     # [START print_solution]
-    print('optimal profit =', computed_profit)
+    packed_items = []
+    packed_weights = []
+    total_weight = 0
+    print('Total value =', computed_value)
+    for i in range(len(values)):
+      if solver.BestSolutionContains(i):
+        packed_items.append(i)
+        packed_weights.append(weights[0][i])
+        total_weight += weights[0][i]
+    print('Total weight:', total_weight)
+    print('Packed items:', packed_items)
+    print('Packed_weights:', packed_weights)
     # [END print_solution]
 
 
