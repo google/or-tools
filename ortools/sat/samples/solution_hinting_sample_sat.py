@@ -20,29 +20,6 @@ from __future__ import print_function
 from ortools.sat.python import cp_model
 
 
-# You need to subclass the cp_model.CpSolverSolutionCallback class.
-# [START print_solution]
-class VarArrayAndObjectiveSolutionPrinter(cp_model.CpSolverSolutionCallback):
-    """Print intermediate solutions."""
-
-    def __init__(self, variables):
-        cp_model.CpSolverSolutionCallback.__init__(self)
-        self.__variables = variables
-        self.__solution_count = 0
-
-    def on_solution_callback(self):
-        print('Solution %i' % self.__solution_count)
-        print('  objective value = %i' % self.ObjectiveValue())
-        for v in self.__variables:
-            print('  %s = %i' % (v, self.Value(v)), end=' ')
-        print()
-        self.__solution_count += 1
-
-    def solution_count(self):
-        return self.__solution_count
-        # [END print_solution]
-
-
 def SolutionHintingSampleSat():
     """Showcases solution hinting."""
     # Creates the model.
@@ -76,7 +53,7 @@ def SolutionHintingSampleSat():
     # Creates a solver and solves.
     # [START solve]
     solver = cp_model.CpSolver()
-    solution_printer = VarArrayAndObjectiveSolutionPrinter([x, y, z])
+    solution_printer = cp_model.VarArrayAndObjectiveSolutionPrinter([x, y, z])
     status = solver.SolveWithSolutionCallback(model, solution_printer)
     # [END solve]
 

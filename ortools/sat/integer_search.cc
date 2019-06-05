@@ -708,6 +708,13 @@ SatSolver::Status ResetAndSolveIntegerProblem(
     const std::vector<Literal>& assumptions, Model* model) {
   SatSolver* const solver = model->GetOrCreate<SatSolver>();
 
+  // Sync the bound first.
+  if (!solver->ResetToLevelZero()) return solver->UnsatStatus();
+  auto* level_zero_callbacks = model->GetOrCreate<LevelZeroCallbackHelper>();
+  for (const auto& cb : level_zero_callbacks->callbacks) {
+    if (!cb()) return SatSolver::INFEASIBLE;
+  }
+
   // Add the assumptions if any and solve.
   if (!solver->ResetWithGivenAssumptions(assumptions)) {
     return solver->UnsatStatus();

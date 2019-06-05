@@ -1,3 +1,6 @@
+ | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Reference manual](reference.md) |
+| ----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | -------------------------------- |
+
 # ortools.sat.python.cp_model
 Methods for building and solving CP-SAT models.
 ## DisplayBounds

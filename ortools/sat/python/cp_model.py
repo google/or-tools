@@ -1615,6 +1615,9 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
   and Value() methods.
   """
 
+    def __init__(self):
+        pywrapsat.SolutionCallback.__init__(self)
+
     def OnSolutionCallback(self):
         """Proxy to the same method in snake case."""
         self.on_solution_callback()
@@ -1693,11 +1696,60 @@ class ObjectiveSolutionPrinter(CpSolverSolutionCallback):
     def on_solution_callback(self):
         """Called on each new solution."""
         current_time = time.time()
-        objective = self.ObjectiveValue()
-        best_bound = self.BestObjectiveBound()
-        obj_lb = min(objective, best_bound)
-        obj_ub = max(objective, best_bound)
-        print('Solution %i, time = %f s, objective = [%i, %i]' %
-              (self.__solution_count, current_time - self.__start_time, obj_lb,
-               obj_ub))
+        obj = self.ObjectiveValue()
+        print('Solution %i, time = %0.2f s, objective = %i' %
+              (self.__solution_count, current_time - self.__start_time, obj))
         self.__solution_count += 1
+
+    def solution_count(self):
+        """Returns the number of solutions found."""
+        return self.__solution_count
+
+
+class VarArrayAndObjectiveSolutionPrinter(CpSolverSolutionCallback):
+    """Print intermediate solutions (objective, variable values, time)."""
+
+    def __init__(self, variables):
+        CpSolverSolutionCallback.__init__(self)
+        self.__variables = variables
+        self.__solution_count = 0
+        self.__start_time = time.time()
+
+    def on_solution_callback(self):
+        """Called on each new solution."""
+        current_time = time.time()
+        obj = self.ObjectiveValue()
+        print('Solution %i, time = %0.2f s, objective = %i' %
+              (self.__solution_count, current_time - self.__start_time, obj))
+        for v in self.__variables:
+            print('  %s = %i' % (v, self.Value(v)), end=' ')
+        print()
+        self.__solution_count += 1
+
+    def solution_count(self):
+        """Returns the number of solutions found."""
+        return self.__solution_count
+
+
+class VarArraySolutionPrinter(CpSolverSolutionCallback):
+    """Print intermediate solutions (variable values, time)."""
+
+    def __init__(self, variables):
+        CpSolverSolutionCallback.__init__(self)
+        self.__variables = variables
+        self.__solution_count = 0
+        self.__start_time = time.time()
+
+    def on_solution_callback(self):
+        """Called on each new solution."""
+        current_time = time.time()
+        print('Solution %i, time = %0.2f s' %
+              (self.__solution_count, current_time - self.__start_time))
+        for v in self.__variables:
+            print('  %s = %i' % (v, self.Value(v)), end=' ')
+        print()
+        self.__solution_count += 1
+
+    def solution_count(self):
+        """Returns the number of solutions found."""
+        return self.__solution_count
