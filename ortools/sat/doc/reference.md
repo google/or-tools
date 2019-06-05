@@ -1,7 +1,6 @@
 | [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Reference manual](reference.md) |
 | ----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | -------------------------------- |
 
-
 # ortools.sat.python.cp_model
 Methods for building and solving CP-SAT models.
 ## DisplayBounds
@@ -14,9 +13,9 @@ Displays a flattened list of intervals.
 ShortName(model, i)
 ```
 Returns a short name of an integer variable, or its negation.
-## LinearExpression
+## LinearExpr
 ```python
-LinearExpression(self, /, *args, **kwargs)
+LinearExpr(self, /, *args, **kwargs)
 ```
 Holds an integer linear expression.
 
@@ -36,9 +35,25 @@ Linear expressions can also be used to specify the objective of the model.
 
     model.Minimize(x + 2 * y + z)
 
+For very large arrays, and to stay in line with
+other languages, special class methods are offered.
+
+    model.Minimize(cp_model.LinearExpr.Sum(expressions))
+    model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) >= 0)
+
+### Sum
+```python
+LinearExpr.Sum(expressions)
+```
+Create the expression sum(expressions).
+### ScalProd
+```python
+LinearExpr.ScalProd(expressions, coefficients)
+```
+Create the expression sum(expressions[i] * coefficients[i]).
 ### GetVarValueMap
 ```python
-LinearExpression.GetVarValueMap(self)
+LinearExpr.GetVarValueMap(self)
 ```
 Scan the expression, and return a list of (var_coef_map, constant).
 ## IntVar
@@ -78,9 +93,9 @@ It is only valid of the variable has a Boolean domain (0 or 1).
 
 Note that this method is nilpotent: x.Not().Not() == x.
 
-## LinearInequality
+## BoundedLinearExpression
 ```python
-LinearInequality(self, expr, bounds)
+BoundedLinearExpression(self, expr, bounds)
 ```
 Represents a linear constraint: lb <= expression <= ub.
 
@@ -201,6 +216,11 @@ Returns:
 CpModel.NewBoolVar(self, name)
 ```
 Creates a 0-1 variable with the given name.
+### NewConstant
+```python
+CpModel.NewConstant(self, value)
+```
+Creates a constant integer variable.
 ### AddLinearConstraint
 ```python
 CpModel.AddLinearConstraint(self, linear_expr, lb, ub)
@@ -215,7 +235,7 @@ Add the constraint: linear_expr in domain.
 ```python
 CpModel.Add(self, ct)
 ```
-Adds a LinearInequality to the model.
+Adds a BoundedLinearExpression to the model.
 ### AddAllDifferent
 ```python
 CpModel.AddAllDifferent(self, variables)
@@ -649,9 +669,9 @@ Returns some statistics on the model as a string.
 CpModel.Validate(self)
 ```
 Returns a string explaining the issue is the model is not valid.
-## EvaluateLinearExpression
+## EvaluateLinearExpr
 ```python
-EvaluateLinearExpression(expression, solution)
+EvaluateLinearExpr(expression, solution)
 ```
 Evaluate an linear expression against a solution.
 ## EvaluateBooleanExpression
@@ -698,7 +718,9 @@ Args:
   callback: The callback that will be called at each solution.
 
 Returns:
-  The status of the solve (FEASIBLE, INFEASIBLE...).
+  The status of the solve: FEASIBLE if some solutions have been found,
+  INFEASIBLE if the solver has proved there are no solution, and OPTIMAL
+  if all solutions have been found.
 
 ### Value
 ```python
@@ -807,7 +829,7 @@ Returns:
     against the current solution.
 
 Raises:
-    RuntimeError: if 'expression' is not a LinearExpression.
+    RuntimeError: if 'expression' is not a LinearExpr.
 
 ## ObjectiveSolutionPrinter
 ```python
@@ -819,3 +841,38 @@ Print intermediate solutions objective and time.
 ObjectiveSolutionPrinter.on_solution_callback(self)
 ```
 Called on each new solution.
+### solution_count
+```python
+ObjectiveSolutionPrinter.solution_count(self)
+```
+Returns the number of solutions found.
+## VarArrayAndObjectiveSolutionPrinter
+```python
+VarArrayAndObjectiveSolutionPrinter(self, variables)
+```
+Print intermediate solutions (objective, variable values, time).
+### on_solution_callback
+```python
+VarArrayAndObjectiveSolutionPrinter.on_solution_callback(self)
+```
+Called on each new solution.
+### solution_count
+```python
+VarArrayAndObjectiveSolutionPrinter.solution_count(self)
+```
+Returns the number of solutions found.
+## VarArraySolutionPrinter
+```python
+VarArraySolutionPrinter(self, variables)
+```
+Print intermediate solutions (variable values, time).
+### on_solution_callback
+```python
+VarArraySolutionPrinter.on_solution_callback(self)
+```
+Called on each new solution.
+### solution_count
+```python
+VarArraySolutionPrinter.solution_count(self)
+```
+Returns the number of solutions found.
