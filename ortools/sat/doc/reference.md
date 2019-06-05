@@ -19,24 +19,22 @@ LinearExpr(self, /, *args, **kwargs)
 ```
 Holds an integer linear expression.
 
-An linear expression is built from integer constants and variables.
+A linear expression is built from integer constants and variables.
+For example, x + 2 * (y - z + 1).
 
-x + 2 * (y - z + 1) is one such linear expression, and can be written that
-way directly in Python, provided x, y, and z are integer variables.
+Linear expressions are used in CP-SAT models in two ways:
 
-Linear expressions are used in two places in the cp_model.
-When used with equality and inequality operators, they create linear
-inequalities that can be added to the model as in:
+* To define constraints. For example
 
-    model.Add(x + 2 * y <= 5)
-    model.Add(sum(array_of_vars) == 5)
+  model.Add(x + 2 * y <= 5)
+  model.Add(sum(array_of_vars) == 5)
 
-Linear expressions can also be used to specify the objective of the model.
+* To define the objective function. For example
 
-    model.Minimize(x + 2 * y + z)
+  model.Minimize(x + 2 * y + z)
 
-For very large arrays, and to stay in line with
-other languages, special class methods are offered.
+For large arrays, you can create constraints and the objective
+from lists of linear expressions or coefficients as follows:
 
     model.Minimize(cp_model.LinearExpr.Sum(expressions))
     model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) >= 0)
@@ -63,7 +61,7 @@ IntVar(self, model, domain, name)
 An integer variable.
 
 An IntVar is an object that can take on any integer value within defined
-ranges. Variables appears in constraint like:
+ranges. Variables appear in constraint like:
 
     x + y >= 5
     AllDifferent([x, y, z])
@@ -89,7 +87,7 @@ IntVar.Not(self)
 Returns the negation of a Boolean variable.
 
 This method implements the logical negation of a Boolean variable.
-It is only valid of the variable has a Boolean domain (0 or 1).
+It is only valid if the variable has a Boolean domain (0 or 1).
 
 Note that this method is nilpotent: x.Not().Not() == x.
 
@@ -127,21 +125,20 @@ Constraint.OnlyEnforceIf(self, boolvar)
 ```
 Adds an enforcement literal to the constraint.
 
-Args:
-    boolvar: A boolean literal or a list of boolean literals.
+**Args:**
 
-Returns:
+- *boolvar*: A boolean literal or a list of boolean literals.
+
+**Returns:**
     self.
 
-This method adds one or more literals (that is a boolean variable or its
+This method adds one or more literals (that is, a boolean variable or its
 negation) as enforcement literals. The conjunction of all these literals
-decides whether the constraint is active or not. It acts as an
+determines whether the constraint is active or not. It acts as an
 implication, so if the conjunction is true, it implies that the constraint
 must be enforced. If it is false, then the constraint is ignored.
 
-The following constraints support enforcement literals:
-   bool or, bool and, and any linear constraints support any number of
-   enforcement literals.
+BoolOr, BoolAnd, and linear constraints all support enforcement literals.
 
 ### Index
 ```python
@@ -157,7 +154,7 @@ Returns the constraint protobuf.
 ```python
 IntervalVar(self, model, start_index, size_index, end_index, is_present_index, name)
 ```
-Represents a Interval variable.
+Represents an Interval variable.
 
 An interval variable is both a constraint and a variable. It is defined by
 three integer variables: start, size, and end.
@@ -167,11 +164,11 @@ It is a constraint because, internally, it enforces that start + size == end.
 It is also a variable as it can appear in specific scheduling constraints:
 NoOverlap, NoOverlap2D, Cumulative.
 
-Optionally, an enforcement literal can be added to this
-constraint. This enforcement literal is understood by the same constraints.
-These constraints ignore interval variables with enforcement literals assigned
-to false. Conversely, these constraints will also set these enforcement
-literals to false if they cannot fit these intervals into the schedule.
+Optionally, an enforcement literal can be added to this constraint, in which
+case these scheduling constraints will ignore interval variables with
+enforcement literals assigned to false. Conversely, these constraints will
+also set these enforcement literals to false if they cannot fit these
+intervals into the schedule.
 
 ### Index
 ```python
@@ -190,6 +187,7 @@ CpModel(self)
 Methods for building a CP model.
 
 Methods beginning with:
+
 * ```New``` create integer, boolean, or interval variables.
 * ```Add``` create new constraints and add them to the model.
 
@@ -204,11 +202,12 @@ CpModel.NewIntVarFromDomain(self, domain, name)
 ```
 Create an integer variable from a list of intervals.
 
-Args:
-    domain: A instance of the Domain class.
-    name: The name of the variable.
+**Args:**
 
-Returns:
+- *domain*: A instance of the Domain class.
+- *name*: The name of the variable.
+
+**Returns:**
     a variable whose domain is the given domain.
 
 ### NewBoolVar
@@ -220,7 +219,7 @@ Creates a 0-1 variable with the given name.
 ```python
 CpModel.NewConstant(self, value)
 ```
-Creates a constant integer variable.
+Declares a constant integer.
 ### AddLinearConstraint
 ```python
 CpModel.AddLinearConstraint(self, linear_expr, lb, ub)
@@ -230,7 +229,7 @@ Adds the constraint: lb <= linear_expr <= ub.
 ```python
 CpModel.AddLinearExpressionInDomain(self, linear_expr, domain)
 ```
-Add the constraint: linear_expr in domain.
+Adds the constraint: linear_expr in domain.
 ### Add
 ```python
 CpModel.Add(self, ct)
@@ -244,10 +243,11 @@ Adds AllDifferent(variables).
 
 This constraint forces all variables to have different values.
 
-Args:
-  variables: a list of integer variables.
+**Args:**
 
-Returns:
+- *variables*: a list of integer variables.
+
+**Returns:**
   An instance of the Constraint class.
 
 ### AddElement
@@ -268,17 +268,18 @@ graph. In case a node 'i' is not in the path, then there must be a
 loop arc 'i -> i' associated with a true literal. Otherwise
 this constraint will fail.
 
-Args:
-  arcs: a list of arcs. An arc is a tuple (source_node, destination_node,
-    literal). The arc is selected in the circuit if the literal is true.
-    Both source_node and destination_node must be integer value between 0
-    and the number of nodes - 1.
+**Args:**
 
-Returns:
+- *arcs*: a list of arcs. An arc is a tuple (source_node, destination_node,
+    literal). The arc is selected in the circuit if the literal is true.
+    Both source_node and destination_node must be integers between 0 and the
+    number of nodes - 1.
+
+**Returns:**
   An instance of the Constraint class.
 
-Raises:
-  ValueError: If the list of arc is empty.
+**Raises:**
+  ValueError: If the list of arcs is empty.
 
 ### AddAllowedAssignments
 ```python
@@ -287,20 +288,23 @@ CpModel.AddAllowedAssignments(self, variables, tuples_list)
 Adds AllowedAssignments(variables, tuples_list).
 
 An AllowedAssignments constraint is a constraint on an array of variables
-that forces, when all variables are fixed to a single value, that the
-corresponding list of values is equal to one of the tuple of the
+that forces, when all variables are fixed to a single value, the
+corresponding list of values to be equal to one of the tuples of the
 tuple_list.
 
-Args:
-  variables: A list of variables.
-  tuples_list: A list of admissible tuples. Each tuple must have the same
+**Args:**
+
+- *variables*: A list of variables.
+- *tuples_list*: A list of admissible tuples. Each tuple must have the same
     length as the variables, and the ith value of a tuple corresponds to the
     ith variable.
 
-Returns:
+**Returns:**
+
   An instance of the Constraint class.
 
-Raises:
+**Raises:**
+
   TypeError: If a tuple does not have the same size as the list of
       variables.
   ValueError: If the array of variables is empty.
@@ -314,16 +318,17 @@ Adds AddForbiddenAssignments(variables, [tuples_list]).
 A ForbiddenAssignments constraint is a constraint on an array of variables
 where the list of impossible combinations is provided in the tuples list.
 
-Args:
-  variables: A list of variables.
-  tuples_list: A list of forbidden tuples. Each tuple must have the same
+**Args:**
+
+- *variables*: A list of variables.
+- *tuples_list*: A list of forbidden tuples. Each tuple must have the same
     length as the variables, and the ith value of a tuple corresponds to the
     ith variable.
 
-Returns:
+**Returns:**
   An instance of the Constraint class.
 
-Raises:
+**Raises:**
   TypeError: If a tuple does not have the same size as the list of
              variables.
   ValueError: If the array of variables is empty.
@@ -346,7 +351,7 @@ initial state. The last phase contains the final states.
 
 Between two consecutive phases i and i + 1, the automaton creates a set of
 arcs. For each transition (tail, transition, head), it will add an arc from
-the state 'tail' of phase i and the state 'head' of phase i + 1. This arc
+the state 'tail' of phase i and the state 'head' of phase i + 1. This arc is
 labeled by the value 'transition' of the variables 'variables[i]'. That is,
 this arc can only be selected if 'variables[i]' is assigned the value
 'transition'.
@@ -356,18 +361,19 @@ that, starting from the initial state in phase 0, there is a path labeled by
 the values of the variables that ends in one of the final states in the
 final phase.
 
-Args:
-  transition_variables: A non empty list of variables whose values
+**Args:**
+
+- *transition_variables*: A non-empty list of variables whose values
     correspond to the labels of the arcs traversed by the automaton.
-  starting_state: The initial state of the automaton.
-  final_states: A non empty list of admissible final states.
-  transition_triples: A list of transition for the automaton, in the
+- *starting_state*: The initial state of the automaton.
+- *final_states*: A non-empty list of admissible final states.
+- *transition_triples*: A list of transitions for the automaton, in the
     following format (current_state, variable_value, next_state).
 
-Returns:
+**Returns:**
   An instance of the Constraint class.
 
-Raises:
+**Raises:**
   ValueError: if transition_variables, final_states, or transition_triples
   are empty.
 
@@ -380,15 +386,16 @@ Adds Inverse(variables, inverse_variables).
 An inverse constraint enforces that if 'variables[i]' is assigned a value
 'j', then inverse_variables[j] is assigned a value 'i'. And vice versa.
 
-Args:
-  variables: An array of integer variables.
-  inverse_variables: An array of integer variables.
+**Args:**
 
-Returns:
+- *variables*: An array of integer variables.
+- *inverse_variables*: An array of integer variables.
+
+**Returns:**
   An instance of the Constraint class.
 
-Raises:
-  TypeError: if variables and inverse_variables have different length, or
+**Raises:**
+  TypeError: if variables and inverse_variables have different lengths, or
       if they are empty.
 
 ### AddReservoirConstraint
@@ -408,20 +415,21 @@ some demands to be executed at time 0 to make sure that we are within those
 bounds with the executed demands. Therefore, at any time t >= 0:
     sum(demands[i] if times[i] <= t) in [min_level, max_level]
 
-Args:
-  times: A list of positive integer variables which specify the time of the
+**Args:**
+
+- *times*: A list of positive integer variables which specify the time of the
     filling or emptying the reservoir.
-  demands: A list of integer values that specifies the amount of the
+- *demands*: A list of integer values that specifies the amount of the
     emptying or feeling.
-  min_level: At any time >= 0, the level of the reservoir must be greater of
+- *min_level*: At any time >= 0, the level of the reservoir must be greater of
     equal than the min level.
-  max_level: At any time >= 0, the level of the reservoir must be less or
+- *max_level*: At any time >= 0, the level of the reservoir must be less or
     equal than the max level.
 
-Returns:
+**Returns:**
   An instance of the Constraint class.
 
-Raises:
+**Raises:**
   ValueError: if max_level < min_level.
 
 ### AddReservoirConstraintWithActive
@@ -444,22 +452,23 @@ bounds with the executed demands. Therefore, at any time t >= 0:
 The array of boolean variables 'actives', if defined, indicates which
 actions are actually performed.
 
-Args:
-  times: A list of positive integer variables which specify the time of the
+**Args:**
+
+- *times*: A list of positive integer variables which specify the time of the
     filling or emptying the reservoir.
-  demands: A list of integer values that specifies the amount of the
+- *demands*: A list of integer values that specifies the amount of the
     emptying or feeling.
-  actives: a list of boolean variables. They indicates if the
+- *actives*: a list of boolean variables. They indicates if the
     emptying/refilling events actually take place.
-  min_level: At any time >= 0, the level of the reservoir must be greater of
+- *min_level*: At any time >= 0, the level of the reservoir must be greater of
     equal than the min level.
-  max_level: At any time >= 0, the level of the reservoir must be less or
+- *max_level*: At any time >= 0, the level of the reservoir must be less or
     equal than the max level.
 
-Returns:
+**Returns:**
   An instance of the Constraint class.
 
-Raises:
+**Raises:**
   ValueError: if max_level < min_level.
 
 ### AddMapDomain
@@ -501,7 +510,7 @@ Adds target == Max(variables).
 ```python
 CpModel.AddDivisionEquality(self, target, num, denom)
 ```
-Adds target == num // denom.
+Adds target == num // denom (integer division rounded towards 0).
 ### AddAbsEquality
 ```python
 CpModel.AddAbsEquality(self, target, var)
@@ -512,11 +521,16 @@ Adds target == Abs(var).
 CpModel.AddModuloEquality(self, target, var, mod)
 ```
 Adds target = var % mod.
+### AddMultiplicationEquality
+```python
+CpModel.AddMultiplicationEquality(self, target, args)
+```
+Adds target == args[0] * .. * args[n].
 ### AddProdEquality
 ```python
 CpModel.AddProdEquality(self, target, args)
 ```
-Adds target == PROD(args).
+Deprecated, use AddMultiplicationEquality.
 ### NewIntervalVar
 ```python
 CpModel.NewIntervalVar(self, start, size, end, name)
@@ -528,23 +542,24 @@ constraints like NoOverlap.
 
 Internally, it ensures that start + size == end.
 
-Args:
-  start: The start of the interval. It can be an integer value, or an
-    integer variable.
-  size: The size of the interval. It can be an integer value, or an integer
-    variable.
-  end: The end of the interval. It can be an integer value, or an integer
-    variable.
-  name: The name of the interval variable.
+**Args:**
 
-Returns:
+- *start*: The start of the interval. It can be an integer value, or an
+    integer variable.
+- *size*: The size of the interval. It can be an integer value, or an integer
+    variable.
+- *end*: The end of the interval. It can be an integer value, or an integer
+    variable.
+- *name*: The name of the interval variable.
+
+**Returns:**
   An IntervalVar object.
 
 ### NewOptionalIntervalVar
 ```python
 CpModel.NewOptionalIntervalVar(self, start, size, end, is_present, name)
 ```
-Creates an optional interval var from start, size, end and is_present.
+Creates an optional interval var from start, size, end, and is_present.
 
 An optional interval variable is a constraint, that is itself used in other
 constraints like NoOverlap. This constraint is protected by an is_present
@@ -552,18 +567,19 @@ literal that indicates if it is active or not.
 
 Internally, it ensures that is_present implies start + size == end.
 
-Args:
-  start: The start of the interval. It can be an integer value, or an
-    integer variable.
-  size: The size of the interval. It can be an integer value, or an integer
-    variable.
-  end: The end of the interval. It can be an integer value, or an integer
-    variable.
-  is_present: A literal that indicates if the interval is active or not. A
-    inactive interval is simply ignored by all constraints.
-  name: The name of the interval variable.
+**Args:**
 
-Returns:
+- *start*: The start of the interval. It can be an integer value, or an
+    integer variable.
+- *size*: The size of the interval. It can be an integer value, or an integer
+    variable.
+- *end*: The end of the interval. It can be an integer value, or an integer
+    variable.
+- *is_present*: A literal that indicates if the interval is active or not. A
+    inactive interval is simply ignored by all constraints.
+- *name*: The name of the interval variable.
+
+**Returns:**
   An IntervalVar object.
 
 ### AddNoOverlap
@@ -575,10 +591,11 @@ Adds NoOverlap(interval_vars).
 A NoOverlap constraint ensures that all present intervals do not overlap
 in time.
 
-Args:
-  interval_vars: The list of interval variables to constrain.
+**Args:**
 
-Returns:
+- *interval_vars*: The list of interval variables to constrain.
+
+**Returns:**
   An instance of the Constraint class.
 
 ### AddNoOverlap2D
@@ -588,14 +605,15 @@ CpModel.AddNoOverlap2D(self, x_intervals, y_intervals)
 Adds NoOverlap2D(x_intervals, y_intervals).
 
 A NoOverlap2D constraint ensures that all present rectangles do not overlap
-on a plan. Each rectangle is aligned with the X and Y axis, and is defined
+on a plane. Each rectangle is aligned with the X and Y axis, and is defined
 by two intervals which represent its projection onto the X and Y axis.
 
-Args:
-  x_intervals: The X coordinates of the rectangles.
-  y_intervals: The Y coordinates of the rectangles.
+**Args:**
 
-Returns:
+- *x_intervals*: The X coordinates of the rectangles.
+- *y_intervals*: The Y coordinates of the rectangles.
+
+**Returns:**
   An instance of the Constraint class.
 
 ### AddCumulative
@@ -610,14 +628,15 @@ This constraint enforces that:
         if (start(intervals[t]) <= t < end(intervals[t])) and
         (t is present)) <= capacity
 
-Args:
-  intervals: The list of intervals.
-  demands: The list of demands for each interval. Each demand must be >= 0.
+**Args:**
+
+- *intervals*: The list of intervals.
+- *demands*: The list of demands for each interval. Each demand must be >= 0.
     Each demand can be an integer value, or an integer variable.
-  capacity: The maximum capacity of the cumulative constraint. It must be a
+- *capacity*: The maximum capacity of the cumulative constraint. It must be a
     positive integer value or variable.
 
-Returns:
+**Returns:**
   An instance of the Constraint class.
 
 ### Proto
@@ -651,42 +670,43 @@ CpModel.AddDecisionStrategy(self, variables, var_strategy, domain_strategy)
 ```
 Adds a search strategy to the model.
 
-Args:
-  variables: a list of variables this strategy will assign.
-  var_strategy: heuristic to choose the next variable to assign.
-  domain_strategy: heuristic to reduce the domain of the selected variable.
-    Currently, this is advanced code, the union of all strategies added to
-    the model must be complete, i.e. instantiates all variables. Otherwise,
-    Solve() will fail.
+**Args:**
+
+- *variables*: a list of variables this strategy will assign.
+- *var_strategy*: heuristic to choose the next variable to assign.
+- *domain_strategy*: heuristic to reduce the domain of the selected variable.
+    Currently, this is advanced code: the union of all strategies added to
+      the model must be complete, i.e. instantiates all variables.
+      Otherwise, Solve() will fail.
 
 ### ModelStats
 ```python
 CpModel.ModelStats(self)
 ```
-Returns some statistics on the model as a string.
+Returns a string containing some model statistics.
 ### Validate
 ```python
 CpModel.Validate(self)
 ```
-Returns a string explaining the issue is the model is not valid.
+Returns a string indicating that the model is invalid.
 ## EvaluateLinearExpr
 ```python
 EvaluateLinearExpr(expression, solution)
 ```
-Evaluate an linear expression against a solution.
+Evaluate a linear expression against a solution.
 ## EvaluateBooleanExpression
 ```python
 EvaluateBooleanExpression(literal, solution)
 ```
-Evaluate an boolean expression against a solution.
+Evaluate a boolean expression against a solution.
 ## CpSolver
 ```python
 CpSolver(self)
 ```
 Main solver class.
 
-The purpose of this class is to search for a solution of a model given to the
-Solve() method.
+The purpose of this class is to search for a solution to the model provided
+to the Solve() method.
 
 Once Solve() is called, this class allows inspecting the solution found
 with the Value() and BooleanValue() methods, as well as general statistics
@@ -701,32 +721,34 @@ Solves the given model and returns the solve status.
 ```python
 CpSolver.SolveWithSolutionCallback(self, model, callback)
 ```
-Solves a problem and pass each solution found to the callback.
+Solves a problem and passes each solution found to the callback.
 ### SearchForAllSolutions
 ```python
 CpSolver.SearchForAllSolutions(self, model, callback)
 ```
 Search for all solutions of a satisfiability problem.
 
-This method searches for all feasible solution of a given model.
+This method searches for all feasible solutions of a given model.
 Then it feeds the solution to the callback.
 
 Note that the model cannot contain an objective.
 
-Args:
-  model: The model to solve.
-  callback: The callback that will be called at each solution.
+**Args:**
 
-Returns:
-  The status of the solve: FEASIBLE if some solutions have been found,
-  INFEASIBLE if the solver has proved there are no solution, and OPTIMAL
-  if all solutions have been found.
+- *model*: The model to solve.
+- *callback*: The callback that will be called at each solution.
+
+**Returns:**
+  The status of the solve:
+  * FEASIBLE if some solutions have been found
+  * INFEASIBLE if the solver has proved there are no solution
+  * OPTIMAL if all solutions have been found
 
 ### Value
 ```python
 CpSolver.Value(self, expression)
 ```
-Returns the value of an linear expression after solve.
+Returns the value of a linear expression after solve.
 ### BooleanValue
 ```python
 CpSolver.BooleanValue(self, literal)
@@ -736,7 +758,7 @@ Returns the boolean value of a literal after solve.
 ```python
 CpSolver.ObjectiveValue(self)
 ```
-Returns the value of objective after solve.
+Returns the value of the objective after solve.
 ### BestObjectiveBound
 ```python
 CpSolver.BestObjectiveBound(self)
@@ -799,20 +821,21 @@ and Value() methods.
 ```python
 CpSolverSolutionCallback.OnSolutionCallback(self)
 ```
-Proxy to the same method in snake case.
+Proxy for the same method in snake case.
 ### BooleanValue
 ```python
 CpSolverSolutionCallback.BooleanValue(self, lit)
 ```
 Returns the boolean value of a boolean literal.
 
-Args:
-    lit: A boolean variable or its negation.
+**Args:**
 
-Returns:
+- *lit*: A boolean variable or its negation.
+
+**Returns:**
     The boolean value of the literal in the solution.
 
-Raises:
+**Raises:**
     RuntimeError: if 'lit' is not a boolean variable or its negation.
 
 ### Value
@@ -821,21 +844,22 @@ CpSolverSolutionCallback.Value(self, expression)
 ```
 Evaluates an linear expression in the current solution.
 
-Args:
-    expression: a linear expression of the model.
+**Args:**
 
-Returns:
+- *expression*: a linear expression of the model.
+
+**Returns:**
     An integer value equal to the evaluation of the linear expression
     against the current solution.
 
-Raises:
+**Raises:**
     RuntimeError: if 'expression' is not a LinearExpr.
 
 ## ObjectiveSolutionPrinter
 ```python
 ObjectiveSolutionPrinter(self)
 ```
-Print intermediate solutions objective and time.
+Display the objective value and time of intermediate solutions.
 ### on_solution_callback
 ```python
 ObjectiveSolutionPrinter.on_solution_callback(self)
