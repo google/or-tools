@@ -461,7 +461,7 @@ class IntVar(LinearExpr):
     This method implements the logical negation of a Boolean variable.
     It is only valid if the variable has a Boolean domain (0 or 1).
 
-    Note that this method is nilpotent: x.Not().Not() == x.
+    Note that this method is nilpotent: `x.Not().Not() == x`.
     """
 
         for bound in self.__var.domain:
@@ -490,10 +490,10 @@ class _NotBooleanVariable(LinearExpr):
 
 
 class BoundedLinearExpression(object):
-    """Represents a linear constraint: lb <= expression <= ub.
+    """Represents a linear constraint: `lb <= linear expression <= ub`.
 
   The only use of this class is to be added to the CpModel through
-  CpModel.Add(expression), as in:
+  `CpModel.Add(expression)`, as in:
 
       model.Add(x + 2 * y -1 >= z)
   """
@@ -806,8 +806,8 @@ class CpModel(object):
 
     An AllowedAssignments constraint is a constraint on an array of variables
     that forces, when all variables are fixed to a single value, the
-    corresponding list of values to be equal to one of the tuples of the
-    tuple_list.
+    corresponding list of values to be equal to one of the tuples of
+    `tuple_list`.
 
     Args:
       variables: A list of variables.
@@ -878,8 +878,8 @@ class CpModel(object):
 
     An automaton constraint takes a list of variables (of size n), an initial
     state, a set of final states, and a set of transitions. A transition is a
-    triplet ('tail', 'transition', 'head'), where 'tail' and 'head' are states,
-    and 'transition' is the label of an arc from 'head' to 'tail',
+    triplet (*tail*, *transition*, *head*), where *tail* and *head* are states,
+    and *transition* is the label of an arc from *head* to *tail*,
     corresponding to the value of one variable in the list of variables.
 
     This automaton will be unrolled into a flow with n + 1 phases. Each phase
@@ -887,11 +887,11 @@ class CpModel(object):
     initial state. The last phase contains the final states.
 
     Between two consecutive phases i and i + 1, the automaton creates a set of
-    arcs. For each transition (tail, transition, head), it will add an arc from
-    the state 'tail' of phase i and the state 'head' of phase i + 1. This arc is
-    labeled by the value 'transition' of the variables 'variables[i]'. That is,
-    this arc can only be selected if 'variables[i]' is assigned the value
-    'transition'.
+    arcs. For each transition (*tail*, *transition*, *head*), it will add an arc
+    from the state *tail* of phase i and the state *head* of phase i + 1. This
+    arc is labeled by the value *transition* of the variables `variables[i]`.
+    That is, this arc can only be selected if `variables[i]` is assigned the
+    value *transition*.
 
     A feasible solution of this constraint is an assignment of variables such
     that, starting from the initial state in phase 0, there is a path labeled by
@@ -948,8 +948,8 @@ class CpModel(object):
     def AddInverse(self, variables, inverse_variables):
         """Adds Inverse(variables, inverse_variables).
 
-    An inverse constraint enforces that if 'variables[i]' is assigned a value
-    'j', then inverse_variables[j] is assigned a value 'i'. And vice versa.
+    An inverse constraint enforces that if `variables[i]` is assigned a value
+    `j`, then `inverse_variables[j]` is assigned a value `i`. And vice versa.
 
     Args:
       variables: An array of integer variables.
@@ -984,12 +984,13 @@ class CpModel(object):
     Maintains a reservoir level within bounds. The water level starts at 0, and
     at any time >= 0, it must be between min_level and max_level. Furthermore,
     this constraints expect all times variables to be >= 0.
-    If the variable times[i] is assigned a value t, then the current level
-    changes by demands[i], which is constant, at time t.
+    If the variable `times[i]` is assigned a value t, then the current level
+    changes by `demands[i]`, which is constant, at time t.
 
     Note that level min can be > 0, or level max can be < 0. It just forces
     some demands to be executed at time 0 to make sure that we are within those
     bounds with the executed demands. Therefore, at any time t >= 0:
+
         sum(demands[i] if times[i] <= t) in [min_level, max_level]
 
     Args:
@@ -1029,14 +1030,16 @@ class CpModel(object):
     at
     any time >= 0, it must be within min_level, and max_level. Furthermore, this
     constraints expect all times variables to be >= 0.
-    If actives[i] is true, and if times[i] is assigned a value t, then the
-    level of the reservoir changes by demands[i], which is constant, at
+    If `actives[i]` is true, and if `times[i]` is assigned a value t, then the
+    level of the reservoir changes by `demands[i]`, which is constant, at
     time t.
 
     Note that level_min can be > 0, or level_max can be < 0. It just forces
     some demands to be executed at time 0 to make sure that we are within those
     bounds with the executed demands. Therefore, at any time t >= 0:
+
         sum(demands[i] * actives[i] if times[i] <= t) in [min_level, max_level]
+
     The array of boolean variables 'actives', if defined, indicates which
     actions are actually performed.
 
@@ -1194,7 +1197,7 @@ class CpModel(object):
     An interval variable is a constraint, that is itself used in other
     constraints like NoOverlap.
 
-    Internally, it ensures that start + size == end.
+    Internally, it ensures that `start + size == end`.
 
     Args:
       start: The start of the interval. It can be an integer value, or an
@@ -1222,7 +1225,7 @@ class CpModel(object):
     constraints like NoOverlap. This constraint is protected by an is_present
     literal that indicates if it is active or not.
 
-    Internally, it ensures that is_present implies start + size == end.
+    Internally, it ensures that `is_present implies start + size == end`.
 
     Args:
       start: The start of the interval. It can be an integer value, or an
@@ -1289,8 +1292,9 @@ class CpModel(object):
         """Adds Cumulative(intervals, demands, capacity).
 
     This constraint enforces that:
-      for all t:
-        sum(demands[i]
+
+        for all t:
+          sum(demands[i]
             if (start(intervals[t]) <= t < end(intervals[t])) and
             (t is present)) <= capacity
 
@@ -1632,7 +1636,7 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
   * `UserTime(self)`
 
   These methods returns the same information as their counterpart in the
-  CpSolver class.
+  `CpSolver` class.
   """
 
     def __init__(self):
@@ -1652,7 +1656,7 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
         The Boolean value of the literal in the solution.
 
     Raises:
-        RuntimeError: if 'lit' is not a boolean variable or its negation.
+        RuntimeError: if `lit` is not a boolean variable or its negation.
     """
         if not self.HasResponse():
             raise RuntimeError('Solve() has not be called.')
