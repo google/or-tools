@@ -746,9 +746,10 @@ Note that the model cannot contain an objective.
 
 **Returns:**
   The status of the solve:
-  * FEASIBLE if some solutions have been found
-  * INFEASIBLE if the solver has proved there are no solution
-  * OPTIMAL if all solutions have been found
+
+  * *FEASIBLE* if some solutions have been found
+  * *INFEASIBLE* if the solver has proved there are no solution
+  * *OPTIMAL* if all solutions have been found
 
 ### Value
 ```python
@@ -822,6 +823,19 @@ found during search.
 The method OnSolutionCallback() will be called by the solver, and must be
 implemented. The current solution can be queried using the BooleanValue()
 and Value() methods.
+
+It inherits the following methods from its base class:
+
+* `ObjectiveValue(self)`
+* `BestObjectiveBound(self)`
+* `NumBooleans(self)`
+* `NumConflicts(self)`
+* `NumBranches(self)`
+* `WallTime(self)`
+* `UserTime(self)`
+
+These methods returns the same information as their counterpart in the
+CpSolver class.
 
 ### OnSolutionCallback
 ```python
