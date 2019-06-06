@@ -1076,6 +1076,7 @@ class RoutingModel {
   IntVar* VehicleVar(int64 index) const { return vehicle_vars_[index]; }
   // Returns the global cost variable which is being minimized.
   IntVar* CostVar() const { return cost_; }
+
   // Returns the cost of the transit arc between two nodes for a given vehicle.
   // Input are variable indices of node. This returns 0 if vehicle < 0.
   int64 GetArcCostForVehicle(int64 from_index, int64 to_index,
@@ -2018,6 +2019,7 @@ class RoutingDimension {
   IntVar* TransitVar(int64 index) const { return transits_[index]; }
   IntVar* FixedTransitVar(int64 index) const { return fixed_transits_[index]; }
   IntVar* SlackVar(int64 index) const { return slacks_[index]; }
+
 #if !defined(SWIGPYTHON)
   // Like CumulVar(), TransitVar(), SlackVar() but return the whole variable
   // vectors instead (indexed by int64 var index).

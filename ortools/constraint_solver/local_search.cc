@@ -1857,6 +1857,8 @@ class NeighborhoodLimit : public LocalSearchOperator {
     return operator_->MakeNextNeighbor(delta, deltadelta);
   }
 
+  bool HoldsDelta() const override { return operator_->HoldsDelta(); }
+
   std::string DebugString() const override { return "NeighborhoodLimit"; }
 
  private:
@@ -1882,6 +1884,7 @@ class CompoundOperator : public LocalSearchOperator {
   void Start(const Assignment* assignment) override;
   bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
   bool HasFragments() const override { return has_fragments_; }
+  bool HoldsDelta() const override { return true; }
 
   std::string DebugString() const override {
     return operators_[operator_indices_[index_]]->DebugString();
@@ -1967,10 +1970,14 @@ bool CompoundOperator::MakeNextNeighbor(Assignment* delta,
         operators_[operator_index]->Start(start_assignment_);
         started_.Set(operator_index);
       }
+      if (!operators_[operator_index]->HoldsDelta()) {
+        delta->Clear();
+      }
       if (operators_[operator_index]->MakeNextNeighbor(delta, deltadelta)) {
         return true;
       }
       ++index_;
+      delta->Clear();
       if (index_ == operators_.size()) {
         index_ = 0;
       }
@@ -2027,6 +2034,7 @@ class RandomCompoundOperator : public LocalSearchOperator {
   void Reset() override;
   void Start(const Assignment* assignment) override;
   bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
+  bool HoldsDelta() const override { return true; }
 
   std::string DebugString() const override { return "RandomCompoundOperator"; }
   // TODO(user): define Self method.
@@ -2072,9 +2080,13 @@ bool RandomCompoundOperator::MakeNextNeighbor(Assignment* delta,
   std::iota(indices.begin(), indices.end(), 0);
   std::shuffle(indices.begin(), indices.end(), rand_);
   for (int index : indices) {
+    if (!operators_[index]->HoldsDelta()) {
+      delta->Clear();
+    }
     if (operators_[index]->MakeNextNeighbor(delta, deltadelta)) {
       return true;
     }
+    delta->Clear();
   }
   return false;
 }
@@ -3023,7 +3035,10 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
     Assignment* delta = solver->MakeAssignment();
     Assignment* deltadelta = solver->MakeAssignment();
     while (true) {
-      delta->Clear();
+      if (!ls_operator_->HoldsDelta()) {
+        delta->Clear();
+      }
+      delta->ClearObjective();
       deltadelta->Clear();
       solver->TopPeriodicCheck();
       if (++counter >= FLAGS_cp_local_search_sync_frequency &&

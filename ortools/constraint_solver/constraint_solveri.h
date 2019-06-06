@@ -821,6 +821,7 @@ class LocalSearchOperator : public BaseObject {
   virtual const LocalSearchOperator* Self() const { return this; }
 #endif  // SWIG
   virtual bool HasFragments() const { return false; }
+  virtual bool HoldsDelta() const { return false; }
 };
 
 // ----- Base operator class for operators manipulating variables -----
@@ -835,6 +836,7 @@ class VarLocalSearchOperator : public LocalSearchOperator {
         cleared_(true),
         var_handler_(var_handler) {}
   ~VarLocalSearchOperator() override {}
+  bool HoldsDelta() const override { return true; }
   // This method should not be overridden. Override OnStart() instead which is
   // called before exiting this method.
   void Start(const Assignment* assignment) override {
@@ -875,20 +877,25 @@ class VarLocalSearchOperator : public LocalSearchOperator {
     MarkChange(index);
   }
   bool ApplyChanges(Assignment* delta, Assignment* deltadelta) const {
-    for (const int64 index : changes_.PositionsSetAtLeastOnce()) {
-      V* var = Var(index);
-      const Val& value = Value(index);
-      const bool activated = activated_[index];
-      if (!activated) {
-        if (!cleared_ && delta_changes_[index] && IsIncremental()) {
-          deltadelta->FastAdd(var)->Deactivate();
+    if (IsIncremental() && !cleared_) {
+      for (const int64 index : delta_changes_.PositionsSetAtLeastOnce()) {
+        V* var = Var(index);
+        const Val& value = Value(index);
+        const bool activated = activated_[index];
+        var_handler_.AddToAssignment(var, value, activated, nullptr, index,
+                                     deltadelta);
+        var_handler_.AddToAssignment(var, value, activated,
+                                     &assignment_indices_, index, delta);
+      }
+    } else {
+      delta->Clear();
+      for (const int64 index : changes_.PositionsSetAtLeastOnce()) {
+        const Val& value = Value(index);
+        const bool activated = activated_[index];
+        if (!activated || value != OldValue(index) || !SkipUnchanged(index)) {
+          var_handler_.AddToAssignment(Var(index), value, activated_[index],
+                                       &assignment_indices_, index, delta);
         }
-        delta->FastAdd(var)->Deactivate();
-      } else if (value != OldValue(index) || !SkipUnchanged(index)) {
-        if (!cleared_ && delta_changes_[index] && IsIncremental()) {
-          var_handler_.AddToAssignment(var, value, index, deltadelta);
-        }
-        var_handler_.AddToAssignment(var, value, index, delta);
       }
     }
     return true;
@@ -902,6 +909,7 @@ class VarLocalSearchOperator : public LocalSearchOperator {
       values_[index] = old_values_[index];
       var_handler_.OnRevertChanges(index);
       activated_.CopyBucket(was_activated_, index);
+      assignment_indices_[index] = -1;
     }
     changes_.SparseClearAll();
   }
@@ -912,6 +920,7 @@ class VarLocalSearchOperator : public LocalSearchOperator {
       values_.resize(size);
       old_values_.resize(size);
       prev_values_.resize(size);
+      assignment_indices_.resize(size, -1);
       activated_.Resize(size);
       was_activated_.Resize(size);
       changes_.ClearAndResize(size);
@@ -937,6 +946,7 @@ class VarLocalSearchOperator : public LocalSearchOperator {
   std::vector<Val> values_;
   std::vector<Val> old_values_;
   std::vector<Val> prev_values_;
+  mutable std::vector<int> assignment_indices_;
   Bitset64<> activated_;
   Bitset64<> was_activated_;
   SparseBitset<> changes_;
@@ -949,9 +959,28 @@ class VarLocalSearchOperator : public LocalSearchOperator {
 
 class IntVarLocalSearchHandler {
  public:
-  void AddToAssignment(IntVar* var, int64 value, int64 index,
+  void AddToAssignment(IntVar* var, int64 value, bool active,
+                       std::vector<int>* assignment_indices, int64 index,
                        Assignment* assignment) const {
-    assignment->FastAdd(var)->SetValue(value);
+    Assignment::IntContainer* const container =
+        assignment->MutableIntVarContainer();
+    IntVarElement* element = nullptr;
+    if (assignment_indices != nullptr) {
+      if ((*assignment_indices)[index] == -1) {
+        (*assignment_indices)[index] = container->Size();
+        element = assignment->FastAdd(var);
+      } else {
+        element = container->MutableElement((*assignment_indices)[index]);
+      }
+    } else {
+      element = assignment->FastAdd(var);
+    }
+    if (active) {
+      element->SetValue(value);
+      element->Activate();
+    } else {
+      element->Deactivate();
+    }
   }
   bool ValueFromAssignent(const Assignment& assignment, IntVar* var,
                           int64 index, int64* value) {
@@ -1048,6 +1077,7 @@ class SequenceVarLocalSearchHandler {
   explicit SequenceVarLocalSearchHandler(SequenceVarLocalSearchOperator* op)
       : op_(op) {}
   void AddToAssignment(SequenceVar* var, const std::vector<int>& value,
+                       bool active, std::vector<int>* assignment_indices,
                        int64 index, Assignment* assignment) const;
   bool ValueFromAssignent(const Assignment& assignment, SequenceVar* var,
                           int64 index, std::vector<int>* value);
@@ -1066,7 +1096,7 @@ class SequenceVarLocalSearchHandler {
 // belongs.
 // clang-format off
 %rename(SequenceVarLocalSearchOperatorTemplate) VarLocalSearchOperator<
-      SequenceVar, std::vector<int>, SequenceVarLocalSearchHandler>;
+    SequenceVar, std::vector<int>, SequenceVarLocalSearchHandler>;
 %template(SequenceVarLocalSearchOperatorTemplate) VarLocalSearchOperator<
       SequenceVar, std::vector<int>, SequenceVarLocalSearchHandler>;
 // clang-format on
@@ -1106,11 +1136,29 @@ class SequenceVarLocalSearchOperator
 };
 
 inline void SequenceVarLocalSearchHandler::AddToAssignment(
-    SequenceVar* var, const std::vector<int>& value, int64 index,
+    SequenceVar* var, const std::vector<int>& value, bool active,
+    std::vector<int>* assignment_indices, int64 index,
     Assignment* assignment) const {
-  SequenceVarElement* const element = assignment->FastAdd(var);
-  element->SetForwardSequence(value);
-  element->SetBackwardSequence(op_->backward_values_[index]);
+  Assignment::SequenceContainer* const container =
+      assignment->MutableSequenceVarContainer();
+  SequenceVarElement* element = nullptr;
+  if (assignment_indices != nullptr) {
+    if ((*assignment_indices)[index] == -1) {
+      (*assignment_indices)[index] = container->Size();
+      element = assignment->FastAdd(var);
+    } else {
+      element = container->MutableElement((*assignment_indices)[index]);
+    }
+  } else {
+    element = assignment->FastAdd(var);
+  }
+  if (active) {
+    element->SetForwardSequence(value);
+    element->SetBackwardSequence(op_->backward_values_[index]);
+    element->Activate();
+  } else {
+    element->Deactivate();
+  }
 }
 
 inline bool SequenceVarLocalSearchHandler::ValueFromAssignent(

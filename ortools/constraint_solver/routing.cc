@@ -90,30 +90,42 @@ class SetValuesFromTargets : public DecisionBuilder {
     }
     index_.SetValue(solver, index);
     if (index >= variables_.size()) return nullptr;
-    if (!HasTargetsInBounds(index)) {
-      // Both bounds were hit, exiting search.
-      solver->Fail();
+    const int64 variable_min = variables_[index]->Min();
+    const int64 variable_max = variables_[index]->Max();
+    // Target can be before, inside, or after the variable range.
+    // We do a trichotomy on this for clarity.
+    if (targets_[index] <= variable_min) {
+      return solver->MakeAssignVariableValue(variables_[index], variable_min);
+    } else if (targets_[index] >= variable_max) {
+      return solver->MakeAssignVariableValue(variables_[index], variable_max);
+    } else {
+      int64 step = steps_[index];
+      int64 value = CapAdd(targets_[index], step);
+      // If value is out of variable's range, we can remove the interval of
+      // values already explored (which can make the solver fail) and
+      // recall Next() to get back into the trichotomy above.
+      if (value < variable_min || variable_max < value) {
+        step = GetNextStep(step);
+        value = CapAdd(targets_[index], step);
+        if (step > 0) {
+          // Values in [variable_min, value) were already explored.
+          variables_[index]->SetMin(value);
+        } else {
+          // Values in (value, variable_max] were already explored.
+          variables_[index]->SetMax(value);
+        }
+        return Next(solver);
+      }
+      steps_.SetValue(solver, index, GetNextStep(step));
+      return solver->MakeAssignVariableValueOrDoNothing(variables_[index],
+                                                        value);
     }
-    const int step = steps_[index];
-    steps_.SetValue(solver, index, GetNextStep(step));
-    return solver->MakeAssignVariableValue(variables_[index],
-                                           CapAdd(targets_[index], step));
   }
 
  private:
-  int GetNextStep(int step) const {
+  int64 GetNextStep(int64 step) const {
     return (step > 0) ? -step : CapSub(1, step);
   }
-  bool HasTargetsInBounds(int index) const {
-    IntVar* const variable = variables_[index];
-    const int64 target = targets_[index];
-    const int64 step = steps_[index];
-    const int64 value = CapAdd(target, step);
-    const int64 next_value = CapAdd(target, GetNextStep(step));
-    return std::max(value, next_value) <= variable->Max() ||
-           std::min(value, next_value) >= variable->Min();
-  }
-
   const std::vector<IntVar*> variables_;
   const std::vector<int64> targets_;
   Rev<int> index_;

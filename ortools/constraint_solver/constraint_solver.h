@@ -2342,6 +2342,7 @@ class Solver {
   Decision* MakeSplitVariableDomain(IntVar* const var, int64 val,
                                     bool start_with_lower_half);
   Decision* MakeAssignVariableValueOrFail(IntVar* const var, int64 value);
+  Decision* MakeAssignVariableValueOrDoNothing(IntVar* const var, int64 value);
   Decision* MakeAssignVariablesValues(const std::vector<IntVar*>& vars,
                                       const std::vector<int64>& values);
   Decision* MakeFailDecision();
@@ -5036,6 +5037,7 @@ class Assignment : public PropagationBaseObject {
   void Save(AssignmentProto* const assignment_proto) const;
 
   void AddObjective(IntVar* const v);
+  void ClearObjective() { objective_element_.Reset(nullptr); }
   IntVar* Objective() const;
   bool HasObjective() const { return (objective_element_.Var() != nullptr); }
   int64 ObjectiveMin() const;
