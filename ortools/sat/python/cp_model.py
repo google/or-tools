@@ -66,6 +66,7 @@ FIXED_SEARCH = sat_parameters_pb2.SatParameters.FIXED_SEARCH
 PORTFOLIO_SEARCH = sat_parameters_pb2.SatParameters.PORTFOLIO_SEARCH
 LP_SEARCH = sat_parameters_pb2.SatParameters.LP_SEARCH
 """The following sections describe methods for building and solving
+
 CP-SAT models, and related tasks:
 
 * [Create model](#ortools.sat.python.cp_model.CpModel): Methods for creating
@@ -108,24 +109,22 @@ def ShortName(model, i):
 class LinearExpr(object):
     """Holds an integer linear expression.
 
-  An linear expression is built from integer constants and variables.
+  A linear expression is built from integer constants and variables.
+  For example, x + 2 * (y - z + 1).
 
-  x + 2 * (y - z + 1) is one such linear expression, and can be written that
-  way directly in Python, provided x, y, and z are integer variables.
+  Linear expressions are used in CP-SAT models in two ways:
 
-  Linear expressions are used in two places in the cp_model.
-  When used with equality and inequality operators, they create linear
-  inequalities that can be added to the model as in:
+  * To define constraints. For example
 
-      model.Add(x + 2 * y <= 5)
-      model.Add(sum(array_of_vars) == 5)
+    model.Add(x + 2 * y <= 5)
+    model.Add(sum(array_of_vars) == 5)
 
-  Linear expressions can also be used to specify the objective of the model.
+  * To define the objective function. For example
 
-      model.Minimize(x + 2 * y + z)
+    model.Minimize(x + 2 * y + z)
 
-  For very large arrays, and to stay in line with
-  other languages, special class methods are offered.
+  For large arrays, you can create constraints and the objective
+  from lists of linear expressions or coefficients as follows:
 
       model.Minimize(cp_model.LinearExpr.Sum(expressions))
       model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) >= 0)
@@ -175,7 +174,7 @@ class LinearExpr(object):
     def __abs__(self):
         raise NotImplementedError(
             'calling abs() on a linear expression is not supported, '
-            'please use cp_model.AddAbsEquality')
+            'please use CpModel.AddAbsEquality')
 
     def __add__(self, expr):
         return _SumArray([self, expr])
@@ -207,17 +206,17 @@ class LinearExpr(object):
     def __div__(self, _):
         raise NotImplementedError(
             'calling / on a linear expression is not supported, '
-            'please use cp_model.AddDivisionEquality')
+            'please use CpModel.AddDivisionEquality')
 
     def __truediv__(self, _):
         raise NotImplementedError(
             'calling // on a linear expression is not supported, '
-            'please use cp_model.AddDivisionEquality')
+            'please use CpModel.AddDivisionEquality')
 
     def __mod__(self, _):
         raise NotImplementedError(
             'calling %% on a linear expression is not supported, '
-            'please use cp_model.AddModuloEquality')
+            'please use CpModel.AddModuloEquality')
 
     def __neg__(self):
         return _ProductCst(self, -1)
@@ -413,7 +412,7 @@ class IntVar(LinearExpr):
     """An integer variable.
 
   An IntVar is an object that can take on any integer value within defined
-  ranges. Variables appears in constraint like:
+  ranges. Variables appear in constraint like:
 
       x + y >= 5
       AllDifferent([x, y, z])
@@ -460,7 +459,7 @@ class IntVar(LinearExpr):
         """Returns the negation of a Boolean variable.
 
     This method implements the logical negation of a Boolean variable.
-    It is only valid of the variable has a Boolean domain (0 or 1).
+    It is only valid if the variable has a Boolean domain (0 or 1).
 
     Note that this method is nilpotent: x.Not().Not() == x.
     """
@@ -558,15 +557,13 @@ class Constraint(object):
     Returns:
         self.
 
-    This method adds one or more literals (that is a boolean variable or its
+    This method adds one or more literals (that is, a boolean variable or its
     negation) as enforcement literals. The conjunction of all these literals
-    decides whether the constraint is active or not. It acts as an
+    determines whether the constraint is active or not. It acts as an
     implication, so if the conjunction is true, it implies that the constraint
     must be enforced. If it is false, then the constraint is ignored.
 
-    The following constraints support enforcement literals:
-       bool or, bool and, and any linear constraints support any number of
-       enforcement literals.
+    BoolOr, BoolAnd, and linear constraints all support enforcement literals.
     """
 
         if isinstance(boolvar, numbers.Integral) and boolvar == 1:
@@ -592,7 +589,7 @@ class Constraint(object):
 
 
 class IntervalVar(object):
-    """Represents a Interval variable.
+    """Represents an Interval variable.
 
   An interval variable is both a constraint and a variable. It is defined by
   three integer variables: start, size, and end.
@@ -602,11 +599,11 @@ class IntervalVar(object):
   It is also a variable as it can appear in specific scheduling constraints:
   NoOverlap, NoOverlap2D, Cumulative.
 
-  Optionally, an enforcement literal can be added to this
-  constraint. This enforcement literal is understood by the same constraints.
-  These constraints ignore interval variables with enforcement literals assigned
-  to false. Conversely, these constraints will also set these enforcement
-  literals to false if they cannot fit these intervals into the schedule.
+  Optionally, an enforcement literal can be added to this constraint, in which
+  case these scheduling constraints will ignore interval variables with
+  enforcement literals assigned to false. Conversely, these constraints will
+  also set these enforcement literals to false if they cannot fit these
+  intervals into the schedule.
   """
 
     def __init__(self, model, start_index, size_index, end_index,
@@ -655,6 +652,7 @@ class CpModel(object):
     """Methods for building a CP model.
 
   Methods beginning with:
+
   * ```New``` create integer, boolean, or interval variables.
   * ```Add``` create new constraints and add them to the model.
   """
@@ -674,8 +672,8 @@ class CpModel(object):
         """Create an integer variable from a list of intervals.
 
     Args:
-        domain: A instance of the Domain class.
-        name: The name of the variable.
+      domain: A instance of the Domain class.
+      name: The name of the variable.
 
     Returns:
         a variable whose domain is the given domain.
@@ -687,17 +685,17 @@ class CpModel(object):
         return IntVar(self.__model, Domain(0, 1), name)
 
     def NewConstant(self, value):
-        """Creates a constant integer variable."""
+        """Declares a constant integer."""
         return IntVar(self.__model, Domain(value, value), '')
 
     # Linear constraints.
 
     def AddLinearConstraint(self, linear_expr, lb, ub):
-        """Adds the constraint: lb <= linear_expr <= ub."""
+        """Adds the constraint: `lb <= linear_expr <= ub`."""
         return self.AddLinearExpressionInDomain(linear_expr, Domain(lb, ub))
 
     def AddLinearExpressionInDomain(self, linear_expr, domain):
-        """Add the constraint: linear_expr in domain."""
+        """Adds the constraint: `linear_expr in domain`."""
         if isinstance(linear_expr, LinearExpr):
             ct = Constraint(self.__model.constraints)
             model_ct = self.__model.constraints[ct.Index()]
@@ -746,7 +744,7 @@ class CpModel(object):
       variables: a list of integer variables.
 
     Returns:
-      An instance of the Constraint class.
+      An instance of the `Constraint` class.
     """
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
@@ -755,10 +753,10 @@ class CpModel(object):
         return ct
 
     def AddElement(self, index, variables, target):
-        """Adds the element constraint: variables[index] == target."""
+        """Adds the element constraint: `variables[index] == target`."""
 
         if not variables:
-            raise ValueError('AddElement expects a non empty variables array')
+            raise ValueError('AddElement expects a non-empty variables array')
 
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
@@ -781,17 +779,17 @@ class CpModel(object):
     Args:
       arcs: a list of arcs. An arc is a tuple (source_node, destination_node,
         literal). The arc is selected in the circuit if the literal is true.
-        Both source_node and destination_node must be integer value between 0
-        and the number of nodes - 1.
+        Both source_node and destination_node must be integers between 0 and the
+        number of nodes - 1.
 
     Returns:
-      An instance of the Constraint class.
+      An instance of the `Constraint` class.
 
     Raises:
-      ValueError: If the list of arc is empty.
+      ValueError: If the list of arcs is empty.
     """
         if not arcs:
-            raise ValueError('AddCircuit expects a non empty array of arcs')
+            raise ValueError('AddCircuit expects a non-empty array of arcs')
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         for arc in arcs:
@@ -807,8 +805,8 @@ class CpModel(object):
         """Adds AllowedAssignments(variables, tuples_list).
 
     An AllowedAssignments constraint is a constraint on an array of variables
-    that forces, when all variables are fixed to a single value, that the
-    corresponding list of values is equal to one of the tuple of the
+    that forces, when all variables are fixed to a single value, the
+    corresponding list of values to be equal to one of the tuples of the
     tuple_list.
 
     Args:
@@ -818,7 +816,7 @@ class CpModel(object):
         ith variable.
 
     Returns:
-      An instance of the Constraint class.
+      An instance of the `Constraint` class.
 
     Raises:
       TypeError: If a tuple does not have the same size as the list of
@@ -828,7 +826,7 @@ class CpModel(object):
 
         if not variables:
             raise ValueError(
-                'AddAllowedAssignments expects a non empty variables '
+                'AddAllowedAssignments expects a non-empty variables '
                 'array')
 
         ct = Constraint(self.__model.constraints)
@@ -856,7 +854,7 @@ class CpModel(object):
         ith variable.
 
     Returns:
-      An instance of the Constraint class.
+      An instance of the `Constraint` class.
 
     Raises:
       TypeError: If a tuple does not have the same size as the list of
@@ -866,7 +864,7 @@ class CpModel(object):
 
         if not variables:
             raise ValueError(
-                'AddForbiddenAssignments expects a non empty variables '
+                'AddForbiddenAssignments expects a non-empty variables '
                 'array')
 
         index = len(self.__model.constraints)
@@ -890,7 +888,7 @@ class CpModel(object):
 
     Between two consecutive phases i and i + 1, the automaton creates a set of
     arcs. For each transition (tail, transition, head), it will add an arc from
-    the state 'tail' of phase i and the state 'head' of phase i + 1. This arc
+    the state 'tail' of phase i and the state 'head' of phase i + 1. This arc is
     labeled by the value 'transition' of the variables 'variables[i]'. That is,
     this arc can only be selected if 'variables[i]' is assigned the value
     'transition'.
@@ -901,15 +899,15 @@ class CpModel(object):
     final phase.
 
     Args:
-      transition_variables: A non empty list of variables whose values
+      transition_variables: A non-empty list of variables whose values
         correspond to the labels of the arcs traversed by the automaton.
       starting_state: The initial state of the automaton.
-      final_states: A non empty list of admissible final states.
-      transition_triples: A list of transition for the automaton, in the
+      final_states: A non-empty list of admissible final states.
+      transition_triples: A list of transitions for the automaton, in the
         following format (current_state, variable_value, next_state).
 
     Returns:
-      An instance of the Constraint class.
+      An instance of the `Constraint` class.
 
     Raises:
       ValueError: if transition_variables, final_states, or transition_triples
@@ -918,7 +916,7 @@ class CpModel(object):
 
         if not transition_variables:
             raise ValueError(
-                'AddAutomaton expects a non empty transition_variables '
+                'AddAutomaton expects a non-empty transition_variables '
                 'array')
         if not final_states:
             raise ValueError('AddAutomaton expects some final states')
@@ -958,10 +956,10 @@ class CpModel(object):
       inverse_variables: An array of integer variables.
 
     Returns:
-      An instance of the Constraint class.
+      An instance of the `Constraint` class.
 
     Raises:
-      TypeError: if variables and inverse_variables have different length, or
+      TypeError: if variables and inverse_variables have different lengths, or
           if they are empty.
     """
 
@@ -987,7 +985,7 @@ class CpModel(object):
     at any time >= 0, it must be between min_level and max_level. Furthermore,
     this constraints expect all times variables to be >= 0.
     If the variable times[i] is assigned a value t, then the current level
-    changes by demands[i] (which is constant) at the time t.
+    changes by demands[i], which is constant, at time t.
 
     Note that level min can be > 0, or level max can be < 0. It just forces
     some demands to be executed at time 0 to make sure that we are within those
@@ -1005,7 +1003,7 @@ class CpModel(object):
         equal than the max level.
 
     Returns:
-      An instance of the Constraint class.
+      An instance of the `Constraint` class.
 
     Raises:
       ValueError: if max_level < min_level.
@@ -1032,7 +1030,8 @@ class CpModel(object):
     any time >= 0, it must be within min_level, and max_level. Furthermore, this
     constraints expect all times variables to be >= 0.
     If actives[i] is true, and if times[i] is assigned a value t, then the
-    level of the reservoir changes by demands[i] (which is constant) at time t.
+    level of the reservoir changes by demands[i], which is constant, at
+    time t.
 
     Note that level_min can be > 0, or level_max can be < 0. It just forces
     some demands to be executed at time 0 to make sure that we are within those
@@ -1054,7 +1053,7 @@ class CpModel(object):
         equal than the max level.
 
     Returns:
-      An instance of the Constraint class.
+      An instance of the `Constraint` class.
 
     Raises:
       ValueError: if max_level < min_level.
@@ -1075,7 +1074,7 @@ class CpModel(object):
         return ct
 
     def AddMapDomain(self, var, bool_var_array, offset=0):
-        """Adds var == i + offset <=> bool_var_array[i] == true for all i."""
+        """Adds `var == i + offset <=> bool_var_array[i] == true for all i`."""
 
         for i, bool_var in enumerate(bool_var_array):
             b_index = bool_var.Index()
@@ -1096,7 +1095,7 @@ class CpModel(object):
                 model_ct.linear.domain.extend([offset + i + 1, INT_MAX])
 
     def AddImplication(self, a, b):
-        """Adds a => b."""
+        """Adds `a => b`."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.bool_or.literals.append(self.GetOrMakeBooleanIndex(b))
@@ -1104,7 +1103,7 @@ class CpModel(object):
         return ct
 
     def AddBoolOr(self, literals):
-        """Adds Or(literals) == true."""
+        """Adds `Or(literals) == true`."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.bool_or.literals.extend(
@@ -1112,7 +1111,7 @@ class CpModel(object):
         return ct
 
     def AddBoolAnd(self, literals):
-        """Adds And(literals) == true."""
+        """Adds `And(literals) == true`."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.bool_and.literals.extend(
@@ -1120,7 +1119,7 @@ class CpModel(object):
         return ct
 
     def AddBoolXOr(self, literals):
-        """Adds XOr(literals) == true."""
+        """Adds `XOr(literals) == true`."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.bool_xor.literals.extend(
@@ -1128,7 +1127,7 @@ class CpModel(object):
         return ct
 
     def AddMinEquality(self, target, variables):
-        """Adds target == Min(variables)."""
+        """Adds `target == Min(variables)`."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.int_min.vars.extend(
@@ -1136,16 +1135,17 @@ class CpModel(object):
         model_ct.int_min.target = self.GetOrMakeIndex(target)
         return ct
 
-    def AddMaxEquality(self, target, args):
-        """Adds target == Max(variables)."""
+    def AddMaxEquality(self, target, variables):
+        """Adds `target == Max(variables)`."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
-        model_ct.int_max.vars.extend([self.GetOrMakeIndex(x) for x in args])
+        model_ct.int_max.vars.extend(
+            [self.GetOrMakeIndex(x) for x in variables])
         model_ct.int_max.target = self.GetOrMakeIndex(target)
         return ct
 
     def AddDivisionEquality(self, target, num, denom):
-        """Adds target == num // denom."""
+        """Adds `target == num // denom` (integer division rounded towards 0)."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.int_div.vars.extend(
@@ -1155,7 +1155,7 @@ class CpModel(object):
         return ct
 
     def AddAbsEquality(self, target, var):
-        """Adds target == Abs(var)."""
+        """Adds `target == Abs(var)`."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         index = self.GetOrMakeIndex(var)
@@ -1164,7 +1164,7 @@ class CpModel(object):
         return ct
 
     def AddModuloEquality(self, target, var, mod):
-        """Adds target = var % mod."""
+        """Adds `target = var % mod`."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.int_mod.vars.extend(
@@ -1173,13 +1173,18 @@ class CpModel(object):
         model_ct.int_mod.target = self.GetOrMakeIndex(target)
         return ct
 
-    def AddProdEquality(self, target, args):
-        """Adds target == PROD(args)."""
+    def AddMultiplicationEquality(self, target, variables):
+        """Adds `target == variables[0] * .. * variables[n]`."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
-        model_ct.int_prod.vars.extend([self.GetOrMakeIndex(x) for x in args])
+        model_ct.int_prod.vars.extend(
+            [self.GetOrMakeIndex(x) for x in variables])
         model_ct.int_prod.target = self.GetOrMakeIndex(target)
         return ct
+
+    def AddProdEquality(self, target, variables):
+        """Deprecated, use AddMultiplicationEquality."""
+        return self.AddMultiplicationEquality(target, variables)
 
     # Scheduling support
 
@@ -1201,7 +1206,7 @@ class CpModel(object):
       name: The name of the interval variable.
 
     Returns:
-      An IntervalVar object.
+      An `IntervalVar` object.
     """
 
         start_index = self.GetOrMakeIndex(start)
@@ -1211,7 +1216,7 @@ class CpModel(object):
                            None, name)
 
     def NewOptionalIntervalVar(self, start, size, end, is_present, name):
-        """Creates an optional interval var from start, size, end and is_present.
+        """Creates an optional interval var from start, size, end, and is_present.
 
     An optional interval variable is a constraint, that is itself used in other
     constraints like NoOverlap. This constraint is protected by an is_present
@@ -1231,7 +1236,7 @@ class CpModel(object):
       name: The name of the interval variable.
 
     Returns:
-      An IntervalVar object.
+      An `IntervalVar` object.
     """
         is_present_index = self.GetOrMakeBooleanIndex(is_present)
         start_index = self.GetOrMakeIndex(start)
@@ -1250,7 +1255,7 @@ class CpModel(object):
       interval_vars: The list of interval variables to constrain.
 
     Returns:
-      An instance of the Constraint class.
+      An instance of the `Constraint` class.
     """
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
@@ -1262,7 +1267,7 @@ class CpModel(object):
         """Adds NoOverlap2D(x_intervals, y_intervals).
 
     A NoOverlap2D constraint ensures that all present rectangles do not overlap
-    on a plan. Each rectangle is aligned with the X and Y axis, and is defined
+    on a plane. Each rectangle is aligned with the X and Y axis, and is defined
     by two intervals which represent its projection onto the X and Y axis.
 
     Args:
@@ -1270,7 +1275,7 @@ class CpModel(object):
       y_intervals: The Y coordinates of the rectangles.
 
     Returns:
-      An instance of the Constraint class.
+      An instance of the `Constraint` class.
     """
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
@@ -1297,7 +1302,7 @@ class CpModel(object):
         positive integer value or variable.
 
     Returns:
-      An instance of the Constraint class.
+      An instance of the `Constraint` class.
     """
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
@@ -1421,9 +1426,9 @@ class CpModel(object):
       variables: a list of variables this strategy will assign.
       var_strategy: heuristic to choose the next variable to assign.
       domain_strategy: heuristic to reduce the domain of the selected variable.
-        Currently, this is advanced code, the union of all strategies added to
-        the model must be complete, i.e. instantiates all variables. Otherwise,
-        Solve() will fail.
+        Currently, this is advanced code: the union of all strategies added to
+          the model must be complete, i.e. instantiates all variables.
+          Otherwise, Solve() will fail.
     """
 
         strategy = self.__model.search_strategy.add()
@@ -1433,11 +1438,11 @@ class CpModel(object):
         strategy.domain_reduction_strategy = domain_strategy
 
     def ModelStats(self):
-        """Returns some statistics on the model as a string."""
+        """Returns a string containing some model statistics."""
         return pywrapsat.SatHelper.ModelStats(self.__model)
 
     def Validate(self):
-        """Returns a string explaining the issue is the model is not valid."""
+        """Returns a string indicating that the model is invalid."""
         return pywrapsat.SatHelper.ValidateModel(self.__model)
 
     def AssertIsBooleanVariable(self, x):
@@ -1452,7 +1457,7 @@ class CpModel(object):
 
 
 def EvaluateLinearExpr(expression, solution):
-    """Evaluate an linear expression against a solution."""
+    """Evaluate a linear expression against a solution."""
     if isinstance(expression, numbers.Integral):
         return expression
     value = 0
@@ -1477,7 +1482,7 @@ def EvaluateLinearExpr(expression, solution):
 
 
 def EvaluateBooleanExpression(literal, solution):
-    """Evaluate an boolean expression against a solution."""
+    """Evaluate a boolean expression against a solution."""
     if isinstance(literal, numbers.Integral):
         return bool(literal)
     elif isinstance(literal, IntVar) or isinstance(literal,
@@ -1495,8 +1500,8 @@ def EvaluateBooleanExpression(literal, solution):
 class CpSolver(object):
     """Main solver class.
 
-  The purpose of this class is to search for a solution of a model given to the
-  Solve() method.
+  The purpose of this class is to search for a solution to the model provided
+  to the Solve() method.
 
   Once Solve() is called, this class allows inspecting the solution found
   with the Value() and BooleanValue() methods, as well as general statistics
@@ -1515,7 +1520,7 @@ class CpSolver(object):
         return self.__solution.status
 
     def SolveWithSolutionCallback(self, model, callback):
-        """Solves a problem and pass each solution found to the callback."""
+        """Solves a problem and passes each solution found to the callback."""
         self.__solution = (
             pywrapsat.SatHelper.SolveWithParametersAndSolutionCallback(
                 model.Proto(), self.parameters, callback))
@@ -1524,7 +1529,7 @@ class CpSolver(object):
     def SearchForAllSolutions(self, model, callback):
         """Search for all solutions of a satisfiability problem.
 
-    This method searches for all feasible solution of a given model.
+    This method searches for all feasible solutions of a given model.
     Then it feeds the solution to the callback.
 
     Note that the model cannot contain an objective.
@@ -1534,9 +1539,10 @@ class CpSolver(object):
       callback: The callback that will be called at each solution.
 
     Returns:
-      The status of the solve: FEASIBLE if some solutions have been found,
-      INFEASIBLE if the solver has proved there are no solution, and OPTIMAL
-      if all solutions have been found.
+      The status of the solve:
+      * FEASIBLE if some solutions have been found
+      * INFEASIBLE if the solver has proved there are no solution
+      * OPTIMAL if all solutions have been found
     """
         if model.HasObjective():
             raise TypeError('Search for all solutions is only defined on '
@@ -1552,7 +1558,7 @@ class CpSolver(object):
         return self.__solution.status
 
     def Value(self, expression):
-        """Returns the value of an linear expression after solve."""
+        """Returns the value of a linear expression after solve."""
         if not self.__solution:
             raise RuntimeError('Solve() has not be called.')
         return EvaluateLinearExpr(expression, self.__solution)
@@ -1564,7 +1570,7 @@ class CpSolver(object):
         return EvaluateBooleanExpression(literal, self.__solution)
 
     def ObjectiveValue(self):
-        """Returns the value of objective after solve."""
+        """Returns the value of the objective after solve."""
         return self.__solution.objective_value
 
     def BestObjectiveBound(self):
@@ -1619,7 +1625,7 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
         pywrapsat.SolutionCallback.__init__(self)
 
     def OnSolutionCallback(self):
-        """Proxy to the same method in snake case."""
+        """Proxy for the same method in snake case."""
         self.on_solution_callback()
 
     def BooleanValue(self, lit):
@@ -1629,7 +1635,7 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
         lit: A boolean variable or its negation.
 
     Returns:
-        The boolean value of the literal in the solution.
+        The Boolean value of the literal in the solution.
 
     Raises:
         RuntimeError: if 'lit' is not a boolean variable or its negation.
@@ -1686,7 +1692,7 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
 
 
 class ObjectiveSolutionPrinter(CpSolverSolutionCallback):
-    """Print intermediate solutions objective and time."""
+    """Display the objective value and time of intermediate solutions."""
 
     def __init__(self):
         CpSolverSolutionCallback.__init__(self)

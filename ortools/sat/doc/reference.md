@@ -127,7 +127,7 @@ Adds an enforcement literal to the constraint.
 
 **Args:**
 
-- *boolvar*: A boolean literal or a list of boolean literals.
+- *boolvar:* A boolean literal or a list of boolean literals.
 
 **Returns:**
     self.
@@ -204,8 +204,8 @@ Create an integer variable from a list of intervals.
 
 **Args:**
 
-- *domain*: A instance of the Domain class.
-- *name*: The name of the variable.
+- *domain:* A instance of the Domain class.
+- *name:* The name of the variable.
 
 **Returns:**
     a variable whose domain is the given domain.
@@ -224,12 +224,12 @@ Declares a constant integer.
 ```python
 CpModel.AddLinearConstraint(self, linear_expr, lb, ub)
 ```
-Adds the constraint: lb <= linear_expr <= ub.
+Adds the constraint: `lb <= linear_expr <= ub`.
 ### AddLinearExpressionInDomain
 ```python
 CpModel.AddLinearExpressionInDomain(self, linear_expr, domain)
 ```
-Adds the constraint: linear_expr in domain.
+Adds the constraint: `linear_expr in domain`.
 ### Add
 ```python
 CpModel.Add(self, ct)
@@ -245,16 +245,16 @@ This constraint forces all variables to have different values.
 
 **Args:**
 
-- *variables*: a list of integer variables.
+- *variables:* a list of integer variables.
 
 **Returns:**
-  An instance of the Constraint class.
+  An instance of the `Constraint` class.
 
 ### AddElement
 ```python
 CpModel.AddElement(self, index, variables, target)
 ```
-Adds the element constraint: variables[index] == target.
+Adds the element constraint: `variables[index] == target`.
 ### AddCircuit
 ```python
 CpModel.AddCircuit(self, arcs)
@@ -270,16 +270,17 @@ this constraint will fail.
 
 **Args:**
 
-- *arcs*: a list of arcs. An arc is a tuple (source_node, destination_node,
+- *arcs:* a list of arcs. An arc is a tuple (source_node, destination_node,
     literal). The arc is selected in the circuit if the literal is true.
     Both source_node and destination_node must be integers between 0 and the
     number of nodes - 1.
 
 **Returns:**
-  An instance of the Constraint class.
+  An instance of the `Constraint` class.
 
 **Raises:**
-  ValueError: If the list of arcs is empty.
+
+- *ValueError:* If the list of arcs is empty.
 
 ### AddAllowedAssignments
 ```python
@@ -294,20 +295,19 @@ tuple_list.
 
 **Args:**
 
-- *variables*: A list of variables.
-- *tuples_list*: A list of admissible tuples. Each tuple must have the same
+- *variables:* A list of variables.
+- *tuples_list:* A list of admissible tuples. Each tuple must have the same
     length as the variables, and the ith value of a tuple corresponds to the
     ith variable.
 
 **Returns:**
-
-  An instance of the Constraint class.
+  An instance of the `Constraint` class.
 
 **Raises:**
 
-  TypeError: If a tuple does not have the same size as the list of
+- *TypeError:* If a tuple does not have the same size as the list of
       variables.
-  ValueError: If the array of variables is empty.
+- *ValueError:* If the array of variables is empty.
 
 ### AddForbiddenAssignments
 ```python
@@ -320,18 +320,19 @@ where the list of impossible combinations is provided in the tuples list.
 
 **Args:**
 
-- *variables*: A list of variables.
-- *tuples_list*: A list of forbidden tuples. Each tuple must have the same
+- *variables:* A list of variables.
+- *tuples_list:* A list of forbidden tuples. Each tuple must have the same
     length as the variables, and the ith value of a tuple corresponds to the
     ith variable.
 
 **Returns:**
-  An instance of the Constraint class.
+  An instance of the `Constraint` class.
 
 **Raises:**
-  TypeError: If a tuple does not have the same size as the list of
+
+- *TypeError:* If a tuple does not have the same size as the list of
              variables.
-  ValueError: If the array of variables is empty.
+- *ValueError:* If the array of variables is empty.
 
 ### AddAutomaton
 ```python
@@ -363,18 +364,19 @@ final phase.
 
 **Args:**
 
-- *transition_variables*: A non-empty list of variables whose values
+- *transition_variables:* A non-empty list of variables whose values
     correspond to the labels of the arcs traversed by the automaton.
-- *starting_state*: The initial state of the automaton.
-- *final_states*: A non-empty list of admissible final states.
-- *transition_triples*: A list of transitions for the automaton, in the
+- *starting_state:* The initial state of the automaton.
+- *final_states:* A non-empty list of admissible final states.
+- *transition_triples:* A list of transitions for the automaton, in the
     following format (current_state, variable_value, next_state).
 
 **Returns:**
-  An instance of the Constraint class.
+  An instance of the `Constraint` class.
 
 **Raises:**
-  ValueError: if transition_variables, final_states, or transition_triples
+
+- *ValueError:* if transition_variables, final_states, or transition_triples
   are empty.
 
 ### AddInverse
@@ -388,14 +390,15 @@ An inverse constraint enforces that if 'variables[i]' is assigned a value
 
 **Args:**
 
-- *variables*: An array of integer variables.
-- *inverse_variables*: An array of integer variables.
+- *variables:* An array of integer variables.
+- *inverse_variables:* An array of integer variables.
 
 **Returns:**
-  An instance of the Constraint class.
+  An instance of the `Constraint` class.
 
 **Raises:**
-  TypeError: if variables and inverse_variables have different lengths, or
+
+- *TypeError:* if variables and inverse_variables have different lengths, or
       if they are empty.
 
 ### AddReservoirConstraint
@@ -408,7 +411,7 @@ Maintains a reservoir level within bounds. The water level starts at 0, and
 at any time >= 0, it must be between min_level and max_level. Furthermore,
 this constraints expect all times variables to be >= 0.
 If the variable times[i] is assigned a value t, then the current level
-changes by demands[i] (which is constant) at the time t.
+changes by demands[i], which is constant, at time t.
 
 Note that level min can be > 0, or level max can be < 0. It just forces
 some demands to be executed at time 0 to make sure that we are within those
@@ -417,20 +420,21 @@ bounds with the executed demands. Therefore, at any time t >= 0:
 
 **Args:**
 
-- *times*: A list of positive integer variables which specify the time of the
+- *times:* A list of positive integer variables which specify the time of the
     filling or emptying the reservoir.
-- *demands*: A list of integer values that specifies the amount of the
+- *demands:* A list of integer values that specifies the amount of the
     emptying or feeling.
-- *min_level*: At any time >= 0, the level of the reservoir must be greater of
+- *min_level:* At any time >= 0, the level of the reservoir must be greater of
     equal than the min level.
-- *max_level*: At any time >= 0, the level of the reservoir must be less or
+- *max_level:* At any time >= 0, the level of the reservoir must be less or
     equal than the max level.
 
 **Returns:**
-  An instance of the Constraint class.
+  An instance of the `Constraint` class.
 
 **Raises:**
-  ValueError: if max_level < min_level.
+
+- *ValueError:* if max_level < min_level.
 
 ### AddReservoirConstraintWithActive
 ```python
@@ -443,7 +447,8 @@ at
 any time >= 0, it must be within min_level, and max_level. Furthermore, this
 constraints expect all times variables to be >= 0.
 If actives[i] is true, and if times[i] is assigned a value t, then the
-level of the reservoir changes by demands[i] (which is constant) at time t.
+level of the reservoir changes by demands[i], which is constant, at
+time t.
 
 Note that level_min can be > 0, or level_max can be < 0. It just forces
 some demands to be executed at time 0 to make sure that we are within those
@@ -454,81 +459,82 @@ actions are actually performed.
 
 **Args:**
 
-- *times*: A list of positive integer variables which specify the time of the
+- *times:* A list of positive integer variables which specify the time of the
     filling or emptying the reservoir.
-- *demands*: A list of integer values that specifies the amount of the
+- *demands:* A list of integer values that specifies the amount of the
     emptying or feeling.
-- *actives*: a list of boolean variables. They indicates if the
+- *actives:* a list of boolean variables. They indicates if the
     emptying/refilling events actually take place.
-- *min_level*: At any time >= 0, the level of the reservoir must be greater of
+- *min_level:* At any time >= 0, the level of the reservoir must be greater of
     equal than the min level.
-- *max_level*: At any time >= 0, the level of the reservoir must be less or
+- *max_level:* At any time >= 0, the level of the reservoir must be less or
     equal than the max level.
 
 **Returns:**
-  An instance of the Constraint class.
+  An instance of the `Constraint` class.
 
 **Raises:**
-  ValueError: if max_level < min_level.
+
+- *ValueError:* if max_level < min_level.
 
 ### AddMapDomain
 ```python
 CpModel.AddMapDomain(self, var, bool_var_array, offset=0)
 ```
-Adds var == i + offset <=> bool_var_array[i] == true for all i.
+Adds `var == i + offset <=> bool_var_array[i] == true for all i`.
 ### AddImplication
 ```python
 CpModel.AddImplication(self, a, b)
 ```
-Adds a => b.
+Adds `a => b`.
 ### AddBoolOr
 ```python
 CpModel.AddBoolOr(self, literals)
 ```
-Adds Or(literals) == true.
+Adds `Or(literals) == true`.
 ### AddBoolAnd
 ```python
 CpModel.AddBoolAnd(self, literals)
 ```
-Adds And(literals) == true.
+Adds `And(literals) == true`.
 ### AddBoolXOr
 ```python
 CpModel.AddBoolXOr(self, literals)
 ```
-Adds XOr(literals) == true.
+Adds `XOr(literals) == true`.
 ### AddMinEquality
 ```python
 CpModel.AddMinEquality(self, target, variables)
 ```
-Adds target == Min(variables).
+Adds `target == Min(variables)`.
 ### AddMaxEquality
 ```python
-CpModel.AddMaxEquality(self, target, args)
+CpModel.AddMaxEquality(self, target, variables)
 ```
-Adds target == Max(variables).
+Adds `target == Max(variables)`.
 ### AddDivisionEquality
 ```python
 CpModel.AddDivisionEquality(self, target, num, denom)
 ```
-Adds target == num // denom (integer division rounded towards 0).
+Adds `target == num // denom` (integer division rounded towards 0).
 ### AddAbsEquality
 ```python
 CpModel.AddAbsEquality(self, target, var)
 ```
-Adds target == Abs(var).
+Adds `target == Abs(var)`.
 ### AddModuloEquality
 ```python
 CpModel.AddModuloEquality(self, target, var, mod)
 ```
-Adds target = var % mod.
+Adds `target = var % mod`.
 ### AddMultiplicationEquality
 ```python
-CpModel.AddMultiplicationEquality(self, target, args)
+CpModel.AddMultiplicationEquality(self, target, variables)
 ```
-Adds target == args[0] * .. * args[n].
+Adds `target == variables[0] * .. * variables[n]`.
 ### AddProdEquality
 ```python
-CpModel.AddProdEquality(self, target, args)
+CpModel.AddProdEquality(self, target, variables)
 ```
 Deprecated, use AddMultiplicationEquality.
 ### NewIntervalVar
@@ -544,16 +550,16 @@ Internally, it ensures that start + size == end.
 
 **Args:**
 
-- *start*: The start of the interval. It can be an integer value, or an
+- *start:* The start of the interval. It can be an integer value, or an
     integer variable.
-- *size*: The size of the interval. It can be an integer value, or an integer
+- *size:* The size of the interval. It can be an integer value, or an integer
     variable.
-- *end*: The end of the interval. It can be an integer value, or an integer
+- *end:* The end of the interval. It can be an integer value, or an integer
     variable.
-- *name*: The name of the interval variable.
+- *name:* The name of the interval variable.
 
 **Returns:**
-  An IntervalVar object.
+  An `IntervalVar` object.
 
 ### NewOptionalIntervalVar
 ```python
@@ -569,18 +575,18 @@ Internally, it ensures that is_present implies start + size == end.
 
 **Args:**
 
-- *start*: The start of the interval. It can be an integer value, or an
+- *start:* The start of the interval. It can be an integer value, or an
     integer variable.
-- *size*: The size of the interval. It can be an integer value, or an integer
+- *size:* The size of the interval. It can be an integer value, or an integer
     variable.
-- *end*: The end of the interval. It can be an integer value, or an integer
+- *end:* The end of the interval. It can be an integer value, or an integer
     variable.
-- *is_present*: A literal that indicates if the interval is active or not. A
+- *is_present:* A literal that indicates if the interval is active or not. A
     inactive interval is simply ignored by all constraints.
-- *name*: The name of the interval variable.
+- *name:* The name of the interval variable.
 
 **Returns:**
-  An IntervalVar object.
+  An `IntervalVar` object.
 
 ### AddNoOverlap
 ```python
@@ -593,10 +599,10 @@ in time.
 
 **Args:**
 
-- *interval_vars*: The list of interval variables to constrain.
+- *interval_vars:* The list of interval variables to constrain.
 
 **Returns:**
-  An instance of the Constraint class.
+  An instance of the `Constraint` class.
 
 ### AddNoOverlap2D
 ```python
@@ -610,11 +616,11 @@ by two intervals which represent its projection onto the X and Y axis.
 
 **Args:**
 
-- *x_intervals*: The X coordinates of the rectangles.
-- *y_intervals*: The Y coordinates of the rectangles.
+- *x_intervals:* The X coordinates of the rectangles.
+- *y_intervals:* The Y coordinates of the rectangles.
 
 **Returns:**
-  An instance of the Constraint class.
+  An instance of the `Constraint` class.
 
 ### AddCumulative
 ```python
@@ -630,14 +636,14 @@ This constraint enforces that:
 
 **Args:**
 
-- *intervals*: The list of intervals.
-- *demands*: The list of demands for each interval. Each demand must be >= 0.
+- *intervals:* The list of intervals.
+- *demands:* The list of demands for each interval. Each demand must be >= 0.
     Each demand can be an integer value, or an integer variable.
-- *capacity*: The maximum capacity of the cumulative constraint. It must be a
+- *capacity:* The maximum capacity of the cumulative constraint. It must be a
     positive integer value or variable.
 
 **Returns:**
-  An instance of the Constraint class.
+  An instance of the `Constraint` class.
 
 ### Proto
 ```python
@@ -672,9 +678,9 @@ Adds a search strategy to the model.
 
 **Args:**
 
-- *variables*: a list of variables this strategy will assign.
-- *var_strategy*: heuristic to choose the next variable to assign.
-- *domain_strategy*: heuristic to reduce the domain of the selected variable.
+- *variables:* a list of variables this strategy will assign.
+- *var_strategy:* heuristic to choose the next variable to assign.
+- *domain_strategy:* heuristic to reduce the domain of the selected variable.
     Currently, this is advanced code: the union of all strategies added to
       the model must be complete, i.e. instantiates all variables.
       Otherwise, Solve() will fail.
@@ -735,8 +741,8 @@ Note that the model cannot contain an objective.
 
 **Args:**
 
-- *model*: The model to solve.
-- *callback*: The callback that will be called at each solution.
+- *model:* The model to solve.
+- *callback:* The callback that will be called at each solution.
 
 **Returns:**
   The status of the solve:
@@ -830,13 +836,14 @@ Returns the boolean value of a boolean literal.
 
 **Args:**
 
-- *lit*: A boolean variable or its negation.
+- *lit:* A boolean variable or its negation.
 
 **Returns:**
-    The boolean value of the literal in the solution.
+    The Boolean value of the literal in the solution.
 
 **Raises:**
-    RuntimeError: if 'lit' is not a boolean variable or its negation.
+
+- *RuntimeError:* if 'lit' is not a boolean variable or its negation.
 
 ### Value
 ```python
@@ -846,14 +853,15 @@ Evaluates an linear expression in the current solution.
 
 **Args:**
 
-- *expression*: a linear expression of the model.
+- *expression:* a linear expression of the model.
 
 **Returns:**
     An integer value equal to the evaluation of the linear expression
     against the current solution.
 
 **Raises:**
-    RuntimeError: if 'expression' is not a LinearExpr.
+
+- *RuntimeError:* if 'expression' is not a LinearExpr.
 
 ## ObjectiveSolutionPrinter
 ```python

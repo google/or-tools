@@ -373,7 +373,7 @@ class CpModelTest(unittest.TestCase):
         except NotImplementedError as e:
             self.assertEqual(
                 'calling abs() on a linear expression is not supported, '
-                'please use cp_model.AddAbsEquality',
+                'please use CpModel.AddAbsEquality',
                 str(e))
             passed = True
         self.assertTrue(passed, 'abs() did not raise an error')
@@ -586,4 +586,3 @@ class CpModelTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
- 
