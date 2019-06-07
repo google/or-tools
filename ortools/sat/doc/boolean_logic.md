@@ -5,6 +5,32 @@
 
 
 
+<!--ts-->
+   * [Boolean logic recipes for the CP-SAT solver.](#boolean-logic-recipes-for-the-cp-sat-solver)
+      * [Introduction](#introduction)
+      * [Boolean variables and literals](#boolean-variables-and-literals)
+         * [Python code](#python-code)
+         * [C   code](#c-code)
+         * [Java code](#java-code)
+         * [C# code](#c-code-1)
+      * [Boolean constraints](#boolean-constraints)
+         * [Python code](#python-code-1)
+         * [C   code](#c-code-2)
+         * [Java code](#java-code-1)
+         * [C# code](#c-code-3)
+      * [Reified constraints](#reified-constraints)
+         * [Python code](#python-code-2)
+         * [C   code](#c-code-4)
+         * [Java code](#java-code-2)
+         * [C# code](#c-code-5)
+      * [Product of two Boolean Variables](#product-of-two-boolean-variables)
+         * [Python code](#python-code-3)
+
+<!-- Added by: lperron, at: Fri Jun  7 09:58:27 CEST 2019 -->
+
+<!--te-->
+
+
 ## Introduction
 
 The CP-SAT solver can express Boolean variables and constraints. A **Boolean

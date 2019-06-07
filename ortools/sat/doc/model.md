@@ -4,6 +4,16 @@
 # Model manipulation
 
 
+<!--ts-->
+   * [Model manipulation](#model-manipulation)
+      * [Introduction](#introduction)
+      * [Solution hinting](#solution-hinting)
+         * [Python code](#python-code)
+
+<!-- Added by: lperron, at: Fri Jun  7 09:59:01 CEST 2019 -->
+
+<!--te-->
+
 
 ## Introduction
 

@@ -4,6 +4,42 @@
 # Scheduling recipes for the CP-SAT solver.
 
 
+<!--ts-->
+   * [Scheduling recipes for the CP-SAT solver.](#scheduling-recipes-for-the-cp-sat-solver)
+      * [Introduction](#introduction)
+      * [Interval variables](#interval-variables)
+         * [Python code](#python-code)
+         * [C   code](#c-code)
+         * [Java code](#java-code)
+         * [C# code](#c-code-1)
+      * [Optional intervals](#optional-intervals)
+         * [Python code](#python-code-1)
+         * [C   code](#c-code-2)
+         * [Java code](#java-code-1)
+         * [C# code](#c-code-3)
+      * [NoOverlap constraint](#nooverlap-constraint)
+         * [Python code](#python-code-2)
+         * [C   code](#c-code-4)
+         * [Java code](#java-code-2)
+         * [C# code](#c-code-5)
+      * [Cumulative constraint](#cumulative-constraint)
+      * [Alternative resources for one interval](#alternative-resources-for-one-interval)
+      * [Ranking tasks in a disjunctive resource](#ranking-tasks-in-a-disjunctive-resource)
+         * [Python code](#python-code-3)
+         * [C   code](#c-code-6)
+         * [Java code](#java-code-3)
+         * [C# code](#c-code-7)
+      * [Intervals spanning over breaks in the calendar](#intervals-spanning-over-breaks-in-the-calendar)
+         * [Python code](#python-code-4)
+      * [Transitions in a disjunctive resource](#transitions-in-a-disjunctive-resource)
+      * [Precedences between intervals](#precedences-between-intervals)
+      * [Convex hull of a set of intervals](#convex-hull-of-a-set-of-intervals)
+      * [Reservoir constraint](#reservoir-constraint)
+
+<!-- Added by: lperron, at: Fri Jun  7 09:58:43 CEST 2019 -->
+
+<!--te-->
+
 
 ## Introduction
 
