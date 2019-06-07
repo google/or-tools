@@ -29,7 +29,6 @@ def BooleanProductSampleSat():
     y = model.NewBoolVar('y')
     p = model.NewBoolVar('p')
 
-
     # x and y implies p, rewrite as not(x and y) or p
     model.AddBoolOr([x.Not(), y.Not(), p])
 
