@@ -368,3 +368,56 @@ public class ReifiedSampleSat
   }
 }
 ```
+
+## Product of two Boolean Variables
+
+A useful construct is the product `p` of two Boolean variables `x` and `y`.
+
+    p == x * y
+
+
+This is equivalent to the logical relation
+
+    p <=> x and y
+
+This is encoded by a conjunction of bool_or and two implications.
+
+
+### Python code
+
+```python
+"""Code sample to demonstrate how to encode the product of Boolean variables."""
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+from ortools.sat.python import cp_model
+
+
+def BooleanProductSampleSat():
+    """Encoding of the product of Boolean variables.
+
+    p == x * y, which is the same as p <=> x and y
+    """
+    model = cp_model.CpModel()
+    x = model.NewBoolVar('x')
+    y = model.NewBoolVar('y')
+    p = model.NewBoolVar('p')
+
+
+    # x and y implies p, rewrite as not(x and y) or p
+    model.AddBoolOr([x.Not(), y.Not(), p])
+
+    # p implies x and y, expanded into two implication
+    model.AddImplication(p, x)
+    model.AddImplication(p, y)
+
+    # Create a solver and solve.
+    solver = cp_model.CpSolver()
+    solution_printer = cp_model.VarArraySolutionPrinter([x, y, p])
+    status = solver.SearchForAllSolutions(model, solution_printer)
+
+
+BooleanProductSampleSat()
+```
