@@ -380,8 +380,13 @@ This is equivalent to the logical relation
 
     p <=> x and y
 
-This is encoded by a conjunction of bool_or and two implications.
+This is encoded by a conjunction of bool_or and two implications. The
+following code samples output the logical table
 
+    x = 1   y = 0   p = 0
+    x = 0   y = 0   p = 0
+    x = 0   y = 1   p = 0
+    x = 1   y = 1   p = 1
 
 ### Python code
 
