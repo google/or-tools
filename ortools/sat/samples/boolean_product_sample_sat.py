@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Code sample to demonstrate how to encode the product of Boolean variables."""
+"""Code sample that encodes the product of two Boolean variables."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -20,10 +20,10 @@ from ortools.sat.python import cp_model
 
 
 def BooleanProductSampleSat():
-    """Encoding of the product of Boolean variables.
+    """Encoding of the product of two Boolean variables.
 
-    p == x * y, which is the same as p <=> x and y
-    """
+  p == x * y, which is the same as p <=> x and y
+  """
     model = cp_model.CpModel()
     x = model.NewBoolVar('x')
     y = model.NewBoolVar('y')
@@ -39,7 +39,7 @@ def BooleanProductSampleSat():
     # Create a solver and solve.
     solver = cp_model.CpSolver()
     solution_printer = cp_model.VarArraySolutionPrinter([x, y, p])
-    status = solver.SearchForAllSolutions(model, solution_printer)
+    solver.SearchForAllSolutions(model, solution_printer)
 
 
 BooleanProductSampleSat()

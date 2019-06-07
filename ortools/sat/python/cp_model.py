@@ -669,7 +669,7 @@ class CpModel(object):
         return IntVar(self.__model, Domain(lb, ub), name)
 
     def NewIntVarFromDomain(self, domain, name):
-        """Create an integer variable from a list of intervals.
+        """Create an integer variable from domain.
 
     Args:
       domain: A instance of the Domain class.

@@ -200,7 +200,7 @@ Create an integer variable with domain [lb, ub].
 ```python
 CpModel.NewIntVarFromDomain(self, domain, name)
 ```
-Create an integer variable from a list of intervals.
+Create an integer variable from a domain.
 
 **Args:**
 
