@@ -58,7 +58,7 @@ PROJECT_LOGO           =
 # entered, it will be relative to the location where doxygen was started. If
 # left blank the current directory will be used.
 
-OUTPUT_DIRECTORY       = reference_manual
+OUTPUT_DIRECTORY       = doxy
 
 # If the CREATE_SUBDIRS tag is set to YES then doxygen will create 4096 sub-
 # directories (in 2 levels) under the output directory of each output format and
@@ -435,7 +435,7 @@ LOOKUP_CACHE_SIZE      = 0
 # normally produced when WARNINGS is set to YES.
 # The default value is: NO.
 
-EXTRACT_ALL            = NO
+EXTRACT_ALL            = YES
 
 # If the EXTRACT_PRIVATE tag is set to YES, all private members of a class will
 # be included in the documentation.
@@ -791,22 +791,24 @@ WARN_LOGFILE           =
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  = \
-		       ortools/com/google/ortools/sat \
-		       ortools/gen/com/google/ortools/sat \
-		       ortools/gen/com/google/ortools/util \
 		       ortools/gen/ortools/sat/*.pb.h \
-		       ortools/gen/ortools/util \
-		       ortools/constraint_solver/routing_model.h \
-      		       ortools/constraint_solver/routing_flags.h \
-      		       ortools/constraint_solver/routing_types.h \
-      		       ortools/constraint_solver/routing_index_manager.h \
-      		       ortools/constraint_solver/routing_parameters.h \
 		       ortools/sat/cp_model.h \
 		       ortools/sat/model.h \
-		       ortools/sat/sat_solver.h \
-       		       ortools/sat/csharp/ \
-       		       ortools/sat/python/cp_model.py \
+		       ortools/sat/cp_model_solver.h \
 		       ortools/util/sorted_interval_list.h
+
+#		       ortools/gen/ortools/util \
+#		       ortools/com/google/ortools/sat \
+#		       ortools/gen/com/google/ortools/sat \
+#		       ortools/gen/com/google/ortools/util \
+#		       ortools/constraint_solver/routing_model.h \
+#      		       ortools/constraint_solver/routing_flags.h \
+#      		       ortools/constraint_solver/routing_types.h \
+#      		       ortools/constraint_solver/routing_index_manager.h \
+#      		       ortools/constraint_solver/routing_parameters.h \
+#      		       ortools/sat/csharp/ \
+#      		       ortools/sat/python/cp_model.py \
+
 
 
 # This tag can be used to specify the character encoding of the source files
@@ -1209,7 +1211,7 @@ HTML_STYLESHEET        =
 # list). For an example see the documentation.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_EXTRA_STYLESHEET  = tools/doxygen.css
+HTML_EXTRA_STYLESHEET  = tools/ortools.css
 
 # The HTML_EXTRA_FILES tag can be used to specify one or more extra images or
 # other source files which should be copied to the HTML output directory. Note
@@ -1683,7 +1685,7 @@ EXTRA_SEARCH_MAPPINGS  =
 # If the GENERATE_LATEX tag is set to YES, doxygen will generate LaTeX output.
 # The default value is: YES.
 
-GENERATE_LATEX         = NO
+GENERATE_LATEX         = YES
 
 # The LATEX_OUTPUT tag is used to specify where the LaTeX docs will be put. If a
 # relative path is entered the value of OUTPUT_DIRECTORY will be put in front of
@@ -1963,7 +1965,7 @@ MAN_LINKS              = NO
 # captures the structure of the code including all documentation.
 # The default value is: NO.
 
-GENERATE_XML           = NO
+GENERATE_XML           = YES
 
 # The XML_OUTPUT tag is used to specify where the XML pages will be put. If a
 # relative path is entered the value of OUTPUT_DIRECTORY will be put in front of
@@ -1990,7 +1992,7 @@ XML_PROGRAMLISTING     = YES
 # that can be used to generate PDF.
 # The default value is: NO.
 
-GENERATE_DOCBOOK       = NO
+GENERATE_DOCBOOK       = YES
 
 # The DOCBOOK_OUTPUT tag is used to specify where the Docbook pages will be put.
 # If a relative path is entered the value of OUTPUT_DIRECTORY will be put in
