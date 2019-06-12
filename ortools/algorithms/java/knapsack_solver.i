@@ -40,6 +40,11 @@ typedef uint64_t uint64;
 %rename (solve) operations_research::KnapsackSolver::Solve;
 %rename (bestSolutionContains)
     operations_research::KnapsackSolver::BestSolutionContains;  // untested
+%rename (isSolutionOptimal) operations_research::KnapsackSolver::IsSolutionOptimal;  // untested
+%rename (getName) operations_research::KnapsackSolver::GetName;  // untested
+%rename (useReduction) operations_research::KnapsackSolver::use_reduction;  // untested
+%rename (setUseReduction) operations_research::KnapsackSolver::set_use_reduction;  // untested
+%rename (setTimeLimit) operations_research::KnapsackSolver::set_time_limit;  // untested
 
 %unignore operations_research::KnapsackSolver::SolverType;
 %unignore operations_research::KnapsackSolver::KNAPSACK_BRUTE_FORCE_SOLVER;  // untested
