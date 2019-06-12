@@ -2,9 +2,9 @@
 
 ## CP-SAT Reference manual
 
-- [C++ API](cp_sat_cpp/html/ndex.html)
-- [Python API](../ortools/sat/doc/reference.md)
-- [Java API](../ortools/sat/doc/java/README.md)
+- [C++ API](cp_sat/cpp/index.html)
+- [Python API](cp-sat/python/reference.md)
+- [Java API](cp-sat/java/README.md)
 
 
 
