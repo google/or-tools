@@ -1,0 +1,7 @@
+<map id="com.google.ortools.sat.LinearExpr" name="com.google.ortools.sat.LinearExpr">
+<area shape="rect" id="node1" title="A linear expression interface that can be parsed." alt="" coords="5,80,229,105"/>
+<area shape="rect" id="node2" title="the substraction of two linear expressions." alt="" coords="277,5,497,31"/>
+<area shape="rect" id="node3" href="$classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html" title="An integer variable." alt="" coords="290,55,484,80"/>
+<area shape="rect" id="node4" href="$classcom_1_1google_1_1ortools_1_1sat_1_1ScalProd.html" title="A linear expression interface that can be parsed." alt="" coords="280,104,494,129"/>
+<area shape="rect" id="node5" href="$classcom_1_1google_1_1ortools_1_1sat_1_1SumOfVariables.html" title="A linear expression interface that can be parsed." alt="" coords="294,153,480,192"/>
+</map>

@@ -1,0 +1,5 @@
+<map id="com.google.ortools.sat.Literal" name="com.google.ortools.sat.Literal">
+<area shape="rect" id="node1" title="Interface to describe a boolean variable or its negation." alt="" coords="110,5,305,31"/>
+<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html" title="An integer variable." alt="" coords="5,85,199,111"/>
+<area shape="rect" id="node3" href="$classcom_1_1google_1_1ortools_1_1sat_1_1NotBooleanVariable.html" title="The negation of a boolean variable." alt="" coords="223,79,403,117"/>
+</map>
