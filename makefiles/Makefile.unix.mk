@@ -95,7 +95,7 @@ ifdef UNIX_GLPK_DIR
 endif
 # This is needed to find scip include files.
 ifdef UNIX_SCIP_DIR
-  SCIP_INC = -I$(UNIX_SCIP_DIR)/include -DUSE_SCIP
+  SCIP_INC = -I$(UNIX_SCIP_DIR)/include -DUSE_SCIP -DNO_CONFIG_HEADER
   SCIP_SWIG = $(SCIP_INC)
 endif
 ifdef UNIX_GUROBI_DIR
@@ -196,8 +196,8 @@ ifeq ($(PLATFORM),MACOSX)
   endif
   ifdef UNIX_SCIP_DIR
     SCIP_LNK = -force_load \
- $(UNIX_SCIP_DIR)/lib/libscip.a \
- $(UNIX_SCIP_DIR)/lib/libsoplex-pic.a
+ $(UNIX_SCIP_DIR)/lib/libscipopt.a \
+ $(UNIX_SCIP_DIR)/lib/libsoplex.a
   endif
   ifdef UNIX_GUROBI_DIR
     GUROBI_LNK = \
