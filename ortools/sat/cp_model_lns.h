@@ -26,10 +26,13 @@ namespace sat {
 
 // Neighborhood returned by Neighborhood generators.
 struct Neighborhood {
+  // True if neighborhood generator was able to generate a neighborhood.
+  bool is_generated = false;
+
   // True if the CpModelProto below is not the same as the base model.
   // This is not expected to happen often but allows to handle this case
   // properly.
-  bool is_reduced;
+  bool is_reduced = false;
 
   // Relaxed model. Any feasible solution to this "local" model should be a
   // feasible solution to the base model too.
@@ -238,8 +241,9 @@ class SchedulingTimeWindowNeighborhoodGenerator : public NeighborhoodGenerator {
 // Generates a neighborhood by fixing the variables who have same solution value
 // as their linear relaxation. This was published in "Exploring relaxation
 // induced neighborhoods to improve MIP solutions" 2004 by E. Danna et.
-// TODO(user): This simulates RINS only at root node. Try to exploit it on
-// other nodes as well.
+//
+// NOTE: The neighborhoods are generated outside of this generator and are
+// managed by SharedRINSNeighborhoodManager.
 class RelaxationInducedNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   explicit RelaxationInducedNeighborhoodGenerator(

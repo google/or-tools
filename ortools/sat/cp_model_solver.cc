@@ -1841,6 +1841,10 @@ void SolveCpModelWithLNS(const CpModelProto& model_proto, int num_workers,
         const double saved_difficulty = difficulty.value();
         Neighborhood neighborhood = generators[selected_generator]->Generate(
             response, num_workers * seed + worker_id, saved_difficulty);
+        if (!neighborhood.is_generated) {
+          std::function<void()> update_function = []() {};
+          return update_function;
+        }
         CpModelProto& local_problem = neighborhood.cp_model;
         const std::string solution_info = absl::StrFormat(
             "%s(d=%0.2f s=%i t=%0.2f)", generators[selected_generator]->name(),
@@ -1889,61 +1893,65 @@ void SolveCpModelWithLNS(const CpModelProto& model_proto, int num_workers,
         }
 
         const bool neighborhood_is_reduced = neighborhood.is_reduced;
-        return [neighborhood_is_reduced, &num_consecutive_not_fully_solved,
-                &shared_response_manager, &response, &difficulty,
-                local_response, &generators, selected_generator,
-                &total_num_calls]() {
-          // TODO(user): This is not ideal in multithread because even though
-          // the saved_difficulty will be the same for all thread, we will
-          // Increase()/Decrease() the difficuty sequentially more than once.
-          if (local_response.status() == CpSolverStatus::OPTIMAL ||
-              local_response.status() == CpSolverStatus::INFEASIBLE) {
-            num_consecutive_not_fully_solved = 0;
-            difficulty.Increase();
-          } else {
-            ++num_consecutive_not_fully_solved;
-            difficulty.Decrease();
-          }
+        std::function<void()> update_function =
+            [neighborhood_is_reduced, &num_consecutive_not_fully_solved,
+             &shared_response_manager, &response, &difficulty, local_response,
+             &generators, selected_generator, &total_num_calls]() {
+              // TODO(user): This is not ideal in multithread because even
+              // though the saved_difficulty will be the same for all thread, we
+              // will Increase()/Decrease() the difficuty sequentially more than
+              // once.
+              if (local_response.status() == CpSolverStatus::OPTIMAL ||
+                  local_response.status() == CpSolverStatus::INFEASIBLE) {
+                num_consecutive_not_fully_solved = 0;
+                difficulty.Increase();
+              } else {
+                ++num_consecutive_not_fully_solved;
+                difficulty.Decrease();
+              }
 
-          // Update the generator record.
-          double objective_diff = 0.0;
-          if (local_response.status() == CpSolverStatus::OPTIMAL ||
-              local_response.status() == CpSolverStatus::FEASIBLE) {
-            objective_diff = std::abs(local_response.objective_value() -
-                                      response.objective_value());
-          }
-          total_num_calls++;
-          generators[selected_generator]->AddSolveData(
-              objective_diff, local_response.deterministic_time());
-          VLOG(2)
-              << generators[selected_generator]->name()
-              << ": [difficulty: " << difficulty.value()
-              << ", deterministic time: " << local_response.deterministic_time()
-              << ", status: "
-              << ProtoEnumToString<CpSolverStatus>(local_response.status())
-              << ", num calls: " << generators[selected_generator]->num_calls()
-              << ", UCB1 Score: "
-              << generators[selected_generator]->GetUCBScore(total_num_calls)
-              << "]";
+              // Update the generator record.
+              double objective_diff = 0.0;
+              if (local_response.status() == CpSolverStatus::OPTIMAL ||
+                  local_response.status() == CpSolverStatus::FEASIBLE) {
+                objective_diff = std::abs(local_response.objective_value() -
+                                          response.objective_value());
+              }
+              total_num_calls++;
+              generators[selected_generator]->AddSolveData(
+                  objective_diff, local_response.deterministic_time());
+              VLOG(2) << generators[selected_generator]->name()
+                      << ": [difficulty: " << difficulty.value()
+                      << ", deterministic time: "
+                      << local_response.deterministic_time() << ", status: "
+                      << ProtoEnumToString<CpSolverStatus>(
+                             local_response.status())
+                      << ", num calls: "
+                      << generators[selected_generator]->num_calls()
+                      << ", UCB1 Score: "
+                      << generators[selected_generator]->GetUCBScore(
+                             total_num_calls)
+                      << "]";
 
-          // Report any feasible solution we have. Note that we do not want to
-          // keep the full model in this lambda, so for now we do not report
-          // local stats in the solution.
-          //
-          // TODO(user): depending on the problem, the bound sharing may or
-          // may not restrict the objective though. Uniformize the behavior.
-          if (local_response.status() == CpSolverStatus::OPTIMAL ||
-              local_response.status() == CpSolverStatus::FEASIBLE) {
-            shared_response_manager->NewSolution(local_response,
-                                                 /*model=*/nullptr);
-          }
-          if (!neighborhood_is_reduced &&
-              (local_response.status() == CpSolverStatus::OPTIMAL ||
-               local_response.status() == CpSolverStatus::INFEASIBLE)) {
-            shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
-                local_response.solution_info());
-          }
-        };
+              // Report any feasible solution we have. Note that we do not want
+              // to keep the full model in this lambda, so for now we do not
+              // report local stats in the solution.
+              //
+              // TODO(user): depending on the problem, the bound sharing may or
+              // may not restrict the objective though. Uniformize the behavior.
+              if (local_response.status() == CpSolverStatus::OPTIMAL ||
+                  local_response.status() == CpSolverStatus::FEASIBLE) {
+                shared_response_manager->NewSolution(local_response,
+                                                     /*model=*/nullptr);
+              }
+              if (!neighborhood_is_reduced &&
+                  (local_response.status() == CpSolverStatus::OPTIMAL ||
+                   local_response.status() == CpSolverStatus::INFEASIBLE)) {
+                shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
+                    local_response.solution_info());
+              }
+            };
+        return update_function;
       });
 }
 

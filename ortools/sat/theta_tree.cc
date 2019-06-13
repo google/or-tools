@@ -33,10 +33,9 @@ void ThetaLambdaTree<IntegerType>::Reset(int num_events) {
   num_leaves_ = std::max(2, num_events + (num_events & 1));
 
   const int num_nodes = 2 * num_leaves_;
-  tree_envelope_.assign(num_nodes, IntegerTypeMinimumValue<IntegerType>());
-  tree_envelope_opt_.assign(num_nodes, IntegerTypeMinimumValue<IntegerType>());
-  tree_sum_of_energy_min_.assign(num_nodes, IntegerType(0));
-  tree_max_of_energy_delta_.assign(num_nodes, IntegerType(0));
+  tree_.assign(num_nodes, TreeNode{IntegerTypeMinimumValue<IntegerType>(),
+                                   IntegerTypeMinimumValue<IntegerType>(),
+                                   IntegerType{0}, IntegerType{0}});
 
   // If num_leaves is not a power or two, the last depth of the tree will not be
   // full, and the array will looke like:
@@ -72,10 +71,8 @@ void ThetaLambdaTree<IntegerType>::AddOrUpdateEvent(
   DCHECK_LE(0, energy_min);
   DCHECK_LE(energy_min, energy_max);
   const int node = GetLeafFromEvent(event);
-  tree_envelope_[node] = initial_envelope + energy_min;
-  tree_envelope_opt_[node] = initial_envelope + energy_max;
-  tree_sum_of_energy_min_[node] = energy_min;
-  tree_max_of_energy_delta_[node] = energy_max - energy_min;
+  tree_[node] = {initial_envelope + energy_min, initial_envelope + energy_max,
+                 energy_min, energy_max - energy_min};
   RefreshNode(node);
 }
 
@@ -84,36 +81,33 @@ void ThetaLambdaTree<IntegerType>::AddOrUpdateOptionalEvent(
     int event, IntegerType initial_envelope_opt, IntegerType energy_max) {
   DCHECK_LE(0, energy_max);
   const int node = GetLeafFromEvent(event);
-  tree_envelope_[node] = IntegerTypeMinimumValue<IntegerType>();
-  tree_envelope_opt_[node] = initial_envelope_opt + energy_max;
-  tree_sum_of_energy_min_[node] = 0;
-  tree_max_of_energy_delta_[node] = energy_max;
+  tree_[node] = {IntegerTypeMinimumValue<IntegerType>(),
+                 initial_envelope_opt + energy_max, IntegerType{0}, energy_max};
   RefreshNode(node);
 }
 
 template <typename IntegerType>
 void ThetaLambdaTree<IntegerType>::RemoveEvent(int event) {
   const int node = GetLeafFromEvent(event);
-  tree_envelope_[node] = IntegerTypeMinimumValue<IntegerType>();
-  tree_envelope_opt_[node] = IntegerTypeMinimumValue<IntegerType>();
-  tree_sum_of_energy_min_[node] = IntegerType(0);
-  tree_max_of_energy_delta_[node] = IntegerType(0);
+  tree_[node] = {IntegerTypeMinimumValue<IntegerType>(),
+                 IntegerTypeMinimumValue<IntegerType>(), IntegerType{0},
+                 IntegerType{0}};
   RefreshNode(node);
 }
 
 template <typename IntegerType>
 IntegerType ThetaLambdaTree<IntegerType>::GetEnvelope() const {
-  return tree_envelope_[1];
+  return tree_[1].envelope;
 }
 template <typename IntegerType>
 IntegerType ThetaLambdaTree<IntegerType>::GetOptionalEnvelope() const {
-  return tree_envelope_opt_[1];
+  return tree_[1].envelope_opt;
 }
 
 template <typename IntegerType>
 int ThetaLambdaTree<IntegerType>::GetMaxEventWithEnvelopeGreaterThan(
     IntegerType target_envelope) const {
-  DCHECK_LT(target_envelope, tree_envelope_[1]);
+  DCHECK_LT(target_envelope, tree_[1].envelope);
   IntegerType unused;
   return GetEventFromLeaf(
       GetMaxLeafWithEnvelopeGreaterThan(1, target_envelope, &unused));
@@ -134,10 +128,10 @@ void ThetaLambdaTree<IntegerType>::GetEventsWithOptionalEnvelopeGreaterThan(
 template <typename IntegerType>
 IntegerType ThetaLambdaTree<IntegerType>::GetEnvelopeOf(int event) const {
   const int leaf = GetLeafFromEvent(event);
-  IntegerType envelope = tree_envelope_[leaf];
+  IntegerType envelope = tree_[leaf].envelope;
   for (int node = leaf; node > 1; node >>= 1) {
     const int right = node | 1;
-    if (node != right) envelope += tree_sum_of_energy_min_[right];
+    if (node != right) envelope += tree_[right].sum_of_energy_min;
   }
   return envelope;
 }
@@ -148,52 +142,50 @@ void ThetaLambdaTree<IntegerType>::RefreshNode(int node) {
     const int right = node | 1;
     const int left = right ^ 1;
     node >>= 1;
-    const IntegerType energy_right = tree_sum_of_energy_min_[right];
-    tree_sum_of_energy_min_[node] =
-        tree_sum_of_energy_min_[left] + energy_right;
-    tree_max_of_energy_delta_[node] = std::max(tree_max_of_energy_delta_[right],
-                                               tree_max_of_energy_delta_[left]);
-    tree_envelope_[node] =
-        std::max(tree_envelope_[right], tree_envelope_[left] + energy_right);
-    tree_envelope_opt_[node] = std::max(
-        tree_envelope_opt_[right],
-        energy_right +
-            std::max(tree_envelope_opt_[left],
-                     tree_envelope_[left] + tree_max_of_energy_delta_[right]));
+    const TreeNode lnode = tree_[left];
+    const TreeNode rnode = tree_[right];
+    tree_[node] = {
+        std::max(rnode.envelope, lnode.envelope + rnode.sum_of_energy_min),
+        std::max(rnode.envelope_opt,
+                 rnode.sum_of_energy_min +
+                     std::max(lnode.envelope_opt,
+                              lnode.envelope + rnode.max_of_energy_delta)),
+        lnode.sum_of_energy_min + rnode.sum_of_energy_min,
+        std::max(rnode.max_of_energy_delta, lnode.max_of_energy_delta)};
   } while (node > 1);
 }
 
 template <typename IntegerType>
 int ThetaLambdaTree<IntegerType>::GetMaxLeafWithEnvelopeGreaterThan(
     int node, IntegerType target_envelope, IntegerType* extra) const {
-  DCHECK_LT(target_envelope, tree_envelope_[node]);
+  DCHECK_LT(target_envelope, tree_[node].envelope);
   while (node < num_leaves_) {
     const int left = node << 1;
     const int right = left | 1;
-    DCHECK_LT(right, tree_envelope_.size());
+    DCHECK_LT(right, tree_.size());
 
-    if (target_envelope < tree_envelope_[right]) {
+    if (target_envelope < tree_[right].envelope) {
       node = right;
     } else {
-      target_envelope -= tree_sum_of_energy_min_[right];
+      target_envelope -= tree_[right].sum_of_energy_min;
       node = left;
     }
   }
-  *extra = tree_envelope_[node] - target_envelope;
+  *extra = tree_[node].envelope - target_envelope;
   return node;
 }
 
 template <typename IntegerType>
 int ThetaLambdaTree<IntegerType>::GetLeafWithMaxEnergyDelta(int node) const {
-  const IntegerType delta_node = tree_max_of_energy_delta_[node];
+  const IntegerType delta_node = tree_[node].max_of_energy_delta;
   while (node < num_leaves_) {
     const int left = node << 1;
     const int right = left | 1;
-    DCHECK_LT(right, tree_envelope_.size());
-    if (tree_max_of_energy_delta_[right] == delta_node) {
+    DCHECK_LT(right, tree_.size());
+    if (tree_[right].max_of_energy_delta == delta_node) {
       node = right;
     } else {
-      DCHECK_EQ(tree_max_of_energy_delta_[left], delta_node);
+      DCHECK_EQ(tree_[left].max_of_energy_delta, delta_node);
       node = left;
     }
   }
@@ -204,37 +196,37 @@ template <typename IntegerType>
 void ThetaLambdaTree<IntegerType>::GetLeavesWithOptionalEnvelopeGreaterThan(
     IntegerType target_envelope, int* critical_leaf, int* optional_leaf,
     IntegerType* available_energy) const {
-  DCHECK_LT(target_envelope, tree_envelope_opt_[1]);
+  DCHECK_LT(target_envelope, tree_[1].envelope_opt);
   int node = 1;
   while (node < num_leaves_) {
     const int left = node << 1;
     const int right = left | 1;
-    DCHECK_LT(right, tree_envelope_.size());
+    DCHECK_LT(right, tree_.size());
 
-    if (target_envelope < tree_envelope_opt_[right]) {
+    if (target_envelope < tree_[right].envelope_opt) {
       node = right;
     } else {
       const IntegerType opt_energy_right =
-          tree_sum_of_energy_min_[right] + tree_max_of_energy_delta_[right];
-      if (target_envelope < tree_envelope_[left] + opt_energy_right) {
+          tree_[right].sum_of_energy_min + tree_[right].max_of_energy_delta;
+      if (target_envelope < tree_[left].envelope + opt_energy_right) {
         *optional_leaf = GetLeafWithMaxEnergyDelta(right);
         IntegerType extra;
         *critical_leaf = GetMaxLeafWithEnvelopeGreaterThan(
             left, target_envelope - opt_energy_right, &extra);
-        *available_energy = tree_sum_of_energy_min_[*optional_leaf] +
-                            tree_max_of_energy_delta_[*optional_leaf] - extra;
+        *available_energy = tree_[*optional_leaf].sum_of_energy_min +
+                            tree_[*optional_leaf].max_of_energy_delta - extra;
         return;
-      } else {  // < tree_envelope_opt_[left] + tree_sum_of_energy_min_[right]
-        target_envelope -= tree_sum_of_energy_min_[right];
+      } else {  // < tree_[left].envelope_opt + tree_[right].sum_of_energy_min
+        target_envelope -= tree_[right].sum_of_energy_min;
         node = left;
       }
     }
   }
   *critical_leaf = node;
   *optional_leaf = node;
-  *available_energy = target_envelope - (tree_envelope_opt_[node] -
-                                         tree_sum_of_energy_min_[node] -
-                                         tree_max_of_energy_delta_[node]);
+  *available_energy = target_envelope - (tree_[node].envelope_opt -
+                                         tree_[node].sum_of_energy_min -
+                                         tree_[node].max_of_energy_delta);
 }
 
 template class ThetaLambdaTree<IntegerValue>;

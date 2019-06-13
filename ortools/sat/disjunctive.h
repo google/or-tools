@@ -235,15 +235,21 @@ class DisjunctiveEdgeFinding : public PropagatorInterface {
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
+  bool PropagateSubwindow(IntegerValue window_end_min);
+
   const bool time_direction_;
   SchedulingConstraintHelper* helper_;
 
+  // This only contains non-gray tasks.
+  std::vector<TaskTime> task_by_increasing_end_max_;
+
+  // All these member are indexed in the same way.
+  std::vector<TaskTime> window_;
   ThetaLambdaTree<IntegerValue> theta_tree_;
-  std::vector<int> non_gray_task_to_event_;
-  std::vector<int> event_to_task_;
-  std::vector<IntegerValue> event_time_;
   std::vector<IntegerValue> event_size_;
 
+  // Task indexed.
+  std::vector<int> non_gray_task_to_event_;
   std::vector<bool> is_gray_;
 };
 
@@ -266,14 +272,15 @@ class DisjunctivePrecedences : public PropagatorInterface {
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
+  bool PropagateSubwindow();
+
   const bool time_direction_;
   SchedulingConstraintHelper* helper_;
   IntegerTrail* integer_trail_;
   PrecedencesPropagator* precedences_;
 
+  std::vector<TaskTime> window_;
   std::vector<IntegerVariable> index_to_end_vars_;
-  std::vector<int> index_to_task_;
-  std::vector<IntegerValue> index_to_cached_shifted_start_min_;
 
   TaskSet task_set_;
   std::vector<int> task_to_arc_index_;

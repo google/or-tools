@@ -18,6 +18,7 @@
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/all_different.h"
+#include "ortools/sat/integer.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/timetable.h"
@@ -647,6 +648,8 @@ bool DisjunctiveDetectablePrecedences::Propagate() {
     const int task = task_time.task_index;
     if (helper_->IsAbsent(task)) continue;
 
+    // TODO(user): It should actually be the real start_min here not the shifted
+    // one. Otherwise we might miss some propagation. Try to unit-test this!
     const IntegerValue start_min = task_time.time;
     if (start_min < window_end) {
       const IntegerValue duration_min = helper_->DurationMin(task);
@@ -841,46 +844,65 @@ int DisjunctiveDetectablePrecedences::RegisterWith(
 
 bool DisjunctivePrecedences::Propagate() {
   helper_->SetTimeDirection(time_direction_);
-
-  index_to_end_vars_.clear();
-  index_to_task_.clear();
-  index_to_cached_shifted_start_min_.clear();
-  for (const auto task_time : helper_->TaskByIncreasingShiftedStartMin()) {
+  window_.clear();
+  IntegerValue window_end = kMinIntegerValue;
+  for (const TaskTime task_time : helper_->TaskByIncreasingShiftedStartMin()) {
     const int task = task_time.task_index;
     if (!helper_->IsPresent(task)) continue;
 
-    index_to_task_.push_back(task);
+    const IntegerValue start_min = task_time.time;
+    if (start_min < window_end) {
+      window_.push_back(task_time);
+      window_end += helper_->DurationMin(task);
+      continue;
+    }
+
+    if (window_.size() > 1 && !PropagateSubwindow()) {
+      return false;
+    }
+
+    // Start of the next window.
+    window_.clear();
+    window_.push_back(task_time);
+    window_end = start_min + helper_->DurationMin(task);
+  }
+  if (window_.size() > 1 && !PropagateSubwindow()) {
+    return false;
+  }
+  return true;
+}
+
+bool DisjunctivePrecedences::PropagateSubwindow() {
+  index_to_end_vars_.clear();
+  for (const auto task_time : window_) {
+    const int task = task_time.task_index;
     index_to_end_vars_.push_back(helper_->EndVars()[task]);
-    index_to_cached_shifted_start_min_.push_back(task_time.time);
   }
   precedences_->ComputePrecedences(index_to_end_vars_, &before_);
 
-  int critical_index;
   const int size = before_.size();
   for (int i = 0; i < size;) {
     const IntegerVariable var = before_[i].var;
     DCHECK_NE(var, kNoIntegerVariable);
     task_set_.Clear();
+
     const int initial_i = i;
     IntegerValue min_offset = before_[i].offset;
     for (; i < size && before_[i].var == var; ++i) {
-      const int task = index_to_task_[before_[i].index];
+      const TaskTime task_time = window_[before_[i].index];
       min_offset = std::min(min_offset, before_[i].offset);
 
       // The task are actually in sorted order, so we do not need to call
       // task_set_.Sort(). This property is DCHECKed.
-      task_set_.AddUnsortedEntry(
-          {task, index_to_cached_shifted_start_min_[before_[i].index],
-           helper_->DurationMin(task)});
+      task_set_.AddUnsortedEntry({task_time.task_index, task_time.time,
+                                  helper_->DurationMin(task_time.task_index)});
     }
     DCHECK_GE(task_set_.SortedTasks().size(), 2);
     if (integer_trail_->IsCurrentlyIgnored(var)) continue;
 
     // TODO(user): Only use the min_offset of the critical task? Or maybe do a
     // more general computation to find by how much we can push var?
-    const IntegerValue new_lb =
-        task_set_.ComputeEndMin(/*task_to_ignore=*/-1, &critical_index) +
-        min_offset;
+    const IntegerValue new_lb = task_set_.ComputeEndMin() + min_offset;
     if (new_lb > integer_trail_->LowerBound(var)) {
       const std::vector<TaskSet::Entry>& sorted_tasks = task_set_.SortedTasks();
       helper_->ClearReason();
@@ -888,10 +910,11 @@ bool DisjunctivePrecedences::Propagate() {
       // Fill task_to_arc_index_ since we need it for the reason.
       // Note that we do not care about the initial content of this vector.
       for (int j = initial_i; j < i; ++j) {
-        const int task = index_to_task_[before_[j].index];
+        const int task = window_[before_[j].index].task_index;
         task_to_arc_index_[task] = before_[j].arc_index;
       }
 
+      const int critical_index = task_set_.GetCriticalIndex();
       const IntegerValue window_start = sorted_tasks[critical_index].start_min;
       for (int i = critical_index; i < sorted_tasks.size(); ++i) {
         const int ct = sorted_tasks[i].task;
@@ -1104,68 +1127,104 @@ int DisjunctiveNotLast::RegisterWith(GenericLiteralWatcher* watcher) {
 }
 
 bool DisjunctiveEdgeFinding::Propagate() {
-  helper_->SetTimeDirection(time_direction_);
   const int num_tasks = helper_->NumTasks();
+  helper_->SetTimeDirection(time_direction_);
+  is_gray_.resize(num_tasks, false);
+  non_gray_task_to_event_.resize(num_tasks);
 
+  window_.clear();
+  IntegerValue window_end = kMinIntegerValue;
+  for (const TaskTime task_time : helper_->TaskByIncreasingShiftedStartMin()) {
+    const int task = task_time.task_index;
+    if (helper_->IsAbsent(task)) continue;
+
+    // Note that we use the real start min here not the shifted one. This is
+    // because we might be able to push it if it is smaller than window end.
+    if (helper_->StartMin(task) < window_end) {
+      window_.push_back(task_time);
+      window_end += helper_->DurationMin(task);
+      continue;
+    }
+
+    // We need at least 3 tasks for the edge-finding to be different from
+    // detectable precedences.
+    if (window_.size() > 2 && !PropagateSubwindow(window_end)) {
+      return false;
+    }
+
+    // Start of the next window.
+    window_.clear();
+    window_.push_back(task_time);
+    window_end = task_time.time + helper_->DurationMin(task);
+  }
+  if (window_.size() > 2 && !PropagateSubwindow(window_end)) {
+    return false;
+  }
+  return true;
+}
+
+bool DisjunctiveEdgeFinding::PropagateSubwindow(IntegerValue window_end_min) {
+  // Cache the task end-max and abort early if possible.
+  task_by_increasing_end_max_.clear();
+  for (const auto task_time : window_) {
+    const int task = task_time.task_index;
+    DCHECK(!helper_->IsAbsent(task));
+
+    // We already mark all the non-present task as gray.
+    //
+    // Same for task with an end-max that is too large: Tasks that are not
+    // present can never trigger propagation or an overload checking failure.
+    // theta_tree_.GetOptionalEnvelope() is always <= window_end, so tasks whose
+    // end_max is >= window_end can never trigger propagation or failure either.
+    // Thus, those tasks can be marked as gray, which removes their contribution
+    // to theta right away.
+    const IntegerValue end_max = helper_->EndMax(task);
+    if (helper_->IsPresent(task) && end_max < window_end_min) {
+      is_gray_[task] = false;
+      task_by_increasing_end_max_.push_back({task, end_max});
+    } else {
+      is_gray_[task] = true;
+    }
+  }
+
+  // If we have just 1 non-gray task, then this propagator does not propagate
+  // more than the detectable precedences, so we abort early.
+  if (task_by_increasing_end_max_.size() < 2) return true;
+  std::sort(task_by_increasing_end_max_.begin(),
+            task_by_increasing_end_max_.end());
+
+  // Set up theta tree.
+  //
   // Some task in the theta tree will be considered "gray".
   // When computing the end-min of the sorted task, we will compute it for:
   // - All the non-gray task
   // - All the non-gray task + at most one gray task.
-  is_gray_.resize(num_tasks, false);
-
-  // Set up theta tree.
   //
   // TODO(user): it should be faster to initialize it all at once rather
   // than calling AddOrUpdate() n times.
-  theta_tree_.Reset(num_tasks);
-  non_gray_task_to_event_.resize(num_tasks);
-  event_to_task_.clear();
-  event_time_.clear();
+  const int window_size = window_.size();
   event_size_.clear();
-  int num_events = 0;
-  int num_not_gray = 0;
-  for (const auto task_time : helper_->TaskByIncreasingShiftedStartMin()) {
+  theta_tree_.Reset(window_size);
+  for (int event = 0; event < window_size; ++event) {
+    const TaskTime task_time = window_[event];
     const int task = task_time.task_index;
-    if (helper_->IsAbsent(task)) {
-      // Even though we completely ignore absent tasks, we still mark them as
-      // gray to simplify the rest of the code in this function.
-      is_gray_[task] = true;
-      continue;
-    }
-    event_to_task_.push_back(task);
-    event_time_.push_back(task_time.time);
-
-    // We already mark all the non-present task as gray.
     const IntegerValue energy_min = helper_->DurationMin(task);
     event_size_.push_back(energy_min);
-    if (helper_->IsPresent(task)) {
-      ++num_not_gray;
-      is_gray_[task] = false;
-      non_gray_task_to_event_[task] = num_events;
-      theta_tree_.AddOrUpdateEvent(num_events, task_time.time, energy_min,
-                                   energy_min);
+    if (is_gray_[task]) {
+      theta_tree_.AddOrUpdateOptionalEvent(event, task_time.time, energy_min);
     } else {
-      is_gray_[task] = true;
-      theta_tree_.AddOrUpdateOptionalEvent(num_events, task_time.time,
-                                           energy_min);
+      non_gray_task_to_event_[task] = event;
+      theta_tree_.AddOrUpdateEvent(event, task_time.time, energy_min,
+                                   energy_min);
     }
-
-    num_events++;
   }
-
-  int end_max_index = 0;
-  const auto& task_by_decreasing_end_max = helper_->TaskByDecreasingEndMax();
 
   // At each iteration we either transform a non-gray task into a gray one or
   // remove a gray task, so this loop is linear in complexity.
-  while (num_not_gray > 0) {
-    // Set end_max_index to the next non-gray task.
-    while (is_gray_[task_by_decreasing_end_max[end_max_index].task_index]) {
-      ++end_max_index;
-      CHECK_LT(end_max_index, num_tasks);
-    }
+  while (true) {
+    DCHECK(!is_gray_[task_by_increasing_end_max_.back().task_index]);
     const IntegerValue non_gray_end_max =
-        task_by_decreasing_end_max[end_max_index].time;
+        task_by_increasing_end_max_.back().time;
 
     // Overload checking.
     const IntegerValue non_gray_end_min = theta_tree_.GetEnvelope();
@@ -1175,11 +1234,11 @@ bool DisjunctiveEdgeFinding::Propagate() {
       // We need the reasons for the critical tasks to fall in:
       const int critical_event =
           theta_tree_.GetMaxEventWithEnvelopeGreaterThan(non_gray_end_max);
-      const IntegerValue window_start = event_time_[critical_event];
+      const IntegerValue window_start = window_[critical_event].time;
       const IntegerValue window_end =
           theta_tree_.GetEnvelopeOf(critical_event) - 1;
-      for (int event = critical_event; event < num_events; event++) {
-        const int task = event_to_task_[event];
+      for (int event = critical_event; event < window_size; event++) {
+        const int task = window_[event].task_index;
         if (is_gray_[task]) continue;
         helper_->AddPresenceReason(task);
         helper_->AddEnergyAfterReason(task, event_size_[event], window_start);
@@ -1204,10 +1263,10 @@ bool DisjunctiveEdgeFinding::Propagate() {
       theta_tree_.GetEventsWithOptionalEnvelopeGreaterThan(
           non_gray_end_max, &critical_event_with_gray, &gray_event,
           &available_energy);
-      const int gray_task = event_to_task_[gray_event];
+      const int gray_task = window_[gray_event].task_index;
 
       // Since the gray task is after all the other, we have a new lower bound.
-      CHECK(is_gray_[gray_task]);
+      DCHECK(is_gray_[gray_task]);
       if (helper_->StartMin(gray_task) < non_gray_end_min) {
         // The API is not ideal here. We just want the start of the critical
         // tasks that explain the non_gray_end_min computed above.
@@ -1218,8 +1277,8 @@ bool DisjunctiveEdgeFinding::Propagate() {
             std::min(critical_event, critical_event_with_gray);
         const int second_event =
             std::max(critical_event, critical_event_with_gray);
-        const IntegerValue first_start = event_time_[first_event];
-        const IntegerValue second_start = event_time_[second_event];
+        const IntegerValue first_start = window_[first_event].time;
+        const IntegerValue second_start = window_[second_event].time;
 
         // window_end is chosen to be has big as possible and still have an
         // overload if the gray task is not last.
@@ -1229,8 +1288,8 @@ bool DisjunctiveEdgeFinding::Propagate() {
 
         // The non-gray part of the explanation as detailed above.
         helper_->ClearReason();
-        for (int event = first_event; event < num_events; event++) {
-          const int task = event_to_task_[event];
+        for (int event = first_event; event < window_size; event++) {
+          const int task = window_[event].task_index;
           if (is_gray_[task]) continue;
           helper_->AddPresenceReason(task);
           helper_->AddEnergyAfterReason(
@@ -1242,7 +1301,7 @@ bool DisjunctiveEdgeFinding::Propagate() {
         // Add the reason for the gray_task (we don't need the end-max or
         // presence reason).
         helper_->AddEnergyAfterReason(gray_task, event_size_[gray_event],
-                                      event_time_[critical_event_with_gray]);
+                                      window_[critical_event_with_gray].time);
 
         // Enqueue the new start-min for gray_task.
         //
@@ -1258,20 +1317,24 @@ bool DisjunctiveEdgeFinding::Propagate() {
       theta_tree_.RemoveEvent(gray_event);
     }
 
-    // Make the non-gray task with larger end-max gray.
-    if (num_not_gray == 1) break;
-    {
-      const int new_gray_task =
-          task_by_decreasing_end_max[end_max_index].task_index;
-      const int new_gray_event = non_gray_task_to_event_[new_gray_task];
-      DCHECK(!is_gray_[new_gray_task]);
-      is_gray_[new_gray_task] = true;
-      theta_tree_.AddOrUpdateOptionalEvent(new_gray_event,
-                                           event_time_[new_gray_event],
-                                           event_size_[new_gray_event]);
+    // Stop before we get just one non-gray task.
+    if (task_by_increasing_end_max_.size() <= 2) break;
+
+    // Stop if the min of end_max is too big.
+    if (task_by_increasing_end_max_[0].time >=
+        theta_tree_.GetOptionalEnvelope()) {
+      break;
     }
-    ++end_max_index;
-    --num_not_gray;
+
+    // Make the non-gray task with larger end-max gray.
+    const int new_gray_task = task_by_increasing_end_max_.back().task_index;
+    task_by_increasing_end_max_.pop_back();
+    const int new_gray_event = non_gray_task_to_event_[new_gray_task];
+    DCHECK(!is_gray_[new_gray_task]);
+    is_gray_[new_gray_task] = true;
+    theta_tree_.AddOrUpdateOptionalEvent(new_gray_event,
+                                         window_[new_gray_event].time,
+                                         event_size_[new_gray_event]);
   }
 
   return true;

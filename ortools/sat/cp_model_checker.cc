@@ -80,6 +80,17 @@ std::string ValidateIntegerVariable(const CpModelProto& model, int v) {
     return absl::StrCat("var #", v, " has and invalid domain() format: ",
                         ProtobufShortDebugString(proto));
   }
+
+  // We do compute ub - lb in some place in the code and do not want to deal
+  // with overflow everywhere. This seems like a reasonable precondition anyway.
+  const int64 lb = proto.domain(0);
+  const int64 ub = proto.domain(proto.domain_size() - 1);
+  if (lb < 0 && lb + kint64max < ub) {
+    return absl::StrCat(
+        "var #", v,
+        " has a domain that is too large, i.e. |UB - LB| overflow an int64: ",
+        ProtobufShortDebugString(proto));
+  }
   return "";
 }
 

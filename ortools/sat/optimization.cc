@@ -1287,12 +1287,8 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     // used in an LP relaxation for instance.
     sat_solver->Backtrack(0);
     sat_solver->SetAssumptionLevel(0);
-    if (!integer_trail->Enqueue(
-            IntegerLiteral::LowerOrEqual(objective_var, objective - 1), {},
-            {})) {
-      return false;
-    }
-    return true;
+    return integer_trail->Enqueue(
+        IntegerLiteral::LowerOrEqual(objective_var, objective - 1), {}, {});
   };
 
   // We express the objective as a linear sum of terms. These will evolve as the
@@ -1339,30 +1335,67 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
   for (int iter = 0;
        result != SatSolver::INFEASIBLE && result != SatSolver::LIMIT_REACHED;
        ++iter) {
-    sat_solver->Backtrack(0);
-    sat_solver->SetAssumptionLevel(0);
+    if (!sat_solver->ResetToLevelZero()) return SatSolver::INFEASIBLE;
+
+    // Compute implied lb.
+    IntegerValue implied_objective_lb(0);
+    for (ObjectiveTerm& term : terms) {
+      const IntegerValue var_lb = integer_trail->LowerBound(term.var);
+      term.old_var_lb = var_lb;
+      implied_objective_lb += term.weight * var_lb.value();
+    }
+
+    // The gap is used to propagate the upper-bound of all variable that are in
+    // the current objective (Exactly like done in the propagation of a linear
+    // constraint with the slack). When this fix a variable to its lower bound,
+    // it is called "hardening" in the max-sat literature. This has a really
+    // beneficial effect on some weighted max-sat problems like the
+    // haplotyping-pedigrees ones.
+    const IntegerValue gap =
+        integer_trail->UpperBound(objective_var) - implied_objective_lb;
 
     // We assumes all terms at their lower-bound.
     std::vector<int> term_indices;
     std::vector<IntegerLiteral> integer_assumptions;
     IntegerValue next_stratified_threshold(0);
-    IntegerValue implied_objective_lb(0);
     IntegerValue objective_offset(0);
+    bool some_bound_were_tightened = false;
     for (int i = 0; i < terms.size(); ++i) {
       const ObjectiveTerm term = terms[i];
-      const IntegerValue var_lb = integer_trail->LowerBound(term.var);
-      terms[i].old_var_lb = var_lb;
-      implied_objective_lb += term.weight * var_lb.value();
 
       // TODO(user): These can be simply removed from the list.
       if (term.weight == 0) continue;
 
+      const IntegerValue var_lb = integer_trail->LowerBound(term.var);
+      const IntegerValue var_ub = integer_trail->UpperBound(term.var);
+
       // Skip fixed terms.
       // We still keep them around for a proper lower-bound computation.
+      //
       // TODO(user): we could keep an objective offset instead.
-      if (var_lb == integer_trail->UpperBound(term.var)) {
+      if (var_lb == var_ub) {
         objective_offset += term.weight * var_lb.value();
         continue;
+      }
+
+      // Hardening. This basically just propagate the implied upper bound
+      // on term.var from the current best solution. Note that the gap
+      // is non-negative and the weight positive here. The test is done in order
+      // to avoid any integer overflow provided (ub - lb) do not overflow, but
+      // this is a precondition in our cp-model.
+      if (gap / term.weight < var_ub - var_lb) {
+        some_bound_were_tightened = true;
+        const IntegerValue new_ub = var_lb + gap / term.weight;
+        if (!integer_trail->Enqueue(
+                IntegerLiteral::LowerOrEqual(term.var, new_ub), {}, {})) {
+          return SatSolver::INFEASIBLE;
+        }
+
+        // Skip if the variable is now fixed.
+        if (var_lb == new_ub) {
+          objective_offset += term.weight * var_lb.value();
+          continue;
+        }
       }
 
       // Only consider the terms above the threshold.
@@ -1377,11 +1410,18 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     }
 
     // Update the objective lower bound with our current bound.
-    if (!integer_trail->Enqueue(
-            IntegerLiteral::GreaterOrEqual(objective_var, implied_objective_lb),
-            {}, {})) {
-      return SatSolver::INFEASIBLE;
+    if (implied_objective_lb > integer_trail->LowerBound(objective_var)) {
+      some_bound_were_tightened = true;
+      if (!integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(
+                                      objective_var, implied_objective_lb),
+                                  {}, {})) {
+        return SatSolver::INFEASIBLE;
+      }
     }
+
+    // Because any Enqueue() might propagate more, we re-compute the assumptions
+    // if we pushed something.
+    if (some_bound_were_tightened) continue;
 
     // No assumptions with the current stratified_threshold? use the new one.
     if (term_indices.empty() && next_stratified_threshold > 0) {
@@ -1476,9 +1516,9 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
           if (parameters.stop_after_first_solution()) {
             return SatSolver::LIMIT_REACHED;
           }
+          sat_solver->Backtrack(0);
+          sat_solver->SetAssumptionLevel(0);
         }
-        sat_solver->Backtrack(0);
-        sat_solver->SetAssumptionLevel(0);
         if (result == SatSolver::ASSUMPTIONS_UNSAT) {
           // TODO(user): If we improve the lower bound of var, we should check
           // if our global lower bound reached our current best solution in
@@ -1506,6 +1546,9 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
       // Tricky: In some rare case, it is possible that the same literal
       // correspond to more that one assumptions. In this case, we can just
       // pick one of them when converting back a core to term indices.
+      //
+      // TODO(user): We can probably be smarter about the cost of the
+      // assumptions though.
       literal_to_term_index[assumptions.back().Index()] = term_indices[i];
     }
 
@@ -1550,11 +1593,6 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
       int new_depth = 0;
       for (const Literal lit : core) {
         const int index = gtl::FindOrDie(literal_to_term_index, lit.Index());
-        min_weight = std::min(min_weight, terms[index].weight);
-        max_weight = std::max(max_weight, terms[index].weight);
-        new_depth = std::max(new_depth, terms[index].depth + 1);
-        new_var_lb += integer_trail->LowerBound(terms[index].var);
-        new_var_ub += integer_trail->UpperBound(terms[index].var);
 
         // When this happen, the core is now trivially "minimized" by the new
         // bound on this variable, so there is no point in adding it.
@@ -1563,6 +1601,13 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
           ignore_this_core = true;
           break;
         }
+
+        const IntegerValue weight = terms[index].weight;
+        min_weight = std::min(min_weight, weight);
+        max_weight = std::max(max_weight, weight);
+        new_depth = std::max(new_depth, terms[index].depth + 1);
+        new_var_lb += integer_trail->LowerBound(terms[index].var);
+        new_var_ub += integer_trail->UpperBound(terms[index].var);
       }
       if (ignore_this_core) continue;
 

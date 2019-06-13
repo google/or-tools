@@ -101,6 +101,7 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
   Neighborhood neighborhood;
   neighborhood.is_reduced = !variables_to_fix.empty();
   neighborhood.cp_model = model_proto_;
+  neighborhood.is_generated = true;
   if (!neighborhood.is_reduced) return neighborhood;
   CHECK_EQ(initial_solution.solution_size(),
            neighborhood.cp_model.variables_size());
@@ -202,6 +203,7 @@ Neighborhood VariableGraphNeighborhoodGenerator::Generate(
   if (target_size == num_active_vars) {
     Neighborhood neighborhood;
     neighborhood.is_reduced = false;
+    neighborhood.is_generated = true;
     neighborhood.cp_model = helper_.ModelProto();
     return neighborhood;
   }
@@ -260,6 +262,7 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
   if (num_constraints == 0 || target_size == num_active_vars) {
     Neighborhood neighborhood;
     neighborhood.is_reduced = false;
+    neighborhood.is_generated = true;
     neighborhood.cp_model = helper_.ModelProto();
     return neighborhood;
   }
@@ -404,6 +407,7 @@ Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
     neighborhood.cp_model.mutable_solution_hint()->add_values(
         initial_solution.solution(var));
   }
+  neighborhood.is_generated = true;
 
   return neighborhood;
 }
@@ -453,6 +457,7 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
     double difficulty) const {
   Neighborhood neighborhood;
   neighborhood.cp_model = helper_.ModelProto();
+  neighborhood.is_generated = false;
 
   const int num_model_vars = helper_.ModelProto().variables_size();
   SharedRINSNeighborhoodManager* rins_manager =
@@ -462,15 +467,13 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
     all_vars.push_back(i);
   }
   if (rins_manager == nullptr) {
-    // TODO(user): Support skipping this neighborhood instead of going
-    // through solving process for the trivial model.
-    return helper_.FixAllVariables(initial_solution);
+    return neighborhood;
   }
   absl::optional<RINSNeighborhood> rins_neighborhood_opt =
       rins_manager->GetUnexploredNeighborhood();
 
   if (!rins_neighborhood_opt.has_value()) {
-    return helper_.FixAllVariables(initial_solution);
+    return neighborhood;
   }
 
   // Fix the variables in the local model.
@@ -484,6 +487,7 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
     neighborhood.cp_model.mutable_variables(var)->add_domain(value);
     neighborhood.is_reduced = true;
   }
+  neighborhood.is_generated = true;
   return neighborhood;
 }
 
