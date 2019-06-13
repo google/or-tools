@@ -1586,7 +1586,7 @@ objs/sat/disjunctive.$O: ortools/sat/disjunctive.cc \
  ortools/sat/intervals.h ortools/sat/cp_constraints.h \
  ortools/sat/integer_expr.h ortools/sat/precedences.h \
  ortools/sat/theta_tree.h ortools/base/iterator_adaptors.h \
- ortools/sat/all_different.h ortools/util/sort.h | $(OBJ_DIR)/sat
+ ortools/sat/all_different.h ortools/sat/timetable.h ortools/util/sort.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sdisjunctive.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sdisjunctive.$O
 
 objs/sat/drat_checker.$O: ortools/sat/drat_checker.cc \
