@@ -1,0 +1,8 @@
+<map id="operations_research::Constraint" name="operations_research::Constraint">
+<area shape="rect" id="node1" title="A constraint is the main modeling object." alt="" coords="414,68,557,107"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1CastConstraint.html" title="Cast constraints are special channeling constraints designed to keep a variable in sync with an expre..." alt="" coords="610,5,753,44"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1DisjunctiveConstraint.html" title="&#45;&#45;— Disjunctive Constraint &#45;&#45;—" alt="" coords="605,68,759,107"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1Pack.html" title="&#45;&#45;&#45;&#45;&#45;&#45;&#45;— Pack Constraint &#45;&#45;&#45;&#45;&#45;&#45;&#45;—" alt="" coords="610,131,753,169"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1PropagationBaseObject.html" title="The PropagationBaseObject is a subclass of BaseObject that is also friend to the Solver class." alt="" coords="196,68,366,107"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="" coords="5,68,148,107"/>
+</map>

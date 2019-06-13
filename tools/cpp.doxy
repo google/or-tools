@@ -791,10 +791,45 @@ WARN_LOGFILE           =
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  = \
+  ortools/constraint_solver/constraint_solver.h \
+  ortools/constraint_solver/constraint_solveri.h \
+  ortools/constraint_solver/routing.h \
+  ortools/constraint_solver/routing_flags.h \
+  ortools/constraint_solver/routing_index_manager.h \
+  ortools/constraint_solver/routing_lp_scheduling.h \
+  ortools/constraint_solver/routing_neighborhoods.h \
+  ortools/constraint_solver/routing_parameters.h \
+  ortools/constraint_solver/routing_types.h \
+  ortools/graph/christofides.h \
+  ortools/graph/cliques.h \
+  ortools/graph/connected_components.h \
+  ortools/graph/connectivity.h \
+  ortools/graph/ebert_graph.h \
+  ortools/graph/eulerian_path.h \
+  ortools/graph/graph.h \
+  ortools/graph/graphs.h \
+  ortools/graph/hamiltonian_path.h \
+  ortools/graph/io.h \
+  ortools/graph/iterators.h \
+  ortools/graph/linear_assignment.h \
+  ortools/graph/max_flow.h \
+  ortools/graph/min_cost_flow.h \
+  ortools/graph/minimum_spanning_tree.h \
+  ortools/graph/one_tree_lower_bound.h \
+  ortools/graph/shortestpaths.h \
+  ortools/graph/strongly_connected_components.h \
+  ortools/graph/util.h  ortools/linear_solver/linear_expr.h \ 
+  ortools/linear_solver/linear_solver.h \
+  ortools/linear_solver/model_exporter.h \
+  ortools/linear_solver/model_exporter_swig_helper.h \
+  ortools/linear_solver/model_validator.h \
   ortools/sat/cp_model.h \
   ortools/sat/cp_model_solver.h \
   ortools/sat/model.h \
   ortools/util/sorted_interval_list.h \
+  ortools/gen/ortools/constraint_solver/routing_enums.pb.h \
+  ortools/gen/ortools/constraint_solver/routing_parameters.pb.h \
+  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
   ortools/gen/ortools/sat/cp_model.pb.h \
   ortools/gen/ortools/sat/sat_parameters.pb.h
 

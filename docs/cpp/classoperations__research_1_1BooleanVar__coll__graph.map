@@ -1,0 +1,8 @@
+<map id="operations_research::BooleanVar" name="operations_research::BooleanVar">
+<area shape="rect" id="node1" title="&#45;&#45;— Boolean Variable &#45;&#45;—" alt="" coords="1007,52,1150,91"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr." alt="" coords="636,5,779,44"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming." alt="" coords="416,5,559,44"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1PropagationBaseObject.html" title="The PropagationBaseObject is a subclass of BaseObject that is also friend to the Solver class." alt="" coords="198,5,367,44"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="" coords="5,5,148,44"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1SimpleRevFIFO.html" title=" " alt="" coords="609,68,806,120"/>
+</map>

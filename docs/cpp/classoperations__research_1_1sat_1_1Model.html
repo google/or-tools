@@ -289,7 +289,7 @@ template&lt;typename T &gt; </div>
 <p>This returns an already created instance or create a new one if needed using the T(Model* model) constructor if it exist or T() otherwise.</p>
 <p>This works a bit like in a dependency injection framework and allows to really easily wire all the classes that make up a solver together. For instance a constraint can depends on the LiteralTrail, or the IntegerTrail or both, it can depend on a Watcher class to register itself in order to be called when needed and so on.</p>
 <p>IMPORTANT: the Model* constructors function shouldn't form a cycle between each other, otherwise this will crash the program. </p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000003">Todo:</a></b></dt><dd>(user): directly store std::unique_ptr&lt;&gt; in singletons_? </dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000104">Todo:</a></b></dt><dd>(user): directly store std::unique_ptr&lt;&gt; in singletons_? </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="model_8h_source.html#l00081">81</a> of file <a class="el" href="model_8h_source.html">model.h</a>.</p>
 

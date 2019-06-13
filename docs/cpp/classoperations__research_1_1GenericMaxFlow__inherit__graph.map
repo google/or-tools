@@ -1,0 +1,4 @@
+<map id="operations_research::GenericMaxFlow&lt; Graph &gt;" name="operations_research::GenericMaxFlow&lt; Graph &gt;">
+<area shape="rect" id="node1" title="Forward declaration." alt="" coords="5,92,194,131"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1MaxFlowStatusClass.html" title="We want an enum for the Status of a max flow run, and we want this enum to be scoped under GenericMax..." alt="" coords="23,5,176,44"/>
+</map>

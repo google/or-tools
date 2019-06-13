@@ -1,0 +1,5 @@
+<map id="operations_research::DecisionVisitor" name="operations_research::DecisionVisitor">
+<area shape="rect" id="node1" title="A DecisionVisitor is used to inspect a decision." alt="" coords="5,92,148,131"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1SymmetryBreaker.html" title="A symmetry breaker is an object that will visit a decision and create the &#39;symmetrical&#39; decision in r..." alt="" coords="5,179,148,217"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="" coords="5,5,148,44"/>
+</map>

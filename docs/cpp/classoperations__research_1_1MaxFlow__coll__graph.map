@@ -1,0 +1,11 @@
+<map id="operations_research::MaxFlow" name="operations_research::MaxFlow">
+<area shape="rect" id="node1" title="Default instance MaxFlow that uses StarGraph." alt="" coords="1530,75,1673,113"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1GenericMaxFlow.html" title=" " alt="" coords="1268,75,1481,113"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1MaxFlowStatusClass.html" title="We want an enum for the Status of a max flow run, and we want this enum to be scoped under GenericMax..." alt="" coords="886,5,1039,44"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1PriorityQueueWithRestrictedPush.html" title=" " alt="" coords="854,68,1071,120"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1EbertGraph.html" title="Forward declarations." alt="" coords="860,144,1066,196"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1EbertGraphBase.html" title="A template for the base class that holds the functionality that exists in common between the EbertGra..." alt="" coords="567,137,805,203"/>
+<area shape="rect" id="node7" href="$classoperations__research_1_1StarGraphBase.html" title=" " alt="" coords="278,144,518,196"/>
+<area shape="rect" id="node8" title=" " alt="" coords="5,108,120,133"/>
+<area shape="rect" id="node9" title=" " alt="" coords="11,205,114,231"/>
+</map>

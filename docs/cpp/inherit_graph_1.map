@@ -1,3 +1,3 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structoperations__research_1_1ClosedInterval.html" title="Represents a closed interval [start, end]. We must have start &lt;= end." alt="" coords="5,5,148,44"/>
+<area shape="rect" id="node1" href="$classConnectedComponentsFinder.html" title="Usage: ConnectedComponentsFinder&lt;MyNodeType&gt; cc; cc.AddNode(node1); cc.AddNode(node2); cc...." alt="" coords="5,5,205,44"/>
 </map>
