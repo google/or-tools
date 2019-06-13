@@ -1,0 +1,13 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" title=" " alt="" coords="5,295,81,320"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1MPConstraintProto.html" title=" " alt="" coords="162,5,305,44"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1MPGeneralConstraintProto.html" title=" " alt="" coords="139,68,328,107"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1MPIndicatorConstraint.html" title=" " alt="" coords="153,131,314,169"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1MPModelProto.html" title=" " alt="" coords="162,193,305,232"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1MPModelRequest.html" title=" " alt="" coords="162,256,305,295"/>
+<area shape="rect" id="node7" href="$classoperations__research_1_1MPSolutionResponse.html" title=" " alt="" coords="155,319,312,357"/>
+<area shape="rect" id="node8" href="$classoperations__research_1_1MPSolverCommonParameters.html" title=" " alt="" coords="129,381,338,420"/>
+<area shape="rect" id="node9" href="$classoperations__research_1_1MPVariableProto.html" title=" " alt="" coords="162,444,305,483"/>
+<area shape="rect" id="node10" href="$classoperations__research_1_1OptionalDouble.html" title=" " alt="" coords="162,507,305,545"/>
+<area shape="rect" id="node11" href="$classoperations__research_1_1PartialVariableAssignment.html" title=" " alt="" coords="141,569,326,608"/>
+</map>

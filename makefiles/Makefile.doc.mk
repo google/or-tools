@@ -1,7 +1,10 @@
 # Generate documentation
 
 cpp-doc:
-	doxygen tools/cpp.doxy
+	doxygen tools/cpp_graph.doxy
+	doxygen tools/cpp_linear.doxy
+	doxygen tools/cpp_routing.doxy
+	doxygen tools/cpp_sat.doxy
 
 java-doc:
 	doxygen tools/java.doxy

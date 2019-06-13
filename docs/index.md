@@ -2,8 +2,10 @@
 
 ## C++ Documentation
 
-- [Main entry](cpp/index.html)
-- [CP-SAT namespace](cpp/namespaceoperations__research_1_1sat.html)
+- [Graph](cpp_graph/index.html)
+- [Routing](cpp_routing/index.html)
+- [Linear Solver](cpp_linear/index.html)
+- [CP-SAT](cpp_sat/index.html)
 
 ## Java Documentation
 
