@@ -99,15 +99,6 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classDenseConnectedComponentsFinder.html">DenseConnectedComponentsFinder</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">NOTE(user): The rest of the functions below should also be in namespace util, but for historical reasons it hasn't been done yet.  <a href="classDenseConnectedComponentsFinder.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structinternal_1_1ConnectedComponentsTypeHelper.html">internal::ConnectedComponentsTypeHelper&lt; T, CompareOrHashT &gt;</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A helper to deduce the type of map to use depending on whether CompareOrHashT is a comparator or a hasher (prefer the latter).  <a href="structinternal_1_1ConnectedComponentsTypeHelper.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structinternal_1_1ConnectedComponentsTypeHelper_1_1SelectContainer.html">internal::ConnectedComponentsTypeHelper&lt; T, CompareOrHashT &gt;::SelectContainer&lt; U, E &gt;</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">SFINAE trait to detect hash functors and select unordered containers if so, and ordered containers otherwise (= by default).  <a href="structinternal_1_1ConnectedComponentsTypeHelper_1_1SelectContainer.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structinternal_1_1ConnectedComponentsTypeHelper_1_1SelectContainer_3_01U_00_01absl_1_1enable__if709ff45ae30ec82cc2c06c401b5d6cb4.html">internal::ConnectedComponentsTypeHelper&lt; T, CompareOrHashT &gt;::SelectContainer&lt; U, absl::enable_if_t&lt; std::is_integral&lt; decltype(std::declval&lt; const U &amp; &gt;()(std::declval&lt; const T &amp; &gt;()))&gt;::value &gt; &gt;</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">The expression inside decltype is basically saying that "H(x)" is well-formed, where H is an instance of U and x is an instance of T, and is a value of integral type.  <a href="structinternal_1_1ConnectedComponentsTypeHelper_1_1SelectContainer_3_01U_00_01absl_1_1enable__if709ff45ae30ec82cc2c06c401b5d6cb4.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classConnectedComponentsFinder.html">ConnectedComponentsFinder&lt; T, CompareOrHashT &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Usage: ConnectedComponentsFinder&lt;MyNodeType&gt; cc; cc.AddNode(node1); cc.AddNode(node2); cc.AddEdge(node1, node2); ...  <a href="classConnectedComponentsFinder.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -116,8 +107,6 @@ Classes</h2></td></tr>
 Namespaces</h2></td></tr>
 <tr class="memitem:namespaceutil"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceutil.html">util</a></td></tr>
 <tr class="memdesc:namespaceutil"><td class="mdescLeft">&#160;</td><td class="mdescRight">Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. <br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:namespaceinternal"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceinternal.html">internal</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>

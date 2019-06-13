@@ -1,3 +1,6 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classoperations__research_1_1StarGraphBase_1_1NodeIterator.html" title="Iterator class for traversing all the nodes in the graph." alt="" coords="5,5,234,71"/>
+<area shape="rect" id="node1" href="$classutil_1_1BaseGraph.html" title=" " alt="" coords="5,68,195,107"/>
+<area shape="rect" id="node2" href="$classutil_1_1ReverseArcListGraph.html" title="Extends the ListGraph by also storing the reverse arcs." alt="" coords="243,5,468,44"/>
+<area shape="rect" id="node3" href="$classutil_1_1ReverseArcMixedGraph.html" title="This graph is a mix between the ReverseArcListGraph and the ReverseArcStaticGraph." alt="" coords="243,68,468,107"/>
+<area shape="rect" id="node4" href="$classutil_1_1ReverseArcStaticGraph.html" title="StaticGraph with reverse arc." alt="" coords="243,131,468,169"/>
 </map>

@@ -1,3 +1,7 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classoperations__research_1_1LinearSumAssignment_1_1BipartiteLeftNodeIterator.html" title=" " alt="" coords="5,5,194,71"/>
+<area shape="rect" id="node1" href="$classoperations__research_1_1MinCostFlowBase.html" title="Different statuses for a solved problem." alt="" coords="5,95,148,133"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1GenericMinCostFlow.html" title=" " alt="" coords="199,5,351,57"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1GenericMinCostFlow.html" title="Forward declaration." alt="" coords="196,81,354,147"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1SimpleMinCostFlow.html" title="A simple and efficient min&#45;cost flow interface." alt="" coords="202,171,348,209"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1MinCostFlow.html" title="Default MinCostFlow instance that uses StarGraph." alt="" coords="402,12,544,51"/>
 </map>

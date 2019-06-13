@@ -1,3 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classoperations__research_1_1Set.html" title=" " alt="" coords="5,5,148,44"/>
+<area shape="rect" id="node1" href="$classoperations__research_1_1StarGraphBase.html" title=" " alt="" coords="5,5,280,71"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1EbertGraphBase.html" title=" " alt="" coords="328,5,602,71"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1ForwardEbertGraph.html" title="A forward&#45;star&#45;only graph representation for greater efficiency in those algorithms that don&#39;t need r..." alt="" coords="650,12,876,64"/>
 </map>

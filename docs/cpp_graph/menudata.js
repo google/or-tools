@@ -136,7 +136,6 @@ var menudata={children:[
 {text:"d",url:"functions_type.html#index_d"},
 {text:"g",url:"functions_type.html#index_g"},
 {text:"i",url:"functions_type.html#index_i"},
-{text:"m",url:"functions_type.html#index_m"},
 {text:"n",url:"functions_type.html#index_n"},
 {text:"o",url:"functions_type.html#index_o"},
 {text:"p",url:"functions_type.html#index_p"},

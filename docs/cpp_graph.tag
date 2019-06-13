@@ -54,12 +54,8 @@
     <path>/Users/lperron/Work/or-tools/ortools/graph/</path>
     <filename>connected__components_8h</filename>
     <class kind="class">DenseConnectedComponentsFinder</class>
-    <class kind="struct">internal::ConnectedComponentsTypeHelper</class>
-    <class kind="struct">internal::ConnectedComponentsTypeHelper::SelectContainer</class>
-    <class kind="struct">internal::ConnectedComponentsTypeHelper::SelectContainer&lt; U, absl::enable_if_t&lt; std::is_integral&lt; decltype(std::declval&lt; const U &amp; &gt;()(std::declval&lt; const T &amp; &gt;()))&gt;::value &gt; &gt;</class>
     <class kind="class">ConnectedComponentsFinder</class>
     <namespace>util</namespace>
-    <namespace>internal</namespace>
     <member kind="function">
       <type>std::vector&lt; int &gt;</type>
       <name>GetConnectedComponents</name>
@@ -98,17 +94,10 @@
     <class kind="struct">operations_research::graph_traits</class>
     <class kind="struct">operations_research::graph_traits&lt; ForwardEbertGraph&lt; NodeIndexType, ArcIndexType &gt; &gt;</class>
     <class kind="struct">operations_research::graph_traits&lt; ForwardStaticGraph&lt; NodeIndexType, ArcIndexType &gt; &gt;</class>
-    <class kind="struct">operations_research::or_internal::TailArrayBuilder</class>
-    <class kind="struct">operations_research::or_internal::TailArrayBuilder&lt; GraphType, false &gt;</class>
-    <class kind="struct">operations_research::or_internal::TailArrayReleaser</class>
-    <class kind="struct">operations_research::or_internal::TailArrayReleaser&lt; GraphType, false &gt;</class>
     <class kind="class">operations_research::TailArrayManager</class>
     <class kind="class">operations_research::ArcFunctorOrderingByTailAndHead</class>
-    <class kind="class">operations_research::or_internal::GraphBuilderFromArcs</class>
-    <class kind="class">operations_research::or_internal::GraphBuilderFromArcs&lt; GraphType, true &gt;</class>
     <class kind="class">operations_research::AnnotatedGraphBuildManager</class>
     <namespace>operations_research</namespace>
-    <namespace>operations_research::or_internal</namespace>
     <member kind="typedef">
       <type>int32</type>
       <name>NodeIndex</name>
@@ -966,7 +955,6 @@
     <name>operations_research::AnnotatedGraphBuildManager</name>
     <filename>classoperations__research_1_1AnnotatedGraphBuildManager.html</filename>
     <templarg></templarg>
-    <base>GraphBuilderFromArcs&lt; GraphType, graph_traits&lt; GraphType &gt;::is_dynamic &gt;</base>
     <member kind="function">
       <type></type>
       <name>AnnotatedGraphBuildManager</name>
@@ -974,25 +962,11 @@
       <anchor>a54e58efb7e00c121962f0642e086ff62</anchor>
       <arglist>(typename GraphType::NodeIndex num_nodes, typename GraphType::ArcIndex num_arcs, bool sort_arcs)</arglist>
     </member>
-    <member kind="function">
-      <type>GraphType::ArcIndex</type>
-      <name>AddArc</name>
-      <anchorfile>classoperations__research_1_1or__internal_1_1GraphBuilderFromArcs.html</anchorfile>
-      <anchor>ac8c490f6e4ec383c92799f17ddde40e1</anchor>
-      <arglist>(typename GraphType::NodeIndex tail, typename GraphType::NodeIndex head)</arglist>
-    </member>
-    <member kind="function">
-      <type>GraphType *</type>
-      <name>Graph</name>
-      <anchorfile>classoperations__research_1_1or__internal_1_1GraphBuilderFromArcs.html</anchorfile>
-      <anchor>a63eda0d830f2a9f145e3aa65e7b80bae</anchor>
-      <arglist>(PermutationCycleHandler&lt; typename GraphType::ArcIndex &gt; *client_cycle_handler)</arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>operations_research::ArcFunctorOrderingByTailAndHead</name>
     <filename>classoperations__research_1_1ArcFunctorOrderingByTailAndHead.html</filename>
-    <templarg>GraphType</templarg>
+    <templarg></templarg>
     <member kind="function">
       <type></type>
       <name>ArcFunctorOrderingByTailAndHead</name>
@@ -2384,28 +2358,6 @@
       <anchorfile>classConnectedComponentsFinder.html</anchorfile>
       <anchor>a350a0a0790e558f619478ce97c8f2ae7</anchor>
       <arglist>() const</arglist>
-    </member>
-  </compound>
-  <compound kind="struct">
-    <name>internal::ConnectedComponentsTypeHelper</name>
-    <filename>structinternal_1_1ConnectedComponentsTypeHelper.html</filename>
-    <templarg>T</templarg>
-    <templarg>CompareOrHashT</templarg>
-    <class kind="struct">internal::ConnectedComponentsTypeHelper::SelectContainer</class>
-    <class kind="struct">internal::ConnectedComponentsTypeHelper::SelectContainer&lt; U, absl::enable_if_t&lt; std::is_integral&lt; decltype(std::declval&lt; const U &amp; &gt;()(std::declval&lt; const T &amp; &gt;()))&gt;::value &gt; &gt;</class>
-    <member kind="typedef">
-      <type>typename SelectContainer&lt; CompareOrHashT &gt;::Set</type>
-      <name>Set</name>
-      <anchorfile>structinternal_1_1ConnectedComponentsTypeHelper.html</anchorfile>
-      <anchor>a9cd35864d49655496e8299033909c931</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="typedef">
-      <type>typename SelectContainer&lt; CompareOrHashT &gt;::Map</type>
-      <name>Map</name>
-      <anchorfile>structinternal_1_1ConnectedComponentsTypeHelper.html</anchorfile>
-      <anchor>ae62844a121f82b3e7f7b43bb7eda50e3</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -6503,91 +6455,6 @@
       <anchorfile>structoperations__research_1_1graph__traits_3_01ForwardStaticGraph_3_01NodeIndexType_00_01ArcIndexType_01_4_01_4.html</anchorfile>
       <anchor>af0cb76b0565277bd556aa738f83534bf</anchor>
       <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>operations_research::or_internal::GraphBuilderFromArcs</name>
-    <filename>classoperations__research_1_1or__internal_1_1GraphBuilderFromArcs.html</filename>
-    <templarg>GraphType</templarg>
-    <templarg>is_dynamic</templarg>
-    <member kind="function">
-      <type></type>
-      <name>GraphBuilderFromArcs</name>
-      <anchorfile>classoperations__research_1_1or__internal_1_1GraphBuilderFromArcs.html</anchorfile>
-      <anchor>a50b4ce116fea3019a46e0d4d502c3d4a</anchor>
-      <arglist>(typename GraphType::NodeIndex max_num_nodes, typename GraphType::ArcIndex max_num_arcs, bool sort_arcs)</arglist>
-    </member>
-    <member kind="function">
-      <type>GraphType::ArcIndex</type>
-      <name>AddArc</name>
-      <anchorfile>classoperations__research_1_1or__internal_1_1GraphBuilderFromArcs.html</anchorfile>
-      <anchor>ac8c490f6e4ec383c92799f17ddde40e1</anchor>
-      <arglist>(typename GraphType::NodeIndex tail, typename GraphType::NodeIndex head)</arglist>
-    </member>
-    <member kind="function">
-      <type>GraphType *</type>
-      <name>Graph</name>
-      <anchorfile>classoperations__research_1_1or__internal_1_1GraphBuilderFromArcs.html</anchorfile>
-      <anchor>a63eda0d830f2a9f145e3aa65e7b80bae</anchor>
-      <arglist>(PermutationCycleHandler&lt; typename GraphType::ArcIndex &gt; *client_cycle_handler)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>GraphBuilderFromArcs&lt; GraphType, graph_traits&lt; GraphType &gt;::is_dynamic &gt;</name>
-    <filename>classoperations__research_1_1or__internal_1_1GraphBuilderFromArcs.html</filename>
-    <member kind="function">
-      <type></type>
-      <name>GraphBuilderFromArcs</name>
-      <anchorfile>classoperations__research_1_1or__internal_1_1GraphBuilderFromArcs.html</anchorfile>
-      <anchor>a50b4ce116fea3019a46e0d4d502c3d4a</anchor>
-      <arglist>(typename GraphType::NodeIndex max_num_nodes, typename GraphType::ArcIndex max_num_arcs, bool sort_arcs)</arglist>
-    </member>
-    <member kind="function">
-      <type>GraphType::ArcIndex</type>
-      <name>AddArc</name>
-      <anchorfile>classoperations__research_1_1or__internal_1_1GraphBuilderFromArcs.html</anchorfile>
-      <anchor>ac8c490f6e4ec383c92799f17ddde40e1</anchor>
-      <arglist>(typename GraphType::NodeIndex tail, typename GraphType::NodeIndex head)</arglist>
-    </member>
-    <member kind="function">
-      <type>GraphType *</type>
-      <name>Graph</name>
-      <anchorfile>classoperations__research_1_1or__internal_1_1GraphBuilderFromArcs.html</anchorfile>
-      <anchor>a63eda0d830f2a9f145e3aa65e7b80bae</anchor>
-      <arglist>(PermutationCycleHandler&lt; typename GraphType::ArcIndex &gt; *client_cycle_handler)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>operations_research::or_internal::GraphBuilderFromArcs&lt; GraphType, true &gt;</name>
-    <filename>classoperations__research_1_1or__internal_1_1GraphBuilderFromArcs_3_01GraphType_00_01true_01_4.html</filename>
-    <templarg></templarg>
-    <member kind="function">
-      <type></type>
-      <name>GraphBuilderFromArcs</name>
-      <anchorfile>classoperations__research_1_1or__internal_1_1GraphBuilderFromArcs_3_01GraphType_00_01true_01_4.html</anchorfile>
-      <anchor>a64d3d75bc8251d0ad57b871d5fe4218d</anchor>
-      <arglist>(typename GraphType::NodeIndex max_num_nodes, typename GraphType::ArcIndex max_num_arcs, bool sort_arcs)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>Reserve</name>
-      <anchorfile>classoperations__research_1_1or__internal_1_1GraphBuilderFromArcs_3_01GraphType_00_01true_01_4.html</anchorfile>
-      <anchor>a5d791b7f9699217ab04fd210eb2fbc0c</anchor>
-      <arglist>(const typename GraphType::NodeIndex new_max_num_nodes, const typename GraphType::ArcIndex new_max_num_arcs)</arglist>
-    </member>
-    <member kind="function">
-      <type>GraphType::ArcIndex</type>
-      <name>AddArc</name>
-      <anchorfile>classoperations__research_1_1or__internal_1_1GraphBuilderFromArcs_3_01GraphType_00_01true_01_4.html</anchorfile>
-      <anchor>ad46ec98800eaa24cf5938a70dd9cdec0</anchor>
-      <arglist>(const typename GraphType::NodeIndex tail, const typename GraphType::NodeIndex head)</arglist>
-    </member>
-    <member kind="function">
-      <type>GraphType *</type>
-      <name>Graph</name>
-      <anchorfile>classoperations__research_1_1or__internal_1_1GraphBuilderFromArcs_3_01GraphType_00_01true_01_4.html</anchorfile>
-      <anchor>a0d5cb434a87d8d954377759e77439590</anchor>
-      <arglist>(PermutationCycleHandler&lt; typename GraphType::ArcIndex &gt; *client_cycle_handler)</arglist>
     </member>
   </compound>
   <compound kind="struct">
@@ -10693,45 +10560,6 @@
       <arglist></arglist>
     </member>
   </compound>
-  <compound kind="struct">
-    <name>internal::ConnectedComponentsTypeHelper::SelectContainer</name>
-    <filename>structinternal_1_1ConnectedComponentsTypeHelper_1_1SelectContainer.html</filename>
-    <templarg>U</templarg>
-    <templarg>E</templarg>
-    <member kind="typedef">
-      <type>std::set&lt; T, CompareOrHashT &gt;</type>
-      <name>Set</name>
-      <anchorfile>structinternal_1_1ConnectedComponentsTypeHelper_1_1SelectContainer.html</anchorfile>
-      <anchor>a5dde23c75f6bb978eeb813de8c33e45c</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="typedef">
-      <type>std::map&lt; T, int, CompareOrHashT &gt;</type>
-      <name>Map</name>
-      <anchorfile>structinternal_1_1ConnectedComponentsTypeHelper_1_1SelectContainer.html</anchorfile>
-      <anchor>a0ed154f290edff8b152633553a5448d3</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="struct">
-    <name>internal::ConnectedComponentsTypeHelper::SelectContainer&lt; U, absl::enable_if_t&lt; std::is_integral&lt; decltype(std::declval&lt; const U &amp; &gt;()(std::declval&lt; const T &amp; &gt;()))&gt;::value &gt; &gt;</name>
-    <filename>structinternal_1_1ConnectedComponentsTypeHelper_1_1SelectContainer_3_01U_00_01absl_1_1enable__if709ff45ae30ec82cc2c06c401b5d6cb4.html</filename>
-    <templarg></templarg>
-    <member kind="typedef">
-      <type>absl::flat_hash_set&lt; T, CompareOrHashT &gt;</type>
-      <name>Set</name>
-      <anchorfile>structinternal_1_1ConnectedComponentsTypeHelper_1_1SelectContainer_3_01U_00_01absl_1_1enable__if709ff45ae30ec82cc2c06c401b5d6cb4.html</anchorfile>
-      <anchor>a439a1cb9d2121271a7db8e24700b8377</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="typedef">
-      <type>absl::flat_hash_map&lt; T, int, CompareOrHashT &gt;</type>
-      <name>Map</name>
-      <anchorfile>structinternal_1_1ConnectedComponentsTypeHelper_1_1SelectContainer_3_01U_00_01absl_1_1enable__if709ff45ae30ec82cc2c06c401b5d6cb4.html</anchorfile>
-      <anchor>a59d3484159e1af75544ad7966e796f31</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
   <compound kind="class">
     <name>operations_research::Set</name>
     <filename>classoperations__research_1_1Set.html</filename>
@@ -12912,52 +12740,6 @@
       <arglist>()</arglist>
     </member>
   </compound>
-  <compound kind="struct">
-    <name>operations_research::or_internal::TailArrayBuilder</name>
-    <filename>structoperations__research_1_1or__internal_1_1TailArrayBuilder.html</filename>
-    <templarg></templarg>
-    <templarg>has_reverse_arcs</templarg>
-    <member kind="function">
-      <type></type>
-      <name>TailArrayBuilder</name>
-      <anchorfile>structoperations__research_1_1or__internal_1_1TailArrayBuilder.html</anchorfile>
-      <anchor>a28b7688fafdc836ef6a73745a0fce436</anchor>
-      <arglist>(GraphType *unused_graph)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>BuildTailArray</name>
-      <anchorfile>structoperations__research_1_1or__internal_1_1TailArrayBuilder.html</anchorfile>
-      <anchor>a589594565d8036122b077b6cd073a78b</anchor>
-      <arglist>() const</arglist>
-    </member>
-  </compound>
-  <compound kind="struct">
-    <name>operations_research::or_internal::TailArrayBuilder&lt; GraphType, false &gt;</name>
-    <filename>structoperations__research_1_1or__internal_1_1TailArrayBuilder_3_01GraphType_00_01false_01_4.html</filename>
-    <templarg></templarg>
-    <member kind="function">
-      <type></type>
-      <name>TailArrayBuilder</name>
-      <anchorfile>structoperations__research_1_1or__internal_1_1TailArrayBuilder_3_01GraphType_00_01false_01_4.html</anchorfile>
-      <anchor>a24a7428dbeb51c80bd4286717a76a6bd</anchor>
-      <arglist>(GraphType *graph)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>BuildTailArray</name>
-      <anchorfile>structoperations__research_1_1or__internal_1_1TailArrayBuilder_3_01GraphType_00_01false_01_4.html</anchorfile>
-      <anchor>aa11235f108a5e901782389445d5142e6</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="variable">
-      <type>GraphType *const</type>
-      <name>graph_</name>
-      <anchorfile>structoperations__research_1_1or__internal_1_1TailArrayBuilder_3_01GraphType_00_01false_01_4.html</anchorfile>
-      <anchor>ab7e50258cbade6b04cce77b445085dca</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
   <compound kind="class">
     <name>operations_research::TailArrayManager</name>
     <filename>classoperations__research_1_1TailArrayManager.html</filename>
@@ -12982,52 +12764,6 @@
       <anchorfile>classoperations__research_1_1TailArrayManager.html</anchorfile>
       <anchor>ac1ef6f2392846180bc3c98f97a583906</anchor>
       <arglist>() const</arglist>
-    </member>
-  </compound>
-  <compound kind="struct">
-    <name>operations_research::or_internal::TailArrayReleaser</name>
-    <filename>structoperations__research_1_1or__internal_1_1TailArrayReleaser.html</filename>
-    <templarg></templarg>
-    <templarg>has_reverse_arcs</templarg>
-    <member kind="function">
-      <type></type>
-      <name>TailArrayReleaser</name>
-      <anchorfile>structoperations__research_1_1or__internal_1_1TailArrayReleaser.html</anchorfile>
-      <anchor>aeff559d3c44a19d42a1f33813c6c362d</anchor>
-      <arglist>(GraphType *unused_graph)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>ReleaseTailArray</name>
-      <anchorfile>structoperations__research_1_1or__internal_1_1TailArrayReleaser.html</anchorfile>
-      <anchor>a5a7ac35808765a8abc9fd2e84ea6ea72</anchor>
-      <arglist>() const</arglist>
-    </member>
-  </compound>
-  <compound kind="struct">
-    <name>operations_research::or_internal::TailArrayReleaser&lt; GraphType, false &gt;</name>
-    <filename>structoperations__research_1_1or__internal_1_1TailArrayReleaser_3_01GraphType_00_01false_01_4.html</filename>
-    <templarg></templarg>
-    <member kind="function">
-      <type></type>
-      <name>TailArrayReleaser</name>
-      <anchorfile>structoperations__research_1_1or__internal_1_1TailArrayReleaser_3_01GraphType_00_01false_01_4.html</anchorfile>
-      <anchor>a15337365a0acc879ac0b8644367d49cd</anchor>
-      <arglist>(GraphType *graph)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>ReleaseTailArray</name>
-      <anchorfile>structoperations__research_1_1or__internal_1_1TailArrayReleaser_3_01GraphType_00_01false_01_4.html</anchorfile>
-      <anchor>a32810896d711a4ee8b476a744e0df3b2</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="variable">
-      <type>GraphType *const</type>
-      <name>graph_</name>
-      <anchorfile>structoperations__research_1_1or__internal_1_1TailArrayReleaser_3_01GraphType_00_01false_01_4.html</anchorfile>
-      <anchor>a2846e22b5bbaabf4c4c6079fb3f91541</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -13058,14 +12794,8 @@
     </member>
   </compound>
   <compound kind="namespace">
-    <name>internal</name>
-    <filename>namespaceinternal.html</filename>
-    <class kind="struct">internal::ConnectedComponentsTypeHelper</class>
-  </compound>
-  <compound kind="namespace">
     <name>operations_research</name>
     <filename>namespaceoperations__research.html</filename>
-    <namespace>operations_research::or_internal</namespace>
     <class kind="class">operations_research::AnnotatedGraphBuildManager</class>
     <class kind="class">operations_research::ArcFunctorOrderingByTailAndHead</class>
     <class kind="class">operations_research::ArcIndexOrderingByTailNode</class>
@@ -13323,16 +13053,6 @@
       <anchor>acff272be25bcf9641218c05c59ec1a4e</anchor>
       <arglist>(int node_count, int start_node, int end_node, std::function&lt; int64(int, int)&gt; graph, std::function&lt; int64(int)&gt; heuristic, int64 disconnected_distance, std::vector&lt; int &gt; *nodes)</arglist>
     </member>
-  </compound>
-  <compound kind="namespace">
-    <name>operations_research::or_internal</name>
-    <filename>namespaceoperations__research_1_1or__internal.html</filename>
-    <class kind="class">operations_research::or_internal::GraphBuilderFromArcs</class>
-    <class kind="class">operations_research::or_internal::GraphBuilderFromArcs&lt; GraphType, true &gt;</class>
-    <class kind="struct">operations_research::or_internal::TailArrayBuilder</class>
-    <class kind="struct">operations_research::or_internal::TailArrayBuilder&lt; GraphType, false &gt;</class>
-    <class kind="struct">operations_research::or_internal::TailArrayReleaser</class>
-    <class kind="struct">operations_research::or_internal::TailArrayReleaser&lt; GraphType, false &gt;</class>
   </compound>
   <compound kind="namespace">
     <name>util</name>
