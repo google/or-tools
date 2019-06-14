@@ -293,7 +293,7 @@ SAMPLE_SHIFTS_MEDIUM = [
     [199, '00:25', '01:12', 1465, 1512, 47]
 ]  # yapf:disable
 
-SAMPLE_SHIFTS_LARGE =
+SAMPLE_SHIFTS_LARGE = [
     [0, '04:18', '05:00', 258, 300, 42],
     [1, '04:27', '05:08', 267, 308, 41],
     [2, '04:29', '05:26', 269, 326, 57],
@@ -1653,7 +1653,7 @@ SAMPLE_SHIFTS_LARGE =
 ]  # yapf:disable
 
 
-SAMPLE_SHIFTS = SAMPLE_SHIFTS_MEDIUM
+SAMPLE_SHIFTS = SAMPLE_SHIFTS_SMALL
 
 
 def bus_driver_scheduling(minimize_drivers, max_num_drivers):
