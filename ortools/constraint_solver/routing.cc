@@ -1119,6 +1119,7 @@ std::vector<std::string> RoutingModel::GetAllDimensionNames() const {
   for (const auto& dimension_name_index : dimension_name_to_index_) {
     dimension_names.push_back(dimension_name_index.first);
   }
+  std::sort(dimension_names.begin(), dimension_names.end());
   return dimension_names;
 }
 
@@ -1282,37 +1283,16 @@ void RoutingModel::ComputeCostClasses(
 
 bool RoutingModel::VehicleClass::LessThan(const VehicleClass& a,
                                           const VehicleClass& b) {
-  if (a.cost_class_index != b.cost_class_index) {
-    return a.cost_class_index < b.cost_class_index;
-  }
-  if (a.fixed_cost != b.fixed_cost) {
-    return a.fixed_cost < b.fixed_cost;
-  }
-  if (a.start_equivalence_class != b.start_equivalence_class) {
-    return a.start_equivalence_class < b.start_equivalence_class;
-  }
-  if (a.end_equivalence_class != b.end_equivalence_class) {
-    return a.end_equivalence_class < b.end_equivalence_class;
-  }
-  if (a.unvisitable_nodes_fprint != b.unvisitable_nodes_fprint) {
-    return a.unvisitable_nodes_fprint < b.unvisitable_nodes_fprint;
-  }
-  if (a.dimension_start_cumuls_min != b.dimension_start_cumuls_min) {
-    return a.dimension_start_cumuls_min < b.dimension_start_cumuls_min;
-  }
-  if (a.dimension_start_cumuls_max != b.dimension_start_cumuls_max) {
-    return a.dimension_start_cumuls_max < b.dimension_start_cumuls_max;
-  }
-  if (a.dimension_end_cumuls_min != b.dimension_end_cumuls_min) {
-    return a.dimension_end_cumuls_min < b.dimension_end_cumuls_min;
-  }
-  if (a.dimension_end_cumuls_max != b.dimension_end_cumuls_max) {
-    return a.dimension_end_cumuls_max < b.dimension_end_cumuls_max;
-  }
-  if (a.dimension_capacities != b.dimension_capacities) {
-    return a.dimension_capacities < b.dimension_capacities;
-  }
-  return a.dimension_evaluator_classes < b.dimension_evaluator_classes;
+  return std::tie(a.cost_class_index, a.fixed_cost, a.start_equivalence_class,
+                  a.end_equivalence_class, a.unvisitable_nodes_fprint,
+                  a.dimension_start_cumuls_min, a.dimension_start_cumuls_max,
+                  a.dimension_end_cumuls_min, a.dimension_end_cumuls_max,
+                  a.dimension_capacities, a.dimension_evaluator_classes) <
+         std::tie(b.cost_class_index, b.fixed_cost, b.start_equivalence_class,
+                  b.end_equivalence_class, b.unvisitable_nodes_fprint,
+                  b.dimension_start_cumuls_min, b.dimension_start_cumuls_max,
+                  b.dimension_end_cumuls_min, b.dimension_end_cumuls_max,
+                  b.dimension_capacities, b.dimension_evaluator_classes);
 }
 
 void RoutingModel::ComputeVehicleClasses() {
@@ -2010,17 +1990,32 @@ void RoutingModel::CloseModelWithParameters(
       }
       solver_->AddConstraint(
           MakePathSpansAndTotalSlacks(dimension, spans, total_slacks));
+      // If a vehicle's span is constrained, its start/end cumuls must be
+      // instantiated.
+      for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
+        if (!spans[vehicle] && !total_slacks[vehicle]) continue;
+        if (spans[vehicle]) {
+          AddVariableTargetToFinalizer(spans[vehicle], kint64min);
+        }
+        AddVariableTargetToFinalizer(dimension->CumulVar(End(vehicle)),
+                                     kint64min);
+        AddVariableTargetToFinalizer(dimension->CumulVar(Start(vehicle)),
+                                     kint64max);
+      }
       // Add costs of variables.
       for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
-        if (span_costs[vehicle] != 0) {
-          DCHECK(total_slacks[vehicle] != nullptr);
-          cost_elements.push_back(
-              solver_
-                  ->MakeProd(vehicle_costs_considered_[vehicle],
-                             solver_->MakeProd(total_slacks[vehicle],
-                                               span_costs[vehicle]))
-                  ->Var());
-        }
+        if (span_costs[vehicle] == 0) continue;
+        DCHECK(total_slacks[vehicle] != nullptr);
+        IntVar* const slack_amount =
+            solver_
+                ->MakeProd(vehicle_costs_considered_[vehicle],
+                           total_slacks[vehicle])
+                ->Var();
+        IntVar* const slack_cost =
+            solver_->MakeProd(slack_amount, span_costs[vehicle])->Var();
+        cost_elements.push_back(slack_cost);
+        AddWeightedVariableMinimizedByFinalizer(slack_amount,
+                                                span_costs[vehicle]);
       }
       if (dimension->HasSoftSpanUpperBounds()) {
         for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
@@ -2030,16 +2025,19 @@ void RoutingModel::CloseModelWithParameters(
           DCHECK(spans[vehicle] != nullptr);
           // Additional cost is vehicle_cost_considered_[vehicle] *
           // max(0, spans[vehicle] - bound_cost.bound) * bound_cost.cost.
-          cost_elements.push_back(
+          IntVar* const span_violation_amount =
               solver_
                   ->MakeProd(
                       vehicle_costs_considered_[vehicle],
-                      solver_->MakeProd(
-                          solver_->MakeMax(solver_->MakeSum(spans[vehicle],
-                                                            -bound_cost.bound),
-                                           0),
-                          bound_cost.cost))
-                  ->Var());
+                      solver_->MakeMax(
+                          solver_->MakeSum(spans[vehicle], -bound_cost.bound),
+                          0))
+                  ->Var();
+          IntVar* const span_violation_cost =
+              solver_->MakeProd(span_violation_amount, bound_cost.cost)->Var();
+          cost_elements.push_back(span_violation_cost);
+          AddWeightedVariableMinimizedByFinalizer(span_violation_amount,
+                                                  bound_cost.cost);
         }
       }
     }
@@ -2923,37 +2921,28 @@ const Assignment* RoutingModel::SolveFromAssignmentWithParameters(
                                           kint64max, kint64max, kint64max);
 
   std::vector<std::unique_ptr<Assignment>> solution_pool;
-  if (nullptr == assignment) {
-    bool solution_found = false;
-    Assignment matching(solver_.get());
-    if (IsMatchingModel() && SolveMatchingModel(&matching) &&
-        AppendAssignmentIfFeasible(matching, &solution_pool)) {
-      if (parameters.log_search()) {
-        LogSolution(parameters, "Min-Cost Flow Solution",
-                    solution_pool.back()->ObjectiveValue(), start_time_ms);
-      }
-      solution_found = true;
-    }
-    if (!solution_found) {
-      // Build trivial solutions to which we can come back too in case the
-      // solver does not manage to build something better.
-      Assignment unperformed(solver_.get());
-      MakeAllUnperformed(this, &unperformed);
-      if (AppendAssignmentIfFeasible(unperformed, &solution_pool) &&
-          parameters.log_search()) {
-        LogSolution(parameters, "All Unperformed Solution",
-                    solution_pool.back()->ObjectiveValue(), start_time_ms);
-      }
-      if (parameters.use_cp_sat() == BOOL_TRUE) {
-        Assignment sat(solver_.get());
-        if (SolveModelWithSat(this, &sat) &&
-            AppendAssignmentIfFeasible(sat, &solution_pool) &&
-            parameters.log_search()) {
-          LogSolution(parameters, "SAT", solution_pool.back()->ObjectiveValue(),
-                      start_time_ms);
+  if (parameters.use_cp() == BOOL_TRUE) {
+    if (nullptr == assignment) {
+      bool solution_found = false;
+      Assignment matching(solver_.get());
+      if (IsMatchingModel() && SolveMatchingModel(&matching) &&
+          AppendAssignmentIfFeasible(matching, &solution_pool)) {
+        if (parameters.log_search()) {
+          LogSolution(parameters, "Min-Cost Flow Solution",
+                      solution_pool.back()->ObjectiveValue(), start_time_ms);
         }
+        solution_found = true;
       }
-      if (parameters.use_cp() == BOOL_TRUE) {
+      if (!solution_found) {
+        // Build trivial solutions to which we can come back too in case the
+        // solver does not manage to build something better.
+        Assignment unperformed(solver_.get());
+        MakeAllUnperformed(this, &unperformed);
+        if (AppendAssignmentIfFeasible(unperformed, &solution_pool) &&
+            parameters.log_search()) {
+          LogSolution(parameters, "All Unperformed Solution",
+                      solution_pool.back()->ObjectiveValue(), start_time_ms);
+        }
         const int64 elapsed_time_ms = solver_->wall_time() - start_time_ms;
         const int64 time_left_ms =
             GetTimeLimitMs(parameters) != kint64max
@@ -2966,11 +2955,26 @@ const Assignment* RoutingModel::SolveFromAssignmentWithParameters(
           solver_->Solve(solve_db_, monitors_);
         }
       }
+    } else {
+      assignment_->CopyIntersection(assignment);
+      solver_->Solve(improve_db_, monitors_);
     }
-  } else {
-    assignment_->CopyIntersection(assignment);
-    solver_->Solve(improve_db_, monitors_);
   }
+
+  if (parameters.use_cp_sat() == BOOL_TRUE) {
+    const int solution_count = collect_assignments_->solution_count();
+    Assignment* const cp_solution =
+        solution_count >= 1 ? collect_assignments_->solution(solution_count - 1)
+                            : nullptr;
+    Assignment sat_solution(solver_.get());
+    if (SolveModelWithSat(*this, cp_solution, &sat_solution) &&
+        AppendAssignmentIfFeasible(sat_solution, &solution_pool) &&
+        parameters.log_search()) {
+      LogSolution(parameters, "SAT", solution_pool.back()->ObjectiveValue(),
+                  start_time_ms);
+    }
+  }
+
   const int64 elapsed_time_ms = solver_->wall_time() - start_time_ms;
   const int solution_count = collect_assignments_->solution_count();
   if (solution_count >= 1 || !solution_pool.empty()) {
@@ -4508,14 +4512,28 @@ std::vector<RoutingDimension*> RoutingModel::GetDimensionsWithSoftOrSpanCosts()
 
 DecisionBuilder*
 RoutingModel::CreateFinalizerForMinimizedAndMaximizedVariables() {
-  std::vector<DecisionBuilder*> decision_builders;
-  decision_builders.push_back(solver_->MakePhase(
-      variables_minimized_by_finalizer_, Solver::CHOOSE_FIRST_UNBOUND,
-      Solver::ASSIGN_MIN_VALUE));
-  decision_builders.push_back(solver_->MakePhase(
-      variables_maximized_by_finalizer_, Solver::CHOOSE_FIRST_UNBOUND,
-      Solver::ASSIGN_MAX_VALUE));
-  return solver_->Compose(decision_builders);
+  std::stable_sort(finalizer_variable_cost_pairs_.begin(),
+                   finalizer_variable_cost_pairs_.end(),
+                   [](const std::pair<IntVar*, int64>& var_cost1,
+                      const std::pair<IntVar*, int64>& var_cost2) {
+                     return var_cost1.second > var_cost2.second;
+                   });
+  const int num_variables = finalizer_variable_cost_pairs_.size() +
+                            finalizer_variable_target_pairs_.size();
+  std::vector<IntVar*> variables;
+  std::vector<int64> targets;
+  variables.reserve(num_variables);
+  targets.reserve(num_variables);
+  for (const auto& variable_cost : finalizer_variable_cost_pairs_) {
+    variables.push_back(variable_cost.first);
+    targets.push_back(kint64min);
+  }
+  for (const auto& variable_target : finalizer_variable_target_pairs_) {
+    variables.push_back(variable_target.first);
+    targets.push_back(variable_target.second);
+  }
+  return MakeSetValuesFromTargets(solver(), std::move(variables),
+                                  std::move(targets));
 }
 
 DecisionBuilder* RoutingModel::CreateSolutionFinalizer(SearchLimit* lns_limit) {
@@ -4975,14 +4993,32 @@ bool RoutingModel::UsesLightPropagation(
              FirstSolutionStrategy::FIRST_UNBOUND_MIN_VALUE;
 }
 
-void RoutingModel::AddVariableMinimizedByFinalizer(IntVar* var) {
+void RoutingModel::AddWeightedVariableMinimizedByFinalizer(IntVar* var,
+                                                           int64 cost) {
   CHECK(var != nullptr);
-  variables_minimized_by_finalizer_.push_back(var);
+  const int index = gtl::LookupOrInsert(&finalizer_variable_cost_index_, var,
+                                        finalizer_variable_cost_pairs_.size());
+  if (index < finalizer_variable_cost_pairs_.size()) {
+    const int64 old_cost = finalizer_variable_cost_pairs_[index].second;
+    finalizer_variable_cost_pairs_[index].second = CapAdd(old_cost, cost);
+  } else {
+    finalizer_variable_cost_pairs_.emplace_back(var, cost);
+  }
+}
+
+void RoutingModel::AddVariableTargetToFinalizer(IntVar* var, int64 target) {
+  CHECK(var != nullptr);
+  if (finalizer_variable_target_set_.contains(var)) return;
+  finalizer_variable_target_set_.insert(var);
+  finalizer_variable_target_pairs_.emplace_back(var, target);
 }
 
 void RoutingModel::AddVariableMaximizedByFinalizer(IntVar* var) {
-  CHECK(var != nullptr);
-  variables_maximized_by_finalizer_.push_back(var);
+  AddVariableTargetToFinalizer(var, kint64max);
+}
+
+void RoutingModel::AddVariableMinimizedByFinalizer(IntVar* var) {
+  AddVariableTargetToFinalizer(var, kint64min);
 }
 
 void RoutingModel::SetupSearch(
@@ -5928,14 +5964,16 @@ bool DisjunctivePropagator::DistanceDuration(Tasks* tasks) {
     // it will force the corresponding break or route start/end to cover this
     // point, which can force a break to be above minimum_break_duration.
 
-    // We suppose break tasks are ordered, end(task_n) <= start(task_{n+1})
+    // We suppose break tasks are ordered, so the algorithm supposes that
+    // start_min(task_n) <= start_min(task_{n+1}) and
+    // end_max(task_n) <= end_max(task_{n+1}).
     for (int task = tasks->num_chain_tasks + 1; task < num_tasks; ++task) {
       tasks->start_min[task] =
-          std::max(tasks->start_min[task], tasks->end_min[task - 1]);
+          std::max(tasks->start_min[task], tasks->start_min[task - 1]);
     }
     for (int task = num_tasks - 2; task >= tasks->num_chain_tasks; --task) {
       tasks->end_max[task] =
-          std::min(tasks->end_max[task], tasks->start_max[task + 1]);
+          std::min(tasks->end_max[task], tasks->end_max[task + 1]);
     }
     // Initial state: start at -inf with route_start in task_set.
     // Sweep over profile, looking for time points where the number of
@@ -6208,7 +6246,7 @@ void RoutingDimension::SetupCumulVarPiecewiseLinearCosts(
       cost_elements->push_back(cost_var);
       // TODO(user): Check if it wouldn't be better to minimize
       // piecewise_linear_cost.var here.
-      model_->AddVariableMinimizedByFinalizer(cost_var);
+      model_->AddWeightedVariableMinimizedByFinalizer(cost_var, 0);
     }
   }
 }
@@ -6258,7 +6296,8 @@ void RoutingDimension::SetupCumulVarSoftUpperBoundCosts(
       cost_elements->push_back(cost_var);
       // NOTE: We minimize the cost here instead of minimizing the cumul
       // variable, to avoid setting the cumul to earlier than necessary.
-      model_->AddVariableMinimizedByFinalizer(cost_var);
+      model_->AddWeightedVariableMinimizedByFinalizer(cost_var,
+                                                      soft_bound.coefficient);
     }
   }
 }
@@ -6308,7 +6347,8 @@ void RoutingDimension::SetupCumulVarSoftLowerBoundCosts(
       cost_elements->push_back(cost_var);
       // NOTE: We minimize the cost here instead of maximizing the cumul
       // variable, to avoid setting the cumul to later than necessary.
-      model_->AddVariableMinimizedByFinalizer(cost_var);
+      model_->AddWeightedVariableMinimizedByFinalizer(cost_var,
+                                                      soft_bound.coefficient);
     }
   }
 }
@@ -6326,7 +6366,8 @@ void RoutingDimension::SetupGlobalSpanCost(
                                ->Var());
     }
     IntVar* const max_end_cumul = solver->MakeMax(end_cumuls)->Var();
-    model_->AddVariableMinimizedByFinalizer(max_end_cumul);
+    model_->AddWeightedVariableMinimizedByFinalizer(
+        max_end_cumul, global_span_cost_coefficient_);
     std::vector<IntVar*> start_cumuls;
     for (int i = 0; i < model_->vehicles(); ++i) {
       IntVar* global_span_cost_start_cumul = solver->MakeIntVar(0, kint64max);
@@ -6336,13 +6377,15 @@ void RoutingDimension::SetupGlobalSpanCost(
       start_cumuls.push_back(global_span_cost_start_cumul);
     }
     IntVar* const min_start_cumul = solver->MakeMin(start_cumuls)->Var();
-    model_->AddVariableMaximizedByFinalizer(min_start_cumul);
+    model_->AddWeightedVariableMinimizedByFinalizer(
+        min_start_cumul, global_span_cost_coefficient_);
     // If there is a single vehicle, model the cost as the sum of its transits
     // to avoid slow (infinite) propagation loops.
     // TODO(user): Avoid slow propagation in the path constraints.
     if (model_->vehicles() == 1) {
       for (int var_index = 0; var_index < model_->Size(); ++var_index) {
-        model_->AddVariableMinimizedByFinalizer(slacks_[var_index]);
+        model_->AddWeightedVariableMinimizedByFinalizer(
+            slacks_[var_index], global_span_cost_coefficient_);
         cost_elements->push_back(
             solver
                 ->MakeProd(
@@ -6404,16 +6447,19 @@ void RoutingDimension::SetBreakIntervalsOfVehicle(
   for (IntervalVar* const interval : vehicle_break_intervals_[vehicle]) {
     model_->AddIntervalToAssignment(interval);
     if (interval->MayBePerformed() && !interval->MustBePerformed()) {
-      model_->AddVariableMinimizedByFinalizer(interval->PerformedExpr()->Var());
+      model_->AddVariableTargetToFinalizer(interval->PerformedExpr()->Var(), 0);
     }
-    model_->AddVariableMinimizedByFinalizer(interval->SafeStartExpr(0)->Var());
-    model_->AddVariableMinimizedByFinalizer(
-        interval->SafeDurationExpr(0)->Var());
+    model_->AddVariableTargetToFinalizer(interval->SafeStartExpr(0)->Var(),
+                                         kint64min);
+    model_->AddVariableTargetToFinalizer(interval->SafeDurationExpr(0)->Var(),
+                                         kint64min);
   }
   // When a vehicle has breaks, if its start and end are fixed,
   // then propagation keeps the cumuls min and max on its path feasible.
-  model_->AddVariableMinimizedByFinalizer(CumulVar(model_->End(vehicle)));
-  model_->AddVariableMaximizedByFinalizer(CumulVar(model_->Start(vehicle)));
+  model_->AddVariableTargetToFinalizer(CumulVar(model_->End(vehicle)),
+                                       kint64min);
+  model_->AddVariableTargetToFinalizer(CumulVar(model_->Start(vehicle)),
+                                       kint64max);
 }
 
 void RoutingDimension::InitializeBreaks() {
@@ -6533,11 +6579,13 @@ void RoutingDimension::SetupSlackAndDependentTransitCosts() const {
   for (auto it = dimensions_with_relevant_slacks.rbegin();
        it != dimensions_with_relevant_slacks.rend(); ++it) {
     for (int i = 0; i < model_->vehicles(); ++i) {
-      model_->AddVariableMaximizedByFinalizer((*it)->cumuls_[model_->Start(i)]);
-      model_->AddVariableMinimizedByFinalizer((*it)->cumuls_[model_->End(i)]);
+      model_->AddVariableTargetToFinalizer((*it)->cumuls_[model_->End(i)],
+                                           kint64min);
+      model_->AddVariableTargetToFinalizer((*it)->cumuls_[model_->Start(i)],
+                                           kint64max);
     }
     for (IntVar* const slack : (*it)->slacks_) {
-      model_->AddVariableMinimizedByFinalizer(slack);
+      model_->AddVariableTargetToFinalizer(slack, kint64min);
     }
   }
 }

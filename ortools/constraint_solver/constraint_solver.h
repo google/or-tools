@@ -4148,8 +4148,10 @@ class SolutionCollector : public SearchMonitor {
     int64 branches;
     int64 failures;
     int64 objective_value;
-    bool operator<(const SolutionData& data) const {
-      return solution < data.solution;
+    bool operator<(const SolutionData& other) const {
+      return std::tie(solution, time, branches, failures, objective_value) <
+             std::tie(other.solution, other.time, other.branches,
+                      other.failures, other.objective_value);
     }
   };
 

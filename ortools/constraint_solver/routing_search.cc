@@ -2751,27 +2751,22 @@ class GlobalCheapestInsertionFilteredDecisionBuilder::PairEntry {
         delivery_to_insert_(delivery_to_insert),
         delivery_insert_after_(delivery_insert_after),
         vehicle_(vehicle) {}
-  // Note: for compatibilty reasons, comparator follows tie-breaking rules used
+  // Note: for compatibility reasons, comparator follows tie-breaking rules used
   // in the first version of GlobalCheapestInsertion.
   bool operator<(const PairEntry& other) const {
+    // We first compare by value, then we favor insertions (vehicle != -1).
+    // The rest of the tie-breaking is done with std::tie.
     if (value_ != other.value_) {
       return value_ > other.value_;
     }
-    if ((vehicle_ == -1) != (other.vehicle_ == -1)) {
-      // Entries have same value, but only one of the two makes a pair of nodes
-      // performed. Prefer the insertion (vehicle != -1).
+    if ((vehicle_ == -1) ^ (other.vehicle_ == -1)) {
       return vehicle_ == -1;
     }
-    if (pickup_insert_after_ != other.pickup_insert_after_) {
-      return pickup_insert_after_ > other.pickup_insert_after_;
-    }
-    if (pickup_to_insert_ != other.pickup_to_insert_) {
-      return pickup_to_insert_ > other.pickup_to_insert_;
-    }
-    if (delivery_insert_after_ != other.delivery_insert_after_) {
-      return delivery_insert_after_ > other.delivery_insert_after_;
-    }
-    return delivery_to_insert_ > other.delivery_to_insert_;
+    return std::tie(pickup_insert_after_, pickup_to_insert_,
+                    delivery_insert_after_, delivery_to_insert_, vehicle_) >
+           std::tie(other.pickup_insert_after_, other.pickup_to_insert_,
+                    other.delivery_insert_after_, other.delivery_to_insert_,
+                    other.vehicle_);
   }
   void SetHeapIndex(int h) { heap_index_ = h; }
   int GetHeapIndex() const { return heap_index_; }
@@ -2802,21 +2797,16 @@ class GlobalCheapestInsertionFilteredDecisionBuilder::NodeEntry {
         node_to_insert_(node_to_insert),
         insert_after_(insert_after),
         vehicle_(vehicle) {}
-  // Note: comparator follows tie-breaking rules used in the first version
-  // GlobalCheapestInsertion.
   bool operator<(const NodeEntry& other) const {
+    // See PairEntry::operator<(), above. This one is similar.
     if (value_ != other.value_) {
       return value_ > other.value_;
     }
-    if ((vehicle_ == -1) != (other.vehicle_ == -1)) {
-      // Entries have same value, but only one of the two makes a node
-      // performed. Prefer the insertion (vehicle != -1).
+    if ((vehicle_ == -1) ^ (other.vehicle_ == -1)) {
       return vehicle_ == -1;
     }
-    if (insert_after_ != other.insert_after_) {
-      return insert_after_ > other.insert_after_;
-    }
-    return node_to_insert_ > other.node_to_insert_;
+    return std::tie(insert_after_, node_to_insert_, vehicle_) >
+           std::tie(other.insert_after_, other.node_to_insert_, other.vehicle_);
   }
   void SetHeapIndex(int h) { heap_index_ = h; }
   int GetHeapIndex() const { return heap_index_; }
@@ -3392,8 +3382,12 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdatePickupPositions(
   // pickup_insert_after.
   const int cost_class = model()->GetCostClassIndexOfVehicle(vehicle).value();
   const int64 pickup_insert_before = Value(pickup_insert_after);
-  for (int64 pickup :
-       GetPickupNeighborsOfNodeForCostClass(cost_class, pickup_insert_after)) {
+  const absl::flat_hash_set<int64>& pickup_neighbors =
+      GetPickupNeighborsOfNodeForCostClass(cost_class, pickup_insert_after);
+  std::vector<int64> sorted_pickup_neighbors(pickup_neighbors.begin(),
+                                             pickup_neighbors.end());
+  std::sort(sorted_pickup_neighbors.begin(), sorted_pickup_neighbors.end());
+  for (int64 pickup : sorted_pickup_neighbors) {
     if (Contains(pickup)) {
       continue;
     }
@@ -3500,8 +3494,12 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdateDeliveryPositions(
   // delivery_insert_after.
   const int cost_class = model()->GetCostClassIndexOfVehicle(vehicle).value();
   const int64 delivery_insert_before = Value(delivery_insert_after);
-  for (int64 delivery : GetDeliveryNeighborsOfNodeForCostClass(
-           cost_class, delivery_insert_after)) {
+  const absl::flat_hash_set<int64>& delivery_neighbors =
+      GetDeliveryNeighborsOfNodeForCostClass(cost_class, delivery_insert_after);
+  std::vector<int64> sorted_delivery_neighbors(delivery_neighbors.begin(),
+                                               delivery_neighbors.end());
+  std::sort(sorted_delivery_neighbors.begin(), sorted_delivery_neighbors.end());
+  for (int64 delivery : sorted_delivery_neighbors) {
     if (Contains(delivery)) {
       continue;
     }

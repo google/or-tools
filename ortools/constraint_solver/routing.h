@@ -862,6 +862,12 @@ class RoutingModel {
   // Adds a variable to maximize in the solution finalizer (see above for
   // information on the solution finalizer).
   void AddVariableMaximizedByFinalizer(IntVar* var);
+  // Adds a variable to minimize in the solution finalizer, with a weighted
+  // priority: the higher the more priority it has.
+  void AddWeightedVariableMinimizedByFinalizer(IntVar* var, int64 cost);
+  // Add a variable to set the closest possible to the target value in the
+  // solution finalizer.
+  void AddVariableTargetToFinalizer(IntVar* var, int64 target);
   // Closes the current routing model; after this method is called, no
   // modification to the model can be done, but RoutesToAssignment becomes
   // available. Note that CloseModel() is automatically called by Solve() and
@@ -1611,9 +1617,11 @@ class RoutingModel {
   std::vector<LocalSearchFilter*> filters_;
   std::vector<LocalSearchFilter*> feasibility_filters_;
   std::vector<LocalSearchFilter*> extra_filters_;
-  std::vector<IntVar*> variables_maximized_by_finalizer_;
-  std::vector<IntVar*> variables_minimized_by_finalizer_;
 #ifndef SWIG
+  std::vector<std::pair<IntVar*, int64>> finalizer_variable_cost_pairs_;
+  std::vector<std::pair<IntVar*, int64>> finalizer_variable_target_pairs_;
+  absl::flat_hash_map<IntVar*, int> finalizer_variable_cost_index_;
+  absl::flat_hash_set<IntVar*> finalizer_variable_target_set_;
   std::unique_ptr<SweepArranger> sweep_arranger_;
 #endif
 
@@ -3144,7 +3152,9 @@ class ChristofidesFilteredDecisionBuilder
 // the TSP corresponding to the model if it has a single vehicle. Therefore the
 // resulting solution might not actually be feasible. Will return false if a
 // solution could not be found.
-bool SolveModelWithSat(RoutingModel* model, Assignment* solution);
+bool SolveModelWithSat(const RoutingModel& model,
+                       const Assignment* initial_solution,
+                       Assignment* solution);
 
 // Generic path-based filter class.
 

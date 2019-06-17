@@ -18,17 +18,19 @@ namespace operations_research {
 namespace sat {
 namespace {
 
+// For now only TSPs are supported.
+bool RoutingModelCanBeSolvedBySat(const RoutingModel& model) {
+  return model.vehicles() == 1;
+}
+
 // Converts a RoutingModel to CpModelProto. The mapping back to RoutingModel
 // next variables can be obtained from the circuit constraint.
 // TODO(user): Support multi-route models and any type of constraints.
-bool PopulateBuilderWithRoutingModel(
-    const RoutingModel& model, CpModelBuilder* builder,
-    const CircuitConstraintProto** circuit_proto) {
-  if (model.vehicles() > 1) return false;
+CircuitConstraintProto* PopulateBuilderWithRoutingModel(
+    const RoutingModel& model, CpModelBuilder* builder) {
   const int num_nodes = model.Nexts().size();
   LinearExpr objective;
   CircuitConstraint circuit = builder->AddCircuitConstraint();
-  *circuit_proto = circuit.MutableProto()->mutable_circuit();
   for (int tail = 0; tail < num_nodes; ++tail) {
     std::unique_ptr<IntVarIterator> iter(
         model.NextVar(tail)->MakeDomainIterator(false));
@@ -48,14 +50,14 @@ bool PopulateBuilderWithRoutingModel(
     }
   }
   builder->Minimize(objective);
-  return true;
+  return circuit.MutableProto()->mutable_circuit();
 }
 
 // Converts a CpSolverResponse to an Assignment containing next variables,
 // using the circuit data to map arcs back to Next variables.
 bool ConvertToSolution(const CpSolverResponse& response,
                        const RoutingModel& model,
-                       const sat::CircuitConstraintProto& circuit,
+                       const CircuitConstraintProto& circuit,
                        Assignment* solution) {
   if (response.status() != CpSolverStatus::OPTIMAL &&
       response.status() != CpSolverStatus::FEASIBLE)
@@ -73,6 +75,22 @@ bool ConvertToSolution(const CpSolverResponse& response,
     }
   }
   return true;
+}
+
+void AddSolutionAsHintToModel(const Assignment* solution,
+                              const RoutingModel& model,
+                              const CircuitConstraintProto& circuit,
+                              CpModelProto* cp_model) {
+  if (solution == nullptr) return;
+  PartialVariableAssignment* const hint = cp_model->mutable_solution_hint();
+  hint->Clear();
+  const int size = circuit.literals_size();
+  for (int i = 0; i < size; ++i) {
+    hint->add_vars(circuit.literals(i));
+    const int tail = circuit.tails(i);
+    const int head = circuit.heads(i);
+    hint->add_values(solution->Value(model.NextVar(tail)) == head);
+  }
 }
 
 // Configures a CP-SAT solver and solves the given (routing) model using it.
@@ -100,14 +118,18 @@ CpSolverResponse SolveRoutingModel(
 
 // Solves a RoutingModel using the CP-SAT solver. Returns false if no solution
 // was found.
-bool SolveModelWithSat(RoutingModel* model, Assignment* solution) {
+bool SolveModelWithSat(const RoutingModel& model,
+                       const Assignment* initial_solution,
+                       Assignment* solution) {
+  if (!sat::RoutingModelCanBeSolvedBySat(model)) return false;
   sat::CpModelBuilder builder;
-  const sat::CircuitConstraintProto* circuit = nullptr;
-  return sat::PopulateBuilderWithRoutingModel(*model, &builder, &circuit) &&
-         sat::ConvertToSolution(
-             sat::SolveRoutingModel(builder.Build(), model->RemainingTime(),
-                                    nullptr),
-             *model, *circuit, solution);
+  const sat::CircuitConstraintProto* const circuit =
+      sat::PopulateBuilderWithRoutingModel(model, &builder);
+  sat::AddSolutionAsHintToModel(initial_solution, model, *circuit,
+                                builder.MutableProto());
+  return sat::ConvertToSolution(
+      sat::SolveRoutingModel(builder.Proto(), model.RemainingTime(), nullptr),
+      model, *circuit, solution);
 }
 
 }  // namespace operations_research

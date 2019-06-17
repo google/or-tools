@@ -1605,23 +1605,20 @@ void NearestNeighbors::ComputeNearest(int row) {
   const IntVar* var = path_operator_.Var(row);
   const int64 var_min = var->Min();
   const int var_size = var->Max() - var_min + 1;
-  using ValuedIndex = std::pair<int /*index*/, int64 /*value*/>;
+  using ValuedIndex = std::pair<int64 /*value*/, int /*index*/>;
   std::vector<ValuedIndex> neighbors(var_size);
   for (int i = 0; i < var_size; ++i) {
     const int index = i + var_min;
-    neighbors[i] = std::make_pair(index, evaluator_(row, index, path));
+    neighbors[i] = std::make_pair(evaluator_(row, index, path), index);
   }
   if (var_size > size_) {
     std::nth_element(neighbors.begin(), neighbors.begin() + size_ - 1,
-                     neighbors.end(),
-                     [](const ValuedIndex& a, const ValuedIndex& b) {
-                       return a.second < b.second;
-                     });
+                     neighbors.end());
   }
 
   // Setup global neighbor matrix for row row_index
   for (int i = 0; i < std::min(size_, var_size); ++i) {
-    neighbors_[row].push_back(neighbors[i].first);
+    neighbors_[row].push_back(neighbors[i].second);
   }
   std::sort(neighbors_[row].begin(), neighbors_[row].end());
 }
