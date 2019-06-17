@@ -85,7 +85,7 @@ RevisedSimplex::RevisedSimplex()
       variable_name_(),
       direction_(),
       error_(),
-      basis_factorization_(matrix_with_slack_, compact_matrix_, basis_),
+      basis_factorization_(&compact_matrix_, &basis_),
       variables_info_(compact_matrix_, lower_bound_, upper_bound_),
       variable_values_(parameters_, compact_matrix_, basis_, variables_info_,
                        basis_factorization_),
@@ -2190,8 +2190,7 @@ bool RevisedSimplex::TestPivot(ColIndex entering_col, RowIndex leaving_row) {
 
   // TODO(user): If 'is_ok' is true, we could use the computed lu in
   // basis_factorization_ rather than recompute it during UpdateAndPivot().
-  MatrixView basis_matrix;
-  basis_matrix.PopulateFromBasis(matrix_with_slack_, basis_);
+  CompactSparseMatrixView basis_matrix(&compact_matrix_, &basis_);
   const bool is_ok = test_lu_.ComputeFactorization(basis_matrix).ok();
   basis_[leaving_row] = leaving_col;
   return is_ok;

@@ -198,7 +198,7 @@ bool AreFirstColumnsAndRowsExactlyEquals(RowIndex num_rows, ColIndex num_cols,
   }
   for (ColIndex col(0); col < num_cols; ++col) {
     const SparseColumn& col_a = matrix_a.column(col);
-    const CompactSparseMatrix::ColumnView& col_b = matrix_b.column(col);
+    const ColumnView& col_b = matrix_b.column(col);
     const EntryIndex end = std::min(col_a.num_entries(), col_b.num_entries());
     if (end < col_a.num_entries() && col_a.EntryRow(end) < num_rows) {
       return false;

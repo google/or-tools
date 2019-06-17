@@ -175,12 +175,10 @@ void EtaFactorization::RightSolve(DenseColumn* d) const {
 // BasisFactorization
 // --------------------------------------------------------
 BasisFactorization::BasisFactorization(
-    const MatrixView& matrix, const CompactSparseMatrix& compact_matrix,
-    const RowToColMapping& basis)
+    const CompactSparseMatrix* compact_matrix, const RowToColMapping* basis)
     : stats_(),
-      matrix_(matrix),
-      compact_matrix_(compact_matrix),
-      basis_(basis),
+      compact_matrix_(*compact_matrix),
+      basis_(*basis),
       tau_is_computed_(false),
       max_num_updates_(0),
       num_updates_(0),
@@ -209,8 +207,7 @@ Status BasisFactorization::Initialize() {
   SCOPED_TIME_STAT(&stats_);
   Clear();
   if (IsIdentityBasis()) return Status::OK();
-  MatrixView basis_matrix;
-  basis_matrix.PopulateFromBasis(matrix_, basis_);
+  CompactSparseMatrixView basis_matrix(&compact_matrix_, &basis_);
   return lu_factorization_.ComputeFactorization(basis_matrix);
 }
 
@@ -225,8 +222,7 @@ Status BasisFactorization::ForceRefactorization() {
   SCOPED_TIME_STAT(&stats_);
   stats_.refactorization_interval.Add(num_updates_);
   Clear();
-  MatrixView basis_matrix;
-  basis_matrix.PopulateFromBasis(matrix_, basis_);
+  CompactSparseMatrixView basis_matrix(&compact_matrix_, &basis_);
   const Status status = lu_factorization_.ComputeFactorization(basis_matrix);
 
   const double kLuComplexityFactor = 10;
@@ -498,15 +494,13 @@ bool BasisFactorization::IsIdentityBasis() const {
 
 Fractional BasisFactorization::ComputeOneNorm() const {
   if (IsIdentityBasis()) return 1.0;
-  MatrixView basis_matrix;
-  basis_matrix.PopulateFromBasis(matrix_, basis_);
+  CompactSparseMatrixView basis_matrix(&compact_matrix_, &basis_);
   return basis_matrix.ComputeOneNorm();
 }
 
 Fractional BasisFactorization::ComputeInfinityNorm() const {
   if (IsIdentityBasis()) return 1.0;
-  MatrixView basis_matrix;
-  basis_matrix.PopulateFromBasis(matrix_, basis_);
+  CompactSparseMatrixView basis_matrix(&compact_matrix_, &basis_);
   return basis_matrix.ComputeInfinityNorm();
 }
 

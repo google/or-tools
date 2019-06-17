@@ -16,6 +16,8 @@
 #include <algorithm>
 
 #include "absl/strings/str_format.h"
+#include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/permutation.h"
 
 namespace operations_research {
 namespace glop {
@@ -212,7 +214,7 @@ void SparseMatrix::PopulateFromPermutedMatrix(
   const ColIndex num_cols = a.num_cols();
   Reset(num_cols, a.num_rows());
   for (ColIndex col(0); col < num_cols; ++col) {
-    for (const SparseColumn::Entry e : a.column(inverse_col_perm[col])) {
+    for (const auto e : a.column(inverse_col_perm[col])) {
       columns_[col].SetCoefficient(row_perm[e.row()], e.coefficient());
     }
   }
@@ -427,8 +429,8 @@ template void SparseMatrix::PopulateFromTranspose<SparseMatrix>(
 template void SparseMatrix::PopulateFromPermutedMatrix<SparseMatrix>(
     const SparseMatrix& a, const RowPermutation& row_perm,
     const ColumnPermutation& inverse_col_perm);
-template void SparseMatrix::PopulateFromPermutedMatrix<MatrixView>(
-    const MatrixView& a, const RowPermutation& row_perm,
+template void SparseMatrix::PopulateFromPermutedMatrix<CompactSparseMatrixView>(
+    const CompactSparseMatrixView& a, const RowPermutation& row_perm,
     const ColumnPermutation& inverse_col_perm);
 
 void CompactSparseMatrix::PopulateFromMatrixView(const MatrixView& input) {
@@ -591,6 +593,16 @@ void TriangularMatrix::Swap(TriangularMatrix* other) {
             other->all_diagonal_coefficients_are_one_);
 }
 
+EntryIndex CompactSparseMatrixView::num_entries() const {
+  return ComputeNumEntries(*this);
+}
+Fractional CompactSparseMatrixView::ComputeOneNorm() const {
+  return ComputeOneNormTemplate(*this);
+}
+Fractional CompactSparseMatrixView::ComputeInfinityNorm() const {
+  return ComputeInfinityNormTemplate(*this);
+}
+
 // Internal function used to finish adding one column to a triangular matrix.
 // This sets the diagonal coefficient to the given value, and prepares the
 // matrix for the next column addition.
@@ -618,7 +630,7 @@ void TriangularMatrix::AddDiagonalOnlyColumn(Fractional diagonal_value) {
   CloseCurrentColumn(diagonal_value);
 }
 
-void TriangularMatrix::AddTriangularColumn(const SparseColumn& column,
+void TriangularMatrix::AddTriangularColumn(const ColumnView& column,
                                            RowIndex diagonal_row) {
   Fractional diagonal_value = 0.0;
   for (const SparseColumn::Entry e : column) {
@@ -665,7 +677,7 @@ void TriangularMatrix::PopulateFromTriangularSparseMatrix(
     const SparseMatrix& input) {
   Reset(input.num_rows());
   for (ColIndex col(0); col < input.num_cols(); ++col) {
-    AddTriangularColumn(input.column(col), ColToRowIndex(col));
+    AddTriangularColumn(ColumnView(input.column(col)), ColToRowIndex(col));
   }
   DCHECK(IsLowerTriangular() || IsUpperTriangular());
 }
@@ -772,8 +784,8 @@ void TriangularMatrix::UpperSolveInternal(DenseColumn* rhs) const {
     // It is faster to iterate this way (instead of i : Column(col)) because of
     // cache locality. Note that the floating-point computations are exactly the
     // same in both cases.
-    const EntryIndex last = starts_[col];
-    for (EntryIndex i(starts_[col + 1] - 1); i >= last; --i) {
+    const EntryIndex i_end = starts_[col];
+    for (EntryIndex i(starts_[col + 1] - 1); i >= i_end; --i) {
       (*rhs)[EntryRow(i)] -= coeff * EntryCoefficient(i);
     }
   }
@@ -797,6 +809,9 @@ void TriangularMatrix::TransposeUpperSolveInternal(DenseColumn* rhs) const {
 
     // Note that this is a bit faster than the simpler
     //     for (const EntryIndex i : Column(col)) {
+    // EntryIndex i is explicitly not modified in outer iterations, since
+    // the last entry in column col is stored contiguously just before the
+    // first entry in column col+1.
     const EntryIndex i_end = starts_[col + 1];
     for (; i < i_end; ++i) {
       sum -= EntryCoefficient(i) * (*rhs)[EntryRow(i)];
@@ -806,18 +821,16 @@ void TriangularMatrix::TransposeUpperSolveInternal(DenseColumn* rhs) const {
   }
 }
 
-void TriangularMatrix::TransposeLowerSolve(DenseColumn* rhs,
-                                           RowIndex* last_non_zero_row) const {
+void TriangularMatrix::TransposeLowerSolve(DenseColumn* rhs) const {
   if (all_diagonal_coefficients_are_one_) {
-    TransposeLowerSolveInternal<true>(rhs, last_non_zero_row);
+    TransposeLowerSolveInternal<true>(rhs);
   } else {
-    TransposeLowerSolveInternal<false>(rhs, last_non_zero_row);
+    TransposeLowerSolveInternal<false>(rhs);
   }
 }
 
 template <bool diagonal_of_ones>
-void TriangularMatrix::TransposeLowerSolveInternal(
-    DenseColumn* rhs, RowIndex* last_non_zero_row) const {
+void TriangularMatrix::TransposeLowerSolveInternal(DenseColumn* rhs) const {
   RETURN_IF_NULL(rhs);
   const ColIndex end = first_non_identity_column_;
 
@@ -825,9 +838,6 @@ void TriangularMatrix::TransposeLowerSolveInternal(
   ColIndex col = num_cols_ - 1;
   while (col >= end && (*rhs)[ColToRowIndex(col)] == 0.0) {
     --col;
-  }
-  if (last_non_zero_row != nullptr) {
-    *last_non_zero_row = ColToRowIndex(col);
   }
 
   EntryIndex i = starts_[col + 1] - 1;
@@ -837,6 +847,9 @@ void TriangularMatrix::TransposeLowerSolveInternal(
     // Note that this is a bit faster than the simpler
     //     for (const EntryIndex i : Column(col)) {
     // mainly because we iterate in a good direction for the cache.
+    // EntryIndex i is explicitly not modified in outer iterations, since
+    // the last entry in column col is stored contiguously just before the
+    // first entry in column col+1.
     const EntryIndex i_end = starts_[col];
     for (; i >= i_end; --i) {
       sum -= EntryCoefficient(i) * (*rhs)[EntryRow(i)];
@@ -969,7 +982,7 @@ void TriangularMatrix::PermutedLowerSolve(
   DCHECK(lower->CheckNoDuplicates());
 }
 
-void TriangularMatrix::PermutedLowerSparseSolve(const SparseColumn& rhs,
+void TriangularMatrix::PermutedLowerSparseSolve(const ColumnView& rhs,
                                                 const RowPermutation& row_perm,
                                                 SparseColumn* lower_column,
                                                 SparseColumn* upper_column) {
@@ -1049,7 +1062,7 @@ void TriangularMatrix::PermutedLowerSparseSolve(const SparseColumn& rhs,
 // will be given by upper_column_rows_ and it will be populated in reverse
 // order.
 void TriangularMatrix::PermutedComputeRowsToConsider(
-    const SparseColumn& rhs, const RowPermutation& row_perm,
+    const ColumnView& rhs, const RowPermutation& row_perm,
     RowIndexVector* lower_column_rows, RowIndexVector* upper_column_rows) {
   stored_.resize(num_rows_, false);
   marked_.resize(num_rows_, false);

@@ -40,6 +40,8 @@
 namespace operations_research {
 namespace glop {
 
+class CompactSparseMatrixView;
+
 // --------------------------------------------------------
 // SparseMatrix
 // --------------------------------------------------------
@@ -273,8 +275,9 @@ extern template void SparseMatrix::PopulateFromTranspose<SparseMatrix>(
 extern template void SparseMatrix::PopulateFromPermutedMatrix<SparseMatrix>(
     const SparseMatrix& a, const RowPermutation& row_perm,
     const ColumnPermutation& inverse_col_perm);
-extern template void SparseMatrix::PopulateFromPermutedMatrix<MatrixView>(
-    const MatrixView& a, const RowPermutation& row_perm,
+extern template void
+SparseMatrix::PopulateFromPermutedMatrix<CompactSparseMatrixView>(
+    const CompactSparseMatrixView& a, const RowPermutation& row_perm,
     const ColumnPermutation& inverse_col_perm);
 
 // Another matrix representation which is more efficient than a SparseMatrix but
@@ -356,45 +359,6 @@ class CompactSparseMatrix {
   }
   Fractional EntryCoefficient(EntryIndex i) const { return coefficients_[i]; }
   RowIndex EntryRow(EntryIndex i) const { return rows_[i]; }
-
-  // Class to iterate on the entries of a given column with the same interface
-  // as for SparseColumn.
-  class ColumnView {
-   public:
-    // Clients should pass Entry by value rather than by reference.
-    // This is because SparseColumnEntry is small (2 pointers and an index) and
-    // previous profiling of this type of use showed no performance penalty
-    // (see cl/51057736).
-    // Example: for(const Entry e : column_view)
-    typedef SparseColumnEntry Entry;
-    typedef SparseVectorIterator<Entry> Iterator;
-
-    ColumnView(EntryIndex num_entries, const RowIndex* const rows,
-               const Fractional* const coefficients)
-        : num_entries_(num_entries), rows_(rows), coefficients_(coefficients) {}
-    EntryIndex num_entries() const { return num_entries_; }
-    Fractional EntryCoefficient(EntryIndex i) const {
-      return coefficients_[i.value()];
-    }
-    Fractional GetFirstCoefficient() const {
-      return EntryCoefficient(EntryIndex(0));
-    }
-    RowIndex EntryRow(EntryIndex i) const { return rows_[i.value()]; }
-    RowIndex GetFirstRow() const { return EntryRow(EntryIndex(0)); }
-
-    Iterator begin() const {
-      return Iterator(this->rows_, this->coefficients_, EntryIndex(0));
-    }
-
-    Iterator end() const {
-      return Iterator(this->rows_, this->coefficients_, num_entries_);
-    }
-
-   private:
-    const EntryIndex num_entries_;
-    const RowIndex* const rows_;
-    const Fractional* const coefficients_;
-  };
 
   ColumnView column(ColIndex col) const {
     DCHECK_LT(col, num_cols_);
@@ -504,6 +468,34 @@ class CompactSparseMatrix {
   DISALLOW_COPY_AND_ASSIGN(CompactSparseMatrix);
 };
 
+// A matrix view of the basis columns of a CompactSparseMatrix, with basis
+// specified as a RowToColMapping.  This class does not take ownership of the
+// underlying matrix or basis, and thus they must outlive this class (and keep
+// the same address in memory).
+class CompactSparseMatrixView {
+ public:
+  CompactSparseMatrixView(const CompactSparseMatrix* compact_matrix,
+                          const RowToColMapping* basis)
+      : compact_matrix_(*compact_matrix), basis_(*basis) {}
+
+  // Same behavior as the SparseMatrix functions above.
+  bool IsEmpty() const { return compact_matrix_.IsEmpty(); }
+  RowIndex num_rows() const { return compact_matrix_.num_rows(); }
+  ColIndex num_cols() const { return RowToColIndex(basis_.size()); }
+  const ColumnView column(ColIndex col) const {
+    return compact_matrix_.column(basis_[ColToRowIndex(col)]);
+  }
+  EntryIndex num_entries() const;
+  Fractional ComputeOneNorm() const;
+  Fractional ComputeInfinityNorm() const;
+
+ private:
+  // We require that the underlying CompactSparseMatrix and RowToColMapping
+  // continue to own the (potentially large) data accessed via this view.
+  const CompactSparseMatrix& compact_matrix_;
+  const RowToColMapping& basis_;
+};
+
 // Specialization of a CompactSparseMatrix used for triangular matrices.
 // To be able to solve triangular systems as efficiently as possible, the
 // diagonal entries are stored in a separate vector and not in the underlying
@@ -543,7 +535,7 @@ class TriangularMatrix : private CompactSparseMatrix {
   // permutation can be fixed at the end by a call to
   // ApplyRowPermutationToNonDiagonalEntries() or accounted directly in the case
   // of PermutedLowerSparseSolve().
-  void AddTriangularColumn(const SparseColumn& column, RowIndex diagonal_row);
+  void AddTriangularColumn(const ColumnView& column, RowIndex diagonal_row);
   void AddTriangularColumnWithGivenDiagonalEntry(const SparseColumn& column,
                                                  RowIndex diagonal_row,
                                                  Fractional diagonal_value);
@@ -604,8 +596,9 @@ class TriangularMatrix : private CompactSparseMatrix {
   // This assumes that the rhs is all zero before the given position.
   void LowerSolveStartingAt(ColIndex start, DenseColumn* rhs) const;
 
-  // This also computes the last non-zero row position (if not nullptr).
-  void TransposeLowerSolve(DenseColumn* rhs, RowIndex* last_non_zero_row) const;
+  // Solves the system Transpose(L).x = rhs, where L is lower triangular.
+  // This can be used to do a left-solve for a row vector (i.e., y.Y = rhs).
+  void TransposeLowerSolve(DenseColumn* rhs) const;
 
   // Hyper-sparse version of the triangular solve functions. The passed
   // non_zero_rows should contain the positions of the symbolic non-zeros of the
@@ -694,7 +687,7 @@ class TriangularMatrix : private CompactSparseMatrix {
   // Note: This function is non-const because ComputeRowsToConsider() also
   // prunes the underlying dependency graph of the lower matrix while doing a
   // solve. See marked_ and pruned_ends_ below.
-  void PermutedLowerSparseSolve(const SparseColumn& rhs,
+  void PermutedLowerSparseSolve(const ColumnView& rhs,
                                 const RowPermutation& row_perm,
                                 SparseColumn* lower, SparseColumn* upper);
 
@@ -718,9 +711,9 @@ class TriangularMatrix : private CompactSparseMatrix {
   // Pruning the graph at the same time is slower but not by too much (< 2x) and
   // seems worth doing. Note that when the lower matrix is dense, most of the
   // graph will likely be pruned. As a result, the symbolic phase will be
-  // negligeable compared to the numerical phase so we don't really need a dense
+  // negligible compared to the numerical phase so we don't really need a dense
   // version of PermutedLowerSparseSolve().
-  void PermutedComputeRowsToConsider(const SparseColumn& rhs,
+  void PermutedComputeRowsToConsider(const ColumnView& rhs,
                                      const RowPermutation& row_perm,
                                      RowIndexVector* lower_column_rows,
                                      RowIndexVector* upper_column_rows);
@@ -738,8 +731,7 @@ class TriangularMatrix : private CompactSparseMatrix {
   template <bool diagonal_of_ones>
   void UpperSolveInternal(DenseColumn* rhs) const;
   template <bool diagonal_of_ones>
-  void TransposeLowerSolveInternal(DenseColumn* rhs,
-                                   RowIndex* last_non_zero_row) const;
+  void TransposeLowerSolveInternal(DenseColumn* rhs) const;
   template <bool diagonal_of_ones>
   void TransposeUpperSolveInternal(DenseColumn* rhs) const;
 
