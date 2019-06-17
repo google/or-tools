@@ -228,10 +228,10 @@ objs/util/sorted_interval_list.$O: ortools/util/sorted_interval_list.cc \
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sutil$Ssorted_interval_list.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Ssorted_interval_list.$O
 
 objs/util/stats.$O: ortools/util/stats.cc ortools/util/stats.h \
- ortools/base/timer.h ortools/base/basictypes.h \
+ ortools/base/macros.h ortools/base/timer.h ortools/base/basictypes.h \
  ortools/base/integral_types.h ortools/base/logging.h \
- ortools/base/macros.h ortools/base/stl_util.h ortools/port/sysinfo.h \
- ortools/port/utf8.h ortools/base/encodingutils.h | $(OBJ_DIR)/util
+ ortools/base/stl_util.h ortools/port/sysinfo.h ortools/port/utf8.h \
+ ortools/base/encodingutils.h | $(OBJ_DIR)/util
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sutil$Sstats.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Sstats.$O
 
 objs/util/time_limit.$O: ortools/util/time_limit.cc \
@@ -3780,3 +3780,4 @@ $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h: \
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: \
  $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sconstraint_solver$Ssolver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
+

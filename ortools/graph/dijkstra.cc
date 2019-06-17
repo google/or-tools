@@ -26,9 +26,9 @@ namespace {
 // Priority queue element
 class Element {
  public:
-  Element() : heap_index_(-1), distance_(0), node_(-1) {}
   bool operator<(const Element& other) const {
-    return distance_ > other.distance_;
+    return distance_ != other.distance_ ? distance_ > other.distance_
+                                        : node_ > other.node_;
   }
   void SetHeapIndex(int h) { heap_index_ = h; }
   int GetHeapIndex() const { return heap_index_; }
@@ -38,9 +38,9 @@ class Element {
   int node() const { return node_; }
 
  private:
-  int heap_index_;
-  int64 distance_;
-  int node_;
+  int64 distance_ = 0;
+  int heap_index_ = -1;
+  int node_ = -1;
 };
 }  // namespace
 

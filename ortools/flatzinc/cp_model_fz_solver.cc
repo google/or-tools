@@ -226,6 +226,10 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     for (const int var : LookupVars(fz_ct.arguments[1])) {
       arg->add_literals(FalseLiteral(var));
     }
+  } else if (fz_ct.type == "bool_xor") {
+    auto* arg = ct->mutable_bool_xor();
+    arg->add_literals(TrueLiteral(LookupVar(fz_ct.arguments[0])));
+    arg->add_literals(TrueLiteral(LookupVar(fz_ct.arguments[1])));
   } else if (fz_ct.type == "array_bool_or") {
     auto* arg = ct->mutable_bool_or();
     for (const int var : LookupVars(fz_ct.arguments[0])) {
@@ -950,9 +954,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   m.TranslateSearchAnnotations(fz_model.search_annotations());
 
   // Print model statistics.
-  if (!FLAGS_use_flatzinc_format) {
-    LOG(INFO) << CpModelStats(m.proto);
-  } else if (p.verbose_logging) {
+  if (FLAGS_use_flatzinc_format && p.verbose_logging) {
     LogInFlatzincFormat(CpModelStats(m.proto));
   }
 
@@ -1041,8 +1043,6 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     if (p.display_statistics) {
       LogInFlatzincFormat(CpSolverResponseStats(response));
     }
-  } else {
-    LOG(INFO) << CpSolverResponseStats(response);
   }
 }
 
