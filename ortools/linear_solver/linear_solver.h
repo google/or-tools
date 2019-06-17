@@ -393,7 +393,7 @@ class MPSolver {
   // Loads model from protocol buffer. Returns MPSOLVER_MODEL_IS_VALID if the
   // model is valid, and another status otherwise (currently only
   // MPSOLVER_MODEL_INVALID and MPSOLVER_INFEASIBLE). If the model isn't
-  // valid, populate "error_message".
+  // valid, populates "error_message".
   MPSolverResponseStatus LoadModelFromProto(const MPModelProto& input_model,
                                             std::string* error_message);
   // The same as above, except that the loading keeps original variable and
@@ -885,6 +885,16 @@ class MPVariable {
   // @see MPSolver::BasisStatus.
   MPSolver::BasisStatus basis_status() const;
 
+  // Advanced usage: Certain MIP solvers (e.g. Gurobi or SCIP) allow you to set
+  // a per-variable priority for determining which variable to branch on. A
+  // value of 0 is treated as default, and is equivalent to not setting the
+  // branching priority. The solver looks first to branch on fractional
+  // variables in higher priority levels. As of 2019-05, only Gurobi and SCIP
+  // support setting branching priority; all other solvers will simply ignore
+  // this annotation.
+  int branching_priority() const { return branching_priority_; }
+  void SetBranchingPriority(int priority);
+
  protected:
   friend class MPSolver;
   friend class MPSolverInterface;
@@ -926,6 +936,7 @@ class MPVariable {
   const std::string name_;
   double solution_value_;
   double reduced_cost_;
+  int branching_priority_ = 0;
   MPSolverInterface* const interface_;
   DISALLOW_COPY_AND_ASSIGN(MPVariable);
 };
@@ -1303,6 +1314,7 @@ class MPSolverInterface {
   // Clears the objective from all its terms.
   virtual void ClearObjective() = 0;
 
+  virtual void BranchingPriorityChangedForVariable(int var_index) {}
   // ------ Query statistics on the solution and the solve ------
   // Returns the number of simplex iterations. The problem must be discrete,
   // otherwise it crashes, or returns kUnknownNumberOfIterations in NDEBUG mode.

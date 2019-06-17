@@ -62,6 +62,7 @@ class SCIPInterface : public MPSolverInterface {
                                double coefficient) override;
   void SetObjectiveOffset(double value) override;
   void ClearObjective() override;
+  void BranchingPriorityChangedForVariable(int var_index) override;
 
   int64 iterations() const override;
   int64 nodes() const override;
@@ -138,6 +139,7 @@ class SCIPInterface : public MPSolverInterface {
   SCIP_VAR* objective_offset_variable_;
   std::vector<SCIP_VAR*> scip_variables_;
   std::vector<SCIP_CONS*> scip_constraints_;
+  bool branching_priority_reset_ = false;
 };
 
 // Our own version of SCIP_CALL to do error management.
@@ -368,6 +370,18 @@ void SCIPInterface::ClearObjective() {
   RETURN_IF_SCIP_ERROR(SCIPchgVarObj(scip_, objective_offset_variable_, 0.0));
 }
 
+void SCIPInterface::BranchingPriorityChangedForVariable(int var_index) {
+  // As of 2019-05, SCIP does not support setting branching priority for
+  // variables in models that have already been solved. Therefore, we force
+  // reset the model when setting the priority on an already extracted variable.
+  // Note that this is a more drastic step than merely changing the sync_status.
+  // This may be slightly conservative, as it is technically possible that
+  // the extraction has occurred without a call to Solve().
+  if (variable_is_extracted(var_index)) {
+    branching_priority_reset_ = true;
+  }
+}
+
 void SCIPInterface::AddRowConstraint(MPConstraint* ct) {
   sync_status_ = MUST_RELOAD;
 }
@@ -399,6 +413,12 @@ void SCIPInterface::ExtractNewVariables() {
           false, nullptr, nullptr, nullptr, nullptr, nullptr));
       RETURN_IF_SCIP_ERROR(SCIPaddVar(scip_, scip_var));
       scip_variables_.push_back(scip_var);
+      const int branching_priority = var->branching_priority();
+      if (branching_priority != 0) {
+        const int index = var->index();
+        RETURN_IF_SCIP_ERROR(SCIPchgVarBranchPriority(
+            scip_, scip_variables_[index], branching_priority));
+      }
     }
     // Add new variables to existing constraints.
     for (int i = 0; i < last_constraint_index_; i++) {
@@ -564,8 +584,10 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
   // Note that SCIP does not provide any incrementality.
   // TODO(user): Is that still true now (2018) ?
   if (param.GetIntegerParam(MPSolverParameters::INCREMENTALITY) ==
-      MPSolverParameters::INCREMENTALITY_OFF) {
+          MPSolverParameters::INCREMENTALITY_OFF ||
+      branching_priority_reset_) {
     Reset();
+    branching_priority_reset_ = false;
   }
 
   // Set log level.

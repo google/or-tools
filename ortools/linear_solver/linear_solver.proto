@@ -64,6 +64,8 @@ message MPVariableProto {
 
   // The name of the variable.
   optional string name = 5 [default = ""];
+
+  optional int32 branching_priority = 6 [default = 0];
 }
 
 // A linear constraint is always of the form:
@@ -106,6 +108,7 @@ message MPGeneralConstraintProto {
 
   oneof general_constraint {
     MPIndicatorConstraint indicator_constraint = 2;
+    MPSosConstraint sos_constraint = 3;
   }
 }
 
@@ -115,6 +118,7 @@ message MPGeneralConstraintProto {
 //     y = 0 => 2 * x1 + 3 * x2 >= 42
 // The 2 * x1 + 3 * x2 >= 42 constraint is only active if the variable y is
 // equal to 0.
+// As of 2019/04, only SCIP, CP-SAT and Gurobi support this constraint type.
 message MPIndicatorConstraint {
   // Variable index (w.r.t. the "variable" field of MPModelProto) of the Boolean
   // variable used as indicator.
@@ -125,6 +129,36 @@ message MPIndicatorConstraint {
 
   // The constraint activated by the indicator variable.
   optional MPConstraintProto constraint = 3;
+}
+
+// Special Ordered Set (SOS) constraints of type 1 or 2.
+// See https://en.wikipedia.org/wiki/Special_ordered_set
+// As of 2019/04, only SCIP and Gurobi support this constraint type.
+message MPSosConstraint {
+  enum Type {
+    // At most one variable in `var_index` must be non-zero.
+    SOS1_DEFAULT = 0;
+    // At most two consecutive variables from `var_index` must be non-zero (i.e.
+    // for some i, var_index[i] and var_index[i+1]). See
+    // http://www.eudoxus.com/lp-training/5/5-6-special-ordered-sets-of-type-2
+    SOS2 = 1;
+  }
+  optional Type type = 1 [default = SOS1_DEFAULT];
+
+  // Variable index (w.r.t. the "variable" field of MPModelProto) of the
+  // variables in the SOS.
+  repeated int32 var_index = 2;
+
+  // Optional: SOS weights. If non-empty, must be of the same size as
+  // "var_index", and strictly increasing.
+  // SUBTLE: The weights can help the solver make branch-and-bound decisions
+  // that fit the underlying optimization model: after each LP relaxation, it
+  // will compute the "average weight" of the SOS variables, weighted by value
+  // (this is confusing: here we're using the values as weights), and the binary
+  // branch decision will be: is the non-zero variable above or below that?
+  // (weights are strictly monotonous, so the "cutoff" average weight
+  // corresponds to a "cutoff" index in the var_index sequence).
+  repeated double weight = 3;
 }
 
 // This message encodes a partial (or full) assignment of the variables of a
