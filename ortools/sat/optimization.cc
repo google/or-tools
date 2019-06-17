@@ -1297,257 +1297,242 @@ SatSolver::Status FindCores(std::vector<Literal> assumptions,
 
 }  // namespace
 
-SatSolver::Status MinimizeWithCoreAndLazyEncoding(
-    const IntegerVariable objective_var,
+CoreBasedOptimizer::CoreBasedOptimizer(
+    IntegerVariable objective_var,
     const std::vector<IntegerVariable>& variables,
     const std::vector<IntegerValue>& coefficients,
-    const std::function<void()>& feasible_solution_observer, Model* model) {
-  const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
-  SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
-  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  IntegerEncoder* integer_encoder = model->GetOrCreate<IntegerEncoder>();
-
-  // We express the objective as a linear sum of terms. These will evolve as the
-  // algorithm progress.
-  struct ObjectiveTerm {
-    IntegerVariable var;
-    IntegerValue weight;
-    int depth;  // only for logging/debugging.
-    IntegerValue old_var_lb;
-
-    // An upper bound on the optimal solution if we were to optimize only this
-    // term. This is used by the cover optimization code.
-    IntegerValue cover_ub;
-  };
-  std::vector<ObjectiveTerm> terms;
+    std::function<void()> feasible_solution_observer, Model* model)
+    : parameters_(model->GetOrCreate<SatParameters>()),
+      sat_solver_(model->GetOrCreate<SatSolver>()),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
+      integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
+      model_(model),
+      objective_var_(objective_var),
+      feasible_solution_observer_(std::move(feasible_solution_observer)) {
   CHECK_EQ(variables.size(), coefficients.size());
   for (int i = 0; i < variables.size(); ++i) {
     if (coefficients[i] > 0) {
-      terms.push_back({variables[i], coefficients[i]});
+      terms_.push_back({variables[i], coefficients[i]});
     } else if (coefficients[i] < 0) {
-      terms.push_back({NegationOf(variables[i]), -coefficients[i]});
+      terms_.push_back({NegationOf(variables[i]), -coefficients[i]});
     } else {
       continue;  // coefficients[i] == 0
     }
-    terms.back().depth = 0;
+    terms_.back().depth = 0;
   }
-
-  // This will be called each time a feasible solution is found. Returns false
-  // if a conflict was detected while trying to constrain the objective to a
-  // smaller value.
-  const auto process_solution = [&]() {
-    // We don't assume that objective_var is linked with its linear term, so
-    // we recompute the objective here.
-    IntegerValue objective(0);
-    for (ObjectiveTerm& term : terms) {
-      const IntegerValue value = integer_trail->LowerBound(term.var);
-      objective += term.weight * value;
-
-      // Also keep in term.cover_ub the minimum value for term.var that we have
-      // seens amongst all the feasible solutions found so far.
-      term.cover_ub = std::min(term.cover_ub, value);
-    }
-    if (objective > integer_trail->UpperBound(objective_var)) return true;
-
-    if (feasible_solution_observer != nullptr) {
-      feasible_solution_observer();
-    }
-
-    // Constrain objective_var. This has a better result when objective_var is
-    // used in an LP relaxation for instance.
-    sat_solver->Backtrack(0);
-    sat_solver->SetAssumptionLevel(0);
-    return integer_trail->Enqueue(
-        IntegerLiteral::LowerOrEqual(objective_var, objective - 1), {}, {});
-  };
-
-  // Use the gap an implied bounds to propagated the bounds of the objective
-  // variables and of its terms.
-  //
-  // TODO(user): create a class + individual function instead of using lambda.
-  const auto propagate_objective_bounds = [&] {
-    // We assumes all terms (modulo stratification) at their lower-bound.
-    bool some_bound_were_tightened = true;
-    while (some_bound_were_tightened) {
-      some_bound_were_tightened = false;
-      if (!sat_solver->ResetToLevelZero()) return false;
-
-      // Compute implied lb.
-      IntegerValue implied_objective_lb(0);
-      for (ObjectiveTerm& term : terms) {
-        const IntegerValue var_lb = integer_trail->LowerBound(term.var);
-        term.old_var_lb = var_lb;
-        implied_objective_lb += term.weight * var_lb.value();
-      }
-
-      // Update the objective lower bound with our current bound.
-      if (implied_objective_lb > integer_trail->LowerBound(objective_var)) {
-        if (!integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(
-                                        objective_var, implied_objective_lb),
-                                    {}, {})) {
-          return false;
-        }
-
-        some_bound_were_tightened = true;
-      }
-
-      // The gap is used to propagate the upper-bound of all variable that are
-      // in the current objective (Exactly like done in the propagation of a
-      // linear constraint with the slack). When this fix a variable to its
-      // lower bound, it is called "hardening" in the max-sat literature. This
-      // has a really beneficial effect on some weighted max-sat problems like
-      // the haplotyping-pedigrees ones.
-      const IntegerValue gap =
-          integer_trail->UpperBound(objective_var) - implied_objective_lb;
-
-      for (const ObjectiveTerm& term : terms) {
-        if (term.weight == 0) continue;
-        const IntegerValue var_lb = integer_trail->LowerBound(term.var);
-        const IntegerValue var_ub = integer_trail->UpperBound(term.var);
-        if (var_lb == var_ub) continue;
-
-        // Hardening. This basically just propagate the implied upper bound on
-        // term.var from the current best solution. Note that the gap is
-        // non-negative and the weight positive here. The test is done in order
-        // to avoid any integer overflow provided (ub - lb) do not overflow, but
-        // this is a precondition in our cp-model.
-        if (gap / term.weight < var_ub - var_lb) {
-          some_bound_were_tightened = true;
-          const IntegerValue new_ub = var_lb + gap / term.weight;
-          if (!integer_trail->Enqueue(
-                  IntegerLiteral::LowerOrEqual(term.var, new_ub), {}, {})) {
-            return false;
-          }
-        }
-      }
-    }
-    return true;
-  };
 
   // This is used by the "stratified" approach. We will only consider terms with
   // a weight not lower than this threshold. The threshold will decrease as the
   // algorithm progress.
-  IntegerValue stratified_threshold =
-      parameters.max_sat_stratification() == SatParameters::STRATIFICATION_NONE
-          ? IntegerValue(1)
-          : kMaxIntegerValue;
+  stratification_threshold_ = parameters_->max_sat_stratification() ==
+                                      SatParameters::STRATIFICATION_NONE
+                                  ? IntegerValue(1)
+                                  : kMaxIntegerValue;
+}
 
-  // Returns the next stratification threshold. Or zero if all the assumptions
-  // where already considered.
-  //
-  // A basic algorithm is to take the next one, or at least the next one
-  // that invalidate the current solution. But to avoid corner cases for
-  // problem with a lot of terms all with different objective weights (in
-  // which case we will kind of introduce only one assumption per loop
-  // wich is little), we use an heuristic and take the 90% percentile of
-  // the unique weights not yet included.
-  //
-  // TODO(user): There is many other possible heuristics here, and I
-  // didn't have the time to properly compare them.
-  const auto compute_next_stratified_threshold = [&]() {
-    std::vector<IntegerValue> weights;
-    for (ObjectiveTerm& term : terms) {
-      if (term.weight >= stratified_threshold) continue;
+bool CoreBasedOptimizer::ProcessSolution() {
+  // We don't assume that objective_var is linked with its linear term, so
+  // we recompute the objective here.
+  IntegerValue objective(0);
+  for (ObjectiveTerm& term : terms_) {
+    const IntegerValue value = integer_trail_->LowerBound(term.var);
+    objective += term.weight * value;
+
+    // Also keep in term.cover_ub the minimum value for term.var that we have
+    // seens amongst all the feasible solutions found so far.
+    term.cover_ub = std::min(term.cover_ub, value);
+  }
+  if (objective > integer_trail_->UpperBound(objective_var_)) return true;
+
+  if (feasible_solution_observer_ != nullptr) {
+    feasible_solution_observer_();
+  }
+  if (parameters_->stop_after_first_solution()) {
+    stop_ = true;
+  }
+
+  // Constrain objective_var. This has a better result when objective_var is
+  // used in an LP relaxation for instance.
+  sat_solver_->Backtrack(0);
+  sat_solver_->SetAssumptionLevel(0);
+  return integer_trail_->Enqueue(
+      IntegerLiteral::LowerOrEqual(objective_var_, objective - 1), {}, {});
+}
+
+bool CoreBasedOptimizer::PropagateObjectiveBounds() {
+  // We assumes all terms (modulo stratification) at their lower-bound.
+  bool some_bound_were_tightened = true;
+  while (some_bound_were_tightened) {
+    some_bound_were_tightened = false;
+    if (!sat_solver_->ResetToLevelZero()) return false;
+
+    // Compute implied lb.
+    IntegerValue implied_objective_lb(0);
+    for (ObjectiveTerm& term : terms_) {
+      const IntegerValue var_lb = integer_trail_->LowerBound(term.var);
+      term.old_var_lb = var_lb;
+      implied_objective_lb += term.weight * var_lb.value();
+    }
+
+    // Update the objective lower bound with our current bound.
+    if (implied_objective_lb > integer_trail_->LowerBound(objective_var_)) {
+      if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(
+                                       objective_var_, implied_objective_lb),
+                                   {}, {})) {
+        return false;
+      }
+
+      some_bound_were_tightened = true;
+    }
+
+    // The gap is used to propagate the upper-bound of all variable that are
+    // in the current objective (Exactly like done in the propagation of a
+    // linear constraint with the slack). When this fix a variable to its
+    // lower bound, it is called "hardening" in the max-sat literature. This
+    // has a really beneficial effect on some weighted max-sat problems like
+    // the haplotyping-pedigrees ones.
+    const IntegerValue gap =
+        integer_trail_->UpperBound(objective_var_) - implied_objective_lb;
+
+    for (const ObjectiveTerm& term : terms_) {
       if (term.weight == 0) continue;
-
-      const IntegerValue var_lb = integer_trail->LevelZeroLowerBound(term.var);
-      const IntegerValue var_ub = integer_trail->LevelZeroUpperBound(term.var);
+      const IntegerValue var_lb = integer_trail_->LowerBound(term.var);
+      const IntegerValue var_ub = integer_trail_->UpperBound(term.var);
       if (var_lb == var_ub) continue;
 
-      weights.push_back(term.weight);
+      // Hardening. This basically just propagate the implied upper bound on
+      // term.var from the current best solution. Note that the gap is
+      // non-negative and the weight positive here. The test is done in order
+      // to avoid any integer overflow provided (ub - lb) do not overflow, but
+      // this is a precondition in our cp-model.
+      if (gap / term.weight < var_ub - var_lb) {
+        some_bound_were_tightened = true;
+        const IntegerValue new_ub = var_lb + gap / term.weight;
+        if (!integer_trail_->Enqueue(
+                IntegerLiteral::LowerOrEqual(term.var, new_ub), {}, {})) {
+          return false;
+        }
+      }
     }
-    if (weights.empty()) return IntegerValue(0);
+  }
+  return true;
+}
 
-    gtl::STLSortAndRemoveDuplicates(&weights);
-    return weights[static_cast<int>(std::floor(0.9 * weights.size()))];
-  };
+// A basic algorithm is to take the next one, or at least the next one
+// that invalidate the current solution. But to avoid corner cases for
+// problem with a lot of terms all with different objective weights (in
+// which case we will kind of introduce only one assumption per loop
+// wich is little), we use an heuristic and take the 90% percentile of
+// the unique weights not yet included.
+//
+// TODO(user): There is many other possible heuristics here, and I
+// didn't have the time to properly compare them.
+void CoreBasedOptimizer::ComputeNextStratificationThreshold() {
+  std::vector<IntegerValue> weights;
+  for (ObjectiveTerm& term : terms_) {
+    if (term.weight >= stratification_threshold_) continue;
+    if (term.weight == 0) continue;
 
+    const IntegerValue var_lb = integer_trail_->LevelZeroLowerBound(term.var);
+    const IntegerValue var_ub = integer_trail_->LevelZeroUpperBound(term.var);
+    if (var_lb == var_ub) continue;
+
+    weights.push_back(term.weight);
+  }
+  if (weights.empty()) {
+    stratification_threshold_ = IntegerValue(0);
+    return;
+  }
+
+  gtl::STLSortAndRemoveDuplicates(&weights);
+  stratification_threshold_ =
+      weights[static_cast<int>(std::floor(0.9 * weights.size()))];
+}
+
+bool CoreBasedOptimizer::CoverOptimization() {
+  // We set a fix deterministic time limit per all sub-solve and skip to the
+  // next core if the sum of the subsolve is also over this limit.
+  constexpr double max_dtime_per_core = 0.5;
+  const double old_time_limit = parameters_->max_deterministic_time();
+  parameters_->set_max_deterministic_time(max_dtime_per_core);
+  auto cleanup = ::gtl::MakeCleanup([old_time_limit, this]() {
+    parameters_->set_max_deterministic_time(old_time_limit);
+  });
+
+  for (const ObjectiveTerm& term : terms_) {
+    // We currently skip the initial objective terms as there could be many
+    // of them. TODO(user): provide an option to cover-optimize them? I
+    // fear that this will slow down the solver too much though.
+    if (term.depth == 0) continue;
+
+    // Find out the true lower bound of var. This is called "cover
+    // optimization" in some of the max-SAT literature. It can helps on some
+    // problem families and hurt on others, but the overall impact is
+    // positive.
+    const IntegerVariable var = term.var;
+    IntegerValue best =
+        std::min(term.cover_ub, integer_trail_->UpperBound(var));
+
+    // Note(user): this can happen in some corner case because each time we
+    // find a solution, we constrain the objective to be smaller than it, so
+    // it is possible that a previous best is now infeasible.
+    if (best <= integer_trail_->LowerBound(var)) continue;
+
+    // Compute the global deterministic time for this core cover
+    // optimization.
+    const double deterministic_limit =
+        time_limit_->GetElapsedDeterministicTime() + max_dtime_per_core;
+
+    // Simple linear scan algorithm to find the optimal of var.
+    SatSolver::Status result;
+    while (best > integer_trail_->LowerBound(var)) {
+      const Literal assumption = integer_encoder_->GetOrCreateAssociatedLiteral(
+          IntegerLiteral::LowerOrEqual(var, best - 1));
+      result = ResetAndSolveIntegerProblem({assumption}, model_);
+      if (result != SatSolver::FEASIBLE) break;
+
+      best = integer_trail_->LowerBound(var);
+      VLOG(1) << "cover_opt var:" << var << " domain:["
+              << integer_trail_->LevelZeroLowerBound(var) << "," << best << "]";
+      if (!ProcessSolution()) return false;
+      if (!sat_solver_->ResetToLevelZero()) return false;
+      if (stop_ ||
+          time_limit_->GetElapsedDeterministicTime() > deterministic_limit) {
+        break;
+      }
+    }
+    if (result == SatSolver::INFEASIBLE) return false;
+    if (result == SatSolver::ASSUMPTIONS_UNSAT) {
+      // TODO(user): If we improve the lower bound of var, we should check
+      // if our global lower bound reached our current best solution in
+      // order to abort early if the optimal is proved.
+      if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(var, best),
+                                   {}, {})) {
+        return false;
+      }
+    }
+  }
+
+  if (!PropagateObjectiveBounds()) return false;
+  return true;
+}
+
+SatSolver::Status CoreBasedOptimizer::Optimize() {
   // TODO(user): The core is returned in the same order as the assumptions,
   // so we don't really need this map, we could just do a linear scan to
   // recover which node are part of the core.
   std::map<LiteralIndex, int> literal_to_term_index;
 
   // Start the algorithm.
-  int max_depth = 0;
-  SatSolver::Status result = SatSolver::FEASIBLE;
-  for (int iter = 0;
-       result != SatSolver::INFEASIBLE && result != SatSolver::LIMIT_REACHED;
-       ++iter) {
-    if (!propagate_objective_bounds()) return SatSolver::INFEASIBLE;
+  stop_ = false;
+  while (true) {
+    if (!PropagateObjectiveBounds()) return SatSolver::INFEASIBLE;
 
     // Bulk cover optimization.
-    if (parameters.cover_optimization()) {
-      // We set a fix deterministic time limit per all sub-solve and skip to the
-      // next core if the sum of the subsolve is also over this limit.
-      constexpr double max_dtime_per_core = 0.5;
-      const double old_time_limit =
-          model->GetOrCreate<SatParameters>()->max_deterministic_time();
-      model->GetOrCreate<SatParameters>()->set_max_deterministic_time(
-          max_dtime_per_core);
-      auto cleanup = ::gtl::MakeCleanup([old_time_limit, &model]() {
-        model->GetOrCreate<SatParameters>()->set_max_deterministic_time(
-            old_time_limit);
-      });
-
-      for (const ObjectiveTerm& term : terms) {
-        // We currently skip the initial objective terms as there could be many
-        // of them. TODO(user): provide an option to cover-optimize them? I
-        // fear that this will slow down the solver too much though.
-        if (term.depth == 0) continue;
-
-        // Find out the true lower bound of var. This is called "cover
-        // optimization" in some of the max-SAT literature. It can helps on some
-        // problem families and hurt on others, but the overall impact is
-        // positive.
-        const IntegerVariable var = term.var;
-        IntegerValue best =
-            std::min(term.cover_ub, integer_trail->UpperBound(var));
-
-        // Note(user): this can happen in some corner case because each time we
-        // find a solution, we constrain the objective to be smaller than it, so
-        // it is possible that a previous best is now infeasible.
-        if (best <= integer_trail->LowerBound(var)) continue;
-
-        // Compute the global deterministic time for this core cover
-        // optimization.
-        auto* time_limit = model->GetOrCreate<TimeLimit>();
-        const double deterministic_limit =
-            time_limit->GetElapsedDeterministicTime() + max_dtime_per_core;
-
-        // Simple linear scan algorithm to find the optimal of var.
-        while (best > integer_trail->LowerBound(var)) {
-          const Literal assumption =
-              integer_encoder->GetOrCreateAssociatedLiteral(
-                  IntegerLiteral::LowerOrEqual(var, best - 1));
-          result = ResetAndSolveIntegerProblem({assumption}, model);
-          if (result != SatSolver::FEASIBLE) break;
-
-          best = integer_trail->LowerBound(var);
-          VLOG(1) << "cover_opt var:" << var << " domain:["
-                  << integer_trail->LevelZeroLowerBound(var) << "," << best
-                  << "]";
-          if (!process_solution()) return SatSolver::INFEASIBLE;
-          if (parameters.stop_after_first_solution()) {
-            return SatSolver::LIMIT_REACHED;
-          }
-          if (!sat_solver->ResetToLevelZero()) return SatSolver::INFEASIBLE;
-          if (time_limit->GetElapsedDeterministicTime() > deterministic_limit) {
-            break;
-          }
-        }
-        if (result == SatSolver::INFEASIBLE) return SatSolver::INFEASIBLE;
-        if (result == SatSolver::ASSUMPTIONS_UNSAT) {
-          // TODO(user): If we improve the lower bound of var, we should check
-          // if our global lower bound reached our current best solution in
-          // order to abort early if the optimal is proved.
-          if (!integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(var, best),
-                                      {}, {})) {
-            return SatSolver::INFEASIBLE;
-          }
-        }
-      }
-
-      if (!propagate_objective_bounds()) return SatSolver::INFEASIBLE;
+    if (parameters_->cover_optimization()) {
+      if (!CoverOptimization()) return SatSolver::INFEASIBLE;
+      if (stop_) return SatSolver::LIMIT_REACHED;
     }
 
     // We assumes all terms (modulo stratification) at their lower-bound.
@@ -1556,8 +1541,8 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     std::vector<IntegerValue> assumption_weights;
     IntegerValue objective_offset(0);
     bool some_assumptions_were_skipped = false;
-    for (int i = 0; i < terms.size(); ++i) {
-      const ObjectiveTerm term = terms[i];
+    for (int i = 0; i < terms_.size(); ++i) {
+      const ObjectiveTerm term = terms_[i];
 
       // TODO(user): These can be simply removed from the list.
       if (term.weight == 0) continue;
@@ -1566,15 +1551,15 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
       // We still keep them around for a proper lower-bound computation.
       //
       // TODO(user): we could keep an objective offset instead.
-      const IntegerValue var_lb = integer_trail->LowerBound(term.var);
-      const IntegerValue var_ub = integer_trail->UpperBound(term.var);
+      const IntegerValue var_lb = integer_trail_->LowerBound(term.var);
+      const IntegerValue var_ub = integer_trail_->UpperBound(term.var);
       if (var_lb == var_ub) {
         objective_offset += term.weight * var_lb.value();
         continue;
       }
 
       // Only consider the terms above the threshold.
-      if (term.weight >= stratified_threshold) {
+      if (term.weight >= stratification_threshold_) {
         integer_assumptions.push_back(
             IntegerLiteral::LowerOrEqual(term.var, var_lb));
         assumption_weights.push_back(term.weight);
@@ -1584,10 +1569,9 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
       }
     }
 
-    // No assumptions with the current stratified_threshold? use the next one.
+    // No assumptions with the current stratification? use the next one.
     if (term_indices.empty() && some_assumptions_were_skipped) {
-      stratified_threshold = compute_next_stratified_threshold();
-      --iter;  // "false" iteration, the lower bound does not increase.
+      ComputeNextStratificationThreshold();
       continue;
     }
 
@@ -1598,22 +1582,26 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
       std::vector<IntegerVariable> constraint_vars;
       std::vector<int64> constraint_coeffs;
       for (const int index : term_indices) {
-        constraint_vars.push_back(terms[index].var);
-        constraint_coeffs.push_back(terms[index].weight.value());
+        constraint_vars.push_back(terms_[index].var);
+        constraint_coeffs.push_back(terms_[index].weight.value());
       }
-      constraint_vars.push_back(objective_var);
+      constraint_vars.push_back(objective_var_);
       constraint_coeffs.push_back(-1);
-      model->Add(WeightedSumLowerOrEqual(constraint_vars, constraint_coeffs,
-                                         -objective_offset.value()));
+      model_->Add(WeightedSumLowerOrEqual(constraint_vars, constraint_coeffs,
+                                          -objective_offset.value()));
 
       return MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
-          objective_var, feasible_solution_observer, model);
+          objective_var_, feasible_solution_observer_, model_);
     }
 
     // Display the progress.
     if (VLOG_IS_ON(1)) {
-      const int64 lb = integer_trail->LowerBound(objective_var).value();
-      const int64 ub = integer_trail->UpperBound(objective_var).value();
+      int max_depth = 0;
+      for (const ObjectiveTerm& term : terms_) {
+        max_depth = std::max(max_depth, term.depth);
+      }
+      const int64 lb = integer_trail_->LowerBound(objective_var_).value();
+      const int64 ub = integer_trail_->UpperBound(objective_var_).value();
       const int gap =
           lb == ub
               ? 0
@@ -1623,7 +1611,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
                               "]"
                               " gap:",
                               gap, "%", " assumptions:", term_indices.size(),
-                              " strat:", stratified_threshold.value(),
+                              " strat:", stratification_threshold_.value(),
                               " depth:", max_depth);
     }
 
@@ -1631,7 +1619,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     std::vector<Literal> assumptions;
     literal_to_term_index.clear();
     for (int i = 0; i < integer_assumptions.size(); ++i) {
-      assumptions.push_back(integer_encoder->GetOrCreateAssociatedLiteral(
+      assumptions.push_back(integer_encoder_->GetOrCreateAssociatedLiteral(
           integer_assumptions[i]));
 
       // Tricky: In some rare case, it is possible that the same literal
@@ -1645,31 +1633,24 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
 
     // Solve under the assumptions.
     std::vector<std::vector<Literal>> cores;
-    result = FindCores(assumptions, assumption_weights, stratified_threshold,
-                       model, &cores);
+    const SatSolver::Status result =
+        FindCores(assumptions, assumption_weights, stratification_threshold_,
+                  model_, &cores);
     if (result == SatSolver::FEASIBLE) {
-      if (!process_solution()) return SatSolver::INFEASIBLE;
-
-      // TODO(user): We actually do not know if this solution was not out of
-      // the requested objective bound.
-      if (parameters.stop_after_first_solution()) {
-        return SatSolver::LIMIT_REACHED;
-      }
+      if (!ProcessSolution()) return SatSolver::INFEASIBLE;
+      if (stop_) return SatSolver::LIMIT_REACHED;
       if (cores.empty()) {
-        stratified_threshold = compute_next_stratified_threshold();
-        if (stratified_threshold == 0) return SatSolver::INFEASIBLE;
-
-        // "false" iteration since the lower bound did not increase.
-        --iter;
+        ComputeNextStratificationThreshold();
+        if (stratification_threshold_ == 0) return SatSolver::INFEASIBLE;
         continue;
       }
     } else if (result != SatSolver::ASSUMPTIONS_UNSAT) {
-      break;
+      return result;
     }
 
     // Process the cores by creating new variables and transferring the minimum
     // weight of each core to it.
-    if (!sat_solver->ResetToLevelZero()) return SatSolver::INFEASIBLE;
+    if (!sat_solver_->ResetToLevelZero()) return SatSolver::INFEASIBLE;
     for (const std::vector<Literal>& core : cores) {
       // This just increase the lower-bound of the corresponding node, which
       // should already be done by the solver.
@@ -1689,22 +1670,21 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
 
         // When this happen, the core is now trivially "minimized" by the new
         // bound on this variable, so there is no point in adding it.
-        if (terms[index].old_var_lb <
-            integer_trail->LowerBound(terms[index].var)) {
+        if (terms_[index].old_var_lb <
+            integer_trail_->LowerBound(terms_[index].var)) {
           ignore_this_core = true;
           break;
         }
 
-        const IntegerValue weight = terms[index].weight;
+        const IntegerValue weight = terms_[index].weight;
         min_weight = std::min(min_weight, weight);
         max_weight = std::max(max_weight, weight);
-        new_depth = std::max(new_depth, terms[index].depth + 1);
-        new_var_lb += integer_trail->LowerBound(terms[index].var);
-        new_var_ub += integer_trail->UpperBound(terms[index].var);
+        new_depth = std::max(new_depth, terms_[index].depth + 1);
+        new_var_lb += integer_trail_->LowerBound(terms_[index].var);
+        new_var_ub += integer_trail_->UpperBound(terms_[index].var);
       }
       if (ignore_this_core) continue;
 
-      max_depth = std::max(max_depth, new_depth);
       VLOG(1) << absl::StrFormat(
           "core:%u weight:[%d,%d] domain:[%d,%d] depth:%d", core.size(),
           min_weight.value(), max_weight.value(), new_var_lb.value(),
@@ -1712,10 +1692,10 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
 
       // We will "transfer" min_weight from all the variables of the core
       // to a new variable.
-      const IntegerVariable new_var = model->Add(
-          NewIntegerVariable(new_var_lb.value(), new_var_ub.value()));
-      terms.push_back({new_var, min_weight, new_depth});
-      terms.back().cover_ub = new_var_ub;
+      const IntegerVariable new_var =
+          integer_trail_->AddIntegerVariable(new_var_lb, new_var_ub);
+      terms_.push_back({new_var, min_weight, new_depth});
+      terms_.back().cover_ub = new_var_ub;
 
       // Sum variables in the core <= new_var.
       {
@@ -1723,19 +1703,17 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
         std::vector<int64> constraint_coeffs;
         for (const Literal lit : core) {
           const int index = gtl::FindOrDie(literal_to_term_index, lit.Index());
-          terms[index].weight -= min_weight;
-          constraint_vars.push_back(terms[index].var);
+          terms_[index].weight -= min_weight;
+          constraint_vars.push_back(terms_[index].var);
           constraint_coeffs.push_back(1);
         }
         constraint_vars.push_back(new_var);
         constraint_coeffs.push_back(-1);
-        model->Add(
+        model_->Add(
             WeightedSumLowerOrEqual(constraint_vars, constraint_coeffs, 0));
       }
     }
   }
-
-  return result;
 }
 
 // TODO(user): take the MPModelRequest or MPModelProto directly, so that we can

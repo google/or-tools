@@ -1221,7 +1221,10 @@ void LoadCpModel(const CpModelProto& model_proto,
     // the other side: objective <= sum terms.
     //
     // TODO(user): Use a better condition to detect when this is not useful.
-    if (user_domain != automatic_domain) {
+    // Note also that for the core algorithm, we might need the other side too,
+    // otherwise we could return feasible solution with an objective above the
+    // user specified upper bound.
+    if (!automatic_domain.IsIncludedIn(user_domain)) {
       std::vector<IntegerVariable> vars;
       std::vector<int64> coeffs;
       const CpObjectiveProto& obj = model_proto.objective();
@@ -1437,9 +1440,9 @@ void SolveLoadedCpModel(const CpModelProto& model_proto,
             objective_var, linear_vars, linear_coeffs, solution_observer,
             model);
       } else {
-        status = MinimizeWithCoreAndLazyEncoding(objective_var, linear_vars,
-                                                 linear_coeffs,
-                                                 solution_observer, model);
+        CoreBasedOptimizer core(objective_var, linear_vars, linear_coeffs,
+                                solution_observer, model);
+        status = core.Optimize();
       }
     } else {
       if (parameters.binary_search_num_conflicts() >= 0) {

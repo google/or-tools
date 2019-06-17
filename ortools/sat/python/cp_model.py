@@ -52,7 +52,7 @@ INT_MAX = 9223372036854775807
 INT32_MAX = 2147483647
 INT32_MIN = -2147483648
 
-# Cp Solver status (exported to avoid importing cp_model_cp2).
+# CpSolver status (exported to avoid importing cp_model_cp2).
 UNKNOWN = cp_model_pb2.UNKNOWN
 MODEL_INVALID = cp_model_pb2.MODEL_INVALID
 FEASIBLE = cp_model_pb2.FEASIBLE
@@ -561,10 +561,10 @@ class Constraint(object):
     BoolOr, BoolAnd, and linear constraints all support enforcement literals.
 
     Args:
-        boolvar: A boolean literal or a list of boolean literals.
+      boolvar: A boolean literal or a list of boolean literals.
 
     Returns:
-        self.
+      self.
     """
 
         if isinstance(boolvar, numbers.Integral) and boolvar == 1:

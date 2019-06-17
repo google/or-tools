@@ -153,11 +153,69 @@ void RestrictObjectiveDomainWithBinarySearch(
 // Unlike MinimizeIntegerVariableWithLinearScanAndLazyEncoding() this function
 // just return the last solver status. In particular if it is INFEASIBLE but
 // feasible_solution_observer() was called, it means we are at OPTIMAL.
-SatSolver::Status MinimizeWithCoreAndLazyEncoding(
-    IntegerVariable objective_var,
-    const std::vector<IntegerVariable>& variables,
-    const std::vector<IntegerValue>& coefficients,
-    const std::function<void()>& feasible_solution_observer, Model* model);
+class CoreBasedOptimizer {
+ public:
+  CoreBasedOptimizer(IntegerVariable objective_var,
+                     const std::vector<IntegerVariable>& variables,
+                     const std::vector<IntegerValue>& coefficients,
+                     std::function<void()> feasible_solution_observer,
+                     Model* model);
+
+  // TODO(user): Change the algo slighlty to allow resuming from the last
+  // aborted position.
+  SatSolver::Status Optimize();
+
+ private:
+  CoreBasedOptimizer(const CoreBasedOptimizer&) = delete;
+  CoreBasedOptimizer& operator=(const CoreBasedOptimizer&) = delete;
+
+  struct ObjectiveTerm {
+    IntegerVariable var;
+    IntegerValue weight;
+    int depth;  // Only for logging/debugging.
+    IntegerValue old_var_lb;
+
+    // An upper bound on the optimal solution if we were to optimize only this
+    // term. This is used by the cover optimization code.
+    IntegerValue cover_ub;
+  };
+
+  // This will be called each time a feasible solution is found. Returns false
+  // if a conflict was detected while trying to constrain the objective to a
+  // smaller value.
+  bool ProcessSolution();
+
+  // Use the gap an implied bounds to propagated the bounds of the objective
+  // variables and of its terms.
+  bool PropagateObjectiveBounds();
+
+  // Heuristic that aim to find the "real" lower bound of the objective on each
+  // core by using a linear scan optimization approach.
+  bool CoverOptimization();
+
+  // Computes the next stratification threshold.
+  // Sets it to zero if all the assumptions where already considered.
+  void ComputeNextStratificationThreshold();
+
+  SatParameters* parameters_;
+  SatSolver* sat_solver_;
+  TimeLimit* time_limit_;
+  IntegerTrail* integer_trail_;
+  IntegerEncoder* integer_encoder_;
+  Model* model_;  // TODO(user): remove this one.
+
+  IntegerVariable objective_var_;
+  std::vector<ObjectiveTerm> terms_;
+  IntegerValue stratification_threshold_;
+  std::function<void()> feasible_solution_observer_;
+
+  // Set to true when we need to abort early.
+  //
+  // TODO(user): This is only used for the stop after first solution parameter
+  // which should likely be handled differently by simply using the normal way
+  // to stop a solver from the feasible solution callback.
+  bool stop_ = false;
+};
 
 // Generalization of the max-HS algorithm (HS stands for Hitting Set). This is
 // similar to MinimizeWithCoreAndLazyEncoding() but it uses a hybrid approach

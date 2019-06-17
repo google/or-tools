@@ -156,14 +156,14 @@ void RegisterVariableBoundsLevelZeroExport(
     const CpModelProto& model_proto, SharedBoundsManager* shared_bounds_manager,
     Model* model);
 
-// Registers a callback to import new objective bounds.
-//
-// Currently, standard search works fine with it.
-// LNS search and Core based search do not support it
+// Registers a callback to import new objective bounds. It will be called each
+// time the search main loop is back to level zero. Note that it the presence of
+// assumptions, this will not happend until the set of assumptions is changed.
 void RegisterObjectiveBoundsImport(
     SharedResponseManager* shared_response_manager, Model* model);
 
 // Registers a callback that will report improving objective best bound.
+// It will be called each time new objective bound are propagated at level zero.
 void RegisterObjectiveBestBoundExport(
     IntegerVariable objective_var,
     SharedResponseManager* shared_response_manager, Model* model);
