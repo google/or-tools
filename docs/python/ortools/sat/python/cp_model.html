@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.6.2" />
 <title>cp_model API documentation</title>
-<meta name="description" content="Methods for building and solving CP-SAT models." />
+<meta name="description" content="Methods for building and solving CP-SAT models …" />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
@@ -21,6 +21,18 @@
 </header>
 <section id="section-intro">
 <p>Methods for building and solving CP-SAT models.</p>
+<p>The following sections describe methods for building and solving</p>
+<p>CP-SAT models, and related tasks:</p>
+<ul>
+<li><a href="#ortools.sat.python.cp_model.CpModel">Create model</a>: Methods for creating
+models, including variables and constraints.</li>
+<li><a href="#ortools.sat.python.cp_model.CpSolver">Solve</a>: Methods for solving
+a model and evaluating solutions.</li>
+<li><a href="#ortools.sat.python.cp_model.CpSolverSolutionCallback">Solution callback</a>:
+Create a callback that is invoked every time the solver finds a new solution.</li>
+<li><a href="#ortools.sat.python.cp_model.ObjectiveSolutionPrinter">Solution printer</a>:
+Print objective values and elapsed time for intermediate solutions.</li>
+</ul>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python"># Copyright 2010-2018 Google LLC
@@ -35,7 +47,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-&#34;&#34;&#34;Methods for building and solving CP-SAT models.&#34;&#34;&#34;
+&#34;&#34;&#34;Methods for building and solving CP-SAT models.
+
+The following sections describe methods for building and solving
+
+CP-SAT models, and related tasks:
+
+* [Create model](#ortools.sat.python.cp_model.CpModel): Methods for creating
+models, including variables and constraints.
+* [Solve](#ortools.sat.python.cp_model.CpSolver): Methods for solving
+a model and evaluating solutions.
+* [Solution callback](#ortools.sat.python.cp_model.CpSolverSolutionCallback):
+Create a callback that is invoked every time the solver finds a new solution.
+* [Solution printer](#ortools.sat.python.cp_model.ObjectiveSolutionPrinter):
+Print objective values and elapsed time for intermediate solutions.
+&#34;&#34;&#34;
 
 from __future__ import absolute_import
 from __future__ import division
@@ -90,19 +116,6 @@ AUTOMATIC_SEARCH = sat_parameters_pb2.SatParameters.AUTOMATIC_SEARCH
 FIXED_SEARCH = sat_parameters_pb2.SatParameters.FIXED_SEARCH
 PORTFOLIO_SEARCH = sat_parameters_pb2.SatParameters.PORTFOLIO_SEARCH
 LP_SEARCH = sat_parameters_pb2.SatParameters.LP_SEARCH
-&#34;&#34;&#34;The following sections describe methods for building and solving
-
-CP-SAT models, and related tasks:
-
-* [Create model](#ortools.sat.python.cp_model.CpModel): Methods for creating
-models, including variables and constraints.
-* [Solve](#ortools.sat.python.cp_model.CpSolver): Methods for solving
-a model and evaluating solutions.
-* [Solution callback](#ortools.sat.python.cp_model.CpSolverSolutionCallback):
-Create a callback that is invoked every time the solver finds a new solution.
-* [Solution printer](#ortools.sat.python.cp_model.ObjectiveSolutionPrinter):
-Print objective values and elapsed time for intermediate solutions.
-&#34;&#34;&#34;
 
 
 def DisplayBounds(bounds):
@@ -576,12 +589,6 @@ class Constraint(object):
     def OnlyEnforceIf(self, boolvar):
         &#34;&#34;&#34;Adds an enforcement literal to the constraint.
 
-    Args:
-        boolvar: A boolean literal or a list of boolean literals.
-
-    Returns:
-        self.
-
     This method adds one or more literals (that is, a boolean variable or its
     negation) as enforcement literals. The conjunction of all these literals
     determines whether the constraint is active or not. It acts as an
@@ -589,6 +596,12 @@ class Constraint(object):
     must be enforced. If it is false, then the constraint is ignored.
 
     BoolOr, BoolAnd, and linear constraints all support enforcement literals.
+
+    Args:
+        boolvar: A boolean literal or a list of boolean literals.
+
+    Returns:
+        self.
     &#34;&#34;&#34;
 
         if isinstance(boolvar, numbers.Integral) and boolvar == 1:
@@ -936,7 +949,7 @@ class CpModel(object):
 
     Raises:
       ValueError: if transition_variables, final_states, or transition_triples
-      are empty.
+        are empty.
     &#34;&#34;&#34;
 
         if not transition_variables:
@@ -1807,24 +1820,6 @@ class VarArraySolutionPrinter(CpSolverSolutionCallback):
 <section>
 </section>
 <section>
-<h2 class="section-title" id="header-variables">Global variables</h2>
-<dl>
-<dt id="cp_model.LP_SEARCH"><code class="name">var <span class="ident">LP_SEARCH</span></code></dt>
-<dd>
-<section class="desc"><p>The following sections describe methods for building and solving</p>
-<p>CP-SAT models, and related tasks:</p>
-<ul>
-<li><a href="#ortools.sat.python.cp_model.CpModel">Create model</a>: Methods for creating
-models, including variables and constraints.</li>
-<li><a href="#ortools.sat.python.cp_model.CpSolver">Solve</a>: Methods for solving
-a model and evaluating solutions.</li>
-<li><a href="#ortools.sat.python.cp_model.CpSolverSolutionCallback">Solution callback</a>:
-Create a callback that is invoked every time the solver finds a new solution.</li>
-<li><a href="#ortools.sat.python.cp_model.ObjectiveSolutionPrinter">Solution printer</a>:
-Print objective values and elapsed time for intermediate solutions.</li>
-</ul></section>
-</dd>
-</dl>
 </section>
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
@@ -2046,12 +2041,6 @@ model.Add(x + 2 * y == 5).OnlyEnforceIf(b.Not())
     def OnlyEnforceIf(self, boolvar):
         &#34;&#34;&#34;Adds an enforcement literal to the constraint.
 
-    Args:
-        boolvar: A boolean literal or a list of boolean literals.
-
-    Returns:
-        self.
-
     This method adds one or more literals (that is, a boolean variable or its
     negation) as enforcement literals. The conjunction of all these literals
     determines whether the constraint is active or not. It acts as an
@@ -2059,6 +2048,12 @@ model.Add(x + 2 * y == 5).OnlyEnforceIf(b.Not())
     must be enforced. If it is false, then the constraint is ignored.
 
     BoolOr, BoolAnd, and linear constraints all support enforcement literals.
+
+    Args:
+        boolvar: A boolean literal or a list of boolean literals.
+
+    Returns:
+        self.
     &#34;&#34;&#34;
 
         if isinstance(boolvar, numbers.Integral) and boolvar == 1:
@@ -2101,35 +2096,23 @@ model.Add(x + 2 * y == 5).OnlyEnforceIf(b.Not())
 </code></dt>
 <dd>
 <section class="desc"><p>Adds an enforcement literal to the constraint.</p>
+<p>This method adds one or more literals (that is, a boolean variable or its
+negation) as enforcement literals. The conjunction of all these literals
+determines whether the constraint is active or not. It acts as an
+implication, so if the conjunction is true, it implies that the constraint
+must be enforced. If it is false, then the constraint is ignored.</p>
+<p>BoolOr, BoolAnd, and linear constraints all support enforcement literals.</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>boolvar</code></strong></dt>
 <dd>A boolean literal or a list of boolean literals.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<dl>
-<dt>self.</dt>
-<dt><code>This</code> <code>method</code> <code>adds</code> <code>one</code> or <code>more</code> <code>literals</code> (<code>that</code> <code>is</code>, <code>a</code> <code>boolean</code> <code>variable</code> or <code>its</code></dt>
-<dd>&nbsp;</dd>
-<dt><code>negation</code>) <code>as</code> <code>enforcement</code> <code>literals.</code> <code>The</code> <code>conjunction</code> of <code>all</code> <code>these</code> <code>literals</code></dt>
-<dd>&nbsp;</dd>
-<dt><code>determines</code> <code>whether</code> <code>the</code> <code>constraint</code> <code>is</code> <code>active</code> or <code>not.</code> <code>It</code> <code>acts</code> <code>as</code> <code>an</code></dt>
-<dd>&nbsp;</dd>
-<dt><code>implication</code>, <code>so</code> <code>if</code> <code>the</code> <code>conjunction</code> <code>is</code> <code>true</code>, <code>it</code> <code>implies</code> <code>that</code> <code>the</code> <code>constraint</code></dt>
-<dd>&nbsp;</dd>
-</dl>
-<p>must be enforced. If it is false, then the constraint is ignored.</p>
-<p>BoolOr, BoolAnd, and linear constraints all support enforcement literals.</p></section>
+<p>self.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def OnlyEnforceIf(self, boolvar):
     &#34;&#34;&#34;Adds an enforcement literal to the constraint.
-
-Args:
-    boolvar: A boolean literal or a list of boolean literals.
-
-Returns:
-    self.
 
 This method adds one or more literals (that is, a boolean variable or its
 negation) as enforcement literals. The conjunction of all these literals
@@ -2138,6 +2121,12 @@ implication, so if the conjunction is true, it implies that the constraint
 must be enforced. If it is false, then the constraint is ignored.
 
 BoolOr, BoolAnd, and linear constraints all support enforcement literals.
+
+Args:
+    boolvar: A boolean literal or a list of boolean literals.
+
+Returns:
+    self.
 &#34;&#34;&#34;
 
     if isinstance(boolvar, numbers.Integral) and boolvar == 1:
@@ -2443,7 +2432,7 @@ BoolOr, BoolAnd, and linear constraints all support enforcement literals.
 
     Raises:
       ValueError: if transition_variables, final_states, or transition_triples
-      are empty.
+        are empty.
     &#34;&#34;&#34;
 
         if not transition_variables:
@@ -3176,9 +3165,9 @@ following format (current_state, variable_value, next_state).</dd>
 <h2 id="raises">Raises</h2>
 <dl>
 <dt><strong><code>ValueError</code></strong></dt>
-<dd>if transition_variables, final_states, or transition_triples</dd>
-</dl>
-<p>are empty.</p></section>
+<dd>if transition_variables, final_states, or transition_triples
+are empty.</dd>
+</dl></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def AddAutomaton(self, transition_variables, starting_state, final_states,
@@ -3220,7 +3209,7 @@ Returns:
 
 Raises:
   ValueError: if transition_variables, final_states, or transition_triples
-  are empty.
+    are empty.
 &#34;&#34;&#34;
 
     if not transition_variables:
@@ -5840,11 +5829,6 @@ def Sum(cls, expressions):
 <ul></ul>
 </div>
 <ul id="index">
-<li><h3><a href="#header-variables">Global variables</a></h3>
-<ul class="">
-<li><code><a title="cp_model.LP_SEARCH" href="#cp_model.LP_SEARCH">LP_SEARCH</a></code></li>
-</ul>
-</li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="cp_model.DisplayBounds" href="#cp_model.DisplayBounds">DisplayBounds</a></code></li>

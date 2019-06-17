@@ -10,7 +10,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Methods for building and solving CP-SAT models."""
+"""Methods for building and solving CP-SAT models.
+
+The following sections describe methods for building and solving
+
+CP-SAT models, and related tasks:
+
+* [Create model](#ortools.sat.python.cp_model.CpModel): Methods for creating
+models, including variables and constraints.
+* [Solve](#ortools.sat.python.cp_model.CpSolver): Methods for solving
+a model and evaluating solutions.
+* [Solution callback](#ortools.sat.python.cp_model.CpSolverSolutionCallback):
+Create a callback that is invoked every time the solver finds a new solution.
+* [Solution printer](#ortools.sat.python.cp_model.ObjectiveSolutionPrinter):
+Print objective values and elapsed time for intermediate solutions.
+"""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -65,20 +79,6 @@ AUTOMATIC_SEARCH = sat_parameters_pb2.SatParameters.AUTOMATIC_SEARCH
 FIXED_SEARCH = sat_parameters_pb2.SatParameters.FIXED_SEARCH
 PORTFOLIO_SEARCH = sat_parameters_pb2.SatParameters.PORTFOLIO_SEARCH
 LP_SEARCH = sat_parameters_pb2.SatParameters.LP_SEARCH
-
-"""The following sections describe methods for building and solving
-
-CP-SAT models, and related tasks:
-
-* [Create model](#ortools.sat.python.cp_model.CpModel): Methods for creating
-models, including variables and constraints.
-* [Solve](#ortools.sat.python.cp_model.CpSolver): Methods for solving
-a model and evaluating solutions.
-* [Solution callback](#ortools.sat.python.cp_model.CpSolverSolutionCallback):
-Create a callback that is invoked every time the solver finds a new solution.
-* [Solution printer](#ortools.sat.python.cp_model.ObjectiveSolutionPrinter):
-Print objective values and elapsed time for intermediate solutions.
-"""
 
 
 def DisplayBounds(bounds):
@@ -552,12 +552,6 @@ class Constraint(object):
     def OnlyEnforceIf(self, boolvar):
         """Adds an enforcement literal to the constraint.
 
-    Args:
-        boolvar: A boolean literal or a list of boolean literals.
-
-    Returns:
-        self.
-
     This method adds one or more literals (that is, a boolean variable or its
     negation) as enforcement literals. The conjunction of all these literals
     determines whether the constraint is active or not. It acts as an
@@ -565,6 +559,12 @@ class Constraint(object):
     must be enforced. If it is false, then the constraint is ignored.
 
     BoolOr, BoolAnd, and linear constraints all support enforcement literals.
+
+    Args:
+        boolvar: A boolean literal or a list of boolean literals.
+
+    Returns:
+        self.
     """
 
         if isinstance(boolvar, numbers.Integral) and boolvar == 1:
@@ -912,7 +912,7 @@ class CpModel(object):
 
     Raises:
       ValueError: if transition_variables, final_states, or transition_triples
-      are empty.
+        are empty.
     """
 
         if not transition_variables:
