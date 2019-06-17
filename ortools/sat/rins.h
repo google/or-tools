@@ -53,7 +53,10 @@ struct RINSVariables {
 };
 
 struct RINSNeighborhood {
+  // A variable will appear only once and not in both vectors.
   std::vector<std::pair<RINSVariable, /*value*/ int64>> fixed_vars;
+  std::vector<std::pair<RINSVariable, /*domain*/ std::pair<int64, int64>>>
+      reduced_domain_vars;
 };
 
 // Shared object to pass around generated RINS neighborhoods across workers.
@@ -74,7 +77,7 @@ class SharedRINSNeighborhoodManager {
   // This is the memory limit we use to avoid storing too many neighborhoods.
   // The sum of the fixed variables of the stored neighborhood will always
   // stays smaller than this.
-  int64 max_fixed_vars() const { return 100 * num_model_vars_; }
+  int64 max_stored_vars() const { return 100 * num_model_vars_; }
 
  private:
   // Used while adding and removing neighborhoods.
@@ -84,9 +87,9 @@ class SharedRINSNeighborhoodManager {
   // collection.
   std::vector<RINSNeighborhood> neighborhoods_;
 
-  // This is the sum of number of fixed variables across all the shared
-  // neighborhoods. This is used for controlling the size of storage.
-  int64 total_num_fixed_vars_ = 0;
+  // This is the sum of number of fixed and reduced variables across all the
+  // shared neighborhoods. This is used for controlling the size of storage.
+  int64 total_stored_vars_ = 0;
 
   const int64 num_model_vars_;
 };

@@ -140,6 +140,9 @@ class NeighborhoodGenerator {
   virtual Neighborhood Generate(const CpSolverResponse& initial_solution,
                                 int64 seed, double difficulty) const = 0;
 
+  // Returns true if the generator needs a solution to generate a neighborhood.
+  virtual bool NeedsFirstSolution() const { return true; }
+
   // Returns a short description of the generator.
   std::string name() const { return name_; }
 
@@ -242,6 +245,10 @@ class SchedulingTimeWindowNeighborhoodGenerator : public NeighborhoodGenerator {
 // as their linear relaxation. This was published in "Exploring relaxation
 // induced neighborhoods to improve MIP solutions" 2004 by E. Danna et.
 //
+// If no solution is available, this generates a neighborhood using only the
+// linear relaxation values. This was published in "RENS – The Relaxation
+// Enforced Neighborhood" 2009 by Timo Berthold.
+//
 // NOTE: The neighborhoods are generated outside of this generator and are
 // managed by SharedRINSNeighborhoodManager.
 class RelaxationInducedNeighborhoodGenerator : public NeighborhoodGenerator {
@@ -253,6 +260,8 @@ class RelaxationInducedNeighborhoodGenerator : public NeighborhoodGenerator {
 
   Neighborhood Generate(const CpSolverResponse& initial_solution, int64 seed,
                         double difficulty) const final;
+
+  bool NeedsFirstSolution() const override { return false; }
 
   const Model* model_;
 };

@@ -487,6 +487,18 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
     neighborhood.cp_model.mutable_variables(var)->add_domain(value);
     neighborhood.is_reduced = true;
   }
+
+  for (const std::pair<RINSVariable, /*domain*/ std::pair<int64, int64>>
+           reduced_var : rins_neighborhood_opt.value().reduced_domain_vars) {
+    int var = reduced_var.first.model_var;
+    int64 lb = reduced_var.second.first;
+    int64 ub = reduced_var.second.second;
+    if (!helper_.IsActive(var)) continue;
+    Domain domain = ReadDomainFromProto(neighborhood.cp_model.variables(var));
+    domain = domain.IntersectionWith(Domain(lb, ub));
+    FillDomainInProto(domain, neighborhood.cp_model.mutable_variables(var));
+    neighborhood.is_reduced = true;
+  }
   neighborhood.is_generated = true;
   return neighborhood;
 }

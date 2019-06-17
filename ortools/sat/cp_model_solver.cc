@@ -1733,13 +1733,6 @@ void SolveCpModelWithLNS(const CpModelProto& model_proto, int num_workers,
   SatParameters* parameters = model->GetOrCreate<SatParameters>();
 
   CpSolverResponse response = shared_response_manager->GetResponse();
-  if (response.status() == CpSolverStatus::UNKNOWN) {
-    parameters->set_stop_after_first_solution(true);
-    LoadCpModel(model_proto, shared_response_manager, model);
-    SolveLoadedCpModel(model_proto, shared_response_manager, model);
-    response = shared_response_manager->GetResponse();
-  }
-  if (response.status() != CpSolverStatus::FEASIBLE) return;
 
   const bool focus_on_decision_variables =
       parameters->lns_focus_on_decision_variables();
@@ -1771,6 +1764,28 @@ void SolveCpModelWithLNS(const CpModelProto& model_proto, int num_workers,
     generators.push_back(
         absl::make_unique<RelaxationInducedNeighborhoodGenerator>(
             &helper, model, "rins"));
+  }
+  bool all_generators_require_solution = true;
+  for (int i = 0; i < generators.size(); ++i) {
+    if (!generators[i]->NeedsFirstSolution()) {
+      all_generators_require_solution = false;
+      break;
+    }
+  }
+  if (response.status() == CpSolverStatus::UNKNOWN) {
+    if (all_generators_require_solution) {
+      parameters->set_stop_after_first_solution(true);
+      LoadCpModel(model_proto, shared_response_manager, model);
+      SolveLoadedCpModel(model_proto, shared_response_manager, model);
+      response = shared_response_manager->GetResponse();
+      if (response.status() != CpSolverStatus::FEASIBLE) {
+        return;
+      }
+    }
+  }
+  if (response.status() != CpSolverStatus::FEASIBLE &&
+      response.status() != CpSolverStatus::UNKNOWN) {
+    return;
   }
 
   // The "optimal" difficulties do not have to be the same for different
@@ -1836,7 +1851,11 @@ void SolveCpModelWithLNS(const CpModelProto& model_proto, int num_workers,
                response.objective_value() == response.best_objective_bound();
       },
       [&](int64 seed) {
-        const int selected_generator = seed % generators.size();
+        int selected_generator = seed % generators.size();
+        while (response.status() == CpSolverStatus::UNKNOWN &&
+               generators[selected_generator]->NeedsFirstSolution()) {
+          selected_generator = (selected_generator + 1) % generators.size();
+        }
         AdaptiveParameterValue& difficulty = difficulties[selected_generator];
         const double saved_difficulty = difficulty.value();
         Neighborhood neighborhood = generators[selected_generator]->Generate(
@@ -2130,7 +2149,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   {
     const std::string error = ValidateCpModel(model_proto);
     if (!error.empty()) {
-      VLOG(1) << error;
+      LOG_IF(INFO, log_search) << error;
       CpSolverResponse response;
       response.set_status(CpSolverStatus::MODEL_INVALID);
       LOG_IF(INFO, log_search) << CpSolverResponseStats(response);

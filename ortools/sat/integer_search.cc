@@ -665,10 +665,28 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
     }
     const int old_level = solver->CurrentDecisionLevel();
 
+    // No decision means that we reached a leave of the search tree and that
+    // we have a feasible solution.
     if (decision == kNoLiteralIndex) {
       SolutionDetails* solution_details = model->Mutable<SolutionDetails>();
       if (solution_details != nullptr) {
         solution_details->LoadFromTrail(*integer_trail);
+      }
+
+      // Save the current polarity of all Booleans in the solution. It will be
+      // followed for the next SAT decisions. This is known to be a good policy
+      // for optimization problem. Note that for decision problem we don't care
+      // since we are just done as soon as a solution is found.
+      //
+      // This idea is kind of "well known", see for instance the "LinSBPS"
+      // submission to the maxSAT 2018 competition by Emir Demirovic and Peter
+      // Stuckey where they show it is a good idea and provide more references.
+      if (model->GetOrCreate<SatParameters>()->use_optimization_hints()) {
+        auto* sat_decision = model->GetOrCreate<SatDecisionPolicy>();
+        const auto& trail = *model->GetOrCreate<Trail>();
+        for (int i = 0; i < trail.Index(); ++i) {
+          sat_decision->SetAssignmentPreference(trail[i], 0.0);
+        }
       }
       return SatSolver::FEASIBLE;
     }
@@ -689,8 +707,10 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
 
     solver->AdvanceDeterministicTime(time_limit);
     if (!solver->ReapplyAssumptionsIfNeeded()) return solver->UnsatStatus();
-    if (model->GetOrCreate<SolutionDetails>()->solution_count > 0 &&
-        model->Get<SharedRINSNeighborhoodManager>() != nullptr) {
+    if (model->Get<SharedRINSNeighborhoodManager>() != nullptr) {
+      // If RINS is activated, we need to make sure the SolutionDetails is
+      // created.
+      model->GetOrCreate<SolutionDetails>();
       num_decisions_without_rins++;
       // TODO(user): Experiment more around dynamically changing the
       // threshold for trigerring RINS. Alternatively expose this as parameter

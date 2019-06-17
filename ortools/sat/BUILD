@@ -633,6 +633,7 @@ cc_library(
         ":sat_base",
         ":sat_parameters_cc_proto",
         ":sat_solver",
+        ":timetable",
         ":theta_tree",
         "//ortools/base",
         "//ortools/base:int_type",

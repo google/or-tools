@@ -41,8 +41,8 @@ https://en.wikipedia.org/wiki/Boolean_satisfiability_problem#Basic_definitions_a
 
 ## Boolean variables and literals
 
-We can create a Boolean variable 'x' and a literal 'not_x' equal to the logical
-negation of 'x'.
+We can create a Boolean variable `x` and a literal `not_x` equal to the logical
+negation of `x`.
 
 ### Python code
 
@@ -241,10 +241,10 @@ The CP-SAT solver supports *half-reified* constraints, also called
 
     x implies constraint
 
-where the constraint must hold if *x* is true.
+where the constraint must hold if `x` is true.
 
 Please note that this is not an equivalence relation. The constraint can still
-be true if *x* is false.
+be true if `x` is false.
 
 So we can write b => And(x, not y). That is, if b is true, then x is true and y
 is false. Note that in this particular example, there are multiple ways to
@@ -401,13 +401,12 @@ A useful construct is the product `p` of two Boolean variables `x` and `y`.
 
     p == x * y
 
-
 This is equivalent to the logical relation
 
     p <=> x and y
 
-This is encoded using one bool_or constraint and two implications. The
-following code samples output this truth table:
+This is encoded using one bool_or constraint and two implications. The following
+code samples output this truth table:
 
     x = 0   y = 0   p = 0
     x = 1   y = 0   p = 0
