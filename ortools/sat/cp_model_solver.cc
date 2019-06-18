@@ -1302,7 +1302,7 @@ void SolveLoadedCpModel(const CpModelProto& model_proto,
           mapping->GetProtoVariableFromIntegerVariable(positive_var);
       rins_var.lp = gtl::FindWithDefault(*lp_dispatcher, positive_var, nullptr);
 
-      if (rins_var.lp != nullptr) {
+      if (rins_var.lp != nullptr && rins_var.model_var >= 0) {
         rins_vars->vars.push_back(rins_var);
       }
     }

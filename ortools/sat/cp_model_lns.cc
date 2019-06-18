@@ -459,13 +459,8 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
   neighborhood.cp_model = helper_.ModelProto();
   neighborhood.is_generated = false;
 
-  const int num_model_vars = helper_.ModelProto().variables_size();
   SharedRINSNeighborhoodManager* rins_manager =
       model_->Mutable<SharedRINSNeighborhoodManager>();
-  std::vector<int> all_vars;
-  for (int i = 0; i < num_model_vars; ++i) {
-    all_vars.push_back(i);
-  }
   if (rins_manager == nullptr) {
     return neighborhood;
   }
@@ -481,6 +476,7 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
        rins_neighborhood_opt.value().fixed_vars) {
     int var = fixed_var.first.model_var;
     int64 value = fixed_var.second;
+    if (var >= neighborhood.cp_model.variables_size()) continue;
     if (!helper_.IsActive(var)) continue;
     neighborhood.cp_model.mutable_variables(var)->clear_domain();
     neighborhood.cp_model.mutable_variables(var)->add_domain(value);
@@ -493,6 +489,7 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
     int var = reduced_var.first.model_var;
     int64 lb = reduced_var.second.first;
     int64 ub = reduced_var.second.second;
+    if (var >= neighborhood.cp_model.variables_size()) continue;
     if (!helper_.IsActive(var)) continue;
     Domain domain = ReadDomainFromProto(neighborhood.cp_model.variables(var));
     domain = domain.IntersectionWith(Domain(lb, ub));

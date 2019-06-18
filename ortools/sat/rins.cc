@@ -48,8 +48,9 @@ SharedRINSNeighborhoodManager::GetUnexploredNeighborhood() {
   // return the last added neighborhood and remove it.
   const RINSNeighborhood neighborhood = std::move(neighborhoods_.back());
   neighborhoods_.pop_back();
-  total_stored_vars_ -=
+  const int64 neighborhood_size =
       neighborhood.fixed_vars.size() + neighborhood.reduced_domain_vars.size();
+  total_stored_vars_ -= neighborhood_size;
   VLOG(1) << "total stored vars: " << total_stored_vars_;
   return neighborhood;
 }
@@ -113,8 +114,12 @@ void AddRINSNeighborhood(Model* model) {
     }
   }
 
-  model->Mutable<SharedRINSNeighborhoodManager>()->AddNeighborhood(
-      rins_neighborhood);
+  const int64 neighborhood_size = rins_neighborhood.fixed_vars.size() +
+                                  rins_neighborhood.reduced_domain_vars.size();
+  if (neighborhood_size > 0) {
+    model->Mutable<SharedRINSNeighborhoodManager>()->AddNeighborhood(
+        rins_neighborhood);
+  }
 }
 
 }  // namespace sat
