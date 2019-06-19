@@ -221,7 +221,7 @@ def solve_shift_scheduling(params, output_proto):
         (3, 0, 5, -2),
         # Employee 5 wants a night shift on the second Thursday.
         (5, 3, 10, -2),
-        # Employee 2 does not want a night shift on the third Friday.
+        # Employee 2 does not want a night shift on the first Friday.
         (2, 3, 4, 4)
     ]
 
