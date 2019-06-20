@@ -7,6 +7,12 @@
 - [Linear Solver](cpp_linear/index.html)
 - [CP-SAT](cpp_sat/index.html)
 
+## DotNET Documentation
+
+- [Main entry](dotnet/index.html)
+- [CP-SAT namespace](dotnet/namespaceGoogle_1_1OrTools_1_1Sat.html)
+
+
 ## Java Documentation
 
 - [Main entry](java/index.html)
@@ -15,6 +21,3 @@
 ## Python documentation
 
 - [CP-SAT module](python/ortools/sat/python/cp_model.html)
-
-
-

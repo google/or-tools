@@ -6,6 +6,9 @@ cpp-doc:
 	doxygen tools/cpp_routing.doxy
 	doxygen tools/cpp_sat.doxy
 
+dotnet-doc:
+	doxygen tools/dotnet.doxy
+
 java-doc:
 	doxygen tools/java.doxy
 
