@@ -5,7 +5,7 @@
         <meta http-equiv="Content-Type" content="text/html;"/>
         <meta charset="utf-8"/>
         <!--<link rel='stylesheet' type='text/css' href="https://fonts.googleapis.com/css?family=Ubuntu:400,700,400italic"/>-->
-        <link rel="stylesheet" type="text/css" href="doxygen.css" title="default" media="screen,print" />
+        <link rel="stylesheet" type="text/css" href="ortools.css" title="default" media="screen,print" />
         <script type="text/javascript" src="jquery.js"></script>
         <script type="text/javascript" src="dynsections.js"></script>
     </head>
@@ -75,6 +75,7 @@ Collaboration diagram for operations_research::MPGeneralConstraintProto:</div>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
 <tr class="memitem:a2cf31917b69263cfbac0e486ddb6aba1"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a2cf31917b69263cfbac0e486ddb6aba1">GeneralConstraintCase</a> { <a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a2cf31917b69263cfbac0e486ddb6aba1a49273ebf624aaccbfa40d1b7e7c0a85f">kIndicatorConstraint</a> = 2, 
+<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a2cf31917b69263cfbac0e486ddb6aba1af76aca0e4b44619463bc0b0e82737896">kSosConstraint</a> = 3, 
 <a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a2cf31917b69263cfbac0e486ddb6aba1a958b131e29583210144fef16daf97795">GENERAL_CONSTRAINT_NOT_SET</a> = 0
  }</td></tr>
 <tr class="separator:a2cf31917b69263cfbac0e486ddb6aba1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -87,23 +88,27 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a6783c5a065b790d843c946d75e624bd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1574f0ff7bd57173445f00124a3ce3cc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a1574f0ff7bd57173445f00124a3ce3cc">MPGeneralConstraintProto</a> (const <a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html">MPGeneralConstraintProto</a> &amp;from)</td></tr>
 <tr class="separator:a1574f0ff7bd57173445f00124a3ce3cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a23ebae958e5b79e041729918317a626e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a23ebae958e5b79e041729918317a626e">MPGeneralConstraintProto</a> (<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html">MPGeneralConstraintProto</a> &amp;&amp;from) noexcept</td></tr>
+<tr class="separator:a23ebae958e5b79e041729918317a626e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ade51c5fc9c7d152fc527acec3d061648"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html">MPGeneralConstraintProto</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#ade51c5fc9c7d152fc527acec3d061648">operator=</a> (const <a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html">MPGeneralConstraintProto</a> &amp;from)</td></tr>
 <tr class="separator:ade51c5fc9c7d152fc527acec3d061648"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4e85d04301ddabea474e41b77a6e75b1"><td class="memItemLeft" align="right" valign="top">const ::google::protobuf::UnknownFieldSet &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a4e85d04301ddabea474e41b77a6e75b1">unknown_fields</a> () const</td></tr>
-<tr class="separator:a4e85d04301ddabea474e41b77a6e75b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2ebf4fef33bac8cc63714f80926209e6"><td class="memItemLeft" align="right" valign="top">inline ::google::protobuf::UnknownFieldSet *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a2ebf4fef33bac8cc63714f80926209e6">mutable_unknown_fields</a> ()</td></tr>
-<tr class="separator:a2ebf4fef33bac8cc63714f80926209e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a19ca123af9d0e7864eae82cada2e3a25"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html">MPGeneralConstraintProto</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a19ca123af9d0e7864eae82cada2e3a25">operator=</a> (<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html">MPGeneralConstraintProto</a> &amp;&amp;from) noexcept</td></tr>
+<tr class="separator:a19ca123af9d0e7864eae82cada2e3a25"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac5d8cfd0c330faeb3ad7d6d9f64e4339"><td class="memItemLeft" align="right" valign="top">const ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#ac5d8cfd0c330faeb3ad7d6d9f64e4339">unknown_fields</a> () const</td></tr>
+<tr class="separator:ac5d8cfd0c330faeb3ad7d6d9f64e4339"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a68936ea3cd26c1b74b9509b995ecab29"><td class="memItemLeft" align="right" valign="top">inline ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a68936ea3cd26c1b74b9509b995ecab29">mutable_unknown_fields</a> ()</td></tr>
+<tr class="separator:a68936ea3cd26c1b74b9509b995ecab29"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6a15885d9dd8dc6ddacdeac999b84d74"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a6a15885d9dd8dc6ddacdeac999b84d74">Swap</a> (<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html">MPGeneralConstraintProto</a> *other)</td></tr>
 <tr class="separator:a6a15885d9dd8dc6ddacdeac999b84d74"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a156c085640796614ae514830f8aabb9b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html">MPGeneralConstraintProto</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a156c085640796614ae514830f8aabb9b">New</a> () const final</td></tr>
 <tr class="memdesc:a156c085640796614ae514830f8aabb9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">implements Message -------------------------------------------&mdash;  <a href="#a156c085640796614ae514830f8aabb9b">More...</a><br /></td></tr>
 <tr class="separator:a156c085640796614ae514830f8aabb9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a041994c580bd05e7e328ac9dd966400d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html">MPGeneralConstraintProto</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a041994c580bd05e7e328ac9dd966400d">New</a> (::google::protobuf::Arena *arena) const final</td></tr>
-<tr class="separator:a041994c580bd05e7e328ac9dd966400d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae14a992ec52211964dbf32b725c15c09"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#ae14a992ec52211964dbf32b725c15c09">CopyFrom</a> (const ::google::protobuf::Message &amp;from) final</td></tr>
-<tr class="separator:ae14a992ec52211964dbf32b725c15c09"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a76bb8bcb9156fe416fc404e8828ce738"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a76bb8bcb9156fe416fc404e8828ce738">MergeFrom</a> (const ::google::protobuf::Message &amp;from) final</td></tr>
-<tr class="separator:a76bb8bcb9156fe416fc404e8828ce738"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0c235e52a7fd56d792aec91a50a3a5b3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html">MPGeneralConstraintProto</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a0c235e52a7fd56d792aec91a50a3a5b3">New</a> (::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</td></tr>
+<tr class="separator:a0c235e52a7fd56d792aec91a50a3a5b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac8af879b433a989fc39fcdb127754267"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#ac8af879b433a989fc39fcdb127754267">CopyFrom</a> (const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</td></tr>
+<tr class="separator:ac8af879b433a989fc39fcdb127754267"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4073780b39428a7602616410275209b9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a4073780b39428a7602616410275209b9">MergeFrom</a> (const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</td></tr>
+<tr class="separator:a4073780b39428a7602616410275209b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afad84cb6995485a207d0804f81436536"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#afad84cb6995485a207d0804f81436536">CopyFrom</a> (const <a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html">MPGeneralConstraintProto</a> &amp;from)</td></tr>
 <tr class="separator:afad84cb6995485a207d0804f81436536"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a22c151a5abcda31d86d375177ec50941"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a22c151a5abcda31d86d375177ec50941">MergeFrom</a> (const <a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html">MPGeneralConstraintProto</a> &amp;from)</td></tr>
@@ -114,35 +119,37 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a60de46823c1e2931b4150bd7980c560b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3ab81e2b0b99952c6e0dbd05ba2eb7ae"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a3ab81e2b0b99952c6e0dbd05ba2eb7ae">ByteSizeLong</a> () const final</td></tr>
 <tr class="separator:a3ab81e2b0b99952c6e0dbd05ba2eb7ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa1c9b66adc82cf192f4bd27639fc8e24"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#aa1c9b66adc82cf192f4bd27639fc8e24">MergePartialFromCodedStream</a> (::google::protobuf::io::CodedInputStream *input) final</td></tr>
-<tr class="separator:aa1c9b66adc82cf192f4bd27639fc8e24"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2d8d43306a0a4d2b55f5b60e17cf34ed"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a2d8d43306a0a4d2b55f5b60e17cf34ed">SerializeWithCachedSizes</a> (::google::protobuf::io::CodedOutputStream *output) const final</td></tr>
-<tr class="separator:a2d8d43306a0a4d2b55f5b60e17cf34ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3c7eff9e740a18fbd8c60a06f9493e84"><td class="memItemLeft" align="right" valign="top">::google::protobuf::uint8 *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a3c7eff9e740a18fbd8c60a06f9493e84">InternalSerializeWithCachedSizesToArray</a> (::google::protobuf::uint8 *target) const final</td></tr>
-<tr class="separator:a3c7eff9e740a18fbd8c60a06f9493e84"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a170ef3d8022f3430cea5be8176dfcd4a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a170ef3d8022f3430cea5be8176dfcd4a">MergePartialFromCodedStream</a> (::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</td></tr>
+<tr class="separator:a170ef3d8022f3430cea5be8176dfcd4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6da2c5fcb342b019f938baa45580186d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a6da2c5fcb342b019f938baa45580186d">SerializeWithCachedSizes</a> (::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</td></tr>
+<tr class="separator:a6da2c5fcb342b019f938baa45580186d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a17de304caa2df417f3e67ab447e4e0bf"><td class="memItemLeft" align="right" valign="top">::PROTOBUF_NAMESPACE_ID::uint8 *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a17de304caa2df417f3e67ab447e4e0bf">InternalSerializeWithCachedSizesToArray</a> (::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</td></tr>
+<tr class="separator:a17de304caa2df417f3e67ab447e4e0bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a32726d5a4bebcdd8a84aef4633275184"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a32726d5a4bebcdd8a84aef4633275184">GetCachedSize</a> () const final</td></tr>
 <tr class="separator:a32726d5a4bebcdd8a84aef4633275184"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae12981213adb64548b917a63f40d11b5"><td class="memItemLeft" align="right" valign="top">::google::protobuf::Metadata&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#ae12981213adb64548b917a63f40d11b5">GetMetadata</a> () const final</td></tr>
-<tr class="separator:ae12981213adb64548b917a63f40d11b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5b4bf03309e3ca0c52b8a113c1b9eaf9"><td class="memItemLeft" align="right" valign="top">::PROTOBUF_NAMESPACE_ID::Metadata&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a5b4bf03309e3ca0c52b8a113c1b9eaf9">GetMetadata</a> () const final</td></tr>
+<tr class="separator:a5b4bf03309e3ca0c52b8a113c1b9eaf9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8bba7542eb93ec6f9464c8ee7219199c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a8bba7542eb93ec6f9464c8ee7219199c">has_name</a> () const</td></tr>
 <tr class="memdesc:a8bba7542eb93ec6f9464c8ee7219199c"><td class="mdescLeft">&#160;</td><td class="mdescRight">nested types -------------------------------------------------&mdash;  <a href="#a8bba7542eb93ec6f9464c8ee7219199c">More...</a><br /></td></tr>
 <tr class="separator:a8bba7542eb93ec6f9464c8ee7219199c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a321828218bc588255d5337e6acd9eb48"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a321828218bc588255d5337e6acd9eb48">clear_name</a> ()</td></tr>
 <tr class="separator:a321828218bc588255d5337e6acd9eb48"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2bac5a3122f6bbb7801b9f668da6aeeb"><td class="memItemLeft" align="right" valign="top">const ::std::string &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a2bac5a3122f6bbb7801b9f668da6aeeb">name</a> () const</td></tr>
-<tr class="separator:a2bac5a3122f6bbb7801b9f668da6aeeb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a814537eab87de4406d08896370239704"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a814537eab87de4406d08896370239704">set_name</a> (const ::std::string &amp;value)</td></tr>
-<tr class="separator:a814537eab87de4406d08896370239704"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a74e9b83f583417d22571efe02b90c5e4"><td class="memItemLeft" align="right" valign="top">const std::string &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a74e9b83f583417d22571efe02b90c5e4">name</a> () const</td></tr>
+<tr class="separator:a74e9b83f583417d22571efe02b90c5e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeed03354161d5dafd07faf7ff9908d2d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#aeed03354161d5dafd07faf7ff9908d2d">set_name</a> (const std::string &amp;value)</td></tr>
+<tr class="separator:aeed03354161d5dafd07faf7ff9908d2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa2dd699453a6ae1e0ec2ff4c5dc57ec1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#aa2dd699453a6ae1e0ec2ff4c5dc57ec1">set_name</a> (std::string &amp;&amp;value)</td></tr>
+<tr class="separator:aa2dd699453a6ae1e0ec2ff4c5dc57ec1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae2f25571556b6694fc6969493a523eda"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#ae2f25571556b6694fc6969493a523eda">set_name</a> (const char *value)</td></tr>
 <tr class="separator:ae2f25571556b6694fc6969493a523eda"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae7f25c54fdd9c84c338c7ec60c97e9f5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#ae7f25c54fdd9c84c338c7ec60c97e9f5">set_name</a> (const char *value, size_t size)</td></tr>
 <tr class="separator:ae7f25c54fdd9c84c338c7ec60c97e9f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa201de18393af8ca448358bdd7218c18"><td class="memItemLeft" align="right" valign="top">::std::string *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#aa201de18393af8ca448358bdd7218c18">mutable_name</a> ()</td></tr>
+<tr class="memitem:aa201de18393af8ca448358bdd7218c18"><td class="memItemLeft" align="right" valign="top">std::string *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#aa201de18393af8ca448358bdd7218c18">mutable_name</a> ()</td></tr>
 <tr class="separator:aa201de18393af8ca448358bdd7218c18"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8f7b422a685ef384223cf105564f4e7d"><td class="memItemLeft" align="right" valign="top">::std::string *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a8f7b422a685ef384223cf105564f4e7d">release_name</a> ()</td></tr>
+<tr class="memitem:a8f7b422a685ef384223cf105564f4e7d"><td class="memItemLeft" align="right" valign="top">std::string *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a8f7b422a685ef384223cf105564f4e7d">release_name</a> ()</td></tr>
 <tr class="separator:a8f7b422a685ef384223cf105564f4e7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a32ca12f453bfc19c7f9cc9c37b553066"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a32ca12f453bfc19c7f9cc9c37b553066">set_allocated_name</a> (::std::string *<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a2bac5a3122f6bbb7801b9f668da6aeeb">name</a>)</td></tr>
-<tr class="separator:a32ca12f453bfc19c7f9cc9c37b553066"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a14ed792e09d02949e825225ccdc52380"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a14ed792e09d02949e825225ccdc52380">set_allocated_name</a> (std::string *<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a74e9b83f583417d22571efe02b90c5e4">name</a>)</td></tr>
+<tr class="separator:a14ed792e09d02949e825225ccdc52380"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa87142dc2040bba8672cad97f858fdcd"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#aa87142dc2040bba8672cad97f858fdcd">has_indicator_constraint</a> () const</td></tr>
 <tr class="memdesc:aa87142dc2040bba8672cad97f858fdcd"><td class="mdescLeft">&#160;</td><td class="mdescRight">optional .<a class="el" href="classoperations__research_1_1MPIndicatorConstraint.html">operations_research.MPIndicatorConstraint</a> indicator_constraint = 2;  <a href="#aa87142dc2040bba8672cad97f858fdcd">More...</a><br /></td></tr>
 <tr class="separator:aa87142dc2040bba8672cad97f858fdcd"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -156,6 +163,19 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a15f1013018bce808656ae4c95415cd69"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a48bf2bb541bea3140542a860bc07595c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a48bf2bb541bea3140542a860bc07595c">set_allocated_indicator_constraint</a> (::<a class="el" href="classoperations__research_1_1MPIndicatorConstraint.html">operations_research::MPIndicatorConstraint</a> *<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a10103847e9319221da2749f8efd0ef26">indicator_constraint</a>)</td></tr>
 <tr class="separator:a48bf2bb541bea3140542a860bc07595c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa5a8cc57aa9631b80c4e2be8f249cf38"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#aa5a8cc57aa9631b80c4e2be8f249cf38">has_sos_constraint</a> () const</td></tr>
+<tr class="memdesc:aa5a8cc57aa9631b80c4e2be8f249cf38"><td class="mdescLeft">&#160;</td><td class="mdescRight">optional .<a class="el" href="classoperations__research_1_1MPSosConstraint.html">operations_research.MPSosConstraint</a> sos_constraint = 3;  <a href="#aa5a8cc57aa9631b80c4e2be8f249cf38">More...</a><br /></td></tr>
+<tr class="separator:aa5a8cc57aa9631b80c4e2be8f249cf38"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a97798df187e054cf43b13d982f98f48b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a97798df187e054cf43b13d982f98f48b">clear_sos_constraint</a> ()</td></tr>
+<tr class="separator:a97798df187e054cf43b13d982f98f48b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a48b36b08a303a5e11c7cbceae0747359"><td class="memItemLeft" align="right" valign="top">const ::<a class="el" href="classoperations__research_1_1MPSosConstraint.html">operations_research::MPSosConstraint</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a48b36b08a303a5e11c7cbceae0747359">sos_constraint</a> () const</td></tr>
+<tr class="separator:a48b36b08a303a5e11c7cbceae0747359"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2f71c0c6408bd30de938edab231d8d47"><td class="memItemLeft" align="right" valign="top">::<a class="el" href="classoperations__research_1_1MPSosConstraint.html">operations_research::MPSosConstraint</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a2f71c0c6408bd30de938edab231d8d47">release_sos_constraint</a> ()</td></tr>
+<tr class="separator:a2f71c0c6408bd30de938edab231d8d47"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8ea86bd6e709db9947a3b6b9ac8eaf45"><td class="memItemLeft" align="right" valign="top">::<a class="el" href="classoperations__research_1_1MPSosConstraint.html">operations_research::MPSosConstraint</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a8ea86bd6e709db9947a3b6b9ac8eaf45">mutable_sos_constraint</a> ()</td></tr>
+<tr class="separator:a8ea86bd6e709db9947a3b6b9ac8eaf45"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa5844d507b0e982b12946d0c5ccd06d1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#aa5844d507b0e982b12946d0c5ccd06d1">set_allocated_sos_constraint</a> (::<a class="el" href="classoperations__research_1_1MPSosConstraint.html">operations_research::MPSosConstraint</a> *<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a48b36b08a303a5e11c7cbceae0747359">sos_constraint</a>)</td></tr>
+<tr class="separator:aa5844d507b0e982b12946d0c5ccd06d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5351c0cb7e3c235a55235ec3ca2535c2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a5351c0cb7e3c235a55235ec3ca2535c2">clear_general_constraint</a> ()</td></tr>
 <tr class="separator:a5351c0cb7e3c235a55235ec3ca2535c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1fa1b2e8991b8063f44e5c9f60b12485"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a2cf31917b69263cfbac0e486ddb6aba1">GeneralConstraintCase</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a1fa1b2e8991b8063f44e5c9f60b12485">general_constraint_case</a> () const</td></tr>
@@ -163,8 +183,12 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:ade54349ab6a27de0e7a315c67fafce78"><td class="memItemLeft" align="right" valign="top">static const ::google::protobuf::Descriptor *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#ade54349ab6a27de0e7a315c67fafce78">descriptor</a> ()</td></tr>
-<tr class="separator:ade54349ab6a27de0e7a315c67fafce78"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04eb965cb31429ace8176986e9e94e96"><td class="memItemLeft" align="right" valign="top">static const ::PROTOBUF_NAMESPACE_ID::Descriptor *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a04eb965cb31429ace8176986e9e94e96">descriptor</a> ()</td></tr>
+<tr class="separator:a04eb965cb31429ace8176986e9e94e96"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4352cc163cc9112cdfa4a2a9d7a39df7"><td class="memItemLeft" align="right" valign="top">static const ::PROTOBUF_NAMESPACE_ID::Descriptor *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a4352cc163cc9112cdfa4a2a9d7a39df7">GetDescriptor</a> ()</td></tr>
+<tr class="separator:a4352cc163cc9112cdfa4a2a9d7a39df7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac05578dc80d2e0fdb31a38a82d607766"><td class="memItemLeft" align="right" valign="top">static const ::PROTOBUF_NAMESPACE_ID::Reflection *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#ac05578dc80d2e0fdb31a38a82d607766">GetReflection</a> ()</td></tr>
+<tr class="separator:ac05578dc80d2e0fdb31a38a82d607766"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abd12f3b07bf2728bed4448e21636d5a4"><td class="memItemLeft" align="right" valign="top">static const <a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html">MPGeneralConstraintProto</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#abd12f3b07bf2728bed4448e21636d5a4">default_instance</a> ()</td></tr>
 <tr class="separator:abd12f3b07bf2728bed4448e21636d5a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa4448f7de136867e33f95954998a6934"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#aa4448f7de136867e33f95954998a6934">InitAsDefaultInstance</a> ()</td></tr>
@@ -180,9 +204,13 @@ Static Public Attributes</h2></td></tr>
 <tr class="separator:ae057f2125478bc0a6bb8929d6dad7023"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae2594704179fc4c5401f7d83cfb96d35"><td class="memItemLeft" align="right" valign="top">static const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#ae2594704179fc4c5401f7d83cfb96d35">kIndicatorConstraintFieldNumber</a> = 2</td></tr>
 <tr class="separator:ae2594704179fc4c5401f7d83cfb96d35"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a73e2a1db2b8567b692cb2c6a0196371f"><td class="memItemLeft" align="right" valign="top">static const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a73e2a1db2b8567b692cb2c6a0196371f">kSosConstraintFieldNumber</a> = 3</td></tr>
+<tr class="separator:a73e2a1db2b8567b692cb2c6a0196371f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="friends"></a>
 Friends</h2></td></tr>
+<tr class="memitem:a9b35d94da3444084fc3673b7717b6cfe"><td class="memItemLeft" align="right" valign="top">class&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a9b35d94da3444084fc3673b7717b6cfe">::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</a></td></tr>
+<tr class="separator:a9b35d94da3444084fc3673b7717b6cfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af910aca53a97ebc29b0a0b528eeb1671"><td class="memItemLeft" align="right" valign="top">struct&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#af910aca53a97ebc29b0a0b528eeb1671">::TableStruct_ortools_2flinear_5fsolver_2flinear_5fsolver_2eproto</a></td></tr>
 <tr class="separator:af910aca53a97ebc29b0a0b528eeb1671"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8f38f5cf55d76f718a960b5b8d67198c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a8f38f5cf55d76f718a960b5b8d67198c">swap</a> (<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html">MPGeneralConstraintProto</a> &amp;a, <a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html">MPGeneralConstraintProto</a> &amp;b)</td></tr>
@@ -190,7 +218,7 @@ Friends</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00528">528</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00603">603</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 </div><h2 class="groupheader">Member Enumeration Documentation</h2>
 <a id="a2cf31917b69263cfbac0e486ddb6aba1"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2cf31917b69263cfbac0e486ddb6aba1">&#9670;&nbsp;</a></span>GeneralConstraintCase</h2>
@@ -205,16 +233,17 @@ Friends</h2></td></tr>
 </div><div class="memdoc">
 <table class="fieldtable">
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a2cf31917b69263cfbac0e486ddb6aba1a49273ebf624aaccbfa40d1b7e7c0a85f"></a>kIndicatorConstraint&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a2cf31917b69263cfbac0e486ddb6aba1af76aca0e4b44619463bc0b0e82737896"></a>kSosConstraint&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a2cf31917b69263cfbac0e486ddb6aba1a958b131e29583210144fef16daf97795"></a>GENERAL_CONSTRAINT_NOT_SET&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00567">567</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00646">646</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a4ef6ff6ba1c772ad245949374745abe5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4ef6ff6ba1c772ad245949374745abe5">&#9670;&nbsp;</a></span>MPGeneralConstraintProto() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a4ef6ff6ba1c772ad245949374745abe5">&#9670;&nbsp;</a></span>MPGeneralConstraintProto() <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -256,7 +285,7 @@ Friends</h2></td></tr>
 </div>
 </div>
 <a id="a1574f0ff7bd57173445f00124a3ce3cc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1574f0ff7bd57173445f00124a3ce3cc">&#9670;&nbsp;</a></span>MPGeneralConstraintProto() <span class="overload">[2/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1574f0ff7bd57173445f00124a3ce3cc">&#9670;&nbsp;</a></span>MPGeneralConstraintProto() <span class="overload">[2/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -270,6 +299,34 @@ Friends</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="a23ebae958e5b79e041729918317a626e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a23ebae958e5b79e041729918317a626e">&#9670;&nbsp;</a></span>MPGeneralConstraintProto() <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">operations_research::MPGeneralConstraintProto::MPGeneralConstraintProto </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html">MPGeneralConstraintProto</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>from</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00610">610</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
@@ -364,7 +421,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02266">2266</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02671">2671</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
@@ -391,12 +448,39 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02203">2203</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02610">2610</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
-<a id="ae14a992ec52211964dbf32b725c15c09"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae14a992ec52211964dbf32b725c15c09">&#9670;&nbsp;</a></span>CopyFrom() <span class="overload">[1/2]</span></h2>
+<a id="a97798df187e054cf43b13d982f98f48b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a97798df187e054cf43b13d982f98f48b">&#9670;&nbsp;</a></span>clear_sos_constraint()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void operations_research::MPGeneralConstraintProto::clear_sos_constraint </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02712">2712</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+
+</div>
+</div>
+<a id="ac8af879b433a989fc39fcdb127754267"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac8af879b433a989fc39fcdb127754267">&#9670;&nbsp;</a></span>CopyFrom() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -407,7 +491,7 @@ Friends</h2></td></tr>
         <tr>
           <td class="memname">void operations_research::MPGeneralConstraintProto::CopyFrom </td>
           <td>(</td>
-          <td class="paramtype">const ::google::protobuf::Message &amp;&#160;</td>
+          <td class="paramtype">const ::PROTOBUF_NAMESPACE_ID::Message &amp;&#160;</td>
           <td class="paramname"><em>from</em></td><td>)</td>
           <td></td>
         </tr>
@@ -464,8 +548,8 @@ Friends</h2></td></tr>
 
 </div>
 </div>
-<a id="ade54349ab6a27de0e7a315c67fafce78"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ade54349ab6a27de0e7a315c67fafce78">&#9670;&nbsp;</a></span>descriptor()</h2>
+<a id="a04eb965cb31429ace8176986e9e94e96"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a04eb965cb31429ace8176986e9e94e96">&#9670;&nbsp;</a></span>descriptor()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -474,7 +558,7 @@ Friends</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static const ::google::protobuf::Descriptor* operations_research::MPGeneralConstraintProto::descriptor </td>
+          <td class="memname">static const ::PROTOBUF_NAMESPACE_ID::Descriptor* operations_research::MPGeneralConstraintProto::descriptor </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -487,7 +571,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00562">562</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00635">635</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
@@ -514,7 +598,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02306">2306</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02752">2752</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
@@ -541,12 +625,12 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00613">613</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00692">692</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
-<a id="ae12981213adb64548b917a63f40d11b5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae12981213adb64548b917a63f40d11b5">&#9670;&nbsp;</a></span>GetMetadata()</h2>
+<a id="a4352cc163cc9112cdfa4a2a9d7a39df7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4352cc163cc9112cdfa4a2a9d7a39df7">&#9670;&nbsp;</a></span>GetDescriptor()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -555,7 +639,34 @@ Friends</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">::google::protobuf::Metadata operations_research::MPGeneralConstraintProto::GetMetadata </td>
+          <td class="memname">static const ::PROTOBUF_NAMESPACE_ID::Descriptor* operations_research::MPGeneralConstraintProto::GetDescriptor </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00638">638</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+
+</div>
+</div>
+<a id="a5b4bf03309e3ca0c52b8a113c1b9eaf9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5b4bf03309e3ca0c52b8a113c1b9eaf9">&#9670;&nbsp;</a></span>GetMetadata()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">::PROTOBUF_NAMESPACE_ID::Metadata operations_research::MPGeneralConstraintProto::GetMetadata </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -567,6 +678,33 @@ Friends</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac05578dc80d2e0fdb31a38a82d607766"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac05578dc80d2e0fdb31a38a82d607766">&#9670;&nbsp;</a></span>GetReflection()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static const ::PROTOBUF_NAMESPACE_ID::Reflection* operations_research::MPGeneralConstraintProto::GetReflection </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00641">641</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
@@ -595,7 +733,7 @@ Friends</h2></td></tr>
 
 <p>optional .<a class="el" href="classoperations__research_1_1MPIndicatorConstraint.html">operations_research.MPIndicatorConstraint</a> indicator_constraint = 2; </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02260">2260</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02665">2665</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
@@ -627,7 +765,36 @@ Friends</h2></td></tr>
 <p>accessors ----------------------------------------------------&mdash; optional string name = 1 [default = ""];</p>
 <p>optional string name = 1 [default = ""]; </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02200">2200</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02607">2607</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+
+</div>
+</div>
+<a id="aa5a8cc57aa9631b80c4e2be8f249cf38"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa5a8cc57aa9631b80c4e2be8f249cf38">&#9670;&nbsp;</a></span>has_sos_constraint()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool operations_research::MPGeneralConstraintProto::has_sos_constraint </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>optional .<a class="el" href="classoperations__research_1_1MPSosConstraint.html">operations_research.MPSosConstraint</a> sos_constraint = 3; </p>
+
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02706">2706</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
@@ -655,7 +822,7 @@ Friends</h2></td></tr>
 </div><div class="memdoc">
 <p>@protoc_insertion_point(field_get:<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a10103847e9319221da2749f8efd0ef26">operations_research.MPGeneralConstraintProto.indicator_constraint</a>) </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02283">2283</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02688">2688</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
@@ -707,12 +874,12 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00573">573</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00653">653</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
-<a id="a3c7eff9e740a18fbd8c60a06f9493e84"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3c7eff9e740a18fbd8c60a06f9493e84">&#9670;&nbsp;</a></span>InternalSerializeWithCachedSizesToArray()</h2>
+<a id="a17de304caa2df417f3e67ab447e4e0bf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a17de304caa2df417f3e67ab447e4e0bf">&#9670;&nbsp;</a></span>InternalSerializeWithCachedSizesToArray()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -721,9 +888,9 @@ Friends</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">::google::protobuf::uint8* operations_research::MPGeneralConstraintProto::InternalSerializeWithCachedSizesToArray </td>
+          <td class="memname">::PROTOBUF_NAMESPACE_ID::uint8* operations_research::MPGeneralConstraintProto::InternalSerializeWithCachedSizesToArray </td>
           <td>(</td>
-          <td class="paramtype">::google::protobuf::uint8 *&#160;</td>
+          <td class="paramtype">::PROTOBUF_NAMESPACE_ID::uint8 *&#160;</td>
           <td class="paramname"><em>target</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -762,8 +929,8 @@ Friends</h2></td></tr>
 
 </div>
 </div>
-<a id="a76bb8bcb9156fe416fc404e8828ce738"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a76bb8bcb9156fe416fc404e8828ce738">&#9670;&nbsp;</a></span>MergeFrom() <span class="overload">[1/2]</span></h2>
+<a id="a4073780b39428a7602616410275209b9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4073780b39428a7602616410275209b9">&#9670;&nbsp;</a></span>MergeFrom() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -774,7 +941,7 @@ Friends</h2></td></tr>
         <tr>
           <td class="memname">void operations_research::MPGeneralConstraintProto::MergeFrom </td>
           <td>(</td>
-          <td class="paramtype">const ::google::protobuf::Message &amp;&#160;</td>
+          <td class="paramtype">const ::PROTOBUF_NAMESPACE_ID::Message &amp;&#160;</td>
           <td class="paramname"><em>from</em></td><td>)</td>
           <td></td>
         </tr>
@@ -806,8 +973,8 @@ Friends</h2></td></tr>
 
 </div>
 </div>
-<a id="aa1c9b66adc82cf192f4bd27639fc8e24"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa1c9b66adc82cf192f4bd27639fc8e24">&#9670;&nbsp;</a></span>MergePartialFromCodedStream()</h2>
+<a id="a170ef3d8022f3430cea5be8176dfcd4a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a170ef3d8022f3430cea5be8176dfcd4a">&#9670;&nbsp;</a></span>MergePartialFromCodedStream()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -818,7 +985,7 @@ Friends</h2></td></tr>
         <tr>
           <td class="memname">bool operations_research::MPGeneralConstraintProto::MergePartialFromCodedStream </td>
           <td>(</td>
-          <td class="paramtype">::google::protobuf::io::CodedInputStream *&#160;</td>
+          <td class="paramtype">::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *&#160;</td>
           <td class="paramname"><em>input</em></td><td>)</td>
           <td></td>
         </tr>
@@ -856,7 +1023,7 @@ Friends</h2></td></tr>
 </div><div class="memdoc">
 <p>@protoc_insertion_point(field_mutable:<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a10103847e9319221da2749f8efd0ef26">operations_research.MPGeneralConstraintProto.indicator_constraint</a>) </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02289">2289</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02694">2694</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
@@ -882,14 +1049,14 @@ Friends</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>@protoc_insertion_point(field_mutable:<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a2bac5a3122f6bbb7801b9f668da6aeeb">operations_research.MPGeneralConstraintProto.name</a>) </p>
+<p>@protoc_insertion_point(field_mutable:<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a74e9b83f583417d22571efe02b90c5e4">operations_research.MPGeneralConstraintProto.name</a>) </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02236">2236</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02641">2641</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
-<a id="a2ebf4fef33bac8cc63714f80926209e6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2ebf4fef33bac8cc63714f80926209e6">&#9670;&nbsp;</a></span>mutable_unknown_fields()</h2>
+<a id="a8ea86bd6e709db9947a3b6b9ac8eaf45"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8ea86bd6e709db9947a3b6b9ac8eaf45">&#9670;&nbsp;</a></span>mutable_sos_constraint()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -898,7 +1065,35 @@ Friends</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">inline ::google::protobuf::UnknownFieldSet* operations_research::MPGeneralConstraintProto::mutable_unknown_fields </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1MPSosConstraint.html">operations_research::MPSosConstraint</a> * operations_research::MPGeneralConstraintProto::mutable_sos_constraint </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>@protoc_insertion_point(field_mutable:<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a48b36b08a303a5e11c7cbceae0747359">operations_research.MPGeneralConstraintProto.sos_constraint</a>) </p>
+
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02735">2735</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+
+</div>
+</div>
+<a id="a68936ea3cd26c1b74b9509b995ecab29"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a68936ea3cd26c1b74b9509b995ecab29">&#9670;&nbsp;</a></span>mutable_unknown_fields()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">inline ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet* operations_research::MPGeneralConstraintProto::mutable_unknown_fields </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -911,12 +1106,12 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00558">558</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00631">631</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
-<a id="a2bac5a3122f6bbb7801b9f668da6aeeb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2bac5a3122f6bbb7801b9f668da6aeeb">&#9670;&nbsp;</a></span>name()</h2>
+<a id="a74e9b83f583417d22571efe02b90c5e4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a74e9b83f583417d22571efe02b90c5e4">&#9670;&nbsp;</a></span>name()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -925,7 +1120,7 @@ Friends</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const ::std::string &amp; operations_research::MPGeneralConstraintProto::name </td>
+          <td class="memname">const std::string &amp; operations_research::MPGeneralConstraintProto::name </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -937,9 +1132,9 @@ Friends</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>@protoc_insertion_point(field_get:<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a2bac5a3122f6bbb7801b9f668da6aeeb">operations_research.MPGeneralConstraintProto.name</a>) </p>
+<p>@protoc_insertion_point(field_get:<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a74e9b83f583417d22571efe02b90c5e4">operations_research.MPGeneralConstraintProto.name</a>) </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02207">2207</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02614">2614</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
@@ -968,12 +1163,12 @@ Friends</h2></td></tr>
 
 <p>implements Message -------------------------------------------&mdash; </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00587">587</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00667">667</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
-<a id="a041994c580bd05e7e328ac9dd966400d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a041994c580bd05e7e328ac9dd966400d">&#9670;&nbsp;</a></span>New() <span class="overload">[2/2]</span></h2>
+<a id="a0c235e52a7fd56d792aec91a50a3a5b3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0c235e52a7fd56d792aec91a50a3a5b3">&#9670;&nbsp;</a></span>New() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -984,7 +1179,7 @@ Friends</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html">MPGeneralConstraintProto</a>* operations_research::MPGeneralConstraintProto::New </td>
           <td>(</td>
-          <td class="paramtype">::google::protobuf::Arena *&#160;</td>
+          <td class="paramtype">::PROTOBUF_NAMESPACE_ID::Arena *&#160;</td>
           <td class="paramname"><em>arena</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -996,12 +1191,12 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00591">591</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00671">671</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
 <a id="ade51c5fc9c7d152fc527acec3d061648"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ade51c5fc9c7d152fc527acec3d061648">&#9670;&nbsp;</a></span>operator=()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ade51c5fc9c7d152fc527acec3d061648">&#9670;&nbsp;</a></span>operator=() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1024,7 +1219,35 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00536">536</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00615">615</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+
+</div>
+</div>
+<a id="a19ca123af9d0e7864eae82cada2e3a25"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a19ca123af9d0e7864eae82cada2e3a25">&#9670;&nbsp;</a></span>operator=() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html">MPGeneralConstraintProto</a>&amp; operations_research::MPGeneralConstraintProto::operator= </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html">MPGeneralConstraintProto</a> &amp;&amp;&#160;</td>
+          <td class="paramname"><em>from</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00619">619</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1052,7 +1275,7 @@ Friends</h2></td></tr>
 </div><div class="memdoc">
 <p>@protoc_insertion_point(field_release:<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a10103847e9319221da2749f8efd0ef26">operations_research.MPGeneralConstraintProto.indicator_constraint</a>) </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02272">2272</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02677">2677</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1078,14 +1301,42 @@ Friends</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>@protoc_insertion_point(field_release:<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a2bac5a3122f6bbb7801b9f668da6aeeb">operations_research.MPGeneralConstraintProto.name</a>) </p>
+<p>@protoc_insertion_point(field_release:<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a74e9b83f583417d22571efe02b90c5e4">operations_research.MPGeneralConstraintProto.name</a>) </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02241">2241</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02646">2646</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
-<a id="a2d8d43306a0a4d2b55f5b60e17cf34ed"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2d8d43306a0a4d2b55f5b60e17cf34ed">&#9670;&nbsp;</a></span>SerializeWithCachedSizes()</h2>
+<a id="a2f71c0c6408bd30de938edab231d8d47"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f71c0c6408bd30de938edab231d8d47">&#9670;&nbsp;</a></span>release_sos_constraint()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1MPSosConstraint.html">operations_research::MPSosConstraint</a> * operations_research::MPGeneralConstraintProto::release_sos_constraint </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>@protoc_insertion_point(field_release:<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a48b36b08a303a5e11c7cbceae0747359">operations_research.MPGeneralConstraintProto.sos_constraint</a>) </p>
+
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02718">2718</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+
+</div>
+</div>
+<a id="a6da2c5fcb342b019f938baa45580186d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6da2c5fcb342b019f938baa45580186d">&#9670;&nbsp;</a></span>SerializeWithCachedSizes()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1096,7 +1347,7 @@ Friends</h2></td></tr>
         <tr>
           <td class="memname">void operations_research::MPGeneralConstraintProto::SerializeWithCachedSizes </td>
           <td>(</td>
-          <td class="paramtype">::google::protobuf::io::CodedOutputStream *&#160;</td>
+          <td class="paramtype">::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *&#160;</td>
           <td class="paramname"><em>output</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -1128,8 +1379,8 @@ Friends</h2></td></tr>
 
 </div>
 </div>
-<a id="a32ca12f453bfc19c7f9cc9c37b553066"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a32ca12f453bfc19c7f9cc9c37b553066">&#9670;&nbsp;</a></span>set_allocated_name()</h2>
+<a id="a14ed792e09d02949e825225ccdc52380"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a14ed792e09d02949e825225ccdc52380">&#9670;&nbsp;</a></span>set_allocated_name()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1140,7 +1391,7 @@ Friends</h2></td></tr>
         <tr>
           <td class="memname">void operations_research::MPGeneralConstraintProto::set_allocated_name </td>
           <td>(</td>
-          <td class="paramtype">::std::string *&#160;</td>
+          <td class="paramtype">std::string *&#160;</td>
           <td class="paramname"><em>name</em></td><td>)</td>
           <td></td>
         </tr>
@@ -1151,14 +1402,32 @@ Friends</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>@protoc_insertion_point(field_set_allocated:<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a2bac5a3122f6bbb7801b9f668da6aeeb">operations_research.MPGeneralConstraintProto.name</a>) </p>
+<p>@protoc_insertion_point(field_set_allocated:<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a74e9b83f583417d22571efe02b90c5e4">operations_research.MPGeneralConstraintProto.name</a>) </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02249">2249</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02654">2654</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
-<a id="a814537eab87de4406d08896370239704"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a814537eab87de4406d08896370239704">&#9670;&nbsp;</a></span>set_name() <span class="overload">[1/3]</span></h2>
+<a id="aa5844d507b0e982b12946d0c5ccd06d1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa5844d507b0e982b12946d0c5ccd06d1">&#9670;&nbsp;</a></span>set_allocated_sos_constraint()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void operations_research::MPGeneralConstraintProto::set_allocated_sos_constraint </td>
+          <td>(</td>
+          <td class="paramtype">::<a class="el" href="classoperations__research_1_1MPSosConstraint.html">operations_research::MPSosConstraint</a> *&#160;</td>
+          <td class="paramname"><em>sos_constraint</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aeed03354161d5dafd07faf7ff9908d2d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeed03354161d5dafd07faf7ff9908d2d">&#9670;&nbsp;</a></span>set_name() <span class="overload">[1/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1169,7 +1438,7 @@ Friends</h2></td></tr>
         <tr>
           <td class="memname">void operations_research::MPGeneralConstraintProto::set_name </td>
           <td>(</td>
-          <td class="paramtype">const ::std::string &amp;&#160;</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
           <td class="paramname"><em>value</em></td><td>)</td>
           <td></td>
         </tr>
@@ -1180,14 +1449,43 @@ Friends</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>@protoc_insertion_point(field_set:<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a2bac5a3122f6bbb7801b9f668da6aeeb">operations_research.MPGeneralConstraintProto.name</a>) </p>
+<p>@protoc_insertion_point(field_set:<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a74e9b83f583417d22571efe02b90c5e4">operations_research.MPGeneralConstraintProto.name</a>) </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02211">2211</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02618">2618</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+
+</div>
+</div>
+<a id="aa2dd699453a6ae1e0ec2ff4c5dc57ec1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa2dd699453a6ae1e0ec2ff4c5dc57ec1">&#9670;&nbsp;</a></span>set_name() <span class="overload">[2/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void operations_research::MPGeneralConstraintProto::set_name </td>
+          <td>(</td>
+          <td class="paramtype">std::string &amp;&amp;&#160;</td>
+          <td class="paramname"><em>value</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>@protoc_insertion_point(field_set_rvalue:<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a74e9b83f583417d22571efe02b90c5e4">operations_research.MPGeneralConstraintProto.name</a>) </p>
+
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02623">2623</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
 <a id="ae2f25571556b6694fc6969493a523eda"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae2f25571556b6694fc6969493a523eda">&#9670;&nbsp;</a></span>set_name() <span class="overload">[2/3]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae2f25571556b6694fc6969493a523eda">&#9670;&nbsp;</a></span>set_name() <span class="overload">[3/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1209,14 +1507,14 @@ Friends</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>@protoc_insertion_point(field_set_char:<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a2bac5a3122f6bbb7801b9f668da6aeeb">operations_research.MPGeneralConstraintProto.name</a>) </p>
+<p>@protoc_insertion_point(field_set_char:<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a74e9b83f583417d22571efe02b90c5e4">operations_research.MPGeneralConstraintProto.name</a>) </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02224">2224</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02629">2629</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
 <a id="ae7f25c54fdd9c84c338c7ec60c97e9f5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae7f25c54fdd9c84c338c7ec60c97e9f5">&#9670;&nbsp;</a></span>set_name() <span class="overload">[3/3]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae7f25c54fdd9c84c338c7ec60c97e9f5">&#9670;&nbsp;</a></span>set_name() <span class="overload">[4/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1248,9 +1546,37 @@ Friends</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>@protoc_insertion_point(field_set_pointer:<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a2bac5a3122f6bbb7801b9f668da6aeeb">operations_research.MPGeneralConstraintProto.name</a>) </p>
+<p>@protoc_insertion_point(field_set_pointer:<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a74e9b83f583417d22571efe02b90c5e4">operations_research.MPGeneralConstraintProto.name</a>) </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02230">2230</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02635">2635</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+
+</div>
+</div>
+<a id="a48b36b08a303a5e11c7cbceae0747359"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a48b36b08a303a5e11c7cbceae0747359">&#9670;&nbsp;</a></span>sos_constraint()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const ::<a class="el" href="classoperations__research_1_1MPSosConstraint.html">operations_research::MPSosConstraint</a> &amp; operations_research::MPGeneralConstraintProto::sos_constraint </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>@protoc_insertion_point(field_get:<a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a48b36b08a303a5e11c7cbceae0747359">operations_research.MPGeneralConstraintProto.sos_constraint</a>) </p>
+
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l02729">2729</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1272,8 +1598,8 @@ Friends</h2></td></tr>
 
 </div>
 </div>
-<a id="a4e85d04301ddabea474e41b77a6e75b1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4e85d04301ddabea474e41b77a6e75b1">&#9670;&nbsp;</a></span>unknown_fields()</h2>
+<a id="ac5d8cfd0c330faeb3ad7d6d9f64e4339"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac5d8cfd0c330faeb3ad7d6d9f64e4339">&#9670;&nbsp;</a></span>unknown_fields()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1282,7 +1608,7 @@ Friends</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const ::google::protobuf::UnknownFieldSet&amp; operations_research::MPGeneralConstraintProto::unknown_fields </td>
+          <td class="memname">const ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet&amp; operations_research::MPGeneralConstraintProto::unknown_fields </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -1295,11 +1621,35 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00555">555</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00628">628</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Friends And Related Function Documentation</h2>
+<a id="a9b35d94da3444084fc3673b7717b6cfe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9b35d94da3444084fc3673b7717b6cfe">&#9670;&nbsp;</a></span>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00699">699</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+
+</div>
+</div>
 <a id="af910aca53a97ebc29b0a0b528eeb1671"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af910aca53a97ebc29b0a0b528eeb1671">&#9670;&nbsp;</a></span>::TableStruct_ortools_2flinear_5fsolver_2flinear_5fsolver_2eproto</h2>
 
@@ -1320,7 +1670,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00679">679</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00778">778</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1358,7 +1708,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00581">581</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00661">661</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1383,7 +1733,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">=</div><div class="line">    2</div></div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00577">577</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00657">657</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1407,7 +1757,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00653">653</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00741">741</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1431,7 +1781,31 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00638">638</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00728">728</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
+
+</div>
+</div>
+<a id="a73e2a1db2b8567b692cb2c6a0196371f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a73e2a1db2b8567b692cb2c6a0196371f">&#9670;&nbsp;</a></span>kSosConstraintFieldNumber</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const int operations_research::MPGeneralConstraintProto::kSosConstraintFieldNumber = 3</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="linear__solver_8pb_8h_source.html#l00750">750</a> of file <a class="el" href="linear__solver_8pb_8h_source.html">linear_solver.pb.h</a>.</p>
 
 </div>
 </div>

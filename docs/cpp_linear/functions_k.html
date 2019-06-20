@@ -5,7 +5,7 @@
         <meta http-equiv="Content-Type" content="text/html;"/>
         <meta charset="utf-8"/>
         <!--<link rel='stylesheet' type='text/css' href="https://fonts.googleapis.com/css?family=Ubuntu:400,700,400italic"/>-->
-        <link rel="stylesheet" type="text/css" href="doxygen.css" title="default" media="screen,print" />
+        <link rel="stylesheet" type="text/css" href="ortools.css" title="default" media="screen,print" />
         <script type="text/javascript" src="jquery.js"></script>
         <script type="text/javascript" src="dynsections.js"></script>
     </head>
@@ -64,8 +64,10 @@
       <li><a href="functions_p.html#index_p"><span>p</span></a></li>
       <li><a href="functions_r.html#index_r"><span>r</span></a></li>
       <li><a href="functions_s.html#index_s"><span>s</span></a></li>
+      <li><a href="functions_t.html#index_t"><span>t</span></a></li>
       <li><a href="functions_u.html#index_u"><span>u</span></a></li>
       <li><a href="functions_v.html#index_v"><span>v</span></a></li>
+      <li><a href="functions_w.html#index_w"><span>w</span></a></li>
       <li><a href="functions_~.html#index__7E"><span>~</span></a></li>
     </ul>
   </div>
@@ -76,6 +78,9 @@
 <h3><a id="index_k"></a>- k -</h3><ul>
 <li>kBestObjectiveBoundFieldNumber
 : <a class="el" href="classoperations__research_1_1MPSolutionResponse.html#ac087d9c26bfdf30a96d8265c7c4effcf">operations_research::MPSolutionResponse</a>
+</li>
+<li>kBranchingPriorityFieldNumber
+: <a class="el" href="classoperations__research_1_1MPVariableProto.html#a5641d857f33a05f09e190d6ac2c8251b">operations_research::MPVariableProto</a>
 </li>
 <li>kCoefficientFieldNumber
 : <a class="el" href="classoperations__research_1_1MPConstraintProto.html#a2f13cad466cd701f1b187483d59805a4">operations_research::MPConstraintProto</a>
@@ -104,6 +109,7 @@
 , <a class="el" href="classoperations__research_1_1MPModelRequest.html#a3222e53b28d5734acce946e0fcdaf2a6">operations_research::MPModelRequest</a>
 , <a class="el" href="classoperations__research_1_1MPSolutionResponse.html#a6e8113932c9b8dbd691046d00573994e">operations_research::MPSolutionResponse</a>
 , <a class="el" href="classoperations__research_1_1MPSolverCommonParameters.html#a8834cc1a6ae262a7cdb1e9b8ebe3d5d3">operations_research::MPSolverCommonParameters</a>
+, <a class="el" href="classoperations__research_1_1MPSosConstraint.html#ad713beb692d411139f0992a9063eb6ed">operations_research::MPSosConstraint</a>
 , <a class="el" href="classoperations__research_1_1MPVariableProto.html#ae06de7d05dd185634d944f74d56ad6d0">operations_research::MPVariableProto</a>
 , <a class="el" href="classoperations__research_1_1OptionalDouble.html#a36f2c73846c8a388927003dd80299b12">operations_research::OptionalDouble</a>
 , <a class="el" href="classoperations__research_1_1PartialVariableAssignment.html#ac677f2680ae29ac4f9d69008b84e09d9">operations_research::PartialVariableAssignment</a>
@@ -140,7 +146,7 @@
 , <a class="el" href="classoperations__research_1_1MPVariableProto.html#a5ccb07923cc9a1bac2c00b216b70192b">operations_research::MPVariableProto</a>
 </li>
 <li>KNAPSACK_MIXED_INTEGER_PROGRAMMING
-: <a class="el" href="classoperations__research_1_1MPModelRequest.html#adc15f284fd46dffc07c353d9d8d993ea">operations_research::MPModelRequest</a>
+: <a class="el" href="classoperations__research_1_1MPModelRequest.html#aa7dc7cc449b2299e191d36b865f3cd5e">operations_research::MPModelRequest</a>
 </li>
 <li>kObjectiveCoefficientFieldNumber
 : <a class="el" href="classoperations__research_1_1MPVariableProto.html#a8cffdd51c38ae1e87144eb234bda245b">operations_research::MPVariableProto</a>
@@ -178,8 +184,17 @@
 <li>kSolverTypeFieldNumber
 : <a class="el" href="classoperations__research_1_1MPModelRequest.html#a574d4b71b338b04ac835da81c30d6f3e">operations_research::MPModelRequest</a>
 </li>
+<li>kSosConstraint
+: <a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a2cf31917b69263cfbac0e486ddb6aba1af76aca0e4b44619463bc0b0e82737896">operations_research::MPGeneralConstraintProto</a>
+</li>
+<li>kSosConstraintFieldNumber
+: <a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a73e2a1db2b8567b692cb2c6a0196371f">operations_research::MPGeneralConstraintProto</a>
+</li>
 <li>kStatusFieldNumber
 : <a class="el" href="classoperations__research_1_1MPSolutionResponse.html#ac2712ff29ac754732f4041a7e67c1341">operations_research::MPSolutionResponse</a>
+</li>
+<li>kTypeFieldNumber
+: <a class="el" href="classoperations__research_1_1MPSosConstraint.html#abb2aeac1446916d48a40886c558c705b">operations_research::MPSosConstraint</a>
 </li>
 <li>kUpperBoundFieldNumber
 : <a class="el" href="classoperations__research_1_1MPConstraintProto.html#a30f8e7ef7c4951cf8b8a4375b0df4d15">operations_research::MPConstraintProto</a>
@@ -197,11 +212,15 @@
 <li>kVarIndexFieldNumber
 : <a class="el" href="classoperations__research_1_1MPConstraintProto.html#a479086d965728a2393e8cf081da15ffc">operations_research::MPConstraintProto</a>
 , <a class="el" href="classoperations__research_1_1MPIndicatorConstraint.html#ac4dc32ee5078fbb8dea629fa546b5f4c">operations_research::MPIndicatorConstraint</a>
+, <a class="el" href="classoperations__research_1_1MPSosConstraint.html#a1dbfad5972ab01953869c63701d6ce24">operations_research::MPSosConstraint</a>
 , <a class="el" href="classoperations__research_1_1PartialVariableAssignment.html#acab46ed9ecd7ccc9d838dfbd38db8faa">operations_research::PartialVariableAssignment</a>
 </li>
 <li>kVarValueFieldNumber
 : <a class="el" href="classoperations__research_1_1MPIndicatorConstraint.html#ac966fa412048b51768b21c43da070ecb">operations_research::MPIndicatorConstraint</a>
 , <a class="el" href="classoperations__research_1_1PartialVariableAssignment.html#af42d8a9e7fbc85605b0821e4e4ea0b37">operations_research::PartialVariableAssignment</a>
+</li>
+<li>kWeightFieldNumber
+: <a class="el" href="classoperations__research_1_1MPSosConstraint.html#ac568532c841abb5799bbba776d3a7692">operations_research::MPSosConstraint</a>
 </li>
 </ul>
 </div><!-- contents -->

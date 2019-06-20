@@ -5,7 +5,7 @@
         <meta http-equiv="Content-Type" content="text/html;"/>
         <meta charset="utf-8"/>
         <!--<link rel='stylesheet' type='text/css' href="https://fonts.googleapis.com/css?family=Ubuntu:400,700,400italic"/>-->
-        <link rel="stylesheet" type="text/css" href="doxygen.css" title="default" media="screen,print" />
+        <link rel="stylesheet" type="text/css" href="ortools.css" title="default" media="screen,print" />
         <script type="text/javascript" src="jquery.js"></script>
         <script type="text/javascript" src="dynsections.js"></script>
     </head>
@@ -43,10 +43,8 @@
   <div id="navrow4" class="tabs3">
     <ul class="tablist">
       <li><a href="#index__5F"><span>_</span></a></li>
-      <li><a href="#index_a"><span>a</span></a></li>
       <li><a href="#index_e"><span>e</span></a></li>
       <li><a href="#index_f"><span>f</span></a></li>
-      <li><a href="#index_g"><span>g</span></a></li>
       <li class="current"><a href="#index_m"><span>m</span></a></li>
     </ul>
   </div>
@@ -76,6 +74,9 @@
 <li>_MPSolverCommonParameters_default_instance_
 : <a class="el" href="namespaceoperations__research.html#a7ece0f2b42b6eaf443223377343e1966">operations_research</a>
 </li>
+<li>_MPSosConstraint_default_instance_
+: <a class="el" href="namespaceoperations__research.html#a3916f807aef0b8a0929c71cb72f8fe2c">operations_research</a>
+</li>
 <li>_MPVariableProto_default_instance_
 : <a class="el" href="namespaceoperations__research.html#af3dce953fd737d51dcb003b93452b3b6">operations_research</a>
 </li>
@@ -84,40 +85,6 @@
 </li>
 <li>_PartialVariableAssignment_default_instance_
 : <a class="el" href="namespaceoperations__research.html#ac92dae0b80b47779fc1de1bf9e7df9dd">operations_research</a>
-</li>
-</ul>
-
-
-<h3><a id="index_a"></a>- a -</h3><ul>
-<li>Arena::CreateMaybeMessage&lt;::operations_research::MPConstraintProto &gt;()
-: <a class="el" href="namespacegoogle_1_1protobuf.html#a46426d4330f8798191f318e844342edd">google::protobuf</a>
-</li>
-<li>Arena::CreateMaybeMessage&lt;::operations_research::MPGeneralConstraintProto &gt;()
-: <a class="el" href="namespacegoogle_1_1protobuf.html#ab2f9904d7bb5495c08a6624901891d05">google::protobuf</a>
-</li>
-<li>Arena::CreateMaybeMessage&lt;::operations_research::MPIndicatorConstraint &gt;()
-: <a class="el" href="namespacegoogle_1_1protobuf.html#a09aec13b641f3ff6f0aaa054d9ffb01a">google::protobuf</a>
-</li>
-<li>Arena::CreateMaybeMessage&lt;::operations_research::MPModelProto &gt;()
-: <a class="el" href="namespacegoogle_1_1protobuf.html#a782374154dcade461d694c642d1a118a">google::protobuf</a>
-</li>
-<li>Arena::CreateMaybeMessage&lt;::operations_research::MPModelRequest &gt;()
-: <a class="el" href="namespacegoogle_1_1protobuf.html#a218a8e8e9347626cd702a3a9c5e4276f">google::protobuf</a>
-</li>
-<li>Arena::CreateMaybeMessage&lt;::operations_research::MPSolutionResponse &gt;()
-: <a class="el" href="namespacegoogle_1_1protobuf.html#a97bcf46029da44aea2acff25eeb8f5e5">google::protobuf</a>
-</li>
-<li>Arena::CreateMaybeMessage&lt;::operations_research::MPSolverCommonParameters &gt;()
-: <a class="el" href="namespacegoogle_1_1protobuf.html#a3123875581158bdc0cef8cc7334204c3">google::protobuf</a>
-</li>
-<li>Arena::CreateMaybeMessage&lt;::operations_research::MPVariableProto &gt;()
-: <a class="el" href="namespacegoogle_1_1protobuf.html#a5241f254a7dd0adf3d39675538cf578f">google::protobuf</a>
-</li>
-<li>Arena::CreateMaybeMessage&lt;::operations_research::OptionalDouble &gt;()
-: <a class="el" href="namespacegoogle_1_1protobuf.html#a57c05b56ab566a13251384836a0ac42e">google::protobuf</a>
-</li>
-<li>Arena::CreateMaybeMessage&lt;::operations_research::PartialVariableAssignment &gt;()
-: <a class="el" href="namespacegoogle_1_1protobuf.html#a62287180108f55a9b20f78b37944b485">google::protobuf</a>
 </li>
 </ul>
 
@@ -148,178 +115,195 @@
 </ul>
 
 
-<h3><a id="index_g"></a>- g -</h3><ul>
-<li>GetEnumDescriptor&lt; ::operations_research::MPModelRequest_SolverType &gt;()
-: <a class="el" href="namespacegoogle_1_1protobuf.html#ab68113b1eb7e078bbcbcec215cb1abff">google::protobuf</a>
-</li>
-<li>GetEnumDescriptor&lt; ::operations_research::MPSolverCommonParameters_LPAlgorithmValues &gt;()
-: <a class="el" href="namespacegoogle_1_1protobuf.html#acc185aeb57cb91a0ccac4b25007bdcf9">google::protobuf</a>
-</li>
-<li>GetEnumDescriptor&lt; ::operations_research::MPSolverResponseStatus &gt;()
-: <a class="el" href="namespacegoogle_1_1protobuf.html#a9f64efd8b0aaa41a3134261c9575ac01">google::protobuf</a>
-</li>
-</ul>
-
-
 <h3><a id="index_m"></a>- m -</h3><ul>
 <li>MPModelRequest_SolverType
-: <a class="el" href="namespaceoperations__research.html#a66408fd9c4c05711631d208dce3118f5">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a15791cd7d877fd8cb7977bbfecd6ce4c">operations_research</a>
 </li>
 <li>MPModelRequest_SolverType_BOP_INTEGER_PROGRAMMING
-: <a class="el" href="namespaceoperations__research.html#a66408fd9c4c05711631d208dce3118f5a67639f2cd42e1197b5ad69a004c93ba3">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a15791cd7d877fd8cb7977bbfecd6ce4ca67639f2cd42e1197b5ad69a004c93ba3">operations_research</a>
 </li>
 <li>MPModelRequest_SolverType_CBC_MIXED_INTEGER_PROGRAMMING
-: <a class="el" href="namespaceoperations__research.html#a66408fd9c4c05711631d208dce3118f5a0e93bcd472e7a9296ff02058ed60f8d1">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a15791cd7d877fd8cb7977bbfecd6ce4ca0e93bcd472e7a9296ff02058ed60f8d1">operations_research</a>
 </li>
 <li>MPModelRequest_SolverType_CLP_LINEAR_PROGRAMMING
-: <a class="el" href="namespaceoperations__research.html#a66408fd9c4c05711631d208dce3118f5a0969851c637668f95c10ddb1ade866a7">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a15791cd7d877fd8cb7977bbfecd6ce4ca0969851c637668f95c10ddb1ade866a7">operations_research</a>
 </li>
 <li>MPModelRequest_SolverType_CPLEX_LINEAR_PROGRAMMING
-: <a class="el" href="namespaceoperations__research.html#a66408fd9c4c05711631d208dce3118f5a4bdeae4b1af8d2cd4aab225db4fc0407">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a15791cd7d877fd8cb7977bbfecd6ce4ca4bdeae4b1af8d2cd4aab225db4fc0407">operations_research</a>
 </li>
 <li>MPModelRequest_SolverType_CPLEX_MIXED_INTEGER_PROGRAMMING
-: <a class="el" href="namespaceoperations__research.html#a66408fd9c4c05711631d208dce3118f5a26762918189367f5e171d0e226084d82">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a15791cd7d877fd8cb7977bbfecd6ce4ca26762918189367f5e171d0e226084d82">operations_research</a>
 </li>
 <li>MPModelRequest_SolverType_descriptor()
-: <a class="el" href="namespaceoperations__research.html#aa3fea38c7df3ab9583e34b82878e255c">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#af637f39c9ca296bf197d792c62167b7d">operations_research</a>
 </li>
 <li>MPModelRequest_SolverType_GLOP_LINEAR_PROGRAMMING
-: <a class="el" href="namespaceoperations__research.html#a66408fd9c4c05711631d208dce3118f5a6fab373696058c6e9f279de4a8446411">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a15791cd7d877fd8cb7977bbfecd6ce4ca6fab373696058c6e9f279de4a8446411">operations_research</a>
 </li>
 <li>MPModelRequest_SolverType_GLPK_LINEAR_PROGRAMMING
-: <a class="el" href="namespaceoperations__research.html#a66408fd9c4c05711631d208dce3118f5aa32d84461e16e800e3f996d6347a304d">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a15791cd7d877fd8cb7977bbfecd6ce4caa32d84461e16e800e3f996d6347a304d">operations_research</a>
 </li>
 <li>MPModelRequest_SolverType_GLPK_MIXED_INTEGER_PROGRAMMING
-: <a class="el" href="namespaceoperations__research.html#a66408fd9c4c05711631d208dce3118f5af60a0830addaf4cf00bc59459fa6647e">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a15791cd7d877fd8cb7977bbfecd6ce4caf60a0830addaf4cf00bc59459fa6647e">operations_research</a>
 </li>
 <li>MPModelRequest_SolverType_GUROBI_LINEAR_PROGRAMMING
-: <a class="el" href="namespaceoperations__research.html#a66408fd9c4c05711631d208dce3118f5a3af34f198d539e787263f9eded0ce0cd">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a15791cd7d877fd8cb7977bbfecd6ce4ca3af34f198d539e787263f9eded0ce0cd">operations_research</a>
 </li>
 <li>MPModelRequest_SolverType_GUROBI_MIXED_INTEGER_PROGRAMMING
-: <a class="el" href="namespaceoperations__research.html#a66408fd9c4c05711631d208dce3118f5ac8beb7f7b026823a6bc2e4e87f546da6">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a15791cd7d877fd8cb7977bbfecd6ce4cac8beb7f7b026823a6bc2e4e87f546da6">operations_research</a>
 </li>
 <li>MPModelRequest_SolverType_IsValid()
 : <a class="el" href="namespaceoperations__research.html#ad26c438ab5f1b232d7eced80a2780ca0">operations_research</a>
 </li>
 <li>MPModelRequest_SolverType_KNAPSACK_MIXED_INTEGER_PROGRAMMING
-: <a class="el" href="namespaceoperations__research.html#a66408fd9c4c05711631d208dce3118f5abe010aed8c1b29c5a0fd9ac262ce791f">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a15791cd7d877fd8cb7977bbfecd6ce4cabe010aed8c1b29c5a0fd9ac262ce791f">operations_research</a>
 </li>
 <li>MPModelRequest_SolverType_Name()
-: <a class="el" href="namespaceoperations__research.html#ad1d017a27f2b89bb55910d1fceb31c64">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a5209f68ceef830f109310dc549479a9b">operations_research</a>
 </li>
 <li>MPModelRequest_SolverType_Parse()
-: <a class="el" href="namespaceoperations__research.html#a028ee3de18b0c41c98df4de7f38c3543">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#aeb81b2591906288f021c0a3e37843b37">operations_research</a>
 </li>
 <li>MPModelRequest_SolverType_SAT_INTEGER_PROGRAMMING
-: <a class="el" href="namespaceoperations__research.html#a66408fd9c4c05711631d208dce3118f5ac0fedb2082db5e7c96da01b4149c318e">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a15791cd7d877fd8cb7977bbfecd6ce4cac0fedb2082db5e7c96da01b4149c318e">operations_research</a>
 </li>
 <li>MPModelRequest_SolverType_SCIP_MIXED_INTEGER_PROGRAMMING
-: <a class="el" href="namespaceoperations__research.html#a66408fd9c4c05711631d208dce3118f5ac25c4844cbdf1e4d7c7efc11f1f8ebf4">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a15791cd7d877fd8cb7977bbfecd6ce4cac25c4844cbdf1e4d7c7efc11f1f8ebf4">operations_research</a>
 </li>
 <li>MPModelRequest_SolverType_SolverType_ARRAYSIZE
-: <a class="el" href="namespaceoperations__research.html#ae6eb74cbdb5037acc1fb265d11616274">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a7affd70e5dc61deefab59f4c06149644">operations_research</a>
 </li>
 <li>MPModelRequest_SolverType_SolverType_MAX
-: <a class="el" href="namespaceoperations__research.html#a955948242965463248545e1785583654">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a42eca5d9d855cdf447e78e17acd87c7a">operations_research</a>
 </li>
 <li>MPModelRequest_SolverType_SolverType_MIN
-: <a class="el" href="namespaceoperations__research.html#a33e0cbbffcf3c459144e44b3f00dc2bf">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a9eaabd9c53b8aa093483b2c664a405c3">operations_research</a>
 </li>
 <li>MPSOLVER_ABNORMAL
-: <a class="el" href="namespaceoperations__research.html#a51d0df17eb5fb24fcdd0a134178cde56ac77789af50586fb2f81915dd1cb790b6">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a8cc975b7db5017319901da0f63a114aaac77789af50586fb2f81915dd1cb790b6">operations_research</a>
 </li>
 <li>MPSOLVER_FEASIBLE
-: <a class="el" href="namespaceoperations__research.html#a51d0df17eb5fb24fcdd0a134178cde56ac7d90afd0518be8cd6433ecad656a83b">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a8cc975b7db5017319901da0f63a114aaac7d90afd0518be8cd6433ecad656a83b">operations_research</a>
 </li>
 <li>MPSOLVER_INFEASIBLE
-: <a class="el" href="namespaceoperations__research.html#a51d0df17eb5fb24fcdd0a134178cde56a0da2dbf49d011970a770d42141819d0a">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a8cc975b7db5017319901da0f63a114aaa0da2dbf49d011970a770d42141819d0a">operations_research</a>
 </li>
 <li>MPSOLVER_MODEL_INVALID
-: <a class="el" href="namespaceoperations__research.html#a51d0df17eb5fb24fcdd0a134178cde56a6ae83516a798f1675e1b4daf0d8ea6b1">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a8cc975b7db5017319901da0f63a114aaa6ae83516a798f1675e1b4daf0d8ea6b1">operations_research</a>
 </li>
 <li>MPSOLVER_MODEL_INVALID_SOLUTION_HINT
-: <a class="el" href="namespaceoperations__research.html#a51d0df17eb5fb24fcdd0a134178cde56a0f9da70b2f2b1304313c3a2a5f4876b3">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a8cc975b7db5017319901da0f63a114aaa0f9da70b2f2b1304313c3a2a5f4876b3">operations_research</a>
 </li>
 <li>MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS
-: <a class="el" href="namespaceoperations__research.html#a51d0df17eb5fb24fcdd0a134178cde56ab90169f8480eca12c963af5ce50d36aa">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a8cc975b7db5017319901da0f63a114aaab90169f8480eca12c963af5ce50d36aa">operations_research</a>
 </li>
 <li>MPSOLVER_MODEL_IS_VALID
-: <a class="el" href="namespaceoperations__research.html#a51d0df17eb5fb24fcdd0a134178cde56a97ee5aaa7f57f286d4a821dd6e57523f">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a8cc975b7db5017319901da0f63a114aaa97ee5aaa7f57f286d4a821dd6e57523f">operations_research</a>
 </li>
 <li>MPSOLVER_NOT_SOLVED
-: <a class="el" href="namespaceoperations__research.html#a51d0df17eb5fb24fcdd0a134178cde56a667b6a5ed42c91ea81fa67c59cb3badb">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a8cc975b7db5017319901da0f63a114aaa667b6a5ed42c91ea81fa67c59cb3badb">operations_research</a>
 </li>
 <li>MPSOLVER_OPTIMAL
-: <a class="el" href="namespaceoperations__research.html#a51d0df17eb5fb24fcdd0a134178cde56ac95cb5be9e36b31647dd28910ac6cae4">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a8cc975b7db5017319901da0f63a114aaac95cb5be9e36b31647dd28910ac6cae4">operations_research</a>
 </li>
 <li>MPSOLVER_SOLVER_TYPE_UNAVAILABLE
-: <a class="el" href="namespaceoperations__research.html#a51d0df17eb5fb24fcdd0a134178cde56afa008125099beaab382c42682be6bbf9">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a8cc975b7db5017319901da0f63a114aaafa008125099beaab382c42682be6bbf9">operations_research</a>
 </li>
 <li>MPSOLVER_UNBOUNDED
-: <a class="el" href="namespaceoperations__research.html#a51d0df17eb5fb24fcdd0a134178cde56ad73de4a0f9908a4c0d11246ecccf32b6">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a8cc975b7db5017319901da0f63a114aaad73de4a0f9908a4c0d11246ecccf32b6">operations_research</a>
 </li>
 <li>MPSOLVER_UNKNOWN_STATUS
-: <a class="el" href="namespaceoperations__research.html#a51d0df17eb5fb24fcdd0a134178cde56a84ea2a63b24de389aac6aa33b1203cd4">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a8cc975b7db5017319901da0f63a114aaa84ea2a63b24de389aac6aa33b1203cd4">operations_research</a>
 </li>
 <li>MPSolverCommonParameters_LPAlgorithmValues
-: <a class="el" href="namespaceoperations__research.html#ab042145a1da0eaafbe215ded57dfe85f">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a46d924645e62163da6dafc13b827d7b1">operations_research</a>
 </li>
 <li>MPSolverCommonParameters_LPAlgorithmValues_descriptor()
-: <a class="el" href="namespaceoperations__research.html#a976efc8cb83ba6997aa984b3c106da17">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a70bcdf756e44dfd2d5dab2a5cf4cfb9a">operations_research</a>
 </li>
 <li>MPSolverCommonParameters_LPAlgorithmValues_IsValid()
 : <a class="el" href="namespaceoperations__research.html#ab3ee5c7a9f799696432b082fd4835232">operations_research</a>
 </li>
 <li>MPSolverCommonParameters_LPAlgorithmValues_LP_ALGO_BARRIER
-: <a class="el" href="namespaceoperations__research.html#ab042145a1da0eaafbe215ded57dfe85fa89ff8ffa01928d5993a1414705eecd15">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a46d924645e62163da6dafc13b827d7b1a89ff8ffa01928d5993a1414705eecd15">operations_research</a>
 </li>
 <li>MPSolverCommonParameters_LPAlgorithmValues_LP_ALGO_DUAL
-: <a class="el" href="namespaceoperations__research.html#ab042145a1da0eaafbe215ded57dfe85fa129c4c6d32bf9aed2414939cb02ff99a">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a46d924645e62163da6dafc13b827d7b1a129c4c6d32bf9aed2414939cb02ff99a">operations_research</a>
 </li>
 <li>MPSolverCommonParameters_LPAlgorithmValues_LP_ALGO_PRIMAL
-: <a class="el" href="namespaceoperations__research.html#ab042145a1da0eaafbe215ded57dfe85fa53de34dc95fb67212e335f19dc210516">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a46d924645e62163da6dafc13b827d7b1a53de34dc95fb67212e335f19dc210516">operations_research</a>
 </li>
 <li>MPSolverCommonParameters_LPAlgorithmValues_LP_ALGO_UNSPECIFIED
-: <a class="el" href="namespaceoperations__research.html#ab042145a1da0eaafbe215ded57dfe85fa2218d316cfcac5a88342c95b188f3fda">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a46d924645e62163da6dafc13b827d7b1a2218d316cfcac5a88342c95b188f3fda">operations_research</a>
 </li>
 <li>MPSolverCommonParameters_LPAlgorithmValues_LPAlgorithmValues_ARRAYSIZE
-: <a class="el" href="namespaceoperations__research.html#a5dc5431b0bd4640975c7f6502e8013d9">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a2b0590a3e329a0bb8a10b866c28138a0">operations_research</a>
 </li>
 <li>MPSolverCommonParameters_LPAlgorithmValues_LPAlgorithmValues_MAX
-: <a class="el" href="namespaceoperations__research.html#a35686dabc230ba01c79fb8fd0f457e40">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a12a6be7881f2f7dd6e426242c961d5d9">operations_research</a>
 </li>
 <li>MPSolverCommonParameters_LPAlgorithmValues_LPAlgorithmValues_MIN
-: <a class="el" href="namespaceoperations__research.html#a1e4803399c53b73b9ae985751803d01a">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#ac1eda65381beae08503e8af2b57a0d4c">operations_research</a>
 </li>
 <li>MPSolverCommonParameters_LPAlgorithmValues_Name()
-: <a class="el" href="namespaceoperations__research.html#a317f48b6b35697bf02ead22157c91c52">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#ac96996b4dbc25690d6d7fe345b364519">operations_research</a>
 </li>
 <li>MPSolverCommonParameters_LPAlgorithmValues_Parse()
-: <a class="el" href="namespaceoperations__research.html#ac2b888d39ca1974f8485911aa6434144">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a3b1bc7a63f4a7972004060311346868f">operations_research</a>
 </li>
 <li>MPSolverResponseStatus
-: <a class="el" href="namespaceoperations__research.html#a51d0df17eb5fb24fcdd0a134178cde56">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a8cc975b7db5017319901da0f63a114aa">operations_research</a>
 </li>
 <li>MPSolverResponseStatus_ARRAYSIZE
-: <a class="el" href="namespaceoperations__research.html#a04af4e3a977e967ddd2f2db792ac2ad7">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#ac136e7845fbe09520c0e7777d9ae8b43">operations_research</a>
 </li>
 <li>MPSolverResponseStatus_descriptor()
-: <a class="el" href="namespaceoperations__research.html#a472faf18ff58cd6640b7b3bf6336d9b6">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#ace7f8b02c012c058db64b534e3378f0f">operations_research</a>
 </li>
 <li>MPSolverResponseStatus_IsValid()
 : <a class="el" href="namespaceoperations__research.html#a7a295b0760db498bc4fa9479bb8c2329">operations_research</a>
 </li>
 <li>MPSolverResponseStatus_MAX
-: <a class="el" href="namespaceoperations__research.html#a92f022bd33162332383c5f70e4821498">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a1315bf58051fbf57733dc025d6994340">operations_research</a>
 </li>
 <li>MPSolverResponseStatus_MIN
-: <a class="el" href="namespaceoperations__research.html#aaf5325d95fb273624f43bf2741836834">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a53c0861628965fd7d72a0816d8575c66">operations_research</a>
 </li>
 <li>MPSolverResponseStatus_Name()
-: <a class="el" href="namespaceoperations__research.html#a1225873debe2bc2cb173d365f06ca615">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a188641a1ab5a4dda11c00a11149b07d4">operations_research</a>
 </li>
 <li>MPSolverResponseStatus_Parse()
-: <a class="el" href="namespaceoperations__research.html#a415f14aa6c054ed47d050bd15e725f52">operations_research</a>
+: <a class="el" href="namespaceoperations__research.html#a22b5756cf719f9b2d10dae67820cf885">operations_research</a>
+</li>
+<li>MPSosConstraint_Type
+: <a class="el" href="namespaceoperations__research.html#ac4082c18fc997b28960d2a15a27af30b">operations_research</a>
+</li>
+<li>MPSosConstraint_Type_descriptor()
+: <a class="el" href="namespaceoperations__research.html#a94d793569692b2bdcb76cf2d7736da05">operations_research</a>
+</li>
+<li>MPSosConstraint_Type_IsValid()
+: <a class="el" href="namespaceoperations__research.html#a69d74b24808a9eba4bcbc04c5bd1f9fb">operations_research</a>
+</li>
+<li>MPSosConstraint_Type_Name()
+: <a class="el" href="namespaceoperations__research.html#a0d84cc4ed67dd0a7ccf556176aa9bc1d">operations_research</a>
+</li>
+<li>MPSosConstraint_Type_Parse()
+: <a class="el" href="namespaceoperations__research.html#a6d1606a9e00c2974c23f2e758924b459">operations_research</a>
+</li>
+<li>MPSosConstraint_Type_SOS1_DEFAULT
+: <a class="el" href="namespaceoperations__research.html#ac4082c18fc997b28960d2a15a27af30ba35dfc279dac55f2292c50123bbd65eb4">operations_research</a>
+</li>
+<li>MPSosConstraint_Type_SOS2
+: <a class="el" href="namespaceoperations__research.html#ac4082c18fc997b28960d2a15a27af30baa35d9c1cb44243e123f7d5993d5b726f">operations_research</a>
+</li>
+<li>MPSosConstraint_Type_Type_ARRAYSIZE
+: <a class="el" href="namespaceoperations__research.html#a43079282dcdc58640a4fb8f3504d9548">operations_research</a>
+</li>
+<li>MPSosConstraint_Type_Type_MAX
+: <a class="el" href="namespaceoperations__research.html#a50ec8ebec75c1daf0e7633cb74ff6657">operations_research</a>
+</li>
+<li>MPSosConstraint_Type_Type_MIN
+: <a class="el" href="namespaceoperations__research.html#a8a26ab806b2722fadd4035cd0be0ae5b">operations_research</a>
 </li>
 </ul>
 </div><!-- contents -->

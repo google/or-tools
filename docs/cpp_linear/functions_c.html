@@ -5,7 +5,7 @@
         <meta http-equiv="Content-Type" content="text/html;"/>
         <meta charset="utf-8"/>
         <!--<link rel='stylesheet' type='text/css' href="https://fonts.googleapis.com/css?family=Ubuntu:400,700,400italic"/>-->
-        <link rel="stylesheet" type="text/css" href="doxygen.css" title="default" media="screen,print" />
+        <link rel="stylesheet" type="text/css" href="ortools.css" title="default" media="screen,print" />
         <script type="text/javascript" src="jquery.js"></script>
         <script type="text/javascript" src="dynsections.js"></script>
     </head>
@@ -64,8 +64,10 @@
       <li><a href="functions_p.html#index_p"><span>p</span></a></li>
       <li><a href="functions_r.html#index_r"><span>r</span></a></li>
       <li><a href="functions_s.html#index_s"><span>s</span></a></li>
+      <li><a href="functions_t.html#index_t"><span>t</span></a></li>
       <li><a href="functions_u.html#index_u"><span>u</span></a></li>
       <li><a href="functions_v.html#index_v"><span>v</span></a></li>
+      <li><a href="functions_w.html#index_w"><span>w</span></a></li>
       <li><a href="functions_~.html#index__7E"><span>~</span></a></li>
     </ul>
   </div>
@@ -75,7 +77,7 @@
 
 <h3><a id="index_c"></a>- c -</h3><ul>
 <li>CBC_MIXED_INTEGER_PROGRAMMING
-: <a class="el" href="classoperations__research_1_1MPModelRequest.html#a8a1951ca60b9cd3980dc5dbc8b78e906">operations_research::MPModelRequest</a>
+: <a class="el" href="classoperations__research_1_1MPModelRequest.html#a1641b77916c0270e22357730e4fc4493">operations_research::MPModelRequest</a>
 </li>
 <li>Clear()
 : <a class="el" href="classoperations__research_1_1MPConstraintProto.html#a662d0a48adefea051359e846d688f865">operations_research::MPConstraintProto</a>
@@ -85,12 +87,16 @@
 , <a class="el" href="classoperations__research_1_1MPModelRequest.html#ac1ba3033490c1ab7f085817491d22dae">operations_research::MPModelRequest</a>
 , <a class="el" href="classoperations__research_1_1MPSolutionResponse.html#abd61a4fdb904666e6b203f5b85f4ddbd">operations_research::MPSolutionResponse</a>
 , <a class="el" href="classoperations__research_1_1MPSolverCommonParameters.html#aed0359cec171eabf7abbade42dca41a3">operations_research::MPSolverCommonParameters</a>
+, <a class="el" href="classoperations__research_1_1MPSosConstraint.html#a9e2e0e6ae9e3ecabb6ce86e4c28f4566">operations_research::MPSosConstraint</a>
 , <a class="el" href="classoperations__research_1_1MPVariableProto.html#a89fd1748e6452956b64edc8f376cdc45">operations_research::MPVariableProto</a>
 , <a class="el" href="classoperations__research_1_1OptionalDouble.html#abc94f07f3e53c2dc2097b50756dab07d">operations_research::OptionalDouble</a>
 , <a class="el" href="classoperations__research_1_1PartialVariableAssignment.html#ab76923bdde9b8199e82065ba47abfbf2">operations_research::PartialVariableAssignment</a>
 </li>
 <li>clear_best_objective_bound()
 : <a class="el" href="classoperations__research_1_1MPSolutionResponse.html#aa0ed8dfdd43246e12c02b81d03ae45ba">operations_research::MPSolutionResponse</a>
+</li>
+<li>clear_branching_priority()
+: <a class="el" href="classoperations__research_1_1MPVariableProto.html#adade5eb436788cce169656745d5e6733">operations_research::MPVariableProto</a>
 </li>
 <li>clear_coefficient()
 : <a class="el" href="classoperations__research_1_1MPConstraintProto.html#a674f003b1363136981c8b6ff2ccd1a9e">operations_research::MPConstraintProto</a>
@@ -176,8 +182,14 @@
 <li>clear_solver_type()
 : <a class="el" href="classoperations__research_1_1MPModelRequest.html#a7dec127297cb18e84924ba1ebb94373f">operations_research::MPModelRequest</a>
 </li>
+<li>clear_sos_constraint()
+: <a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#a97798df187e054cf43b13d982f98f48b">operations_research::MPGeneralConstraintProto</a>
+</li>
 <li>clear_status()
 : <a class="el" href="classoperations__research_1_1MPSolutionResponse.html#a59e89fd692444fb987e92acc632cd1f6">operations_research::MPSolutionResponse</a>
+</li>
+<li>clear_type()
+: <a class="el" href="classoperations__research_1_1MPSosConstraint.html#a42140495e297ef560c2c27253ca10322">operations_research::MPSosConstraint</a>
 </li>
 <li>clear_upper_bound()
 : <a class="el" href="classoperations__research_1_1MPConstraintProto.html#ade5fd5169654f17614d3b426829273b4">operations_research::MPConstraintProto</a>
@@ -189,6 +201,7 @@
 <li>clear_var_index()
 : <a class="el" href="classoperations__research_1_1MPConstraintProto.html#aa526748f0cbc568a82a89720de2e1399">operations_research::MPConstraintProto</a>
 , <a class="el" href="classoperations__research_1_1MPIndicatorConstraint.html#ab2205d82bdad160ee2509fdd5fac3f51">operations_research::MPIndicatorConstraint</a>
+, <a class="el" href="classoperations__research_1_1MPSosConstraint.html#a4b9a394dd1e97f994cfe1a7379fc2029">operations_research::MPSosConstraint</a>
 , <a class="el" href="classoperations__research_1_1PartialVariableAssignment.html#a40014a65f2205e5f6754c7a5b8df3e67">operations_research::PartialVariableAssignment</a>
 </li>
 <li>clear_var_value()
@@ -201,8 +214,11 @@
 <li>clear_variable_value()
 : <a class="el" href="classoperations__research_1_1MPSolutionResponse.html#a6da91d5cdb532512d4f2efc96c273500">operations_research::MPSolutionResponse</a>
 </li>
+<li>clear_weight()
+: <a class="el" href="classoperations__research_1_1MPSosConstraint.html#a4a1a33e78aef5b0ff2bf99d7a16e3478">operations_research::MPSosConstraint</a>
+</li>
 <li>CLP_LINEAR_PROGRAMMING
-: <a class="el" href="classoperations__research_1_1MPModelRequest.html#a9b2666be8f137679a183a79ac44bd954">operations_research::MPModelRequest</a>
+: <a class="el" href="classoperations__research_1_1MPModelRequest.html#a2ea3ce8df0f748802fb97c0b3a6a5722">operations_research::MPModelRequest</a>
 </li>
 <li>coefficient()
 : <a class="el" href="classoperations__research_1_1MPConstraintProto.html#ab7fd245949617780299ea0f0bed446c4">operations_research::MPConstraintProto</a>
@@ -212,28 +228,29 @@
 </li>
 <li>constraint()
 : <a class="el" href="classoperations__research_1_1MPIndicatorConstraint.html#a02112ccc2d2e12774abeae21e9d39916">operations_research::MPIndicatorConstraint</a>
-, <a class="el" href="classoperations__research_1_1MPModelProto.html#a7de4169939eff84eea61ac205a42325b">operations_research::MPModelProto</a>
+, <a class="el" href="classoperations__research_1_1MPModelProto.html#a140bf890bfceafaca6a15cf8f84c4bc1">operations_research::MPModelProto</a>
 </li>
 <li>constraint_size()
 : <a class="el" href="classoperations__research_1_1MPModelProto.html#af91908ae4dad316b74410421bf1936fa">operations_research::MPModelProto</a>
 </li>
 <li>CopyFrom()
-: <a class="el" href="classoperations__research_1_1MPConstraintProto.html#a1e47ef5e1486a0b88263226eef0cc81a">operations_research::MPConstraintProto</a>
-, <a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#ae14a992ec52211964dbf32b725c15c09">operations_research::MPGeneralConstraintProto</a>
-, <a class="el" href="classoperations__research_1_1MPIndicatorConstraint.html#a689618cda7a67758eff0a26f070ca064">operations_research::MPIndicatorConstraint</a>
-, <a class="el" href="classoperations__research_1_1MPModelProto.html#a241d15325442983ec540f5870e9e01de">operations_research::MPModelProto</a>
-, <a class="el" href="classoperations__research_1_1MPModelRequest.html#a2a1db5f17af2bcc8120df6b9579e981a">operations_research::MPModelRequest</a>
-, <a class="el" href="classoperations__research_1_1MPSolutionResponse.html#a6e713016c5836b8786e3dd8eb76141f8">operations_research::MPSolutionResponse</a>
-, <a class="el" href="classoperations__research_1_1MPSolverCommonParameters.html#a8d562ea03ef8fe1bc9256be00f220542">operations_research::MPSolverCommonParameters</a>
-, <a class="el" href="classoperations__research_1_1MPVariableProto.html#a14e8b27a18065aba5e5bd211e11aa9f6">operations_research::MPVariableProto</a>
+: <a class="el" href="classoperations__research_1_1MPConstraintProto.html#a586d11b330d52732af07a0d599afb45a">operations_research::MPConstraintProto</a>
+, <a class="el" href="classoperations__research_1_1MPGeneralConstraintProto.html#afad84cb6995485a207d0804f81436536">operations_research::MPGeneralConstraintProto</a>
+, <a class="el" href="classoperations__research_1_1MPIndicatorConstraint.html#ace0eafff2b3bff385766d8cd99bc4a6c">operations_research::MPIndicatorConstraint</a>
+, <a class="el" href="classoperations__research_1_1MPModelProto.html#ac11f33e444a3256026ed062c8a31d516">operations_research::MPModelProto</a>
+, <a class="el" href="classoperations__research_1_1MPModelRequest.html#a5ef2e82abd9f363594b1b999ed62ccda">operations_research::MPModelRequest</a>
+, <a class="el" href="classoperations__research_1_1MPSolutionResponse.html#a1ce5838e637ee9511b0deb790015e4a9">operations_research::MPSolutionResponse</a>
+, <a class="el" href="classoperations__research_1_1MPSolverCommonParameters.html#a6c0a9ae90e743a2b57e3928c67757828">operations_research::MPSolverCommonParameters</a>
+, <a class="el" href="classoperations__research_1_1MPSosConstraint.html#a684227d3926d81765dca850da5fc819a">operations_research::MPSosConstraint</a>
+, <a class="el" href="classoperations__research_1_1MPVariableProto.html#a0ffdc54c1073f2e7d20269fb5c6ab074">operations_research::MPVariableProto</a>
 , <a class="el" href="classoperations__research_1_1OptionalDouble.html#a5fd00504567875d0a6092c26f1187bad">operations_research::OptionalDouble</a>
-, <a class="el" href="classoperations__research_1_1PartialVariableAssignment.html#a3805ecad014b8b39f8a5bec076407428">operations_research::PartialVariableAssignment</a>
+, <a class="el" href="classoperations__research_1_1PartialVariableAssignment.html#af1c56240332a5de239066e389c0c01c3">operations_research::PartialVariableAssignment</a>
 </li>
 <li>CPLEX_LINEAR_PROGRAMMING
-: <a class="el" href="classoperations__research_1_1MPModelRequest.html#aabd0eb9710977c12151f45626552f0be">operations_research::MPModelRequest</a>
+: <a class="el" href="classoperations__research_1_1MPModelRequest.html#a080026387b93e030672c47eebe9bcf2c">operations_research::MPModelRequest</a>
 </li>
 <li>CPLEX_MIXED_INTEGER_PROGRAMMING
-: <a class="el" href="classoperations__research_1_1MPModelRequest.html#a5d493e08b153dd7dc2aae3411984d751">operations_research::MPModelRequest</a>
+: <a class="el" href="classoperations__research_1_1MPModelRequest.html#abe5c46883b619f9adc7c740c76c988c3">operations_research::MPModelRequest</a>
 </li>
 </ul>
 </div><!-- contents -->

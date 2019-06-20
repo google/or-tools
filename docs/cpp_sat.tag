@@ -109,13 +109,12 @@
     <class kind="class">operations_research::sat::PartialVariableAssignment</class>
     <class kind="class">operations_research::sat::CpModelProto</class>
     <class kind="class">operations_research::sat::CpSolverResponse</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::DecisionStrategyProto_VariableSelectionStrategy &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::DecisionStrategyProto_DomainReductionStrategy &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::CpSolverStatus &gt;</class>
+    <class kind="struct">is_proto_enum&lt; ::operations_research::sat::DecisionStrategyProto_VariableSelectionStrategy &gt;</class>
+    <class kind="struct">is_proto_enum&lt; ::operations_research::sat::DecisionStrategyProto_DomainReductionStrategy &gt;</class>
+    <class kind="struct">is_proto_enum&lt; ::operations_research::sat::CpSolverStatus &gt;</class>
+    <namespace>internal</namespace>
     <namespace>operations_research</namespace>
     <namespace>operations_research::sat</namespace>
-    <namespace>google</namespace>
-    <namespace>google::protobuf</namespace>
     <member kind="define">
       <type>#define</type>
       <name>PROTOBUF_INTERNAL_EXPORT_ortools_2fsat_2fcp_5fmodel_2eproto</name>
@@ -127,316 +126,309 @@
       <type></type>
       <name>DecisionStrategyProto_VariableSelectionStrategy</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a10a32f85785b62ba65343391e575148e</anchor>
+      <anchor>ac0ca8810a97bcc1b3d45269a33fd4f0c</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_VariableSelectionStrategy_CHOOSE_FIRST</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a10a32f85785b62ba65343391e575148ea5e00b7cd6b433ec6a15ff913d3b2c3f3</anchor>
+      <anchor>ac0ca8810a97bcc1b3d45269a33fd4f0ca5e00b7cd6b433ec6a15ff913d3b2c3f3</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_VariableSelectionStrategy_CHOOSE_LOWEST_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a10a32f85785b62ba65343391e575148ea0b1d456b36749d677aa4a201b22ba114</anchor>
+      <anchor>ac0ca8810a97bcc1b3d45269a33fd4f0ca0b1d456b36749d677aa4a201b22ba114</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_VariableSelectionStrategy_CHOOSE_HIGHEST_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a10a32f85785b62ba65343391e575148ea79fc0af04ed454750ecb59dc5a748e88</anchor>
+      <anchor>ac0ca8810a97bcc1b3d45269a33fd4f0ca79fc0af04ed454750ecb59dc5a748e88</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_VariableSelectionStrategy_CHOOSE_MIN_DOMAIN_SIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a10a32f85785b62ba65343391e575148ea18e573e60bf8dde6880a6cfb9f697ffc</anchor>
+      <anchor>ac0ca8810a97bcc1b3d45269a33fd4f0ca18e573e60bf8dde6880a6cfb9f697ffc</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_VariableSelectionStrategy_CHOOSE_MAX_DOMAIN_SIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a10a32f85785b62ba65343391e575148ea9bc8cd090f555c04c4fb8ec23838dc30</anchor>
+      <anchor>ac0ca8810a97bcc1b3d45269a33fd4f0ca9bc8cd090f555c04c4fb8ec23838dc30</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_VariableSelectionStrategy_DecisionStrategyProto_VariableSelectionStrategy_INT_MIN_SENTINEL_DO_NOT_USE_</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a10a32f85785b62ba65343391e575148ea77405cd855df69ed653be2766be0a1af</anchor>
+      <anchor>ac0ca8810a97bcc1b3d45269a33fd4f0ca77405cd855df69ed653be2766be0a1af</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_VariableSelectionStrategy_DecisionStrategyProto_VariableSelectionStrategy_INT_MAX_SENTINEL_DO_NOT_USE_</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a10a32f85785b62ba65343391e575148eadecec94c9d1599ecbdfdab2f7cfcb7aa</anchor>
+      <anchor>ac0ca8810a97bcc1b3d45269a33fd4f0cadecec94c9d1599ecbdfdab2f7cfcb7aa</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>DecisionStrategyProto_DomainReductionStrategy</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>adb7c9ce3ef722957ff56d0875e802fb4</anchor>
+      <anchor>a20ead57ac0739497ea66f0c21b23b529</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_DomainReductionStrategy_SELECT_MIN_VALUE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>adb7c9ce3ef722957ff56d0875e802fb4a2f416e6e94f971bfbb75ba25e7f7b760</anchor>
+      <anchor>a20ead57ac0739497ea66f0c21b23b529a2f416e6e94f971bfbb75ba25e7f7b760</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_DomainReductionStrategy_SELECT_MAX_VALUE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>adb7c9ce3ef722957ff56d0875e802fb4ac22896facd05595ce84133b3b3043685</anchor>
+      <anchor>a20ead57ac0739497ea66f0c21b23b529ac22896facd05595ce84133b3b3043685</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_DomainReductionStrategy_SELECT_LOWER_HALF</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>adb7c9ce3ef722957ff56d0875e802fb4ab63e61aebddafddd1496d6ab577dab53</anchor>
+      <anchor>a20ead57ac0739497ea66f0c21b23b529ab63e61aebddafddd1496d6ab577dab53</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_DomainReductionStrategy_SELECT_UPPER_HALF</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>adb7c9ce3ef722957ff56d0875e802fb4ac41d0ba8114af7179c253fda16e517ca</anchor>
+      <anchor>a20ead57ac0739497ea66f0c21b23b529ac41d0ba8114af7179c253fda16e517ca</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_DomainReductionStrategy_DecisionStrategyProto_DomainReductionStrategy_INT_MIN_SENTINEL_DO_NOT_USE_</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>adb7c9ce3ef722957ff56d0875e802fb4a82875a7d185a8f87d56cb0fb0f37f72a</anchor>
+      <anchor>a20ead57ac0739497ea66f0c21b23b529a82875a7d185a8f87d56cb0fb0f37f72a</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_DomainReductionStrategy_DecisionStrategyProto_DomainReductionStrategy_INT_MAX_SENTINEL_DO_NOT_USE_</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>adb7c9ce3ef722957ff56d0875e802fb4ac1c76a18c1405c9569b8afca29919e48</anchor>
+      <anchor>a20ead57ac0739497ea66f0c21b23b529ac1c76a18c1405c9569b8afca29919e48</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>CpSolverStatus</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a2392f4581af743a0af577069f99fed12</anchor>
+      <anchor>ac14a394f629f2cf1070b84bce2e427ce</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>UNKNOWN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a2392f4581af743a0af577069f99fed12a693e3d1636a488a456c173453c45cc14</anchor>
+      <anchor>ac14a394f629f2cf1070b84bce2e427cea693e3d1636a488a456c173453c45cc14</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MODEL_INVALID</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a2392f4581af743a0af577069f99fed12acb3300bde58b85d202f9c211dfabcb49</anchor>
+      <anchor>ac14a394f629f2cf1070b84bce2e427ceacb3300bde58b85d202f9c211dfabcb49</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FEASIBLE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a2392f4581af743a0af577069f99fed12ae4d551fa942cba479e3090bb8ae40e73</anchor>
+      <anchor>ac14a394f629f2cf1070b84bce2e427ceae4d551fa942cba479e3090bb8ae40e73</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>INFEASIBLE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a2392f4581af743a0af577069f99fed12a185c2992ead7a0d90d260164cf10d46f</anchor>
+      <anchor>ac14a394f629f2cf1070b84bce2e427cea185c2992ead7a0d90d260164cf10d46f</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>OPTIMAL</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a2392f4581af743a0af577069f99fed12a78e9c6b9f6ac60a9e9c2d25967ed1ad0</anchor>
+      <anchor>ac14a394f629f2cf1070b84bce2e427cea78e9c6b9f6ac60a9e9c2d25967ed1ad0</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>CpSolverStatus_INT_MIN_SENTINEL_DO_NOT_USE_</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a2392f4581af743a0af577069f99fed12a443f059ef1efc767e19c5724f6c161d9</anchor>
+      <anchor>ac14a394f629f2cf1070b84bce2e427cea443f059ef1efc767e19c5724f6c161d9</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>CpSolverStatus_INT_MAX_SENTINEL_DO_NOT_USE_</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a2392f4581af743a0af577069f99fed12ae535ad44840a077b35974e3a04530717</anchor>
+      <anchor>ac14a394f629f2cf1070b84bce2e427ceae535ad44840a077b35974e3a04530717</anchor>
       <arglist></arglist>
     </member>
     <member kind="function">
-      <type>void</type>
-      <name>AddDescriptors_ortools_2fsat_2fcp_5fmodel_2eproto</name>
-      <anchorfile>cp__model_8pb_8h.html</anchorfile>
-      <anchor>a38bf680499d9a614d825dfa5a7a689a6</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::AllDifferentConstraintProto *</type>
+      <type>PROTOBUF_NAMESPACE_OPEN ::operations_research::sat::AllDifferentConstraintProto *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::AllDifferentConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>ab6c5ebe14cfc68d93a5f60686f2ae22d</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>af9e54e2d5d81731965cba2c72fd237f5</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::sat::AutomatonConstraintProto *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::AutomatonConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a47da04ba2be147be8b0a249d1127175f</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>a409e867844426d248649058045d91b4a</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::sat::BoolArgumentProto *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::BoolArgumentProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>ad530047c3866901687cad573a8902a36</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>a26f4220a644805d216623919b4454e90</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::sat::CircuitConstraintProto *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::CircuitConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>ab8dbc8cdb17b07a5682228a84ca326a7</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>aa622f7324c218952ff6e6fa76e70b5ae</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::sat::CircuitCoveringConstraintProto *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::CircuitCoveringConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a65ba1bb90bf8b69684824af54ed34061</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>a053a9a83617d85d70590f9bcb69f9072</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::sat::ConstraintProto *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::ConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a194b7268d38aea43cf720189f2c7d933</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>a8a08a0412dc7ad772d01538c4541d8fe</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::sat::CpModelProto *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::CpModelProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>aad6b5a46ab5d2233f555b7eaa7f9dc8b</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>a8bb69e78d4b1193a570cb373cbcd77f1</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::sat::CpObjectiveProto *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::CpObjectiveProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>afbd10e0381bdcea8db6a4b8b1ddda5b4</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>aaa9871408c076cdce214c53975c778b2</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::sat::CpSolverResponse *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::CpSolverResponse &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>abdc2b7a036c638cad9b003b8e2ae38fb</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>aa932638eb3288abef76ec6ce44abad2c</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::sat::CumulativeConstraintProto *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::CumulativeConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a8c7246d8fad339bf133ecf5ce8b70e6f</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>a469cc5bec5d04722b7a2ed2157cbed69</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::sat::DecisionStrategyProto *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::DecisionStrategyProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>ab396a7c48de804df389f1fde37cd4aed</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>ae9d3a1b377448fff473eb094e1a4398f</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::sat::DecisionStrategyProto_AffineTransformation *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::DecisionStrategyProto_AffineTransformation &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a8dafed95c6efbf6296753a9a90923388</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>a76684065481e77a04d6a785b57a37ea0</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::sat::ElementConstraintProto *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::ElementConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a4e0bfccb327b7e1ef475d48d813554ac</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>aafaee55e2ef399a5e005a29ebdd5557f</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::sat::IntegerArgumentProto *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::IntegerArgumentProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>ad1456edebbb93b07e4cb7b231c6d5d1c</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>a31af3405cf06940dbbd7e2ada3faa05e</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::sat::IntegerVariableProto *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::IntegerVariableProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a8e446e46683177ee44ab293e2c35231b</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>abfe1c95f3203f48ee2e0fd985df573cf</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::sat::IntervalConstraintProto *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::IntervalConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a23fd3de0c47884bbebb25116ece5c2d7</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>a1a52f0d999d97d872a7b681048663497</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::sat::InverseConstraintProto *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::InverseConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a6fd2c00fa691e2d0a3ec45cf883dfdf5</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>aebc3014f5f916f36e4b00d3cb6b4221c</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::sat::LinearConstraintProto *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::LinearConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>abe77e6dc60fd9e0d5c696b1b55c2fccd</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>ae4641d439ae970665040cfe8c8e4cc17</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::sat::NoOverlap2DConstraintProto *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::NoOverlap2DConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>ab081583e505c7c4003cc7981f7bd354f</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>ad2d5af22bab0d3f84df7c744828ab2e4</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::sat::NoOverlapConstraintProto *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::NoOverlapConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>aa61f6fa8185bc8617023420148f33045</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>a42a27eb2a39b4d60a27f41639fdadda6</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::sat::PartialVariableAssignment *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::PartialVariableAssignment &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a9605edce6c8d1b9f2b465ea3cf193e72</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>a69b0f0b690bac6d13d2cb8723d9bc746</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::sat::ReservoirConstraintProto *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::ReservoirConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>adb8db465df82459433570257339128c1</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>ae6b0dd316e74205a0dc9ac55e4625278</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::sat::RoutesConstraintProto *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::RoutesConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>ae061245ac4989a9fa86f211ccf1a94bb</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>a72e417ceed325aefeb735bc1269b5926</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::sat::TableConstraintProto *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::TableConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>ab58f5023a24725742e59513c8a5785e2</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>a32645384af0bf66e5cb51f2367bfee0a</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
@@ -447,25 +439,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>DecisionStrategyProto_VariableSelectionStrategy_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>af66c861360ab3857d0bb2d53fde74bca</anchor>
+      <anchor>ac8eeb3305c37f40da67f55486402ac78</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>DecisionStrategyProto_VariableSelectionStrategy_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a2262e194393851724b02211c34c57457</anchor>
-      <arglist>(DecisionStrategyProto_VariableSelectionStrategy value)</arglist>
+      <anchor>abbc472dcbb3ad76095da9926b37e49f8</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>DecisionStrategyProto_VariableSelectionStrategy_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>af25eeda8a253dce34e0b0e98f69031ad</anchor>
-      <arglist>(const ::std::string &amp;name, DecisionStrategyProto_VariableSelectionStrategy *value)</arglist>
+      <anchor>a158d3c3e8612a0cb9be525140c96267f</anchor>
+      <arglist>(const std::string &amp;name, DecisionStrategyProto_VariableSelectionStrategy *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -475,25 +467,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>DecisionStrategyProto_DomainReductionStrategy_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a3bef95d750e0d2c4dcbf9944a6147232</anchor>
+      <anchor>a60036e4e1e1d47218d6339e9119805c4</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>DecisionStrategyProto_DomainReductionStrategy_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a15661f91c1c5635b462c569097268773</anchor>
-      <arglist>(DecisionStrategyProto_DomainReductionStrategy value)</arglist>
+      <anchor>ac22a3ab628a918dd90466ba12d6ee0cd</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>DecisionStrategyProto_DomainReductionStrategy_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ab65df8c02daf63542fcee35b0a9f7779</anchor>
-      <arglist>(const ::std::string &amp;name, DecisionStrategyProto_DomainReductionStrategy *value)</arglist>
+      <anchor>a6f1fd67f2396dd88544958778b9854bf</anchor>
+      <arglist>(const std::string &amp;name, DecisionStrategyProto_DomainReductionStrategy *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -503,46 +495,53 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>CpSolverStatus_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aef4cfe27470b9d29843e9394cb75f33a</anchor>
+      <anchor>ad87fa7d63870ba0085a841c2303dad6b</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>CpSolverStatus_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a168a8ab6018d96c83fbd0d0ee03e087c</anchor>
-      <arglist>(CpSolverStatus value)</arglist>
+      <anchor>aede942101121114490d4f59631bf9292</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>CpSolverStatus_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a49458d152506001af5ad6ad1b7c8576e</anchor>
-      <arglist>(const ::std::string &amp;name, CpSolverStatus *value)</arglist>
+      <anchor>a463a1c6294a89434db5de2a5560685f4</anchor>
+      <arglist>(const std::string &amp;name, CpSolverStatus *value)</arglist>
     </member>
     <member kind="function">
       <type>const EnumDescriptor *</type>
       <name>GetEnumDescriptor&lt; ::operations_research::sat::DecisionStrategyProto_VariableSelectionStrategy &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a932a088438a4a18cac0d84a50f9cef93</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>af88b4fbcdca26fee95079ec1dc7ff5ec</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>const EnumDescriptor *</type>
       <name>GetEnumDescriptor&lt; ::operations_research::sat::DecisionStrategyProto_DomainReductionStrategy &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>ab7bf2119b197f54b7cfb237d392a3b31</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>a58db7092358e258353cc6ab4d035ecaf</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>const EnumDescriptor *</type>
       <name>GetEnumDescriptor&lt; ::operations_research::sat::CpSolverStatus &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a61f6bf84c590e6ff99427d674d30cc9c</anchor>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>af89daf730ccca1a8de5eebfdf9406131</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="variable">
+      <type>const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable</type>
+      <name>descriptor_table_ortools_2fsat_2fcp_5fmodel_2eproto</name>
+      <anchorfile>cp__model_8pb_8h.html</anchorfile>
+      <anchor>a15e31e7e010c4b2e239f514608cbf9a8</anchor>
+      <arglist></arglist>
     </member>
     <member kind="variable">
       <type>AllDifferentConstraintProtoDefaultTypeInternal</type>
@@ -713,66 +712,66 @@
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const DecisionStrategyProto_VariableSelectionStrategy</type>
+      <type>constexpr DecisionStrategyProto_VariableSelectionStrategy</type>
       <name>DecisionStrategyProto_VariableSelectionStrategy_VariableSelectionStrategy_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a59941f8a574d610fbd0d2766daf437e2</anchor>
+      <anchor>a3e5fd8dd3f65b3725d38e743b450fe14</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const DecisionStrategyProto_VariableSelectionStrategy</type>
+      <type>constexpr DecisionStrategyProto_VariableSelectionStrategy</type>
       <name>DecisionStrategyProto_VariableSelectionStrategy_VariableSelectionStrategy_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aa936a57453c9681bab32e74a3747c5f7</anchor>
+      <anchor>a3e888f213753f1e8fac882e0a2394040</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>DecisionStrategyProto_VariableSelectionStrategy_VariableSelectionStrategy_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a0fe139f7887fdce2f0d82ba7bfe3b761</anchor>
+      <anchor>a6c4f9d19c7865cdcdc3fa9c1ecfd98e8</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const DecisionStrategyProto_DomainReductionStrategy</type>
+      <type>constexpr DecisionStrategyProto_DomainReductionStrategy</type>
       <name>DecisionStrategyProto_DomainReductionStrategy_DomainReductionStrategy_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a8d89ba785675bf6374b216c6880cf89d</anchor>
+      <anchor>adeada39a9b25093a4cc1883510e1bb08</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const DecisionStrategyProto_DomainReductionStrategy</type>
+      <type>constexpr DecisionStrategyProto_DomainReductionStrategy</type>
       <name>DecisionStrategyProto_DomainReductionStrategy_DomainReductionStrategy_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a2446fab2d79c5ef3d9ab370d8be7519b</anchor>
+      <anchor>aec9bb98a52b3d32d47a598fc5eafb671</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>DecisionStrategyProto_DomainReductionStrategy_DomainReductionStrategy_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a98b9900acdb468cd47a37be6ec6fecce</anchor>
+      <anchor>a1742cab1f2a807d32238c453b92bdeb3</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const CpSolverStatus</type>
+      <type>constexpr CpSolverStatus</type>
       <name>CpSolverStatus_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a39d6196edcd5c594db5524b4fd1a9cad</anchor>
+      <anchor>a067ce64a3f75c8567b22bf8bbecf2fa5</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const CpSolverStatus</type>
+      <type>constexpr CpSolverStatus</type>
       <name>CpSolverStatus_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad61de2d59ad12b07b65b1b2497542ea2</anchor>
+      <anchor>ac52096bfb8221d5724ff16dc4c93647c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>CpSolverStatus_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a9309f1a918471faabd064037b40b3a2a</anchor>
+      <anchor>aeccedf377b000af35b4e9091c1bc2bb8</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -863,20 +862,19 @@
     <filename>sat__parameters_8pb_8h</filename>
     <class kind="struct">TableStruct_ortools_2fsat_2fsat_5fparameters_2eproto</class>
     <class kind="class">operations_research::sat::SatParameters</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_VariableOrder &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_Polarity &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_ConflictMinimizationAlgorithm &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_BinaryMinizationAlgorithm &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_ClauseProtection &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_ClauseOrdering &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_RestartAlgorithm &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_MaxSatAssumptionOrder &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_MaxSatStratificationAlgorithm &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_SearchBranching &gt;</class>
+    <class kind="struct">is_proto_enum&lt; ::operations_research::sat::SatParameters_VariableOrder &gt;</class>
+    <class kind="struct">is_proto_enum&lt; ::operations_research::sat::SatParameters_Polarity &gt;</class>
+    <class kind="struct">is_proto_enum&lt; ::operations_research::sat::SatParameters_ConflictMinimizationAlgorithm &gt;</class>
+    <class kind="struct">is_proto_enum&lt; ::operations_research::sat::SatParameters_BinaryMinizationAlgorithm &gt;</class>
+    <class kind="struct">is_proto_enum&lt; ::operations_research::sat::SatParameters_ClauseProtection &gt;</class>
+    <class kind="struct">is_proto_enum&lt; ::operations_research::sat::SatParameters_ClauseOrdering &gt;</class>
+    <class kind="struct">is_proto_enum&lt; ::operations_research::sat::SatParameters_RestartAlgorithm &gt;</class>
+    <class kind="struct">is_proto_enum&lt; ::operations_research::sat::SatParameters_MaxSatAssumptionOrder &gt;</class>
+    <class kind="struct">is_proto_enum&lt; ::operations_research::sat::SatParameters_MaxSatStratificationAlgorithm &gt;</class>
+    <class kind="struct">is_proto_enum&lt; ::operations_research::sat::SatParameters_SearchBranching &gt;</class>
+    <namespace>internal</namespace>
     <namespace>operations_research</namespace>
     <namespace>operations_research::sat</namespace>
-    <namespace>google</namespace>
-    <namespace>google::protobuf</namespace>
     <member kind="define">
       <type>#define</type>
       <name>PROTOBUF_INTERNAL_EXPORT_ortools_2fsat_2fsat_5fparameters_2eproto</name>
@@ -888,318 +886,311 @@
       <type></type>
       <name>SatParameters_VariableOrder</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a7500a48ce324f0ef41f39e45f60f214d</anchor>
+      <anchor>a299d9cbf6a19e8aa8294c01b02d59aa7</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_VariableOrder_IN_ORDER</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a7500a48ce324f0ef41f39e45f60f214da92760d7186df85dfd6c188eae0b9b591</anchor>
+      <anchor>a299d9cbf6a19e8aa8294c01b02d59aa7a92760d7186df85dfd6c188eae0b9b591</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_VariableOrder_IN_REVERSE_ORDER</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a7500a48ce324f0ef41f39e45f60f214da941215af97625c63a144520ec7e02bfb</anchor>
+      <anchor>a299d9cbf6a19e8aa8294c01b02d59aa7a941215af97625c63a144520ec7e02bfb</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_VariableOrder_IN_RANDOM_ORDER</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a7500a48ce324f0ef41f39e45f60f214da8de6cbc54e325b78d800c8354591d726</anchor>
+      <anchor>a299d9cbf6a19e8aa8294c01b02d59aa7a8de6cbc54e325b78d800c8354591d726</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>SatParameters_Polarity</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>add5353b524feae6119c2a8220f1ca3d2</anchor>
+      <anchor>a517d73d1db81fd87470e6bcbe87c633e</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_Polarity_POLARITY_TRUE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>add5353b524feae6119c2a8220f1ca3d2a6145ecb76ca29dc07b9acde97866a8ee</anchor>
+      <anchor>a517d73d1db81fd87470e6bcbe87c633ea6145ecb76ca29dc07b9acde97866a8ee</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_Polarity_POLARITY_FALSE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>add5353b524feae6119c2a8220f1ca3d2a204c91561099609cdf7b6469e84e9576</anchor>
+      <anchor>a517d73d1db81fd87470e6bcbe87c633ea204c91561099609cdf7b6469e84e9576</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_Polarity_POLARITY_RANDOM</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>add5353b524feae6119c2a8220f1ca3d2afaf662755a533bc2353968b4c4da4d32</anchor>
+      <anchor>a517d73d1db81fd87470e6bcbe87c633eafaf662755a533bc2353968b4c4da4d32</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_Polarity_POLARITY_WEIGHTED_SIGN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>add5353b524feae6119c2a8220f1ca3d2af9a6fbf18fc3445083ca746b1e920ca6</anchor>
+      <anchor>a517d73d1db81fd87470e6bcbe87c633eaf9a6fbf18fc3445083ca746b1e920ca6</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_Polarity_POLARITY_REVERSE_WEIGHTED_SIGN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>add5353b524feae6119c2a8220f1ca3d2a77094f18176663ceea0b80667cf917a6</anchor>
+      <anchor>a517d73d1db81fd87470e6bcbe87c633ea77094f18176663ceea0b80667cf917a6</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>SatParameters_ConflictMinimizationAlgorithm</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a8ab616f5071426513fb5d7dd88f2b23b</anchor>
+      <anchor>ada813507f9879e596a07b3850f7fc0d5</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_ConflictMinimizationAlgorithm_NONE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a8ab616f5071426513fb5d7dd88f2b23bae1bd62c48ad8f9a7d242ae916bbe5066</anchor>
+      <anchor>ada813507f9879e596a07b3850f7fc0d5ae1bd62c48ad8f9a7d242ae916bbe5066</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_ConflictMinimizationAlgorithm_SIMPLE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a8ab616f5071426513fb5d7dd88f2b23bac1adcdd93b988565644ddc9c3510c96c</anchor>
+      <anchor>ada813507f9879e596a07b3850f7fc0d5ac1adcdd93b988565644ddc9c3510c96c</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_ConflictMinimizationAlgorithm_RECURSIVE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a8ab616f5071426513fb5d7dd88f2b23bacf7f9f878c3e92e4e319c3e4ea926af7</anchor>
+      <anchor>ada813507f9879e596a07b3850f7fc0d5acf7f9f878c3e92e4e319c3e4ea926af7</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_ConflictMinimizationAlgorithm_EXPERIMENTAL</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a8ab616f5071426513fb5d7dd88f2b23ba52b205df52309c4f050206500297e4e5</anchor>
+      <anchor>ada813507f9879e596a07b3850f7fc0d5a52b205df52309c4f050206500297e4e5</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>SatParameters_BinaryMinizationAlgorithm</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>af925d9b6f4730729d935c3fad014c4ff</anchor>
+      <anchor>a402444328a26710265238ae8fb883496</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_BinaryMinizationAlgorithm_NO_BINARY_MINIMIZATION</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>af925d9b6f4730729d935c3fad014c4ffa5cefb853f31166cc3684d90594d5dde9</anchor>
+      <anchor>a402444328a26710265238ae8fb883496a5cefb853f31166cc3684d90594d5dde9</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_BinaryMinizationAlgorithm_BINARY_MINIMIZATION_FIRST</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>af925d9b6f4730729d935c3fad014c4ffacefb9cb334d97dc99896de7db79a2476</anchor>
+      <anchor>a402444328a26710265238ae8fb883496acefb9cb334d97dc99896de7db79a2476</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_BinaryMinizationAlgorithm_BINARY_MINIMIZATION_FIRST_WITH_TRANSITIVE_REDUCTION</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>af925d9b6f4730729d935c3fad014c4ffac586955ded9c943dee2faf8b5b738dbd</anchor>
+      <anchor>a402444328a26710265238ae8fb883496ac586955ded9c943dee2faf8b5b738dbd</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_BinaryMinizationAlgorithm_BINARY_MINIMIZATION_WITH_REACHABILITY</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>af925d9b6f4730729d935c3fad014c4ffa30c30629b82fa4252c40e28942e35416</anchor>
+      <anchor>a402444328a26710265238ae8fb883496a30c30629b82fa4252c40e28942e35416</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_BinaryMinizationAlgorithm_EXPERIMENTAL_BINARY_MINIMIZATION</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>af925d9b6f4730729d935c3fad014c4ffaeb6a38e1f5f44d7f13c6f8d6325ba069</anchor>
+      <anchor>a402444328a26710265238ae8fb883496aeb6a38e1f5f44d7f13c6f8d6325ba069</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>SatParameters_ClauseProtection</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad24109146a44723f1c95b7d3f226fcc1</anchor>
+      <anchor>af02bc4bd103928ea008623a1da38a12c</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_ClauseProtection_PROTECTION_NONE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad24109146a44723f1c95b7d3f226fcc1a1739f0f3322dc59ebaa2fb9fa3481d6b</anchor>
+      <anchor>af02bc4bd103928ea008623a1da38a12ca1739f0f3322dc59ebaa2fb9fa3481d6b</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_ClauseProtection_PROTECTION_ALWAYS</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad24109146a44723f1c95b7d3f226fcc1aa7de36c91e9668bd4d3429170a3a915a</anchor>
+      <anchor>af02bc4bd103928ea008623a1da38a12caa7de36c91e9668bd4d3429170a3a915a</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_ClauseProtection_PROTECTION_LBD</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad24109146a44723f1c95b7d3f226fcc1a4ce148354b01f5b1e2da32e7576edaa3</anchor>
+      <anchor>af02bc4bd103928ea008623a1da38a12ca4ce148354b01f5b1e2da32e7576edaa3</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>SatParameters_ClauseOrdering</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a31ad84fa962b626887890dd76a53c74a</anchor>
+      <anchor>ab33358f8fe7b8cb7f98c226b3a070e38</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_ClauseOrdering_CLAUSE_ACTIVITY</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a31ad84fa962b626887890dd76a53c74aaaab0bb6b57e109185e6a62d5d0271a04</anchor>
+      <anchor>ab33358f8fe7b8cb7f98c226b3a070e38aaab0bb6b57e109185e6a62d5d0271a04</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_ClauseOrdering_CLAUSE_LBD</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a31ad84fa962b626887890dd76a53c74aa2dcf758b7ee7431577e2aa80a60b163e</anchor>
+      <anchor>ab33358f8fe7b8cb7f98c226b3a070e38a2dcf758b7ee7431577e2aa80a60b163e</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>SatParameters_RestartAlgorithm</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a192662f710ae6cff2e00eff50ce55ac3</anchor>
+      <anchor>a2916a603fb108fbf4133f865d472fc0b</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_RestartAlgorithm_NO_RESTART</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a192662f710ae6cff2e00eff50ce55ac3a698c5900a88697e89f1a9ffa790fd49f</anchor>
+      <anchor>a2916a603fb108fbf4133f865d472fc0ba698c5900a88697e89f1a9ffa790fd49f</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_RestartAlgorithm_LUBY_RESTART</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a192662f710ae6cff2e00eff50ce55ac3a0fcf1821b877dd61f6cfac37a36a82d8</anchor>
+      <anchor>a2916a603fb108fbf4133f865d472fc0ba0fcf1821b877dd61f6cfac37a36a82d8</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_RestartAlgorithm_DL_MOVING_AVERAGE_RESTART</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a192662f710ae6cff2e00eff50ce55ac3a89e7ee47fc5c826c03f455f082f22c70</anchor>
+      <anchor>a2916a603fb108fbf4133f865d472fc0ba89e7ee47fc5c826c03f455f082f22c70</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_RestartAlgorithm_LBD_MOVING_AVERAGE_RESTART</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a192662f710ae6cff2e00eff50ce55ac3a5d2302ed4086b87cadaad18aa5981aed</anchor>
+      <anchor>a2916a603fb108fbf4133f865d472fc0ba5d2302ed4086b87cadaad18aa5981aed</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_RestartAlgorithm_FIXED_RESTART</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a192662f710ae6cff2e00eff50ce55ac3a353691b5a40f70fe5d05cc01bdf22536</anchor>
+      <anchor>a2916a603fb108fbf4133f865d472fc0ba353691b5a40f70fe5d05cc01bdf22536</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>SatParameters_MaxSatAssumptionOrder</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a683a06394b218203a4517b19468df400</anchor>
+      <anchor>a71cb004d78f7d8c38fcc9cbc225af533</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_MaxSatAssumptionOrder_DEFAULT_ASSUMPTION_ORDER</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a683a06394b218203a4517b19468df400ab0500c1196441cd7820da82c2c1baf6f</anchor>
+      <anchor>a71cb004d78f7d8c38fcc9cbc225af533ab0500c1196441cd7820da82c2c1baf6f</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_MaxSatAssumptionOrder_ORDER_ASSUMPTION_BY_DEPTH</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a683a06394b218203a4517b19468df400a61bc7845a56fecefcc18795a536d5eb3</anchor>
+      <anchor>a71cb004d78f7d8c38fcc9cbc225af533a61bc7845a56fecefcc18795a536d5eb3</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_MaxSatAssumptionOrder_ORDER_ASSUMPTION_BY_WEIGHT</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a683a06394b218203a4517b19468df400a44da070df5c6e2443fa1c00b6c25893f</anchor>
+      <anchor>a71cb004d78f7d8c38fcc9cbc225af533a44da070df5c6e2443fa1c00b6c25893f</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>SatParameters_MaxSatStratificationAlgorithm</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ab342c0ecaab53f1e8e6cf05ca513b8d5</anchor>
+      <anchor>a011a7400ac03996a9023db2a9e7df81c</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_MaxSatStratificationAlgorithm_STRATIFICATION_NONE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ab342c0ecaab53f1e8e6cf05ca513b8d5a5bb7f0a112c4672ea2abec407f7d384c</anchor>
+      <anchor>a011a7400ac03996a9023db2a9e7df81ca5bb7f0a112c4672ea2abec407f7d384c</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_MaxSatStratificationAlgorithm_STRATIFICATION_DESCENT</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ab342c0ecaab53f1e8e6cf05ca513b8d5a0c67cde78d6314de8d13734d65709b3a</anchor>
+      <anchor>a011a7400ac03996a9023db2a9e7df81ca0c67cde78d6314de8d13734d65709b3a</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_MaxSatStratificationAlgorithm_STRATIFICATION_ASCENT</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ab342c0ecaab53f1e8e6cf05ca513b8d5adf547628eb3421e641512aeb95b31912</anchor>
+      <anchor>a011a7400ac03996a9023db2a9e7df81cadf547628eb3421e641512aeb95b31912</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>SatParameters_SearchBranching</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad9191a142de9cc0cca4248601387cb4b</anchor>
+      <anchor>af29968605d0dca7194386c85c3e8269e</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_SearchBranching_AUTOMATIC_SEARCH</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad9191a142de9cc0cca4248601387cb4bac23498a3951b707b682de68c3f2ef4ba</anchor>
+      <anchor>af29968605d0dca7194386c85c3e8269eac23498a3951b707b682de68c3f2ef4ba</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_SearchBranching_FIXED_SEARCH</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad9191a142de9cc0cca4248601387cb4ba4b402cda1dee9234ecc9bf3f969dae9c</anchor>
+      <anchor>af29968605d0dca7194386c85c3e8269ea4b402cda1dee9234ecc9bf3f969dae9c</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_SearchBranching_PORTFOLIO_SEARCH</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad9191a142de9cc0cca4248601387cb4ba79d67aaf6b62f71bbddd9c5177ebedc1</anchor>
+      <anchor>af29968605d0dca7194386c85c3e8269ea79d67aaf6b62f71bbddd9c5177ebedc1</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_SearchBranching_LP_SEARCH</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad9191a142de9cc0cca4248601387cb4bac0ee72ff494861f949253aac50496f42</anchor>
+      <anchor>af29968605d0dca7194386c85c3e8269eac0ee72ff494861f949253aac50496f42</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_SearchBranching_PSEUDO_COST_SEARCH</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad9191a142de9cc0cca4248601387cb4ba0959d8f131e2610b97a8830464b2c633</anchor>
+      <anchor>af29968605d0dca7194386c85c3e8269ea0959d8f131e2610b97a8830464b2c633</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_SearchBranching_PORTFOLIO_WITH_QUICK_RESTART_SEARCH</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad9191a142de9cc0cca4248601387cb4ba28a2409f7a5ca2ecd6635da22e4e6667</anchor>
+      <anchor>af29968605d0dca7194386c85c3e8269ea28a2409f7a5ca2ecd6635da22e4e6667</anchor>
       <arglist></arglist>
     </member>
     <member kind="function">
-      <type>void</type>
-      <name>AddDescriptors_ortools_2fsat_2fsat_5fparameters_2eproto</name>
-      <anchorfile>sat__parameters_8pb_8h.html</anchorfile>
-      <anchor>a68b07c45a03772248435665ca63fb33a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::SatParameters *</type>
+      <type>PROTOBUF_NAMESPACE_OPEN ::operations_research::sat::SatParameters *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::SatParameters &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a5e3ba24b3733dab6d3aac5a8deec1fc6</anchor>
+      <anchorfile>sat__parameters_8pb_8h.html</anchorfile>
+      <anchor>ab55372e60a420147082bef8a70b2bb15</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
@@ -1210,25 +1201,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>SatParameters_VariableOrder_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a63d00708775015b761d79d26958ae008</anchor>
+      <anchor>a0a75b439d4e889cf84f7d6f6b5a37a86</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>SatParameters_VariableOrder_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aea11eda3bbcc4f79baab267009d28df6</anchor>
-      <arglist>(SatParameters_VariableOrder value)</arglist>
+      <anchor>a9e40adad4a6a75afceefe43c8c509457</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>SatParameters_VariableOrder_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a628f11b71a7acbabf2c7eb0a55ebf04e</anchor>
-      <arglist>(const ::std::string &amp;name, SatParameters_VariableOrder *value)</arglist>
+      <anchor>a2b5db4bee652895d2a67171ad96cecb7</anchor>
+      <arglist>(const std::string &amp;name, SatParameters_VariableOrder *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -1238,25 +1229,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>SatParameters_Polarity_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ab019ee0753776b26fed17764e82d23e9</anchor>
+      <anchor>a3a1aa6bdfa59980400e6617e6a206071</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>SatParameters_Polarity_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aeb3937db56cace9b52fbb3ada9bfea73</anchor>
-      <arglist>(SatParameters_Polarity value)</arglist>
+      <anchor>af6e220cb137fc0462fc253744b8bc3ba</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>SatParameters_Polarity_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aacbaf337b8a87121b647c838bef22e1b</anchor>
-      <arglist>(const ::std::string &amp;name, SatParameters_Polarity *value)</arglist>
+      <anchor>aa8e76d4d2386cfab3cefb7460f62d95c</anchor>
+      <arglist>(const std::string &amp;name, SatParameters_Polarity *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -1266,25 +1257,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>SatParameters_ConflictMinimizationAlgorithm_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a0405a68dd3f67e20ca8c7b12d45cb870</anchor>
+      <anchor>a8ae6f7af0b88d08cd83a4ff1a1108985</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>SatParameters_ConflictMinimizationAlgorithm_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a729819ca8e41e5a7c95a32da63d75804</anchor>
-      <arglist>(SatParameters_ConflictMinimizationAlgorithm value)</arglist>
+      <anchor>af3ae9c39e1b2cf4733a63fb9e4f958b7</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>SatParameters_ConflictMinimizationAlgorithm_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a184421f59216ca2ef58f282236cf8bc3</anchor>
-      <arglist>(const ::std::string &amp;name, SatParameters_ConflictMinimizationAlgorithm *value)</arglist>
+      <anchor>af1125a74a1efaf1562812c9d9b1ffc00</anchor>
+      <arglist>(const std::string &amp;name, SatParameters_ConflictMinimizationAlgorithm *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -1294,25 +1285,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>SatParameters_BinaryMinizationAlgorithm_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ac6854e48c578db9f71a0c4a95dc95279</anchor>
+      <anchor>a8e0457f852d7716dc2d913867100dc8c</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>SatParameters_BinaryMinizationAlgorithm_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>af7cc36dac69bb4b7d7d5dacbf37e57ba</anchor>
-      <arglist>(SatParameters_BinaryMinizationAlgorithm value)</arglist>
+      <anchor>aea747a1c7b91baf6f1b5486700c31e5f</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>SatParameters_BinaryMinizationAlgorithm_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aa0292e780dbe4984839ecad4b44fccf0</anchor>
-      <arglist>(const ::std::string &amp;name, SatParameters_BinaryMinizationAlgorithm *value)</arglist>
+      <anchor>a7c328aaf533ab0b051f9b4617bd47d43</anchor>
+      <arglist>(const std::string &amp;name, SatParameters_BinaryMinizationAlgorithm *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -1322,25 +1313,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>SatParameters_ClauseProtection_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>afdfdf216dea1b6ca3cb4c816396f7493</anchor>
+      <anchor>ac92d8d18b4148e00e25b463b42c0ea3b</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>SatParameters_ClauseProtection_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aa46504e5e34f1716ac37b78ddc08b060</anchor>
-      <arglist>(SatParameters_ClauseProtection value)</arglist>
+      <anchor>ae1e232826064de5442ec15d6a2ff90f2</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>SatParameters_ClauseProtection_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a1558fb6c8e007b75889204116c149f78</anchor>
-      <arglist>(const ::std::string &amp;name, SatParameters_ClauseProtection *value)</arglist>
+      <anchor>a45a55c59398241500c1604ed6736e7e0</anchor>
+      <arglist>(const std::string &amp;name, SatParameters_ClauseProtection *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -1350,25 +1341,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>SatParameters_ClauseOrdering_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a38f0d79ca92d2252d62d8db8dfd1556a</anchor>
+      <anchor>a6763a151acaebadf9a4be9383e91e1eb</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>SatParameters_ClauseOrdering_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a56d5fe6aa184be05f6092ab990f5250e</anchor>
-      <arglist>(SatParameters_ClauseOrdering value)</arglist>
+      <anchor>a87813e257ba880dc079609db5d7f5da4</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>SatParameters_ClauseOrdering_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad674863df7b9117f210c945f2674db58</anchor>
-      <arglist>(const ::std::string &amp;name, SatParameters_ClauseOrdering *value)</arglist>
+      <anchor>ab38e233912e1d6e80baf8fe3bec043ee</anchor>
+      <arglist>(const std::string &amp;name, SatParameters_ClauseOrdering *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -1378,25 +1369,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>SatParameters_RestartAlgorithm_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aa2f24a25dc16dd685917069e6bb22b0b</anchor>
+      <anchor>a9d2995934edcfcc59a0da77719fcb11b</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>SatParameters_RestartAlgorithm_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a9703a0efa39a7877735205de9a006c0f</anchor>
-      <arglist>(SatParameters_RestartAlgorithm value)</arglist>
+      <anchor>a34b396f35aa7c449a39d2b92c3f93744</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>SatParameters_RestartAlgorithm_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a0960de8f477819a400cbd3a41062b9a2</anchor>
-      <arglist>(const ::std::string &amp;name, SatParameters_RestartAlgorithm *value)</arglist>
+      <anchor>af97fc1fcba310fb2c415278cef3df03a</anchor>
+      <arglist>(const std::string &amp;name, SatParameters_RestartAlgorithm *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -1406,25 +1397,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>SatParameters_MaxSatAssumptionOrder_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a828b06b1d9e9e57276c5092899592cd2</anchor>
+      <anchor>aa36fba890ac5ad3ce86c9f70b8352bb5</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>SatParameters_MaxSatAssumptionOrder_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a3a48b4e764d3598485a64075cee904fa</anchor>
-      <arglist>(SatParameters_MaxSatAssumptionOrder value)</arglist>
+      <anchor>aa49899c1c9df530d20f240b519437c6d</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>SatParameters_MaxSatAssumptionOrder_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a3bc3e149fd0e1959e5805d7ad73ccff2</anchor>
-      <arglist>(const ::std::string &amp;name, SatParameters_MaxSatAssumptionOrder *value)</arglist>
+      <anchor>ac304d2e190884ab7f230876fe1bd1d9f</anchor>
+      <arglist>(const std::string &amp;name, SatParameters_MaxSatAssumptionOrder *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -1434,25 +1425,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>SatParameters_MaxSatStratificationAlgorithm_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a52f132562a3089063ffa35dc1c54f21b</anchor>
+      <anchor>a9f22011e31eaf54170afe80d301665ac</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>SatParameters_MaxSatStratificationAlgorithm_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a08c2c94217816891bec7180e5f6b50d3</anchor>
-      <arglist>(SatParameters_MaxSatStratificationAlgorithm value)</arglist>
+      <anchor>a7b0414d7c022b8a1f606bace4c8192cf</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>SatParameters_MaxSatStratificationAlgorithm_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>affb8017c363df7be4c369908a6e1f90f</anchor>
-      <arglist>(const ::std::string &amp;name, SatParameters_MaxSatStratificationAlgorithm *value)</arglist>
+      <anchor>ac4c30c8eeb5c485f9676410745f1d9d2</anchor>
+      <arglist>(const std::string &amp;name, SatParameters_MaxSatStratificationAlgorithm *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -1462,95 +1453,102 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>SatParameters_SearchBranching_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a136b498c164dea9e5a9829d1590cec7b</anchor>
+      <anchor>a05587e288b302e572a8e80b100505a21</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>SatParameters_SearchBranching_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aaf4dfaa6a41d60012b210e5587cbbf51</anchor>
-      <arglist>(SatParameters_SearchBranching value)</arglist>
+      <anchor>ab59fe9a81546232a6951f9c673c02e8a</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>SatParameters_SearchBranching_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a992a00120a7ac841217f4561576cc354</anchor>
-      <arglist>(const ::std::string &amp;name, SatParameters_SearchBranching *value)</arglist>
+      <anchor>ae566d186f92afaced5ffb7ebae02d474</anchor>
+      <arglist>(const std::string &amp;name, SatParameters_SearchBranching *value)</arglist>
     </member>
     <member kind="function">
       <type>const EnumDescriptor *</type>
       <name>GetEnumDescriptor&lt; ::operations_research::sat::SatParameters_VariableOrder &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>affaa52e637aa5700a18de9de15d50802</anchor>
+      <anchorfile>sat__parameters_8pb_8h.html</anchorfile>
+      <anchor>a8885ce51db5f4e62425ed9d5c09ed568</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>const EnumDescriptor *</type>
       <name>GetEnumDescriptor&lt; ::operations_research::sat::SatParameters_Polarity &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a7ce45884a30882618460722b3f5b6a63</anchor>
+      <anchorfile>sat__parameters_8pb_8h.html</anchorfile>
+      <anchor>ad097df0060c8654c1b6cfc1285bc4969</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>const EnumDescriptor *</type>
       <name>GetEnumDescriptor&lt; ::operations_research::sat::SatParameters_ConflictMinimizationAlgorithm &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a865dfb0c8234642d80df4b0f91914a54</anchor>
+      <anchorfile>sat__parameters_8pb_8h.html</anchorfile>
+      <anchor>aad7abfd3f639a7d1f9c112b4e4e7d4f0</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>const EnumDescriptor *</type>
       <name>GetEnumDescriptor&lt; ::operations_research::sat::SatParameters_BinaryMinizationAlgorithm &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a53653792bc958c9d29044e3ab139254b</anchor>
+      <anchorfile>sat__parameters_8pb_8h.html</anchorfile>
+      <anchor>a8b09b973b5ccbe5b9cbbcde8b824a2fb</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>const EnumDescriptor *</type>
       <name>GetEnumDescriptor&lt; ::operations_research::sat::SatParameters_ClauseProtection &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>ad34fd79c2176b0344e2a5a649cfcca5e</anchor>
+      <anchorfile>sat__parameters_8pb_8h.html</anchorfile>
+      <anchor>a611a7d92c4add7f72478e8fb80b789c2</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>const EnumDescriptor *</type>
       <name>GetEnumDescriptor&lt; ::operations_research::sat::SatParameters_ClauseOrdering &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a5f0b29c0076ec4e010aeeb8bdb500a02</anchor>
+      <anchorfile>sat__parameters_8pb_8h.html</anchorfile>
+      <anchor>a59199dd6f81e1980528a711e643b9905</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>const EnumDescriptor *</type>
       <name>GetEnumDescriptor&lt; ::operations_research::sat::SatParameters_RestartAlgorithm &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>aa75c01445cca67a20648e0162d4d01b3</anchor>
+      <anchorfile>sat__parameters_8pb_8h.html</anchorfile>
+      <anchor>a56c312c25b31438ad9cd30de76ecf4e8</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>const EnumDescriptor *</type>
       <name>GetEnumDescriptor&lt; ::operations_research::sat::SatParameters_MaxSatAssumptionOrder &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>afa03ee919b72e3665921728ee15be26d</anchor>
+      <anchorfile>sat__parameters_8pb_8h.html</anchorfile>
+      <anchor>a52f8336c6767ff5a1b41074ec7a991c0</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>const EnumDescriptor *</type>
       <name>GetEnumDescriptor&lt; ::operations_research::sat::SatParameters_MaxSatStratificationAlgorithm &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a86ff4f7acb5908cc179e592e6dae80e9</anchor>
+      <anchorfile>sat__parameters_8pb_8h.html</anchorfile>
+      <anchor>aeac2e6fcf0da93835e0cf3171d059b1c</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>const EnumDescriptor *</type>
       <name>GetEnumDescriptor&lt; ::operations_research::sat::SatParameters_SearchBranching &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a20bb637648e3cdc283c4e71ce06a3956</anchor>
+      <anchorfile>sat__parameters_8pb_8h.html</anchorfile>
+      <anchor>ae9c1c46327d6db147835ccc4a748fdd4</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="variable">
+      <type>const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable</type>
+      <name>descriptor_table_ortools_2fsat_2fsat_5fparameters_2eproto</name>
+      <anchorfile>sat__parameters_8pb_8h.html</anchorfile>
+      <anchor>a34114c8909693aee3ef96a477490f1fc</anchor>
+      <arglist></arglist>
     </member>
     <member kind="variable">
       <type>SatParametersDefaultTypeInternal</type>
@@ -1560,213 +1558,213 @@
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_VariableOrder</type>
+      <type>constexpr SatParameters_VariableOrder</type>
       <name>SatParameters_VariableOrder_VariableOrder_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>afebbdcc35f1ea46b6b36b02942a45718</anchor>
+      <anchor>a2a39eab5a6aadab97bb23a7fb39af600</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_VariableOrder</type>
+      <type>constexpr SatParameters_VariableOrder</type>
       <name>SatParameters_VariableOrder_VariableOrder_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aa37fa90963dd6767336794ec9ddd88a6</anchor>
+      <anchor>a094b77c6089ed1097550980f9ffb764f</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>SatParameters_VariableOrder_VariableOrder_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a0dbcc1f155896d126ee866c6fa7cdbca</anchor>
+      <anchor>a3232d0c544cf356f09b6f8d1b67269e3</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_Polarity</type>
+      <type>constexpr SatParameters_Polarity</type>
       <name>SatParameters_Polarity_Polarity_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a7dcc06ad16f29c763ef71c12e33428d0</anchor>
+      <anchor>afbfa21e2ce75113388357f29f610342c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_Polarity</type>
+      <type>constexpr SatParameters_Polarity</type>
       <name>SatParameters_Polarity_Polarity_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aa9e4f6913a334312075d8b06e4a8f481</anchor>
+      <anchor>a72fe8e22daeacc4a74374d4c34bc09f4</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>SatParameters_Polarity_Polarity_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aa038a595c0924ec0a6b6d1df43a47a92</anchor>
+      <anchor>a84b9e2a32889c7bc5476029d4107d736</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_ConflictMinimizationAlgorithm</type>
+      <type>constexpr SatParameters_ConflictMinimizationAlgorithm</type>
       <name>SatParameters_ConflictMinimizationAlgorithm_ConflictMinimizationAlgorithm_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a797fae7f793822a392093b2c0e0583df</anchor>
+      <anchor>ae3d1dd4a33df05f7da9a3ea6c4932c0a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_ConflictMinimizationAlgorithm</type>
+      <type>constexpr SatParameters_ConflictMinimizationAlgorithm</type>
       <name>SatParameters_ConflictMinimizationAlgorithm_ConflictMinimizationAlgorithm_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad89401863cafbbb42117a67da51a9c7a</anchor>
+      <anchor>a2bfd2dd07fc93d2ebcf90df9982b173f</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>SatParameters_ConflictMinimizationAlgorithm_ConflictMinimizationAlgorithm_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a8bb3e1b9fc46859bcb473d877fdf81f7</anchor>
+      <anchor>a8a1f2ce9ceb6c6e6ea95e8413c5f304c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_BinaryMinizationAlgorithm</type>
+      <type>constexpr SatParameters_BinaryMinizationAlgorithm</type>
       <name>SatParameters_BinaryMinizationAlgorithm_BinaryMinizationAlgorithm_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>af3993105042b8a18ef4c48af71dbfae6</anchor>
+      <anchor>ab260b9d1bc3bedcc3ad29d6b2fd831d4</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_BinaryMinizationAlgorithm</type>
+      <type>constexpr SatParameters_BinaryMinizationAlgorithm</type>
       <name>SatParameters_BinaryMinizationAlgorithm_BinaryMinizationAlgorithm_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ac3979ff56f4e8e1a3827ffe9a1cfd953</anchor>
+      <anchor>a92db718bcc5d276ccf747bde81c78a10</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>SatParameters_BinaryMinizationAlgorithm_BinaryMinizationAlgorithm_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a4603f2b46b1da66b7f160b501802a571</anchor>
+      <anchor>a97ac406a44712bd2893b29957f2528d5</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_ClauseProtection</type>
+      <type>constexpr SatParameters_ClauseProtection</type>
       <name>SatParameters_ClauseProtection_ClauseProtection_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a50a54b74c5a02bf787d5161be8496a65</anchor>
+      <anchor>aef4cd5f95bfffe8b384372e1cba49049</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_ClauseProtection</type>
+      <type>constexpr SatParameters_ClauseProtection</type>
       <name>SatParameters_ClauseProtection_ClauseProtection_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a315f1d416996e0e1df6cf7c5f22c4c83</anchor>
+      <anchor>abf9faaf009e6527846e0ff336797f3a0</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>SatParameters_ClauseProtection_ClauseProtection_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a177a5f526c9aaf4dde0ae3d973a0a1c6</anchor>
+      <anchor>a299e745a341d3282f1f57f930c9d56e1</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_ClauseOrdering</type>
+      <type>constexpr SatParameters_ClauseOrdering</type>
       <name>SatParameters_ClauseOrdering_ClauseOrdering_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aa6f7a09fe0ece7997430857d3d2b06d7</anchor>
+      <anchor>a6e554645f4d0f9989e1f3d69c1528eea</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_ClauseOrdering</type>
+      <type>constexpr SatParameters_ClauseOrdering</type>
       <name>SatParameters_ClauseOrdering_ClauseOrdering_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a8939c25bb2dba51fc7d410b379ca4b95</anchor>
+      <anchor>acc0499f1b3c9772bc081ca484c6aa680</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>SatParameters_ClauseOrdering_ClauseOrdering_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a7bd8956745a9e0f194935411ad26a7a7</anchor>
+      <anchor>aee2d784d894a30c420456d0b389b7970</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_RestartAlgorithm</type>
+      <type>constexpr SatParameters_RestartAlgorithm</type>
       <name>SatParameters_RestartAlgorithm_RestartAlgorithm_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad069012c7b5da25c0b506d93f249ae3c</anchor>
+      <anchor>a87bcdd92d224942666c7be6e2f936ab0</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_RestartAlgorithm</type>
+      <type>constexpr SatParameters_RestartAlgorithm</type>
       <name>SatParameters_RestartAlgorithm_RestartAlgorithm_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ae5654991d85d76a2bb57727e534aca69</anchor>
+      <anchor>a955126bc9840983ce5d4faa8d82f1669</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>SatParameters_RestartAlgorithm_RestartAlgorithm_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a9fc9eb8a69f68bb8c56f718d2905cccf</anchor>
+      <anchor>ae791277565602a13d6e3c8e4ff0e28b9</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_MaxSatAssumptionOrder</type>
+      <type>constexpr SatParameters_MaxSatAssumptionOrder</type>
       <name>SatParameters_MaxSatAssumptionOrder_MaxSatAssumptionOrder_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a8276145f0fea9405a17ea4e15437c370</anchor>
+      <anchor>aedb4be4a6a9caaf8d9161888934ad2d2</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_MaxSatAssumptionOrder</type>
+      <type>constexpr SatParameters_MaxSatAssumptionOrder</type>
       <name>SatParameters_MaxSatAssumptionOrder_MaxSatAssumptionOrder_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a253ac635cb2d948d9e6f7ddbdf50deb3</anchor>
+      <anchor>ae198f9232534912ddf238f7be789f4aa</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>SatParameters_MaxSatAssumptionOrder_MaxSatAssumptionOrder_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ab876374ba4d61ed8a8f5ab1647214f57</anchor>
+      <anchor>a45e86ed8cbe846e59c55298161086446</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_MaxSatStratificationAlgorithm</type>
+      <type>constexpr SatParameters_MaxSatStratificationAlgorithm</type>
       <name>SatParameters_MaxSatStratificationAlgorithm_MaxSatStratificationAlgorithm_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a81ef72928f25bf91f9459e95b30f60a3</anchor>
+      <anchor>a5df42a6b5c40d46ea317abd561b7ea0b</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_MaxSatStratificationAlgorithm</type>
+      <type>constexpr SatParameters_MaxSatStratificationAlgorithm</type>
       <name>SatParameters_MaxSatStratificationAlgorithm_MaxSatStratificationAlgorithm_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>af77a4c44b279a8ed20ba62fe6855f3d3</anchor>
+      <anchor>a8665ee9afc158ac57d842bcef9eccc59</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>SatParameters_MaxSatStratificationAlgorithm_MaxSatStratificationAlgorithm_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aeb0e2efc07e4da53cac4c129726d25c2</anchor>
+      <anchor>a673309e5337b624e75e496fe33494135</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_SearchBranching</type>
+      <type>constexpr SatParameters_SearchBranching</type>
       <name>SatParameters_SearchBranching_SearchBranching_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a759737df3763d9079011350ee71b933f</anchor>
+      <anchor>ab90d62c554b3478c3271c929cf81cb59</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_SearchBranching</type>
+      <type>constexpr SatParameters_SearchBranching</type>
       <name>SatParameters_SearchBranching_SearchBranching_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ae811ceae8f8230a59d40b5effad594af</anchor>
+      <anchor>ac5449564c89e6ffab546725d1d49422a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>SatParameters_SearchBranching_SearchBranching_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a82110fc37ba023a467574052d75d507b</anchor>
+      <anchor>a3de01c1278d9f16ff4ff5cd72c0233da</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -1833,11 +1831,25 @@
       <arglist>(const AllDifferentConstraintProto &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>AllDifferentConstraintProto</name>
+      <anchorfile>classoperations__research_1_1sat_1_1AllDifferentConstraintProto.html</anchorfile>
+      <anchor>a18a193d68b6d36129baa39ba8305e7bb</anchor>
+      <arglist>(AllDifferentConstraintProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>AllDifferentConstraintProto &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1sat_1_1AllDifferentConstraintProto.html</anchorfile>
       <anchor>ad4bf1bfe0a0aa3f19e6b5dc7159adb30</anchor>
       <arglist>(const AllDifferentConstraintProto &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>AllDifferentConstraintProto &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1sat_1_1AllDifferentConstraintProto.html</anchorfile>
+      <anchor>ad0d93227329a105dce1f5d886d4eece4</anchor>
+      <arglist>(AllDifferentConstraintProto &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -1857,22 +1869,22 @@
       <type>AllDifferentConstraintProto *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1sat_1_1AllDifferentConstraintProto.html</anchorfile>
-      <anchor>a3f257dab16292c7831f7361aef07625d</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a7594df5e05f4e00ef90295124f804b33</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1AllDifferentConstraintProto.html</anchorfile>
-      <anchor>afb358ed428e2e634fabf33b60f99d149</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>afc0eff892d4d3c91e2a8896cdd3f1c6a</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1AllDifferentConstraintProto.html</anchorfile>
-      <anchor>a43898ffb224792fda6b89f64411a60f8</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a36c0f6c68932ec390c6056553088d4cb</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -1913,22 +1925,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1sat_1_1AllDifferentConstraintProto.html</anchorfile>
-      <anchor>a3a28d885a00ca704abf9bbd609e30090</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a70cc568bda521cb236b0de1105d6cbea</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1sat_1_1AllDifferentConstraintProto.html</anchorfile>
-      <anchor>ab7b8130120e80ca58bc306d702a250e0</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>a7a8089df01c8dd6e21d200235e19f6a9</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1sat_1_1AllDifferentConstraintProto.html</anchorfile>
-      <anchor>a308313c0054b1c5b7bf34ec4f540f249</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>a9ba1716fdd6c673cdf8a272f36bc371c</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -1938,10 +1950,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1sat_1_1AllDifferentConstraintProto.html</anchorfile>
-      <anchor>a603e743d00fcfb3ca7a4f92e67de73a3</anchor>
+      <anchor>a4c8b417d5bbabcbb0a7b9c612e238296</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -1959,45 +1971,59 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1AllDifferentConstraintProto.html</anchorfile>
-      <anchor>a3d78b15020b25d11c0907e92f7c3b566</anchor>
+      <anchor>a5432d5ef70e0542e82bf1dcd37835764</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1AllDifferentConstraintProto.html</anchorfile>
-      <anchor>a336ec9541dce5445385a90d03c2ab273</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>a330d5a032e2edff2a61e7d0df0ad37e2</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1AllDifferentConstraintProto.html</anchorfile>
-      <anchor>a5e343db89b4f96f073219ff96cbf1ed1</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>ac0f6689e29e66f4c442b3acb65f4e5d3</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1AllDifferentConstraintProto.html</anchorfile>
-      <anchor>adbe8562cfce680587f33ec3377bf9a6a</anchor>
+      <anchor>a148d985a451711d4772c2788a872d47b</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1AllDifferentConstraintProto.html</anchorfile>
-      <anchor>a5fe82b6bcc56f466ed48bf5891f3b617</anchor>
+      <anchor>a4b67968e25b11b09e015b29e98728737</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1AllDifferentConstraintProto.html</anchorfile>
-      <anchor>a7f5b7ef264feb768b76df854f4a63f39</anchor>
+      <anchor>a787dab3160566a9e6ef32aea1621ed12</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1sat_1_1AllDifferentConstraintProto.html</anchorfile>
+      <anchor>a530a7f2f84abfcc5c429c4bbb23f6ce1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1sat_1_1AllDifferentConstraintProto.html</anchorfile>
+      <anchor>aec57737fc9e8cd9fb5741c1334d2f8b8</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -2033,6 +2059,13 @@
       <name>kVarsFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1AllDifferentConstraintProto.html</anchorfile>
       <anchor>a0ab3526b503dbd92ed23ad2d929f03e6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1sat_1_1AllDifferentConstraintProto.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
       <arglist></arglist>
     </member>
     <member kind="friend">
@@ -2143,11 +2176,25 @@
       <arglist>(const AutomatonConstraintProto &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>AutomatonConstraintProto</name>
+      <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
+      <anchor>a0a40b8d24a1c6be0de1b58258b88b1fa</anchor>
+      <arglist>(AutomatonConstraintProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>AutomatonConstraintProto &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
       <anchor>acb72109275f0bbd30408de1bcf0eeacc</anchor>
       <arglist>(const AutomatonConstraintProto &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>AutomatonConstraintProto &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
+      <anchor>a9dbb826a67aee7033a9a40b8b39c04e5</anchor>
+      <arglist>(AutomatonConstraintProto &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -2167,22 +2214,22 @@
       <type>AutomatonConstraintProto *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>ac9c293fb6841816d4911c2f1290e1754</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a4356742955a42402b5109f9417046b8d</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>a19b7f343b8d97295cd1669c93cbec5f2</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a1f713b3f6e3703dce9404ac385815018</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>a40dd164a5aebba8849cccdc52b0a2f4b</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>ad7aec0f8284ef631528616c94b2e4b07</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -2223,22 +2270,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>aab3fb4fe814c6edcba5e71d8fdfaa63b</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>acb748e7519e9f4613a67fc964e07c37a</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>a006fe8a819c993ad062c8d4bd18083dc</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>a0f0c772e1735d9cb1bc2984b21ccf5e0</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>ad34c59148c5364923d67f967682cea4d</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>ad4267a1dbbfd2fb2721de3bf7c86b3ca</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -2248,10 +2295,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>ad94224e07479c7e60dbe62515a3ff409</anchor>
+      <anchor>aef9565b5cd3343f0979ef107007dc826</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -2269,38 +2316,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>final_states</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>a7608e2255874168b59392f72cb753447</anchor>
+      <anchor>a67ad078c59a4ffd9b328557fea9d6407</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_final_states</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>a80ed7ff85b8efd1815d86586068c4b76</anchor>
-      <arglist>(int index, ::google::protobuf::int64 value)</arglist>
+      <anchor>acc60db648ea6ae4033b5c1d02305f81c</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_final_states</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>a0dff0dadcfc0fa8c28c8ac1fa094b778</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>a790d6563d36a290e884763caa6826171</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; &amp;</type>
       <name>final_states</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>a043b5f8d4dced524e49a99b4a53fa07f</anchor>
+      <anchor>a42b381ffc45ae39bc8b81e6f426e9ca0</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; *</type>
       <name>mutable_final_states</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>a32c8de8beacb484cff5d46efba7ee59c</anchor>
+      <anchor>a98e9b061b686ff37d0176b32dbba2e7f</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -2318,38 +2365,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>transition_tail</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>aa7d0d3d3943614c389782d117262f1e6</anchor>
+      <anchor>ace417bfcddc37ae122eb33d3976061ab</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_transition_tail</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>a96e3c98ba5837f23106681f0db79560e</anchor>
-      <arglist>(int index, ::google::protobuf::int64 value)</arglist>
+      <anchor>a212d84ad00baa0488040c8886f7de073</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_transition_tail</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>a59b9541b95f5f3f798dbecd104e31a11</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>afd36bb5e043f609441c6127de2e38fa7</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; &amp;</type>
       <name>transition_tail</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>adf3352df0fdb68b199240d941a2acb47</anchor>
+      <anchor>a8b3dcf412fb8e9dcd6e1f6206e68dbe0</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; *</type>
       <name>mutable_transition_tail</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>a4c04bcfc62345b462205b2779600d9f4</anchor>
+      <anchor>af1ae6ae59444f831fd45d87e273195b3</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -2367,38 +2414,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>transition_head</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>ade960984611c1148c2bf4d8d33c661b2</anchor>
+      <anchor>a007eaad0566ac0542ce3362412d5b6e2</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_transition_head</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>a8f85400789546a6557933cd3d4544118</anchor>
-      <arglist>(int index, ::google::protobuf::int64 value)</arglist>
+      <anchor>a7f592e13c29c9161dbe1de786c8f419b</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_transition_head</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>a58a98d5c7fd069b1b2951b8239db3006</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>ac330d77451cf4c74935c49ce16a3db63</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; &amp;</type>
       <name>transition_head</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>a31a2f332cf3239dc51b35c8fd4c085d6</anchor>
+      <anchor>a1091a8b57f3c4321b1fbbcb7d22ac368</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; *</type>
       <name>mutable_transition_head</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>a40d46599946d091ddaed7d1b8a4c0ce0</anchor>
+      <anchor>a3ab516231bcfe85a06f710828200e232</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -2416,38 +2463,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>transition_label</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>a43b569d25ec0ab27d4b422c67e26dc0b</anchor>
+      <anchor>a824e784647eee6bfa2eca744baa88a96</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_transition_label</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>ac9244949573e2ed7874c351cae0b07e2</anchor>
-      <arglist>(int index, ::google::protobuf::int64 value)</arglist>
+      <anchor>a496dfc4e7fb4012c9bb442d6729e878a</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_transition_label</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>a073dbd97e67b045e5a92e5e3839be2b5</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>aad26e6bdba5475af14c5d766c3db6f36</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; &amp;</type>
       <name>transition_label</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>a801d47702cc27485643dba6b9c342429</anchor>
+      <anchor>a18e3780ff768a243c90d8bda85a6f1e9</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; *</type>
       <name>mutable_transition_label</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>a01636f4466914de4f4faaeed4be942e5</anchor>
+      <anchor>a4b926673e1dacfcb8cb0e1f0644a36b0</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -2465,38 +2512,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>ace455118d811041fc43444902f78cfc0</anchor>
+      <anchor>a7a7eb946cd2899ad44a9d07ee8278247</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>a70a7ca8986dd225fbf8f4b88835f98e8</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>ac263624b35636be7f4b3aba11f65aa28</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>ae831863cb9f82a9ec4ac78ae8d2eabee</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>af1e5140fb15d4ef95372802659250caf</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>ac080d419e3df06c0e526c304be0398ba</anchor>
+      <anchor>acfb78f1e1215f1f1c1952027970ba6b5</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>a1eff50f92f57709e19816fe5eb38c3d7</anchor>
+      <anchor>a060568cd86774ddae044467d7ac70765</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -2507,24 +2554,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>starting_state</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>a4f0070663b33142e48c4d67622bec0b7</anchor>
+      <anchor>a7d9ccbb067ca5e444b9d47d81128ca21</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_starting_state</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>ab967d11422ab695be4918379f20b70d0</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>a5db4d85bb9722f8f12c299914c561aac</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
-      <anchor>a3c88a9d69667ec90b35c18c3869e9536</anchor>
+      <anchor>a02dacdf8e3df498488a50787dc1fd5be</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
+      <anchor>a786f11ebfbf1d56f43dbb2fe59c714ba</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
+      <anchor>ab2338d0ad7147dc2607ddd0f54e29146</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -2598,6 +2659,13 @@
       <arglist></arglist>
     </member>
     <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
       <type>friend struct</type>
       <name>::TableStruct_ortools_2fsat_2fcp_5fmodel_2eproto</name>
       <anchorfile>classoperations__research_1_1sat_1_1AutomatonConstraintProto.html</anchorfile>
@@ -2637,11 +2705,25 @@
       <arglist>(const BoolArgumentProto &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>BoolArgumentProto</name>
+      <anchorfile>classoperations__research_1_1sat_1_1BoolArgumentProto.html</anchorfile>
+      <anchor>a0b8b0e911d72034c8e9079e61d44bf99</anchor>
+      <arglist>(BoolArgumentProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>BoolArgumentProto &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1sat_1_1BoolArgumentProto.html</anchorfile>
       <anchor>a9bb2617efbb9575da8fc1d4cf01af39f</anchor>
       <arglist>(const BoolArgumentProto &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>BoolArgumentProto &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1sat_1_1BoolArgumentProto.html</anchorfile>
+      <anchor>a0ab889fca98935fb0d33c0533676ce29</anchor>
+      <arglist>(BoolArgumentProto &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -2661,22 +2743,22 @@
       <type>BoolArgumentProto *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1sat_1_1BoolArgumentProto.html</anchorfile>
-      <anchor>ad71453c1e6cf339ee64682c236414895</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a1fd57fc737d9fd8ad9e5c2cd1e4a1b9a</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1BoolArgumentProto.html</anchorfile>
-      <anchor>add1109346f6be8042ba61c50d9a1693c</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a8ffc74b28c02faca6b1fb511495eb74f</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1BoolArgumentProto.html</anchorfile>
-      <anchor>a7cd712133e4d51f544270bbc03043bc6</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a718f32ca9acff7fa22d4a521ad378fdb</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -2717,22 +2799,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1sat_1_1BoolArgumentProto.html</anchorfile>
-      <anchor>a0ed2d0310bea9145b889990c36ea6407</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a374bab814d71cc07ddb92859755ee9ae</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1sat_1_1BoolArgumentProto.html</anchorfile>
-      <anchor>acf1bd48d0a8e0a45f0ca59be3c9176af</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>abfae199f4bfa98a7a528833826f6d863</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1sat_1_1BoolArgumentProto.html</anchorfile>
-      <anchor>a1bcc5e52d8ab9d48de1e58857b7207bb</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>a8309b2ec36ae6ec6f48858f5c2474d6d</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -2742,10 +2824,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1sat_1_1BoolArgumentProto.html</anchorfile>
-      <anchor>a88a222d89d9c63750694affc2a16a369</anchor>
+      <anchor>aac53884d856be05b5325ea8e5ab6f4b3</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -2763,45 +2845,59 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>literals</name>
       <anchorfile>classoperations__research_1_1sat_1_1BoolArgumentProto.html</anchorfile>
-      <anchor>a3f16f613b34bcf50af48d7485ebb35c1</anchor>
+      <anchor>a183f41aa3f8363fde734d052e549808b</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_literals</name>
       <anchorfile>classoperations__research_1_1sat_1_1BoolArgumentProto.html</anchorfile>
-      <anchor>adfdf82f30184efad642acf6159fcfe9a</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>acae81ec12bb5bd770d2eec51ef23d3f5</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_literals</name>
       <anchorfile>classoperations__research_1_1sat_1_1BoolArgumentProto.html</anchorfile>
-      <anchor>a749ebb82bf43204a4e1ea9cb17c533cc</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>abd801eb8d8cb2a1610847f5c300f97f0</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>literals</name>
       <anchorfile>classoperations__research_1_1sat_1_1BoolArgumentProto.html</anchorfile>
-      <anchor>a73001359fb4c2ea4644c08122967b05b</anchor>
+      <anchor>ae81e28c7552a8a0081427a597a5588fc</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_literals</name>
       <anchorfile>classoperations__research_1_1sat_1_1BoolArgumentProto.html</anchorfile>
-      <anchor>a40332ca462fb011f1a83a39295e9b630</anchor>
+      <anchor>a042502ee0b013a0ee642d5d3a971b2aa</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1BoolArgumentProto.html</anchorfile>
-      <anchor>aa7da3152a8f00b1cbd80cb886bce1db2</anchor>
+      <anchor>a9442a39d196c57fefa5a2bc430c28238</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1sat_1_1BoolArgumentProto.html</anchorfile>
+      <anchor>a6df66478cdb7080394627f159184ccba</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1sat_1_1BoolArgumentProto.html</anchorfile>
+      <anchor>a90c889b8fd2606dd3ef4ea903812e023</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -2837,6 +2933,13 @@
       <name>kLiteralsFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1BoolArgumentProto.html</anchorfile>
       <anchor>a264798808af6ae84c09a6f047980025b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1sat_1_1BoolArgumentProto.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
       <arglist></arglist>
     </member>
     <member kind="friend">
@@ -3077,11 +3180,25 @@
       <arglist>(const CircuitConstraintProto &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>CircuitConstraintProto</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
+      <anchor>acfc301e53387f6f6648d4c00219ccfbc</anchor>
+      <arglist>(CircuitConstraintProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>CircuitConstraintProto &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
       <anchor>ac2b3d1c86cae0843cb1b90ad512a485a</anchor>
       <arglist>(const CircuitConstraintProto &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>CircuitConstraintProto &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
+      <anchor>adca1b367f0dccf2e839d531961d47d8e</anchor>
+      <arglist>(CircuitConstraintProto &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -3101,22 +3218,22 @@
       <type>CircuitConstraintProto *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
-      <anchor>ab44585f7a5855d888e1f7b9b6e923eed</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>ab4022fc492de205ba28ed8c9a09c8a10</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
-      <anchor>a7aa2c01b5ad538488d678c00c1e9c0f0</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>af12d39200e7147020df8996e33d3e7f3</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
-      <anchor>a81fafe099df488db67ca908097324839</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a3c98c107d751beaea12a7364c16173b8</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -3157,22 +3274,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
-      <anchor>a9ee7a4d988128cb5b3d3c5795e9628b9</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a3508e8df39b373eec09f9d737e760149</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
-      <anchor>a678875e4c352af0223e22ae4d6205423</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>ad0487137e6d0f0c01feef70628f73809</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
-      <anchor>ac930eec00068f2bc78e8846589f0eee9</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>aa5222e72b649e41786ada08c55e1a7fb</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -3182,10 +3299,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
-      <anchor>a616915ddd9c051553257da27d6626d14</anchor>
+      <anchor>a52952736062a3e3b3f2da58483a2a936</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -3203,38 +3320,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>tails</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
-      <anchor>ae4c70a436cb759f1aa65e64652de574a</anchor>
+      <anchor>a90fe0b6031d071a9976f4e4c9b3c44cf</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_tails</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
-      <anchor>a360bf3fdf81562acae6740542f62d96a</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>aab571aded258b877e5b2e832fd9aeca1</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_tails</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
-      <anchor>a34bd0d3c0fcf3bc84a925c6043e333ff</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a32cfb519b55b8efbe0e8ffaca87ef3f3</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>tails</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
-      <anchor>ab030bad5974eb5c6748f8fb02ee1dc4e</anchor>
+      <anchor>a12ab8126b7c549534c41a833a712a2e0</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_tails</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
-      <anchor>a8445c2a968481ce74e53bae45148a473</anchor>
+      <anchor>ac657f71cd67eb628824b23e62e6cce60</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -3252,38 +3369,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>heads</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
-      <anchor>a7d9717048673653429237fb3a2cdd9e1</anchor>
+      <anchor>aaac0c3fef3bcc091195f5e0abd77ca73</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_heads</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
-      <anchor>a7e8fc502eec008fd4dbeffb1dccd4938</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>afd3ab11d3b69fcaf36c0d14d27d1df36</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_heads</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
-      <anchor>a934fa3aeaeb55e19742e07813cd283ef</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>ad51e9b0a82b92275f28514c2e12f4a2e</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>heads</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
-      <anchor>aefa5a6533fbf4b7b116e763067be3d6c</anchor>
+      <anchor>ac883a9543e9401b498857d8fcc3e9536</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_heads</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
-      <anchor>a9e5d797bed65aa26e8add80266749d02</anchor>
+      <anchor>a16ecc66bb54205cbdfcf39053bf9ab77</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -3301,45 +3418,59 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>literals</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
-      <anchor>aa154f4ee20de7b05fd19987ea35c1a59</anchor>
+      <anchor>a17a9803ff6fb7ba1299d7608a7566ef9</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_literals</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
-      <anchor>a330cd6d9c5d1d0b9eadccf208c32d4c7</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>a167c39824d4540fa2022282b8b41960e</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_literals</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
-      <anchor>af9a48fb2a07e20f850c529f7a76aa26f</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>af211a92848fd2ad38db52af89ab3af53</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>literals</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
-      <anchor>a67c6013435a3684f201e1255768029ce</anchor>
+      <anchor>a52239d260759f64100e823a10362ba7e</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_literals</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
-      <anchor>a38a95c5e65fbf2ffb20f1d54eab900c8</anchor>
+      <anchor>a5d40c8bc35f9d182c7149cf0e817b119</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
-      <anchor>a71a68d9e1f208f445411a521b3c004dd</anchor>
+      <anchor>a0da7d539b61a75ebf543236dc6470940</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
+      <anchor>a0e82404eb2bf9a7e4c4a5903eaadf075</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
+      <anchor>a8e252e7ebf0df19a87d3777b89013dd3</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -3392,6 +3523,13 @@
       <arglist></arglist>
     </member>
     <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
       <type>friend struct</type>
       <name>::TableStruct_ortools_2fsat_2fcp_5fmodel_2eproto</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitConstraintProto.html</anchorfile>
@@ -3431,11 +3569,25 @@
       <arglist>(const CircuitCoveringConstraintProto &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>CircuitCoveringConstraintProto</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
+      <anchor>ac48a824427e52ed7eca62aa36ed15892</anchor>
+      <arglist>(CircuitCoveringConstraintProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>CircuitCoveringConstraintProto &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
       <anchor>a7923ca37bb6e6c8a86928e95ede9eede</anchor>
       <arglist>(const CircuitCoveringConstraintProto &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>CircuitCoveringConstraintProto &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
+      <anchor>abbdc1c4f74e49e67d20a8b97d7f2cf3a</anchor>
+      <arglist>(CircuitCoveringConstraintProto &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -3455,22 +3607,22 @@
       <type>CircuitCoveringConstraintProto *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>aebd09027ebd0f9aa811cb79663961ac8</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>ae22b3a2bdb16c7112c3e4bc87d31c99b</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>acd2b5c5d7f23d9f4522b208909f2e637</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>ae354770522793d2776dd29a968d8c850</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>a0730512bbaf709aea4661d0dc96aad81</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a3fe3f323c3dd1b34b7bef2ec713e9c6d</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -3511,22 +3663,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>a6df68edcf297586760f81fe8dc06e6e2</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>ae34537cf79bed4306c742409d094320f</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>a3e5412f253d404a7d7ccddb9b523eca1</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>ac5409dd9bcce987820c3fc174bdeb182</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>ae50eccc06cd67c0985936e744f7f4883</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>a7d815930be735db6bafb18c2cac3e3c6</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -3536,10 +3688,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>a18da503c7a02cbc861ec7c061d25e9c8</anchor>
+      <anchor>aba068503a8b7f3a19ffadeb93edfff42</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -3557,38 +3709,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>nexts</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>a345efbf6fed0f58374bb58083c021a15</anchor>
+      <anchor>a6482685dc018f38a306cee7841b4d000</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_nexts</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>a2d3aa7f19f696d1a4bdf6d7c2826cb59</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>a5aebe828c1ba441dc794430e9b52da19</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_nexts</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>a5db8ca7f4e96ce3b3a3396aa397f5351</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a800d633954ccafd43aa0bf66ec0e6377</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>nexts</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>a54e42a780e65edfc9c5a1a44ffd572da</anchor>
+      <anchor>a6500a61dcdcb6242ac8712bc03868a09</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_nexts</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>aaa54f6a6d1916e53cad22f46bb2a4909</anchor>
+      <anchor>ad06bddfaf45a1cb4a01bda9a0433d6c2</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -3606,45 +3758,59 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>distinguished_nodes</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>a70b107b5eb2e8170009f089209220cdc</anchor>
+      <anchor>a2a7431afa9135e0663127c9ab38cd8f8</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_distinguished_nodes</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>a5205db0efa49b6c873824ce9b326cd63</anchor>
-      <arglist>(int index, ::google::protobuf::int64 value)</arglist>
+      <anchor>ad9e12d507f22b04054aac4e3a6ea1e32</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_distinguished_nodes</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>adf3da7be113000ed83607e3116ce8741</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>a3783023f282cc73ccb3f201b38b76996</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; &amp;</type>
       <name>distinguished_nodes</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>a860f8ef11d9677f4fb412c260082f524</anchor>
+      <anchor>a25872c9e5967d1c8c817be4f032616c8</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; *</type>
       <name>mutable_distinguished_nodes</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>ad60ef4ef646a2db977c7817270d4ff1a</anchor>
+      <anchor>a33d635b59879cb017492eb1b2c6e26b4</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
-      <anchor>adbb601898963a0ffe3e010989cc1ca67</anchor>
+      <anchor>a1e8d7ec791b11672fb43e828eea1af86</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
+      <anchor>aa65aa58eeb416adac8cfd33bc7a1f23f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
+      <anchor>a3ed20d43a18d543f31cf3bfda5ce4fb2</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -3687,6 +3853,13 @@
       <name>kDistinguishedNodesFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
       <anchor>a425c18334e10877278812faa278192fb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
       <arglist></arglist>
     </member>
     <member kind="friend">
@@ -4144,11 +4317,25 @@
       <arglist>(const ConstraintProto &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>ConstraintProto</name>
+      <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
+      <anchor>a1733b9cff441428641c1266ddbedac53</anchor>
+      <arglist>(ConstraintProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>ConstraintProto &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a3a8b3abb61dc03fc158995e8a642a52c</anchor>
       <arglist>(const ConstraintProto &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>ConstraintProto &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
+      <anchor>a08ff9597aa845ded8b3da415ba7398df</anchor>
+      <arglist>(ConstraintProto &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -4168,22 +4355,22 @@
       <type>ConstraintProto *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a912cd7bfaef8d9fc7d84e2d018717886</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>ade399ad3b6845e16e854f66a7a2140fd</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>af211fe01e91b6e7a72e3c26f1ec703b4</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>aaabb103f3b6d54629795d13a55ebc1b7</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a2b77692bab4e194cc9b0176728023a59</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a498b891140896abdce15fad3fce9457f</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -4224,22 +4411,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a3cf90604f80fdf917e71beaf9e4a87f0</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>af0994e9917bbe6552f6e1a4e6764c190</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a555a6c06001400bb65fc7126e023bcb9</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>a32aba4cb600b6493db4f74ff090d9461</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a17dfaf4a23a22ef75948187a00515ae6</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>af2af3c116e17f889970cd12c6109649c</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -4249,10 +4436,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a0fd5b8a1e6c42ec4bf9f7067f60984d1</anchor>
+      <anchor>a8fb5d37a54083a5bff55e272fd122290</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -4270,38 +4457,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>enforcement_literal</name>
       <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>aad8a9f4db9671f2ba09b7cc5f80de829</anchor>
+      <anchor>aa982241c6cf65af57c5fa6330f0a7e78</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_enforcement_literal</name>
       <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a0511c64e1a26240948da5f9c88dd9c10</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>abae83fc42c8c406f0e4689f7f32b929e</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_enforcement_literal</name>
       <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>ad436d37ed3f40815cc2c988656940a13</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a6eaa42ad925fb130b9de91e1faae8cd0</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>enforcement_literal</name>
       <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a896083969ba6c2e5ac1312c456199a9f</anchor>
+      <anchor>a7955ed63902d5b67f8d82f7cc8a78839</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_enforcement_literal</name>
       <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a8ded2b15353596d604787ffd5fc8599a</anchor>
+      <anchor>a69bdbbc236cbbcb74f110367263c9b2f</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -4312,18 +4499,25 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>name</name>
       <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a95f1be1dd6ac795a3df9c3a0e170528f</anchor>
+      <anchor>acd77e8d0a4026c999d04a94387775282</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_name</name>
       <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a7cfbf8832eedc78348b1518fdfc71433</anchor>
-      <arglist>(const ::std::string &amp;value)</arglist>
+      <anchor>af4088f5091bed104b22b6ccbd398abe7</anchor>
+      <arglist>(const std::string &amp;value)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_name</name>
+      <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
+      <anchor>ae5673f9ecb2fa3d87df0c8337599c7d0</anchor>
+      <arglist>(std::string &amp;&amp;value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -4340,14 +4534,14 @@
       <arglist>(const char *value, size_t size)</arglist>
     </member>
     <member kind="function">
-      <type>::std::string *</type>
+      <type>std::string *</type>
       <name>mutable_name</name>
       <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
       <anchor>adbdd4f5efeab12b810f875b2492a663c</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::std::string *</type>
+      <type>std::string *</type>
       <name>release_name</name>
       <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a042ffd63999a1573d23d2af6b3d28e8f</anchor>
@@ -4357,8 +4551,8 @@
       <type>void</type>
       <name>set_allocated_name</name>
       <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a0b5d2693fd55e990ae477fa73c24c599</anchor>
-      <arglist>(::std::string *name)</arglist>
+      <anchor>ac7a8a6601a6a9d39c1e34408a5cd0d82</anchor>
+      <arglist>(std::string *name)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -5341,10 +5535,24 @@
       <arglist>() const</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
-      <anchor>a70b6960ffe28e5091a48a9ef5641c0eb</anchor>
+      <anchor>a28616e1523e83ca9f573ac0b58753c1d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
+      <anchor>ac8e6fe00953a8d2deaa2671a89516cc5</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
+      <anchor>afb99c8df57f687d4ea4ebbb12b2edcf0</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -5548,6 +5756,13 @@
       <name>kCumulativeFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
       <anchor>a9c53395c32bcae6681fca96aa1038a5b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1sat_1_1ConstraintProto.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
       <arglist></arglist>
     </member>
     <member kind="friend">
@@ -5916,11 +6131,25 @@
       <arglist>(const CpModelProto &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>CpModelProto</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
+      <anchor>ab9c606f40d2570f8e807e41817f15a88</anchor>
+      <arglist>(CpModelProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>CpModelProto &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
       <anchor>a7006db70a302c79981b9660bbe246958</anchor>
       <arglist>(const CpModelProto &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>CpModelProto &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
+      <anchor>a899635e54102152ed80713602bb32b51</anchor>
+      <arglist>(CpModelProto &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -5940,22 +6169,22 @@
       <type>CpModelProto *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
-      <anchor>af9bea058cd2cf13e0433cfd3bcc35be9</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a6d24e851d9cf29eb47184d2ac3b35cfc</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
-      <anchor>ae235c19572e0a8d48b42e9c31ab78b0b</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a7f2c39efda80964dd04f04a107de9ebc</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
-      <anchor>a25c173cba523e37dfbb7190edc8f3073</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a415cc64f88bd4a001458baf0a0e5cc88</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -5996,22 +6225,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
-      <anchor>a5a05243a19689d990534a2f09ca22898</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a4468d35b497d88141c9a924207031a6c</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
-      <anchor>a98978db1c3b796c8849bfe0e7ffb159d</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>aa01dae17f9aee6b68369b6927de07c2c</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
-      <anchor>a6e32a52282d87eb1a2e5bc21bfd60180</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>a65c43a44785d8365ddf946ff8a5e3a4c</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -6021,10 +6250,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
-      <anchor>a391a9b50628ddd3e3c7ab3bdd76ca21c</anchor>
+      <anchor>a94e19c4ffd38b953a0e7a769ac574295</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -6049,10 +6278,10 @@
       <arglist>(int index)</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedPtrField&lt; ::operations_research::sat::IntegerVariableProto &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedPtrField&lt; ::operations_research::sat::IntegerVariableProto &gt; *</type>
       <name>mutable_variables</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
-      <anchor>aff4a670eb1ff293d739a513b02cc9fc2</anchor>
+      <anchor>a2f72dc6e045bd107eccd6fb96c68a0dc</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -6070,10 +6299,10 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedPtrField&lt; ::operations_research::sat::IntegerVariableProto &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField&lt; ::operations_research::sat::IntegerVariableProto &gt; &amp;</type>
       <name>variables</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
-      <anchor>ae89b32d1155e884b833edf049b201fc6</anchor>
+      <anchor>a1f922d0450bfa7e0735e1a3f8ffbbbfb</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
@@ -6098,10 +6327,10 @@
       <arglist>(int index)</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedPtrField&lt; ::operations_research::sat::ConstraintProto &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedPtrField&lt; ::operations_research::sat::ConstraintProto &gt; *</type>
       <name>mutable_constraints</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
-      <anchor>a70fe8587686d1a4f37077be394689a5f</anchor>
+      <anchor>a1954918f154563af2c8da34952fa76c2</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -6119,10 +6348,10 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedPtrField&lt; ::operations_research::sat::ConstraintProto &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField&lt; ::operations_research::sat::ConstraintProto &gt; &amp;</type>
       <name>constraints</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
-      <anchor>ac1ff55db77b00aaf4544c150d117fc93</anchor>
+      <anchor>a40f360480270741c820afbee9084fc19</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
@@ -6147,10 +6376,10 @@
       <arglist>(int index)</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedPtrField&lt; ::operations_research::sat::DecisionStrategyProto &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedPtrField&lt; ::operations_research::sat::DecisionStrategyProto &gt; *</type>
       <name>mutable_search_strategy</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
-      <anchor>a089063f63c2e05389038cf4b5013047f</anchor>
+      <anchor>a860ed5a553a3c567df3b5757897a164f</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -6168,10 +6397,10 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedPtrField&lt; ::operations_research::sat::DecisionStrategyProto &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField&lt; ::operations_research::sat::DecisionStrategyProto &gt; &amp;</type>
       <name>search_strategy</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
-      <anchor>a29ac54c8b2662ac8d6b0fe482bf8c7e1</anchor>
+      <anchor>a03c38afccb36b384306abe57b4098c2e</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
@@ -6182,18 +6411,25 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>name</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
-      <anchor>a3ea206928327e817ef207fd22d5eb51d</anchor>
+      <anchor>a9144500864f84719a9cf45c0977f7c13</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_name</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
-      <anchor>ac90647359d886780a3479b14929277fa</anchor>
-      <arglist>(const ::std::string &amp;value)</arglist>
+      <anchor>abb2e2b370fdb73da1e261d97a9554e68</anchor>
+      <arglist>(const std::string &amp;value)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_name</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
+      <anchor>a0a6526e58404084476db463c8ed5d381</anchor>
+      <arglist>(std::string &amp;&amp;value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -6210,14 +6446,14 @@
       <arglist>(const char *value, size_t size)</arglist>
     </member>
     <member kind="function">
-      <type>::std::string *</type>
+      <type>std::string *</type>
       <name>mutable_name</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
       <anchor>ad57481a60fda7d4d85bad549b7ce97ed</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::std::string *</type>
+      <type>std::string *</type>
       <name>release_name</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
       <anchor>af43f89c8f28f6162f97c906bf51925aa</anchor>
@@ -6227,8 +6463,8 @@
       <type>void</type>
       <name>set_allocated_name</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
-      <anchor>a0a2acf3624890052ba0776f4cb24e636</anchor>
-      <arglist>(::std::string *name)</arglist>
+      <anchor>a7e96e1d5d7ef8c0a8204d86b7efc4765</anchor>
+      <arglist>(std::string *name)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -6315,10 +6551,24 @@
       <arglist>(::operations_research::sat::PartialVariableAssignment *solution_hint)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
-      <anchor>abeb0e6462cc596404e3c23684fb76ce6</anchor>
+      <anchor>a731294524333d8e5d48435237348b339</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
+      <anchor>aae27cb4dd5c4f7d3da50d7ad82a52453</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
+      <anchor>a7e44efb165d0981613a6ea8dcd412487</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -6392,6 +6642,13 @@
       <arglist></arglist>
     </member>
     <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
       <type>friend struct</type>
       <name>::TableStruct_ortools_2fsat_2fcp_5fmodel_2eproto</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpModelProto.html</anchorfile>
@@ -6431,11 +6688,25 @@
       <arglist>(const CpObjectiveProto &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>CpObjectiveProto</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
+      <anchor>a7490b3401f636ce10a4360aa118c65e6</anchor>
+      <arglist>(CpObjectiveProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>CpObjectiveProto &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
       <anchor>a94eb71df33b1b12bd25c19840e09ec61</anchor>
       <arglist>(const CpObjectiveProto &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>CpObjectiveProto &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
+      <anchor>ada61bca96bb58de68bc84ea3f0919c3b</anchor>
+      <arglist>(CpObjectiveProto &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -6455,22 +6726,22 @@
       <type>CpObjectiveProto *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
-      <anchor>a59fdb7aeb16e0749952ad2d2894c7dc5</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a623f196d47f6f4f5fbcf74538150093c</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
-      <anchor>a1a3b2a49a3a3f3dc2a8a467d8bb000da</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>ae73ae521d3f073999bad9b9e6881ac6b</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
-      <anchor>a16b3d70ac402e8bbb9b712c9ba4f7931</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>af8d192d03f6eca285ae95969ab72ad3e</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -6511,22 +6782,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
-      <anchor>adb93a3069513773e4ae2d5a2ab4fe1d9</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a627cd3f163c4d34934916edcad03eef9</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
-      <anchor>a80a3dd769e2954937a625714253c0816</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>acfb80e1d561de2349e4fa2226c434d02</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
-      <anchor>a185e720a7608443d599e574ecb16c212</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>ac76699b8aab5654386665b87acaf4096</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -6536,10 +6807,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
-      <anchor>ac3c8fbf32858b2eccbb47b7e08d927d4</anchor>
+      <anchor>a99df0571c28bb530c03f3016d2635dac</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -6557,38 +6828,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
-      <anchor>ae0767a5ed87b48013cca110686f95a0d</anchor>
+      <anchor>ae244af0784c53ee44e97027e7a3fa61d</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
-      <anchor>a90c549e8764b32f322f51f2ac3df7090</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>a5b42ca233984edcf66ec6646310388be</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
-      <anchor>a3bfff65947efdceb3cb71aee6277321a</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>aee4319427495cff63d7c7b117e18e87f</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
-      <anchor>a8d6228eb6697463c62782dbdd59e61ee</anchor>
+      <anchor>a1f7458f5587dcf49d81556f40217dc85</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
-      <anchor>a81713efe54f8e325fcef24608c95aa2f</anchor>
+      <anchor>abc3b9fef9bf2fb4902a4e3115e472968</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -6606,38 +6877,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>coeffs</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
-      <anchor>aaf63bf3b72009f6ad8fb868286e1d7aa</anchor>
+      <anchor>a92f697a0eb43c20a80c114d49548f647</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_coeffs</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
-      <anchor>a7d87ecea77ff3f1e0e95b90b43c0537e</anchor>
-      <arglist>(int index, ::google::protobuf::int64 value)</arglist>
+      <anchor>a9dd672e91dc5ba60b0f69d1abfa3a5bd</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_coeffs</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
-      <anchor>ac0a8b1e3648120495074c53a53c7f853</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>ab0eda9c9918d8535b90c39f49780ab29</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; &amp;</type>
       <name>coeffs</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
-      <anchor>a5aeea6f884c8f8ef34dc65aa6d6fb045</anchor>
+      <anchor>afac741fb4e2327f905402fcef2143c73</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; *</type>
       <name>mutable_coeffs</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
-      <anchor>a98a338c74125708ff0e1f5d7e13176e7</anchor>
+      <anchor>a9296477196a9c7d4c36cfef50258ce83</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -6655,38 +6926,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>domain</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
-      <anchor>a882a3c06be3bfcccc52fc729e31aae71</anchor>
+      <anchor>acf4d56a13c0b8b92d94b76f86a9281b0</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_domain</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
-      <anchor>a3a256036c6d0f35a390b0301ad53272d</anchor>
-      <arglist>(int index, ::google::protobuf::int64 value)</arglist>
+      <anchor>a7e3fd4ac35de4616137e11abb80a4712</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_domain</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
-      <anchor>af22e8e07cea0ee83e347e83ad4afcc91</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>a918ccbfd3a412280436939baf301c948</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; &amp;</type>
       <name>domain</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
-      <anchor>ac768393d3f03b5b37a9fc17a84cc6fb7</anchor>
+      <anchor>a44025c3ad0cc1fcf9021dbbbf44f0443</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; *</type>
       <name>mutable_domain</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
-      <anchor>a6c04700d32629f2d84f164013d142100</anchor>
+      <anchor>a8b1031d54d4bee6bd7db5424afab9f84</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -6732,10 +7003,24 @@
       <arglist>(double value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
-      <anchor>a7f902003a1bc9cfb75c39770fe0f724c</anchor>
+      <anchor>a1a4e2cdec62483f3f77412a73b316ca9</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
+      <anchor>aac51ebe65db3532e265b4ff9de79ab6f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
+      <anchor>a37544c0c84c2e1f16bf979e0b96f1b30</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -6802,6 +7087,13 @@
       <arglist></arglist>
     </member>
     <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
       <type>friend struct</type>
       <name>::TableStruct_ortools_2fsat_2fcp_5fmodel_2eproto</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpObjectiveProto.html</anchorfile>
@@ -6841,11 +7133,25 @@
       <arglist>(const CpSolverResponse &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>CpSolverResponse</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
+      <anchor>ac7681b7f64a9c45e91dcfbd5b8936077</anchor>
+      <arglist>(CpSolverResponse &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>CpSolverResponse &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>a2440c897e10a4669c114233b20c83572</anchor>
       <arglist>(const CpSolverResponse &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>CpSolverResponse &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
+      <anchor>a72081bb486a244e4517523eaa033e4d0</anchor>
+      <arglist>(CpSolverResponse &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -6865,22 +7171,22 @@
       <type>CpSolverResponse *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a2d52be86282bcfc6f32c450f238151db</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>ae83455e74524f42725ba364fde23bc15</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a52398ec87a8eef51792a6d1d5ccac222</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a4696230468ba71b17ad03aecc1f1bf58</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>aedc8a90df52dc4fa12df7d45837158e6</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>aa75a238f9aacbe1027451afafe3d34e0</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -6921,22 +7227,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>ad11a23afc428cf6f15b37ea6058b1148</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a05c108403d00c66985fea5e0ebcd5d48</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a6beb02f0e89a3f8c14c6d8c4c0c65510</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>a24a0bdebda34e5cef46e92f3f69a08e3</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a7faaf04ada1ae344cb1961adbce17557</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>a4096763c3527606d8093a576a2876aa4</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -6946,10 +7252,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a06943f9db338eb2d8e9ec0bb59568a38</anchor>
+      <anchor>a2f595ed4ce158d420594ecd4233dbf3b</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -6967,38 +7273,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>solution</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>ad2aea702a7bb2f89b141dd215889b303</anchor>
+      <anchor>a81b237b96a7287285fcd8f2fc3fe20f1</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_solution</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a3bed20993a23e4289e1cc4e8040df19e</anchor>
-      <arglist>(int index, ::google::protobuf::int64 value)</arglist>
+      <anchor>a08b87d620818db8da6ca5f7889e70b86</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_solution</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a146a48ba2588d930b60a2322b25cb941</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>a2ca28ff0bfe53ba270d70b061e69fd66</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; &amp;</type>
       <name>solution</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>ae81a5faff5f0737e33313a2014a910a8</anchor>
+      <anchor>a2ec998043eeb90ac6f037b39d84cf275</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; *</type>
       <name>mutable_solution</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a6a98194fe4ecb943c42253f50d4927b2</anchor>
+      <anchor>a1ab19f8341ecae38f4de63b9212bfd21</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -7016,38 +7322,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>solution_lower_bounds</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>ad9b271303d6457fd16e3734c200a1896</anchor>
+      <anchor>a6aa1509a4023b302c543ac040aeec1e0</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_solution_lower_bounds</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a111fb1a1152fd9253ee989cf37dc3cf6</anchor>
-      <arglist>(int index, ::google::protobuf::int64 value)</arglist>
+      <anchor>a40f627b8a75f42b235f96962c212b9e8</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_solution_lower_bounds</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a7530e4b6478cda7692ba9abed5bd83da</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>a691cf62ab6d85232d2e2c1b8e9ba2bae</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; &amp;</type>
       <name>solution_lower_bounds</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>ac1603ca53ec276b56fad7cd49f4c514d</anchor>
+      <anchor>a403e61710bd8e825c11b416a2ee4fc26</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; *</type>
       <name>mutable_solution_lower_bounds</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a642e0f917b425929feee0718975db212</anchor>
+      <anchor>ad8f3c371c015ce611b14c6907dccddf9</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -7065,38 +7371,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>solution_upper_bounds</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a7847cb3bf67c9d6cb3d529f0bd13f4e0</anchor>
+      <anchor>ab4fb3c7e269729cb0686c0c91838c761</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_solution_upper_bounds</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a5a3bfa474c45f6b439114f6dc99859ef</anchor>
-      <arglist>(int index, ::google::protobuf::int64 value)</arglist>
+      <anchor>a8d6b6dd41e61b849c501285e557310c8</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_solution_upper_bounds</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>afd43c080ad197f5f2b56c6e02b7892e9</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>a46d365039e48fe8227449ef2e667cacc</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; &amp;</type>
       <name>solution_upper_bounds</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a06d1a1b86b070012e2d3daf535e575fb</anchor>
+      <anchor>ad601302b8b114c09f99f53e11f177985</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; *</type>
       <name>mutable_solution_upper_bounds</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a9f4b8686f5aa21a686284bdd555400d9</anchor>
+      <anchor>af6391067e60fcfa142eaca2e62be7290</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -7121,10 +7427,10 @@
       <arglist>(int index)</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedPtrField&lt; ::operations_research::sat::IntegerVariableProto &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedPtrField&lt; ::operations_research::sat::IntegerVariableProto &gt; *</type>
       <name>mutable_tightened_variables</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>aec506bbb3cf249e382ae7dd934b3bb73</anchor>
+      <anchor>adbdeeb6d8e5aaf22b373fb3f9889bdb9</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -7142,10 +7448,10 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedPtrField&lt; ::operations_research::sat::IntegerVariableProto &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField&lt; ::operations_research::sat::IntegerVariableProto &gt; &amp;</type>
       <name>tightened_variables</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a96a43fb3e1cadb8cbd38a1d6d39cc07e</anchor>
+      <anchor>a4f9764f1613690eddd9233c8088f584a</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
@@ -7156,18 +7462,25 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>solution_info</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a08f559112ba62830cc2bc71853e874c5</anchor>
+      <anchor>a1c1afddd00dfb0e8ab0710e9aaef263d</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_solution_info</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>aadc89ed59fea8a3f2a683215df897325</anchor>
-      <arglist>(const ::std::string &amp;value)</arglist>
+      <anchor>afd9b1c08048de154eeb8249ccdce83c4</anchor>
+      <arglist>(const std::string &amp;value)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_solution_info</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
+      <anchor>a858337b9c1074b25c515aac6fd5e187a</anchor>
+      <arglist>(std::string &amp;&amp;value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -7184,14 +7497,14 @@
       <arglist>(const char *value, size_t size)</arglist>
     </member>
     <member kind="function">
-      <type>::std::string *</type>
+      <type>std::string *</type>
       <name>mutable_solution_info</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>a7007d548e08343070631d76e8608150c</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::std::string *</type>
+      <type>std::string *</type>
       <name>release_solution_info</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>aac94fa47e35567ed306c239b87d4b542</anchor>
@@ -7201,8 +7514,8 @@
       <type>void</type>
       <name>set_allocated_solution_info</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a92261c5bd393b986560be9dcfbed8f5b</anchor>
-      <arglist>(::std::string *solution_info)</arglist>
+      <anchor>a6f68c0ff776bf2c95cf87579b0ce1f65</anchor>
+      <arglist>(std::string *solution_info)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -7296,18 +7609,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>num_booleans</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>ae28cd938c13b82c21b8a7db8c2d1ea1e</anchor>
+      <anchor>affdd4a4b39a31b1e858f0df0cee8d16b</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_num_booleans</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a620dd7f4c6098bd16fb6350fc05b712e</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>a2407cc21f500b63eaa0c30eb25d5febf</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -7317,18 +7630,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>num_conflicts</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>ab46b0c684717e6beb1f70422ff1370b7</anchor>
+      <anchor>a1da9d5094d01730150b2e3c79ea05a0d</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_num_conflicts</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a8ea2cdb806e113bcc07df0f4743a9e55</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>a2fa8b163c4d4bf0f8c3baba38b9a4052</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -7338,18 +7651,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>num_branches</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a0230bf1cb96e8cb86e43df75ec77dafa</anchor>
+      <anchor>a1c29eb25ee1ab49024bceb4cb826b2b6</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_num_branches</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>adab0c2dac568e1252fafa57675f6b454</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>a70496a76d73507fff2f6ecd7e12ed435</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -7359,18 +7672,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>num_binary_propagations</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>adfee8503447839921133b90d36113c87</anchor>
+      <anchor>abf4e77e7db38b31a42195a502c8cd968</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_num_binary_propagations</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a90d5547f0b9438c6e39be3c7c12d6c3a</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>ada2994e545f5a6c595afbc423b9a002f</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -7380,18 +7693,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>num_integer_propagations</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>aacb7bbf40a532dac20ec63bddccaf31e</anchor>
+      <anchor>a05af523bc68504b5266303f3107cbb25</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_num_integer_propagations</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a1d245a3aa20f475e5f6ad19b8268649b</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>a1cef224a8d98c9b805f4d25d03c0ae3e</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -7457,10 +7770,24 @@
       <arglist>(double value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
-      <anchor>a3869369049ac1e6f4d9707054002d95c</anchor>
+      <anchor>ac312585a1164a1e715dea6ae6f0bc7fa</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
+      <anchor>adb8a8d1df0a96c81d156816cbb497845</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
+      <anchor>a0a355945018a1a750c9be88c01fc8e3c</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -7611,6 +7938,13 @@
       <arglist></arglist>
     </member>
     <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
       <type>friend struct</type>
       <name>::TableStruct_ortools_2fsat_2fcp_5fmodel_2eproto</name>
       <anchorfile>classoperations__research_1_1sat_1_1CpSolverResponse.html</anchorfile>
@@ -7718,11 +8052,25 @@
       <arglist>(const CumulativeConstraintProto &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>CumulativeConstraintProto</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
+      <anchor>aebf3fdb22167124baee3d7e4e5edde80</anchor>
+      <arglist>(CumulativeConstraintProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>CumulativeConstraintProto &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
       <anchor>a83c1d1b1cb5722859bcaaea1887c2f22</anchor>
       <arglist>(const CumulativeConstraintProto &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>CumulativeConstraintProto &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
+      <anchor>a5ec69399289ca49d80c90917c802e684</anchor>
+      <arglist>(CumulativeConstraintProto &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -7742,22 +8090,22 @@
       <type>CumulativeConstraintProto *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
-      <anchor>a2a673fd709e990dfa57cb0e599d693c9</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a25b603c875d3b30e212ff01e5c5bc081</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
-      <anchor>ab6fe2ba4ee8caf4ed7dc4e11714a5190</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a10ace762c31bc432718efd67b1132e93</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
-      <anchor>ac40424f16725018ee78242edb99ad15a</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a836d2ae669b00e046f93db946b40639e</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -7798,22 +8146,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
-      <anchor>a8d43f75020ba77c89e2d73f9c1eeceee</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a0d281361afe4058a78e4e39a66597f4c</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
-      <anchor>a23b74fe5f2eb24d6c252d7e04c9e083c</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>ac9b8b49732256fde4da5f18f28e88d37</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
-      <anchor>a237821ec81d4b61da4eec3a3e467c853</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>aa6082291d3a4e6f9666c6030bd49e0ba</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -7823,10 +8171,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
-      <anchor>a64a1e9dc003e6e2ae0f96c80b0a6258f</anchor>
+      <anchor>a6f5cfd0cbe176a833875695642750d7b</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -7844,38 +8192,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>intervals</name>
       <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
-      <anchor>aa9afcc60fd9b45fb8f54b7f8a2afda90</anchor>
+      <anchor>ae1b25f2d567329cb7cf023c4a004ccf8</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_intervals</name>
       <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
-      <anchor>a15c1e77f058b40205c1452742b71be25</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>a8183404624cdc5d7be8b0c358e9480d3</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_intervals</name>
       <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
-      <anchor>ac77f7363de61db1fcbe7386938da6dfc</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>ad65122aed1fb594475283526056f0d3d</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>intervals</name>
       <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
-      <anchor>acc120c3c6c78d57b5cbed290d7a4bc80</anchor>
+      <anchor>a95af476d3773af5d5ac0f5616f92d88f</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_intervals</name>
       <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
-      <anchor>a8f68267bcc49c542d3ce63bf6300970b</anchor>
+      <anchor>aad40f69dfcc726a3ff788ed5a740a0b5</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -7893,38 +8241,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>demands</name>
       <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
-      <anchor>a03b79ce802caab3b536150f1726d38b8</anchor>
+      <anchor>a1f88db1294ed3f20303390d378e174f0</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_demands</name>
       <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
-      <anchor>a5fc5084550aefacd79ed6b68fd8f859e</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>a54f36bdd67eb0eca09934c34a9013418</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_demands</name>
       <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
-      <anchor>a646544a220adb95bc37ff6bad40b533f</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>add331758b0f8b5cbde92562ee6a46092</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>demands</name>
       <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
-      <anchor>a3f1ae271a5938c29d4b5116104c45a1a</anchor>
+      <anchor>a977f17e2b11b2b595461e44d35e95d41</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_demands</name>
       <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
-      <anchor>aad3d5d2a6dd5a7d3c811c267689836ed</anchor>
+      <anchor>ac4050ff2448ac1fc66bdb73e1adb168a</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -7935,24 +8283,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>capacity</name>
       <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
-      <anchor>a5f1d6d16c39512f4373b99aca911c14e</anchor>
+      <anchor>a4405349fc3862e105c70de9d9707a1d0</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_capacity</name>
       <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
-      <anchor>a26b5a8f47eed479a97b3378cbaa3c2b5</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a16aa71cc0ff53fc405dfee4a8d760839</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
-      <anchor>a3a26ed131e1cf6738b365721eb6c3a31</anchor>
+      <anchor>af982779b245e6f21b3483f2818d9555d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
+      <anchor>a7566605c5f8bfe434ce6dbc1f4438606</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
+      <anchor>a3d76d15732f6253abebd2b1b677a5790</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -8002,6 +8364,13 @@
       <name>kCapacityFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
       <anchor>a037378ee39d381e18d6380ad7311e95e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1sat_1_1CumulativeConstraintProto.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
       <arglist></arglist>
     </member>
     <member kind="friend">
@@ -8065,11 +8434,25 @@
       <arglist>(const DecisionStrategyProto &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>DecisionStrategyProto</name>
+      <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
+      <anchor>ae579ff912d8a69c27e673b2daff24a6d</anchor>
+      <arglist>(DecisionStrategyProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>DecisionStrategyProto &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
       <anchor>a76e3c16a78d21b34412985b57171ac38</anchor>
       <arglist>(const DecisionStrategyProto &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>DecisionStrategyProto &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
+      <anchor>a5348d9898186d9cda41b8106cfe7f2e3</anchor>
+      <arglist>(DecisionStrategyProto &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -8089,22 +8472,22 @@
       <type>DecisionStrategyProto *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>a3b494bc9dfb5ad3ff5fcad476a3ef382</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a3e0a19798ee7a04c74e731d9db2d1a74</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>a41c27f71953534889372f99ce47a56e3</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a3476bcbfc6b15276741e31351c712373</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>ac4844c71a78ba1389aee54e8b39ae4b2</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a55cc6e2c3ac51349f1111a5cc8c9a5aa</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -8145,22 +8528,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>ae5de369220b5bb023198fcc4b3aafc92</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a079a253edbca983a7efa1bb3adc8dac2</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>a9911042a6619cdc224ed08785939f1f2</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>adfe697b70d598477b2153ca82194acaf</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>ab5a1e5067aab871c7cc6fd7f0aa2d9bd</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>a382ae103b05ecf32151f109f4610f2ae</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -8170,10 +8553,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>a9369d733971f70e9173d08d70ae5b1a9</anchor>
+      <anchor>a98cdd05180906fc25ce3d99025d6d27c</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -8191,38 +8574,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>variables</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>a4aaaa5d8695a9d0e013299a5d521df00</anchor>
+      <anchor>a69699f10c3116b4469b986dd6a3977f2</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_variables</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>ab833ea02af51e8dfc759d8139cda9c6b</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>a5e73c6660bb8db7bea1962afdd60c056</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_variables</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>a0be21f9fe3ee6280fb456838bb99d6a0</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a3b41ad82b93b7687d5acc4a20b189feb</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>variables</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>a70c8eb816c8d6fb1306d907a99733d16</anchor>
+      <anchor>a3a23bc5a00e15237112b94c0b5f0eeb9</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_variables</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>a36a148fe7b6102c9bb1418bcc8d775a6</anchor>
+      <anchor>af2b5b018600397d1661d9b41305ca319</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -8247,10 +8630,10 @@
       <arglist>(int index)</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedPtrField&lt; ::operations_research::sat::DecisionStrategyProto_AffineTransformation &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedPtrField&lt; ::operations_research::sat::DecisionStrategyProto_AffineTransformation &gt; *</type>
       <name>mutable_transformations</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>a8a8b7602404b2bb2d19759579e2db903</anchor>
+      <anchor>a7b271fd0ed933997e5f2c685887cf899</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -8268,10 +8651,10 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedPtrField&lt; ::operations_research::sat::DecisionStrategyProto_AffineTransformation &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField&lt; ::operations_research::sat::DecisionStrategyProto_AffineTransformation &gt; &amp;</type>
       <name>transformations</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>a4e81fcf3a0d2688d7f75ef6e1b4ecbe9</anchor>
+      <anchor>a57c6f172bea7811085f2f302cb157593</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
@@ -8317,10 +8700,24 @@
       <arglist>(::operations_research::sat::DecisionStrategyProto_DomainReductionStrategy value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>a330a653504fd83b1f854347437ea1e74</anchor>
+      <anchor>a0b0d9d77806b6143867f4b255d815157</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
+      <anchor>abb67e3297bcf4386a109e11543690a00</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
+      <anchor>a6f8036c47ddd7427185302f9552893e1</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -8352,25 +8749,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::EnumDescriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>VariableSelectionStrategy_descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>a06ea5e492ddac4f52085bb1671a8afc0</anchor>
+      <anchor>a1f6a9e268798a6043933b4dcc0bfbd7e</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::std::string &amp;</type>
+      <type>static const std::string &amp;</type>
       <name>VariableSelectionStrategy_Name</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>a21aecb659761e692c96a4ea4adc5e32f</anchor>
-      <arglist>(VariableSelectionStrategy value)</arglist>
+      <anchor>a34edcda60aeda83651ef9dd64375b938</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
       <name>VariableSelectionStrategy_Parse</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>afd73728c190663a8f436f331e603fc9b</anchor>
-      <arglist>(const ::std::string &amp;name, VariableSelectionStrategy *value)</arglist>
+      <anchor>aa139a4e1e222b266b27ebc8b5555e61b</anchor>
+      <arglist>(const std::string &amp;name, VariableSelectionStrategy *value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
@@ -8380,25 +8777,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::EnumDescriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>DomainReductionStrategy_descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>a4e46902d1b2467d16056547d1de55a9f</anchor>
+      <anchor>a13d7d19fe15bde72e9e6f3bb0840a0fb</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::std::string &amp;</type>
+      <type>static const std::string &amp;</type>
       <name>DomainReductionStrategy_Name</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>a15d31a74ad4c60a52b3a7dee91392e56</anchor>
-      <arglist>(DomainReductionStrategy value)</arglist>
+      <anchor>ae6edb8523d36af2e66d9f0f352177195</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
       <name>DomainReductionStrategy_Parse</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>ac960a4909cff78b3e5d35da220d0db00</anchor>
-      <arglist>(const ::std::string &amp;name, DomainReductionStrategy *value)</arglist>
+      <anchor>a4d2fb297d926886c9ecb8bc512b05272</anchor>
+      <arglist>(const std::string &amp;name, DomainReductionStrategy *value)</arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static constexpr int</type>
@@ -8408,108 +8805,108 @@
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const VariableSelectionStrategy</type>
+      <type>static constexpr VariableSelectionStrategy</type>
       <name>CHOOSE_FIRST</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>a7afb92d202ee0e1953c122f0a9443926</anchor>
+      <anchor>a349a25beb40192bf26ef4e84f7888d0e</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const VariableSelectionStrategy</type>
+      <type>static constexpr VariableSelectionStrategy</type>
       <name>CHOOSE_LOWEST_MIN</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>ac997cb60c8654c076f7865725778b477</anchor>
+      <anchor>a695854f176ddd1021f1da5d4a095db57</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const VariableSelectionStrategy</type>
+      <type>static constexpr VariableSelectionStrategy</type>
       <name>CHOOSE_HIGHEST_MAX</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>a95a33611fb2c05051d2c4f3e07e28970</anchor>
+      <anchor>a2afe83f647784aded7bf8a58f7fbb244</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const VariableSelectionStrategy</type>
+      <type>static constexpr VariableSelectionStrategy</type>
       <name>CHOOSE_MIN_DOMAIN_SIZE</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>a143556cc1a403e35fe2a07da641c25af</anchor>
+      <anchor>ac37ebeff543e66aaeed7322c988d9672</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const VariableSelectionStrategy</type>
+      <type>static constexpr VariableSelectionStrategy</type>
       <name>CHOOSE_MAX_DOMAIN_SIZE</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>a642b56c3730fda6a8143f39f5edea6cd</anchor>
+      <anchor>a9ba8aeb78f76818517a5ac036124f012</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const VariableSelectionStrategy</type>
+      <type>static constexpr VariableSelectionStrategy</type>
       <name>VariableSelectionStrategy_MIN</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>ab31a7b2dd8658deb5b249a1f455144df</anchor>
+      <anchor>addec6e034241e295020d62127a73de7d</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const VariableSelectionStrategy</type>
+      <type>static constexpr VariableSelectionStrategy</type>
       <name>VariableSelectionStrategy_MAX</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>a553727aa97199f0258705fe53a0238bf</anchor>
+      <anchor>a5cdaa984271e380016c7ce2b349f25e5</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const int</type>
+      <type>static constexpr int</type>
       <name>VariableSelectionStrategy_ARRAYSIZE</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>ac2f16b0f2e786318452bc0e2b3bab41b</anchor>
+      <anchor>abfd92c1e695220c76a7d47d5fba03e26</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const DomainReductionStrategy</type>
+      <type>static constexpr DomainReductionStrategy</type>
       <name>SELECT_MIN_VALUE</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>a4e09ce3aa9616c482f74699eaf5eb2b3</anchor>
+      <anchor>a227a045c0771aa000bab4d00832d2c0d</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const DomainReductionStrategy</type>
+      <type>static constexpr DomainReductionStrategy</type>
       <name>SELECT_MAX_VALUE</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>a1edc6f84a39ce65a0bdf357987f36b7e</anchor>
+      <anchor>a00cb1a254d5006a3981586dd8d357509</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const DomainReductionStrategy</type>
+      <type>static constexpr DomainReductionStrategy</type>
       <name>SELECT_LOWER_HALF</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>a2315bf69248382bc6f39afc16c5b8824</anchor>
+      <anchor>ac6433780c7703c35425a04f09388fb8b</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const DomainReductionStrategy</type>
+      <type>static constexpr DomainReductionStrategy</type>
       <name>SELECT_UPPER_HALF</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>a9767c6dbc86303846faef44dd8b9bf29</anchor>
+      <anchor>a5ac00624c5344965ff9ffbc6c0ee1439</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const DomainReductionStrategy</type>
+      <type>static constexpr DomainReductionStrategy</type>
       <name>DomainReductionStrategy_MIN</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>addad991a7c937a33b1fd0e2598c35ee4</anchor>
+      <anchor>a394fe79c6b38f60ad8f59588207ac782</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const DomainReductionStrategy</type>
+      <type>static constexpr DomainReductionStrategy</type>
       <name>DomainReductionStrategy_MAX</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>af13b04b95701563d5725e5579ab825b3</anchor>
+      <anchor>aa7440c60315b99dc77ff31ba370ae5f0</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const int</type>
+      <type>static constexpr int</type>
       <name>DomainReductionStrategy_ARRAYSIZE</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
-      <anchor>a421bebdebe01b0a17c66273c34a4a17f</anchor>
+      <anchor>aa392c4ff969726a55293bba902601f9d</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -8538,6 +8935,13 @@
       <name>kDomainReductionStrategyFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
       <anchor>a58047bbf6614804d5d5fa952196fcc12</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
       <arglist></arglist>
     </member>
     <member kind="friend">
@@ -8580,11 +8984,25 @@
       <arglist>(const DecisionStrategyProto_AffineTransformation &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>DecisionStrategyProto_AffineTransformation</name>
+      <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto__AffineTransformation.html</anchorfile>
+      <anchor>a925aa5ec3eafd63623d22529bc514adf</anchor>
+      <arglist>(DecisionStrategyProto_AffineTransformation &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>DecisionStrategyProto_AffineTransformation &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto__AffineTransformation.html</anchorfile>
       <anchor>aea5d25cccdfdf1d280f98e086aad7fad</anchor>
       <arglist>(const DecisionStrategyProto_AffineTransformation &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>DecisionStrategyProto_AffineTransformation &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto__AffineTransformation.html</anchorfile>
+      <anchor>a5e9c6236c89957fccdae6600bf82add9</anchor>
+      <arglist>(DecisionStrategyProto_AffineTransformation &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -8604,22 +9022,22 @@
       <type>DecisionStrategyProto_AffineTransformation *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto__AffineTransformation.html</anchorfile>
-      <anchor>adb550ca0135fd189e16f618f37a85042</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a72aaad9045bde09c18da39448dc8dfe3</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto__AffineTransformation.html</anchorfile>
-      <anchor>a223dc130d3965201a75209ab012f6640</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a1c510e7b3f83b5f731fad55dd6f0d353</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto__AffineTransformation.html</anchorfile>
-      <anchor>a68b9639649903c49911bd85ce7c96590</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a406f0e36e2de78c8f0451eb7ca79c751</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -8660,22 +9078,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto__AffineTransformation.html</anchorfile>
-      <anchor>a07ca39cab35d0ead52ece73779d40559</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>aebe783eaf7423a7f906a151ee41ce6cb</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto__AffineTransformation.html</anchorfile>
-      <anchor>a469e3c984d966012c16cf94bea9b317a</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>a984576bdbd7f7fe28fe84f1822fdfe14</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto__AffineTransformation.html</anchorfile>
-      <anchor>aa66e3480e592e48ce6e8dd02314e68dd</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>a2fa668d466ffba03961baae9c0f0e772</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -8685,10 +9103,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto__AffineTransformation.html</anchorfile>
-      <anchor>a04def99dc038571ef4c0e25ff3322be4</anchor>
+      <anchor>ac2eb36ea709d39f0686fc19f1d143f23</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -8699,18 +9117,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>offset</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto__AffineTransformation.html</anchorfile>
-      <anchor>ae39aacc07452153596ef17d32184e8b2</anchor>
+      <anchor>a23fb57763d5d459cb99eb65c37534906</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_offset</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto__AffineTransformation.html</anchorfile>
-      <anchor>ab03976ef449a0b3d80d9cb38c138b6fe</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>a920dac42548ff6627c6c587677bfd2d3</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -8720,18 +9138,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>positive_coeff</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto__AffineTransformation.html</anchorfile>
-      <anchor>ae95ba4b997bdaa600e038d5dcbaf4646</anchor>
+      <anchor>a6fb9bd86a210dcee0e7b4d7c42062c26</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_positive_coeff</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto__AffineTransformation.html</anchorfile>
-      <anchor>a029ae67aeb4b793a334e1760f13130e6</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>a510f2f33ba40f6aa2d87e4680ccf7daa</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -8741,24 +9159,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>var</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto__AffineTransformation.html</anchorfile>
-      <anchor>a63190c693edd4b147374e56bd924a6a0</anchor>
+      <anchor>a3c7e1ead14616068c90b19d2364bb9e0</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_var</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto__AffineTransformation.html</anchorfile>
-      <anchor>a9946da51d64e13193a4ba2db1dae47f9</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a70dd21749e61b27b15ba01bc86798464</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto__AffineTransformation.html</anchorfile>
-      <anchor>a8abc988bbeb85c0493c429e62ee7351a</anchor>
+      <anchor>aab8cc83289f887dc2bc741c72f0ee49b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto__AffineTransformation.html</anchorfile>
+      <anchor>a2aa027e6cde24f8328696c2e37056609</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto__AffineTransformation.html</anchorfile>
+      <anchor>a1ae9f61f0479f7d609ae57eb44995709</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -8808,6 +9240,13 @@
       <name>kVarFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto__AffineTransformation.html</anchorfile>
       <anchor>a97613b1cd1584f0e10a88b1461db2881</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1sat_1_1DecisionStrategyProto__AffineTransformation.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
       <arglist></arglist>
     </member>
     <member kind="friend">
@@ -9120,11 +9559,25 @@
       <arglist>(const ElementConstraintProto &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>ElementConstraintProto</name>
+      <anchorfile>classoperations__research_1_1sat_1_1ElementConstraintProto.html</anchorfile>
+      <anchor>a5e449fbd6146b99c58c6fb64552ea463</anchor>
+      <arglist>(ElementConstraintProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>ElementConstraintProto &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1sat_1_1ElementConstraintProto.html</anchorfile>
       <anchor>aa2ca4dac3acc0a8ef884dff558557a29</anchor>
       <arglist>(const ElementConstraintProto &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>ElementConstraintProto &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1sat_1_1ElementConstraintProto.html</anchorfile>
+      <anchor>a902db34604b4c6b9a8521ead22d93a22</anchor>
+      <arglist>(ElementConstraintProto &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -9144,22 +9597,22 @@
       <type>ElementConstraintProto *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1sat_1_1ElementConstraintProto.html</anchorfile>
-      <anchor>a759a3f69b0754034975105a16063e047</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a31130afd20e0b5a2a30d66cacd8714bf</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1ElementConstraintProto.html</anchorfile>
-      <anchor>a9c014184068264a1c55be99de09d4651</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a94dfb457277421a23b9818dcd427d961</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1ElementConstraintProto.html</anchorfile>
-      <anchor>a4169d794ab045ff25ddb1147e7812b79</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a4296b4f005b32c788ad52ee379a0346a</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -9200,22 +9653,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1sat_1_1ElementConstraintProto.html</anchorfile>
-      <anchor>a6c26da3253d27069a6ba5c07aac7cee2</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>aa923ef352424ab190d870dbf0e9d5d44</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1sat_1_1ElementConstraintProto.html</anchorfile>
-      <anchor>a5ab887f8e95475e4f3e8275c3e126ebe</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>a3cb089872b5eee4236456cd7cd862644</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1sat_1_1ElementConstraintProto.html</anchorfile>
-      <anchor>af51600c6d50a29b7001015858f0d0a16</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>ab92f6bd75c52150d0c8cf9b08d7f7554</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -9225,10 +9678,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1sat_1_1ElementConstraintProto.html</anchorfile>
-      <anchor>adfb1e1f941c82e3550fc43d72e9c1216</anchor>
+      <anchor>a454726de5fdccf5bff72c6b8d88414da</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -9246,38 +9699,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1ElementConstraintProto.html</anchorfile>
-      <anchor>abe4127e35dfcd544b7dcc931e4e88660</anchor>
+      <anchor>a9e487e77a5f7e3c425c74946f89c28ea</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1ElementConstraintProto.html</anchorfile>
-      <anchor>a876c375489c917850b5e76e23e373c7b</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>a0d712102e6d9fa860423518f02d48313</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1ElementConstraintProto.html</anchorfile>
-      <anchor>a46c2fea6c935fd20d8a2f3d9de11a6e7</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a72f91dec4a8d196afc6fcbd353ef2f4f</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1ElementConstraintProto.html</anchorfile>
-      <anchor>ae39f0d776d112940fdaf596b30bd3b34</anchor>
+      <anchor>a8c899c40c4ba35acc5090a3d6a72d8e1</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1ElementConstraintProto.html</anchorfile>
-      <anchor>a53e4c4c9b7495247955bcbab46eb873c</anchor>
+      <anchor>a766a5a3e579e773d758f9ddfbdf8999b</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -9288,18 +9741,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>index</name>
       <anchorfile>classoperations__research_1_1sat_1_1ElementConstraintProto.html</anchorfile>
-      <anchor>aca1a47927851ab518313e1a6072760eb</anchor>
+      <anchor>a478995f3850f744dee5803ce00ee3f9b</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_index</name>
       <anchorfile>classoperations__research_1_1sat_1_1ElementConstraintProto.html</anchorfile>
-      <anchor>a77b626d7f7d907976c99d28a74285af7</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a4ad52f48b6b05b910bddab247ff96ddb</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -9309,24 +9762,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>target</name>
       <anchorfile>classoperations__research_1_1sat_1_1ElementConstraintProto.html</anchorfile>
-      <anchor>a5c79758d73f37756e372d564111ae4cf</anchor>
+      <anchor>aa6e89e07811cb54a5d60df52b14d4dba</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_target</name>
       <anchorfile>classoperations__research_1_1sat_1_1ElementConstraintProto.html</anchorfile>
-      <anchor>aa9ee8af8d0dfb4299f94b7a62a8100c1</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>af07859512cdaf9b76078c80678f4e92d</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1ElementConstraintProto.html</anchorfile>
-      <anchor>add9d068973de2c1bf6b3708ec39e55ad</anchor>
+      <anchor>af122983c8081273a0a85c715cab2c67c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1sat_1_1ElementConstraintProto.html</anchorfile>
+      <anchor>a5f08f1f03641c492df9d73e665ade434</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1sat_1_1ElementConstraintProto.html</anchorfile>
+      <anchor>a339ff3d44b979528b15bdc34e4c79945</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -9379,6 +9846,13 @@
       <arglist></arglist>
     </member>
     <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1sat_1_1ElementConstraintProto.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
       <type>friend struct</type>
       <name>::TableStruct_ortools_2fsat_2fcp_5fmodel_2eproto</name>
       <anchorfile>classoperations__research_1_1sat_1_1ElementConstraintProto.html</anchorfile>
@@ -9418,11 +9892,25 @@
       <arglist>(const IntegerArgumentProto &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>IntegerArgumentProto</name>
+      <anchorfile>classoperations__research_1_1sat_1_1IntegerArgumentProto.html</anchorfile>
+      <anchor>aa277f2cd42d8ba1ced09c48f112753da</anchor>
+      <arglist>(IntegerArgumentProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>IntegerArgumentProto &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerArgumentProto.html</anchorfile>
       <anchor>a229cb29935b0f965cb141e4bb8205c8d</anchor>
       <arglist>(const IntegerArgumentProto &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntegerArgumentProto &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1sat_1_1IntegerArgumentProto.html</anchorfile>
+      <anchor>ad9425aa6488cf6aed9e273667933bea2</anchor>
+      <arglist>(IntegerArgumentProto &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -9442,22 +9930,22 @@
       <type>IntegerArgumentProto *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>a76ca6999090bf52a1db53d006e802507</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a02b806ac3fa096c5f4ae1fc2959b5deb</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>a74e341eb9426f7c62ebbf138ca20e6c7</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>ad9d37d0be15b71a4282961be41470d8c</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>aeef522ce8ceb7ff532b0f16d6932d9ba</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a9a74ecdd5189ed7d2868942048dce4ed</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -9498,22 +9986,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>a85bcf08d0fe22d2958f4d8831a3d5fe7</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a7438e0db688137c83c4648ba8bd76362</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>ab28d2c3ae2073a1924d5c3fb73e41631</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>a266a3227f7d0ff631a79a868320d1ef6</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>ac3ff8fcbe2dbfb6df7171f2b54aabc66</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>a7c4349c5e1ee673f0319ecee31f6450a</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -9523,10 +10011,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>a2f3c1b6efd6a3be7eb83f20967e59161</anchor>
+      <anchor>ab969fb61af158e5ccf58f58da457ee3a</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -9544,38 +10032,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>a1a3f2e28db44d5ca4d6aafcd49d3cc23</anchor>
+      <anchor>abfa94bd5c8d07e4a18ec5d9c80e9a945</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>a682692d89dec3e3f389bd6647948bfcc</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>a8e6044bcefc0ef4e80b41858daf14b8a</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>ac063816c65abd07aa7e4032be313e41b</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a9bd714e7789291ba5928a80e2f82b45b</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>a34eede096385cba135ab1366ea33f611</anchor>
+      <anchor>a9a07bb9d0a7da7431a175dac0bdffa36</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>a89f8a595403a84c32bf33b084e6ddbab</anchor>
+      <anchor>a743f40f110cb58c191fa16361951ce43</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -9586,24 +10074,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>target</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>af319ee6e9b868be040000bc1949fae73</anchor>
+      <anchor>a167d610c9e825a46463cadaeeea807c1</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_target</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>ad57b8078e97eede9d3d141236c461a00</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a2f627522063b3fc4116edd3f1ec36fe9</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerArgumentProto.html</anchorfile>
-      <anchor>a3011bb913f22bd13d846b669e377b5e9</anchor>
+      <anchor>a27dfe37ed4af00ad7798bab6d3241d10</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1sat_1_1IntegerArgumentProto.html</anchorfile>
+      <anchor>a1fc06ab2885fe2ac1ff3f5c71a61cdd9</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1sat_1_1IntegerArgumentProto.html</anchorfile>
+      <anchor>ab0e753e63f026d3a7fd41a5cec57b7e9</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -9649,6 +10151,13 @@
       <arglist></arglist>
     </member>
     <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1sat_1_1IntegerArgumentProto.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
       <type>friend struct</type>
       <name>::TableStruct_ortools_2fsat_2fcp_5fmodel_2eproto</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerArgumentProto.html</anchorfile>
@@ -9688,11 +10197,25 @@
       <arglist>(const IntegerVariableProto &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>IntegerVariableProto</name>
+      <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
+      <anchor>a97cf9dda5ca2a67c95c665a22185e150</anchor>
+      <arglist>(IntegerVariableProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>IntegerVariableProto &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
       <anchor>ab076d7e334e142ce3357cedc15798eaf</anchor>
       <arglist>(const IntegerVariableProto &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntegerVariableProto &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
+      <anchor>a2fb96970474d540b2e0e1942b79e8766</anchor>
+      <arglist>(IntegerVariableProto &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -9712,22 +10235,22 @@
       <type>IntegerVariableProto *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
-      <anchor>acdc5f2ad592f40617d2f84ceb5be569f</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a45e0bde7d1189d592ee2f890ea20178c</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
-      <anchor>afcf6300004357f465c6e6315d01967f7</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a7291eeab3fc5282103ab806bf6b31b3f</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
-      <anchor>a7ca0cf1946f0f1dcf6b1517aad039799</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>abaca913e93fa258ba010bc29ac3b0076</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -9768,22 +10291,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
-      <anchor>a2d8ae61a69b08ce0186846047d975b43</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a65607b84fac1b80a467ce03e54db1886</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
-      <anchor>a0a5581f80e905856028fc85b2c0cbd5e</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>af36e80a50d7fc906d7dba87b3da7f3ad</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
-      <anchor>a123e9f5b2d3cf3ece40031783258db6d</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>af703937f06aeed5b6b757611c405b7e5</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -9793,10 +10316,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
-      <anchor>a561f827883d918424566ce05bcf2d5ca</anchor>
+      <anchor>a49b79c87a609d425f39373fab2e3c950</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -9814,38 +10337,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>domain</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
-      <anchor>ac203aeb218d4d5a6d2026ab68a790c54</anchor>
+      <anchor>a35f427cbde882e9c925ddabc01f77b62</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_domain</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
-      <anchor>ad79f95d0310e4137558b94dcb1741df2</anchor>
-      <arglist>(int index, ::google::protobuf::int64 value)</arglist>
+      <anchor>a15c19cc15e78288baabb0c1c559753c0</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_domain</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
-      <anchor>a6a5111609ed5868ec8e9e94ea3b97112</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>a698e9f94617bff66cb6645fc7d55d9b2</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; &amp;</type>
       <name>domain</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
-      <anchor>a6d81b77d35652f06d0472ef4528c41e9</anchor>
+      <anchor>a3e0195e30316ee0983f1924cad035a8d</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; *</type>
       <name>mutable_domain</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
-      <anchor>af26837227cf0258ec2a5870f2601972d</anchor>
+      <anchor>a7cb7586fa6679cdd9a4fa2e2e2757476</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -9856,18 +10379,25 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>name</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
-      <anchor>abd07f5dd77698e902a520047a90a0492</anchor>
+      <anchor>a5ae2400b8a1bbf76d789a2dfd6dcfcee</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_name</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
-      <anchor>a81fc369d0e0fcc136fb25e7be2e4ee01</anchor>
-      <arglist>(const ::std::string &amp;value)</arglist>
+      <anchor>a72d58a435115ebf6858a7c6714e5dd03</anchor>
+      <arglist>(const std::string &amp;value)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_name</name>
+      <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
+      <anchor>a976e20695b8ed47ddf197fbee463131d</anchor>
+      <arglist>(std::string &amp;&amp;value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -9884,14 +10414,14 @@
       <arglist>(const char *value, size_t size)</arglist>
     </member>
     <member kind="function">
-      <type>::std::string *</type>
+      <type>std::string *</type>
       <name>mutable_name</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
       <anchor>a5e5e4fd6b4fbf6677cbc2005166ce610</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::std::string *</type>
+      <type>std::string *</type>
       <name>release_name</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
       <anchor>ac78972e516dc09a05ff3e418f19cc9bf</anchor>
@@ -9901,14 +10431,28 @@
       <type>void</type>
       <name>set_allocated_name</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
-      <anchor>a5f683aaca013088f86b74be3880f71cb</anchor>
-      <arglist>(::std::string *name)</arglist>
+      <anchor>ac8cc2c02b64609b9b3532a46d934ed6a</anchor>
+      <arglist>(std::string *name)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
-      <anchor>a0e1b5f12ed881beafa471d7005c6beb0</anchor>
+      <anchor>ad6907986dd7f8217d394800b5a4abf86</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
+      <anchor>a65627ed13423b910be3f8bca46beb232</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
+      <anchor>a345c1422dbd9e02225043b312542bda6</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -9951,6 +10495,13 @@
       <name>kNameFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
       <anchor>a1f7faafa7f13e865c8f4d3e8a230d4d7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1sat_1_1IntegerVariableProto.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
       <arglist></arglist>
     </member>
     <member kind="friend">
@@ -10004,11 +10555,25 @@
       <arglist>(const IntervalConstraintProto &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>IntervalConstraintProto</name>
+      <anchorfile>classoperations__research_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
+      <anchor>aef1d22d8936e6d378900906d0575dce3</anchor>
+      <arglist>(IntervalConstraintProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>IntervalConstraintProto &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
       <anchor>a512114cdcc8ed5ad5b2c92c06feacca8</anchor>
       <arglist>(const IntervalConstraintProto &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntervalConstraintProto &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
+      <anchor>ade249f2b19645786bf013a489e3e6f64</anchor>
+      <arglist>(IntervalConstraintProto &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -10028,22 +10593,22 @@
       <type>IntervalConstraintProto *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
-      <anchor>acbd8dcd7118281c66a7f94df85fde083</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>aaa3e5d84beb1dec61fc757875e46ae2d</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
-      <anchor>a3f218b44b69f869446c3465b3b78ef0c</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>ac3dd68811cc04399d5dcb4255abcb2ae</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
-      <anchor>aba2137e936d77191e3283e936baebeb5</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a412988cb98ea2deef607d579a5482840</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -10084,22 +10649,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
-      <anchor>a4675a33cac1bc4fe78a251a284630862</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>ac7485b26107450ab45c2a099f3a8c85d</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
-      <anchor>ab8290a970a9967efaa5ec2797c70a40b</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>a7f1c962a830a640c29addf211f8598d2</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
-      <anchor>a2900e8b555936ca6a05c4e37e2a9215b</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>ab923ab8344f3ff8011f1e93d6079807a</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -10109,10 +10674,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
-      <anchor>a1c916ba369039e6c78d13ab14c5772d9</anchor>
+      <anchor>adcaee36be878423d8d1d44491c6091b0</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -10123,18 +10688,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>start</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
-      <anchor>a78d1b1dc724b19f85af0bc314c711a9f</anchor>
+      <anchor>acafb802850f5330ebafa68e6e3de989b</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_start</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
-      <anchor>a5ae68d04d4dbce1475944b1578be3519</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a13a46a0cd59eda5142b7215ded99cf86</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -10144,18 +10709,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>end</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
-      <anchor>ae7a98f61a1c3ff325ef0372076cf0143</anchor>
+      <anchor>a2316ac0c647646d6d139063b938a8a39</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_end</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
-      <anchor>ab34c04000082a5f0c8cff30dd95494f6</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a8ea8c19af7450c3c33256f701424aa5c</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -10165,24 +10730,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>size</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
-      <anchor>a90a8e4c6bec3046aa21724629b82b143</anchor>
+      <anchor>a56a4bcd79422222e8bb98517a908b87d</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_size</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
-      <anchor>af7e414b30614b4b3dff461e4c58ffa1a</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a3e1a497efcbdd8180427fbf3788797da</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
-      <anchor>a6035b88733f83c4218a8e355cb85d8eb</anchor>
+      <anchor>a6a393ef1c7b51f2e0007e2d6b52c56da</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
+      <anchor>ad466d99190fc673292ef6cf31084b520</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
+      <anchor>ae4652b8283c432b4198fb989d6b30397</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -10232,6 +10811,13 @@
       <name>kSizeFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
       <anchor>ad4ce0a19246e4f29943ece3ca17d69a3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1sat_1_1IntervalConstraintProto.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
       <arglist></arglist>
     </member>
     <member kind="friend">
@@ -10527,11 +11113,25 @@
       <arglist>(const InverseConstraintProto &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>InverseConstraintProto</name>
+      <anchorfile>classoperations__research_1_1sat_1_1InverseConstraintProto.html</anchorfile>
+      <anchor>adbc6f50b0bf5f310f492b4d1eb58327d</anchor>
+      <arglist>(InverseConstraintProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>InverseConstraintProto &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1sat_1_1InverseConstraintProto.html</anchorfile>
       <anchor>a3c836696a5468e2fae84c8e227997719</anchor>
       <arglist>(const InverseConstraintProto &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>InverseConstraintProto &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1sat_1_1InverseConstraintProto.html</anchorfile>
+      <anchor>a5f8d2b3653eda435bc41feed2d85b289</anchor>
+      <arglist>(InverseConstraintProto &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -10551,22 +11151,22 @@
       <type>InverseConstraintProto *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1sat_1_1InverseConstraintProto.html</anchorfile>
-      <anchor>a3d286c359ae5f9d363525347b696264f</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a0f723d654e9c1b78eeaac15a234e2430</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1InverseConstraintProto.html</anchorfile>
-      <anchor>a4ae985803f8ec8e2d3413f1929811d09</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a88e0a46fbb9f1b6c2c68ee27274ffd26</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1InverseConstraintProto.html</anchorfile>
-      <anchor>ae2aa02fea74fade45bf32abc7b90e534</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>af40707332cdc4685d0e9abcf6584ff80</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -10607,22 +11207,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1sat_1_1InverseConstraintProto.html</anchorfile>
-      <anchor>a836b638b2f4ae43a5039081357f79106</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>ac4347d3eac7f361ddc3bd829b4a8d411</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1sat_1_1InverseConstraintProto.html</anchorfile>
-      <anchor>a18b0a1eb0dfa05523c4cd7630a36094b</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>a6d02e97f77c629c3e7c8a451f9c8233e</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1sat_1_1InverseConstraintProto.html</anchorfile>
-      <anchor>a3fe245041d484a22a8e9fde8b1815667</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>a849f18a967e370a015fef5896fb23e8b</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -10632,10 +11232,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1sat_1_1InverseConstraintProto.html</anchorfile>
-      <anchor>afb33eb21ec05e18d35cc7c9e06cb6278</anchor>
+      <anchor>a703a4336ebbef8a3ccdd9abd0c3a6aa6</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -10653,38 +11253,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>f_direct</name>
       <anchorfile>classoperations__research_1_1sat_1_1InverseConstraintProto.html</anchorfile>
-      <anchor>a17851fed0bc9677d5ae52d4988fa4e0b</anchor>
+      <anchor>a4ddf6022d3decd2abfb070c5d5f96d12</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_f_direct</name>
       <anchorfile>classoperations__research_1_1sat_1_1InverseConstraintProto.html</anchorfile>
-      <anchor>af130f4b550988b7dfd18635bc57e8b6e</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>adae2df639ce277ef0f08824f6e9deea8</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_f_direct</name>
       <anchorfile>classoperations__research_1_1sat_1_1InverseConstraintProto.html</anchorfile>
-      <anchor>aab56f0400d82e12b68f0b7a2551a5b94</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a47bb1622b00eaa858364faaa23c399ba</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>f_direct</name>
       <anchorfile>classoperations__research_1_1sat_1_1InverseConstraintProto.html</anchorfile>
-      <anchor>ac130e23a053a7d45bb8f12c5eac51f6a</anchor>
+      <anchor>a470aa43a28c6b1876a0b3723ffb32f2e</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_f_direct</name>
       <anchorfile>classoperations__research_1_1sat_1_1InverseConstraintProto.html</anchorfile>
-      <anchor>a03ff372c76c76ea3ac043bc6151fdfdd</anchor>
+      <anchor>a5dd6ae94e0634fd01255ff6c2119070c</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -10702,45 +11302,59 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>f_inverse</name>
       <anchorfile>classoperations__research_1_1sat_1_1InverseConstraintProto.html</anchorfile>
-      <anchor>aa243449e607387892fa83f1eed645aab</anchor>
+      <anchor>a44450d00fc6338488e868881c4bba97b</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_f_inverse</name>
       <anchorfile>classoperations__research_1_1sat_1_1InverseConstraintProto.html</anchorfile>
-      <anchor>a87c52075d7dc27ae402f71bc97117460</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>a559035c7333f7105143f5857a0dd51ff</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_f_inverse</name>
       <anchorfile>classoperations__research_1_1sat_1_1InverseConstraintProto.html</anchorfile>
-      <anchor>a26393486a91d83ad6d2c167cd027b139</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a79e53bec72580aaf63996a7ae0519740</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>f_inverse</name>
       <anchorfile>classoperations__research_1_1sat_1_1InverseConstraintProto.html</anchorfile>
-      <anchor>ae37f0c34a86cf741682454fc88d6d1d7</anchor>
+      <anchor>a58405504d22e85ddc7228cd87432d1f5</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_f_inverse</name>
       <anchorfile>classoperations__research_1_1sat_1_1InverseConstraintProto.html</anchorfile>
-      <anchor>a0b57a04347b29e484f1064ee2c7e9a67</anchor>
+      <anchor>ad38fa48efd8ef89d4a3d1d8f42c50c37</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1InverseConstraintProto.html</anchorfile>
-      <anchor>a001b76a0d0bde4d748267318c4e9cf3b</anchor>
+      <anchor>a5dc73f41a9d9d1506020199a6a4e0ebe</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1sat_1_1InverseConstraintProto.html</anchorfile>
+      <anchor>a4638a65936886b722f0eb8f73327afe4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1sat_1_1InverseConstraintProto.html</anchorfile>
+      <anchor>ad4e2d512c6c9977b232912d354d82feb</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -10786,6 +11400,13 @@
       <arglist></arglist>
     </member>
     <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1sat_1_1InverseConstraintProto.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
       <type>friend struct</type>
       <name>::TableStruct_ortools_2fsat_2fcp_5fmodel_2eproto</name>
       <anchorfile>classoperations__research_1_1sat_1_1InverseConstraintProto.html</anchorfile>
@@ -10801,56 +11422,56 @@
     </member>
   </compound>
   <compound kind="struct">
-    <name>google::protobuf::is_proto_enum&lt; ::operations_research::sat::CpSolverStatus &gt;</name>
-    <filename>structgoogle_1_1protobuf_1_1is__proto__enum_3_01_1_1operations__research_1_1sat_1_1CpSolverStatus_01_4.html</filename>
+    <name>is_proto_enum&lt; ::operations_research::sat::CpSolverStatus &gt;</name>
+    <filename>structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1CpSolverStatus_01_4.html</filename>
   </compound>
   <compound kind="struct">
-    <name>google::protobuf::is_proto_enum&lt; ::operations_research::sat::DecisionStrategyProto_DomainReductionStrategy &gt;</name>
-    <filename>structgoogle_1_1protobuf_1_1is__proto__enum_3_01_1_1operations__research_1_1sat_1_1DecisionStrat411f5031253253c57f3c5f378dfc1bf0.html</filename>
+    <name>is_proto_enum&lt; ::operations_research::sat::DecisionStrategyProto_DomainReductionStrategy &gt;</name>
+    <filename>structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1DecisionStrategyProto__DomainReductionStrategy_01_4.html</filename>
   </compound>
   <compound kind="struct">
-    <name>google::protobuf::is_proto_enum&lt; ::operations_research::sat::DecisionStrategyProto_VariableSelectionStrategy &gt;</name>
-    <filename>structgoogle_1_1protobuf_1_1is__proto__enum_3_01_1_1operations__research_1_1sat_1_1DecisionStrat9163b6fc058f1feefc5796666205cadb.html</filename>
+    <name>is_proto_enum&lt; ::operations_research::sat::DecisionStrategyProto_VariableSelectionStrategy &gt;</name>
+    <filename>structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1DecisionStrategyProto__VariableSelectionStrategy_01_4.html</filename>
   </compound>
   <compound kind="struct">
-    <name>google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_BinaryMinizationAlgorithm &gt;</name>
-    <filename>structgoogle_1_1protobuf_1_1is__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParametersb465c243b8d7fa2fa0ca5cc28bee453c.html</filename>
+    <name>is_proto_enum&lt; ::operations_research::sat::SatParameters_BinaryMinizationAlgorithm &gt;</name>
+    <filename>structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__BinaryMinizationAlgorithm_01_4.html</filename>
   </compound>
   <compound kind="struct">
-    <name>google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_ClauseOrdering &gt;</name>
-    <filename>structgoogle_1_1protobuf_1_1is__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__ClauseOrdering_01_4.html</filename>
+    <name>is_proto_enum&lt; ::operations_research::sat::SatParameters_ClauseOrdering &gt;</name>
+    <filename>structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__ClauseOrdering_01_4.html</filename>
   </compound>
   <compound kind="struct">
-    <name>google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_ClauseProtection &gt;</name>
-    <filename>structgoogle_1_1protobuf_1_1is__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__ClauseProtection_01_4.html</filename>
+    <name>is_proto_enum&lt; ::operations_research::sat::SatParameters_ClauseProtection &gt;</name>
+    <filename>structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__ClauseProtection_01_4.html</filename>
   </compound>
   <compound kind="struct">
-    <name>google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_ConflictMinimizationAlgorithm &gt;</name>
-    <filename>structgoogle_1_1protobuf_1_1is__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters18e480b3e82e25979893dc86f9997a3d.html</filename>
+    <name>is_proto_enum&lt; ::operations_research::sat::SatParameters_ConflictMinimizationAlgorithm &gt;</name>
+    <filename>structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__ConflictMinimizationAlgorithm_01_4.html</filename>
   </compound>
   <compound kind="struct">
-    <name>google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_MaxSatAssumptionOrder &gt;</name>
-    <filename>structgoogle_1_1protobuf_1_1is__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__MaxSatAssumptionOrder_01_4.html</filename>
+    <name>is_proto_enum&lt; ::operations_research::sat::SatParameters_MaxSatAssumptionOrder &gt;</name>
+    <filename>structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__MaxSatAssumptionOrder_01_4.html</filename>
   </compound>
   <compound kind="struct">
-    <name>google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_MaxSatStratificationAlgorithm &gt;</name>
-    <filename>structgoogle_1_1protobuf_1_1is__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters66ef3c834a5336a1d6bbbf0bf3479a8a.html</filename>
+    <name>is_proto_enum&lt; ::operations_research::sat::SatParameters_MaxSatStratificationAlgorithm &gt;</name>
+    <filename>structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__MaxSatStratificationAlgorithm_01_4.html</filename>
   </compound>
   <compound kind="struct">
-    <name>google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_Polarity &gt;</name>
-    <filename>structgoogle_1_1protobuf_1_1is__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__Polarity_01_4.html</filename>
+    <name>is_proto_enum&lt; ::operations_research::sat::SatParameters_Polarity &gt;</name>
+    <filename>structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__Polarity_01_4.html</filename>
   </compound>
   <compound kind="struct">
-    <name>google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_RestartAlgorithm &gt;</name>
-    <filename>structgoogle_1_1protobuf_1_1is__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__RestartAlgorithm_01_4.html</filename>
+    <name>is_proto_enum&lt; ::operations_research::sat::SatParameters_RestartAlgorithm &gt;</name>
+    <filename>structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__RestartAlgorithm_01_4.html</filename>
   </compound>
   <compound kind="struct">
-    <name>google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_SearchBranching &gt;</name>
-    <filename>structgoogle_1_1protobuf_1_1is__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__SearchBranching_01_4.html</filename>
+    <name>is_proto_enum&lt; ::operations_research::sat::SatParameters_SearchBranching &gt;</name>
+    <filename>structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__SearchBranching_01_4.html</filename>
   </compound>
   <compound kind="struct">
-    <name>google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_VariableOrder &gt;</name>
-    <filename>structgoogle_1_1protobuf_1_1is__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__VariableOrder_01_4.html</filename>
+    <name>is_proto_enum&lt; ::operations_research::sat::SatParameters_VariableOrder &gt;</name>
+    <filename>structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__VariableOrder_01_4.html</filename>
   </compound>
   <compound kind="class">
     <name>operations_research::sat::LinearConstraintProto</name>
@@ -10877,11 +11498,25 @@
       <arglist>(const LinearConstraintProto &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>LinearConstraintProto</name>
+      <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
+      <anchor>a15fc73c1d9e1169210a1d05693ba4c41</anchor>
+      <arglist>(LinearConstraintProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>LinearConstraintProto &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
       <anchor>a9c8f76e5cbd2626626c02fc2cc95ee93</anchor>
       <arglist>(const LinearConstraintProto &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearConstraintProto &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
+      <anchor>acae4f97d26631280037013fe3fdec1e3</anchor>
+      <arglist>(LinearConstraintProto &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -10901,22 +11536,22 @@
       <type>LinearConstraintProto *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
-      <anchor>ab41b4e7d447883313ad3cf79a7bf1333</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>ab02c28153dfbcc2a736c6218bc2cbb1a</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
-      <anchor>ae902ec0b85ad20e45f1d1aca587154af</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a8cd76fa45dde35a0daabd8f6089c7ba1</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
-      <anchor>a04d16ca877e9d32d2b308535ab194ad4</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>ab17ed4c2b7dbf148c167ecf82c947526</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -10957,22 +11592,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
-      <anchor>a59345ee7a0f4fb46cfea81f5706a44c9</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a44347be73701ae82d560097e2377e390</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
-      <anchor>a26d94e1077abb1d225dc1cff79115828</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>af86067fa54e366670d53c8447586503a</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
-      <anchor>a1f72815b3f0c64cdeacf2b6588de27ca</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>adcdc620bced54254827fb1cb505e534a</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -10982,10 +11617,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
-      <anchor>a9dd65cbbc0e23fe45e0b56b07ba41a97</anchor>
+      <anchor>a4906a0a11ce035fc6df718679b97dc96</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -11003,38 +11638,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
-      <anchor>ad5a96be4b085b8079f88acc078c1206e</anchor>
+      <anchor>a0ce21bd21de20bc62dd99ecfe02f8158</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
-      <anchor>a48153b0908ab52ef751af444a8bb21f2</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>ae9221fcd2a7d9cce65b381730982ca3b</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
-      <anchor>aa32001e1d34909075d470e6c340f23f9</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a12c5d8b0f5dd8dd53e5461b8629cc495</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
-      <anchor>a9b89a74a9285096815daaae3cb88cef1</anchor>
+      <anchor>aa9b730b96040a7cd9abad90175e333b8</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
-      <anchor>a0cd04adfd0040fd66dad694659a5e8e4</anchor>
+      <anchor>ad47809548a0fc2f1506d80cf8099af78</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -11052,38 +11687,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>coeffs</name>
       <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
-      <anchor>a59420f1aa75b90ae1ebbfbece5a62cc6</anchor>
+      <anchor>a08646e4e945c4ee40fe030b04f362106</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_coeffs</name>
       <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
-      <anchor>acfe7f207f1c13152768aa22c336ccafa</anchor>
-      <arglist>(int index, ::google::protobuf::int64 value)</arglist>
+      <anchor>aee153669434b8548134f251653cb6b06</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_coeffs</name>
       <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
-      <anchor>a16ded2172bd8e0eb24b8d6ddec8ed509</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>ac0e448a494ebbac4b27edda749339d8b</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; &amp;</type>
       <name>coeffs</name>
       <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
-      <anchor>adffffa27012872d39a6a849846c1a967</anchor>
+      <anchor>a5af044811d7b24753d7dc1457c5d55e1</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; *</type>
       <name>mutable_coeffs</name>
       <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
-      <anchor>aec1b4c510553db2ba1298b3861349a89</anchor>
+      <anchor>a058673bef6c44167b967b1761d734b4c</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -11101,45 +11736,59 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>domain</name>
       <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
-      <anchor>a6b59fe1edcaae5ee12ff2ad388406703</anchor>
+      <anchor>a44e43e6327c74bb905e838e836d402c5</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_domain</name>
       <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
-      <anchor>a5ece7ea8553ce7f2ca44f2a1887a9d41</anchor>
-      <arglist>(int index, ::google::protobuf::int64 value)</arglist>
+      <anchor>a35e5a351d91db4c7d6e6eda89247f0b8</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_domain</name>
       <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
-      <anchor>aea11befb2a8995c54d9f9aec3e0ddd1f</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>afeb16a09eb1c4fb0b316a6de573e670e</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; &amp;</type>
       <name>domain</name>
       <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
-      <anchor>aac55042e1e2d3c7ba00701f7db1b5bad</anchor>
+      <anchor>a5a1df99e46f4233e2755f4b81969e746</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; *</type>
       <name>mutable_domain</name>
       <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
-      <anchor>a4ece75ec9fd0878e6da9bab1d74ddaad</anchor>
+      <anchor>aafbcb5580d414f14797a872cfbd40aaa</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
-      <anchor>a10c127f451771e37f5aa0cf185d09c34</anchor>
+      <anchor>af0d82db2f522bf193f09ce363bf53d1f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
+      <anchor>a2426daac40a3292cfe33e2b15a43797a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
+      <anchor>a567badf31ad724104c9da4dff24c5cbb</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -11189,6 +11838,13 @@
       <name>kDomainFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
       <anchor>ad5430f9ab23f7a653a862667cdafb3f4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1sat_1_1LinearConstraintProto.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
       <arglist></arglist>
     </member>
     <member kind="friend">
@@ -11468,11 +12124,25 @@
       <arglist>(const NoOverlap2DConstraintProto &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>NoOverlap2DConstraintProto</name>
+      <anchorfile>classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
+      <anchor>a1172f2d2dcf7c5082169722f7f3d917d</anchor>
+      <arglist>(NoOverlap2DConstraintProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>NoOverlap2DConstraintProto &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
       <anchor>ad88c52d26f57a52b144b97ba00b6a2a5</anchor>
       <arglist>(const NoOverlap2DConstraintProto &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>NoOverlap2DConstraintProto &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
+      <anchor>a8428b57a7644055596bcb132ab837fcb</anchor>
+      <arglist>(NoOverlap2DConstraintProto &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -11492,22 +12162,22 @@
       <type>NoOverlap2DConstraintProto *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
-      <anchor>ad7a049528458b3b9c0455b27de6c024d</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a33b1a031bfa21680d4f037c27eef5dd4</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
-      <anchor>a7897fe7bac6dbe40208fec8325ae3cf3</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>ab82522bd0a37047d544e54b1a26e5994</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
-      <anchor>a43acbe1879cfdb4b722f16c68bb263ba</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a3e386275789caa5eba7f011aa74976ae</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -11548,22 +12218,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
-      <anchor>a1c19ae90b0599197513636fb370b248e</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>af373d7d753b0f71b1c1d04bafa6e16c2</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
-      <anchor>ac78acd732cc4e84afb030b521a43440a</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>a41e3c5628aa75ec7d95bc23c28319d47</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
-      <anchor>a2a37fb5869f6a4525bd40fa3fb9f3962</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>ad2831450cebb5d1a65ef3ea3b8b6836a</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -11573,10 +12243,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
-      <anchor>a81d7728125f4b346abfe4d6100a5cb09</anchor>
+      <anchor>a65e560f9c955fc057a71cadadab0d806</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -11594,38 +12264,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>x_intervals</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
-      <anchor>aa323713564d4ce5445e52ded60280fac</anchor>
+      <anchor>a5dae90d1fb1e966510f477b3fd7de296</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_x_intervals</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
-      <anchor>a8ec0a47cb3dc9d0fe7e79e85a1920ec3</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>a8c124aca59c7cb0b24d40dd4b5066a2a</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_x_intervals</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
-      <anchor>aa3c5873d02689551bd0fce71e2a6da68</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a8b07656d51866fac64b48917a3fe6ea3</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>x_intervals</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
-      <anchor>a7b757d2993665d27d387826bb3183dc3</anchor>
+      <anchor>a6e818c0043d494831cad126fcabd7b69</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_x_intervals</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
-      <anchor>a516e0a79d0644a258d56e08e1702a74d</anchor>
+      <anchor>a8a210c928ed983a59f823f744d885124</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -11643,45 +12313,59 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>y_intervals</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
-      <anchor>a989843a92948d851842487a176f29e64</anchor>
+      <anchor>aa3fe2b2f87bb89e2d4e6a47d1f3d1656</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_y_intervals</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
-      <anchor>aba72a8b560eac9f7ff8bdf3db9072184</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>a8d09d1c57a8ad4982865bae04a6feb85</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_y_intervals</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
-      <anchor>a8a18ca5d782eed72f077a109a68c2ae1</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>ad3c4dadc08c4f36aaba943dbd0c1aaa0</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>y_intervals</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
-      <anchor>a3239a5b449447ea3d4c20409ac3e8f55</anchor>
+      <anchor>a5a97c78e3bd7352e36ed611a9290e5d5</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_y_intervals</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
-      <anchor>acdeafb6ab842902069739409c4a6ad53</anchor>
+      <anchor>a006765bec18088869bdb311ec852bac8</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
-      <anchor>a8f4236e14af67c64c5fe6629eebda8d1</anchor>
+      <anchor>ab71f23f26bf1410097f25d90e472d79a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
+      <anchor>aa74c21c7222c834e14ee16d1df46a070</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
+      <anchor>a2826f84854ea19a60fe4b0fb3aac2bae</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -11727,6 +12411,13 @@
       <arglist></arglist>
     </member>
     <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
       <type>friend struct</type>
       <name>::TableStruct_ortools_2fsat_2fcp_5fmodel_2eproto</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html</anchorfile>
@@ -11766,11 +12457,25 @@
       <arglist>(const NoOverlapConstraintProto &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>NoOverlapConstraintProto</name>
+      <anchorfile>classoperations__research_1_1sat_1_1NoOverlapConstraintProto.html</anchorfile>
+      <anchor>a2889e8663f080b95cae731029fe6e957</anchor>
+      <arglist>(NoOverlapConstraintProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>NoOverlapConstraintProto &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlapConstraintProto.html</anchorfile>
       <anchor>a933306ebe007ad7a65f1de3a7573f65c</anchor>
       <arglist>(const NoOverlapConstraintProto &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>NoOverlapConstraintProto &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1sat_1_1NoOverlapConstraintProto.html</anchorfile>
+      <anchor>ae5a2559d2b1f4a865c62fde8a5b299ff</anchor>
+      <arglist>(NoOverlapConstraintProto &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -11790,22 +12495,22 @@
       <type>NoOverlapConstraintProto *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlapConstraintProto.html</anchorfile>
-      <anchor>ae4ab756015c6fe91b28bef8cb564875e</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>ac2c8458cbcb020ee4b68d610d3c90bb4</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlapConstraintProto.html</anchorfile>
-      <anchor>ac408f8f251dbec2cd66fd01f544f090f</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a262ed13c3d642bb2ca6d32efe8670136</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlapConstraintProto.html</anchorfile>
-      <anchor>a82fff3fe9cccd939c37191281fff59d0</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>abfba7b3ba2db6f9204d6a8dfb18b52b9</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -11846,22 +12551,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlapConstraintProto.html</anchorfile>
-      <anchor>aa833dd34de2c1675e2f543dda02f13a0</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a519dc81f785eb97c10c23b11bc90e066</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlapConstraintProto.html</anchorfile>
-      <anchor>a3ead9492b767534c84dff72f653f3157</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>abf150aab6fbc9a4c3d0581cc6bbf0aa0</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlapConstraintProto.html</anchorfile>
-      <anchor>ab6f003d4d36be3a8c1b1db9e8ad5b093</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>a76b4e6dccbbd4096a2ebcae75e80021a</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -11871,10 +12576,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlapConstraintProto.html</anchorfile>
-      <anchor>aed7e1998bfdce75439bf491bfd478ca3</anchor>
+      <anchor>acbb8e91398a505fe3495c1b5298d8019</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -11892,45 +12597,59 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>intervals</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlapConstraintProto.html</anchorfile>
-      <anchor>ac84f031376543b28989cb29efaf9147a</anchor>
+      <anchor>a53f7740469a9bd8e4def0068758bcba3</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_intervals</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlapConstraintProto.html</anchorfile>
-      <anchor>aa0b4dd1b79bc252098a014fc35c70687</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>ac866d9a7c1e5b39289555c446b907373</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_intervals</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlapConstraintProto.html</anchorfile>
-      <anchor>a31a037f85fee9f86f38ed200709a20ad</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a6a7c16ad4ed281e3f5896996930dda8e</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>intervals</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlapConstraintProto.html</anchorfile>
-      <anchor>afd16d8f988f54ec74c7d364b6f41ccf6</anchor>
+      <anchor>a482f1afd17f13ff34cce808525929602</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_intervals</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlapConstraintProto.html</anchorfile>
-      <anchor>aa96e2a817b536b884b555dbd2de5ef20</anchor>
+      <anchor>a3df32f2e5e52f5f1c3fc709a8feb7cc8</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlapConstraintProto.html</anchorfile>
-      <anchor>a4ed7e38a09fa28cb33aea04f0063eb2d</anchor>
+      <anchor>aef06a673d2828624378c53dff605c2b8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1sat_1_1NoOverlapConstraintProto.html</anchorfile>
+      <anchor>af7ed26fd574543f39a561cca4947ef11</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1sat_1_1NoOverlapConstraintProto.html</anchorfile>
+      <anchor>a6a19f196e264fb3bcf70ab07d36ccc72</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -11966,6 +12685,13 @@
       <name>kIntervalsFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1NoOverlapConstraintProto.html</anchorfile>
       <anchor>ac21fdddf5a859ef216febf27ac926c2f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1sat_1_1NoOverlapConstraintProto.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
       <arglist></arglist>
     </member>
     <member kind="friend">
@@ -12008,11 +12734,25 @@
       <arglist>(const PartialVariableAssignment &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>PartialVariableAssignment</name>
+      <anchorfile>classoperations__research_1_1sat_1_1PartialVariableAssignment.html</anchorfile>
+      <anchor>ac276d5c490d73db515702b7ae3c78915</anchor>
+      <arglist>(PartialVariableAssignment &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>PartialVariableAssignment &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1sat_1_1PartialVariableAssignment.html</anchorfile>
       <anchor>a3822c2fde39cab2adc595da8c1b2f45f</anchor>
       <arglist>(const PartialVariableAssignment &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>PartialVariableAssignment &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1sat_1_1PartialVariableAssignment.html</anchorfile>
+      <anchor>aac4a3ad13ee73501620e8b201e37aa2b</anchor>
+      <arglist>(PartialVariableAssignment &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -12032,22 +12772,22 @@
       <type>PartialVariableAssignment *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1sat_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>a31739266b4221c58a2dc368145429912</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a9db8f018d5e17b6913edeaaa11aa3651</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>a1ff4b3c9103559f9ed69404ae856455a</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>ad24eeef9a2bbdd2c56aef7594244a167</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>a00e35fd12d4b2ab4591b5931411c2f7d</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>ae69add04f731189b71aae1ff79805818</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -12088,22 +12828,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1sat_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>ace99e96915e11ded3b0ae3a0c771ac78</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a2ca02674d731864b8475070449c6b109</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1sat_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>aafb238a4b36d251ba8ff92bf923c3142</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>a724b86514961292ba1de857fc58ddc90</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1sat_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>a62695a07a62febcf46e9422602cb2806</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>afe7e8791f629227bce705edb19ccfbfc</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -12113,10 +12853,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1sat_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>a416f12a73fef0d9366506138d6637628</anchor>
+      <anchor>a578fba150c0d366d654465372252e40f</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -12134,38 +12874,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>a89b52919f7dd874129a967be48033812</anchor>
+      <anchor>aefeab774151ffaab3864e21b05524858</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>a23b5abbc7f688acbdf704b02da0e88dc</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>aabef22c98f580a722bf7b9e735ba825e</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>a4c3a9db1e8c4cf4af54ae5ea107aa360</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a877b1bb708c277a2f07682b19e6dcaf8</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>a090c69ab85bb86f553cfc464e1c60184</anchor>
+      <anchor>a5a463f13f17e6b7fc1944bdfb2dd82f1</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>a6fdb6116aeb56b2c1ab15d659e875407</anchor>
+      <anchor>ad1ea8eae5e928933e7adcaf9349d9ca1</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -12183,45 +12923,59 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>values</name>
       <anchorfile>classoperations__research_1_1sat_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>a99fa87887ea0a77c7ab403deb82ff3ed</anchor>
+      <anchor>a2bced585d102e5c0b44309a0f2ccc8a1</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_values</name>
       <anchorfile>classoperations__research_1_1sat_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>ae41776bb85571069aa5d878b0229cb57</anchor>
-      <arglist>(int index, ::google::protobuf::int64 value)</arglist>
+      <anchor>af0579efaa4bfe818dde97c4b4235f226</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_values</name>
       <anchorfile>classoperations__research_1_1sat_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>ab6137cdf2d56c02368f0e391290f0a40</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>a27361866f00c323c97be322598cdc296</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; &amp;</type>
       <name>values</name>
       <anchorfile>classoperations__research_1_1sat_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>af974a112432d21c7de6764d7c54ba706</anchor>
+      <anchor>a55775f34f56545f00e86a97d94f4dcf4</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; *</type>
       <name>mutable_values</name>
       <anchorfile>classoperations__research_1_1sat_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>a72d9beefc5c5592d84e1ca1280329210</anchor>
+      <anchor>ad84d50c5e7253aae616daeab2aefbad7</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>a9a1f68ba47740bd8a790c9a8b7e923ee</anchor>
+      <anchor>acce6ffc24d51acaa921703b658d4c992</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1sat_1_1PartialVariableAssignment.html</anchorfile>
+      <anchor>a570d7c2c03404d4fbcdb613e5ea006bd</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1sat_1_1PartialVariableAssignment.html</anchorfile>
+      <anchor>affede24a65ae67db73bedb4a0e2c49f6</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -12264,6 +13018,13 @@
       <name>kValuesFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1PartialVariableAssignment.html</anchorfile>
       <anchor>a0aa3eb65b93085dbcc7e6fad7cb1b76f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1sat_1_1PartialVariableAssignment.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
       <arglist></arglist>
     </member>
     <member kind="friend">
@@ -12381,11 +13142,25 @@
       <arglist>(const ReservoirConstraintProto &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>ReservoirConstraintProto</name>
+      <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
+      <anchor>a6df939b382b4530e028d61f1794e2294</anchor>
+      <arglist>(ReservoirConstraintProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>ReservoirConstraintProto &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
       <anchor>ad0daab530049b740b2c4ad4dc71813ae</anchor>
       <arglist>(const ReservoirConstraintProto &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>ReservoirConstraintProto &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
+      <anchor>ab9737f3bd861c599d59f5e7693e3e234</anchor>
+      <arglist>(ReservoirConstraintProto &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -12405,22 +13180,22 @@
       <type>ReservoirConstraintProto *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a28bc8e2515658aa794a1e4ccd904b0f5</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a51095605c42eaed517c8762be13775d4</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a4a0cba3048560f8d31003af2fa84a02f</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a78bdd3321468e1dde4051fc14884c3f4</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a3151e59aba8a904b228b5d5464d37606</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>ab93c2ed02d24fd18e18ba32460d2acf2</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -12461,22 +13236,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a78e9bb83a34bbd0f2b15165f23146bd7</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a186bafd07b4845897f2d92cade39ed68</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a9cfeaa3ec46716cedfa08b9b3c2e8514</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>ad446d653bc58747f5109196c90ecdd26</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a043bfa1898a2233049986581d48f50f7</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>a5b48930d1d32d8612f47e172c78203a2</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -12486,10 +13261,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a48ec7007a9339df9d683b10e8312b0ed</anchor>
+      <anchor>a9adc655050f472034b718de32c5b5394</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -12507,38 +13282,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>times</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a26e9cc7b3b9bdbfef2b00e16e73ba3ef</anchor>
+      <anchor>aa27ee24b4ac91d3aad9297dd9bfd66ca</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_times</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a3542c5ee0934923a4db3951898491eba</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>a46cc6d4f1190618ba68a80b2c938003c</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_times</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a4ad9c91833bd1b77bc51f2fd075732b7</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a4e15fe7bf37df4b8d5df18136cc7fafa</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>times</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a5ce08a0d494a171bab04798bb3fcf2e8</anchor>
+      <anchor>a59c27374cb44cf28c6853bf7c3a95a31</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_times</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a15658578766363f6241daa606faba152</anchor>
+      <anchor>a22a066e3d0183fe827ab396a2de52b86</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -12556,38 +13331,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>demands</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a37ea75f2fdc29bd5180317efb8e65ca4</anchor>
+      <anchor>abffb414670e87056ff70283523ca9111</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_demands</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a3b34d2b6434970d2403f09e6f6adc83b</anchor>
-      <arglist>(int index, ::google::protobuf::int64 value)</arglist>
+      <anchor>abbc908767462fffa62f2d48c57174c66</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_demands</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>aec1a9af37b5eda800df7954c397af66a</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>a911c084c988307f3e74235c2f7817523</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; &amp;</type>
       <name>demands</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a604d5115f71bf66e2a50c8565fa8dd96</anchor>
+      <anchor>afb4103c6998cca65e55fbf048db83a95</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; *</type>
       <name>mutable_demands</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a3c22c0918a20ba08b415033e4135b46e</anchor>
+      <anchor>a2b4f7fa585378a6226d2fe7c67b332b6</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -12605,38 +13380,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>actives</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>acecfe2d5a55deaa5b06992a93d6484c9</anchor>
+      <anchor>a3cdcbaf49de8bbe2f7ca22c08d5b2c35</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_actives</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a090c46af8c3b859cef9d741bd486ef60</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>a69d0c73914c880cf30cd733844bd605a</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_actives</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>ab9cbf0a91106598317a46cad679c260c</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>ab2c584372bed72149e7fe8d4e105b419</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>actives</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a6b599aedc9ba9cbb64bd6e9b0da62c15</anchor>
+      <anchor>a46b950b46006a063c47ce4ffc7c531ea</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_actives</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>ae866b73e50c9941517ef282f99051c41</anchor>
+      <anchor>a84ee32336ae9d85a393a9de83a642975</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -12647,18 +13422,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>min_level</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>aa88c25852b8b1e025befca7d8b2a09c2</anchor>
+      <anchor>aeb9256ec5e8a0f654698ed4420302325</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_min_level</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a174662a19893f1bb6d74f75c9835cc67</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>a1294a12fc1c7ff217267a316123d4297</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -12668,24 +13443,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>max_level</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a6a495f736292659fea2144bb36c830ca</anchor>
+      <anchor>acdfb8d377e07d0554c00ddfff0c53c06</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_max_level</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>ad72cd85207cf349db67caa0983c2f769</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>aeebd5e4f572235cffc852f31428bd9b2</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
-      <anchor>a09ca0e48042eca20291deaae1a6ca0ab</anchor>
+      <anchor>a85c0548e54d98ad3667acb14c3d88f0c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
+      <anchor>a437fca83fc79d4f8a6ab3a9027c2fd1c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
+      <anchor>a5aa47f5ac101589cb8b027960069234f</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -12752,6 +13541,13 @@
       <arglist></arglist>
     </member>
     <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
       <type>friend struct</type>
       <name>::TableStruct_ortools_2fsat_2fcp_5fmodel_2eproto</name>
       <anchorfile>classoperations__research_1_1sat_1_1ReservoirConstraintProto.html</anchorfile>
@@ -12791,11 +13587,25 @@
       <arglist>(const RoutesConstraintProto &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>RoutesConstraintProto</name>
+      <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
+      <anchor>a17a7441bc6ec3ee4918d6861b42fcc5f</anchor>
+      <arglist>(RoutesConstraintProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>RoutesConstraintProto &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
       <anchor>a07107e6e4490559714e67f598f5dc6e3</anchor>
       <arglist>(const RoutesConstraintProto &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>RoutesConstraintProto &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
+      <anchor>a9f7e32277cf1647b478a47a49ba560b6</anchor>
+      <arglist>(RoutesConstraintProto &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -12815,22 +13625,22 @@
       <type>RoutesConstraintProto *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>ad01d19c48930b971dd7226b887b09c71</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a9eeae97f0c3ae1362db856925aee138a</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>ab2803f84af6dd5e0001d2d0f684c7592</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>addeed518e6913a72e9f4a44b92ef4fa1</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>a3a96c0f0aa10ebe43ae2244c64a78ffd</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>aaafd9c1d50cc8e6ebaa371ab3779dbd4</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -12871,22 +13681,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>a7cb2f719c82beae54dcad6a7662ed16a</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a1aa5997c9c0cf173051d68213de9c94d</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>a86185387b22e8aa017c5cbe73bd43cd9</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>aa53aac2a71c4e604599f2671486087ba</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>abfe1146ccc9b45f0c75b465e465a1e4b</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>a3656ecf5dd1667b4fbb6399f4ec465a1</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -12896,10 +13706,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>aeba75ace214d57312dc1c68ffcfd6d0d</anchor>
+      <anchor>a4cacb09f2c4fcad6a24ad36e8fb089f4</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -12917,38 +13727,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>tails</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>ac999451b8005028f6d9980c40cc5b50e</anchor>
+      <anchor>a78f1bb9d85c382195b11f89118fcfa2f</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_tails</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>a3ec99719358ad6c69af6178c32810c00</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>a5b3524e43e8bee1f5623d797d9a49b75</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_tails</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>a9dc96a8d328728424eef7c1bc39f55e6</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a00667eebf43010f5c6547172341768c5</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>tails</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>ab1f643c6f14740a188afa86a0e2fa58c</anchor>
+      <anchor>aa4eae0065b2bdbd41ccfda1e96f94af5</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_tails</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>a11e644ad3de4c039b0e33305ab84a08e</anchor>
+      <anchor>a14d02441b4a2cb30e716edf1b5d69ae1</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -12966,38 +13776,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>heads</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>a5d37fd5ecf7ccd06400b8b1ddf26fc2b</anchor>
+      <anchor>af212f423c73e244a0366d971323ababf</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_heads</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>a89e25008788a355ede317f8ed37f5d3e</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>a80dfab194c4475eed3a8b26c121a7814</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_heads</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>a2a657c65614fd2013ddbcd59a116159d</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a04519e764f71fdd3f4b9cbb826139fa5</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>heads</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>a57b0428b6ce971792f597d0be198214a</anchor>
+      <anchor>ac10863b9e8d5fc66555471a831faaf30</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_heads</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>a135a0af61eb4d06812e95266aaaf7cb5</anchor>
+      <anchor>ad149dc83ae58efa5fb69cb0280265575</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -13015,38 +13825,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>literals</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>a9cd602b59502cbf1b17a4ef1b143bbe9</anchor>
+      <anchor>a370b960f5cc66a1f1ef1ebba450959e3</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_literals</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>a24a2b81b63ebeb44e8b451b9d5133dbd</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>ab99b69348cacde480ec731ffbae53542</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_literals</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>a730a4d2d29418698249237a9dc6542e4</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a98bae32f517be73e678363dc24139ef3</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>literals</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>a7036fdc5b463044eb61b6875f97f3a38</anchor>
+      <anchor>af63853ae7f40d06e032ab7faec545482</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_literals</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>a273ef0b5026940a0a5b3a902651499ce</anchor>
+      <anchor>a1d5371d312c6e4bb6d5824b39f5d8c64</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -13064,38 +13874,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>demands</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>a9cf398907e3b671a4594e5554d70c977</anchor>
+      <anchor>ac1b1c6feca6541fb0d9530d2ecce98a3</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_demands</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>a1cb301f8a82a2f1c985ad0fb3bfddd6a</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>a30b67bcaff0fe4224b3410a18cc41150</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_demands</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>a63a12f09c4bc8fdde43ac4b559763a89</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a72fc409ecae763062f258c0bb0e6bf4b</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>demands</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>a9bf414d09754d276cfd22def447eb5e5</anchor>
+      <anchor>afe63352a9495caea002ad883d338bdbf</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_demands</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>aa11316cc6cbd19d3f3c6ed14945785de</anchor>
+      <anchor>a498c73699bcc815d2c720cbd9a3cc5ab</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -13106,24 +13916,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>capacity</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>aacff77e53d0072434980333c61b82d39</anchor>
+      <anchor>a21a223f37da2ea5587223937baa07668</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_capacity</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>a7ac72a8ce8d4b71770a5ed34aa84e79e</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>add7c48e251f27d50481c9097deba2c23</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
-      <anchor>aa9f3001289f8819fe09292568f90d325</anchor>
+      <anchor>a2a16933622336a5c40530cc26c97d28c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
+      <anchor>a3d11284ccc6e48dc6c01d522d2806d1f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
+      <anchor>a38a9b3053f4e5a30a652a16085ff051b</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -13187,6 +14011,13 @@
       <name>kCapacityFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
       <anchor>a281c1cad6b3dd7607dfbb18eaff68077</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1sat_1_1RoutesConstraintProto.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
       <arglist></arglist>
     </member>
     <member kind="friend">
@@ -13299,6 +14130,13 @@
       <arglist>(const SatParameters &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>SatParameters</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a10514519099f08853b63cff3cae4fa99</anchor>
+      <arglist>(SatParameters &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>SatParameters &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
@@ -13306,17 +14144,24 @@
       <arglist>(const SatParameters &amp;from)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::UnknownFieldSet &amp;</type>
+      <type>SatParameters &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>ac191d1ed74bfcdf68191b443c9a5ce46</anchor>
+      <arglist>(SatParameters &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>const ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet &amp;</type>
       <name>unknown_fields</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a4989838448ff19efcdda63bff1d28860</anchor>
+      <anchor>a202b9e0c424bcc7ab89ee33899e975ad</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>inline ::google::protobuf::UnknownFieldSet *</type>
+      <type>inline ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet *</type>
       <name>mutable_unknown_fields</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a0957a9798bf5266a0ee61d76ce364eb9</anchor>
+      <anchor>a91040e4fa7123a8f3a6ba487d33cd182</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -13337,22 +14182,22 @@
       <type>SatParameters *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>acd1d8a1dc86d4c0e02117cbb9e3f674d</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>adc4b099138bae9fc352a6d396a1f919f</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ada7a766ae7013e03ae3c90634af38d22</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a9ee0315962908cb92596cf2ff93af546</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a983f1d5469855684789e594c76f6ff5e</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a0625ede0beccfe6712965f5b2d1e4de7</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -13393,22 +14238,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>af4a604adc8e1840cd94d6de32cb0e2d3</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a48ed39e4fc54c6accd788bab6e72d004</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a39019f6e657462912af22ba5d6bb90df</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>adf5d17a9f59c46cf95e49852f103e9d1</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a9ca12b6a1ff8f10f85559b0416440463</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>a925d9b18fc13a36011ddc6ed0f282a8a</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -13418,10 +14263,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a0401247b7ccc60f440834f79400577c2</anchor>
+      <anchor>a67f371cf3efe83f09014dc4ec91626ea</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -13460,17 +14305,17 @@
       <arglist>(::operations_research::sat::SatParameters_RestartAlgorithm value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; int &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; int &gt; &amp;</type>
       <name>restart_algorithms</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>adde98dc970f6376b3548d1b3d74cc6ef</anchor>
+      <anchor>a192691891f170ce78b84bd290fd0d0f9</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; int &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; int &gt; *</type>
       <name>mutable_restart_algorithms</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a6145a44b08812a703c9b205c8f7f3567</anchor>
+      <anchor>a5b924328ee39f0d7c91aa824a85ba817</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -13488,18 +14333,25 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>default_restart_algorithms</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a3631c23795ee76fb52cd04798a2dd415</anchor>
+      <anchor>a545369a07562208a80985583b7c52a08</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_default_restart_algorithms</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a3f35c980529ab98b1a27395e28410ca0</anchor>
-      <arglist>(const ::std::string &amp;value)</arglist>
+      <anchor>a93742f7c29f8032cb2cb34d927dcb8c2</anchor>
+      <arglist>(const std::string &amp;value)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_default_restart_algorithms</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a7c0c381590c11e84a9fe175644f7f366</anchor>
+      <arglist>(std::string &amp;&amp;value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -13516,14 +14368,14 @@
       <arglist>(const char *value, size_t size)</arglist>
     </member>
     <member kind="function">
-      <type>::std::string *</type>
+      <type>std::string *</type>
       <name>mutable_default_restart_algorithms</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>aeca983c469ec5a7c9a155040bf790fe4</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::std::string *</type>
+      <type>std::string *</type>
       <name>release_default_restart_algorithms</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>ad52b0ed823c5c768b125c9568bf5a379</anchor>
@@ -13533,8 +14385,8 @@
       <type>void</type>
       <name>set_allocated_default_restart_algorithms</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a4fcefde6fc8457f40a5b646e6cd62669</anchor>
-      <arglist>(::std::string *default_restart_algorithms)</arglist>
+      <anchor>a9d62115a885cc0f8ded411034f783fff</anchor>
+      <arglist>(std::string *default_restart_algorithms)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -13971,18 +14823,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>num_conflicts_before_strategy_changes</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a4949c084392f4007e76d6c91b598a0c1</anchor>
+      <anchor>a463fb8380d1e39902a299eec0339b3cc</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_num_conflicts_before_strategy_changes</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ab954d5ba1420dffde08f95a737070b05</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a30aa37174358221915a82f9f45949693</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -14279,18 +15131,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>search_randomization_tolerance</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a35e52748cfd2aebf785980f151b32cd2</anchor>
+      <anchor>a3067a81a730e9e008b0b70940f46a6f9</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_search_randomization_tolerance</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>aaca922e8870efcfe27d122a82b369a87</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>aa5e2b14b6ed7d6417cab405d45937105</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -14307,18 +15159,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>num_search_workers</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a20d149f7b5ab8da7326739acf96a0691</anchor>
+      <anchor>ac85bba5787bf4ff93bab8fcc212eeabb</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_num_search_workers</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a43558c4a0596a883357bf880fc97538d</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>ad8006b08158a9f7a415b6525b1b9601e</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -14559,18 +15411,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>mip_max_activity_exponent</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>aff86b511d8b6786752926351510eea5f</anchor>
+      <anchor>abe147ab35c9e2963f93f8d9747300efd</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_mip_max_activity_exponent</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ad7b83e8141859ebbde292bb0a5593848</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a71030a0f1c74fd0854e2974619204ff4</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -14643,18 +15495,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>clause_cleanup_period</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ab0ccb4457e0ad167e46b6c3a06e6fa5a</anchor>
+      <anchor>af80e747965e275a56a11d58c1840f0ef</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_clause_cleanup_period</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>aa6c6dac098960b53295cbf681794adc3</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a0091dd987c6322441eaa8c648f8fb895</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -14671,18 +15523,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>clause_cleanup_target</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a1e7bff24d803180e6c60f3bbc8399d2c</anchor>
+      <anchor>afcf6077aa3e47e15c38b6fd6784b0da9</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_clause_cleanup_target</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a81576b47a1f47c5f43656a93ef2195b5</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a77b09ed710299822b2da8051c06711c5</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -14867,18 +15719,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>glucose_decay_increment_period</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a2164f40a11d9c0fc18d3343f210662f4</anchor>
+      <anchor>a960f7a4b929147546a018775cf287fe8</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_glucose_decay_increment_period</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a157dd38edaf7918be0e4b459edbe0da1</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a047672292c03c458c5aed164b6df737e</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -14895,18 +15747,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>restart_period</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a5be6deac1efe31d76db6726e660905e8</anchor>
+      <anchor>ad757bb66293d5b9af7c3009abe787cb9</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_restart_period</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>aa31156bf26261533816877f72939b2d4</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a7f8923d1b9ef000d38535ed807defe86</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -14923,18 +15775,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>random_seed</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a8793fe1ef6b2c3f25392fe5c5d02406c</anchor>
+      <anchor>a1578caef67fa09927ec6cf3283d528e6</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_random_seed</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a8f00b9736678a1480237eec03be56fdc</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>ab85ded0257cd47919c08c972638687d2</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -15007,18 +15859,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>max_number_of_conflicts</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a2b8343a6e7cc8d92d5a109f174fca34d</anchor>
+      <anchor>afc68a4fe7fdfa4a494172292d3ff7df9</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_max_number_of_conflicts</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>aec741a938e27028b5981dcbd5b34d09a</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>a30818b8ba29e4eb46ddecdbca3337365</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -15035,18 +15887,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>max_memory_in_mb</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a9b2aea19ec06c2c4be018ff4c7e47e0d</anchor>
+      <anchor>a1dd90c9543a33590a5a9e373e4e8300d</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_max_memory_in_mb</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>acb651eaf2ec51630e6f667316f531def</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>a23d5a879c7f6a07f3ef2be2f817c9a6a</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -15175,18 +16027,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>pb_cleanup_increment</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a6cbb2e430e3383fb9b99b67d52762fa7</anchor>
+      <anchor>a859219ce3b976de7f7d29fe3603b7a29</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_pb_cleanup_increment</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a1de6629d3f45b80ff26d4bccc14b4ecc</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a83188a72a5137065ef6e503f4712992a</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -15259,18 +16111,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>presolve_bve_threshold</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a73249750d34559a087ac41e5bdf54017</anchor>
+      <anchor>ab02aebe26c05c6299af2d0d69b645203</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_presolve_bve_threshold</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a3bf9c24ff70bea71327a2b114c41bfe8</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>af6ba272e4b819616857bde6b9fcf2174</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -15315,18 +16167,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>presolve_bve_clause_weight</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>adac48d8340e5d1e35f4ea7b62f574359</anchor>
+      <anchor>a55c005e3857895529d6228acb6bc3588</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_presolve_bve_clause_weight</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a84c96de45986c3680f738acfbe1019e1</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a19582a1612b7dabbd59a41ec4de8f2ed</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -15343,18 +16195,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>clause_cleanup_lbd_bound</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a2f7f7060e4c4c613917889e877c27f97</anchor>
+      <anchor>a24a484ac7f306852aa26f114decf393d</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_clause_cleanup_lbd_bound</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a95e7a399fd787d4385f1b816b1feed3d</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a92ce4d479408909b62cd3972be827721</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -15483,18 +16335,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>restart_running_window_size</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a7d895b8a64cb84c9012eafb8039aacbe</anchor>
+      <anchor>a806b9b864116342978994d34fa09fedd</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_restart_running_window_size</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ad88983ceb72252974624c21b5b07c277</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a898a9ce9a49525d01f0bab548f77f959</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -15595,18 +16447,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>blocking_restart_window_size</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ac562190b40c8922ca90b23f9d7927bd3</anchor>
+      <anchor>a35ea3ba196b62c3c301edb821b5926d7</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_blocking_restart_window_size</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ac16bea982f01e50a6317d32d474339db</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a57a5c3a1afb9b969926079880a796e21</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -15623,18 +16475,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>presolve_bva_threshold</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a3791dcd2af8b19dd689fcbdbfd9c1a48</anchor>
+      <anchor>a1f2c4e2d9cf303fd9481f849239f3697</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_presolve_bva_threshold</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>acabf4a4dde1b035f6df59e3843590703</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a0e4d4626e9f7711332bf53312a987528</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -15791,18 +16643,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>linearization_level</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ad4a07a8fb6acf0a027563d1d4a133a83</anchor>
+      <anchor>af0a98b63bfb6d3d974d1235625812f45</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_linearization_level</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a7f10929649ecda23f27a44c0ac975817</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a479d7f837928fb1d3109cda96a5ace3b</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -15819,18 +16671,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>max_num_cuts</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a5c2a0955211d922f4a3aba089b85af80</anchor>
+      <anchor>a6b9c4341d3433adb5a02fcdf469aaa65</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_max_num_cuts</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a9d0dfd588027e1ccf4e2a0b8d2846dc6</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a764d44a1fbb118e3b17f69f4774c7219</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -15847,18 +16699,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>minimize_with_propagation_restart_period</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a1833d328fea0ceb1ec02765a3512d38c</anchor>
+      <anchor>adb9da8fa990a6f8202a4fdf155f57158</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_minimize_with_propagation_restart_period</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ad628d7514b4068b42f9b9c0a7ec018d5</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a95a1271513447c72cfe99ca774a701f7</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -15875,18 +16727,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>minimize_with_propagation_num_decisions</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ae1a4415a99796a9fd749e99e6b6a4f54</anchor>
+      <anchor>af8bdbd4c57e397c79abfba8357b18010</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_minimize_with_propagation_num_decisions</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>af1fa079c985591e5d0001ddcff49faeb</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a23ab915a47f8bef020c2c6ca845101c2</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -15903,18 +16755,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>binary_search_num_conflicts</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ae3833e782e4b08278db0e93a75be0c0f</anchor>
+      <anchor>a22598b41445a495208a74941bac0cf76</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_binary_search_num_conflicts</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a71bb9a8c458757ab5a41ccd90b0049b6</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>afb858b77f8166fddb4281aa8be7ec3fe</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -15931,18 +16783,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>lns_num_threads</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ad207affa2571674283639fa5693a1109</anchor>
+      <anchor>a69c361b3993f09cbcc0c1617e8f4380f</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_lns_num_threads</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a12df387cf27bf7466fe3e02b0d3cad4c</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a0b0a5cd9162bde4fb9d78145587d305c</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -16071,18 +16923,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>boolean_encoding_level</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>aa67dd1d9130c57bf709b7b3603d7057e</anchor>
+      <anchor>a20b11d0a1b3e895e99e9d22bc2f7646d</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_boolean_encoding_level</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a06724d9c7bcc779776da20675c5f6719</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>ae6f55b803fc56bf6eb980a2e2d5cb654</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -16198,62 +17050,6 @@
     </member>
     <member kind="function">
       <type>bool</type>
-      <name>has_use_optional_variables</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a7f895da906479be37a0fa925c65a919e</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>clear_use_optional_variables</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ae47f567d8c8f82fada73347d29b253c5</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>use_optional_variables</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a7a5f4c6f5d6f57b15dd98ad63de8acf1</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>set_use_optional_variables</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a88306976162c40099a868c7a44aae596</anchor>
-      <arglist>(bool value)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>has_use_exact_lp_reason</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a5e035ce620456899ec8de1b3f226c45b</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>clear_use_exact_lp_reason</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>aa771eb136ae84dd984dc9b10892633d7</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>use_exact_lp_reason</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a62d4b73c33078a073cbfeee9ff560998</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>set_use_exact_lp_reason</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a97156b400b2f40de83044bc1357358ee</anchor>
-      <arglist>(bool value)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
       <name>has_cp_model_probing_level</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>ae26158b8feb367dc1255f7d2a2cf880a</anchor>
@@ -16267,18 +17063,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>cp_model_probing_level</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a56e16db387858b22278343db567e05de</anchor>
+      <anchor>afaafc2bd7e49e342deb5c9f7326e0977</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_cp_model_probing_level</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a06a1176010691d9644aa6fb5a85bfcab</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a29fd961109a86f05f1566cfa7990ebe8</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -16394,6 +17190,90 @@
     </member>
     <member kind="function">
       <type>bool</type>
+      <name>has_lns_is_deterministic</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a83d07ef3083197fcbb50439c5228d3a7</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>clear_lns_is_deterministic</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>abb03e7f5dfc29372ac42d4e6eafbf2de</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>lns_is_deterministic</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a445cafdb12de1d64e814a8f920fa477e</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_lns_is_deterministic</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a0f31fa821e1f455e16c4e0dda79f063b</anchor>
+      <arglist>(bool value)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>has_use_optional_variables</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a7f895da906479be37a0fa925c65a919e</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>clear_use_optional_variables</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>ae47f567d8c8f82fada73347d29b253c5</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>use_optional_variables</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a7a5f4c6f5d6f57b15dd98ad63de8acf1</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_use_optional_variables</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a88306976162c40099a868c7a44aae596</anchor>
+      <arglist>(bool value)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>has_use_exact_lp_reason</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a5e035ce620456899ec8de1b3f226c45b</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>clear_use_exact_lp_reason</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>aa771eb136ae84dd984dc9b10892633d7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>use_exact_lp_reason</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a62d4b73c33078a073cbfeee9ff560998</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_use_exact_lp_reason</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a97156b400b2f40de83044bc1357358ee</anchor>
+      <arglist>(bool value)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
       <name>has_max_integer_rounding_scaling</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a7afb62ad9e9d6be5a26d00b383affd49</anchor>
@@ -16407,18 +17287,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>max_integer_rounding_scaling</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a60af9685480f6db8877875d1fea1a061</anchor>
+      <anchor>a3aee2d5ca527b9b127fea3bcdc4d7fc7</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_max_integer_rounding_scaling</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a2b7a438fe3f4521f16570f74fb048389</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a62c7db88ac0975d6ccb2adf297cdc175</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -16435,18 +17315,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>max_inactive_count</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>aa7d4e1ac370b64b682865b9f7de95c4c</anchor>
+      <anchor>a251a8349e328b59486aef4d46e5544d7</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_max_inactive_count</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a93a9fe4e73991610bc81842b7d31a3ff</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>ac08f42beb7c0dc2bcc619f45f117282d</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -16463,18 +17343,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>constraint_removal_batch_size</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a8d64d46cbece5f00483662b8590283a3</anchor>
+      <anchor>a27d70a01c7fd8403d1b5d0a587c9daef</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_constraint_removal_batch_size</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a713538029f2cd48b7a7f3dd2e6464d1e</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>aa5ff14517c248adc111bb24ad3c702b7</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -16491,18 +17371,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>pseudo_cost_reliability_threshold</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ab4dba107d7ac74f7661c1ca42ef8766b</anchor>
+      <anchor>a30e29a94a6530420599dfa28c4fc5214</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_pseudo_cost_reliability_threshold</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a2a75515bb216f21bf399aa402981dc03</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>ab35469e7f8aceb9cd0910536f174fdff</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -16617,10 +17497,24 @@
       <arglist>(double value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>aaed79e80ca86d9fb3638f5a9e2b32ac2</anchor>
+      <anchor>a72e7bb63d4b6363fff35b1aa0021975e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a156612be30633dab86669dc0d46c0e6b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a812b5213e915ef4cdcdf1952347d2980</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -16652,25 +17546,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::EnumDescriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>VariableOrder_descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>afe4d4a18e63003d315d561d6e49ea2ca</anchor>
+      <anchor>a699a4ab94c8606abc4dc210f6fdbca96</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::std::string &amp;</type>
+      <type>static const std::string &amp;</type>
       <name>VariableOrder_Name</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a12cbd225eb2ca67e70f5a579546633a0</anchor>
-      <arglist>(VariableOrder value)</arglist>
+      <anchor>a20498d3f0d5902b7aa42e4277969cebe</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
       <name>VariableOrder_Parse</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a71447e0d785124feaec093711f57854b</anchor>
-      <arglist>(const ::std::string &amp;name, VariableOrder *value)</arglist>
+      <anchor>a7ebbe6be94f3b6c0028d565faa7b7cba</anchor>
+      <arglist>(const std::string &amp;name, VariableOrder *value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
@@ -16680,25 +17574,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::EnumDescriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>Polarity_descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a43c446efc51c8bd3e5fea028c66cd730</anchor>
+      <anchor>a1982e2981258e72b22ef2f3495107311</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::std::string &amp;</type>
+      <type>static const std::string &amp;</type>
       <name>Polarity_Name</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a5a9c5543625d0b37fe4e64a809e45f52</anchor>
-      <arglist>(Polarity value)</arglist>
+      <anchor>a8768e99c21345c33f514a334be34f0c8</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
       <name>Polarity_Parse</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a0452cd51658f6c3edc48b14dca6fb143</anchor>
-      <arglist>(const ::std::string &amp;name, Polarity *value)</arglist>
+      <anchor>a765d9e64f5b38d1a586c4aeda871eec4</anchor>
+      <arglist>(const std::string &amp;name, Polarity *value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
@@ -16708,25 +17602,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::EnumDescriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>ConflictMinimizationAlgorithm_descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>aeb399103bedf4b050dc9ea68ebf46e1e</anchor>
+      <anchor>a7bee08f50ce6a68ac894ed898c408643</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::std::string &amp;</type>
+      <type>static const std::string &amp;</type>
       <name>ConflictMinimizationAlgorithm_Name</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ac4fdc023451067acb40ce0ab6acb13a9</anchor>
-      <arglist>(ConflictMinimizationAlgorithm value)</arglist>
+      <anchor>ae096c22b537af54751598904cd4f8a48</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
       <name>ConflictMinimizationAlgorithm_Parse</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ade8d4fe9dae2d95d04cbb75d94b882d8</anchor>
-      <arglist>(const ::std::string &amp;name, ConflictMinimizationAlgorithm *value)</arglist>
+      <anchor>a3c0638c78551bf99edebcf29f8ae5383</anchor>
+      <arglist>(const std::string &amp;name, ConflictMinimizationAlgorithm *value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
@@ -16736,25 +17630,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::EnumDescriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>BinaryMinizationAlgorithm_descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a8966e1478b1c92b8d3fb9b0ef2bd6c42</anchor>
+      <anchor>af2796dfa9022846c716f43e105ced36b</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::std::string &amp;</type>
+      <type>static const std::string &amp;</type>
       <name>BinaryMinizationAlgorithm_Name</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a0020d12962e21d30b735dd18426d26d9</anchor>
-      <arglist>(BinaryMinizationAlgorithm value)</arglist>
+      <anchor>a64303bd96e74de80127201d244a176d7</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
       <name>BinaryMinizationAlgorithm_Parse</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a04afc825b2be6b6406f21a5e40d34119</anchor>
-      <arglist>(const ::std::string &amp;name, BinaryMinizationAlgorithm *value)</arglist>
+      <anchor>a845426838511816af9aca93a3c06d627</anchor>
+      <arglist>(const std::string &amp;name, BinaryMinizationAlgorithm *value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
@@ -16764,25 +17658,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::EnumDescriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>ClauseProtection_descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a32b6ca5af81080412353ca50282cc557</anchor>
+      <anchor>a6636cd7c449803277bc75421452af67f</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::std::string &amp;</type>
+      <type>static const std::string &amp;</type>
       <name>ClauseProtection_Name</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a4e7e26d7d49a1cfdfacaf2238608ef6e</anchor>
-      <arglist>(ClauseProtection value)</arglist>
+      <anchor>ab634a6ce39d4479a246ab7570d19746b</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
       <name>ClauseProtection_Parse</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a75c70671cc09c6f0c1df11731e11f441</anchor>
-      <arglist>(const ::std::string &amp;name, ClauseProtection *value)</arglist>
+      <anchor>a6bb81ad185b7e9ab599ed02bf6a15c3e</anchor>
+      <arglist>(const std::string &amp;name, ClauseProtection *value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
@@ -16792,25 +17686,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::EnumDescriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>ClauseOrdering_descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>aea6353f3cda72a34a89116be6087c164</anchor>
+      <anchor>a8a256dd17b3c0aacce7eed235c2001d6</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::std::string &amp;</type>
+      <type>static const std::string &amp;</type>
       <name>ClauseOrdering_Name</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a437df16b9ca15e73e188e94a5363c5b4</anchor>
-      <arglist>(ClauseOrdering value)</arglist>
+      <anchor>a2e7cd1ecd09a09e51e9d92b32881f6d3</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
       <name>ClauseOrdering_Parse</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ac4b379625407a03531940c603f6b33ea</anchor>
-      <arglist>(const ::std::string &amp;name, ClauseOrdering *value)</arglist>
+      <anchor>a8794003fa170bf864c9bf28376c2ca61</anchor>
+      <arglist>(const std::string &amp;name, ClauseOrdering *value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
@@ -16820,25 +17714,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::EnumDescriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>RestartAlgorithm_descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a3dc05fa5cdc2f995e2218f7c9bf73a37</anchor>
+      <anchor>af5c36f310f322203917bc2b327fbeaed</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::std::string &amp;</type>
+      <type>static const std::string &amp;</type>
       <name>RestartAlgorithm_Name</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a1c8b0f7a8aa9583ac016d9054f7b597c</anchor>
-      <arglist>(RestartAlgorithm value)</arglist>
+      <anchor>a7af1827e1598b546fd616885f8f50418</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
       <name>RestartAlgorithm_Parse</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a3202c943977c622d095ec4ffbcceffc4</anchor>
-      <arglist>(const ::std::string &amp;name, RestartAlgorithm *value)</arglist>
+      <anchor>a15247bf1aef4237a4bd4275c9a48a130</anchor>
+      <arglist>(const std::string &amp;name, RestartAlgorithm *value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
@@ -16848,25 +17742,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::EnumDescriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>MaxSatAssumptionOrder_descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>adc71dcb0b31c6d95033985af7135c87b</anchor>
+      <anchor>a80711a2c09fe1c8d062c0a68f79b74f7</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::std::string &amp;</type>
+      <type>static const std::string &amp;</type>
       <name>MaxSatAssumptionOrder_Name</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>aea935941ff08301dd73f60930c35aad0</anchor>
-      <arglist>(MaxSatAssumptionOrder value)</arglist>
+      <anchor>aacaf58a1a74d8c72edd5a6902ed0f8be</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
       <name>MaxSatAssumptionOrder_Parse</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a696b6d3f48af46ab32e35eab6beb44ee</anchor>
-      <arglist>(const ::std::string &amp;name, MaxSatAssumptionOrder *value)</arglist>
+      <anchor>a8210929b912e6b8c5fd22777ff5ec9f9</anchor>
+      <arglist>(const std::string &amp;name, MaxSatAssumptionOrder *value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
@@ -16876,25 +17770,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::EnumDescriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>MaxSatStratificationAlgorithm_descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a5c5cb3a3fb9ffc034ba78b9d02accef2</anchor>
+      <anchor>abdee1b886cf03364e8e14627534f307a</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::std::string &amp;</type>
+      <type>static const std::string &amp;</type>
       <name>MaxSatStratificationAlgorithm_Name</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a8e7c15deb129bd4ce0e63c0817bfeda0</anchor>
-      <arglist>(MaxSatStratificationAlgorithm value)</arglist>
+      <anchor>aeeb3819a43afadbbba637a5529469f99</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
       <name>MaxSatStratificationAlgorithm_Parse</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a09be63eaddc70dc7e4d5b6cf0a0e5a26</anchor>
-      <arglist>(const ::std::string &amp;name, MaxSatStratificationAlgorithm *value)</arglist>
+      <anchor>aee56a43cd5e54cbad9300b097f7cb9ee</anchor>
+      <arglist>(const std::string &amp;name, MaxSatStratificationAlgorithm *value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
@@ -16904,31 +17798,31 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::EnumDescriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>SearchBranching_descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a131679cbb21f9404089fba7c0beec697</anchor>
+      <anchor>a114dbeff5922ad917bb88b2590e9b17b</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::std::string &amp;</type>
+      <type>static const std::string &amp;</type>
       <name>SearchBranching_Name</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a138705335715574c8c51c90da336bd53</anchor>
-      <arglist>(SearchBranching value)</arglist>
+      <anchor>a9fd1df263e5922b78cd5f8b3ff939fe0</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
       <name>SearchBranching_Parse</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a094f12329b6c0d449d2d74bd6a424bbd</anchor>
-      <arglist>(const ::std::string &amp;name, SearchBranching *value)</arglist>
+      <anchor>aa5def0bf886a4ebe5660d33ba38703fb</anchor>
+      <arglist>(const std::string &amp;name, SearchBranching *value)</arglist>
     </member>
     <member kind="variable">
-      <type>static ::google::protobuf::internal::ExplicitlyConstructed&lt;::std::string &gt;</type>
+      <type>static ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed&lt; std::string &gt;</type>
       <name>_i_give_permission_to_break_this_code_default_default_restart_algorithms_</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a87cc48db7a45852491e2c497b1351c0a</anchor>
+      <anchor>ab8c128b64cb3cb39cae2aedc1ddbaa9c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -16939,486 +17833,486 @@
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const VariableOrder</type>
+      <type>static constexpr VariableOrder</type>
       <name>IN_ORDER</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>aab7c39c7967989bc649796f7d0895f11</anchor>
+      <anchor>adad61cb8c48e7cd47c94823daf419b4e</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const VariableOrder</type>
+      <type>static constexpr VariableOrder</type>
       <name>IN_REVERSE_ORDER</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>abd72c94ebf8070bb83c7c65cb40344a7</anchor>
+      <anchor>ad426422ff60534d9f59c9e13bd511e39</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const VariableOrder</type>
+      <type>static constexpr VariableOrder</type>
       <name>IN_RANDOM_ORDER</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a7026e9d849b6edc6004041381574bed7</anchor>
+      <anchor>ac90d0823e400a7d7d305738773e65f2f</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const VariableOrder</type>
+      <type>static constexpr VariableOrder</type>
       <name>VariableOrder_MIN</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a096aacfba17e165157532d06fb0d5a97</anchor>
+      <anchor>aacd8bf53f3333b2013f2cc1a7e01ea48</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const VariableOrder</type>
+      <type>static constexpr VariableOrder</type>
       <name>VariableOrder_MAX</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a751655caacc2971f471ff5a696622a93</anchor>
+      <anchor>a0a6dedca5e472d92b2667839889825c5</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const int</type>
+      <type>static constexpr int</type>
       <name>VariableOrder_ARRAYSIZE</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a22ed1e37a58cc754ceecaa75ff8869a6</anchor>
+      <anchor>af24bba72e9fcce633208fbda37ac27db</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Polarity</type>
+      <type>static constexpr Polarity</type>
       <name>POLARITY_TRUE</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a4d725db13d7dfeb831b8fd3a7555b14b</anchor>
+      <anchor>adf6d4457b4e4e62f4a4281fccceb506b</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Polarity</type>
+      <type>static constexpr Polarity</type>
       <name>POLARITY_FALSE</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>aa313ce97ef3038b27bdf7d51f02cc09e</anchor>
+      <anchor>a2155720e133e08f6e32365cfa04852c5</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Polarity</type>
+      <type>static constexpr Polarity</type>
       <name>POLARITY_RANDOM</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a5cf220ea3cfb9980aa790af3c9e9569f</anchor>
+      <anchor>ae1b31252b9fb880bc92d45ca8014246d</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Polarity</type>
+      <type>static constexpr Polarity</type>
       <name>POLARITY_WEIGHTED_SIGN</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ac90816275d11367a0e0c32c5b26158a1</anchor>
+      <anchor>a9a805c6dca8255c45e37b81283780974</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Polarity</type>
+      <type>static constexpr Polarity</type>
       <name>POLARITY_REVERSE_WEIGHTED_SIGN</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>aa6742ee90c34b205a5c0cfe17191ab68</anchor>
+      <anchor>a373210e9e33c7de5fd43fb07cc78ac3e</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Polarity</type>
+      <type>static constexpr Polarity</type>
       <name>Polarity_MIN</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a84a5fee9d824f0d8aebb23185757de39</anchor>
+      <anchor>af8ac098aed6bf7f8a52531d2f655a2af</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Polarity</type>
+      <type>static constexpr Polarity</type>
       <name>Polarity_MAX</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>aa34eda498b6cc1768de190f6b1bdc1bf</anchor>
+      <anchor>a1b03a101da6d03e3d476b1a79f3c9e4c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const int</type>
+      <type>static constexpr int</type>
       <name>Polarity_ARRAYSIZE</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ad35f31dfec1e267469d3516355378631</anchor>
+      <anchor>a8407edc9430519fc8067920fa4601e9a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ConflictMinimizationAlgorithm</type>
+      <type>static constexpr ConflictMinimizationAlgorithm</type>
       <name>NONE</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>acfe8f027464d9683d13a613f6e64a888</anchor>
+      <anchor>a11a99e284516133016d4f08e988e8848</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ConflictMinimizationAlgorithm</type>
+      <type>static constexpr ConflictMinimizationAlgorithm</type>
       <name>SIMPLE</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a0dea1ec8fc4091058590032d8866a104</anchor>
+      <anchor>a9206fede2fc1c6d18c268812c11b4386</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ConflictMinimizationAlgorithm</type>
+      <type>static constexpr ConflictMinimizationAlgorithm</type>
       <name>RECURSIVE</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ab0cb198805b7f786d8812e735bb08a94</anchor>
+      <anchor>afb3bbcb0e2d56baaa610c1d55d2448a9</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ConflictMinimizationAlgorithm</type>
+      <type>static constexpr ConflictMinimizationAlgorithm</type>
       <name>EXPERIMENTAL</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>aeaef638996b6f51cebebbc73658f5aad</anchor>
+      <anchor>a30c54411c509ab0dd993c4c4f8a4d62c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ConflictMinimizationAlgorithm</type>
+      <type>static constexpr ConflictMinimizationAlgorithm</type>
       <name>ConflictMinimizationAlgorithm_MIN</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a9fdd8a0fb42b0abe3ade65879a54e858</anchor>
+      <anchor>a8841141976250822e9e1ae22cdbca3b8</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ConflictMinimizationAlgorithm</type>
+      <type>static constexpr ConflictMinimizationAlgorithm</type>
       <name>ConflictMinimizationAlgorithm_MAX</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a06b4cdfe9d6815efa2db7339340129b4</anchor>
+      <anchor>a3969b6248e8af7ec02e2655490ef6534</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const int</type>
+      <type>static constexpr int</type>
       <name>ConflictMinimizationAlgorithm_ARRAYSIZE</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a99e141ddd096a6d07b42823fa6e8f3ee</anchor>
+      <anchor>a5838e8ff773f89a1b457398877f854a8</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const BinaryMinizationAlgorithm</type>
+      <type>static constexpr BinaryMinizationAlgorithm</type>
       <name>NO_BINARY_MINIMIZATION</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>af40696f27c44fe19b067c6d8bb2da17b</anchor>
+      <anchor>a3811f69fdb8c2299a49ccf927e61f896</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const BinaryMinizationAlgorithm</type>
+      <type>static constexpr BinaryMinizationAlgorithm</type>
       <name>BINARY_MINIMIZATION_FIRST</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a69007d20eb576d240318e5e7a6bde061</anchor>
+      <anchor>a6d6ab41394f8bdef178abadddecd07b8</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const BinaryMinizationAlgorithm</type>
+      <type>static constexpr BinaryMinizationAlgorithm</type>
       <name>BINARY_MINIMIZATION_FIRST_WITH_TRANSITIVE_REDUCTION</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>aa79b9c9d2c5a5f57f6dfe8063bcaed32</anchor>
+      <anchor>aacd46dd1106f6a1f1fb33ed83aa02be2</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const BinaryMinizationAlgorithm</type>
+      <type>static constexpr BinaryMinizationAlgorithm</type>
       <name>BINARY_MINIMIZATION_WITH_REACHABILITY</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a59f1b5df734beb3bba823a8903c87678</anchor>
+      <anchor>a457b59b4e428e89ad36f6b7a3008ca83</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const BinaryMinizationAlgorithm</type>
+      <type>static constexpr BinaryMinizationAlgorithm</type>
       <name>EXPERIMENTAL_BINARY_MINIMIZATION</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a6918b20342fb3a7e1aed146137ab2f64</anchor>
+      <anchor>a158f6663209bf0ac40cdd1b3065fdf71</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const BinaryMinizationAlgorithm</type>
+      <type>static constexpr BinaryMinizationAlgorithm</type>
       <name>BinaryMinizationAlgorithm_MIN</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>aef8529ff207405baba83f4680ed0f383</anchor>
+      <anchor>a2806f19428752bc08e1c488f9b117853</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const BinaryMinizationAlgorithm</type>
+      <type>static constexpr BinaryMinizationAlgorithm</type>
       <name>BinaryMinizationAlgorithm_MAX</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>adf8dd60fb14b4f08cd5f651b38f79c77</anchor>
+      <anchor>a1f4c2b8d7b3363d4448700c28be529aa</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const int</type>
+      <type>static constexpr int</type>
       <name>BinaryMinizationAlgorithm_ARRAYSIZE</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a5d3c53e24031b3a21e7147275ad29b39</anchor>
+      <anchor>a84a0c817ce5590f619fa3913112d163a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ClauseProtection</type>
+      <type>static constexpr ClauseProtection</type>
       <name>PROTECTION_NONE</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>aefc25ec61b528fcd02226705d5ea6217</anchor>
+      <anchor>aaa4dbfcffead4532eeadd626e95e3e0e</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ClauseProtection</type>
+      <type>static constexpr ClauseProtection</type>
       <name>PROTECTION_ALWAYS</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a941cb40b2f39ef4efeebb1e70f8ff937</anchor>
+      <anchor>aa142b0dac67760773d10b35ab0744752</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ClauseProtection</type>
+      <type>static constexpr ClauseProtection</type>
       <name>PROTECTION_LBD</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a8efc4b1f266490d69e39018ae138949b</anchor>
+      <anchor>a80adef83e0ba836ac7f3313d176a098b</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ClauseProtection</type>
+      <type>static constexpr ClauseProtection</type>
       <name>ClauseProtection_MIN</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ae316c121bce984d78d3b24c13a841f58</anchor>
+      <anchor>ae763497b6449cec56f0028075b9d9a89</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ClauseProtection</type>
+      <type>static constexpr ClauseProtection</type>
       <name>ClauseProtection_MAX</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a6635ac1dde37a5f23419e6e377d1e4bf</anchor>
+      <anchor>a022072bfb734bca33b3066de63714be6</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const int</type>
+      <type>static constexpr int</type>
       <name>ClauseProtection_ARRAYSIZE</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a5aff806eddf4c716950dd02389957201</anchor>
+      <anchor>a13e89948bbfa5c7ab2cd2c0c826069cd</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ClauseOrdering</type>
+      <type>static constexpr ClauseOrdering</type>
       <name>CLAUSE_ACTIVITY</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a3993fcfa9890a765a3525ba8f53c7538</anchor>
+      <anchor>aa5ed59a4b434dc7d905bc77d9105ee0c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ClauseOrdering</type>
+      <type>static constexpr ClauseOrdering</type>
       <name>CLAUSE_LBD</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a882ac7be48af6c9c5e4d9701b27faf21</anchor>
+      <anchor>a283d86d150af1fc8ff2391d3cbcfeeee</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ClauseOrdering</type>
+      <type>static constexpr ClauseOrdering</type>
       <name>ClauseOrdering_MIN</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ac65f112c37e68734baa6537ac4a904e9</anchor>
+      <anchor>a12597794e5b74f5243ccb7247337b332</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ClauseOrdering</type>
+      <type>static constexpr ClauseOrdering</type>
       <name>ClauseOrdering_MAX</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a0e75cfa647164057bbd3b316a837fddd</anchor>
+      <anchor>a4c74dd07e925009cbef07c563f75d223</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const int</type>
+      <type>static constexpr int</type>
       <name>ClauseOrdering_ARRAYSIZE</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a07da5cc47f8e6cc6db6be5e055580ab5</anchor>
+      <anchor>acabe8c5c83ae1a24f385f2766401e6ca</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const RestartAlgorithm</type>
+      <type>static constexpr RestartAlgorithm</type>
       <name>NO_RESTART</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a039ae13cd6b782e1f99678d4d28015a4</anchor>
+      <anchor>ada783388ee445131473f52990e0d29e1</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const RestartAlgorithm</type>
+      <type>static constexpr RestartAlgorithm</type>
       <name>LUBY_RESTART</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a3b12089e6ab77ba0ccce005404b6bdaa</anchor>
+      <anchor>ae7ab3368898d3e0a77ccd09102e645c5</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const RestartAlgorithm</type>
+      <type>static constexpr RestartAlgorithm</type>
       <name>DL_MOVING_AVERAGE_RESTART</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a0a52bb15631c83768272904bfcfe9624</anchor>
+      <anchor>a65730fb52dcf4ce5d66419c7179df542</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const RestartAlgorithm</type>
+      <type>static constexpr RestartAlgorithm</type>
       <name>LBD_MOVING_AVERAGE_RESTART</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a548bf4dbe7fe1edc79c4b0ff0ccb1e8b</anchor>
+      <anchor>ac24828a61e9a4ee5f343dfae89d33843</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const RestartAlgorithm</type>
+      <type>static constexpr RestartAlgorithm</type>
       <name>FIXED_RESTART</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a72bdf170f7b41fc06597fbcc01fe3025</anchor>
+      <anchor>a2672c445112fcc4f5570a37d59783bd5</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const RestartAlgorithm</type>
+      <type>static constexpr RestartAlgorithm</type>
       <name>RestartAlgorithm_MIN</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>abb7bcdf9aad20babd08b21fabc28848d</anchor>
+      <anchor>ac60247aab0bf6144f990259cdb5d2cbf</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const RestartAlgorithm</type>
+      <type>static constexpr RestartAlgorithm</type>
       <name>RestartAlgorithm_MAX</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a8dbc16942213b9aaf1b2dc8f887ca2b4</anchor>
+      <anchor>accc13eb79a2b42694d69a198ea2faf5c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const int</type>
+      <type>static constexpr int</type>
       <name>RestartAlgorithm_ARRAYSIZE</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ae721a71cfc3a975c1204bdb7d4f008d7</anchor>
+      <anchor>a1112b1ae2f5a33f0d5aded507afff519</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const MaxSatAssumptionOrder</type>
+      <type>static constexpr MaxSatAssumptionOrder</type>
       <name>DEFAULT_ASSUMPTION_ORDER</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ad7b7f934e8517cf796868eae9b3d2754</anchor>
+      <anchor>a1c0cc798810280747de3cb5d8da7ab8f</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const MaxSatAssumptionOrder</type>
+      <type>static constexpr MaxSatAssumptionOrder</type>
       <name>ORDER_ASSUMPTION_BY_DEPTH</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a6c958cd2b6193a939404d328049b2c42</anchor>
+      <anchor>a44233b88df8f648291109a21413ec1b7</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const MaxSatAssumptionOrder</type>
+      <type>static constexpr MaxSatAssumptionOrder</type>
       <name>ORDER_ASSUMPTION_BY_WEIGHT</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a241a9b2e33328b7462841a00de8b98ac</anchor>
+      <anchor>a3e24268cd192509216e64c3247d3ee4e</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const MaxSatAssumptionOrder</type>
+      <type>static constexpr MaxSatAssumptionOrder</type>
       <name>MaxSatAssumptionOrder_MIN</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a70bb2afa1b27329c604e668f04d92e69</anchor>
+      <anchor>abe3018b3726717006b1f62acda6098c1</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const MaxSatAssumptionOrder</type>
+      <type>static constexpr MaxSatAssumptionOrder</type>
       <name>MaxSatAssumptionOrder_MAX</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a1c83568d861a69277f8048192f6bbc05</anchor>
+      <anchor>af59e16b3a3534348df927653593cca37</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const int</type>
+      <type>static constexpr int</type>
       <name>MaxSatAssumptionOrder_ARRAYSIZE</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a549d159c9ca81f44357b8b0aaee3754d</anchor>
+      <anchor>ae4454454867fbc6b11dcdeb9a11aae62</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const MaxSatStratificationAlgorithm</type>
+      <type>static constexpr MaxSatStratificationAlgorithm</type>
       <name>STRATIFICATION_NONE</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a41af0908f9b89fe55649767609040acb</anchor>
+      <anchor>ae3e688d4d8665595388024c804d02313</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const MaxSatStratificationAlgorithm</type>
+      <type>static constexpr MaxSatStratificationAlgorithm</type>
       <name>STRATIFICATION_DESCENT</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>af8c3f740d6416c55d029b1fc1cc208f6</anchor>
+      <anchor>a86479bcb0657b9073728d1396d18a97a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const MaxSatStratificationAlgorithm</type>
+      <type>static constexpr MaxSatStratificationAlgorithm</type>
       <name>STRATIFICATION_ASCENT</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a52849202bd1f8caa584392c7894676da</anchor>
+      <anchor>a98a2d480fd9bb1dabfd53d8e76584d6f</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const MaxSatStratificationAlgorithm</type>
+      <type>static constexpr MaxSatStratificationAlgorithm</type>
       <name>MaxSatStratificationAlgorithm_MIN</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>aaeecf950f2739bbf56ce999d68d13309</anchor>
+      <anchor>a4ab09c24a9a649c58af0fa763a7f20e0</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const MaxSatStratificationAlgorithm</type>
+      <type>static constexpr MaxSatStratificationAlgorithm</type>
       <name>MaxSatStratificationAlgorithm_MAX</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a3264acff21635894db666781f77205f4</anchor>
+      <anchor>a2353c911319a686f3a7e5a4b2d7d098b</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const int</type>
+      <type>static constexpr int</type>
       <name>MaxSatStratificationAlgorithm_ARRAYSIZE</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a6876ba2c6d0ad20aea70014f09f2f267</anchor>
+      <anchor>ab13e4e1d1ac373223422b55433d07ffd</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const SearchBranching</type>
+      <type>static constexpr SearchBranching</type>
       <name>AUTOMATIC_SEARCH</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ac9deaec5fe4bf4180c402e61d23b82f0</anchor>
+      <anchor>a6ef30a08ad64ae30b432d37ff09aaf6c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const SearchBranching</type>
+      <type>static constexpr SearchBranching</type>
       <name>FIXED_SEARCH</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a4890ad17eafc5aa7b1dcd7818a18d601</anchor>
+      <anchor>a8d16e29509bb32191869438d7bbfb436</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const SearchBranching</type>
+      <type>static constexpr SearchBranching</type>
       <name>PORTFOLIO_SEARCH</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>afb1ea4767376332394160940313806ac</anchor>
+      <anchor>a35dd900bc32a6a2dce80054f9fe95f6e</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const SearchBranching</type>
+      <type>static constexpr SearchBranching</type>
       <name>LP_SEARCH</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ab4804e8357aac35b14a37dfd871d3ce2</anchor>
+      <anchor>ae5ae9725c90d386a85ae39493b72b8e9</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const SearchBranching</type>
+      <type>static constexpr SearchBranching</type>
       <name>PSEUDO_COST_SEARCH</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a1e2441ec2726b8957f3a9b0cc6ac5b4f</anchor>
+      <anchor>a9971fc10dee1257f9c8453621dc7799c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const SearchBranching</type>
+      <type>static constexpr SearchBranching</type>
       <name>PORTFOLIO_WITH_QUICK_RESTART_SEARCH</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a6eda43a2cf694cb7856dde222e1fc87b</anchor>
+      <anchor>ad6a4d8239cdff7440e1c57078d26ef95</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const SearchBranching</type>
+      <type>static constexpr SearchBranching</type>
       <name>SearchBranching_MIN</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ad6fefc3c15637bd5b72f5658cf70d80b</anchor>
+      <anchor>aa0ed785558da77807e90c35fc6d13227</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const SearchBranching</type>
+      <type>static constexpr SearchBranching</type>
       <name>SearchBranching_MAX</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>adb4b9d057fde96f94f7c0bab1d203346</anchor>
+      <anchor>ad6ece3fc1ac949e81d11fd3aa0ff5257</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const int</type>
+      <type>static constexpr int</type>
       <name>SearchBranching_ARRAYSIZE</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a93e71a28216f0a05511cc130748fb96e</anchor>
+      <anchor>a767188f203e3d604715b4b501cd69a4f</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -18102,20 +18996,6 @@
     </member>
     <member kind="variable" static="yes">
       <type>static const int</type>
-      <name>kUseOptionalVariablesFieldNumber</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ab235b1dadc66cfdcc2028440e484fff4</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>static const int</type>
-      <name>kUseExactLpReasonFieldNumber</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ac7683b3a2936667b0717e99694dfab20</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>static const int</type>
       <name>kCpModelProbingLevelFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>afbf561236292602be18854f2bb02f29b</anchor>
@@ -18147,6 +19027,27 @@
       <name>kExploitIntegerLpSolutionFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a890e3e04001aab3224a754f07592ec9f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const int</type>
+      <name>kLnsIsDeterministicFieldNumber</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>aa5fbbb1a9892fb54e4d500c044c455d2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const int</type>
+      <name>kUseOptionalVariablesFieldNumber</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>ab235b1dadc66cfdcc2028440e484fff4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const int</type>
+      <name>kUseExactLpReasonFieldNumber</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>ac7683b3a2936667b0717e99694dfab20</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -18203,6 +19104,13 @@
       <name>kMipCheckPrecisionFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a0a19f4ba1b97ab1cd80e227b41e4fbae</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
       <arglist></arglist>
     </member>
     <member kind="friend">
@@ -18458,11 +19366,25 @@
       <arglist>(const TableConstraintProto &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>TableConstraintProto</name>
+      <anchorfile>classoperations__research_1_1sat_1_1TableConstraintProto.html</anchorfile>
+      <anchor>a2df83a90848ba0eb7f50e32beae2cbb8</anchor>
+      <arglist>(TableConstraintProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>TableConstraintProto &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1sat_1_1TableConstraintProto.html</anchorfile>
       <anchor>a1c026db493b5064e9ce685013912e67f</anchor>
       <arglist>(const TableConstraintProto &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>TableConstraintProto &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1sat_1_1TableConstraintProto.html</anchorfile>
+      <anchor>a30c497155674d236b3eaccd249508436</anchor>
+      <arglist>(TableConstraintProto &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -18482,22 +19404,22 @@
       <type>TableConstraintProto *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1sat_1_1TableConstraintProto.html</anchorfile>
-      <anchor>ac32c367b2e64008e84ed459e6b36b337</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a882fecc12bd2d0d3941b12843b680b84</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1TableConstraintProto.html</anchorfile>
-      <anchor>a29595acc87491e4baa443dff8a553085</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a6b129a89827687b57c1f6cf8e7b56bd0</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1sat_1_1TableConstraintProto.html</anchorfile>
-      <anchor>a1c8f7f2a4102935aab12103884c93f6a</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a35e5f3a4997d475832f12b577648d6f0</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -18538,22 +19460,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1sat_1_1TableConstraintProto.html</anchorfile>
-      <anchor>a4acfab8c4cb91a62bdb315ee01cbc399</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>abcd1b2506c494838c9558422de0b7723</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1sat_1_1TableConstraintProto.html</anchorfile>
-      <anchor>aa3d5038f619f4d26df68912643c9c19b</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>a63b6cfb1dbb3d4192511798010360e93</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1sat_1_1TableConstraintProto.html</anchorfile>
-      <anchor>aad65e0b4426550b418a8581478c6a956</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>a2aec5796d37cf916cfc7993a00b338c7</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -18563,10 +19485,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1sat_1_1TableConstraintProto.html</anchorfile>
-      <anchor>af70593a7881923531e6ec0b6bd633b0e</anchor>
+      <anchor>a9fcc9b44747889c9138112e77d6f6f2d</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -18584,38 +19506,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1TableConstraintProto.html</anchorfile>
-      <anchor>af08a9d644b6c6b919a525d93eaecdc7f</anchor>
+      <anchor>a8913fab975f337a838810df126f01689</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1TableConstraintProto.html</anchorfile>
-      <anchor>a99f424f79fa01716a8973836a6403c9a</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>ad7208a4d07f1bdf32fd13fc09956a9bb</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1TableConstraintProto.html</anchorfile>
-      <anchor>a7816ae8513ee482a4388cb15208a2482</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>ac01216912b17e0583d3115dbc5551d88</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1TableConstraintProto.html</anchorfile>
-      <anchor>a7ff12db3864cbbbd9ea188f0ea1b131a</anchor>
+      <anchor>af6132f010a730c8233ec808ca1f32a69</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_vars</name>
       <anchorfile>classoperations__research_1_1sat_1_1TableConstraintProto.html</anchorfile>
-      <anchor>a1f5e2d436e0bc4c401097d5afc844efc</anchor>
+      <anchor>a26f3b7f29ec0ec1340ea8f0d8a0b8cde</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -18633,38 +19555,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>values</name>
       <anchorfile>classoperations__research_1_1sat_1_1TableConstraintProto.html</anchorfile>
-      <anchor>ad44be45403c52030c76eb10d03dc287c</anchor>
+      <anchor>a8d723adf3db45a78f51f57a2126eba68</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_values</name>
       <anchorfile>classoperations__research_1_1sat_1_1TableConstraintProto.html</anchorfile>
-      <anchor>aae2e73a33d7caf8229a98777b764038b</anchor>
-      <arglist>(int index, ::google::protobuf::int64 value)</arglist>
+      <anchor>ab815bc07664ff575f4e693b377f0625a</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_values</name>
       <anchorfile>classoperations__research_1_1sat_1_1TableConstraintProto.html</anchorfile>
-      <anchor>a5b3b062000ff1eccafe2da65be87ec2c</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>ad862bbb2d31214c25269ec4fbe15e609</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; &amp;</type>
       <name>values</name>
       <anchorfile>classoperations__research_1_1sat_1_1TableConstraintProto.html</anchorfile>
-      <anchor>a704cd614efff326dd36876f219f8aeed</anchor>
+      <anchor>ab120f76b7b57a84566fe588cbbeb5ae0</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int64 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int64 &gt; *</type>
       <name>mutable_values</name>
       <anchorfile>classoperations__research_1_1sat_1_1TableConstraintProto.html</anchorfile>
-      <anchor>a5a023305323cffb9478f0bd32376e2b9</anchor>
+      <anchor>a0369e6125e1556a0dc2b7d7da5363e9d</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -18689,10 +19611,24 @@
       <arglist>(bool value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1sat_1_1TableConstraintProto.html</anchorfile>
-      <anchor>a348929fafab761e7a99660c2b81cc05f</anchor>
+      <anchor>a54d5dff03aeac74c96c134b5bd656378</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1sat_1_1TableConstraintProto.html</anchorfile>
+      <anchor>a7e9ea2067b30723b219a76fdc36ed58f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1sat_1_1TableConstraintProto.html</anchorfile>
+      <anchor>a1fd5b9f3387f9bdb9aaece4d6b7489e0</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -18745,6 +19681,13 @@
       <arglist></arglist>
     </member>
     <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1sat_1_1TableConstraintProto.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
       <type>friend struct</type>
       <name>::TableStruct_ortools_2fsat_2fcp_5fmodel_2eproto</name>
       <anchorfile>classoperations__research_1_1sat_1_1TableConstraintProto.html</anchorfile>
@@ -18763,45 +19706,45 @@
     <name>TableStruct_ortools_2fsat_2fcp_5fmodel_2eproto</name>
     <filename>structTableStruct__ortools__2fsat__2fcp__5fmodel__2eproto.html</filename>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::internal::ParseTableField entries []</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTableField entries []</type>
       <name>PROTOBUF_SECTION_VARIABLE</name>
       <anchorfile>structTableStruct__ortools__2fsat__2fcp__5fmodel__2eproto.html</anchorfile>
-      <anchor>ae2bf684da069ec17ebefa296adb22993</anchor>
+      <anchor>ab2cd557c4dac3e40f17f1b149170fa59</anchor>
       <arglist>(protodesc_cold)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::internal::AuxillaryParseTableField aux []</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::internal::AuxillaryParseTableField aux []</type>
       <name>PROTOBUF_SECTION_VARIABLE</name>
       <anchorfile>structTableStruct__ortools__2fsat__2fcp__5fmodel__2eproto.html</anchorfile>
-      <anchor>a4a8ba0ded625913812da9d0b273f5c7f</anchor>
+      <anchor>ad24d39651bea2cdf9a4cdcd7e8a83838</anchor>
       <arglist>(protodesc_cold)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::internal::ParseTable schema [24]</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema [24]</type>
       <name>PROTOBUF_SECTION_VARIABLE</name>
       <anchorfile>structTableStruct__ortools__2fsat__2fcp__5fmodel__2eproto.html</anchorfile>
-      <anchor>aadbc72e8b80df0e57b1d038e2ebb5a5a</anchor>
+      <anchor>a6b76a418b26fed74383dd10053e84c96</anchor>
       <arglist>(protodesc_cold)</arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ::google::protobuf::internal::FieldMetadata</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::internal::FieldMetadata</type>
       <name>field_metadata</name>
       <anchorfile>structTableStruct__ortools__2fsat__2fcp__5fmodel__2eproto.html</anchorfile>
-      <anchor>a2a956171ed889dbcef47d7258c058b89</anchor>
+      <anchor>ad26edd68cb6615a762cbfe94efad2eb6</anchor>
       <arglist>[]</arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ::google::protobuf::internal::SerializationTable</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::internal::SerializationTable</type>
       <name>serialization_table</name>
       <anchorfile>structTableStruct__ortools__2fsat__2fcp__5fmodel__2eproto.html</anchorfile>
-      <anchor>ac9df3dc13cf6f89405c66a081ffe833d</anchor>
+      <anchor>a22a47948e790d2d2d04a586faaa01e54</anchor>
       <arglist>[]</arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ::google::protobuf::uint32</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::uint32</type>
       <name>offsets</name>
       <anchorfile>structTableStruct__ortools__2fsat__2fcp__5fmodel__2eproto.html</anchorfile>
-      <anchor>ace6ed23e4e261a5f5b41ec94ebe7ff29</anchor>
+      <anchor>ad86f34f978df579b088079980476e75d</anchor>
       <arglist>[]</arglist>
     </member>
   </compound>
@@ -18809,335 +19752,51 @@
     <name>TableStruct_ortools_2fsat_2fsat_5fparameters_2eproto</name>
     <filename>structTableStruct__ortools__2fsat__2fsat__5fparameters__2eproto.html</filename>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::internal::ParseTableField entries []</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTableField entries []</type>
       <name>PROTOBUF_SECTION_VARIABLE</name>
       <anchorfile>structTableStruct__ortools__2fsat__2fsat__5fparameters__2eproto.html</anchorfile>
-      <anchor>a45e4823caaa375e4256d4bef9f4ecc88</anchor>
+      <anchor>af29db2b4097b70d5d728461bcfca9ffd</anchor>
       <arglist>(protodesc_cold)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::internal::AuxillaryParseTableField aux []</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::internal::AuxillaryParseTableField aux []</type>
       <name>PROTOBUF_SECTION_VARIABLE</name>
       <anchorfile>structTableStruct__ortools__2fsat__2fsat__5fparameters__2eproto.html</anchorfile>
-      <anchor>a8e3aaa6a265314766ef0b541cfaf56e9</anchor>
+      <anchor>a903f3f288a4d1c6e555c186f02482a14</anchor>
       <arglist>(protodesc_cold)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::internal::ParseTable schema [1]</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema [1]</type>
       <name>PROTOBUF_SECTION_VARIABLE</name>
       <anchorfile>structTableStruct__ortools__2fsat__2fsat__5fparameters__2eproto.html</anchorfile>
-      <anchor>a591b5d07c121c984719dbf4fcdd8cd50</anchor>
+      <anchor>a6f40f1a585bbc934178959a315ac0d42</anchor>
       <arglist>(protodesc_cold)</arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ::google::protobuf::internal::FieldMetadata</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::internal::FieldMetadata</type>
       <name>field_metadata</name>
       <anchorfile>structTableStruct__ortools__2fsat__2fsat__5fparameters__2eproto.html</anchorfile>
-      <anchor>a9d4b81cf8b41b0cfc7e999500b7d70f7</anchor>
+      <anchor>a5b79f1673db4a0c63db5fe67fc9d558d</anchor>
       <arglist>[]</arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ::google::protobuf::internal::SerializationTable</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::internal::SerializationTable</type>
       <name>serialization_table</name>
       <anchorfile>structTableStruct__ortools__2fsat__2fsat__5fparameters__2eproto.html</anchorfile>
-      <anchor>a1b323b885ae3884bcc86749b33bbbd04</anchor>
+      <anchor>afc73598fde64f17f1a22e47097b3a6c9</anchor>
       <arglist>[]</arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ::google::protobuf::uint32</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::uint32</type>
       <name>offsets</name>
       <anchorfile>structTableStruct__ortools__2fsat__2fsat__5fparameters__2eproto.html</anchorfile>
-      <anchor>a0f4088c97bd013efcbc107dcb32d3fbd</anchor>
+      <anchor>a4178f61ecf4882088d35687afd6e3540</anchor>
       <arglist>[]</arglist>
     </member>
   </compound>
   <compound kind="namespace">
-    <name>google</name>
-    <filename>namespacegoogle.html</filename>
-    <namespace>google::protobuf</namespace>
-  </compound>
-  <compound kind="namespace">
-    <name>google::protobuf</name>
-    <filename>namespacegoogle_1_1protobuf.html</filename>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::CpSolverStatus &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::DecisionStrategyProto_DomainReductionStrategy &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::DecisionStrategyProto_VariableSelectionStrategy &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_BinaryMinizationAlgorithm &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_ClauseOrdering &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_ClauseProtection &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_ConflictMinimizationAlgorithm &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_MaxSatAssumptionOrder &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_MaxSatStratificationAlgorithm &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_Polarity &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_RestartAlgorithm &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_SearchBranching &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::sat::SatParameters_VariableOrder &gt;</class>
-    <member kind="function">
-      <type>::operations_research::sat::AllDifferentConstraintProto *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::AllDifferentConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>ab6c5ebe14cfc68d93a5f60686f2ae22d</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::AutomatonConstraintProto *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::AutomatonConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a47da04ba2be147be8b0a249d1127175f</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::BoolArgumentProto *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::BoolArgumentProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>ad530047c3866901687cad573a8902a36</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::CircuitConstraintProto *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::CircuitConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>ab8dbc8cdb17b07a5682228a84ca326a7</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::CircuitCoveringConstraintProto *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::CircuitCoveringConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a65ba1bb90bf8b69684824af54ed34061</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::ConstraintProto *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::ConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a194b7268d38aea43cf720189f2c7d933</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::CpModelProto *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::CpModelProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>aad6b5a46ab5d2233f555b7eaa7f9dc8b</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::CpObjectiveProto *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::CpObjectiveProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>afbd10e0381bdcea8db6a4b8b1ddda5b4</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::CpSolverResponse *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::CpSolverResponse &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>abdc2b7a036c638cad9b003b8e2ae38fb</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::CumulativeConstraintProto *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::CumulativeConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a8c7246d8fad339bf133ecf5ce8b70e6f</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::DecisionStrategyProto *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::DecisionStrategyProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>ab396a7c48de804df389f1fde37cd4aed</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::DecisionStrategyProto_AffineTransformation *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::DecisionStrategyProto_AffineTransformation &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a8dafed95c6efbf6296753a9a90923388</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::ElementConstraintProto *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::ElementConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a4e0bfccb327b7e1ef475d48d813554ac</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::IntegerArgumentProto *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::IntegerArgumentProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>ad1456edebbb93b07e4cb7b231c6d5d1c</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::IntegerVariableProto *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::IntegerVariableProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a8e446e46683177ee44ab293e2c35231b</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::IntervalConstraintProto *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::IntervalConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a23fd3de0c47884bbebb25116ece5c2d7</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::InverseConstraintProto *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::InverseConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a6fd2c00fa691e2d0a3ec45cf883dfdf5</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::LinearConstraintProto *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::LinearConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>abe77e6dc60fd9e0d5c696b1b55c2fccd</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::NoOverlap2DConstraintProto *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::NoOverlap2DConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>ab081583e505c7c4003cc7981f7bd354f</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::NoOverlapConstraintProto *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::NoOverlapConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>aa61f6fa8185bc8617023420148f33045</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::PartialVariableAssignment *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::PartialVariableAssignment &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a9605edce6c8d1b9f2b465ea3cf193e72</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::ReservoirConstraintProto *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::ReservoirConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>adb8db465df82459433570257339128c1</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::RoutesConstraintProto *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::RoutesConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>ae061245ac4989a9fa86f211ccf1a94bb</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::TableConstraintProto *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::TableConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>ab58f5023a24725742e59513c8a5785e2</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>const EnumDescriptor *</type>
-      <name>GetEnumDescriptor&lt; ::operations_research::sat::DecisionStrategyProto_VariableSelectionStrategy &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a932a088438a4a18cac0d84a50f9cef93</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>const EnumDescriptor *</type>
-      <name>GetEnumDescriptor&lt; ::operations_research::sat::DecisionStrategyProto_DomainReductionStrategy &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>ab7bf2119b197f54b7cfb237d392a3b31</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>const EnumDescriptor *</type>
-      <name>GetEnumDescriptor&lt; ::operations_research::sat::CpSolverStatus &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a61f6bf84c590e6ff99427d674d30cc9c</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::sat::SatParameters *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::sat::SatParameters &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a5e3ba24b3733dab6d3aac5a8deec1fc6</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>const EnumDescriptor *</type>
-      <name>GetEnumDescriptor&lt; ::operations_research::sat::SatParameters_VariableOrder &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>affaa52e637aa5700a18de9de15d50802</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>const EnumDescriptor *</type>
-      <name>GetEnumDescriptor&lt; ::operations_research::sat::SatParameters_Polarity &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a7ce45884a30882618460722b3f5b6a63</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>const EnumDescriptor *</type>
-      <name>GetEnumDescriptor&lt; ::operations_research::sat::SatParameters_ConflictMinimizationAlgorithm &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a865dfb0c8234642d80df4b0f91914a54</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>const EnumDescriptor *</type>
-      <name>GetEnumDescriptor&lt; ::operations_research::sat::SatParameters_BinaryMinizationAlgorithm &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a53653792bc958c9d29044e3ab139254b</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>const EnumDescriptor *</type>
-      <name>GetEnumDescriptor&lt; ::operations_research::sat::SatParameters_ClauseProtection &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>ad34fd79c2176b0344e2a5a649cfcca5e</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>const EnumDescriptor *</type>
-      <name>GetEnumDescriptor&lt; ::operations_research::sat::SatParameters_ClauseOrdering &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a5f0b29c0076ec4e010aeeb8bdb500a02</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>const EnumDescriptor *</type>
-      <name>GetEnumDescriptor&lt; ::operations_research::sat::SatParameters_RestartAlgorithm &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>aa75c01445cca67a20648e0162d4d01b3</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>const EnumDescriptor *</type>
-      <name>GetEnumDescriptor&lt; ::operations_research::sat::SatParameters_MaxSatAssumptionOrder &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>afa03ee919b72e3665921728ee15be26d</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>const EnumDescriptor *</type>
-      <name>GetEnumDescriptor&lt; ::operations_research::sat::SatParameters_MaxSatStratificationAlgorithm &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a86ff4f7acb5908cc179e592e6dae80e9</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>const EnumDescriptor *</type>
-      <name>GetEnumDescriptor&lt; ::operations_research::sat::SatParameters_SearchBranching &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a20bb637648e3cdc283c4e71ce06a3956</anchor>
-      <arglist>()</arglist>
-    </member>
+    <name>internal</name>
+    <filename>namespaceinternal.html</filename>
   </compound>
   <compound kind="namespace">
     <name>operations_research</name>
@@ -19220,445 +19879,445 @@
       <type></type>
       <name>DecisionStrategyProto_VariableSelectionStrategy</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a10a32f85785b62ba65343391e575148e</anchor>
+      <anchor>ac0ca8810a97bcc1b3d45269a33fd4f0c</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_VariableSelectionStrategy_CHOOSE_FIRST</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a10a32f85785b62ba65343391e575148ea5e00b7cd6b433ec6a15ff913d3b2c3f3</anchor>
+      <anchor>ac0ca8810a97bcc1b3d45269a33fd4f0ca5e00b7cd6b433ec6a15ff913d3b2c3f3</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_VariableSelectionStrategy_CHOOSE_LOWEST_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a10a32f85785b62ba65343391e575148ea0b1d456b36749d677aa4a201b22ba114</anchor>
+      <anchor>ac0ca8810a97bcc1b3d45269a33fd4f0ca0b1d456b36749d677aa4a201b22ba114</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_VariableSelectionStrategy_CHOOSE_HIGHEST_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a10a32f85785b62ba65343391e575148ea79fc0af04ed454750ecb59dc5a748e88</anchor>
+      <anchor>ac0ca8810a97bcc1b3d45269a33fd4f0ca79fc0af04ed454750ecb59dc5a748e88</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_VariableSelectionStrategy_CHOOSE_MIN_DOMAIN_SIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a10a32f85785b62ba65343391e575148ea18e573e60bf8dde6880a6cfb9f697ffc</anchor>
+      <anchor>ac0ca8810a97bcc1b3d45269a33fd4f0ca18e573e60bf8dde6880a6cfb9f697ffc</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_VariableSelectionStrategy_CHOOSE_MAX_DOMAIN_SIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a10a32f85785b62ba65343391e575148ea9bc8cd090f555c04c4fb8ec23838dc30</anchor>
+      <anchor>ac0ca8810a97bcc1b3d45269a33fd4f0ca9bc8cd090f555c04c4fb8ec23838dc30</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_VariableSelectionStrategy_DecisionStrategyProto_VariableSelectionStrategy_INT_MIN_SENTINEL_DO_NOT_USE_</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a10a32f85785b62ba65343391e575148ea77405cd855df69ed653be2766be0a1af</anchor>
+      <anchor>ac0ca8810a97bcc1b3d45269a33fd4f0ca77405cd855df69ed653be2766be0a1af</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_VariableSelectionStrategy_DecisionStrategyProto_VariableSelectionStrategy_INT_MAX_SENTINEL_DO_NOT_USE_</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a10a32f85785b62ba65343391e575148eadecec94c9d1599ecbdfdab2f7cfcb7aa</anchor>
+      <anchor>ac0ca8810a97bcc1b3d45269a33fd4f0cadecec94c9d1599ecbdfdab2f7cfcb7aa</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>DecisionStrategyProto_DomainReductionStrategy</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>adb7c9ce3ef722957ff56d0875e802fb4</anchor>
+      <anchor>a20ead57ac0739497ea66f0c21b23b529</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_DomainReductionStrategy_SELECT_MIN_VALUE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>adb7c9ce3ef722957ff56d0875e802fb4a2f416e6e94f971bfbb75ba25e7f7b760</anchor>
+      <anchor>a20ead57ac0739497ea66f0c21b23b529a2f416e6e94f971bfbb75ba25e7f7b760</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_DomainReductionStrategy_SELECT_MAX_VALUE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>adb7c9ce3ef722957ff56d0875e802fb4ac22896facd05595ce84133b3b3043685</anchor>
+      <anchor>a20ead57ac0739497ea66f0c21b23b529ac22896facd05595ce84133b3b3043685</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_DomainReductionStrategy_SELECT_LOWER_HALF</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>adb7c9ce3ef722957ff56d0875e802fb4ab63e61aebddafddd1496d6ab577dab53</anchor>
+      <anchor>a20ead57ac0739497ea66f0c21b23b529ab63e61aebddafddd1496d6ab577dab53</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_DomainReductionStrategy_SELECT_UPPER_HALF</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>adb7c9ce3ef722957ff56d0875e802fb4ac41d0ba8114af7179c253fda16e517ca</anchor>
+      <anchor>a20ead57ac0739497ea66f0c21b23b529ac41d0ba8114af7179c253fda16e517ca</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_DomainReductionStrategy_DecisionStrategyProto_DomainReductionStrategy_INT_MIN_SENTINEL_DO_NOT_USE_</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>adb7c9ce3ef722957ff56d0875e802fb4a82875a7d185a8f87d56cb0fb0f37f72a</anchor>
+      <anchor>a20ead57ac0739497ea66f0c21b23b529a82875a7d185a8f87d56cb0fb0f37f72a</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>DecisionStrategyProto_DomainReductionStrategy_DecisionStrategyProto_DomainReductionStrategy_INT_MAX_SENTINEL_DO_NOT_USE_</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>adb7c9ce3ef722957ff56d0875e802fb4ac1c76a18c1405c9569b8afca29919e48</anchor>
+      <anchor>a20ead57ac0739497ea66f0c21b23b529ac1c76a18c1405c9569b8afca29919e48</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>CpSolverStatus</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a2392f4581af743a0af577069f99fed12</anchor>
+      <anchor>ac14a394f629f2cf1070b84bce2e427ce</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>UNKNOWN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a2392f4581af743a0af577069f99fed12a693e3d1636a488a456c173453c45cc14</anchor>
+      <anchor>ac14a394f629f2cf1070b84bce2e427cea693e3d1636a488a456c173453c45cc14</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MODEL_INVALID</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a2392f4581af743a0af577069f99fed12acb3300bde58b85d202f9c211dfabcb49</anchor>
+      <anchor>ac14a394f629f2cf1070b84bce2e427ceacb3300bde58b85d202f9c211dfabcb49</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FEASIBLE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a2392f4581af743a0af577069f99fed12ae4d551fa942cba479e3090bb8ae40e73</anchor>
+      <anchor>ac14a394f629f2cf1070b84bce2e427ceae4d551fa942cba479e3090bb8ae40e73</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>INFEASIBLE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a2392f4581af743a0af577069f99fed12a185c2992ead7a0d90d260164cf10d46f</anchor>
+      <anchor>ac14a394f629f2cf1070b84bce2e427cea185c2992ead7a0d90d260164cf10d46f</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>OPTIMAL</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a2392f4581af743a0af577069f99fed12a78e9c6b9f6ac60a9e9c2d25967ed1ad0</anchor>
+      <anchor>ac14a394f629f2cf1070b84bce2e427cea78e9c6b9f6ac60a9e9c2d25967ed1ad0</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>CpSolverStatus_INT_MIN_SENTINEL_DO_NOT_USE_</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a2392f4581af743a0af577069f99fed12a443f059ef1efc767e19c5724f6c161d9</anchor>
+      <anchor>ac14a394f629f2cf1070b84bce2e427cea443f059ef1efc767e19c5724f6c161d9</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>CpSolverStatus_INT_MAX_SENTINEL_DO_NOT_USE_</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a2392f4581af743a0af577069f99fed12ae535ad44840a077b35974e3a04530717</anchor>
+      <anchor>ac14a394f629f2cf1070b84bce2e427ceae535ad44840a077b35974e3a04530717</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>SatParameters_VariableOrder</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a7500a48ce324f0ef41f39e45f60f214d</anchor>
+      <anchor>a299d9cbf6a19e8aa8294c01b02d59aa7</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_VariableOrder_IN_ORDER</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a7500a48ce324f0ef41f39e45f60f214da92760d7186df85dfd6c188eae0b9b591</anchor>
+      <anchor>a299d9cbf6a19e8aa8294c01b02d59aa7a92760d7186df85dfd6c188eae0b9b591</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_VariableOrder_IN_REVERSE_ORDER</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a7500a48ce324f0ef41f39e45f60f214da941215af97625c63a144520ec7e02bfb</anchor>
+      <anchor>a299d9cbf6a19e8aa8294c01b02d59aa7a941215af97625c63a144520ec7e02bfb</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_VariableOrder_IN_RANDOM_ORDER</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a7500a48ce324f0ef41f39e45f60f214da8de6cbc54e325b78d800c8354591d726</anchor>
+      <anchor>a299d9cbf6a19e8aa8294c01b02d59aa7a8de6cbc54e325b78d800c8354591d726</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>SatParameters_Polarity</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>add5353b524feae6119c2a8220f1ca3d2</anchor>
+      <anchor>a517d73d1db81fd87470e6bcbe87c633e</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_Polarity_POLARITY_TRUE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>add5353b524feae6119c2a8220f1ca3d2a6145ecb76ca29dc07b9acde97866a8ee</anchor>
+      <anchor>a517d73d1db81fd87470e6bcbe87c633ea6145ecb76ca29dc07b9acde97866a8ee</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_Polarity_POLARITY_FALSE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>add5353b524feae6119c2a8220f1ca3d2a204c91561099609cdf7b6469e84e9576</anchor>
+      <anchor>a517d73d1db81fd87470e6bcbe87c633ea204c91561099609cdf7b6469e84e9576</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_Polarity_POLARITY_RANDOM</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>add5353b524feae6119c2a8220f1ca3d2afaf662755a533bc2353968b4c4da4d32</anchor>
+      <anchor>a517d73d1db81fd87470e6bcbe87c633eafaf662755a533bc2353968b4c4da4d32</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_Polarity_POLARITY_WEIGHTED_SIGN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>add5353b524feae6119c2a8220f1ca3d2af9a6fbf18fc3445083ca746b1e920ca6</anchor>
+      <anchor>a517d73d1db81fd87470e6bcbe87c633eaf9a6fbf18fc3445083ca746b1e920ca6</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_Polarity_POLARITY_REVERSE_WEIGHTED_SIGN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>add5353b524feae6119c2a8220f1ca3d2a77094f18176663ceea0b80667cf917a6</anchor>
+      <anchor>a517d73d1db81fd87470e6bcbe87c633ea77094f18176663ceea0b80667cf917a6</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>SatParameters_ConflictMinimizationAlgorithm</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a8ab616f5071426513fb5d7dd88f2b23b</anchor>
+      <anchor>ada813507f9879e596a07b3850f7fc0d5</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_ConflictMinimizationAlgorithm_NONE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a8ab616f5071426513fb5d7dd88f2b23bae1bd62c48ad8f9a7d242ae916bbe5066</anchor>
+      <anchor>ada813507f9879e596a07b3850f7fc0d5ae1bd62c48ad8f9a7d242ae916bbe5066</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_ConflictMinimizationAlgorithm_SIMPLE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a8ab616f5071426513fb5d7dd88f2b23bac1adcdd93b988565644ddc9c3510c96c</anchor>
+      <anchor>ada813507f9879e596a07b3850f7fc0d5ac1adcdd93b988565644ddc9c3510c96c</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_ConflictMinimizationAlgorithm_RECURSIVE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a8ab616f5071426513fb5d7dd88f2b23bacf7f9f878c3e92e4e319c3e4ea926af7</anchor>
+      <anchor>ada813507f9879e596a07b3850f7fc0d5acf7f9f878c3e92e4e319c3e4ea926af7</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_ConflictMinimizationAlgorithm_EXPERIMENTAL</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a8ab616f5071426513fb5d7dd88f2b23ba52b205df52309c4f050206500297e4e5</anchor>
+      <anchor>ada813507f9879e596a07b3850f7fc0d5a52b205df52309c4f050206500297e4e5</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>SatParameters_BinaryMinizationAlgorithm</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>af925d9b6f4730729d935c3fad014c4ff</anchor>
+      <anchor>a402444328a26710265238ae8fb883496</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_BinaryMinizationAlgorithm_NO_BINARY_MINIMIZATION</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>af925d9b6f4730729d935c3fad014c4ffa5cefb853f31166cc3684d90594d5dde9</anchor>
+      <anchor>a402444328a26710265238ae8fb883496a5cefb853f31166cc3684d90594d5dde9</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_BinaryMinizationAlgorithm_BINARY_MINIMIZATION_FIRST</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>af925d9b6f4730729d935c3fad014c4ffacefb9cb334d97dc99896de7db79a2476</anchor>
+      <anchor>a402444328a26710265238ae8fb883496acefb9cb334d97dc99896de7db79a2476</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_BinaryMinizationAlgorithm_BINARY_MINIMIZATION_FIRST_WITH_TRANSITIVE_REDUCTION</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>af925d9b6f4730729d935c3fad014c4ffac586955ded9c943dee2faf8b5b738dbd</anchor>
+      <anchor>a402444328a26710265238ae8fb883496ac586955ded9c943dee2faf8b5b738dbd</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_BinaryMinizationAlgorithm_BINARY_MINIMIZATION_WITH_REACHABILITY</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>af925d9b6f4730729d935c3fad014c4ffa30c30629b82fa4252c40e28942e35416</anchor>
+      <anchor>a402444328a26710265238ae8fb883496a30c30629b82fa4252c40e28942e35416</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_BinaryMinizationAlgorithm_EXPERIMENTAL_BINARY_MINIMIZATION</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>af925d9b6f4730729d935c3fad014c4ffaeb6a38e1f5f44d7f13c6f8d6325ba069</anchor>
+      <anchor>a402444328a26710265238ae8fb883496aeb6a38e1f5f44d7f13c6f8d6325ba069</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>SatParameters_ClauseProtection</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad24109146a44723f1c95b7d3f226fcc1</anchor>
+      <anchor>af02bc4bd103928ea008623a1da38a12c</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_ClauseProtection_PROTECTION_NONE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad24109146a44723f1c95b7d3f226fcc1a1739f0f3322dc59ebaa2fb9fa3481d6b</anchor>
+      <anchor>af02bc4bd103928ea008623a1da38a12ca1739f0f3322dc59ebaa2fb9fa3481d6b</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_ClauseProtection_PROTECTION_ALWAYS</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad24109146a44723f1c95b7d3f226fcc1aa7de36c91e9668bd4d3429170a3a915a</anchor>
+      <anchor>af02bc4bd103928ea008623a1da38a12caa7de36c91e9668bd4d3429170a3a915a</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_ClauseProtection_PROTECTION_LBD</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad24109146a44723f1c95b7d3f226fcc1a4ce148354b01f5b1e2da32e7576edaa3</anchor>
+      <anchor>af02bc4bd103928ea008623a1da38a12ca4ce148354b01f5b1e2da32e7576edaa3</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>SatParameters_ClauseOrdering</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a31ad84fa962b626887890dd76a53c74a</anchor>
+      <anchor>ab33358f8fe7b8cb7f98c226b3a070e38</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_ClauseOrdering_CLAUSE_ACTIVITY</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a31ad84fa962b626887890dd76a53c74aaaab0bb6b57e109185e6a62d5d0271a04</anchor>
+      <anchor>ab33358f8fe7b8cb7f98c226b3a070e38aaab0bb6b57e109185e6a62d5d0271a04</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_ClauseOrdering_CLAUSE_LBD</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a31ad84fa962b626887890dd76a53c74aa2dcf758b7ee7431577e2aa80a60b163e</anchor>
+      <anchor>ab33358f8fe7b8cb7f98c226b3a070e38a2dcf758b7ee7431577e2aa80a60b163e</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>SatParameters_RestartAlgorithm</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a192662f710ae6cff2e00eff50ce55ac3</anchor>
+      <anchor>a2916a603fb108fbf4133f865d472fc0b</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_RestartAlgorithm_NO_RESTART</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a192662f710ae6cff2e00eff50ce55ac3a698c5900a88697e89f1a9ffa790fd49f</anchor>
+      <anchor>a2916a603fb108fbf4133f865d472fc0ba698c5900a88697e89f1a9ffa790fd49f</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_RestartAlgorithm_LUBY_RESTART</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a192662f710ae6cff2e00eff50ce55ac3a0fcf1821b877dd61f6cfac37a36a82d8</anchor>
+      <anchor>a2916a603fb108fbf4133f865d472fc0ba0fcf1821b877dd61f6cfac37a36a82d8</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_RestartAlgorithm_DL_MOVING_AVERAGE_RESTART</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a192662f710ae6cff2e00eff50ce55ac3a89e7ee47fc5c826c03f455f082f22c70</anchor>
+      <anchor>a2916a603fb108fbf4133f865d472fc0ba89e7ee47fc5c826c03f455f082f22c70</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_RestartAlgorithm_LBD_MOVING_AVERAGE_RESTART</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a192662f710ae6cff2e00eff50ce55ac3a5d2302ed4086b87cadaad18aa5981aed</anchor>
+      <anchor>a2916a603fb108fbf4133f865d472fc0ba5d2302ed4086b87cadaad18aa5981aed</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_RestartAlgorithm_FIXED_RESTART</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a192662f710ae6cff2e00eff50ce55ac3a353691b5a40f70fe5d05cc01bdf22536</anchor>
+      <anchor>a2916a603fb108fbf4133f865d472fc0ba353691b5a40f70fe5d05cc01bdf22536</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>SatParameters_MaxSatAssumptionOrder</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a683a06394b218203a4517b19468df400</anchor>
+      <anchor>a71cb004d78f7d8c38fcc9cbc225af533</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_MaxSatAssumptionOrder_DEFAULT_ASSUMPTION_ORDER</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a683a06394b218203a4517b19468df400ab0500c1196441cd7820da82c2c1baf6f</anchor>
+      <anchor>a71cb004d78f7d8c38fcc9cbc225af533ab0500c1196441cd7820da82c2c1baf6f</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_MaxSatAssumptionOrder_ORDER_ASSUMPTION_BY_DEPTH</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a683a06394b218203a4517b19468df400a61bc7845a56fecefcc18795a536d5eb3</anchor>
+      <anchor>a71cb004d78f7d8c38fcc9cbc225af533a61bc7845a56fecefcc18795a536d5eb3</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_MaxSatAssumptionOrder_ORDER_ASSUMPTION_BY_WEIGHT</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a683a06394b218203a4517b19468df400a44da070df5c6e2443fa1c00b6c25893f</anchor>
+      <anchor>a71cb004d78f7d8c38fcc9cbc225af533a44da070df5c6e2443fa1c00b6c25893f</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>SatParameters_MaxSatStratificationAlgorithm</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ab342c0ecaab53f1e8e6cf05ca513b8d5</anchor>
+      <anchor>a011a7400ac03996a9023db2a9e7df81c</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_MaxSatStratificationAlgorithm_STRATIFICATION_NONE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ab342c0ecaab53f1e8e6cf05ca513b8d5a5bb7f0a112c4672ea2abec407f7d384c</anchor>
+      <anchor>a011a7400ac03996a9023db2a9e7df81ca5bb7f0a112c4672ea2abec407f7d384c</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_MaxSatStratificationAlgorithm_STRATIFICATION_DESCENT</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ab342c0ecaab53f1e8e6cf05ca513b8d5a0c67cde78d6314de8d13734d65709b3a</anchor>
+      <anchor>a011a7400ac03996a9023db2a9e7df81ca0c67cde78d6314de8d13734d65709b3a</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_MaxSatStratificationAlgorithm_STRATIFICATION_ASCENT</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ab342c0ecaab53f1e8e6cf05ca513b8d5adf547628eb3421e641512aeb95b31912</anchor>
+      <anchor>a011a7400ac03996a9023db2a9e7df81cadf547628eb3421e641512aeb95b31912</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>SatParameters_SearchBranching</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad9191a142de9cc0cca4248601387cb4b</anchor>
+      <anchor>af29968605d0dca7194386c85c3e8269e</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_SearchBranching_AUTOMATIC_SEARCH</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad9191a142de9cc0cca4248601387cb4bac23498a3951b707b682de68c3f2ef4ba</anchor>
+      <anchor>af29968605d0dca7194386c85c3e8269eac23498a3951b707b682de68c3f2ef4ba</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_SearchBranching_FIXED_SEARCH</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad9191a142de9cc0cca4248601387cb4ba4b402cda1dee9234ecc9bf3f969dae9c</anchor>
+      <anchor>af29968605d0dca7194386c85c3e8269ea4b402cda1dee9234ecc9bf3f969dae9c</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_SearchBranching_PORTFOLIO_SEARCH</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad9191a142de9cc0cca4248601387cb4ba79d67aaf6b62f71bbddd9c5177ebedc1</anchor>
+      <anchor>af29968605d0dca7194386c85c3e8269ea79d67aaf6b62f71bbddd9c5177ebedc1</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_SearchBranching_LP_SEARCH</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad9191a142de9cc0cca4248601387cb4bac0ee72ff494861f949253aac50496f42</anchor>
+      <anchor>af29968605d0dca7194386c85c3e8269eac0ee72ff494861f949253aac50496f42</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_SearchBranching_PSEUDO_COST_SEARCH</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad9191a142de9cc0cca4248601387cb4ba0959d8f131e2610b97a8830464b2c633</anchor>
+      <anchor>af29968605d0dca7194386c85c3e8269ea0959d8f131e2610b97a8830464b2c633</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>SatParameters_SearchBranching_PORTFOLIO_WITH_QUICK_RESTART_SEARCH</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad9191a142de9cc0cca4248601387cb4ba28a2409f7a5ca2ecd6635da22e4e6667</anchor>
+      <anchor>af29968605d0dca7194386c85c3e8269ea28a2409f7a5ca2ecd6635da22e4e6667</anchor>
       <arglist></arglist>
     </member>
     <member kind="function">
@@ -19774,25 +20433,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>DecisionStrategyProto_VariableSelectionStrategy_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>af66c861360ab3857d0bb2d53fde74bca</anchor>
+      <anchor>ac8eeb3305c37f40da67f55486402ac78</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>DecisionStrategyProto_VariableSelectionStrategy_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a2262e194393851724b02211c34c57457</anchor>
-      <arglist>(DecisionStrategyProto_VariableSelectionStrategy value)</arglist>
+      <anchor>abbc472dcbb3ad76095da9926b37e49f8</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>DecisionStrategyProto_VariableSelectionStrategy_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>af25eeda8a253dce34e0b0e98f69031ad</anchor>
-      <arglist>(const ::std::string &amp;name, DecisionStrategyProto_VariableSelectionStrategy *value)</arglist>
+      <anchor>a158d3c3e8612a0cb9be525140c96267f</anchor>
+      <arglist>(const std::string &amp;name, DecisionStrategyProto_VariableSelectionStrategy *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -19802,25 +20461,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>DecisionStrategyProto_DomainReductionStrategy_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a3bef95d750e0d2c4dcbf9944a6147232</anchor>
+      <anchor>a60036e4e1e1d47218d6339e9119805c4</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>DecisionStrategyProto_DomainReductionStrategy_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a15661f91c1c5635b462c569097268773</anchor>
-      <arglist>(DecisionStrategyProto_DomainReductionStrategy value)</arglist>
+      <anchor>ac22a3ab628a918dd90466ba12d6ee0cd</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>DecisionStrategyProto_DomainReductionStrategy_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ab65df8c02daf63542fcee35b0a9f7779</anchor>
-      <arglist>(const ::std::string &amp;name, DecisionStrategyProto_DomainReductionStrategy *value)</arglist>
+      <anchor>a6f1fd67f2396dd88544958778b9854bf</anchor>
+      <arglist>(const std::string &amp;name, DecisionStrategyProto_DomainReductionStrategy *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -19830,25 +20489,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>CpSolverStatus_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aef4cfe27470b9d29843e9394cb75f33a</anchor>
+      <anchor>ad87fa7d63870ba0085a841c2303dad6b</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>CpSolverStatus_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a168a8ab6018d96c83fbd0d0ee03e087c</anchor>
-      <arglist>(CpSolverStatus value)</arglist>
+      <anchor>aede942101121114490d4f59631bf9292</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>CpSolverStatus_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a49458d152506001af5ad6ad1b7c8576e</anchor>
-      <arglist>(const ::std::string &amp;name, CpSolverStatus *value)</arglist>
+      <anchor>a463a1c6294a89434db5de2a5560685f4</anchor>
+      <arglist>(const std::string &amp;name, CpSolverStatus *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -19858,25 +20517,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>SatParameters_VariableOrder_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a63d00708775015b761d79d26958ae008</anchor>
+      <anchor>a0a75b439d4e889cf84f7d6f6b5a37a86</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>SatParameters_VariableOrder_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aea11eda3bbcc4f79baab267009d28df6</anchor>
-      <arglist>(SatParameters_VariableOrder value)</arglist>
+      <anchor>a9e40adad4a6a75afceefe43c8c509457</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>SatParameters_VariableOrder_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a628f11b71a7acbabf2c7eb0a55ebf04e</anchor>
-      <arglist>(const ::std::string &amp;name, SatParameters_VariableOrder *value)</arglist>
+      <anchor>a2b5db4bee652895d2a67171ad96cecb7</anchor>
+      <arglist>(const std::string &amp;name, SatParameters_VariableOrder *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -19886,25 +20545,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>SatParameters_Polarity_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ab019ee0753776b26fed17764e82d23e9</anchor>
+      <anchor>a3a1aa6bdfa59980400e6617e6a206071</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>SatParameters_Polarity_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aeb3937db56cace9b52fbb3ada9bfea73</anchor>
-      <arglist>(SatParameters_Polarity value)</arglist>
+      <anchor>af6e220cb137fc0462fc253744b8bc3ba</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>SatParameters_Polarity_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aacbaf337b8a87121b647c838bef22e1b</anchor>
-      <arglist>(const ::std::string &amp;name, SatParameters_Polarity *value)</arglist>
+      <anchor>aa8e76d4d2386cfab3cefb7460f62d95c</anchor>
+      <arglist>(const std::string &amp;name, SatParameters_Polarity *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -19914,25 +20573,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>SatParameters_ConflictMinimizationAlgorithm_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a0405a68dd3f67e20ca8c7b12d45cb870</anchor>
+      <anchor>a8ae6f7af0b88d08cd83a4ff1a1108985</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>SatParameters_ConflictMinimizationAlgorithm_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a729819ca8e41e5a7c95a32da63d75804</anchor>
-      <arglist>(SatParameters_ConflictMinimizationAlgorithm value)</arglist>
+      <anchor>af3ae9c39e1b2cf4733a63fb9e4f958b7</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>SatParameters_ConflictMinimizationAlgorithm_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a184421f59216ca2ef58f282236cf8bc3</anchor>
-      <arglist>(const ::std::string &amp;name, SatParameters_ConflictMinimizationAlgorithm *value)</arglist>
+      <anchor>af1125a74a1efaf1562812c9d9b1ffc00</anchor>
+      <arglist>(const std::string &amp;name, SatParameters_ConflictMinimizationAlgorithm *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -19942,25 +20601,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>SatParameters_BinaryMinizationAlgorithm_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ac6854e48c578db9f71a0c4a95dc95279</anchor>
+      <anchor>a8e0457f852d7716dc2d913867100dc8c</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>SatParameters_BinaryMinizationAlgorithm_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>af7cc36dac69bb4b7d7d5dacbf37e57ba</anchor>
-      <arglist>(SatParameters_BinaryMinizationAlgorithm value)</arglist>
+      <anchor>aea747a1c7b91baf6f1b5486700c31e5f</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>SatParameters_BinaryMinizationAlgorithm_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aa0292e780dbe4984839ecad4b44fccf0</anchor>
-      <arglist>(const ::std::string &amp;name, SatParameters_BinaryMinizationAlgorithm *value)</arglist>
+      <anchor>a7c328aaf533ab0b051f9b4617bd47d43</anchor>
+      <arglist>(const std::string &amp;name, SatParameters_BinaryMinizationAlgorithm *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -19970,25 +20629,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>SatParameters_ClauseProtection_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>afdfdf216dea1b6ca3cb4c816396f7493</anchor>
+      <anchor>ac92d8d18b4148e00e25b463b42c0ea3b</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>SatParameters_ClauseProtection_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aa46504e5e34f1716ac37b78ddc08b060</anchor>
-      <arglist>(SatParameters_ClauseProtection value)</arglist>
+      <anchor>ae1e232826064de5442ec15d6a2ff90f2</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>SatParameters_ClauseProtection_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a1558fb6c8e007b75889204116c149f78</anchor>
-      <arglist>(const ::std::string &amp;name, SatParameters_ClauseProtection *value)</arglist>
+      <anchor>a45a55c59398241500c1604ed6736e7e0</anchor>
+      <arglist>(const std::string &amp;name, SatParameters_ClauseProtection *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -19998,25 +20657,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>SatParameters_ClauseOrdering_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a38f0d79ca92d2252d62d8db8dfd1556a</anchor>
+      <anchor>a6763a151acaebadf9a4be9383e91e1eb</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>SatParameters_ClauseOrdering_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a56d5fe6aa184be05f6092ab990f5250e</anchor>
-      <arglist>(SatParameters_ClauseOrdering value)</arglist>
+      <anchor>a87813e257ba880dc079609db5d7f5da4</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>SatParameters_ClauseOrdering_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad674863df7b9117f210c945f2674db58</anchor>
-      <arglist>(const ::std::string &amp;name, SatParameters_ClauseOrdering *value)</arglist>
+      <anchor>ab38e233912e1d6e80baf8fe3bec043ee</anchor>
+      <arglist>(const std::string &amp;name, SatParameters_ClauseOrdering *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -20026,25 +20685,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>SatParameters_RestartAlgorithm_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aa2f24a25dc16dd685917069e6bb22b0b</anchor>
+      <anchor>a9d2995934edcfcc59a0da77719fcb11b</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>SatParameters_RestartAlgorithm_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a9703a0efa39a7877735205de9a006c0f</anchor>
-      <arglist>(SatParameters_RestartAlgorithm value)</arglist>
+      <anchor>a34b396f35aa7c449a39d2b92c3f93744</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>SatParameters_RestartAlgorithm_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a0960de8f477819a400cbd3a41062b9a2</anchor>
-      <arglist>(const ::std::string &amp;name, SatParameters_RestartAlgorithm *value)</arglist>
+      <anchor>af97fc1fcba310fb2c415278cef3df03a</anchor>
+      <arglist>(const std::string &amp;name, SatParameters_RestartAlgorithm *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -20054,25 +20713,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>SatParameters_MaxSatAssumptionOrder_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a828b06b1d9e9e57276c5092899592cd2</anchor>
+      <anchor>aa36fba890ac5ad3ce86c9f70b8352bb5</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>SatParameters_MaxSatAssumptionOrder_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a3a48b4e764d3598485a64075cee904fa</anchor>
-      <arglist>(SatParameters_MaxSatAssumptionOrder value)</arglist>
+      <anchor>aa49899c1c9df530d20f240b519437c6d</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>SatParameters_MaxSatAssumptionOrder_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a3bc3e149fd0e1959e5805d7ad73ccff2</anchor>
-      <arglist>(const ::std::string &amp;name, SatParameters_MaxSatAssumptionOrder *value)</arglist>
+      <anchor>ac304d2e190884ab7f230876fe1bd1d9f</anchor>
+      <arglist>(const std::string &amp;name, SatParameters_MaxSatAssumptionOrder *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -20082,25 +20741,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>SatParameters_MaxSatStratificationAlgorithm_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a52f132562a3089063ffa35dc1c54f21b</anchor>
+      <anchor>a9f22011e31eaf54170afe80d301665ac</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>SatParameters_MaxSatStratificationAlgorithm_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a08c2c94217816891bec7180e5f6b50d3</anchor>
-      <arglist>(SatParameters_MaxSatStratificationAlgorithm value)</arglist>
+      <anchor>a7b0414d7c022b8a1f606bace4c8192cf</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>SatParameters_MaxSatStratificationAlgorithm_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>affb8017c363df7be4c369908a6e1f90f</anchor>
-      <arglist>(const ::std::string &amp;name, SatParameters_MaxSatStratificationAlgorithm *value)</arglist>
+      <anchor>ac4c30c8eeb5c485f9676410745f1d9d2</anchor>
+      <arglist>(const std::string &amp;name, SatParameters_MaxSatStratificationAlgorithm *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -20110,25 +20769,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>SatParameters_SearchBranching_descriptor</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a136b498c164dea9e5a9829d1590cec7b</anchor>
+      <anchor>a05587e288b302e572a8e80b100505a21</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>SatParameters_SearchBranching_Name</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aaf4dfaa6a41d60012b210e5587cbbf51</anchor>
-      <arglist>(SatParameters_SearchBranching value)</arglist>
+      <anchor>ab59fe9a81546232a6951f9c673c02e8a</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>SatParameters_SearchBranching_Parse</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a992a00120a7ac841217f4561576cc354</anchor>
-      <arglist>(const ::std::string &amp;name, SatParameters_SearchBranching *value)</arglist>
+      <anchor>ae566d186f92afaced5ffb7ebae02d474</anchor>
+      <arglist>(const std::string &amp;name, SatParameters_SearchBranching *value)</arglist>
     </member>
     <member kind="variable">
       <type>std::function&lt; void(Model *)&gt;</type>
@@ -20313,66 +20972,66 @@
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const DecisionStrategyProto_VariableSelectionStrategy</type>
+      <type>constexpr DecisionStrategyProto_VariableSelectionStrategy</type>
       <name>DecisionStrategyProto_VariableSelectionStrategy_VariableSelectionStrategy_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a59941f8a574d610fbd0d2766daf437e2</anchor>
+      <anchor>a3e5fd8dd3f65b3725d38e743b450fe14</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const DecisionStrategyProto_VariableSelectionStrategy</type>
+      <type>constexpr DecisionStrategyProto_VariableSelectionStrategy</type>
       <name>DecisionStrategyProto_VariableSelectionStrategy_VariableSelectionStrategy_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aa936a57453c9681bab32e74a3747c5f7</anchor>
+      <anchor>a3e888f213753f1e8fac882e0a2394040</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>DecisionStrategyProto_VariableSelectionStrategy_VariableSelectionStrategy_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a0fe139f7887fdce2f0d82ba7bfe3b761</anchor>
+      <anchor>a6c4f9d19c7865cdcdc3fa9c1ecfd98e8</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const DecisionStrategyProto_DomainReductionStrategy</type>
+      <type>constexpr DecisionStrategyProto_DomainReductionStrategy</type>
       <name>DecisionStrategyProto_DomainReductionStrategy_DomainReductionStrategy_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a8d89ba785675bf6374b216c6880cf89d</anchor>
+      <anchor>adeada39a9b25093a4cc1883510e1bb08</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const DecisionStrategyProto_DomainReductionStrategy</type>
+      <type>constexpr DecisionStrategyProto_DomainReductionStrategy</type>
       <name>DecisionStrategyProto_DomainReductionStrategy_DomainReductionStrategy_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a2446fab2d79c5ef3d9ab370d8be7519b</anchor>
+      <anchor>aec9bb98a52b3d32d47a598fc5eafb671</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>DecisionStrategyProto_DomainReductionStrategy_DomainReductionStrategy_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a98b9900acdb468cd47a37be6ec6fecce</anchor>
+      <anchor>a1742cab1f2a807d32238c453b92bdeb3</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const CpSolverStatus</type>
+      <type>constexpr CpSolverStatus</type>
       <name>CpSolverStatus_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a39d6196edcd5c594db5524b4fd1a9cad</anchor>
+      <anchor>a067ce64a3f75c8567b22bf8bbecf2fa5</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const CpSolverStatus</type>
+      <type>constexpr CpSolverStatus</type>
       <name>CpSolverStatus_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad61de2d59ad12b07b65b1b2497542ea2</anchor>
+      <anchor>ac52096bfb8221d5724ff16dc4c93647c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>CpSolverStatus_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a9309f1a918471faabd064037b40b3a2a</anchor>
+      <anchor>aeccedf377b000af35b4e9091c1bc2bb8</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
@@ -20383,213 +21042,213 @@
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_VariableOrder</type>
+      <type>constexpr SatParameters_VariableOrder</type>
       <name>SatParameters_VariableOrder_VariableOrder_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>afebbdcc35f1ea46b6b36b02942a45718</anchor>
+      <anchor>a2a39eab5a6aadab97bb23a7fb39af600</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_VariableOrder</type>
+      <type>constexpr SatParameters_VariableOrder</type>
       <name>SatParameters_VariableOrder_VariableOrder_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aa37fa90963dd6767336794ec9ddd88a6</anchor>
+      <anchor>a094b77c6089ed1097550980f9ffb764f</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>SatParameters_VariableOrder_VariableOrder_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a0dbcc1f155896d126ee866c6fa7cdbca</anchor>
+      <anchor>a3232d0c544cf356f09b6f8d1b67269e3</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_Polarity</type>
+      <type>constexpr SatParameters_Polarity</type>
       <name>SatParameters_Polarity_Polarity_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a7dcc06ad16f29c763ef71c12e33428d0</anchor>
+      <anchor>afbfa21e2ce75113388357f29f610342c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_Polarity</type>
+      <type>constexpr SatParameters_Polarity</type>
       <name>SatParameters_Polarity_Polarity_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aa9e4f6913a334312075d8b06e4a8f481</anchor>
+      <anchor>a72fe8e22daeacc4a74374d4c34bc09f4</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>SatParameters_Polarity_Polarity_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aa038a595c0924ec0a6b6d1df43a47a92</anchor>
+      <anchor>a84b9e2a32889c7bc5476029d4107d736</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_ConflictMinimizationAlgorithm</type>
+      <type>constexpr SatParameters_ConflictMinimizationAlgorithm</type>
       <name>SatParameters_ConflictMinimizationAlgorithm_ConflictMinimizationAlgorithm_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a797fae7f793822a392093b2c0e0583df</anchor>
+      <anchor>ae3d1dd4a33df05f7da9a3ea6c4932c0a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_ConflictMinimizationAlgorithm</type>
+      <type>constexpr SatParameters_ConflictMinimizationAlgorithm</type>
       <name>SatParameters_ConflictMinimizationAlgorithm_ConflictMinimizationAlgorithm_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad89401863cafbbb42117a67da51a9c7a</anchor>
+      <anchor>a2bfd2dd07fc93d2ebcf90df9982b173f</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>SatParameters_ConflictMinimizationAlgorithm_ConflictMinimizationAlgorithm_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a8bb3e1b9fc46859bcb473d877fdf81f7</anchor>
+      <anchor>a8a1f2ce9ceb6c6e6ea95e8413c5f304c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_BinaryMinizationAlgorithm</type>
+      <type>constexpr SatParameters_BinaryMinizationAlgorithm</type>
       <name>SatParameters_BinaryMinizationAlgorithm_BinaryMinizationAlgorithm_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>af3993105042b8a18ef4c48af71dbfae6</anchor>
+      <anchor>ab260b9d1bc3bedcc3ad29d6b2fd831d4</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_BinaryMinizationAlgorithm</type>
+      <type>constexpr SatParameters_BinaryMinizationAlgorithm</type>
       <name>SatParameters_BinaryMinizationAlgorithm_BinaryMinizationAlgorithm_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ac3979ff56f4e8e1a3827ffe9a1cfd953</anchor>
+      <anchor>a92db718bcc5d276ccf747bde81c78a10</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>SatParameters_BinaryMinizationAlgorithm_BinaryMinizationAlgorithm_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a4603f2b46b1da66b7f160b501802a571</anchor>
+      <anchor>a97ac406a44712bd2893b29957f2528d5</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_ClauseProtection</type>
+      <type>constexpr SatParameters_ClauseProtection</type>
       <name>SatParameters_ClauseProtection_ClauseProtection_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a50a54b74c5a02bf787d5161be8496a65</anchor>
+      <anchor>aef4cd5f95bfffe8b384372e1cba49049</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_ClauseProtection</type>
+      <type>constexpr SatParameters_ClauseProtection</type>
       <name>SatParameters_ClauseProtection_ClauseProtection_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a315f1d416996e0e1df6cf7c5f22c4c83</anchor>
+      <anchor>abf9faaf009e6527846e0ff336797f3a0</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>SatParameters_ClauseProtection_ClauseProtection_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a177a5f526c9aaf4dde0ae3d973a0a1c6</anchor>
+      <anchor>a299e745a341d3282f1f57f930c9d56e1</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_ClauseOrdering</type>
+      <type>constexpr SatParameters_ClauseOrdering</type>
       <name>SatParameters_ClauseOrdering_ClauseOrdering_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aa6f7a09fe0ece7997430857d3d2b06d7</anchor>
+      <anchor>a6e554645f4d0f9989e1f3d69c1528eea</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_ClauseOrdering</type>
+      <type>constexpr SatParameters_ClauseOrdering</type>
       <name>SatParameters_ClauseOrdering_ClauseOrdering_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a8939c25bb2dba51fc7d410b379ca4b95</anchor>
+      <anchor>acc0499f1b3c9772bc081ca484c6aa680</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>SatParameters_ClauseOrdering_ClauseOrdering_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a7bd8956745a9e0f194935411ad26a7a7</anchor>
+      <anchor>aee2d784d894a30c420456d0b389b7970</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_RestartAlgorithm</type>
+      <type>constexpr SatParameters_RestartAlgorithm</type>
       <name>SatParameters_RestartAlgorithm_RestartAlgorithm_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ad069012c7b5da25c0b506d93f249ae3c</anchor>
+      <anchor>a87bcdd92d224942666c7be6e2f936ab0</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_RestartAlgorithm</type>
+      <type>constexpr SatParameters_RestartAlgorithm</type>
       <name>SatParameters_RestartAlgorithm_RestartAlgorithm_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ae5654991d85d76a2bb57727e534aca69</anchor>
+      <anchor>a955126bc9840983ce5d4faa8d82f1669</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>SatParameters_RestartAlgorithm_RestartAlgorithm_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a9fc9eb8a69f68bb8c56f718d2905cccf</anchor>
+      <anchor>ae791277565602a13d6e3c8e4ff0e28b9</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_MaxSatAssumptionOrder</type>
+      <type>constexpr SatParameters_MaxSatAssumptionOrder</type>
       <name>SatParameters_MaxSatAssumptionOrder_MaxSatAssumptionOrder_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a8276145f0fea9405a17ea4e15437c370</anchor>
+      <anchor>aedb4be4a6a9caaf8d9161888934ad2d2</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_MaxSatAssumptionOrder</type>
+      <type>constexpr SatParameters_MaxSatAssumptionOrder</type>
       <name>SatParameters_MaxSatAssumptionOrder_MaxSatAssumptionOrder_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a253ac635cb2d948d9e6f7ddbdf50deb3</anchor>
+      <anchor>ae198f9232534912ddf238f7be789f4aa</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>SatParameters_MaxSatAssumptionOrder_MaxSatAssumptionOrder_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ab876374ba4d61ed8a8f5ab1647214f57</anchor>
+      <anchor>a45e86ed8cbe846e59c55298161086446</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_MaxSatStratificationAlgorithm</type>
+      <type>constexpr SatParameters_MaxSatStratificationAlgorithm</type>
       <name>SatParameters_MaxSatStratificationAlgorithm_MaxSatStratificationAlgorithm_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a81ef72928f25bf91f9459e95b30f60a3</anchor>
+      <anchor>a5df42a6b5c40d46ea317abd561b7ea0b</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_MaxSatStratificationAlgorithm</type>
+      <type>constexpr SatParameters_MaxSatStratificationAlgorithm</type>
       <name>SatParameters_MaxSatStratificationAlgorithm_MaxSatStratificationAlgorithm_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>af77a4c44b279a8ed20ba62fe6855f3d3</anchor>
+      <anchor>a8665ee9afc158ac57d842bcef9eccc59</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>SatParameters_MaxSatStratificationAlgorithm_MaxSatStratificationAlgorithm_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>aeb0e2efc07e4da53cac4c129726d25c2</anchor>
+      <anchor>a673309e5337b624e75e496fe33494135</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_SearchBranching</type>
+      <type>constexpr SatParameters_SearchBranching</type>
       <name>SatParameters_SearchBranching_SearchBranching_MIN</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a759737df3763d9079011350ee71b933f</anchor>
+      <anchor>ab90d62c554b3478c3271c929cf81cb59</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const SatParameters_SearchBranching</type>
+      <type>constexpr SatParameters_SearchBranching</type>
       <name>SatParameters_SearchBranching_SearchBranching_MAX</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>ae811ceae8f8230a59d40b5effad594af</anchor>
+      <anchor>ac5449564c89e6ffab546725d1d49422a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>SatParameters_SearchBranching_SearchBranching_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research_1_1sat.html</anchorfile>
-      <anchor>a82110fc37ba023a467574052d75d507b</anchor>
+      <anchor>a3de01c1278d9f16ff4ff5cd72c0233da</anchor>
       <arglist></arglist>
     </member>
   </compound>

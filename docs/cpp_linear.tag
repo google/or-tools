@@ -15,18 +15,19 @@
     <class kind="class">operations_research::MPConstraintProto</class>
     <class kind="class">operations_research::MPGeneralConstraintProto</class>
     <class kind="class">operations_research::MPIndicatorConstraint</class>
+    <class kind="class">operations_research::MPSosConstraint</class>
     <class kind="class">operations_research::PartialVariableAssignment</class>
     <class kind="class">operations_research::MPModelProto</class>
     <class kind="class">operations_research::OptionalDouble</class>
     <class kind="class">operations_research::MPSolverCommonParameters</class>
     <class kind="class">operations_research::MPModelRequest</class>
     <class kind="class">operations_research::MPSolutionResponse</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::MPSolverCommonParameters_LPAlgorithmValues &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::MPModelRequest_SolverType &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::MPSolverResponseStatus &gt;</class>
+    <class kind="struct">is_proto_enum&lt; ::operations_research::MPSosConstraint_Type &gt;</class>
+    <class kind="struct">is_proto_enum&lt; ::operations_research::MPSolverCommonParameters_LPAlgorithmValues &gt;</class>
+    <class kind="struct">is_proto_enum&lt; ::operations_research::MPModelRequest_SolverType &gt;</class>
+    <class kind="struct">is_proto_enum&lt; ::operations_research::MPSolverResponseStatus &gt;</class>
+    <namespace>internal</namespace>
     <namespace>operations_research</namespace>
-    <namespace>google</namespace>
-    <namespace>google::protobuf</namespace>
     <member kind="define">
       <type>#define</type>
       <name>PROTOBUF_INTERNAL_EXPORT_ortools_2flinear_5fsolver_2flinear_5fsolver_2eproto</name>
@@ -36,275 +37,322 @@
     </member>
     <member kind="enumeration">
       <type></type>
+      <name>MPSosConstraint_Type</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>ac4082c18fc997b28960d2a15a27af30b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>MPSosConstraint_Type_SOS1_DEFAULT</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>ac4082c18fc997b28960d2a15a27af30ba35dfc279dac55f2292c50123bbd65eb4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>MPSosConstraint_Type_SOS2</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>ac4082c18fc997b28960d2a15a27af30baa35d9c1cb44243e123f7d5993d5b726f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
       <name>MPSolverCommonParameters_LPAlgorithmValues</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab042145a1da0eaafbe215ded57dfe85f</anchor>
+      <anchor>a46d924645e62163da6dafc13b827d7b1</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSolverCommonParameters_LPAlgorithmValues_LP_ALGO_UNSPECIFIED</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab042145a1da0eaafbe215ded57dfe85fa2218d316cfcac5a88342c95b188f3fda</anchor>
+      <anchor>a46d924645e62163da6dafc13b827d7b1a2218d316cfcac5a88342c95b188f3fda</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSolverCommonParameters_LPAlgorithmValues_LP_ALGO_DUAL</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab042145a1da0eaafbe215ded57dfe85fa129c4c6d32bf9aed2414939cb02ff99a</anchor>
+      <anchor>a46d924645e62163da6dafc13b827d7b1a129c4c6d32bf9aed2414939cb02ff99a</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSolverCommonParameters_LPAlgorithmValues_LP_ALGO_PRIMAL</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab042145a1da0eaafbe215ded57dfe85fa53de34dc95fb67212e335f19dc210516</anchor>
+      <anchor>a46d924645e62163da6dafc13b827d7b1a53de34dc95fb67212e335f19dc210516</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSolverCommonParameters_LPAlgorithmValues_LP_ALGO_BARRIER</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab042145a1da0eaafbe215ded57dfe85fa89ff8ffa01928d5993a1414705eecd15</anchor>
+      <anchor>a46d924645e62163da6dafc13b827d7b1a89ff8ffa01928d5993a1414705eecd15</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>MPModelRequest_SolverType</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4c</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_GLOP_LINEAR_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5a6fab373696058c6e9f279de4a8446411</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4ca6fab373696058c6e9f279de4a8446411</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_CLP_LINEAR_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5a0969851c637668f95c10ddb1ade866a7</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4ca0969851c637668f95c10ddb1ade866a7</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_GLPK_LINEAR_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5aa32d84461e16e800e3f996d6347a304d</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4caa32d84461e16e800e3f996d6347a304d</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_GUROBI_LINEAR_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5a3af34f198d539e787263f9eded0ce0cd</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4ca3af34f198d539e787263f9eded0ce0cd</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_CPLEX_LINEAR_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5a4bdeae4b1af8d2cd4aab225db4fc0407</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4ca4bdeae4b1af8d2cd4aab225db4fc0407</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_SCIP_MIXED_INTEGER_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5ac25c4844cbdf1e4d7c7efc11f1f8ebf4</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4cac25c4844cbdf1e4d7c7efc11f1f8ebf4</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_GLPK_MIXED_INTEGER_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5af60a0830addaf4cf00bc59459fa6647e</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4caf60a0830addaf4cf00bc59459fa6647e</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_CBC_MIXED_INTEGER_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5a0e93bcd472e7a9296ff02058ed60f8d1</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4ca0e93bcd472e7a9296ff02058ed60f8d1</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_GUROBI_MIXED_INTEGER_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5ac8beb7f7b026823a6bc2e4e87f546da6</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4cac8beb7f7b026823a6bc2e4e87f546da6</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_CPLEX_MIXED_INTEGER_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5a26762918189367f5e171d0e226084d82</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4ca26762918189367f5e171d0e226084d82</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_BOP_INTEGER_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5a67639f2cd42e1197b5ad69a004c93ba3</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4ca67639f2cd42e1197b5ad69a004c93ba3</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_SAT_INTEGER_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5ac0fedb2082db5e7c96da01b4149c318e</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4cac0fedb2082db5e7c96da01b4149c318e</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_KNAPSACK_MIXED_INTEGER_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5abe010aed8c1b29c5a0fd9ac262ce791f</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4cabe010aed8c1b29c5a0fd9ac262ce791f</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>MPSolverResponseStatus</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aa</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSOLVER_OPTIMAL</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56ac95cb5be9e36b31647dd28910ac6cae4</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aaac95cb5be9e36b31647dd28910ac6cae4</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSOLVER_FEASIBLE</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56ac7d90afd0518be8cd6433ecad656a83b</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aaac7d90afd0518be8cd6433ecad656a83b</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSOLVER_INFEASIBLE</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56a0da2dbf49d011970a770d42141819d0a</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aaa0da2dbf49d011970a770d42141819d0a</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSOLVER_UNBOUNDED</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56ad73de4a0f9908a4c0d11246ecccf32b6</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aaad73de4a0f9908a4c0d11246ecccf32b6</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSOLVER_ABNORMAL</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56ac77789af50586fb2f81915dd1cb790b6</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aaac77789af50586fb2f81915dd1cb790b6</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSOLVER_NOT_SOLVED</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56a667b6a5ed42c91ea81fa67c59cb3badb</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aaa667b6a5ed42c91ea81fa67c59cb3badb</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSOLVER_MODEL_IS_VALID</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56a97ee5aaa7f57f286d4a821dd6e57523f</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aaa97ee5aaa7f57f286d4a821dd6e57523f</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSOLVER_UNKNOWN_STATUS</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56a84ea2a63b24de389aac6aa33b1203cd4</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aaa84ea2a63b24de389aac6aa33b1203cd4</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSOLVER_MODEL_INVALID</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56a6ae83516a798f1675e1b4daf0d8ea6b1</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aaa6ae83516a798f1675e1b4daf0d8ea6b1</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSOLVER_MODEL_INVALID_SOLUTION_HINT</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56a0f9da70b2f2b1304313c3a2a5f4876b3</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aaa0f9da70b2f2b1304313c3a2a5f4876b3</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56ab90169f8480eca12c963af5ce50d36aa</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aaab90169f8480eca12c963af5ce50d36aa</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSOLVER_SOLVER_TYPE_UNAVAILABLE</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56afa008125099beaab382c42682be6bbf9</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aaafa008125099beaab382c42682be6bbf9</anchor>
       <arglist></arglist>
     </member>
     <member kind="function">
-      <type>void</type>
-      <name>AddDescriptors_ortools_2flinear_5fsolver_2flinear_5fsolver_2eproto</name>
-      <anchorfile>linear__solver_8pb_8h.html</anchorfile>
-      <anchor>a7f35194793812465687f4a16273cf830</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::MPConstraintProto *</type>
+      <type>PROTOBUF_NAMESPACE_OPEN ::operations_research::MPConstraintProto *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::MPConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a46426d4330f8798191f318e844342edd</anchor>
+      <anchorfile>linear__solver_8pb_8h.html</anchorfile>
+      <anchor>a9a113c4684d1033ac9473dcb589f122e</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::MPGeneralConstraintProto *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::MPGeneralConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>ab2f9904d7bb5495c08a6624901891d05</anchor>
+      <anchorfile>linear__solver_8pb_8h.html</anchorfile>
+      <anchor>abfcd5bdf253f964bbe89d47f24777443</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::MPIndicatorConstraint *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::MPIndicatorConstraint &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a09aec13b641f3ff6f0aaa054d9ffb01a</anchor>
+      <anchorfile>linear__solver_8pb_8h.html</anchorfile>
+      <anchor>ab171bd5035991fb7ab6e0163679238f9</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::MPModelProto *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::MPModelProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a782374154dcade461d694c642d1a118a</anchor>
+      <anchorfile>linear__solver_8pb_8h.html</anchorfile>
+      <anchor>a5c6146771791a1f32bad6494ca1a2bc5</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::MPModelRequest *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::MPModelRequest &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a218a8e8e9347626cd702a3a9c5e4276f</anchor>
+      <anchorfile>linear__solver_8pb_8h.html</anchorfile>
+      <anchor>a6ea8278e40d80442b6ab7bbc2e92f238</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::MPSolutionResponse *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::MPSolutionResponse &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a97bcf46029da44aea2acff25eeb8f5e5</anchor>
+      <anchorfile>linear__solver_8pb_8h.html</anchorfile>
+      <anchor>a77c592e83322cb1b241720f74c467285</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::MPSolverCommonParameters *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::MPSolverCommonParameters &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a3123875581158bdc0cef8cc7334204c3</anchor>
+      <anchorfile>linear__solver_8pb_8h.html</anchorfile>
+      <anchor>af3e03f34b72f583856c6491b279e04af</anchor>
+      <arglist>(Arena *)</arglist>
+    </member>
+    <member kind="function">
+      <type>::operations_research::MPSosConstraint *</type>
+      <name>Arena::CreateMaybeMessage&lt;::operations_research::MPSosConstraint &gt;</name>
+      <anchorfile>linear__solver_8pb_8h.html</anchorfile>
+      <anchor>ab4154144ff7ab873599743507f1ac14f</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::MPVariableProto *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::MPVariableProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a5241f254a7dd0adf3d39675538cf578f</anchor>
+      <anchorfile>linear__solver_8pb_8h.html</anchorfile>
+      <anchor>ae246d1c1c8bbf0af81168fb7621f920e</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::OptionalDouble *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::OptionalDouble &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a57c05b56ab566a13251384836a0ac42e</anchor>
+      <anchorfile>linear__solver_8pb_8h.html</anchorfile>
+      <anchor>a1a2d4f72f6da5b4955f50f92c57a618e</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::PartialVariableAssignment *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::PartialVariableAssignment &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a62287180108f55a9b20f78b37944b485</anchor>
+      <anchorfile>linear__solver_8pb_8h.html</anchorfile>
+      <anchor>a2868a3e35d5de439d4817308efe07c66</anchor>
       <arglist>(Arena *)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>MPSosConstraint_Type_IsValid</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a69d74b24808a9eba4bcbc04c5bd1f9fb</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
+      <name>MPSosConstraint_Type_descriptor</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a94d793569692b2bdcb76cf2d7736da05</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::string &amp;</type>
+      <name>MPSosConstraint_Type_Name</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a0d84cc4ed67dd0a7ccf556176aa9bc1d</anchor>
+      <arglist>(T enum_t_value)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>MPSosConstraint_Type_Parse</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a6d1606a9e00c2974c23f2e758924b459</anchor>
+      <arglist>(const std::string &amp;name, MPSosConstraint_Type *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -314,25 +362,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>MPSolverCommonParameters_LPAlgorithmValues_descriptor</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a976efc8cb83ba6997aa984b3c106da17</anchor>
+      <anchor>a70bcdf756e44dfd2d5dab2a5cf4cfb9a</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>MPSolverCommonParameters_LPAlgorithmValues_Name</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a317f48b6b35697bf02ead22157c91c52</anchor>
-      <arglist>(MPSolverCommonParameters_LPAlgorithmValues value)</arglist>
+      <anchor>ac96996b4dbc25690d6d7fe345b364519</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>MPSolverCommonParameters_LPAlgorithmValues_Parse</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ac2b888d39ca1974f8485911aa6434144</anchor>
-      <arglist>(const ::std::string &amp;name, MPSolverCommonParameters_LPAlgorithmValues *value)</arglist>
+      <anchor>a3b1bc7a63f4a7972004060311346868f</anchor>
+      <arglist>(const std::string &amp;name, MPSolverCommonParameters_LPAlgorithmValues *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -342,25 +390,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>MPModelRequest_SolverType_descriptor</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>aa3fea38c7df3ab9583e34b82878e255c</anchor>
+      <anchor>af637f39c9ca296bf197d792c62167b7d</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>MPModelRequest_SolverType_Name</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ad1d017a27f2b89bb55910d1fceb31c64</anchor>
-      <arglist>(MPModelRequest_SolverType value)</arglist>
+      <anchor>a5209f68ceef830f109310dc549479a9b</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>MPModelRequest_SolverType_Parse</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a028ee3de18b0c41c98df4de7f38c3543</anchor>
-      <arglist>(const ::std::string &amp;name, MPModelRequest_SolverType *value)</arglist>
+      <anchor>aeb81b2591906288f021c0a3e37843b37</anchor>
+      <arglist>(const std::string &amp;name, MPModelRequest_SolverType *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -370,46 +418,60 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>MPSolverResponseStatus_descriptor</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a472faf18ff58cd6640b7b3bf6336d9b6</anchor>
+      <anchor>ace7f8b02c012c058db64b534e3378f0f</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>MPSolverResponseStatus_Name</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a1225873debe2bc2cb173d365f06ca615</anchor>
-      <arglist>(MPSolverResponseStatus value)</arglist>
+      <anchor>a188641a1ab5a4dda11c00a11149b07d4</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>MPSolverResponseStatus_Parse</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a415f14aa6c054ed47d050bd15e725f52</anchor>
-      <arglist>(const ::std::string &amp;name, MPSolverResponseStatus *value)</arglist>
+      <anchor>a22b5756cf719f9b2d10dae67820cf885</anchor>
+      <arglist>(const std::string &amp;name, MPSolverResponseStatus *value)</arglist>
+    </member>
+    <member kind="function">
+      <type>const EnumDescriptor *</type>
+      <name>GetEnumDescriptor&lt; ::operations_research::MPSosConstraint_Type &gt;</name>
+      <anchorfile>linear__solver_8pb_8h.html</anchorfile>
+      <anchor>adba5596aedf0d949dbafcef74a3f50ff</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>const EnumDescriptor *</type>
       <name>GetEnumDescriptor&lt; ::operations_research::MPSolverCommonParameters_LPAlgorithmValues &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>acc185aeb57cb91a0ccac4b25007bdcf9</anchor>
+      <anchorfile>linear__solver_8pb_8h.html</anchorfile>
+      <anchor>a29b652c1631e6d387cafbbd19a98952d</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>const EnumDescriptor *</type>
       <name>GetEnumDescriptor&lt; ::operations_research::MPModelRequest_SolverType &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>ab68113b1eb7e078bbcbcec215cb1abff</anchor>
+      <anchorfile>linear__solver_8pb_8h.html</anchorfile>
+      <anchor>ab6581d728d80c7e2174e850337fe8bdc</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>const EnumDescriptor *</type>
       <name>GetEnumDescriptor&lt; ::operations_research::MPSolverResponseStatus &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a9f64efd8b0aaa41a3134261c9575ac01</anchor>
+      <anchorfile>linear__solver_8pb_8h.html</anchorfile>
+      <anchor>adc6127e6cad4afd5d1eeecb696e45321</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="variable">
+      <type>const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable</type>
+      <name>descriptor_table_ortools_2flinear_5fsolver_2flinear_5fsolver_2eproto</name>
+      <anchorfile>linear__solver_8pb_8h.html</anchorfile>
+      <anchor>a73f97af81379c4dd1bb9082b3be9bd25</anchor>
+      <arglist></arglist>
     </member>
     <member kind="variable">
       <type>MPConstraintProtoDefaultTypeInternal</type>
@@ -461,6 +523,13 @@
       <arglist></arglist>
     </member>
     <member kind="variable">
+      <type>MPSosConstraintDefaultTypeInternal</type>
+      <name>_MPSosConstraint_default_instance_</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a3916f807aef0b8a0929c71cb72f8fe2c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
       <type>MPVariableProtoDefaultTypeInternal</type>
       <name>_MPVariableProto_default_instance_</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
@@ -482,66 +551,87 @@
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const MPSolverCommonParameters_LPAlgorithmValues</type>
+      <type>constexpr MPSosConstraint_Type</type>
+      <name>MPSosConstraint_Type_Type_MIN</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a8a26ab806b2722fadd4035cd0be0ae5b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>constexpr MPSosConstraint_Type</type>
+      <name>MPSosConstraint_Type_Type_MAX</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a50ec8ebec75c1daf0e7633cb74ff6657</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>constexpr int</type>
+      <name>MPSosConstraint_Type_Type_ARRAYSIZE</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a43079282dcdc58640a4fb8f3504d9548</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>constexpr MPSolverCommonParameters_LPAlgorithmValues</type>
       <name>MPSolverCommonParameters_LPAlgorithmValues_LPAlgorithmValues_MIN</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a1e4803399c53b73b9ae985751803d01a</anchor>
+      <anchor>ac1eda65381beae08503e8af2b57a0d4c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const MPSolverCommonParameters_LPAlgorithmValues</type>
+      <type>constexpr MPSolverCommonParameters_LPAlgorithmValues</type>
       <name>MPSolverCommonParameters_LPAlgorithmValues_LPAlgorithmValues_MAX</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a35686dabc230ba01c79fb8fd0f457e40</anchor>
+      <anchor>a12a6be7881f2f7dd6e426242c961d5d9</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>MPSolverCommonParameters_LPAlgorithmValues_LPAlgorithmValues_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a5dc5431b0bd4640975c7f6502e8013d9</anchor>
+      <anchor>a2b0590a3e329a0bb8a10b866c28138a0</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const MPModelRequest_SolverType</type>
+      <type>constexpr MPModelRequest_SolverType</type>
       <name>MPModelRequest_SolverType_SolverType_MIN</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a33e0cbbffcf3c459144e44b3f00dc2bf</anchor>
+      <anchor>a9eaabd9c53b8aa093483b2c664a405c3</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const MPModelRequest_SolverType</type>
+      <type>constexpr MPModelRequest_SolverType</type>
       <name>MPModelRequest_SolverType_SolverType_MAX</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a955948242965463248545e1785583654</anchor>
+      <anchor>a42eca5d9d855cdf447e78e17acd87c7a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>MPModelRequest_SolverType_SolverType_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ae6eb74cbdb5037acc1fb265d11616274</anchor>
+      <anchor>a7affd70e5dc61deefab59f4c06149644</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const MPSolverResponseStatus</type>
+      <type>constexpr MPSolverResponseStatus</type>
       <name>MPSolverResponseStatus_MIN</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>aaf5325d95fb273624f43bf2741836834</anchor>
+      <anchor>a53c0861628965fd7d72a0816d8575c66</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const MPSolverResponseStatus</type>
+      <type>constexpr MPSolverResponseStatus</type>
       <name>MPSolverResponseStatus_MAX</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a92f022bd33162332383c5f70e4821498</anchor>
+      <anchor>a1315bf58051fbf57733dc025d6994340</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>MPSolverResponseStatus_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a04af4e3a977e967ddd2f2db792ac2ad7</anchor>
+      <anchor>ac136e7845fbe09520c0e7777d9ae8b43</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -611,16 +701,20 @@
     </member>
   </compound>
   <compound kind="struct">
-    <name>google::protobuf::is_proto_enum&lt; ::operations_research::MPModelRequest_SolverType &gt;</name>
-    <filename>structgoogle_1_1protobuf_1_1is__proto__enum_3_01_1_1operations__research_1_1MPModelRequest__SolverType_01_4.html</filename>
+    <name>is_proto_enum&lt; ::operations_research::MPModelRequest_SolverType &gt;</name>
+    <filename>structis__proto__enum_3_01_1_1operations__research_1_1MPModelRequest__SolverType_01_4.html</filename>
   </compound>
   <compound kind="struct">
-    <name>google::protobuf::is_proto_enum&lt; ::operations_research::MPSolverCommonParameters_LPAlgorithmValues &gt;</name>
-    <filename>structgoogle_1_1protobuf_1_1is__proto__enum_3_01_1_1operations__research_1_1MPSolverCommonParameters__LPAlgorithmValues_01_4.html</filename>
+    <name>is_proto_enum&lt; ::operations_research::MPSolverCommonParameters_LPAlgorithmValues &gt;</name>
+    <filename>structis__proto__enum_3_01_1_1operations__research_1_1MPSolverCommonParameters__LPAlgorithmValues_01_4.html</filename>
   </compound>
   <compound kind="struct">
-    <name>google::protobuf::is_proto_enum&lt; ::operations_research::MPSolverResponseStatus &gt;</name>
-    <filename>structgoogle_1_1protobuf_1_1is__proto__enum_3_01_1_1operations__research_1_1MPSolverResponseStatus_01_4.html</filename>
+    <name>is_proto_enum&lt; ::operations_research::MPSolverResponseStatus &gt;</name>
+    <filename>structis__proto__enum_3_01_1_1operations__research_1_1MPSolverResponseStatus_01_4.html</filename>
+  </compound>
+  <compound kind="struct">
+    <name>is_proto_enum&lt; ::operations_research::MPSosConstraint_Type &gt;</name>
+    <filename>structis__proto__enum_3_01_1_1operations__research_1_1MPSosConstraint__Type_01_4.html</filename>
   </compound>
   <compound kind="class">
     <name>operations_research::MPConstraintProto</name>
@@ -647,6 +741,13 @@
       <arglist>(const MPConstraintProto &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>MPConstraintProto</name>
+      <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
+      <anchor>a0f70e1e672ccbd5affd2a5e46a10a254</anchor>
+      <arglist>(MPConstraintProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>MPConstraintProto &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
@@ -654,17 +755,24 @@
       <arglist>(const MPConstraintProto &amp;from)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::UnknownFieldSet &amp;</type>
+      <type>MPConstraintProto &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
+      <anchor>a5c4fbd893d61dfb5abea6b365afe931e</anchor>
+      <arglist>(MPConstraintProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>const ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet &amp;</type>
       <name>unknown_fields</name>
       <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
-      <anchor>a1ccc1aa516189f11cb3304ecf0439727</anchor>
+      <anchor>ade167500822ccd95ea25ca389c4475f9</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>inline ::google::protobuf::UnknownFieldSet *</type>
+      <type>inline ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet *</type>
       <name>mutable_unknown_fields</name>
       <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
-      <anchor>a28d363a4973a30b57653b02fcf4ef112</anchor>
+      <anchor>abe045894ee3c1110249de6cfa6f4368b</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -685,22 +793,22 @@
       <type>MPConstraintProto *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
-      <anchor>a9ca8c647295ebace3e574b8e3d24bee2</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>ae7deb8233c44f06e4385a02e0fe04b95</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
-      <anchor>a1e47ef5e1486a0b88263226eef0cc81a</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a586d11b330d52732af07a0d599afb45a</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
-      <anchor>ae82d889c54d721b96f33556003e2ccee</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>aea296cdb66e72503ce8d17366b2b8bc3</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -741,22 +849,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
-      <anchor>a53b71370fe9f6028e4fdaaa7130867b3</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a7393723452a94363ce894a3406065900</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
-      <anchor>a50004cea51db571adac38b03d42fb465</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>aec473efdfdaa2d67723b072f0e8550e3</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
-      <anchor>a2237ad5ee4fa949c66068a3bf50e48d2</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>a7d9e438875e7c3e8b4190a8854629242</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -766,10 +874,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
-      <anchor>a50be0160e882c5c5a7b0d285a5cb8433</anchor>
+      <anchor>ad01855f0c34db1c0f2e42305142ef573</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -787,38 +895,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>var_index</name>
       <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
-      <anchor>abd590f956c62b7b53558d5485a89afbe</anchor>
+      <anchor>a780c41f1f1c177b5fbf37219a67d6015</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_var_index</name>
       <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
-      <anchor>a6f2666deb52c9f3f75c177e35723d129</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>acd745a283043504a91ee092119ea5d90</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_var_index</name>
       <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
-      <anchor>a8c3f7e5768e6019e02732e32ec160138</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>ab0b9a3c594c44ac6e49a848fc14d2a07</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>var_index</name>
       <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
-      <anchor>a4ddcba5b8c1d08d304f4daf9199c61b4</anchor>
+      <anchor>a77e63b15fcfdc911f245bffb836d61a9</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_var_index</name>
       <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
-      <anchor>a82a9ae60780f5b864eba01252d740aff</anchor>
+      <anchor>a5a4b26a43b9a108655cce2f3c19cf6f3</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -857,17 +965,17 @@
       <arglist>(double value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; double &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; double &gt; &amp;</type>
       <name>coefficient</name>
       <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
-      <anchor>acd4aebe6852a0c3ab3c656abbe20e4cf</anchor>
+      <anchor>a2acf13a458dd64dc62471064c39d0d5c</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; double &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; double &gt; *</type>
       <name>mutable_coefficient</name>
       <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
-      <anchor>a140e35bcc8eddf4a7cbf8964deaf99ec</anchor>
+      <anchor>aacb8989ae0e24d68a66ddbf0762b17dc</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -885,18 +993,25 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>name</name>
       <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
-      <anchor>a8ef40ebe70dd1dd05c12c148ef90ade6</anchor>
+      <anchor>abbebdd738eedb3590d3d2af853f2a052</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_name</name>
       <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
-      <anchor>a548d8dfec72ee7116bc14ba967638473</anchor>
-      <arglist>(const ::std::string &amp;value)</arglist>
+      <anchor>ae1f9fda0852e800f5253a6b401d2fe3e</anchor>
+      <arglist>(const std::string &amp;value)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_name</name>
+      <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
+      <anchor>a5330be4e21146f52658a247bdbabb934</anchor>
+      <arglist>(std::string &amp;&amp;value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -913,14 +1028,14 @@
       <arglist>(const char *value, size_t size)</arglist>
     </member>
     <member kind="function">
-      <type>::std::string *</type>
+      <type>std::string *</type>
       <name>mutable_name</name>
       <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
       <anchor>a9d6d9d5d6f97aa28b1a51bdcb8933c43</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::std::string *</type>
+      <type>std::string *</type>
       <name>release_name</name>
       <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
       <anchor>aa27185b73e53ba34df82530bdf73e4c2</anchor>
@@ -930,8 +1045,8 @@
       <type>void</type>
       <name>set_allocated_name</name>
       <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
-      <anchor>a5f9eb552e3bf5ab0c41a5d8e4316c8d3</anchor>
-      <arglist>(::std::string *name)</arglist>
+      <anchor>aefeb7d188d2187518ca19598db9fcb81</anchor>
+      <arglist>(std::string *name)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -1018,10 +1133,24 @@
       <arglist>(double value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
-      <anchor>a4444b37c56ec0a1ea31c0eab930c2bc2</anchor>
+      <anchor>a07ae8358259bae15bd62f8b12ac63732</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
+      <anchor>afff0780dfc42c64fafdf0aefbb5bfc2f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
+      <anchor>a91d9ea4d8bd90580c6e78e15f166883b</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -1095,6 +1224,13 @@
       <arglist></arglist>
     </member>
     <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
       <type>friend struct</type>
       <name>::TableStruct_ortools_2flinear_5fsolver_2flinear_5fsolver_2eproto</name>
       <anchorfile>classoperations__research_1_1MPConstraintProto.html</anchorfile>
@@ -1126,6 +1262,12 @@
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
+      <name>kSosConstraint</name>
+      <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
+      <anchor>a2cf31917b69263cfbac0e486ddb6aba1af76aca0e4b44619463bc0b0e82737896</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
       <name>GENERAL_CONSTRAINT_NOT_SET</name>
       <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
       <anchor>a2cf31917b69263cfbac0e486ddb6aba1a958b131e29583210144fef16daf97795</anchor>
@@ -1135,6 +1277,12 @@
       <name>kIndicatorConstraint</name>
       <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
       <anchor>a2cf31917b69263cfbac0e486ddb6aba1a49273ebf624aaccbfa40d1b7e7c0a85f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>kSosConstraint</name>
+      <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
+      <anchor>a2cf31917b69263cfbac0e486ddb6aba1af76aca0e4b44619463bc0b0e82737896</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
@@ -1165,6 +1313,13 @@
       <arglist>(const MPGeneralConstraintProto &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>MPGeneralConstraintProto</name>
+      <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
+      <anchor>a23ebae958e5b79e041729918317a626e</anchor>
+      <arglist>(MPGeneralConstraintProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>MPGeneralConstraintProto &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
@@ -1172,17 +1327,24 @@
       <arglist>(const MPGeneralConstraintProto &amp;from)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::UnknownFieldSet &amp;</type>
+      <type>MPGeneralConstraintProto &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
+      <anchor>a19ca123af9d0e7864eae82cada2e3a25</anchor>
+      <arglist>(MPGeneralConstraintProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>const ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet &amp;</type>
       <name>unknown_fields</name>
       <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
-      <anchor>a4e85d04301ddabea474e41b77a6e75b1</anchor>
+      <anchor>ac5d8cfd0c330faeb3ad7d6d9f64e4339</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>inline ::google::protobuf::UnknownFieldSet *</type>
+      <type>inline ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet *</type>
       <name>mutable_unknown_fields</name>
       <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
-      <anchor>a2ebf4fef33bac8cc63714f80926209e6</anchor>
+      <anchor>a68936ea3cd26c1b74b9509b995ecab29</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -1203,22 +1365,22 @@
       <type>MPGeneralConstraintProto *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
-      <anchor>a041994c580bd05e7e328ac9dd966400d</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a0c235e52a7fd56d792aec91a50a3a5b3</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
-      <anchor>ae14a992ec52211964dbf32b725c15c09</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>ac8af879b433a989fc39fcdb127754267</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
-      <anchor>a76bb8bcb9156fe416fc404e8828ce738</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a4073780b39428a7602616410275209b9</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -1259,22 +1421,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
-      <anchor>aa1c9b66adc82cf192f4bd27639fc8e24</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a170ef3d8022f3430cea5be8176dfcd4a</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
-      <anchor>a2d8d43306a0a4d2b55f5b60e17cf34ed</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>a6da2c5fcb342b019f938baa45580186d</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
-      <anchor>a3c7eff9e740a18fbd8c60a06f9493e84</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>a17de304caa2df417f3e67ab447e4e0bf</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -1284,10 +1446,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
-      <anchor>ae12981213adb64548b917a63f40d11b5</anchor>
+      <anchor>a5b4bf03309e3ca0c52b8a113c1b9eaf9</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -1305,18 +1467,25 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>name</name>
       <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
-      <anchor>a2bac5a3122f6bbb7801b9f668da6aeeb</anchor>
+      <anchor>a74e9b83f583417d22571efe02b90c5e4</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_name</name>
       <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
-      <anchor>a814537eab87de4406d08896370239704</anchor>
-      <arglist>(const ::std::string &amp;value)</arglist>
+      <anchor>aeed03354161d5dafd07faf7ff9908d2d</anchor>
+      <arglist>(const std::string &amp;value)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_name</name>
+      <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
+      <anchor>aa2dd699453a6ae1e0ec2ff4c5dc57ec1</anchor>
+      <arglist>(std::string &amp;&amp;value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -1333,14 +1502,14 @@
       <arglist>(const char *value, size_t size)</arglist>
     </member>
     <member kind="function">
-      <type>::std::string *</type>
+      <type>std::string *</type>
       <name>mutable_name</name>
       <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
       <anchor>aa201de18393af8ca448358bdd7218c18</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::std::string *</type>
+      <type>std::string *</type>
       <name>release_name</name>
       <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
       <anchor>a8f7b422a685ef384223cf105564f4e7d</anchor>
@@ -1350,8 +1519,8 @@
       <type>void</type>
       <name>set_allocated_name</name>
       <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
-      <anchor>a32ca12f453bfc19c7f9cc9c37b553066</anchor>
-      <arglist>(::std::string *name)</arglist>
+      <anchor>a14ed792e09d02949e825225ccdc52380</anchor>
+      <arglist>(std::string *name)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -1396,6 +1565,48 @@
       <arglist>(::operations_research::MPIndicatorConstraint *indicator_constraint)</arglist>
     </member>
     <member kind="function">
+      <type>bool</type>
+      <name>has_sos_constraint</name>
+      <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
+      <anchor>aa5a8cc57aa9631b80c4e2be8f249cf38</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>clear_sos_constraint</name>
+      <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
+      <anchor>a97798df187e054cf43b13d982f98f48b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>const ::operations_research::MPSosConstraint &amp;</type>
+      <name>sos_constraint</name>
+      <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
+      <anchor>a48b36b08a303a5e11c7cbceae0747359</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>::operations_research::MPSosConstraint *</type>
+      <name>release_sos_constraint</name>
+      <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
+      <anchor>a2f71c0c6408bd30de938edab231d8d47</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>::operations_research::MPSosConstraint *</type>
+      <name>mutable_sos_constraint</name>
+      <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
+      <anchor>a8ea86bd6e709db9947a3b6b9ac8eaf45</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_allocated_sos_constraint</name>
+      <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
+      <anchor>aa5844d507b0e982b12946d0c5ccd06d1</anchor>
+      <arglist>(::operations_research::MPSosConstraint *sos_constraint)</arglist>
+    </member>
+    <member kind="function">
       <type>void</type>
       <name>clear_general_constraint</name>
       <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
@@ -1410,10 +1621,24 @@
       <arglist>() const</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
-      <anchor>ade54349ab6a27de0e7a315c67fafce78</anchor>
+      <anchor>a04eb965cb31429ace8176986e9e94e96</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
+      <anchor>a4352cc163cc9112cdfa4a2a9d7a39df7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
+      <anchor>ac05578dc80d2e0fdb31a38a82d607766</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -1458,6 +1683,20 @@
       <anchor>ae2594704179fc4c5401f7d83cfb96d35</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static const int</type>
+      <name>kSosConstraintFieldNumber</name>
+      <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
+      <anchor>a73e2a1db2b8567b692cb2c6a0196371f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1MPGeneralConstraintProto.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="friend">
       <type>friend struct</type>
       <name>::TableStruct_ortools_2flinear_5fsolver_2flinear_5fsolver_2eproto</name>
@@ -1498,6 +1737,13 @@
       <arglist>(const MPIndicatorConstraint &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>MPIndicatorConstraint</name>
+      <anchorfile>classoperations__research_1_1MPIndicatorConstraint.html</anchorfile>
+      <anchor>ad7e3123d36580743a53821081ad885a6</anchor>
+      <arglist>(MPIndicatorConstraint &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>MPIndicatorConstraint &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1MPIndicatorConstraint.html</anchorfile>
@@ -1505,17 +1751,24 @@
       <arglist>(const MPIndicatorConstraint &amp;from)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::UnknownFieldSet &amp;</type>
+      <type>MPIndicatorConstraint &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1MPIndicatorConstraint.html</anchorfile>
+      <anchor>aefcff32e94dc2a90f584a766c1f4bd99</anchor>
+      <arglist>(MPIndicatorConstraint &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>const ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet &amp;</type>
       <name>unknown_fields</name>
       <anchorfile>classoperations__research_1_1MPIndicatorConstraint.html</anchorfile>
-      <anchor>abc3da54ec40b22676bd20628fcfc9f1a</anchor>
+      <anchor>a2f69949237763a07a9b9d7bfdb63b0a1</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>inline ::google::protobuf::UnknownFieldSet *</type>
+      <type>inline ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet *</type>
       <name>mutable_unknown_fields</name>
       <anchorfile>classoperations__research_1_1MPIndicatorConstraint.html</anchorfile>
-      <anchor>add2962171a6c2c2b4f45fdf0923a5cd1</anchor>
+      <anchor>aa0e3997031cb0436e2160d5de17c3b04</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -1536,22 +1789,22 @@
       <type>MPIndicatorConstraint *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1MPIndicatorConstraint.html</anchorfile>
-      <anchor>ad0aa365ecefa1707c49c1a9c3e0ec555</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>adbad288f72b75b30616fad06c1c8c5af</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1MPIndicatorConstraint.html</anchorfile>
-      <anchor>a689618cda7a67758eff0a26f070ca064</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>ace0eafff2b3bff385766d8cd99bc4a6c</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1MPIndicatorConstraint.html</anchorfile>
-      <anchor>a5657f41955d56b14020eaa55ea3bc8df</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a6edc740544090e00a81906975b4478f6</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -1592,22 +1845,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1MPIndicatorConstraint.html</anchorfile>
-      <anchor>a6fcd387d738d5f9a68191bc4263904ad</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a40f0ae68942231e64fa1806f704fef21</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1MPIndicatorConstraint.html</anchorfile>
-      <anchor>a4dc781794176fe1fe24e0253aad93101</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>af1b8c75cb249cf0b4b3beaca250db644</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1MPIndicatorConstraint.html</anchorfile>
-      <anchor>a5ee691f4d3f6d92f3e0a99a8aad0c427</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>aad0876708fdf8cfb3f69ee02c9000380</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -1617,10 +1870,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1MPIndicatorConstraint.html</anchorfile>
-      <anchor>a41c7cb8277b09fc54f262abe300fab77</anchor>
+      <anchor>a5912ec20abf3de58f4d3852600774125</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -1680,18 +1933,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>var_index</name>
       <anchorfile>classoperations__research_1_1MPIndicatorConstraint.html</anchorfile>
-      <anchor>a30de5bc42ed8cb4be1a0bd8d6fd272e9</anchor>
+      <anchor>a9619fa3bdf73f8b58f56586aee338610</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_var_index</name>
       <anchorfile>classoperations__research_1_1MPIndicatorConstraint.html</anchorfile>
-      <anchor>a4488cdb709270d9a6e27595eeffdb662</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a55ecaaaa4e00ac6e82466e47948b9a15</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -1708,24 +1961,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>var_value</name>
       <anchorfile>classoperations__research_1_1MPIndicatorConstraint.html</anchorfile>
-      <anchor>a65660188fdd8f365f82c44c06a2eced3</anchor>
+      <anchor>a21d53b500cbd97fe5e31ff23b35a8812</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_var_value</name>
       <anchorfile>classoperations__research_1_1MPIndicatorConstraint.html</anchorfile>
-      <anchor>adac9ca27d9eeaf0551a7e40d76db9529</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a058ad269a90a96ff7a1deba68f032b11</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1MPIndicatorConstraint.html</anchorfile>
-      <anchor>ad9eb75be474fee423dd3f9a9644183d2</anchor>
+      <anchor>a6eda95d439b2018075e9a0993b391379</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1MPIndicatorConstraint.html</anchorfile>
+      <anchor>afdfce7fd707734ca46b9d34ad7e281b2</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1MPIndicatorConstraint.html</anchorfile>
+      <anchor>a94e119884ac96e355cde0b7f0cd3dfd3</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -1775,6 +2042,13 @@
       <name>kVarValueFieldNumber</name>
       <anchorfile>classoperations__research_1_1MPIndicatorConstraint.html</anchorfile>
       <anchor>ac966fa412048b51768b21c43da070ecb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1MPIndicatorConstraint.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
       <arglist></arglist>
     </member>
     <member kind="friend">
@@ -1856,6 +2130,13 @@
       <arglist>(const MPModelProto &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>MPModelProto</name>
+      <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
+      <anchor>a9ae0d50d391e9c33085f0d2f62f4f3ca</anchor>
+      <arglist>(MPModelProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>MPModelProto &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
@@ -1863,17 +2144,24 @@
       <arglist>(const MPModelProto &amp;from)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::UnknownFieldSet &amp;</type>
+      <type>MPModelProto &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
+      <anchor>a22d17426afe0af4f294f5ba29da522ff</anchor>
+      <arglist>(MPModelProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>const ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet &amp;</type>
       <name>unknown_fields</name>
       <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
-      <anchor>a8336a053894af5868adb472feef3d98a</anchor>
+      <anchor>a41446638a635e6a35dfd6d8ca47f2cfc</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>inline ::google::protobuf::UnknownFieldSet *</type>
+      <type>inline ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet *</type>
       <name>mutable_unknown_fields</name>
       <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
-      <anchor>a9f524907ee617c640e8e24c07839715b</anchor>
+      <anchor>a0f23afc93086b7c2f026c1f0dc384ab7</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -1894,22 +2182,22 @@
       <type>MPModelProto *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
-      <anchor>a69d482bdf65a3e74beb3d2393b3e413c</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>ac71a27e7f7ced602c0c6ff85e74601d4</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
-      <anchor>a05cc581517f70f4fa70eaa233d58ce96</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>ac11f33e444a3256026ed062c8a31d516</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
-      <anchor>a220aa0b5324a08d241e78a1dd59b9c90</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>af00b492bede9cea434c22461ac6a0cd1</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -1950,22 +2238,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
-      <anchor>af1ff5fcfaadc6f86f3e0f86955bb2d28</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a6159869e1359e9cfb6cea3430f7704bc</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
-      <anchor>afb3fa8727d7352d798df80b7a22a9ac8</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>a9741becf8d6a4cfd04eeaace9c65a5c3</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
-      <anchor>a7e55fca7d3ef983d71b898610dba2301</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>a896e358adaed52ffdc7119a11f0f187c</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -1975,10 +2263,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
-      <anchor>aa35460b92f66ac36f28120253704c72e</anchor>
+      <anchor>ac3c9716dc8c9e6deb6c3650177b567f9</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -2003,10 +2291,10 @@
       <arglist>(int index)</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedPtrField&lt; ::operations_research::MPVariableProto &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedPtrField&lt; ::operations_research::MPVariableProto &gt; *</type>
       <name>mutable_variable</name>
       <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
-      <anchor>a7c1201ae59d012942599c225a4b08c5f</anchor>
+      <anchor>aa90a413c453d3b18fa421c3f4a40726e</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -2024,10 +2312,10 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedPtrField&lt; ::operations_research::MPVariableProto &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField&lt; ::operations_research::MPVariableProto &gt; &amp;</type>
       <name>variable</name>
       <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
-      <anchor>ab4e73296fcd61a0b2ebd4f5992dacaac</anchor>
+      <anchor>ab5ae318d787951fc33935494bcebc144</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
@@ -2052,10 +2340,10 @@
       <arglist>(int index)</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedPtrField&lt; ::operations_research::MPConstraintProto &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedPtrField&lt; ::operations_research::MPConstraintProto &gt; *</type>
       <name>mutable_constraint</name>
       <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
-      <anchor>af9746796d6e12fb4062e46abaf6408d7</anchor>
+      <anchor>acbcf4f8e997d3c59d56ff589273e8b17</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -2073,10 +2361,10 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedPtrField&lt; ::operations_research::MPConstraintProto &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField&lt; ::operations_research::MPConstraintProto &gt; &amp;</type>
       <name>constraint</name>
       <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
-      <anchor>a7de4169939eff84eea61ac205a42325b</anchor>
+      <anchor>a140bf890bfceafaca6a15cf8f84c4bc1</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
@@ -2101,10 +2389,10 @@
       <arglist>(int index)</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedPtrField&lt; ::operations_research::MPGeneralConstraintProto &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedPtrField&lt; ::operations_research::MPGeneralConstraintProto &gt; *</type>
       <name>mutable_general_constraint</name>
       <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
-      <anchor>a052cf91befed98dcbf3fb0e2392d4bb5</anchor>
+      <anchor>aef2719f6a7ab16f74ba43ed230a30d89</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -2122,10 +2410,10 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedPtrField&lt; ::operations_research::MPGeneralConstraintProto &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField&lt; ::operations_research::MPGeneralConstraintProto &gt; &amp;</type>
       <name>general_constraint</name>
       <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
-      <anchor>a449937899b047d40350f37e90613a6ea</anchor>
+      <anchor>a3665914fdbbdc6aec50fb3d72f612ddd</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
@@ -2143,18 +2431,25 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>name</name>
       <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
-      <anchor>aa5b1db802f9d12052208f0b84da3d154</anchor>
+      <anchor>a6850e569a7cfa2964a32554201899737</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_name</name>
       <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
-      <anchor>ac8a9945c33e6858b66ca96b8753c44f1</anchor>
-      <arglist>(const ::std::string &amp;value)</arglist>
+      <anchor>a5ac0e95d76d81bd2357a1d3dbedaa932</anchor>
+      <arglist>(const std::string &amp;value)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_name</name>
+      <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
+      <anchor>aa8d1e82150889dfc9c3153487670e28f</anchor>
+      <arglist>(std::string &amp;&amp;value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -2171,14 +2466,14 @@
       <arglist>(const char *value, size_t size)</arglist>
     </member>
     <member kind="function">
-      <type>::std::string *</type>
+      <type>std::string *</type>
       <name>mutable_name</name>
       <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
       <anchor>a2d85fe9aad80c83e7d904b73da5a06d9</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::std::string *</type>
+      <type>std::string *</type>
       <name>release_name</name>
       <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
       <anchor>ad3aca9f5ef2959d6e969001fe32110e7</anchor>
@@ -2188,8 +2483,8 @@
       <type>void</type>
       <name>set_allocated_name</name>
       <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
-      <anchor>a4ab165579ca6b803a8e4e8ac59cdf902</anchor>
-      <arglist>(::std::string *name)</arglist>
+      <anchor>a9663569e272e1bb41d68a6d3cb6b6c07</anchor>
+      <arglist>(std::string *name)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -2290,10 +2585,24 @@
       <arglist>(bool value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
-      <anchor>a99fc5a0026667a5092e36355106f3e57</anchor>
+      <anchor>af5e12572814c0270376b485137db2efd</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
+      <anchor>ac1f9d28cbbc9640e80505533e4c23d81</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
+      <anchor>ad737b1c9b768a3f41d518f47e57430e9</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -2374,6 +2683,13 @@
       <arglist></arglist>
     </member>
     <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
       <type>friend struct</type>
       <name>::TableStruct_ortools_2flinear_5fsolver_2flinear_5fsolver_2eproto</name>
       <anchorfile>classoperations__research_1_1MPModelProto.html</anchorfile>
@@ -2420,6 +2736,13 @@
       <arglist>(const MPModelRequest &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>MPModelRequest</name>
+      <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
+      <anchor>a47a06f7c07b569b7e820bd9bff5ead44</anchor>
+      <arglist>(MPModelRequest &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>MPModelRequest &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
@@ -2427,17 +2750,24 @@
       <arglist>(const MPModelRequest &amp;from)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::UnknownFieldSet &amp;</type>
+      <type>MPModelRequest &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
+      <anchor>ac762029a62425eaf7e57075d3ea2456e</anchor>
+      <arglist>(MPModelRequest &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>const ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet &amp;</type>
       <name>unknown_fields</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>a96bf3ec4d50146a23f4a6fef56150054</anchor>
+      <anchor>a22fb1d32fe12402ef84e14a561e31a2c</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>inline ::google::protobuf::UnknownFieldSet *</type>
+      <type>inline ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet *</type>
       <name>mutable_unknown_fields</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>a1c369a2ef680e13e248e88e5ada68f89</anchor>
+      <anchor>a412ea0812202862d8d4e5b23eb34075f</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -2458,22 +2788,22 @@
       <type>MPModelRequest *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>adb2728d1e9929dcd813e288b611ed4a8</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a612bfb8ca4f8a792949b06ca47c3ca1d</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>a2a1db5f17af2bcc8120df6b9579e981a</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>ad641b13b91314f3309f88a1ebdd70583</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>aae6f0181f06f3cdc4d56cf11fc2e3f89</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a67451b2fc312a8a6de11dafc8476dc7d</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -2514,22 +2844,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>a82b9166551006fa361145d9f052fdd17</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a141877501be675c72da09478ce50e55c</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>ada4fe809193291662e8e0f4dc208cccf</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>a77ea7df548b25370633869f0caf1f921</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>ad19b6b803471827d9f227baaea816115</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>afeafb49a3edf2c668c542d1ec683feed</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -2539,10 +2869,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>a9b2a605b190d96fcef6e877241884518</anchor>
+      <anchor>afbfa135179cc55eeaec72c15d2b37ca3</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -2560,18 +2890,25 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>solver_specific_parameters</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>a8052b14c4df9bd603ae37cbe16a8170a</anchor>
+      <anchor>a3f0ea522ebc273f907a96434006134f5</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_solver_specific_parameters</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>ab30c61202c19b92c7e260bcf43742fc7</anchor>
-      <arglist>(const ::std::string &amp;value)</arglist>
+      <anchor>a647c582cb93d3748e3c6e80e32cb26a8</anchor>
+      <arglist>(const std::string &amp;value)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_solver_specific_parameters</name>
+      <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
+      <anchor>a592a98b4bf6a8d7a993ae2ede5983450</anchor>
+      <arglist>(std::string &amp;&amp;value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -2588,14 +2925,14 @@
       <arglist>(const char *value, size_t size)</arglist>
     </member>
     <member kind="function">
-      <type>::std::string *</type>
+      <type>std::string *</type>
       <name>mutable_solver_specific_parameters</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
       <anchor>afee47e519007f2309c89d8f2ff8001f2</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::std::string *</type>
+      <type>std::string *</type>
       <name>release_solver_specific_parameters</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
       <anchor>a2feff3d15e814351fbd150cd225f8dd2</anchor>
@@ -2605,8 +2942,8 @@
       <type>void</type>
       <name>set_allocated_solver_specific_parameters</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>a26001ce3010c95d2cd4f084f90c7ecdc</anchor>
-      <arglist>(::std::string *solver_specific_parameters)</arglist>
+      <anchor>a6247984f936d1c758908988418f4ca0c</anchor>
+      <arglist>(std::string *solver_specific_parameters)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -2735,10 +3072,24 @@
       <arglist>(::operations_research::MPModelRequest_SolverType value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>a98bc4d08893e62dc015b1644c5a1cdb4</anchor>
+      <anchor>add16a1bf2f363b611e9fe4c1e7397e88</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
+      <anchor>aaf58d06bc141be9c822896176e56f32a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
+      <anchor>a05ca64f1fb20d0127fb684dbdd291a63</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -2770,25 +3121,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::EnumDescriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>SolverType_descriptor</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>a90c5c3597fba8e409d4719fa4e596045</anchor>
+      <anchor>ac06437e0133322deba7ad53b3f60e171</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::std::string &amp;</type>
+      <type>static const std::string &amp;</type>
       <name>SolverType_Name</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>ae2e6f9e3b4b1eae3ffb22c47fe76f241</anchor>
-      <arglist>(SolverType value)</arglist>
+      <anchor>ae201ed7def637c43d53e242fa41f2d37</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
       <name>SolverType_Parse</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>a3c88508eafad10d79796733e8a93213e</anchor>
-      <arglist>(const ::std::string &amp;name, SolverType *value)</arglist>
+      <anchor>a95ec94dc6b3ea38a80ac2bceeb9c4958</anchor>
+      <arglist>(const std::string &amp;name, SolverType *value)</arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static constexpr int</type>
@@ -2798,115 +3149,115 @@
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const SolverType</type>
+      <type>static constexpr SolverType</type>
       <name>GLOP_LINEAR_PROGRAMMING</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>af428a16c4c412ec6ebacc9617cff702f</anchor>
+      <anchor>ad95405e840ce5bae4d43977e2e6407af</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const SolverType</type>
+      <type>static constexpr SolverType</type>
       <name>CLP_LINEAR_PROGRAMMING</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>a9b2666be8f137679a183a79ac44bd954</anchor>
+      <anchor>a2ea3ce8df0f748802fb97c0b3a6a5722</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const SolverType</type>
+      <type>static constexpr SolverType</type>
       <name>GLPK_LINEAR_PROGRAMMING</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>a166cb86f727891d1cf27e56fd361feef</anchor>
+      <anchor>aba5737f3cad6e067bcfc7dd04c870b63</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const SolverType</type>
+      <type>static constexpr SolverType</type>
       <name>GUROBI_LINEAR_PROGRAMMING</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>a02407a59b8a08d3c9d6793aaf6c32790</anchor>
+      <anchor>abca4692f0fcfa117ca40af1c5c53f917</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const SolverType</type>
+      <type>static constexpr SolverType</type>
       <name>CPLEX_LINEAR_PROGRAMMING</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>aabd0eb9710977c12151f45626552f0be</anchor>
+      <anchor>a080026387b93e030672c47eebe9bcf2c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const SolverType</type>
+      <type>static constexpr SolverType</type>
       <name>SCIP_MIXED_INTEGER_PROGRAMMING</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>a76935d28e2b3cbbbf8715cfa599d4c9a</anchor>
+      <anchor>ada47ef0b4153c303f4f8c0ff4518e9cc</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const SolverType</type>
+      <type>static constexpr SolverType</type>
       <name>GLPK_MIXED_INTEGER_PROGRAMMING</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>a775c0aead110ca24f9109ed711f12aae</anchor>
+      <anchor>aaaf45d1bde8a2dacb3060e75670d2935</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const SolverType</type>
+      <type>static constexpr SolverType</type>
       <name>CBC_MIXED_INTEGER_PROGRAMMING</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>a8a1951ca60b9cd3980dc5dbc8b78e906</anchor>
+      <anchor>a1641b77916c0270e22357730e4fc4493</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const SolverType</type>
+      <type>static constexpr SolverType</type>
       <name>GUROBI_MIXED_INTEGER_PROGRAMMING</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>ae9122e5c618331e0990457de96281d68</anchor>
+      <anchor>a5e2c61bfc40faf93efadff0e59cfdb82</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const SolverType</type>
+      <type>static constexpr SolverType</type>
       <name>CPLEX_MIXED_INTEGER_PROGRAMMING</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>a5d493e08b153dd7dc2aae3411984d751</anchor>
+      <anchor>abe5c46883b619f9adc7c740c76c988c3</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const SolverType</type>
+      <type>static constexpr SolverType</type>
       <name>BOP_INTEGER_PROGRAMMING</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>a6876386800f3f8bb5dfafc0397a8d6e5</anchor>
+      <anchor>a5c08074c8f6966c8d4182b0678a7e150</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const SolverType</type>
+      <type>static constexpr SolverType</type>
       <name>SAT_INTEGER_PROGRAMMING</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>a0ea1d81351036835bec9d5d3f9c56f59</anchor>
+      <anchor>a4cac26b88bf1179ab56a0208999ead9a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const SolverType</type>
+      <type>static constexpr SolverType</type>
       <name>KNAPSACK_MIXED_INTEGER_PROGRAMMING</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>adc15f284fd46dffc07c353d9d8d993ea</anchor>
+      <anchor>aa7dc7cc449b2299e191d36b865f3cd5e</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const SolverType</type>
+      <type>static constexpr SolverType</type>
       <name>SolverType_MIN</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>aacefe99bb45dbb287c4a23d215e7fa93</anchor>
+      <anchor>a5627a9ad23ae98827c388e15553ffe2a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const SolverType</type>
+      <type>static constexpr SolverType</type>
       <name>SolverType_MAX</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>a85f46bdaebe6d3c872d71a1d46129bfc</anchor>
+      <anchor>a493fc18496160428abe3ce9d2dc53ec8</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const int</type>
+      <type>static constexpr int</type>
       <name>SolverType_ARRAYSIZE</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
-      <anchor>a4a3aae6d6f5272ce477455a0a24ae0fc</anchor>
+      <anchor>ac7cd44b7957b4cee491642df92d7fdb0</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -2942,6 +3293,13 @@
       <name>kSolverTypeFieldNumber</name>
       <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
       <anchor>a574d4b71b338b04ac835da81c30d6f3e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1MPModelRequest.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
       <arglist></arglist>
     </member>
     <member kind="friend">
@@ -2984,6 +3342,13 @@
       <arglist>(const MPSolutionResponse &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>MPSolutionResponse</name>
+      <anchorfile>classoperations__research_1_1MPSolutionResponse.html</anchorfile>
+      <anchor>aa7083de934957361064b85e671d98bf5</anchor>
+      <arglist>(MPSolutionResponse &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>MPSolutionResponse &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1MPSolutionResponse.html</anchorfile>
@@ -2991,17 +3356,24 @@
       <arglist>(const MPSolutionResponse &amp;from)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::UnknownFieldSet &amp;</type>
+      <type>MPSolutionResponse &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1MPSolutionResponse.html</anchorfile>
+      <anchor>a304b676e377a361681c228d194a35056</anchor>
+      <arglist>(MPSolutionResponse &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>const ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet &amp;</type>
       <name>unknown_fields</name>
       <anchorfile>classoperations__research_1_1MPSolutionResponse.html</anchorfile>
-      <anchor>a5ee46335727baec486aff218d6df52d6</anchor>
+      <anchor>a23ff8fa31306a5d90cea682d6484596e</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>inline ::google::protobuf::UnknownFieldSet *</type>
+      <type>inline ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet *</type>
       <name>mutable_unknown_fields</name>
       <anchorfile>classoperations__research_1_1MPSolutionResponse.html</anchorfile>
-      <anchor>aa9b685d9b3846757c65623a2c668ace8</anchor>
+      <anchor>a8c5995c70c6c633299ff1d697b242ae1</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -3022,22 +3394,22 @@
       <type>MPSolutionResponse *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1MPSolutionResponse.html</anchorfile>
-      <anchor>a9bd65f27c9729af22e2550d8fef87535</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a885c043c62c25d6a6ddf2a547c7a94e3</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1MPSolutionResponse.html</anchorfile>
-      <anchor>a6e713016c5836b8786e3dd8eb76141f8</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a1ce5838e637ee9511b0deb790015e4a9</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1MPSolutionResponse.html</anchorfile>
-      <anchor>ace35f3b88ee492b7dc7b90c214678a24</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a66afdea65fb57c621879985b47f5d3c3</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -3078,22 +3450,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1MPSolutionResponse.html</anchorfile>
-      <anchor>aab4708caff04f7b16baabe663b0477c4</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>acdd6d121d205c55c28b35fa1b7202bff</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1MPSolutionResponse.html</anchorfile>
-      <anchor>a13692ab983543a0968d9df4fb036788b</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>a2b3456ec4e9e0f5dedae13a7c8e7aaa7</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1MPSolutionResponse.html</anchorfile>
-      <anchor>a1e57e92dda539378793602322b029e23</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>a2dcb4d4fb72ca65ea9eb618c190c123f</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -3103,10 +3475,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1MPSolutionResponse.html</anchorfile>
-      <anchor>a777355ef23fb36a58c1cfa170b8ff280</anchor>
+      <anchor>ad262be4a452cf124c10d0e85a3525e27</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -3145,17 +3517,17 @@
       <arglist>(double value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; double &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; double &gt; &amp;</type>
       <name>variable_value</name>
       <anchorfile>classoperations__research_1_1MPSolutionResponse.html</anchorfile>
-      <anchor>a43dd68cddac1c5aabd8aa12953f6611b</anchor>
+      <anchor>a1a4fdc5be6979047d5ab4bc4f756a089</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; double &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; double &gt; *</type>
       <name>mutable_variable_value</name>
       <anchorfile>classoperations__research_1_1MPSolutionResponse.html</anchorfile>
-      <anchor>a7022136909d7f9a4f5f0f89be9dea12d</anchor>
+      <anchor>a3579d86d93ee10835aa417fce43225cc</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -3194,17 +3566,17 @@
       <arglist>(double value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; double &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; double &gt; &amp;</type>
       <name>dual_value</name>
       <anchorfile>classoperations__research_1_1MPSolutionResponse.html</anchorfile>
-      <anchor>a36e3780a2db3c4b6ef22592072be0937</anchor>
+      <anchor>afffec263de5be060fd683cb7f77f77bb</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; double &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; double &gt; *</type>
       <name>mutable_dual_value</name>
       <anchorfile>classoperations__research_1_1MPSolutionResponse.html</anchorfile>
-      <anchor>a98f40db050945b91782b64b264c73b79</anchor>
+      <anchor>a38474f62aedfaced9ad77d8e82282d0a</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -3243,17 +3615,17 @@
       <arglist>(double value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; double &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; double &gt; &amp;</type>
       <name>reduced_cost</name>
       <anchorfile>classoperations__research_1_1MPSolutionResponse.html</anchorfile>
-      <anchor>ad174e6da60bdd326f1e6ceeb3be20db0</anchor>
+      <anchor>a9f1cd44e5505ac392d844a2444d1f08f</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; double &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; double &gt; *</type>
       <name>mutable_reduced_cost</name>
       <anchorfile>classoperations__research_1_1MPSolutionResponse.html</anchorfile>
-      <anchor>aebd03995f34999e6c321a5df5d105bb3</anchor>
+      <anchor>a8a57911af8711c387db527c9f9ec2f1f</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -3341,10 +3713,24 @@
       <arglist>(::operations_research::MPSolverResponseStatus value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1MPSolutionResponse.html</anchorfile>
-      <anchor>ae44aa0bbbbe7958e999328c7e14a044b</anchor>
+      <anchor>a22059d09607c3b8243fa04bcaeb7fddd</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1MPSolutionResponse.html</anchorfile>
+      <anchor>aa5b39fa05d67f3fbc906bfc869fff943</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1MPSolutionResponse.html</anchorfile>
+      <anchor>aa62d98a43cf90276fcc4fbd882b2f5f9</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -3418,6 +3804,13 @@
       <arglist></arglist>
     </member>
     <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1MPSolutionResponse.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
       <type>friend struct</type>
       <name>::TableStruct_ortools_2flinear_5fsolver_2flinear_5fsolver_2eproto</name>
       <anchorfile>classoperations__research_1_1MPSolutionResponse.html</anchorfile>
@@ -3464,6 +3857,13 @@
       <arglist>(const MPSolverCommonParameters &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>MPSolverCommonParameters</name>
+      <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
+      <anchor>a7dfb3ed9e85240be0f28d8ee6119c631</anchor>
+      <arglist>(MPSolverCommonParameters &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>MPSolverCommonParameters &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
@@ -3471,17 +3871,24 @@
       <arglist>(const MPSolverCommonParameters &amp;from)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::UnknownFieldSet &amp;</type>
+      <type>MPSolverCommonParameters &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
+      <anchor>abea7d3aff5f78fc4eb898376c1f4817c</anchor>
+      <arglist>(MPSolverCommonParameters &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>const ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet &amp;</type>
       <name>unknown_fields</name>
       <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
-      <anchor>a3f5a436f7d81683e675287d03a418253</anchor>
+      <anchor>a0cc7e44a0b6d195e922182a2cc33e150</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>inline ::google::protobuf::UnknownFieldSet *</type>
+      <type>inline ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet *</type>
       <name>mutable_unknown_fields</name>
       <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
-      <anchor>a5a519d08fa6d92e20492fd15d5a5a89c</anchor>
+      <anchor>a9dd30a842ddfe37c1d2dd62aaf9c33fd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -3502,22 +3909,22 @@
       <type>MPSolverCommonParameters *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
-      <anchor>aafd31bf77fc2d7f83ba6500ee2334fed</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a3b01bf7a42e9a5ca34c76aff47c33bdf</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
-      <anchor>afb47ae0e68ebbfb236e9c84ceeedda32</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a6c0a9ae90e743a2b57e3928c67757828</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
-      <anchor>ae456de0b9ce965a6ec7186a34ac3090a</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>ad3c5810dbf626dbbca40397c5e39d7a2</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -3558,22 +3965,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
-      <anchor>a8c42678a6a0bfec69e8e8d40b5be2566</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a20cc887e783658243973551831da7933</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
-      <anchor>add1516a72142b04ea8c50f9c3e1d9da6</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>abfe30efa928731feb5b57ae0f4c8e3ee</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
-      <anchor>ac2dcfc9501fb2a8bfae2b2b6b8beebdc</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>aed4287682e3ae3514be974adb805a60b</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -3583,10 +3990,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
-      <anchor>a66e5ecddbed6348d6643f2ff570e31e5</anchor>
+      <anchor>a53398a85356202f49851c7ccfe16105a</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -3800,10 +4207,24 @@
       <arglist>(::operations_research::OptionalBoolean value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
-      <anchor>abbee1eca054fa23efca3dd469bdad856</anchor>
+      <anchor>a7fe3425b656ff748d2a54b417683ae1e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
+      <anchor>a4eb31f0916c4bc2c10aa123f382121d3</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
+      <anchor>a2906af194f9b72a0add2525fcfd737b0</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -3835,25 +4256,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::EnumDescriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>LPAlgorithmValues_descriptor</name>
       <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
-      <anchor>a0bdfe222b5fe442738570ef4de620097</anchor>
+      <anchor>a8e5bd01cce14e19384dbb5932225ce7a</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::std::string &amp;</type>
+      <type>static const std::string &amp;</type>
       <name>LPAlgorithmValues_Name</name>
       <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
-      <anchor>aef7519eb88d0b9694884f56a1b8b59e5</anchor>
-      <arglist>(LPAlgorithmValues value)</arglist>
+      <anchor>aab8554e67a204a2407bcae1bd4552c51</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
       <name>LPAlgorithmValues_Parse</name>
       <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
-      <anchor>a311cb962edaf80e5ecfa860c159f2191</anchor>
-      <arglist>(const ::std::string &amp;name, LPAlgorithmValues *value)</arglist>
+      <anchor>a26ec7059979185b161efe1b02bc245f4</anchor>
+      <arglist>(const std::string &amp;name, LPAlgorithmValues *value)</arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static constexpr int</type>
@@ -3863,52 +4284,52 @@
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const LPAlgorithmValues</type>
+      <type>static constexpr LPAlgorithmValues</type>
       <name>LP_ALGO_UNSPECIFIED</name>
       <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
-      <anchor>a4507de9d0be620d79d36e1fc491c193f</anchor>
+      <anchor>a451e8cae76b11602cfcd00ab705ccda8</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const LPAlgorithmValues</type>
+      <type>static constexpr LPAlgorithmValues</type>
       <name>LP_ALGO_DUAL</name>
       <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
-      <anchor>a4e000d52d5f8609bde2d86b7242f2871</anchor>
+      <anchor>a0aa62e04f861e6e60c044b41a936a2ea</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const LPAlgorithmValues</type>
+      <type>static constexpr LPAlgorithmValues</type>
       <name>LP_ALGO_PRIMAL</name>
       <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
-      <anchor>ac3d39663ed3ab6d119a762554887dd95</anchor>
+      <anchor>a90e92782dea2a7e3d3ef695468e47ade</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const LPAlgorithmValues</type>
+      <type>static constexpr LPAlgorithmValues</type>
       <name>LP_ALGO_BARRIER</name>
       <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
-      <anchor>a17cf830119c8eec6bf82af43922c7a79</anchor>
+      <anchor>aa76efeebfa128c524c90366194d7eeb8</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const LPAlgorithmValues</type>
+      <type>static constexpr LPAlgorithmValues</type>
       <name>LPAlgorithmValues_MIN</name>
       <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
-      <anchor>a400e9bd70c165f5b466930d91db4c995</anchor>
+      <anchor>ae87f3855f26b50a795cc8cdb8cbd4c06</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const LPAlgorithmValues</type>
+      <type>static constexpr LPAlgorithmValues</type>
       <name>LPAlgorithmValues_MAX</name>
       <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
-      <anchor>a4e4cfee03566d84e0c29964a46c138ee</anchor>
+      <anchor>a40277564b0313e56adc6e4f4a48bce85</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const int</type>
+      <type>static constexpr int</type>
       <name>LPAlgorithmValues_ARRAYSIZE</name>
       <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
-      <anchor>a726316270672b571630f30b70743312f</anchor>
+      <anchor>a2a1f085384fb024681c611ca1b2328d9</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -3954,6 +4375,13 @@
       <arglist></arglist>
     </member>
     <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
       <type>friend struct</type>
       <name>::TableStruct_ortools_2flinear_5fsolver_2flinear_5fsolver_2eproto</name>
       <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
@@ -3966,6 +4394,458 @@
       <anchorfile>classoperations__research_1_1MPSolverCommonParameters.html</anchorfile>
       <anchor>a3ef7437ece6efc6c3d73ea07fbef4855</anchor>
       <arglist>(MPSolverCommonParameters &amp;a, MPSolverCommonParameters &amp;b)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::MPSosConstraint</name>
+    <filename>classoperations__research_1_1MPSosConstraint.html</filename>
+    <member kind="typedef">
+      <type>MPSosConstraint_Type</type>
+      <name>Type</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a2a0e1001b3343face886a920fac92833</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>MPSosConstraint</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>afb146038bc0ae4a82443bedf6a41e7d4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual</type>
+      <name>~MPSosConstraint</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>aee50c5d8956f70f535554a14ede3f656</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>MPSosConstraint</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>ac68098c6e05517770d3c66006ac053b4</anchor>
+      <arglist>(const MPSosConstraint &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>MPSosConstraint</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a7e57cd207c82924a4159b352a493f556</anchor>
+      <arglist>(MPSosConstraint &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>MPSosConstraint &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a2fc979854067dd31752e3eaf93b66ebd</anchor>
+      <arglist>(const MPSosConstraint &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>MPSosConstraint &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a799b78f85762ecbd51a3345b3a7cac93</anchor>
+      <arglist>(MPSosConstraint &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>const ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet &amp;</type>
+      <name>unknown_fields</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a48b3d6a1c08cd21402f032f95d6c0e4f</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>inline ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet *</type>
+      <name>mutable_unknown_fields</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a1fbfb7554d749efcaa370c26a2c91aad</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Swap</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>aeec1fb5f3cf356ad86164078f2b44841</anchor>
+      <arglist>(MPSosConstraint *other)</arglist>
+    </member>
+    <member kind="function">
+      <type>MPSosConstraint *</type>
+      <name>New</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a1b7f11f4c053a2289e49d4d2c4c3af12</anchor>
+      <arglist>() const final</arglist>
+    </member>
+    <member kind="function">
+      <type>MPSosConstraint *</type>
+      <name>New</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>acc64a83699f56ba1e99d00da5190cb25</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyFrom</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a13952a17e8cf3a867abfb73943ef13fd</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MergeFrom</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a2eac4fd3aa6fd5bbb858a7d3ac6b76ee</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyFrom</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a684227d3926d81765dca850da5fc819a</anchor>
+      <arglist>(const MPSosConstraint &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MergeFrom</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a8595714daf43d02e429a6a6cbbcedfa7</anchor>
+      <arglist>(const MPSosConstraint &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>PROTOBUF_ATTRIBUTE_REINITIALIZES void</type>
+      <name>Clear</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a9e2e0e6ae9e3ecabb6ce86e4c28f4566</anchor>
+      <arglist>() final</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>IsInitialized</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a4c0265bebd26eca3e86963f001f57e98</anchor>
+      <arglist>() const final</arglist>
+    </member>
+    <member kind="function">
+      <type>size_t</type>
+      <name>ByteSizeLong</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>ae591d9757e75b01442a7e62ec20d601c</anchor>
+      <arglist>() const final</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>MergePartialFromCodedStream</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a50a915df6d7fee9267fcd3a7747fe49c</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SerializeWithCachedSizes</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a72bb2fe50efc8606bd474a10b1a70626</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
+    </member>
+    <member kind="function">
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
+      <name>InternalSerializeWithCachedSizesToArray</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a23045597f1902f84da5d5235dc643018</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetCachedSize</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a230cb7befbbc7ff449ea7a5a3802f517</anchor>
+      <arglist>() const final</arglist>
+    </member>
+    <member kind="function">
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
+      <name>GetMetadata</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a9c49cb4448a2a0fd0cbb933f09f9591c</anchor>
+      <arglist>() const final</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>var_index_size</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>ad2ea96b4127eb2944ab2d652491baebd</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>clear_var_index</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a4b9a394dd1e97f994cfe1a7379fc2029</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
+      <name>var_index</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>ad4ba491d6656aef2b6ce14d14d99cf01</anchor>
+      <arglist>(int index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_var_index</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>aab4e3dedb74a0c29d3df022ba9c84268</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>add_var_index</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a5576bb20bca29ed4eda43e2b4b9247f1</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
+    </member>
+    <member kind="function">
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
+      <name>var_index</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a03de6d5ff4a7ffb033478f00c71db48f</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
+      <name>mutable_var_index</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>ae6c69bd4e46582995ce3c7a9c036658b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>weight_size</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a7665f86b3ed723269cac94bf14d01ad0</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>clear_weight</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a4a1a33e78aef5b0ff2bf99d7a16e3478</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>weight</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a235a66740de57251cfaa3387d132330f</anchor>
+      <arglist>(int index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_weight</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a63d36464e6a33b178dc315a66b4a9ad9</anchor>
+      <arglist>(int index, double value)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>add_weight</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a3e1617716a9eb5ea110ab0f090397efc</anchor>
+      <arglist>(double value)</arglist>
+    </member>
+    <member kind="function">
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; double &gt; &amp;</type>
+      <name>weight</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a2e7159181e0b3423d7f19164bce3b876</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; double &gt; *</type>
+      <name>mutable_weight</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a637f8487af7e3f77625713aad7bc4494</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>has_type</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a1bd1320f7685edd8c5395aa663341c16</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>clear_type</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a42140495e297ef560c2c27253ca10322</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>::operations_research::MPSosConstraint_Type</type>
+      <name>type</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a2df361194caf5e4463fbbed84c656fc7</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_type</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>ab2548485ba08eaa25e2e24199fef91f4</anchor>
+      <arglist>(::operations_research::MPSosConstraint_Type value)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>descriptor</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>af0a9ac6f60f07d13d5bef20ca2b49201</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>aadddf22f38ae842d1365ccc7243db640</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a709b787bea1ada39bcf3eb870de35f7e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const MPSosConstraint &amp;</type>
+      <name>default_instance</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a71d5911e13b9bc3867c9ca58dc4d6a59</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>InitAsDefaultInstance</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a4a4ade79d6848b71ae8e0783ebc0111d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const MPSosConstraint *</type>
+      <name>internal_default_instance</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a7a1cacad2e4de04abc4d4bb410d87624</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static bool</type>
+      <name>Type_IsValid</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>af670b6bfdad221487337ebb353036b75</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
+      <name>Type_descriptor</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a9aaafc6271ea2df4af1a65cbb8506bcf</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const std::string &amp;</type>
+      <name>Type_Name</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>ae5f7840e329c8c7286fae9d12755535b</anchor>
+      <arglist>(T enum_t_value)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static bool</type>
+      <name>Type_Parse</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a0e98d0f7d465cc70fab65f72a3c5bb9f</anchor>
+      <arglist>(const std::string &amp;name, Type *value)</arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int</type>
+      <name>kIndexInFileMessages</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>ad713beb692d411139f0992a9063eb6ed</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr Type</type>
+      <name>SOS1_DEFAULT</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>aa3dab72e0e2b95c0b6e47b73bcc69199</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr Type</type>
+      <name>SOS2</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>ad274af8f614ee6beca8911362bb25c2f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr Type</type>
+      <name>Type_MIN</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a81c3692f56ba1a2c830fd7cf47d11146</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr Type</type>
+      <name>Type_MAX</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a6200a36b5cb91d4e21762c20145086d4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static constexpr int</type>
+      <name>Type_ARRAYSIZE</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a7c4a30c7b67b03f1c2f20f4d77a40b8d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const int</type>
+      <name>kVarIndexFieldNumber</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a1dbfad5972ab01953869c63701d6ce24</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const int</type>
+      <name>kWeightFieldNumber</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>ac568532c841abb5799bbba776d3a7692</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const int</type>
+      <name>kTypeFieldNumber</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>abb2aeac1446916d48a40886c558c705b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend struct</type>
+      <name>::TableStruct_ortools_2flinear_5fsolver_2flinear_5fsolver_2eproto</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>af910aca53a97ebc29b0a0b528eeb1671</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend void</type>
+      <name>swap</name>
+      <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
+      <anchor>a5dbc5d574b38cde070463680d87e9cdb</anchor>
+      <arglist>(MPSosConstraint &amp;a, MPSosConstraint &amp;b)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -3993,6 +4873,13 @@
       <arglist>(const MPVariableProto &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>MPVariableProto</name>
+      <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
+      <anchor>a2228aa035c4679076d612ad7a7367a04</anchor>
+      <arglist>(MPVariableProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>MPVariableProto &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
@@ -4000,17 +4887,24 @@
       <arglist>(const MPVariableProto &amp;from)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::UnknownFieldSet &amp;</type>
+      <type>MPVariableProto &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
+      <anchor>aea708da5988649175a66ce565380c369</anchor>
+      <arglist>(MPVariableProto &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>const ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet &amp;</type>
       <name>unknown_fields</name>
       <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
-      <anchor>a59492eebc80e07180b125223a2cb1240</anchor>
+      <anchor>ae07a0339e2463e1d5ec3891a51c8cdeb</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>inline ::google::protobuf::UnknownFieldSet *</type>
+      <type>inline ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet *</type>
       <name>mutable_unknown_fields</name>
       <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
-      <anchor>a6226783aa133e32a7be1561cc7995536</anchor>
+      <anchor>a961a32fc471dbf46aad8f819d540fb77</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -4031,22 +4925,22 @@
       <type>MPVariableProto *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
-      <anchor>a9ce66d6ad9a4fcb057b808a9da8912cd</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a1c3425e747a8163b9953d646d080d80f</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
-      <anchor>a129d367db52ef98b3c55dd66723890ea</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a0ffdc54c1073f2e7d20269fb5c6ab074</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
-      <anchor>ab3a998c513b261c6775ffff2beef4f33</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a65a3581b22383b59bcb947fdb50fa8ac</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -4087,22 +4981,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
-      <anchor>aa7c4165c873011fc9471588cd6c1f1ee</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>ada780fdedbed0037b473879f1a07dcd3</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
-      <anchor>a291406c2c172d0eee32a6614a0466b78</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>a2bcfb3cc88341f6e751b859b89342e62</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
-      <anchor>a776ac9529fe870943e6ec095da4fa19b</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>acdcc296bcb79e339341f609aa7918418</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -4112,10 +5006,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
-      <anchor>a0295dcb0581a10916aea29e57eb50e14</anchor>
+      <anchor>a2130a5e7f9a63b6802b3d1dad012b8ee</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -4133,18 +5027,25 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>name</name>
       <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
-      <anchor>a90ce7b2f989daa7d98d73ded4b2ea2bb</anchor>
+      <anchor>af6750e75d02b64614ac6cb6424f7b9a0</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_name</name>
       <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
-      <anchor>a309981c23311ea4ed46ab93480d3cfe5</anchor>
-      <arglist>(const ::std::string &amp;value)</arglist>
+      <anchor>addc50daf7db9041c0f58d04cca6cba9b</anchor>
+      <arglist>(const std::string &amp;value)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_name</name>
+      <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
+      <anchor>a16eeb9b0988dc882fd51896da234e28a</anchor>
+      <arglist>(std::string &amp;&amp;value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -4161,14 +5062,14 @@
       <arglist>(const char *value, size_t size)</arglist>
     </member>
     <member kind="function">
-      <type>::std::string *</type>
+      <type>std::string *</type>
       <name>mutable_name</name>
       <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
       <anchor>ab1261573cff3c47b234a300d34f6452b</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::std::string *</type>
+      <type>std::string *</type>
       <name>release_name</name>
       <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
       <anchor>a1d607740d3050978d04f31d01296c6b7</anchor>
@@ -4178,8 +5079,8 @@
       <type>void</type>
       <name>set_allocated_name</name>
       <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
-      <anchor>a41173b0267a6158addc75abf280c273a</anchor>
-      <arglist>(::std::string *name)</arglist>
+      <anchor>a43fda9c3abb29a9a493a7a806b53abb0</anchor>
+      <arglist>(std::string *name)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -4239,6 +5140,34 @@
     </member>
     <member kind="function">
       <type>bool</type>
+      <name>has_branching_priority</name>
+      <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
+      <anchor>aa0a0ecd3ee1ec9c0b997359205dde136</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>clear_branching_priority</name>
+      <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
+      <anchor>adade5eb436788cce169656745d5e6733</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
+      <name>branching_priority</name>
+      <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
+      <anchor>a9cfaa26d92675300703d8d9621396e18</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_branching_priority</name>
+      <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
+      <anchor>a3f814beb2c9d25f27e30fff16e104598</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
       <name>has_lower_bound</name>
       <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
       <anchor>a5d69b8518570db9b5c5f7cedaf5b3809</anchor>
@@ -4294,10 +5223,24 @@
       <arglist>(double value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
-      <anchor>ab454eeff8efd212c02b645969a6f074e</anchor>
+      <anchor>a0a2d86822192fdf98f65353ccad5dad8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
+      <anchor>aa5df5142710261c84c3171996206c349</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
+      <anchor>acbc37eb86a54beac068c779801317a68</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -4351,6 +5294,13 @@
     </member>
     <member kind="variable" static="yes">
       <type>static const int</type>
+      <name>kBranchingPriorityFieldNumber</name>
+      <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
+      <anchor>a5641d857f33a05f09e190d6ac2c8251b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const int</type>
       <name>kLowerBoundFieldNumber</name>
       <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
       <anchor>a73578a474e28aa5d0e8aad3c05424f0b</anchor>
@@ -4361,6 +5311,13 @@
       <name>kUpperBoundFieldNumber</name>
       <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
       <anchor>a8e22d9cfbceb3503571503453006d559</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1MPVariableProto.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
       <arglist></arglist>
     </member>
     <member kind="friend">
@@ -4403,6 +5360,13 @@
       <arglist>(const OptionalDouble &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>OptionalDouble</name>
+      <anchorfile>classoperations__research_1_1OptionalDouble.html</anchorfile>
+      <anchor>a13e6dad8632df288416bdd94fd0df1e7</anchor>
+      <arglist>(OptionalDouble &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>OptionalDouble &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1OptionalDouble.html</anchorfile>
@@ -4410,17 +5374,24 @@
       <arglist>(const OptionalDouble &amp;from)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::UnknownFieldSet &amp;</type>
+      <type>OptionalDouble &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1OptionalDouble.html</anchorfile>
+      <anchor>a504120f95e15a1e71cf209d9b93157b2</anchor>
+      <arglist>(OptionalDouble &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>const ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet &amp;</type>
       <name>unknown_fields</name>
       <anchorfile>classoperations__research_1_1OptionalDouble.html</anchorfile>
-      <anchor>ae0cf0868f3dff82ca1ba1c47a27fd886</anchor>
+      <anchor>a2a93171bf45f55369c758f9337dd65ea</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>inline ::google::protobuf::UnknownFieldSet *</type>
+      <type>inline ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet *</type>
       <name>mutable_unknown_fields</name>
       <anchorfile>classoperations__research_1_1OptionalDouble.html</anchorfile>
-      <anchor>a8913bafe2308773777053d850f7fabc1</anchor>
+      <anchor>af864352c5dafeddce187695a3ae24bcc</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -4441,22 +5412,22 @@
       <type>OptionalDouble *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1OptionalDouble.html</anchorfile>
-      <anchor>aec9a405b68ae6ea9aecf1f3528881cd7</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a262eb91b7e1dce29df7ecabf6d43ede4</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1OptionalDouble.html</anchorfile>
-      <anchor>adc4e54b9efa5eaf423ededfcf4f9ad9a</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>ac3f8e64ebff323cecfa2a41886f86664</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1OptionalDouble.html</anchorfile>
-      <anchor>ae93136b4bd4a067082a9eccea4a90bf2</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a55e664958ddb866d07aa9e37206d6faf</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -4497,22 +5468,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1OptionalDouble.html</anchorfile>
-      <anchor>a12c4154c1c12f82134674bb82b7bc243</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>aa76eb8f2af8d4e5d404f34495147c2d8</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1OptionalDouble.html</anchorfile>
-      <anchor>a2c7bfbe177dd870b48c52018c716986b</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>a2ec26b7b3746d35972473fc0d5c6324b</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1OptionalDouble.html</anchorfile>
-      <anchor>a7132104836e07bf28fe6d0f1609c3e3d</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>a031492fa560f6d525c9ba7068554f8a6</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -4522,10 +5493,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1OptionalDouble.html</anchorfile>
-      <anchor>a13ebb3eb0d1c537f618850a0b623e7b7</anchor>
+      <anchor>a05ce54d80cb057348f48003b1069a394</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -4557,10 +5528,24 @@
       <arglist>(double value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1OptionalDouble.html</anchorfile>
-      <anchor>ab8a1b50c3ad0563cc7eae92fc9ac6cca</anchor>
+      <anchor>af419e2de2e48c7bb65acd185fd7d6146</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1OptionalDouble.html</anchorfile>
+      <anchor>a2d4cc857956971d399fd929031fced05</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1OptionalDouble.html</anchorfile>
+      <anchor>a93006a7209080ee0afa499beb8aff307</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -4596,6 +5581,13 @@
       <name>kValueFieldNumber</name>
       <anchorfile>classoperations__research_1_1OptionalDouble.html</anchorfile>
       <anchor>a58566ced525f962991a04c3c039a2bbc</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1OptionalDouble.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
       <arglist></arglist>
     </member>
     <member kind="friend">
@@ -4638,6 +5630,13 @@
       <arglist>(const PartialVariableAssignment &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>PartialVariableAssignment</name>
+      <anchorfile>classoperations__research_1_1PartialVariableAssignment.html</anchorfile>
+      <anchor>a2609899860dcaaee103e3d9d3e7cdb49</anchor>
+      <arglist>(PartialVariableAssignment &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>PartialVariableAssignment &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1PartialVariableAssignment.html</anchorfile>
@@ -4645,17 +5644,24 @@
       <arglist>(const PartialVariableAssignment &amp;from)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::UnknownFieldSet &amp;</type>
+      <type>PartialVariableAssignment &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1PartialVariableAssignment.html</anchorfile>
+      <anchor>a459706299ff079a574d02101940a53ce</anchor>
+      <arglist>(PartialVariableAssignment &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
+      <type>const ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet &amp;</type>
       <name>unknown_fields</name>
       <anchorfile>classoperations__research_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>a4aa6b404f26812262154d96b3b3c32bc</anchor>
+      <anchor>a0419d3890bcc24619c692b58e00025d7</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>inline ::google::protobuf::UnknownFieldSet *</type>
+      <type>inline ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet *</type>
       <name>mutable_unknown_fields</name>
       <anchorfile>classoperations__research_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>a71b84e11925c3602e6277d1c6ec9d190</anchor>
+      <anchor>a7c27934178b6aabd031f2e9f1c02ab98</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -4676,22 +5682,22 @@
       <type>PartialVariableAssignment *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>af797ff9c45a1a2a5753225f05286a3a3</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a5e65fc8f5a57a385c17309ecfe11abfe</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>a3805ecad014b8b39f8a5bec076407428</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>af1c56240332a5de239066e389c0c01c3</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>ac69c9596f2365b0c340e2117b8cd5c29</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a9ebf517febe19dd2c53887da470c2694</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -4732,22 +5738,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>a3cb9835fc0f68138132b9169eec0dd39</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a5e9e54bf2da71ab4eae1f590c6dec976</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>ad9a8e892afef882446085fec75d6812a</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>ac3ab17b3ed705445bcc813a66a0e0b2c</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>af324d7266c4ebd1d998c369fc4ebdebc</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>a05fff420a4e8d36f31e5d1d6ab218352</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -4757,10 +5763,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>a9124cbb81efbbb3b0ad08299e2de2ae5</anchor>
+      <anchor>aab8fc6a1644e0557c82ecd7b96287e47</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -4778,38 +5784,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>var_index</name>
       <anchorfile>classoperations__research_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>ab9f44a03150702ad296fee4802dc9f3c</anchor>
+      <anchor>a9464b9b2a128ad6a66ac7b4d30809d36</anchor>
       <arglist>(int index) const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_var_index</name>
       <anchorfile>classoperations__research_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>a20cf5ae120651eb3973099a49a6fa3a8</anchor>
-      <arglist>(int index, ::google::protobuf::int32 value)</arglist>
+      <anchor>a074bc686b6afccbba9bb104205aca909</anchor>
+      <arglist>(int index, ::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>add_var_index</name>
       <anchorfile>classoperations__research_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>a408aeda33339211a206ebbceb5a9001c</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>adc61faba8d33c752968adfe3a73198a4</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; &amp;</type>
       <name>var_index</name>
       <anchorfile>classoperations__research_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>a28d3ad55fecca6898480918c1c12c761</anchor>
+      <anchor>af98c698abe34821590c9ab56a3c11524</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; ::google::protobuf::int32 &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; ::PROTOBUF_NAMESPACE_ID::int32 &gt; *</type>
       <name>mutable_var_index</name>
       <anchorfile>classoperations__research_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>a35eb008d46e30c7c44796be88cdf1258</anchor>
+      <anchor>ac35d334678cc29c83b4d61b8625acaf0</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -4848,24 +5854,38 @@
       <arglist>(double value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::RepeatedField&lt; double &gt; &amp;</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; double &gt; &amp;</type>
       <name>var_value</name>
       <anchorfile>classoperations__research_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>ac97cf17d2b424553cfd5e4a3d33c95f9</anchor>
+      <anchor>a0c71dc52f489f62a2768f43d5e451933</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::RepeatedField&lt; double &gt; *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::RepeatedField&lt; double &gt; *</type>
       <name>mutable_var_value</name>
       <anchorfile>classoperations__research_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>aaa51a66b9749093ff36d7275ff11439a</anchor>
+      <anchor>a2de40e4bc038da3d4be1bea4be33b6e3</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1PartialVariableAssignment.html</anchorfile>
-      <anchor>abd22bd5cbff19ff39e43652bb97cb4e7</anchor>
+      <anchor>a24131213b34e356875f2e16df277179f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1PartialVariableAssignment.html</anchorfile>
+      <anchor>a6c79f62f4da1262acd0413cf0ddfd385</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1PartialVariableAssignment.html</anchorfile>
+      <anchor>ad3ad7b3e9897348a82dadb7e382ba5b6</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -4911,6 +5931,13 @@
       <arglist></arglist>
     </member>
     <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1PartialVariableAssignment.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
       <type>friend struct</type>
       <name>::TableStruct_ortools_2flinear_5fsolver_2flinear_5fsolver_2eproto</name>
       <anchorfile>classoperations__research_1_1PartialVariableAssignment.html</anchorfile>
@@ -4929,150 +5956,51 @@
     <name>TableStruct_ortools_2flinear_5fsolver_2flinear_5fsolver_2eproto</name>
     <filename>structTableStruct__ortools__2flinear__5fsolver__2flinear__5fsolver__2eproto.html</filename>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::internal::ParseTableField entries []</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTableField entries []</type>
       <name>PROTOBUF_SECTION_VARIABLE</name>
       <anchorfile>structTableStruct__ortools__2flinear__5fsolver__2flinear__5fsolver__2eproto.html</anchorfile>
-      <anchor>aad7f9cccf25ab5347ccfdd3181c5313c</anchor>
+      <anchor>ab0021985b398d91a5038c29af93c5e1d</anchor>
       <arglist>(protodesc_cold)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::internal::AuxillaryParseTableField aux []</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::internal::AuxillaryParseTableField aux []</type>
       <name>PROTOBUF_SECTION_VARIABLE</name>
       <anchorfile>structTableStruct__ortools__2flinear__5fsolver__2flinear__5fsolver__2eproto.html</anchorfile>
-      <anchor>a7f73ad5a3cb84317de11e0fce25b5748</anchor>
+      <anchor>ae89b6468e71ab96b8719afc2f860ce09</anchor>
       <arglist>(protodesc_cold)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::internal::ParseTable schema [10]</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema [11]</type>
       <name>PROTOBUF_SECTION_VARIABLE</name>
       <anchorfile>structTableStruct__ortools__2flinear__5fsolver__2flinear__5fsolver__2eproto.html</anchorfile>
-      <anchor>a36f53a995cc0a98292f46326c1a88ab4</anchor>
+      <anchor>aa1db0c27c3994ce246d23e942c325e0f</anchor>
       <arglist>(protodesc_cold)</arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ::google::protobuf::internal::FieldMetadata</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::internal::FieldMetadata</type>
       <name>field_metadata</name>
       <anchorfile>structTableStruct__ortools__2flinear__5fsolver__2flinear__5fsolver__2eproto.html</anchorfile>
-      <anchor>aa4070ea2442883c40844f0afe9086391</anchor>
+      <anchor>a99802beb583a4ed25707283597242a5a</anchor>
       <arglist>[]</arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ::google::protobuf::internal::SerializationTable</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::internal::SerializationTable</type>
       <name>serialization_table</name>
       <anchorfile>structTableStruct__ortools__2flinear__5fsolver__2flinear__5fsolver__2eproto.html</anchorfile>
-      <anchor>aad230e47ede8e2ef2572608919accff5</anchor>
+      <anchor>a2173c6cfbfa8f412b8dd294d6d7798f2</anchor>
       <arglist>[]</arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ::google::protobuf::uint32</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::uint32</type>
       <name>offsets</name>
       <anchorfile>structTableStruct__ortools__2flinear__5fsolver__2flinear__5fsolver__2eproto.html</anchorfile>
-      <anchor>a9c8f2578ea4d1b52ca41a188fb1db106</anchor>
+      <anchor>affa2d00f4e745385ebd6e5f68eb79b4a</anchor>
       <arglist>[]</arglist>
     </member>
   </compound>
   <compound kind="namespace">
-    <name>google</name>
-    <filename>namespacegoogle.html</filename>
-    <namespace>google::protobuf</namespace>
-  </compound>
-  <compound kind="namespace">
-    <name>google::protobuf</name>
-    <filename>namespacegoogle_1_1protobuf.html</filename>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::MPModelRequest_SolverType &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::MPSolverCommonParameters_LPAlgorithmValues &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::MPSolverResponseStatus &gt;</class>
-    <member kind="function">
-      <type>::operations_research::MPConstraintProto *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::MPConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a46426d4330f8798191f318e844342edd</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::MPGeneralConstraintProto *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::MPGeneralConstraintProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>ab2f9904d7bb5495c08a6624901891d05</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::MPIndicatorConstraint *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::MPIndicatorConstraint &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a09aec13b641f3ff6f0aaa054d9ffb01a</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::MPModelProto *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::MPModelProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a782374154dcade461d694c642d1a118a</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::MPModelRequest *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::MPModelRequest &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a218a8e8e9347626cd702a3a9c5e4276f</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::MPSolutionResponse *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::MPSolutionResponse &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a97bcf46029da44aea2acff25eeb8f5e5</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::MPSolverCommonParameters *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::MPSolverCommonParameters &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a3123875581158bdc0cef8cc7334204c3</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::MPVariableProto *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::MPVariableProto &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a5241f254a7dd0adf3d39675538cf578f</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::OptionalDouble *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::OptionalDouble &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a57c05b56ab566a13251384836a0ac42e</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::PartialVariableAssignment *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::PartialVariableAssignment &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a62287180108f55a9b20f78b37944b485</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>const EnumDescriptor *</type>
-      <name>GetEnumDescriptor&lt; ::operations_research::MPSolverCommonParameters_LPAlgorithmValues &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>acc185aeb57cb91a0ccac4b25007bdcf9</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>const EnumDescriptor *</type>
-      <name>GetEnumDescriptor&lt; ::operations_research::MPModelRequest_SolverType &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>ab68113b1eb7e078bbcbcec215cb1abff</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>const EnumDescriptor *</type>
-      <name>GetEnumDescriptor&lt; ::operations_research::MPSolverResponseStatus &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a9f64efd8b0aaa41a3134261c9575ac01</anchor>
-      <arglist>()</arglist>
-    </member>
+    <name>internal</name>
+    <filename>namespaceinternal.html</filename>
   </compound>
   <compound kind="namespace">
     <name>operations_research</name>
@@ -5085,202 +6013,222 @@
     <class kind="class">operations_research::MPModelRequest</class>
     <class kind="class">operations_research::MPSolutionResponse</class>
     <class kind="class">operations_research::MPSolverCommonParameters</class>
+    <class kind="class">operations_research::MPSosConstraint</class>
     <class kind="class">operations_research::MPVariableProto</class>
     <class kind="class">operations_research::OptionalDouble</class>
     <class kind="class">operations_research::PartialVariableAssignment</class>
     <member kind="enumeration">
       <type></type>
+      <name>MPSosConstraint_Type</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>ac4082c18fc997b28960d2a15a27af30b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>MPSosConstraint_Type_SOS1_DEFAULT</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>ac4082c18fc997b28960d2a15a27af30ba35dfc279dac55f2292c50123bbd65eb4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>MPSosConstraint_Type_SOS2</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>ac4082c18fc997b28960d2a15a27af30baa35d9c1cb44243e123f7d5993d5b726f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
       <name>MPSolverCommonParameters_LPAlgorithmValues</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab042145a1da0eaafbe215ded57dfe85f</anchor>
+      <anchor>a46d924645e62163da6dafc13b827d7b1</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSolverCommonParameters_LPAlgorithmValues_LP_ALGO_UNSPECIFIED</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab042145a1da0eaafbe215ded57dfe85fa2218d316cfcac5a88342c95b188f3fda</anchor>
+      <anchor>a46d924645e62163da6dafc13b827d7b1a2218d316cfcac5a88342c95b188f3fda</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSolverCommonParameters_LPAlgorithmValues_LP_ALGO_DUAL</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab042145a1da0eaafbe215ded57dfe85fa129c4c6d32bf9aed2414939cb02ff99a</anchor>
+      <anchor>a46d924645e62163da6dafc13b827d7b1a129c4c6d32bf9aed2414939cb02ff99a</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSolverCommonParameters_LPAlgorithmValues_LP_ALGO_PRIMAL</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab042145a1da0eaafbe215ded57dfe85fa53de34dc95fb67212e335f19dc210516</anchor>
+      <anchor>a46d924645e62163da6dafc13b827d7b1a53de34dc95fb67212e335f19dc210516</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSolverCommonParameters_LPAlgorithmValues_LP_ALGO_BARRIER</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab042145a1da0eaafbe215ded57dfe85fa89ff8ffa01928d5993a1414705eecd15</anchor>
+      <anchor>a46d924645e62163da6dafc13b827d7b1a89ff8ffa01928d5993a1414705eecd15</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>MPModelRequest_SolverType</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4c</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_GLOP_LINEAR_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5a6fab373696058c6e9f279de4a8446411</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4ca6fab373696058c6e9f279de4a8446411</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_CLP_LINEAR_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5a0969851c637668f95c10ddb1ade866a7</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4ca0969851c637668f95c10ddb1ade866a7</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_GLPK_LINEAR_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5aa32d84461e16e800e3f996d6347a304d</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4caa32d84461e16e800e3f996d6347a304d</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_GUROBI_LINEAR_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5a3af34f198d539e787263f9eded0ce0cd</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4ca3af34f198d539e787263f9eded0ce0cd</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_CPLEX_LINEAR_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5a4bdeae4b1af8d2cd4aab225db4fc0407</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4ca4bdeae4b1af8d2cd4aab225db4fc0407</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_SCIP_MIXED_INTEGER_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5ac25c4844cbdf1e4d7c7efc11f1f8ebf4</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4cac25c4844cbdf1e4d7c7efc11f1f8ebf4</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_GLPK_MIXED_INTEGER_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5af60a0830addaf4cf00bc59459fa6647e</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4caf60a0830addaf4cf00bc59459fa6647e</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_CBC_MIXED_INTEGER_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5a0e93bcd472e7a9296ff02058ed60f8d1</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4ca0e93bcd472e7a9296ff02058ed60f8d1</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_GUROBI_MIXED_INTEGER_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5ac8beb7f7b026823a6bc2e4e87f546da6</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4cac8beb7f7b026823a6bc2e4e87f546da6</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_CPLEX_MIXED_INTEGER_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5a26762918189367f5e171d0e226084d82</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4ca26762918189367f5e171d0e226084d82</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_BOP_INTEGER_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5a67639f2cd42e1197b5ad69a004c93ba3</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4ca67639f2cd42e1197b5ad69a004c93ba3</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_SAT_INTEGER_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5ac0fedb2082db5e7c96da01b4149c318e</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4cac0fedb2082db5e7c96da01b4149c318e</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPModelRequest_SolverType_KNAPSACK_MIXED_INTEGER_PROGRAMMING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a66408fd9c4c05711631d208dce3118f5abe010aed8c1b29c5a0fd9ac262ce791f</anchor>
+      <anchor>a15791cd7d877fd8cb7977bbfecd6ce4cabe010aed8c1b29c5a0fd9ac262ce791f</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>MPSolverResponseStatus</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aa</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSOLVER_OPTIMAL</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56ac95cb5be9e36b31647dd28910ac6cae4</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aaac95cb5be9e36b31647dd28910ac6cae4</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSOLVER_FEASIBLE</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56ac7d90afd0518be8cd6433ecad656a83b</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aaac7d90afd0518be8cd6433ecad656a83b</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSOLVER_INFEASIBLE</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56a0da2dbf49d011970a770d42141819d0a</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aaa0da2dbf49d011970a770d42141819d0a</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSOLVER_UNBOUNDED</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56ad73de4a0f9908a4c0d11246ecccf32b6</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aaad73de4a0f9908a4c0d11246ecccf32b6</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSOLVER_ABNORMAL</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56ac77789af50586fb2f81915dd1cb790b6</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aaac77789af50586fb2f81915dd1cb790b6</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSOLVER_NOT_SOLVED</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56a667b6a5ed42c91ea81fa67c59cb3badb</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aaa667b6a5ed42c91ea81fa67c59cb3badb</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSOLVER_MODEL_IS_VALID</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56a97ee5aaa7f57f286d4a821dd6e57523f</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aaa97ee5aaa7f57f286d4a821dd6e57523f</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSOLVER_UNKNOWN_STATUS</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56a84ea2a63b24de389aac6aa33b1203cd4</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aaa84ea2a63b24de389aac6aa33b1203cd4</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSOLVER_MODEL_INVALID</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56a6ae83516a798f1675e1b4daf0d8ea6b1</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aaa6ae83516a798f1675e1b4daf0d8ea6b1</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSOLVER_MODEL_INVALID_SOLUTION_HINT</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56a0f9da70b2f2b1304313c3a2a5f4876b3</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aaa0f9da70b2f2b1304313c3a2a5f4876b3</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56ab90169f8480eca12c963af5ce50d36aa</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aaab90169f8480eca12c963af5ce50d36aa</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>MPSOLVER_SOLVER_TYPE_UNAVAILABLE</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a51d0df17eb5fb24fcdd0a134178cde56afa008125099beaab382c42682be6bbf9</anchor>
+      <anchor>a8cc975b7db5017319901da0f63a114aaafa008125099beaab382c42682be6bbf9</anchor>
       <arglist></arglist>
     </member>
     <member kind="function">
@@ -5327,31 +6275,59 @@
     </member>
     <member kind="function">
       <type>bool</type>
+      <name>MPSosConstraint_Type_IsValid</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a69d74b24808a9eba4bcbc04c5bd1f9fb</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
+      <name>MPSosConstraint_Type_descriptor</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a94d793569692b2bdcb76cf2d7736da05</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::string &amp;</type>
+      <name>MPSosConstraint_Type_Name</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a0d84cc4ed67dd0a7ccf556176aa9bc1d</anchor>
+      <arglist>(T enum_t_value)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>MPSosConstraint_Type_Parse</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a6d1606a9e00c2974c23f2e758924b459</anchor>
+      <arglist>(const std::string &amp;name, MPSosConstraint_Type *value)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
       <name>MPSolverCommonParameters_LPAlgorithmValues_IsValid</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
       <anchor>ab3ee5c7a9f799696432b082fd4835232</anchor>
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>MPSolverCommonParameters_LPAlgorithmValues_descriptor</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a976efc8cb83ba6997aa984b3c106da17</anchor>
+      <anchor>a70bcdf756e44dfd2d5dab2a5cf4cfb9a</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>MPSolverCommonParameters_LPAlgorithmValues_Name</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a317f48b6b35697bf02ead22157c91c52</anchor>
-      <arglist>(MPSolverCommonParameters_LPAlgorithmValues value)</arglist>
+      <anchor>ac96996b4dbc25690d6d7fe345b364519</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>MPSolverCommonParameters_LPAlgorithmValues_Parse</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ac2b888d39ca1974f8485911aa6434144</anchor>
-      <arglist>(const ::std::string &amp;name, MPSolverCommonParameters_LPAlgorithmValues *value)</arglist>
+      <anchor>a3b1bc7a63f4a7972004060311346868f</anchor>
+      <arglist>(const std::string &amp;name, MPSolverCommonParameters_LPAlgorithmValues *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -5361,25 +6337,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>MPModelRequest_SolverType_descriptor</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>aa3fea38c7df3ab9583e34b82878e255c</anchor>
+      <anchor>af637f39c9ca296bf197d792c62167b7d</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>MPModelRequest_SolverType_Name</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ad1d017a27f2b89bb55910d1fceb31c64</anchor>
-      <arglist>(MPModelRequest_SolverType value)</arglist>
+      <anchor>a5209f68ceef830f109310dc549479a9b</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>MPModelRequest_SolverType_Parse</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a028ee3de18b0c41c98df4de7f38c3543</anchor>
-      <arglist>(const ::std::string &amp;name, MPModelRequest_SolverType *value)</arglist>
+      <anchor>aeb81b2591906288f021c0a3e37843b37</anchor>
+      <arglist>(const std::string &amp;name, MPModelRequest_SolverType *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -5389,25 +6365,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>MPSolverResponseStatus_descriptor</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a472faf18ff58cd6640b7b3bf6336d9b6</anchor>
+      <anchor>ace7f8b02c012c058db64b534e3378f0f</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>MPSolverResponseStatus_Name</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a1225873debe2bc2cb173d365f06ca615</anchor>
-      <arglist>(MPSolverResponseStatus value)</arglist>
+      <anchor>a188641a1ab5a4dda11c00a11149b07d4</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>MPSolverResponseStatus_Parse</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a415f14aa6c054ed47d050bd15e725f52</anchor>
-      <arglist>(const ::std::string &amp;name, MPSolverResponseStatus *value)</arglist>
+      <anchor>a22b5756cf719f9b2d10dae67820cf885</anchor>
+      <arglist>(const std::string &amp;name, MPSolverResponseStatus *value)</arglist>
     </member>
     <member kind="variable">
       <type>MPConstraintProtoDefaultTypeInternal</type>
@@ -5459,6 +6435,13 @@
       <arglist></arglist>
     </member>
     <member kind="variable">
+      <type>MPSosConstraintDefaultTypeInternal</type>
+      <name>_MPSosConstraint_default_instance_</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a3916f807aef0b8a0929c71cb72f8fe2c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
       <type>MPVariableProtoDefaultTypeInternal</type>
       <name>_MPVariableProto_default_instance_</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
@@ -5480,66 +6463,87 @@
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const MPSolverCommonParameters_LPAlgorithmValues</type>
+      <type>constexpr MPSosConstraint_Type</type>
+      <name>MPSosConstraint_Type_Type_MIN</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a8a26ab806b2722fadd4035cd0be0ae5b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>constexpr MPSosConstraint_Type</type>
+      <name>MPSosConstraint_Type_Type_MAX</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a50ec8ebec75c1daf0e7633cb74ff6657</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>constexpr int</type>
+      <name>MPSosConstraint_Type_Type_ARRAYSIZE</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a43079282dcdc58640a4fb8f3504d9548</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>constexpr MPSolverCommonParameters_LPAlgorithmValues</type>
       <name>MPSolverCommonParameters_LPAlgorithmValues_LPAlgorithmValues_MIN</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a1e4803399c53b73b9ae985751803d01a</anchor>
+      <anchor>ac1eda65381beae08503e8af2b57a0d4c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const MPSolverCommonParameters_LPAlgorithmValues</type>
+      <type>constexpr MPSolverCommonParameters_LPAlgorithmValues</type>
       <name>MPSolverCommonParameters_LPAlgorithmValues_LPAlgorithmValues_MAX</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a35686dabc230ba01c79fb8fd0f457e40</anchor>
+      <anchor>a12a6be7881f2f7dd6e426242c961d5d9</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>MPSolverCommonParameters_LPAlgorithmValues_LPAlgorithmValues_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a5dc5431b0bd4640975c7f6502e8013d9</anchor>
+      <anchor>a2b0590a3e329a0bb8a10b866c28138a0</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const MPModelRequest_SolverType</type>
+      <type>constexpr MPModelRequest_SolverType</type>
       <name>MPModelRequest_SolverType_SolverType_MIN</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a33e0cbbffcf3c459144e44b3f00dc2bf</anchor>
+      <anchor>a9eaabd9c53b8aa093483b2c664a405c3</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const MPModelRequest_SolverType</type>
+      <type>constexpr MPModelRequest_SolverType</type>
       <name>MPModelRequest_SolverType_SolverType_MAX</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a955948242965463248545e1785583654</anchor>
+      <anchor>a42eca5d9d855cdf447e78e17acd87c7a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>MPModelRequest_SolverType_SolverType_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ae6eb74cbdb5037acc1fb265d11616274</anchor>
+      <anchor>a7affd70e5dc61deefab59f4c06149644</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const MPSolverResponseStatus</type>
+      <type>constexpr MPSolverResponseStatus</type>
       <name>MPSolverResponseStatus_MIN</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>aaf5325d95fb273624f43bf2741836834</anchor>
+      <anchor>a53c0861628965fd7d72a0816d8575c66</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const MPSolverResponseStatus</type>
+      <type>constexpr MPSolverResponseStatus</type>
       <name>MPSolverResponseStatus_MAX</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a92f022bd33162332383c5f70e4821498</anchor>
+      <anchor>a1315bf58051fbf57733dc025d6994340</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>MPSolverResponseStatus_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a04af4e3a977e967ddd2f2db792ac2ad7</anchor>
+      <anchor>ac136e7845fbe09520c0e7777d9ae8b43</anchor>
       <arglist></arglist>
     </member>
   </compound>

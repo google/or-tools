@@ -839,6 +839,20 @@
     </member>
     <member kind="function">
       <type>void</type>
+      <name>AddWeightedVariableMinimizedByFinalizer</name>
+      <anchorfile>routing_8h.html</anchorfile>
+      <anchor>a939aa2ef2afec0337b0f9d4dcb1c2db8</anchor>
+      <arglist>(IntVar *var, int64 cost)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddVariableTargetToFinalizer</name>
+      <anchorfile>routing_8h.html</anchorfile>
+      <anchor>a1739a41268c21cfc401d870f05b93536</anchor>
+      <arglist>(IntVar *var, int64 target)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
       <name>CloseModel</name>
       <anchorfile>routing_8h.html</anchorfile>
       <anchor>add71470f4175a0859e6e3d69c2a53988</anchor>
@@ -1314,11 +1328,10 @@
     <class kind="struct">TableStruct_ortools_2fconstraint_5fsolver_2frouting_5fenums_2eproto</class>
     <class kind="class">operations_research::FirstSolutionStrategy</class>
     <class kind="class">operations_research::LocalSearchMetaheuristic</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::FirstSolutionStrategy_Value &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::LocalSearchMetaheuristic_Value &gt;</class>
+    <class kind="struct">is_proto_enum&lt; ::operations_research::FirstSolutionStrategy_Value &gt;</class>
+    <class kind="struct">is_proto_enum&lt; ::operations_research::LocalSearchMetaheuristic_Value &gt;</class>
+    <namespace>internal</namespace>
     <namespace>operations_research</namespace>
-    <namespace>google</namespace>
-    <namespace>google::protobuf</namespace>
     <member kind="define">
       <type>#define</type>
       <name>PROTOBUF_INTERNAL_EXPORT_ortools_2fconstraint_5fsolver_2frouting_5fenums_2eproto</name>
@@ -1330,197 +1343,190 @@
       <type></type>
       <name>FirstSolutionStrategy_Value</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362c</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06d</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_UNSET</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362cad02e019c28342793688466400afd032d</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06dad02e019c28342793688466400afd032d</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_AUTOMATIC</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca6c8e1e7a2859125316fe07082a2da868</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da6c8e1e7a2859125316fe07082a2da868</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_PATH_CHEAPEST_ARC</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca4c1d8ec510011789f52267efc7d34bb7</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da4c1d8ec510011789f52267efc7d34bb7</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_PATH_MOST_CONSTRAINED_ARC</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362cae133e7145564aa475a81741a6240e901</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06dae133e7145564aa475a81741a6240e901</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_EVALUATOR_STRATEGY</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca6d0f4bf298a2b6e6462feb7035d2c5de</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da6d0f4bf298a2b6e6462feb7035d2c5de</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_SAVINGS</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca2acc1235ef1e7bec84c9a60b010400b7</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da2acc1235ef1e7bec84c9a60b010400b7</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_SWEEP</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca83fd39655867e51be481faa09fbea164</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da83fd39655867e51be481faa09fbea164</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_CHRISTOFIDES</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca8a09bb6c57bf531f6674ea171b011791</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da8a09bb6c57bf531f6674ea171b011791</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_ALL_UNPERFORMED</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca0c4ad672038428a0f3b3b7f6c92d8840</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da0c4ad672038428a0f3b3b7f6c92d8840</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_BEST_INSERTION</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362cad0735ef20259782cea2046f90c39bda8</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06dad0735ef20259782cea2046f90c39bda8</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_PARALLEL_CHEAPEST_INSERTION</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362cabba644bd336acdb33aef7257f5bfa536</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06dabba644bd336acdb33aef7257f5bfa536</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_SEQUENTIAL_CHEAPEST_INSERTION</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca8580f408e6e4af5373e4dd081d59d767</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da8580f408e6e4af5373e4dd081d59d767</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_LOCAL_CHEAPEST_INSERTION</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca348e92318608b985248e17102d016cdd</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da348e92318608b985248e17102d016cdd</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_GLOBAL_CHEAPEST_ARC</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca9a63d38a1eed11971089af926145f83e</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da9a63d38a1eed11971089af926145f83e</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_LOCAL_CHEAPEST_ARC</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca451e468bc86902552aa9b987f66f5875</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da451e468bc86902552aa9b987f66f5875</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_FIRST_UNBOUND_MIN_VALUE</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca9c097f678b4aaaa6b10df89dc4d4802e</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da9c097f678b4aaaa6b10df89dc4d4802e</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_FirstSolutionStrategy_Value_INT_MIN_SENTINEL_DO_NOT_USE_</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca8cdfd32facff4a66e180fab80f3fb711</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da8cdfd32facff4a66e180fab80f3fb711</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_FirstSolutionStrategy_Value_INT_MAX_SENTINEL_DO_NOT_USE_</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362cae584dc12821c9b7171986c986b6c7462</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06dae584dc12821c9b7171986c986b6c7462</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>LocalSearchMetaheuristic_Value</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a96ad216f076775131996dbfd897ace77</anchor>
+      <anchor>a792fc7c1636eff4a9476ea5a24459aed</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>LocalSearchMetaheuristic_Value_UNSET</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a96ad216f076775131996dbfd897ace77ab1177884bf5c3fda2cac819cca8279ec</anchor>
+      <anchor>a792fc7c1636eff4a9476ea5a24459aedab1177884bf5c3fda2cac819cca8279ec</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>LocalSearchMetaheuristic_Value_AUTOMATIC</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a96ad216f076775131996dbfd897ace77a883a6e25cd8984a9e4e06636823f7201</anchor>
+      <anchor>a792fc7c1636eff4a9476ea5a24459aeda883a6e25cd8984a9e4e06636823f7201</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>LocalSearchMetaheuristic_Value_GREEDY_DESCENT</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a96ad216f076775131996dbfd897ace77a844fc936bb493f6a5d592b28302ea2f1</anchor>
+      <anchor>a792fc7c1636eff4a9476ea5a24459aeda844fc936bb493f6a5d592b28302ea2f1</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>LocalSearchMetaheuristic_Value_GUIDED_LOCAL_SEARCH</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a96ad216f076775131996dbfd897ace77a2909a10cd525473780b35aaa3c4f4eda</anchor>
+      <anchor>a792fc7c1636eff4a9476ea5a24459aeda2909a10cd525473780b35aaa3c4f4eda</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>LocalSearchMetaheuristic_Value_SIMULATED_ANNEALING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a96ad216f076775131996dbfd897ace77a0d373c31dbec1678db8b9e50ae63327f</anchor>
+      <anchor>a792fc7c1636eff4a9476ea5a24459aeda0d373c31dbec1678db8b9e50ae63327f</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>LocalSearchMetaheuristic_Value_TABU_SEARCH</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a96ad216f076775131996dbfd897ace77a63e13a565cf5daf981c1b565912b3b0f</anchor>
+      <anchor>a792fc7c1636eff4a9476ea5a24459aeda63e13a565cf5daf981c1b565912b3b0f</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>LocalSearchMetaheuristic_Value_GENERIC_TABU_SEARCH</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a96ad216f076775131996dbfd897ace77a300fe37f649b909a810935825778b77c</anchor>
+      <anchor>a792fc7c1636eff4a9476ea5a24459aeda300fe37f649b909a810935825778b77c</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>LocalSearchMetaheuristic_Value_LocalSearchMetaheuristic_Value_INT_MIN_SENTINEL_DO_NOT_USE_</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a96ad216f076775131996dbfd897ace77a0783003ef2622becdab73be7bfb66e03</anchor>
+      <anchor>a792fc7c1636eff4a9476ea5a24459aeda0783003ef2622becdab73be7bfb66e03</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>LocalSearchMetaheuristic_Value_LocalSearchMetaheuristic_Value_INT_MAX_SENTINEL_DO_NOT_USE_</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a96ad216f076775131996dbfd897ace77a719d13ec837e44b8b25b0f3315346594</anchor>
+      <anchor>a792fc7c1636eff4a9476ea5a24459aeda719d13ec837e44b8b25b0f3315346594</anchor>
       <arglist></arglist>
     </member>
     <member kind="function">
-      <type>void</type>
-      <name>AddDescriptors_ortools_2fconstraint_5fsolver_2frouting_5fenums_2eproto</name>
-      <anchorfile>routing__enums_8pb_8h.html</anchorfile>
-      <anchor>afe156995beacc2afec599ab709faca04</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::FirstSolutionStrategy *</type>
+      <type>PROTOBUF_NAMESPACE_OPEN ::operations_research::FirstSolutionStrategy *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::FirstSolutionStrategy &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a46a0573ef15e8d450a94645726e4a115</anchor>
+      <anchorfile>routing__enums_8pb_8h.html</anchorfile>
+      <anchor>af66aea96731c9aec7a79f8f0a8ebdc2c</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::LocalSearchMetaheuristic *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::LocalSearchMetaheuristic &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a46ac56c90da4ab9e7c9d2cbe996a6889</anchor>
+      <anchorfile>routing__enums_8pb_8h.html</anchorfile>
+      <anchor>a1929141d8ceae06af6d0c92b3de0e3fe</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
@@ -1531,25 +1537,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>FirstSolutionStrategy_Value_descriptor</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a3c3c2af7d77d5e7f76f9a3d8fb1edf0f</anchor>
+      <anchor>a99ad9f9140f36fbb7d0fa70aba00b46b</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>FirstSolutionStrategy_Value_Name</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>aaed24a4c7f867bbe1173faf422387c57</anchor>
-      <arglist>(FirstSolutionStrategy_Value value)</arglist>
+      <anchor>aa3347cbb67e6b42bf2d99c6e36a43285</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>FirstSolutionStrategy_Value_Parse</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ad1acf7e4aff76fb0cc1659d91bdb5a62</anchor>
-      <arglist>(const ::std::string &amp;name, FirstSolutionStrategy_Value *value)</arglist>
+      <anchor>a53e650ef5267d5f3db388f6a6b9482a8</anchor>
+      <arglist>(const std::string &amp;name, FirstSolutionStrategy_Value *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -1559,39 +1565,46 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>LocalSearchMetaheuristic_Value_descriptor</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a5142d10acce3d076acf89506752dba5f</anchor>
+      <anchor>a00f3e64ec0029f07e62e1c1abfd6071f</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>LocalSearchMetaheuristic_Value_Name</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ade04d594c17cc2436976da614fa0a2f7</anchor>
-      <arglist>(LocalSearchMetaheuristic_Value value)</arglist>
+      <anchor>a3412913b0ac8a9e00d3a64bcce238da0</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>LocalSearchMetaheuristic_Value_Parse</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a8e7c14051a98f40a1782646965401ca7</anchor>
-      <arglist>(const ::std::string &amp;name, LocalSearchMetaheuristic_Value *value)</arglist>
+      <anchor>acd6f3950d95b591a67cdc61be1f8cb40</anchor>
+      <arglist>(const std::string &amp;name, LocalSearchMetaheuristic_Value *value)</arglist>
     </member>
     <member kind="function">
       <type>const EnumDescriptor *</type>
       <name>GetEnumDescriptor&lt; ::operations_research::FirstSolutionStrategy_Value &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a34bc82f8ac3dc7b49fdfc02cd399fcfb</anchor>
+      <anchorfile>routing__enums_8pb_8h.html</anchorfile>
+      <anchor>af22e88bc83bbd1823edaec6845651098</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>const EnumDescriptor *</type>
       <name>GetEnumDescriptor&lt; ::operations_research::LocalSearchMetaheuristic_Value &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>afdc886b972e845de58089a1f0fd7b61a</anchor>
+      <anchorfile>routing__enums_8pb_8h.html</anchorfile>
+      <anchor>ac10a962b3f273fe713e3ec24f958244d</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="variable">
+      <type>const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable</type>
+      <name>descriptor_table_ortools_2fconstraint_5fsolver_2frouting_5fenums_2eproto</name>
+      <anchorfile>routing__enums_8pb_8h.html</anchorfile>
+      <anchor>adb36228f7101310ce5c6464e0afa24ab</anchor>
+      <arglist></arglist>
     </member>
     <member kind="variable">
       <type>FirstSolutionStrategyDefaultTypeInternal</type>
@@ -1608,45 +1621,45 @@
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const FirstSolutionStrategy_Value</type>
+      <type>constexpr FirstSolutionStrategy_Value</type>
       <name>FirstSolutionStrategy_Value_Value_MIN</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a9aec91f2a6b9e10f98ded28a1df2925b</anchor>
+      <anchor>a2c7b8136ecfa0fe9cf4cd72a7f503e99</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const FirstSolutionStrategy_Value</type>
+      <type>constexpr FirstSolutionStrategy_Value</type>
       <name>FirstSolutionStrategy_Value_Value_MAX</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a999203a7a00dc983c437624201cdbce2</anchor>
+      <anchor>a02c2709292cb324dd96c1f7c3cd6bb80</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>FirstSolutionStrategy_Value_Value_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a9e8e1305d7b00c52172281a44baad6c2</anchor>
+      <anchor>aa952bfe0a71c0897a2490f8e29feea1b</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const LocalSearchMetaheuristic_Value</type>
+      <type>constexpr LocalSearchMetaheuristic_Value</type>
       <name>LocalSearchMetaheuristic_Value_Value_MIN</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a3713cc7fe59ec4df14e26ac0310cf0e5</anchor>
+      <anchor>aeef02d29a4fbff402021b9ed0509b3d2</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const LocalSearchMetaheuristic_Value</type>
+      <type>constexpr LocalSearchMetaheuristic_Value</type>
       <name>LocalSearchMetaheuristic_Value_Value_MAX</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a86aef277165b7aacec371daebe466690</anchor>
+      <anchor>a7c6b8ceb9a6dad94886b3a8fa8d3a136</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>LocalSearchMetaheuristic_Value_Value_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a4fd8517c34ce555a83981c8cc3a00d3c</anchor>
+      <anchor>ab75b4553844ec6a32a0d881f7f64d879</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -2076,9 +2089,8 @@
     <class kind="class">operations_research::RoutingSearchParameters_LocalSearchNeighborhoodOperators</class>
     <class kind="class">operations_research::RoutingSearchParameters</class>
     <class kind="class">operations_research::RoutingModelParameters</class>
+    <namespace>internal</namespace>
     <namespace>operations_research</namespace>
-    <namespace>google</namespace>
-    <namespace>google::protobuf</namespace>
     <member kind="define">
       <type>#define</type>
       <name>PROTOBUF_INTERNAL_EXPORT_ortools_2fconstraint_5fsolver_2frouting_5fparameters_2eproto</name>
@@ -2087,32 +2099,32 @@
       <arglist></arglist>
     </member>
     <member kind="function">
-      <type>void</type>
-      <name>AddDescriptors_ortools_2fconstraint_5fsolver_2frouting_5fparameters_2eproto</name>
-      <anchorfile>routing__parameters_8pb_8h.html</anchorfile>
-      <anchor>a1b331d107b661381c44fcb30ec2d71ab</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::RoutingModelParameters *</type>
+      <type>PROTOBUF_NAMESPACE_OPEN ::operations_research::RoutingModelParameters *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::RoutingModelParameters &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a9b7b91a9046ed6001177f9828bb02baf</anchor>
+      <anchorfile>routing__parameters_8pb_8h.html</anchorfile>
+      <anchor>aafec97bd10b50fab49307a19965084ca</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::RoutingSearchParameters *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::RoutingSearchParameters &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a48576a6238bbee63a4e7b85f192b84c7</anchor>
+      <anchorfile>routing__parameters_8pb_8h.html</anchorfile>
+      <anchor>a319e5c4759de7382dd6a60271d8e3ce6</anchor>
       <arglist>(Arena *)</arglist>
     </member>
     <member kind="function">
       <type>::operations_research::RoutingSearchParameters_LocalSearchNeighborhoodOperators *</type>
       <name>Arena::CreateMaybeMessage&lt;::operations_research::RoutingSearchParameters_LocalSearchNeighborhoodOperators &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a881c03b2a6c813d26593e6de11e4ff3c</anchor>
+      <anchorfile>routing__parameters_8pb_8h.html</anchorfile>
+      <anchor>aa5dcf33a4b44e601fc33617b5fe05a38</anchor>
       <arglist>(Arena *)</arglist>
+    </member>
+    <member kind="variable">
+      <type>const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable</type>
+      <name>descriptor_table_ortools_2fconstraint_5fsolver_2frouting_5fparameters_2eproto</name>
+      <anchorfile>routing__parameters_8pb_8h.html</anchorfile>
+      <anchor>a08fb716a4f5f875f265060f453fa01b1</anchor>
+      <arglist></arglist>
     </member>
     <member kind="variable">
       <type>RoutingModelParametersDefaultTypeInternal</type>
@@ -7145,11 +7157,25 @@
       <arglist>(const FirstSolutionStrategy &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>FirstSolutionStrategy</name>
+      <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
+      <anchor>ac64021feef4b649b35285abe3640a79c</anchor>
+      <arglist>(FirstSolutionStrategy &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>FirstSolutionStrategy &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
       <anchor>a2a67478ad16aea717eb397622f72e31f</anchor>
       <arglist>(const FirstSolutionStrategy &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>FirstSolutionStrategy &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
+      <anchor>a1a1b0f411bed6edaeccf8ac130c9c360</anchor>
+      <arglist>(FirstSolutionStrategy &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -7169,22 +7195,22 @@
       <type>FirstSolutionStrategy *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>ade39862495509a98b15dc833cbc40af2</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>ab77c251e3e1c947a00a37e44dfb136ce</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>a536b8219f5b5f086c329db19a2212dd6</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>ac8b31759a3ec7cd3f18f6144549e9698</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>a4da0a3bd22b64594cf7b3bc93550fe38</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>af68ebbc1e89b706395596c5582362758</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -7225,22 +7251,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>ae1f5196d4f1a60007cc6d14d4fa9926f</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a0d9f206d54176dea109e620044dc7702</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>a5c91c7a35a520ef5cdd95c2d59eb9b58</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>abeb27617f605bb48b78a0f91cf14bc15</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>acfecc7658eef181ebcdcf55e36630861</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>abb1d57a5708ebc2b8219c83f47df6374</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -7250,17 +7276,31 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>a4c5fdda0a80c6f1da516ab29c3803662</anchor>
+      <anchor>a4e11066b077f871567503b5d2fe19ded</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>a907bb218b153372a938a6cf735890c83</anchor>
+      <anchor>a6c4424dd0040e94f2bf4e85cd0d9300e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
+      <anchor>a69486649596a38ed478c8d3896822000</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
+      <anchor>a9a67922ac76920430eb2421836908e4b</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -7292,25 +7332,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::EnumDescriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>Value_descriptor</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>ad0e903dd5aea1e0b95e1e3917244823f</anchor>
+      <anchor>a7c0b7f460246b34af182532a8f23522a</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::std::string &amp;</type>
+      <type>static const std::string &amp;</type>
       <name>Value_Name</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>a289f4040f3bb084ecaadb8332e4cde24</anchor>
-      <arglist>(Value value)</arglist>
+      <anchor>ae77f2f518c9658bc9235e6172848a2ab</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
       <name>Value_Parse</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>a86bda42d4289d44d5a38e8b91e9ecef3</anchor>
-      <arglist>(const ::std::string &amp;name, Value *value)</arglist>
+      <anchor>a3b8efc2b7d690ed0ac9f99cb5b5c29d9</anchor>
+      <arglist>(const std::string &amp;name, Value *value)</arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static constexpr int</type>
@@ -7320,136 +7360,143 @@
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>UNSET</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>a26de3c667e847e85cda8e44c868d307f</anchor>
+      <anchor>a4dd41549233ec9fb7c61080b6e6ce0d9</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>AUTOMATIC</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>a116e74d7b5d2c850321b0e214c2dd517</anchor>
+      <anchor>a5477cce7c4179d9e7b90648f83fb42cc</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>PATH_CHEAPEST_ARC</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>a1c65231053c401c53204cc20dfa7fcb8</anchor>
+      <anchor>a72c366179254099966e64aeeccb80d7b</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>PATH_MOST_CONSTRAINED_ARC</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>a3a23f59c5476d060e89d9f90c249f52b</anchor>
+      <anchor>a088f1250db7d5489fef5423dbdb1f852</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>EVALUATOR_STRATEGY</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>aff88d6db6feffc9d26de6a43c0265985</anchor>
+      <anchor>ab24f892b8513fd6a44b2e736cf5ebccd</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>SAVINGS</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>a2b16394b0b606ae6d1cf996ad45563fd</anchor>
+      <anchor>afade5e1b09e5eefccae67c7e1ace4799</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>SWEEP</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>aa1edc23e8d9fce224df66bfaf869211c</anchor>
+      <anchor>ad4a38e7277e3fb0557479e078a560d1c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>CHRISTOFIDES</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>afe943bc7f706719ecc82197e62f430c5</anchor>
+      <anchor>a810785d1c4e24d8d9f8ffa244510dbbc</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>ALL_UNPERFORMED</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>a9d03b8ff9f77de1ee440d38ee97dd3c9</anchor>
+      <anchor>adf4baca2e1ec52b240ef4a81222e9ef2</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>BEST_INSERTION</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>a82e631b145c5703c5298f1ed7f6e070b</anchor>
+      <anchor>adc58d693df6846a100517f16dcbb1976</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>PARALLEL_CHEAPEST_INSERTION</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>ade7535db6b7462aa69e72e15f008ad22</anchor>
+      <anchor>afc186ca926ad9f46441f9f49bf0d33a8</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>SEQUENTIAL_CHEAPEST_INSERTION</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>a40890d931e3e1b4fff6cc5a4089a4536</anchor>
+      <anchor>a679ed57a30eb39c43e4befed054875aa</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>LOCAL_CHEAPEST_INSERTION</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>a8e70c933401ded7d988f6da46bf4bb71</anchor>
+      <anchor>a51944b51cacedda16b4ffb5b7b8545da</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>GLOBAL_CHEAPEST_ARC</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>a467c982ee44404517ce3f8395702db22</anchor>
+      <anchor>aec1a079bc829458d3f925a1383a82721</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>LOCAL_CHEAPEST_ARC</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>a54449efe5ace20e165234a62d9c9909c</anchor>
+      <anchor>a820abc949104ddc53240f345f70c5436</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>FIRST_UNBOUND_MIN_VALUE</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>a7204a269ea553ab38930d8558607dcba</anchor>
+      <anchor>aa26bba1c9225cdb253618d62246feec4</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>Value_MIN</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>a5e51d1b4bdd44df570113d253a92aee1</anchor>
+      <anchor>a152b7935166a40ff6d4882c9d8dfd05f</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>Value_MAX</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>ad7d1e7b8bd3427da7e6a50ac0af92771</anchor>
+      <anchor>a5df12367741c438c09f1317f878558e3</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const int</type>
+      <type>static constexpr int</type>
       <name>Value_ARRAYSIZE</name>
       <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
-      <anchor>a75ac1035d44eeca56ea0e7aea7903161</anchor>
+      <anchor>a7ab811620a1448e7d5817937aa63db53</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1FirstSolutionStrategy.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
       <arglist></arglist>
     </member>
     <member kind="friend">
@@ -10204,12 +10251,12 @@
     </member>
   </compound>
   <compound kind="struct">
-    <name>google::protobuf::is_proto_enum&lt; ::operations_research::FirstSolutionStrategy_Value &gt;</name>
-    <filename>structgoogle_1_1protobuf_1_1is__proto__enum_3_01_1_1operations__research_1_1FirstSolutionStrategy__Value_01_4.html</filename>
+    <name>is_proto_enum&lt; ::operations_research::FirstSolutionStrategy_Value &gt;</name>
+    <filename>structis__proto__enum_3_01_1_1operations__research_1_1FirstSolutionStrategy__Value_01_4.html</filename>
   </compound>
   <compound kind="struct">
-    <name>google::protobuf::is_proto_enum&lt; ::operations_research::LocalSearchMetaheuristic_Value &gt;</name>
-    <filename>structgoogle_1_1protobuf_1_1is__proto__enum_3_01_1_1operations__research_1_1LocalSearchMetaheuristic__Value_01_4.html</filename>
+    <name>is_proto_enum&lt; ::operations_research::LocalSearchMetaheuristic_Value &gt;</name>
+    <filename>structis__proto__enum_3_01_1_1operations__research_1_1LocalSearchMetaheuristic__Value_01_4.html</filename>
   </compound>
   <compound kind="class">
     <name>operations_research::SimpleRevFIFO::Iterator</name>
@@ -10928,11 +10975,25 @@
       <arglist>(const LocalSearchMetaheuristic &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>LocalSearchMetaheuristic</name>
+      <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
+      <anchor>ab852b901ede55036ed7a2939d847fb62</anchor>
+      <arglist>(LocalSearchMetaheuristic &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>LocalSearchMetaheuristic &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
       <anchor>aaf1586b73fc2e1471ddc41c4b2b70780</anchor>
       <arglist>(const LocalSearchMetaheuristic &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>LocalSearchMetaheuristic &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
+      <anchor>a8a687f292c44e539486afd8558d734cc</anchor>
+      <arglist>(LocalSearchMetaheuristic &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -10952,22 +11013,22 @@
       <type>LocalSearchMetaheuristic *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
-      <anchor>a1221a688aaed6a1c0e7185b50fa915d9</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>acbb0511179a981e4308d8488d6726c48</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
-      <anchor>a56bc3d526564aaa73775da15761cf4a1</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a96c25b8ac9b60518dc51ae012d52417f</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
-      <anchor>aacc9c336989478c199e06d82280c6822</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a56af304d61e223827b27357aa897eb1a</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -11008,22 +11069,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
-      <anchor>a548bddb43cecec213ec45db15017b5d4</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a7876ca825c90874e60ddb26e01008448</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
-      <anchor>ab0ae9b7acd3526090cda46f8595433cd</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>a29e13296b86f28d93b18de0d873997bd</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
-      <anchor>a35115856799814cd22493b328ae3eaa0</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>a22df175a77b885e035a27c2a264eeafd</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -11033,17 +11094,31 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
-      <anchor>a9fb80b53a3c4b365ec88ac4c9284df26</anchor>
+      <anchor>a7eb162d73d0902b845deb03cfd33f790</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
-      <anchor>aab7ad24c677d3adcdaff4dd550365846</anchor>
+      <anchor>a4e880532bf698c7d14e124ea1e986ff1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
+      <anchor>a32b0b437e8eabbffc212f2d4e12f3c6b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
+      <anchor>aa29560cb8e05e3da8beccaa2adbcbab9</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -11075,25 +11150,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::EnumDescriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>Value_descriptor</name>
       <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
-      <anchor>a2f918eb223844572162bcbf7d684a6c4</anchor>
+      <anchor>a3eb0ee6d02104002fab0c720ba9e8229</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::std::string &amp;</type>
+      <type>static const std::string &amp;</type>
       <name>Value_Name</name>
       <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
-      <anchor>aef4c1c27f1026c24022b1abfb7278dbb</anchor>
-      <arglist>(Value value)</arglist>
+      <anchor>ac4385ffd8cd51378b9926e7efd1aef10</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static bool</type>
       <name>Value_Parse</name>
       <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
-      <anchor>aed0c5df053602a2e236067569060c816</anchor>
-      <arglist>(const ::std::string &amp;name, Value *value)</arglist>
+      <anchor>a336becbdfb08d3ef2dcb4868397a97ed</anchor>
+      <arglist>(const std::string &amp;name, Value *value)</arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static constexpr int</type>
@@ -11103,73 +11178,80 @@
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>UNSET</name>
       <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
-      <anchor>aa1d84a66ec946950aad8771bab989f77</anchor>
+      <anchor>a8060e5f2c6e2f5c10c46458d98bc88c2</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>AUTOMATIC</name>
       <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
-      <anchor>a3f4e789e3c97d6f2bb66b5aa92d606ec</anchor>
+      <anchor>a56d3b180808b004971e40c9dfc0d2085</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>GREEDY_DESCENT</name>
       <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
-      <anchor>ab86c18953547ee5edce729505378d27a</anchor>
+      <anchor>a839adb76638f3fb36fa66f1948157658</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>GUIDED_LOCAL_SEARCH</name>
       <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
-      <anchor>ac9a4546877b5abb260fc20dcdd985233</anchor>
+      <anchor>af8f761170b5e74bd9c337ee1f76485f3</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>SIMULATED_ANNEALING</name>
       <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
-      <anchor>aa528e65a25c752adbf71738ffe4fa5d0</anchor>
+      <anchor>aa6d1f00a59bac345005559e1a59ff3a8</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>TABU_SEARCH</name>
       <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
-      <anchor>afa344a17e25cc613856c1dda0402711d</anchor>
+      <anchor>ac2ed27039f87a3cfb988e73982a6feba</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>GENERIC_TABU_SEARCH</name>
       <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
-      <anchor>ac1c6cf6408a1e2c73bc4395517d4b3f5</anchor>
+      <anchor>af110c8266b5dc8d40169cad7b29b54ab</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>Value_MIN</name>
       <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
-      <anchor>aac83642b92f97ea26ef8d1b32fb61290</anchor>
+      <anchor>aaf14e9678030f9a0935e275a99bde8f9</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const Value</type>
+      <type>static constexpr Value</type>
       <name>Value_MAX</name>
       <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
-      <anchor>ad36ef2dc4e546a1b7ccdddd496936af7</anchor>
+      <anchor>ac8c4fea5f99479cbdc4fb8b87111cd7a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const int</type>
+      <type>static constexpr int</type>
       <name>Value_ARRAYSIZE</name>
       <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
-      <anchor>aae59d3f7f8390dd9d7620b23c4dcb7cc</anchor>
+      <anchor>a1e35a020257671a9954df6fc8565c4c9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1LocalSearchMetaheuristic.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
       <arglist></arglist>
     </member>
     <member kind="friend">
@@ -22761,11 +22843,25 @@
       <arglist>(const RoutingModelParameters &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>RoutingModelParameters</name>
+      <anchorfile>classoperations__research_1_1RoutingModelParameters.html</anchorfile>
+      <anchor>a278f1b03e836775ebff77c290655076b</anchor>
+      <arglist>(RoutingModelParameters &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>RoutingModelParameters &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1RoutingModelParameters.html</anchorfile>
       <anchor>a35a1ad7467c77c92554475f81ddc6e1b</anchor>
       <arglist>(const RoutingModelParameters &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>RoutingModelParameters &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1RoutingModelParameters.html</anchorfile>
+      <anchor>a8707e1e11dce153e8651da3ca2d9f2d4</anchor>
+      <arglist>(RoutingModelParameters &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -22785,22 +22881,22 @@
       <type>RoutingModelParameters *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1RoutingModelParameters.html</anchorfile>
-      <anchor>a63c08f48b6de8d5134e98eb943b76ebb</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a41c83c109325681148f10d91b2bd3b52</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1RoutingModelParameters.html</anchorfile>
-      <anchor>a0eba789c2b4eddce2dd347858d05801c</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a4cddd5d691c8e9690f40b6a59307983b</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1RoutingModelParameters.html</anchorfile>
-      <anchor>a384c724a86d92fe3c0a0a9ea7b19c417</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a9f4e28be5238b67f1ed343975ce60d8e</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -22841,22 +22937,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1RoutingModelParameters.html</anchorfile>
-      <anchor>a66ef009dd5a8663497035434eae4b500</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a04874835bf05c3c49f10e9b4aa7312aa</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1RoutingModelParameters.html</anchorfile>
-      <anchor>afac97a81405afe49c7ee22069e5f088c</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>a533d483c5f6b2cc13a447bcbdda9fd4c</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1RoutingModelParameters.html</anchorfile>
-      <anchor>a6ccc12c866228174e6e5a1e5b7521870</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>ae69c245d41f9e591e2e61712025523f2</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -22866,10 +22962,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1RoutingModelParameters.html</anchorfile>
-      <anchor>aafccec65f54eeed2a8942d1e8714674d</anchor>
+      <anchor>a8944262133306b0c357cd9e08246887d</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -22943,24 +23039,38 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>max_callback_cache_size</name>
       <anchorfile>classoperations__research_1_1RoutingModelParameters.html</anchorfile>
-      <anchor>a273fab71677f13bed5c14045c09e6fdc</anchor>
+      <anchor>a5ac81f7414e329f3471406a680dc5a6e</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_max_callback_cache_size</name>
       <anchorfile>classoperations__research_1_1RoutingModelParameters.html</anchorfile>
-      <anchor>ab63f2fa95c48d2b50ccbcb008f0c1fad</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>abd724c580cfc1d2f6d175eb2a70d0bbe</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1RoutingModelParameters.html</anchorfile>
-      <anchor>af2b7c5b13fcd0918967e7ad746122179</anchor>
+      <anchor>a0ac98b6114c27295901dffd09c0f2a92</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1RoutingModelParameters.html</anchorfile>
+      <anchor>a406bb75560f8e4c64cc958d1c6cbff18</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1RoutingModelParameters.html</anchorfile>
+      <anchor>a99df7228a605fd8ca998c1bf511ac440</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -23013,6 +23123,13 @@
       <arglist></arglist>
     </member>
     <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1RoutingModelParameters.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
       <type>friend struct</type>
       <name>::TableStruct_ortools_2fconstraint_5fsolver_2frouting_5fparameters_2eproto</name>
       <anchorfile>classoperations__research_1_1RoutingModelParameters.html</anchorfile>
@@ -23059,11 +23176,25 @@
       <arglist>(const RoutingSearchParameters &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>RoutingSearchParameters</name>
+      <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
+      <anchor>a4eee9f11c2ca4ed4c300608e3b471d96</anchor>
+      <arglist>(RoutingSearchParameters &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>RoutingSearchParameters &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a348b079cbf2b95ab0eab656bd9cfa7c6</anchor>
       <arglist>(const RoutingSearchParameters &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>RoutingSearchParameters &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
+      <anchor>a3567bb2acdefdb608b666fed6713dcfa</anchor>
+      <arglist>(RoutingSearchParameters &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -23083,22 +23214,22 @@
       <type>RoutingSearchParameters *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
-      <anchor>aa93a2ee829d31b29cf9ee110767793ec</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>ad0070439a2653a9747d69e6bd65c39ba</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
-      <anchor>a51ccd81badf5fd42596a2166ad4344c5</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a48c87e5bb4eb225dfd080c78160edbb4</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
-      <anchor>a73079d2984aca08a2d96b8dc5f3ecdf7</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a3ca84e6c13226d3e182525bff85179af</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -23139,22 +23270,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
-      <anchor>ab00d29d082cdddd3508668cb3d228fda</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a1869a8f644cad7d247df8333f84103fe</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
-      <anchor>a6f7593fb5f4f87fc22c997a2309e3682</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>a18da174cd2726fb319cb2a5e1710eabd</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
-      <anchor>aeb15f43cd5cf087f2fa5fc8dc7fcb3b5</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>a64d7fd8d8665ab5c8c9f5cbed58578a0</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -23164,10 +23295,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
-      <anchor>a615be3bb38da5680a559a6e3b0fcc816</anchor>
+      <anchor>abefcdb0e966f37fdc1552e0c0627e8ee</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -23227,32 +23358,32 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::Duration &amp;</type>
+      <type>const PROTOBUF_NAMESPACE_ID::Duration &amp;</type>
       <name>time_limit</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
-      <anchor>a1572ae0e305e616b334cad6b76e2ccf5</anchor>
+      <anchor>a4d507cb3a94f1e2a4d13aeacd85e2d88</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Duration *</type>
+      <type>PROTOBUF_NAMESPACE_ID::Duration *</type>
       <name>release_time_limit</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
-      <anchor>a9854f066d0463f3fb9ba685cac93adf9</anchor>
+      <anchor>a1425a7c936c6b0f166a9c18d77bbc61b</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Duration *</type>
+      <type>PROTOBUF_NAMESPACE_ID::Duration *</type>
       <name>mutable_time_limit</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
-      <anchor>a6100d9b1e14b3a4d1e588029f889af32</anchor>
+      <anchor>a6e85767c5e223f1094b2f1c8ecaee04e</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_allocated_time_limit</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
-      <anchor>a9db1d82a834535fbcd9cf80ada51a70c</anchor>
-      <arglist>(::google::protobuf::Duration *time_limit)</arglist>
+      <anchor>a322afc1d48aecbc157a02103d4d878be</anchor>
+      <arglist>(PROTOBUF_NAMESPACE_ID::Duration *time_limit)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -23269,32 +23400,32 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::Duration &amp;</type>
+      <type>const PROTOBUF_NAMESPACE_ID::Duration &amp;</type>
       <name>lns_time_limit</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
-      <anchor>a1a45f3495d4f58c36fd81b29532ba7fe</anchor>
+      <anchor>ae24f1aa98fc1e57bfab7684917ab0fc0</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Duration *</type>
+      <type>PROTOBUF_NAMESPACE_ID::Duration *</type>
       <name>release_lns_time_limit</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
-      <anchor>aab64e08f1392624e83e025827bc125d5</anchor>
+      <anchor>aa0cebfea8df38d6587721e5d66b558a2</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Duration *</type>
+      <type>PROTOBUF_NAMESPACE_ID::Duration *</type>
       <name>mutable_lns_time_limit</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
-      <anchor>aba239be68d8b7cf62f83139b377713c8</anchor>
+      <anchor>a732502fa2d23aef9fb1bd043161d1b8e</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_allocated_lns_time_limit</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
-      <anchor>ab42fbfb5acad14d3982cba5795060bb5</anchor>
-      <arglist>(::google::protobuf::Duration *lns_time_limit)</arglist>
+      <anchor>a1c6db3213bf663cf2ae4b39297c7531d</anchor>
+      <arglist>(PROTOBUF_NAMESPACE_ID::Duration *lns_time_limit)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -23388,18 +23519,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int64</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int64</type>
       <name>solution_limit</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
-      <anchor>aed9498fcea83be6eb1a3e1c5404a8e96</anchor>
+      <anchor>a4f1f250bddea1a6599b5b837b4225ddf</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_solution_limit</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
-      <anchor>ae651efd1197d105d612bf5557d949174</anchor>
-      <arglist>(::google::protobuf::int64 value)</arglist>
+      <anchor>ae708cb7297edb2bbc1ac59d763cf46df</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -23598,18 +23729,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>number_of_solutions_to_collect</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
-      <anchor>a428052e8aa788eb3914d4d9cc6d3b2f5</anchor>
+      <anchor>a2698bb92760d1ed4cf8bab4170c23f90</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_number_of_solutions_to_collect</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
-      <anchor>ac53d98084db1df02874f2f2bc58903c9</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>ab9173079730e18028276cc9be34774ba</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -23619,18 +23750,18 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::int32</type>
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
       <name>relocate_expensive_chain_num_arcs_to_consider</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
-      <anchor>afa448aadf248abb689d8fbcd1ae4ef2e</anchor>
+      <anchor>af680f3539ecda882c8355ea873be63c1</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>set_relocate_expensive_chain_num_arcs_to_consider</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
-      <anchor>aa803bebd236264eadfcc41041bb1cfc4</anchor>
-      <arglist>(::google::protobuf::int32 value)</arglist>
+      <anchor>a53824ced8b76aec5a70c1aa6d1d35524</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -23738,10 +23869,24 @@
       <arglist>(::operations_research::OptionalBoolean value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
-      <anchor>a6b7f08937c3593b7cba9e6f8953ed003</anchor>
+      <anchor>af6ad14ec80cd0aaa5a3c38bb5fdff1c2</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
+      <anchor>ad48d8cc40769ca6c429eee6bdeb1eeef</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
+      <anchor>aa686a6d8e9b59bdbe4b6220a669af79c</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -23941,6 +24086,13 @@
       <arglist></arglist>
     </member>
     <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
       <type>friend struct</type>
       <name>::TableStruct_ortools_2fconstraint_5fsolver_2frouting_5fparameters_2eproto</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
@@ -23980,11 +24132,25 @@
       <arglist>(const RoutingSearchParameters_LocalSearchNeighborhoodOperators &amp;from)</arglist>
     </member>
     <member kind="function">
+      <type></type>
+      <name>RoutingSearchParameters_LocalSearchNeighborhoodOperators</name>
+      <anchorfile>classoperations__research_1_1RoutingSearchParameters__LocalSearchNeighborhoodOperators.html</anchorfile>
+      <anchor>a99e08d5b88d969e35185ff0fe0e2de67</anchor>
+      <arglist>(RoutingSearchParameters_LocalSearchNeighborhoodOperators &amp;&amp;from) noexcept</arglist>
+    </member>
+    <member kind="function">
       <type>RoutingSearchParameters_LocalSearchNeighborhoodOperators &amp;</type>
       <name>operator=</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters__LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>a4c85d35217f4c46199421cc1ad5539a2</anchor>
       <arglist>(const RoutingSearchParameters_LocalSearchNeighborhoodOperators &amp;from)</arglist>
+    </member>
+    <member kind="function">
+      <type>RoutingSearchParameters_LocalSearchNeighborhoodOperators &amp;</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1RoutingSearchParameters__LocalSearchNeighborhoodOperators.html</anchorfile>
+      <anchor>a6c115cb1769d451dd6083d02c5e8d776</anchor>
+      <arglist>(RoutingSearchParameters_LocalSearchNeighborhoodOperators &amp;&amp;from) noexcept</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -24004,22 +24170,22 @@
       <type>RoutingSearchParameters_LocalSearchNeighborhoodOperators *</type>
       <name>New</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters__LocalSearchNeighborhoodOperators.html</anchorfile>
-      <anchor>a71a9653693abdc5b2ed036b02e8b209f</anchor>
-      <arglist>(::google::protobuf::Arena *arena) const final</arglist>
+      <anchor>a9bc8e9e89d3cecab2dc4389b16f750e7</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::Arena *arena) const final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>CopyFrom</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters__LocalSearchNeighborhoodOperators.html</anchorfile>
-      <anchor>afefd485fb4a786b5fbc391dc899ce669</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>a82ffbadc4ec6da8b5441c39587fa3161</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>MergeFrom</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters__LocalSearchNeighborhoodOperators.html</anchorfile>
-      <anchor>a5611bcef0069a22d862653128185f2c5</anchor>
-      <arglist>(const ::google::protobuf::Message &amp;from) final</arglist>
+      <anchor>aa700f43a308254ec29619f19fcb1606e</anchor>
+      <arglist>(const ::PROTOBUF_NAMESPACE_ID::Message &amp;from) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -24060,22 +24226,22 @@
       <type>bool</type>
       <name>MergePartialFromCodedStream</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters__LocalSearchNeighborhoodOperators.html</anchorfile>
-      <anchor>a9a978785c85266bc9f9260265f642c3d</anchor>
-      <arglist>(::google::protobuf::io::CodedInputStream *input) final</arglist>
+      <anchor>a403e8dbc128f61e200f89b18b410b088</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedInputStream *input) final</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SerializeWithCachedSizes</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters__LocalSearchNeighborhoodOperators.html</anchorfile>
-      <anchor>a23947bfd2e925502f9e51dc0612c7cbc</anchor>
-      <arglist>(::google::protobuf::io::CodedOutputStream *output) const final</arglist>
+      <anchor>a00b225a54d6aae501e3fff4708e3092a</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::io::CodedOutputStream *output) const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::uint8 *</type>
+      <type>::PROTOBUF_NAMESPACE_ID::uint8 *</type>
       <name>InternalSerializeWithCachedSizesToArray</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters__LocalSearchNeighborhoodOperators.html</anchorfile>
-      <anchor>ae0ab089d75605b372262fc2bb2c28ec8</anchor>
-      <arglist>(::google::protobuf::uint8 *target) const final</arglist>
+      <anchor>ac9626532b28350ffb7a9e644de3c1497</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::uint8 *target) const final</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -24085,10 +24251,10 @@
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
-      <type>::google::protobuf::Metadata</type>
+      <type>::PROTOBUF_NAMESPACE_ID::Metadata</type>
       <name>GetMetadata</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters__LocalSearchNeighborhoodOperators.html</anchorfile>
-      <anchor>a47d6524492476d2e6329df65709b0366</anchor>
+      <anchor>aac9fb20a2060070b2ffd2bebc9d7b1d8</anchor>
       <arglist>() const final</arglist>
     </member>
     <member kind="function">
@@ -24638,10 +24804,24 @@
       <arglist>(::operations_research::OptionalBoolean value)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::Descriptor *</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters__LocalSearchNeighborhoodOperators.html</anchorfile>
-      <anchor>af25be871daf60885fe09d2b354fc7ea0</anchor>
+      <anchor>a0c792b421c32f23a32c6837a1eb40151</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
+      <name>GetDescriptor</name>
+      <anchorfile>classoperations__research_1_1RoutingSearchParameters__LocalSearchNeighborhoodOperators.html</anchorfile>
+      <anchor>a56a9edb13fa45cca809473c8a1fb1e63</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static const ::PROTOBUF_NAMESPACE_ID::Reflection *</type>
+      <name>GetReflection</name>
+      <anchorfile>classoperations__research_1_1RoutingSearchParameters__LocalSearchNeighborhoodOperators.html</anchorfile>
+      <anchor>aad3da82d490fd69c7170310c40b7fa12</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" static="yes">
@@ -24852,6 +25032,13 @@
       <name>kUseExchangeSubtripFieldNumber</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters__LocalSearchNeighborhoodOperators.html</anchorfile>
       <anchor>a3881a1d5a28948206cccb19fc1afc423</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata</name>
+      <anchorfile>classoperations__research_1_1RoutingSearchParameters__LocalSearchNeighborhoodOperators.html</anchorfile>
+      <anchor>a9b35d94da3444084fc3673b7717b6cfe</anchor>
       <arglist></arglist>
     </member>
     <member kind="friend">
@@ -26973,8 +27160,8 @@
       <type>bool</type>
       <name>operator&lt;</name>
       <anchorfile>structoperations__research_1_1SolutionCollector_1_1SolutionData.html</anchorfile>
-      <anchor>af59523edfd6fd990b377a75dda905104</anchor>
-      <arglist>(const SolutionData &amp;data) const</arglist>
+      <anchor>a4fd4a3e7f39bccab9df8deac462048b9</anchor>
+      <arglist>(const SolutionData &amp;other) const</arglist>
     </member>
     <member kind="variable">
       <type>Assignment *</type>
@@ -32226,45 +32413,45 @@
     <name>TableStruct_ortools_2fconstraint_5fsolver_2frouting_5fenums_2eproto</name>
     <filename>structTableStruct__ortools__2fconstraint__5fsolver__2frouting__5fenums__2eproto.html</filename>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::internal::ParseTableField entries []</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTableField entries []</type>
       <name>PROTOBUF_SECTION_VARIABLE</name>
       <anchorfile>structTableStruct__ortools__2fconstraint__5fsolver__2frouting__5fenums__2eproto.html</anchorfile>
-      <anchor>af41db19ef04ddcf5cd1965d166b8354f</anchor>
+      <anchor>ab5fda0b43f22b9ddd9fbcb08cff18ace</anchor>
       <arglist>(protodesc_cold)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::internal::AuxillaryParseTableField aux []</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::internal::AuxillaryParseTableField aux []</type>
       <name>PROTOBUF_SECTION_VARIABLE</name>
       <anchorfile>structTableStruct__ortools__2fconstraint__5fsolver__2frouting__5fenums__2eproto.html</anchorfile>
-      <anchor>a415481cc8d72be6f9764359182c461c7</anchor>
+      <anchor>a508a737a6f8e15b1aa1cfb77e1762e46</anchor>
       <arglist>(protodesc_cold)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::internal::ParseTable schema [2]</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema [2]</type>
       <name>PROTOBUF_SECTION_VARIABLE</name>
       <anchorfile>structTableStruct__ortools__2fconstraint__5fsolver__2frouting__5fenums__2eproto.html</anchorfile>
-      <anchor>aa11e67be2ffd5e82c8dff2fbd01496c2</anchor>
+      <anchor>a073d8f2ffd5d99017da6a91bdad062cb</anchor>
       <arglist>(protodesc_cold)</arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ::google::protobuf::internal::FieldMetadata</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::internal::FieldMetadata</type>
       <name>field_metadata</name>
       <anchorfile>structTableStruct__ortools__2fconstraint__5fsolver__2frouting__5fenums__2eproto.html</anchorfile>
-      <anchor>a1f68eaace521b5ee7c9af9918945d49c</anchor>
+      <anchor>a38c98650df323b6051b068a37efa4834</anchor>
       <arglist>[]</arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ::google::protobuf::internal::SerializationTable</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::internal::SerializationTable</type>
       <name>serialization_table</name>
       <anchorfile>structTableStruct__ortools__2fconstraint__5fsolver__2frouting__5fenums__2eproto.html</anchorfile>
-      <anchor>ac3b5be8b698271306df8a1e651c69e91</anchor>
+      <anchor>a3f042d4fad097fef80b5ca1ba6d48ed7</anchor>
       <arglist>[]</arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ::google::protobuf::uint32</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::uint32</type>
       <name>offsets</name>
       <anchorfile>structTableStruct__ortools__2fconstraint__5fsolver__2frouting__5fenums__2eproto.html</anchorfile>
-      <anchor>aebce3e159a3380eeb0469a42e01185bc</anchor>
+      <anchor>aa4012da1d708e7c88b0540d61af7248a</anchor>
       <arglist>[]</arglist>
     </member>
   </compound>
@@ -32272,45 +32459,45 @@
     <name>TableStruct_ortools_2fconstraint_5fsolver_2frouting_5fparameters_2eproto</name>
     <filename>structTableStruct__ortools__2fconstraint__5fsolver__2frouting__5fparameters__2eproto.html</filename>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::internal::ParseTableField entries []</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTableField entries []</type>
       <name>PROTOBUF_SECTION_VARIABLE</name>
       <anchorfile>structTableStruct__ortools__2fconstraint__5fsolver__2frouting__5fparameters__2eproto.html</anchorfile>
-      <anchor>a600be17546d71407f9daeb84ed5cf49e</anchor>
+      <anchor>a2fb86ecfe8ad2860574802a70cd30f86</anchor>
       <arglist>(protodesc_cold)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::internal::AuxillaryParseTableField aux []</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::internal::AuxillaryParseTableField aux []</type>
       <name>PROTOBUF_SECTION_VARIABLE</name>
       <anchorfile>structTableStruct__ortools__2fconstraint__5fsolver__2frouting__5fparameters__2eproto.html</anchorfile>
-      <anchor>aad89ee01d278c4fc793c58c9c95c7214</anchor>
+      <anchor>adf273e45163a74e47a4d3329194b4f56</anchor>
       <arglist>(protodesc_cold)</arglist>
     </member>
     <member kind="function" static="yes">
-      <type>static const ::google::protobuf::internal::ParseTable schema [3]</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema [3]</type>
       <name>PROTOBUF_SECTION_VARIABLE</name>
       <anchorfile>structTableStruct__ortools__2fconstraint__5fsolver__2frouting__5fparameters__2eproto.html</anchorfile>
-      <anchor>a791b36c895a013a41cae7a356a2e802a</anchor>
+      <anchor>a2aef2dbd747f1c5b8e214c32e31ecb5a</anchor>
       <arglist>(protodesc_cold)</arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ::google::protobuf::internal::FieldMetadata</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::internal::FieldMetadata</type>
       <name>field_metadata</name>
       <anchorfile>structTableStruct__ortools__2fconstraint__5fsolver__2frouting__5fparameters__2eproto.html</anchorfile>
-      <anchor>a61d84b4cdeb3a87694936601fd7b3ce2</anchor>
+      <anchor>a3a2c7d7e549806559170a84a201ba597</anchor>
       <arglist>[]</arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ::google::protobuf::internal::SerializationTable</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::internal::SerializationTable</type>
       <name>serialization_table</name>
       <anchorfile>structTableStruct__ortools__2fconstraint__5fsolver__2frouting__5fparameters__2eproto.html</anchorfile>
-      <anchor>ab2eb8f60a38ea3bb6dce7e3b7b97b180</anchor>
+      <anchor>afc09e329ebff5cec3be01ae37c182025</anchor>
       <arglist>[]</arglist>
     </member>
     <member kind="variable" static="yes">
-      <type>static const ::google::protobuf::uint32</type>
+      <type>static const ::PROTOBUF_NAMESPACE_ID::uint32</type>
       <name>offsets</name>
       <anchorfile>structTableStruct__ortools__2fconstraint__5fsolver__2frouting__5fparameters__2eproto.html</anchorfile>
-      <anchor>ab07a3979731c1cb2db252492b85b2a9e</anchor>
+      <anchor>a117ffe01c8b8a0d7a5d72f7c7ca66b49</anchor>
       <arglist>[]</arglist>
     </member>
   </compound>
@@ -33019,64 +33206,8 @@
     </member>
   </compound>
   <compound kind="namespace">
-    <name>google</name>
-    <filename>namespacegoogle.html</filename>
-    <namespace>google::protobuf</namespace>
-  </compound>
-  <compound kind="namespace">
-    <name>google::protobuf</name>
-    <filename>namespacegoogle_1_1protobuf.html</filename>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::FirstSolutionStrategy_Value &gt;</class>
-    <class kind="struct">google::protobuf::is_proto_enum&lt; ::operations_research::LocalSearchMetaheuristic_Value &gt;</class>
-    <member kind="function">
-      <type>::operations_research::FirstSolutionStrategy *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::FirstSolutionStrategy &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a46a0573ef15e8d450a94645726e4a115</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::LocalSearchMetaheuristic *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::LocalSearchMetaheuristic &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a46ac56c90da4ab9e7c9d2cbe996a6889</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>const EnumDescriptor *</type>
-      <name>GetEnumDescriptor&lt; ::operations_research::FirstSolutionStrategy_Value &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a34bc82f8ac3dc7b49fdfc02cd399fcfb</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>const EnumDescriptor *</type>
-      <name>GetEnumDescriptor&lt; ::operations_research::LocalSearchMetaheuristic_Value &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>afdc886b972e845de58089a1f0fd7b61a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::RoutingModelParameters *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::RoutingModelParameters &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a9b7b91a9046ed6001177f9828bb02baf</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::RoutingSearchParameters *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::RoutingSearchParameters &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a48576a6238bbee63a4e7b85f192b84c7</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
-    <member kind="function">
-      <type>::operations_research::RoutingSearchParameters_LocalSearchNeighborhoodOperators *</type>
-      <name>Arena::CreateMaybeMessage&lt;::operations_research::RoutingSearchParameters_LocalSearchNeighborhoodOperators &gt;</name>
-      <anchorfile>namespacegoogle_1_1protobuf.html</anchorfile>
-      <anchor>a881c03b2a6c813d26593e6de11e4ff3c</anchor>
-      <arglist>(Arena *)</arglist>
-    </member>
+    <name>internal</name>
+    <filename>namespaceinternal.html</filename>
   </compound>
   <compound kind="namespace">
     <name>operations_research</name>
@@ -33277,176 +33408,176 @@
       <type></type>
       <name>FirstSolutionStrategy_Value</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362c</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06d</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_UNSET</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362cad02e019c28342793688466400afd032d</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06dad02e019c28342793688466400afd032d</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_AUTOMATIC</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca6c8e1e7a2859125316fe07082a2da868</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da6c8e1e7a2859125316fe07082a2da868</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_PATH_CHEAPEST_ARC</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca4c1d8ec510011789f52267efc7d34bb7</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da4c1d8ec510011789f52267efc7d34bb7</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_PATH_MOST_CONSTRAINED_ARC</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362cae133e7145564aa475a81741a6240e901</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06dae133e7145564aa475a81741a6240e901</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_EVALUATOR_STRATEGY</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca6d0f4bf298a2b6e6462feb7035d2c5de</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da6d0f4bf298a2b6e6462feb7035d2c5de</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_SAVINGS</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca2acc1235ef1e7bec84c9a60b010400b7</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da2acc1235ef1e7bec84c9a60b010400b7</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_SWEEP</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca83fd39655867e51be481faa09fbea164</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da83fd39655867e51be481faa09fbea164</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_CHRISTOFIDES</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca8a09bb6c57bf531f6674ea171b011791</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da8a09bb6c57bf531f6674ea171b011791</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_ALL_UNPERFORMED</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca0c4ad672038428a0f3b3b7f6c92d8840</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da0c4ad672038428a0f3b3b7f6c92d8840</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_BEST_INSERTION</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362cad0735ef20259782cea2046f90c39bda8</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06dad0735ef20259782cea2046f90c39bda8</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_PARALLEL_CHEAPEST_INSERTION</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362cabba644bd336acdb33aef7257f5bfa536</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06dabba644bd336acdb33aef7257f5bfa536</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_SEQUENTIAL_CHEAPEST_INSERTION</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca8580f408e6e4af5373e4dd081d59d767</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da8580f408e6e4af5373e4dd081d59d767</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_LOCAL_CHEAPEST_INSERTION</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca348e92318608b985248e17102d016cdd</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da348e92318608b985248e17102d016cdd</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_GLOBAL_CHEAPEST_ARC</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca9a63d38a1eed11971089af926145f83e</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da9a63d38a1eed11971089af926145f83e</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_LOCAL_CHEAPEST_ARC</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca451e468bc86902552aa9b987f66f5875</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da451e468bc86902552aa9b987f66f5875</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_FIRST_UNBOUND_MIN_VALUE</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca9c097f678b4aaaa6b10df89dc4d4802e</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da9c097f678b4aaaa6b10df89dc4d4802e</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_FirstSolutionStrategy_Value_INT_MIN_SENTINEL_DO_NOT_USE_</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362ca8cdfd32facff4a66e180fab80f3fb711</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06da8cdfd32facff4a66e180fab80f3fb711</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>FirstSolutionStrategy_Value_FirstSolutionStrategy_Value_INT_MAX_SENTINEL_DO_NOT_USE_</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab567c87506c164323ce22036cf4c362cae584dc12821c9b7171986c986b6c7462</anchor>
+      <anchor>aef3a296fa4f9d9d745fe62f1aa67a06dae584dc12821c9b7171986c986b6c7462</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>LocalSearchMetaheuristic_Value</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a96ad216f076775131996dbfd897ace77</anchor>
+      <anchor>a792fc7c1636eff4a9476ea5a24459aed</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>LocalSearchMetaheuristic_Value_UNSET</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a96ad216f076775131996dbfd897ace77ab1177884bf5c3fda2cac819cca8279ec</anchor>
+      <anchor>a792fc7c1636eff4a9476ea5a24459aedab1177884bf5c3fda2cac819cca8279ec</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>LocalSearchMetaheuristic_Value_AUTOMATIC</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a96ad216f076775131996dbfd897ace77a883a6e25cd8984a9e4e06636823f7201</anchor>
+      <anchor>a792fc7c1636eff4a9476ea5a24459aeda883a6e25cd8984a9e4e06636823f7201</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>LocalSearchMetaheuristic_Value_GREEDY_DESCENT</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a96ad216f076775131996dbfd897ace77a844fc936bb493f6a5d592b28302ea2f1</anchor>
+      <anchor>a792fc7c1636eff4a9476ea5a24459aeda844fc936bb493f6a5d592b28302ea2f1</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>LocalSearchMetaheuristic_Value_GUIDED_LOCAL_SEARCH</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a96ad216f076775131996dbfd897ace77a2909a10cd525473780b35aaa3c4f4eda</anchor>
+      <anchor>a792fc7c1636eff4a9476ea5a24459aeda2909a10cd525473780b35aaa3c4f4eda</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>LocalSearchMetaheuristic_Value_SIMULATED_ANNEALING</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a96ad216f076775131996dbfd897ace77a0d373c31dbec1678db8b9e50ae63327f</anchor>
+      <anchor>a792fc7c1636eff4a9476ea5a24459aeda0d373c31dbec1678db8b9e50ae63327f</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>LocalSearchMetaheuristic_Value_TABU_SEARCH</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a96ad216f076775131996dbfd897ace77a63e13a565cf5daf981c1b565912b3b0f</anchor>
+      <anchor>a792fc7c1636eff4a9476ea5a24459aeda63e13a565cf5daf981c1b565912b3b0f</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>LocalSearchMetaheuristic_Value_GENERIC_TABU_SEARCH</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a96ad216f076775131996dbfd897ace77a300fe37f649b909a810935825778b77c</anchor>
+      <anchor>a792fc7c1636eff4a9476ea5a24459aeda300fe37f649b909a810935825778b77c</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>LocalSearchMetaheuristic_Value_LocalSearchMetaheuristic_Value_INT_MIN_SENTINEL_DO_NOT_USE_</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a96ad216f076775131996dbfd897ace77a0783003ef2622becdab73be7bfb66e03</anchor>
+      <anchor>a792fc7c1636eff4a9476ea5a24459aeda0783003ef2622becdab73be7bfb66e03</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>LocalSearchMetaheuristic_Value_LocalSearchMetaheuristic_Value_INT_MAX_SENTINEL_DO_NOT_USE_</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a96ad216f076775131996dbfd897ace77a719d13ec837e44b8b25b0f3315346594</anchor>
+      <anchor>a792fc7c1636eff4a9476ea5a24459aeda719d13ec837e44b8b25b0f3315346594</anchor>
       <arglist></arglist>
     </member>
     <member kind="function">
@@ -33800,25 +33931,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>FirstSolutionStrategy_Value_descriptor</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a3c3c2af7d77d5e7f76f9a3d8fb1edf0f</anchor>
+      <anchor>a99ad9f9140f36fbb7d0fa70aba00b46b</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>FirstSolutionStrategy_Value_Name</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>aaed24a4c7f867bbe1173faf422387c57</anchor>
-      <arglist>(FirstSolutionStrategy_Value value)</arglist>
+      <anchor>aa3347cbb67e6b42bf2d99c6e36a43285</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>FirstSolutionStrategy_Value_Parse</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ad1acf7e4aff76fb0cc1659d91bdb5a62</anchor>
-      <arglist>(const ::std::string &amp;name, FirstSolutionStrategy_Value *value)</arglist>
+      <anchor>a53e650ef5267d5f3db388f6a6b9482a8</anchor>
+      <arglist>(const std::string &amp;name, FirstSolutionStrategy_Value *value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -33828,25 +33959,25 @@
       <arglist>(int value)</arglist>
     </member>
     <member kind="function">
-      <type>const ::google::protobuf::EnumDescriptor *</type>
+      <type>const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor *</type>
       <name>LocalSearchMetaheuristic_Value_descriptor</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a5142d10acce3d076acf89506752dba5f</anchor>
+      <anchor>a00f3e64ec0029f07e62e1c1abfd6071f</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>const ::std::string &amp;</type>
+      <type>const std::string &amp;</type>
       <name>LocalSearchMetaheuristic_Value_Name</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ade04d594c17cc2436976da614fa0a2f7</anchor>
-      <arglist>(LocalSearchMetaheuristic_Value value)</arglist>
+      <anchor>a3412913b0ac8a9e00d3a64bcce238da0</anchor>
+      <arglist>(T enum_t_value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
       <name>LocalSearchMetaheuristic_Value_Parse</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a8e7c14051a98f40a1782646965401ca7</anchor>
-      <arglist>(const ::std::string &amp;name, LocalSearchMetaheuristic_Value *value)</arglist>
+      <anchor>acd6f3950d95b591a67cdc61be1f8cb40</anchor>
+      <arglist>(const std::string &amp;name, LocalSearchMetaheuristic_Value *value)</arglist>
     </member>
     <member kind="function">
       <type>Demon *</type>
@@ -33940,45 +34071,45 @@
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const FirstSolutionStrategy_Value</type>
+      <type>constexpr FirstSolutionStrategy_Value</type>
       <name>FirstSolutionStrategy_Value_Value_MIN</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a9aec91f2a6b9e10f98ded28a1df2925b</anchor>
+      <anchor>a2c7b8136ecfa0fe9cf4cd72a7f503e99</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const FirstSolutionStrategy_Value</type>
+      <type>constexpr FirstSolutionStrategy_Value</type>
       <name>FirstSolutionStrategy_Value_Value_MAX</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a999203a7a00dc983c437624201cdbce2</anchor>
+      <anchor>a02c2709292cb324dd96c1f7c3cd6bb80</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>FirstSolutionStrategy_Value_Value_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a9e8e1305d7b00c52172281a44baad6c2</anchor>
+      <anchor>aa952bfe0a71c0897a2490f8e29feea1b</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const LocalSearchMetaheuristic_Value</type>
+      <type>constexpr LocalSearchMetaheuristic_Value</type>
       <name>LocalSearchMetaheuristic_Value_Value_MIN</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a3713cc7fe59ec4df14e26ac0310cf0e5</anchor>
+      <anchor>aeef02d29a4fbff402021b9ed0509b3d2</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const LocalSearchMetaheuristic_Value</type>
+      <type>constexpr LocalSearchMetaheuristic_Value</type>
       <name>LocalSearchMetaheuristic_Value_Value_MAX</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a86aef277165b7aacec371daebe466690</anchor>
+      <anchor>a7c6b8ceb9a6dad94886b3a8fa8d3a136</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
-      <type>const int</type>
+      <type>constexpr int</type>
       <name>LocalSearchMetaheuristic_Value_Value_ARRAYSIZE</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a4fd8517c34ce555a83981c8cc3a00d3c</anchor>
+      <anchor>ab75b4553844ec6a32a0d881f7f64d879</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
