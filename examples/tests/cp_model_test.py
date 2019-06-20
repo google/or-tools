@@ -583,6 +583,38 @@ class CpModelTest(unittest.TestCase):
         status2 = solver.Solve(model)
         self.assertEqual(status1, status2)
 
+    def testPresolveBoolean(self):
+        print('testPresolveBoolean')
+        model = cp_model.CpModel()
+
+        b = model.NewBoolVar('b')
+        x = model.NewIntVar(1, 10, 'x')
+        y = model.NewIntVar(1, 10, 'y')
+
+        # b implies x == y  via linear inequations
+        model.Add(x - y >= 9 * (b - 1))
+        model.Add(y - x >= 9 * (b - 1))
+
+        obj = 100 * b + x - 2 * y
+        model.Minimize(obj)
+
+        print(model.Proto())
+
+        solver = cp_model.CpSolver()
+        status = solver.Solve(model)
+
+        print(solver.ObjectiveValue())
+
+    def testWindowsProtobufOverflow(self):
+        print('testWindowsProtobufOverflow')
+        model = cp_model.CpModel()
+
+        a = model.NewIntVar(0, 10, 'a')
+        b = model.NewIntVar(0, 10, 'b')
+
+        ct = model.Add(a+b >= 5)
+        self.assertEqual(ct.Proto().linear.domain[1], cp_model.INT_MAX)
+
 
 if __name__ == '__main__':
     unittest.main()
