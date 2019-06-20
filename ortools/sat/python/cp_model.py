@@ -728,7 +728,7 @@ class CpModel(object):
                                                     Domain.FromFlatIntervals(
                                                         ct.Bounds()))
         elif ct and isinstance(ct, bool):
-            pass  # Nothing to do, was already evaluated to true.
+            return self.AddBoolOr([True])
         elif not ct and isinstance(ct, bool):
             return self.AddBoolOr([])  # Evaluate to false.
         else:
