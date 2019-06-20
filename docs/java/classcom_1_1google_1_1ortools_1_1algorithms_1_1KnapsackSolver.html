@@ -5,7 +5,7 @@
         <meta http-equiv="Content-Type" content="text/html;"/>
         <meta charset="utf-8"/>
         <!--<link rel='stylesheet' type='text/css' href="https://fonts.googleapis.com/css?family=Ubuntu:400,700,400italic"/>-->
-        <link rel="stylesheet" type="text/css" href="doxygen.css" title="default" media="screen,print" />
+        <link rel="stylesheet" type="text/css" href="ortools.css" title="default" media="screen,print" />
         <script type="text/javascript" src="jquery.js"></script>
         <script type="text/javascript" src="dynsections.js"></script>
     </head>
@@ -71,6 +71,16 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a86b9400f19838acc60411703ece777c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4289dd15929df6a7b20acbac3f6eae55"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver.html#a4289dd15929df6a7b20acbac3f6eae55">bestSolutionContains</a> (int item_id)</td></tr>
 <tr class="separator:a4289dd15929df6a7b20acbac3f6eae55"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4739782e483a17d41c93850f372f22e4"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver.html#a4739782e483a17d41c93850f372f22e4">isSolutionOptimal</a> ()</td></tr>
+<tr class="separator:a4739782e483a17d41c93850f372f22e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ca12bb3360598c0548d0de81b38c34b"><td class="memItemLeft" align="right" valign="top">String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver.html#a3ca12bb3360598c0548d0de81b38c34b">getName</a> ()</td></tr>
+<tr class="separator:a3ca12bb3360598c0548d0de81b38c34b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9397051479da2ba13997e21ce9b02493"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver.html#a9397051479da2ba13997e21ce9b02493">useReduction</a> ()</td></tr>
+<tr class="separator:a9397051479da2ba13997e21ce9b02493"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a807708964205a04f7fd5252341200daf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver.html#a807708964205a04f7fd5252341200daf">setUseReduction</a> (boolean use_reduction)</td></tr>
+<tr class="separator:a807708964205a04f7fd5252341200daf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5b08123bb36b0d7294f2630cbfeb9121"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver.html#a5b08123bb36b0d7294f2630cbfeb9121">setTimeLimit</a> (double time_limit_seconds)</td></tr>
+<tr class="separator:a5b08123bb36b0d7294f2630cbfeb9121"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
@@ -308,6 +318,33 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a3ca12bb3360598c0548d0de81b38c34b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ca12bb3360598c0548d0de81b38c34b">&#9670;&nbsp;</a></span>getName()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">String com.google.ortools.algorithms.KnapsackSolver.getName </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00062">62</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
+
+</div>
+</div>
 <a id="a4c448eb5e9b767c402d9c3b55ead64f3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4c448eb5e9b767c402d9c3b55ead64f3">&#9670;&nbsp;</a></span>init()</h2>
 
@@ -352,6 +389,89 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a4739782e483a17d41c93850f372f22e4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4739782e483a17d41c93850f372f22e4">&#9670;&nbsp;</a></span>isSolutionOptimal()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">boolean com.google.ortools.algorithms.KnapsackSolver.isSolutionOptimal </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00058">58</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
+
+</div>
+</div>
+<a id="a5b08123bb36b0d7294f2630cbfeb9121"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5b08123bb36b0d7294f2630cbfeb9121">&#9670;&nbsp;</a></span>setTimeLimit()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void com.google.ortools.algorithms.KnapsackSolver.setTimeLimit </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>time_limit_seconds</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00074">74</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
+
+</div>
+</div>
+<a id="a807708964205a04f7fd5252341200daf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a807708964205a04f7fd5252341200daf">&#9670;&nbsp;</a></span>setUseReduction()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void com.google.ortools.algorithms.KnapsackSolver.setUseReduction </td>
+          <td>(</td>
+          <td class="paramtype">boolean&#160;</td>
+          <td class="paramname"><em>use_reduction</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00070">70</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
+
+</div>
+</div>
 <a id="a86b9400f19838acc60411703ece777c6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a86b9400f19838acc60411703ece777c6">&#9670;&nbsp;</a></span>solve()</h2>
 
@@ -376,6 +496,33 @@ Protected Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00050">50</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
+
+</div>
+</div>
+<a id="a9397051479da2ba13997e21ce9b02493"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9397051479da2ba13997e21ce9b02493">&#9670;&nbsp;</a></span>useReduction()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">boolean com.google.ortools.algorithms.KnapsackSolver.useReduction </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00066">66</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
 
 </div>
 </div>

@@ -5,7 +5,7 @@
         <meta http-equiv="Content-Type" content="text/html;"/>
         <meta charset="utf-8"/>
         <!--<link rel='stylesheet' type='text/css' href="https://fonts.googleapis.com/css?family=Ubuntu:400,700,400italic"/>-->
-        <link rel="stylesheet" type="text/css" href="doxygen.css" title="default" media="screen,print" />
+        <link rel="stylesheet" type="text/css" href="ortools.css" title="default" media="screen,print" />
         <script type="text/javascript" src="jquery.js"></script>
         <script type="text/javascript" src="dynsections.js"></script>
     </head>
@@ -735,7 +735,7 @@ Limit to the time spent in the search.
 <pre>
 If true, use the CP solver to find a solution. Either local or depth-first
 search will be used depending on the value of use_depth_first_search. Will
-be run after the CP-SAT solver if time is remaining (cf. use_cp_sat).
+be run before the CP-SAT solver (cf. use_cp_sat).
 </pre><p><code>.operations_research.OptionalBoolean use_cp = 28;</code> </p>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1Builder.html#a2465da28ff146fc1c0596948bbc2896e">com.google.ortools.constraintsolver.RoutingSearchParameters.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters.html#add42f8b0cf36eed2e19310b5bd73c119">com.google.ortools.constraintsolver.RoutingSearchParameters</a>.</p>
@@ -757,9 +757,9 @@ be run after the CP-SAT solver if time is remaining (cf. use_cp_sat).
       </table>
 </div><div class="memdoc">
 <pre>
-If true, use the CP-SAT solver to find a solution. If there is time
-remaining normal CP local or depth-first search will be run if use_cp is
-true.
+If true, use the CP-SAT solver to find a solution. If use_cp is also true,
+the CP-SAT solver will be run after the CP solver if there is time
+remaining and will use the CP solution as a hint for the CP-SAT search.
 As of 5/2019, only TSP models can be solved.
 </pre><p><code>.operations_research.OptionalBoolean use_cp_sat = 27;</code> </p>
 
@@ -782,9 +782,9 @@ As of 5/2019, only TSP models can be solved.
       </table>
 </div><div class="memdoc">
 <pre>
-If true, use the CP-SAT solver to find a solution. If there is time
-remaining normal CP local or depth-first search will be run if use_cp is
-true.
+If true, use the CP-SAT solver to find a solution. If use_cp is also true,
+the CP-SAT solver will be run after the CP solver if there is time
+remaining and will use the CP solution as a hint for the CP-SAT search.
 As of 5/2019, only TSP models can be solved.
 </pre><p><code>.operations_research.OptionalBoolean use_cp_sat = 27;</code> </p>
 
@@ -809,7 +809,7 @@ As of 5/2019, only TSP models can be solved.
 <pre>
 If true, use the CP solver to find a solution. Either local or depth-first
 search will be used depending on the value of use_depth_first_search. Will
-be run after the CP-SAT solver if time is remaining (cf. use_cp_sat).
+be run before the CP-SAT solver (cf. use_cp_sat).
 </pre><p><code>.operations_research.OptionalBoolean use_cp = 28;</code> </p>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1Builder.html#a64034f8211ab8a5966a5faee105c8450">com.google.ortools.constraintsolver.RoutingSearchParameters.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters.html#a22f83d45dccb60067768bf8777e662b5">com.google.ortools.constraintsolver.RoutingSearchParameters</a>.</p>

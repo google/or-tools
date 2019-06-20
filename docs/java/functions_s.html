@@ -5,7 +5,7 @@
         <meta http-equiv="Content-Type" content="text/html;"/>
         <meta charset="utf-8"/>
         <!--<link rel='stylesheet' type='text/css' href="https://fonts.googleapis.com/css?family=Ubuntu:400,700,400italic"/>-->
-        <link rel="stylesheet" type="text/css" href="doxygen.css" title="default" media="screen,print" />
+        <link rel="stylesheet" type="text/css" href="ortools.css" title="default" media="screen,print" />
         <script type="text/javascript" src="jquery.js"></script>
         <script type="text/javascript" src="dynsections.js"></script>
     </head>
@@ -133,9 +133,6 @@
 </li>
 <li>ScalProd()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ScalProd.html#af69a56f2fa0450cb3800b22a63b4a1af">com.google.ortools.sat.ScalProd</a>
-</li>
-<li>SCIP_MIXED_INTEGER_PROGRAMMING
-: <a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#a391a6703fcea242a86243e93a06cb7cc">com.google.ortools.linearsolver.MPSolver.OptimizationProblemType</a>
 </li>
 <li>SEARCH_BRANCHING_FIELD_NUMBER
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#a585b810d9b6d56747dd80348f2b106e3">com.google.ortools.sat.SatParameters</a>
@@ -714,6 +711,9 @@
 <li>setLnsFocusOnDecisionVariables()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#ac01e20e007a76bb38e3518cac2388f8f">com.google.ortools.sat.SatParameters.Builder</a>
 </li>
+<li>setLnsIsDeterministic()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a2079e8ebdc61c682b5ca605a5099fa4b">com.google.ortools.sat.SatParameters.Builder</a>
+</li>
 <li>setLnsNumThreads()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a3beb088c4100bc55be6bab0497d511af">com.google.ortools.sat.SatParameters.Builder</a>
 </li>
@@ -1282,7 +1282,8 @@
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html#a252e7d91ea97cd9fe2832cdd4f5b31cd">com.google.ortools.constraintsolver.RegularLimitParameters.Builder</a>
 </li>
 <li>setTimeLimit()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1Builder.html#aefdf17e7ccac9d61c24bd1424e5ac66b">com.google.ortools.constraintsolver.RoutingSearchParameters.Builder</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver.html#a5b08123bb36b0d7294f2630cbfeb9121">com.google.ortools.algorithms.KnapsackSolver</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1Builder.html#aefdf17e7ccac9d61c24bd1424e5ac66b">com.google.ortools.constraintsolver.RoutingSearchParameters.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a59cc36067f863a9a57ea05b955bea0c1">com.google.ortools.linearsolver.MPSolver</a>
 </li>
 <li>setTimes()
@@ -1537,6 +1538,9 @@
 <li>setUsePrecedencesInDisjunctiveConstraint()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a00e7fff6f94994b1db5c4f51974b7d64">com.google.ortools.sat.SatParameters.Builder</a>
 </li>
+<li>setUseReduction()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver.html#a807708964205a04f7fd5252341200daf">com.google.ortools.algorithms.KnapsackSolver</a>
+</li>
 <li>setUseRelocate()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1LocalSearchNeighborhoodOperators_1_1Builder.html#a1ac3245e63db89956083221ace9bfa42">com.google.ortools.constraintsolver.RoutingSearchParameters.LocalSearchNeighborhoodOperators.Builder</a>
 </li>
@@ -1789,8 +1793,8 @@
 </li>
 <li>solve()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver.html#a86b9400f19838acc60411703ece777c6">com.google.ortools.algorithms.KnapsackSolver</a>
-, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#ace94c91aae666b99f834bc32eef6c658">com.google.ortools.constraintsolver.RoutingModel</a>
-, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a0b8317ff2f5226d2bb7133beb8e6fe24">com.google.ortools.constraintsolver.Solver</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a4ab476ec705ad5ce286195cdb4ae0ca2">com.google.ortools.constraintsolver.RoutingModel</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#aaf9e4f046bcc0e1b7d7bc80be009859f">com.google.ortools.constraintsolver.Solver</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment.html#aba3fbea2425409bb0bd08c25424dd2ce">com.google.ortools.graph.LinearSumAssignment</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow.html#a1d3df7e36d43babfeefff298b7f7ca7f">com.google.ortools.graph.MaxFlow</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1graph_1_1MinCostFlow.html#afe8e3af7fd7cd59374eb5357176f777e">com.google.ortools.graph.MinCostFlow</a>
@@ -1811,7 +1815,7 @@
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1graph_1_1MinCostFlow.html#abffcd0f8f5749092b5687b0a16ad6d6e">com.google.ortools.graph.MinCostFlow</a>
 </li>
 <li>SolveModelWithSat()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1main.html#a858250ee0a41f3741b419bb47eb1edb2">com.google.ortools.constraintsolver.main</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1main.html#a8d8560a7a296ef547c7bfc6e038e2635">com.google.ortools.constraintsolver.main</a>
 </li>
 <li>solver()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#a895aa657ed72a56de47f4bff949f7d9d">com.google.ortools.constraintsolver.ModelCache</a>
@@ -1820,7 +1824,7 @@
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#ab9ea9a1042c6f76e04e50b62bd1f99d8">com.google.ortools.constraintsolver.SearchMonitor</a>
 </li>
 <li>Solver()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a39e6d4c1bef15b6e715a5c9fac70e92f">com.google.ortools.constraintsolver.Solver</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#aba93a389ac87fa622d04c9c1348a869c">com.google.ortools.constraintsolver.Solver</a>
 </li>
 <li>SOLVER_PARAMETERS_FIELD_NUMBER
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModelParameters.html#a6e205364c5738e740375cfca849840b3">com.google.ortools.constraintsolver.RoutingModelParameters</a>
@@ -1842,7 +1846,7 @@
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntTupleSet.html#a51497785d029ad2ee8776bfdc1b42243">com.google.ortools.constraintsolver.IntTupleSet</a>
 </li>
 <li>SortedDisjointIntervalList()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1SortedDisjointIntervalList.html#a10bfcaa2a676e8fb580b3e676fd1c492">com.google.ortools.util.SortedDisjointIntervalList</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1SortedDisjointIntervalList.html#a1f6d0b6faabd64e3624054a6658fb9a4">com.google.ortools.util.SortedDisjointIntervalList</a>
 </li>
 <li>sortedLexicographically()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntTupleSet.html#a82d32aa1c84ac8630ed70a232cd25b3c">com.google.ortools.constraintsolver.IntTupleSet</a>

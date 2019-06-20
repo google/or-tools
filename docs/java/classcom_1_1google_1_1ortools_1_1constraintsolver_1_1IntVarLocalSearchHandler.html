@@ -5,7 +5,7 @@
         <meta http-equiv="Content-Type" content="text/html;"/>
         <meta charset="utf-8"/>
         <!--<link rel='stylesheet' type='text/css' href="https://fonts.googleapis.com/css?family=Ubuntu:400,700,400italic"/>-->
-        <link rel="stylesheet" type="text/css" href="doxygen.css" title="default" media="screen,print" />
+        <link rel="stylesheet" type="text/css" href="ortools.css" title="default" media="screen,print" />
         <script type="text/javascript" src="jquery.js"></script>
         <script type="text/javascript" src="dynsections.js"></script>
     </head>
@@ -55,8 +55,8 @@
 Public Member Functions</h2></td></tr>
 <tr class="memitem:af490bbf35fafb8cdf439229c7f037695"><td class="memItemLeft" align="right" valign="top">synchronized void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchHandler.html#af490bbf35fafb8cdf439229c7f037695">delete</a> ()</td></tr>
 <tr class="separator:af490bbf35fafb8cdf439229c7f037695"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae4fae43ee4ef8d967e12c3ef8dfd62e8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchHandler.html#ae4fae43ee4ef8d967e12c3ef8dfd62e8">addToAssignment</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a> var, long value, long index, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html">Assignment</a> assignment)</td></tr>
-<tr class="separator:ae4fae43ee4ef8d967e12c3ef8dfd62e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3c525da97b7b18dad49b7487bd78e3f9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchHandler.html#a3c525da97b7b18dad49b7487bd78e3f9">addToAssignment</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a> var, long value, boolean active, SWIGTYPE_p_std__vectorT_int_t assignment_indices, long index, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html">Assignment</a> assignment)</td></tr>
+<tr class="separator:a3c525da97b7b18dad49b7487bd78e3f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a39493f3309d3641732e899a20b26e5d9"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchHandler.html#a39493f3309d3641732e899a20b26e5d9">valueFromAssignent</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html">Assignment</a> assignment, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a> var, long index, long[] value)</td></tr>
 <tr class="separator:a39493f3309d3641732e899a20b26e5d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa866d3ff7e1bcff7bb649bd419e0a086"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchHandler.html#aa866d3ff7e1bcff7bb649bd419e0a086">onRevertChanges</a> (long index)</td></tr>
@@ -153,8 +153,8 @@ Protected Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ae4fae43ee4ef8d967e12c3ef8dfd62e8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae4fae43ee4ef8d967e12c3ef8dfd62e8">&#9670;&nbsp;</a></span>addToAssignment()</h2>
+<a id="a3c525da97b7b18dad49b7487bd78e3f9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3c525da97b7b18dad49b7487bd78e3f9">&#9670;&nbsp;</a></span>addToAssignment()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -173,6 +173,18 @@ Protected Attributes</h2></td></tr>
           <td></td>
           <td class="paramtype">long&#160;</td>
           <td class="paramname"><em>value</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">boolean&#160;</td>
+          <td class="paramname"><em>active</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">SWIGTYPE_p_std__vectorT_int_t&#160;</td>
+          <td class="paramname"><em>assignment_indices</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
