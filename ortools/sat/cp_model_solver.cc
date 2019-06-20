@@ -26,6 +26,9 @@
 
 #include "absl/memory/memory.h"
 #include "glog/vlog_is_on.h"
+#include "ortools/sat/cuts.h"
+#include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/saturated_arithmetic.h"
 
 #if !defined(__PORTABLE_PLATFORM__)
 #include "absl/synchronization/notification.h"
@@ -376,6 +379,11 @@ std::string Summarize(const std::string& input) {
                       input.substr(input.size() - half, half));
 }
 
+bool IsPositive(IntegerVariable v, Model* m) {
+  IntegerTrail* const integer_trail = m->GetOrCreate<IntegerTrail>();
+  return integer_trail->LevelZeroLowerBound(v) >= 0;
+}
+
 }  // namespace.
 
 // =============================================================================
@@ -670,8 +678,11 @@ IntegerVariable GetOrCreateVariableGreaterOrEqualToSumOf(
 void TryToAddCutGenerators(const CpModelProto& model_proto,
                            const ConstraintProto& ct, Model* m,
                            LinearRelaxation* relaxation) {
+  const int linearization_level =
+      m->GetOrCreate<SatParameters>()->linearization_level();
   auto* mapping = m->GetOrCreate<CpModelMapping>();
-  if (ct.constraint_case() == ConstraintProto::ConstraintCase::kCircuit) {
+  if (ct.constraint_case() == ConstraintProto::ConstraintCase::kCircuit &&
+      linearization_level > 1) {
     std::vector<int> tails(ct.circuit().tails().begin(),
                            ct.circuit().tails().end());
     std::vector<int> heads(ct.circuit().heads().begin(),
@@ -689,7 +700,8 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
         CreateStronglyConnectedGraphCutGenerator(num_nodes, tails, heads,
                                                  vars));
   }
-  if (ct.constraint_case() == ConstraintProto::ConstraintCase::kRoutes) {
+  if (ct.constraint_case() == ConstraintProto::ConstraintCase::kRoutes &&
+      linearization_level > 1) {
     std::vector<int> tails;
     std::vector<int> heads;
     std::vector<IntegerVariable> vars;
@@ -715,6 +727,23 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
                                        ct.routes().demands().end());
       relaxation->cut_generators.push_back(CreateCVRPCutGenerator(
           num_nodes, tails, heads, vars, demands, ct.routes().capacity()));
+    }
+  }
+  if (ct.constraint_case() == ConstraintProto::ConstraintCase::kIntProd) {
+    if (HasEnforcementLiteral(ct)) return;
+    if (ct.int_prod().vars_size() != 2) return;
+
+    const int target = ct.int_prod().target();
+    const IntegerVariable v0 = mapping->Integer(ct.int_prod().vars(0));
+    const IntegerVariable v1 = mapping->Integer(ct.int_prod().vars(1));
+
+    if (v0 == v1 && IsPositive(v0, m)) {
+      relaxation->cut_generators.push_back(
+          CreateSquareCutGenerator(mapping->Integer(target), v0, m));
+    } else if (IsPositive(v0, m) && IsPositive(v1, m)) {
+      relaxation->cut_generators.push_back(
+          CreatePositiveMultiplicationCutGenerator(mapping->Integer(target), v0,
+                                                   v1, m));
     }
   }
 }
@@ -759,11 +788,7 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
     TryToLinearizeConstraint(model_proto, ct, m, linearization_level,
                              &relaxation);
 
-    // For now these are only useful on problem with circuit. They can help
-    // a lot on complex problems, but they also slow down simple ones.
-    if (linearization_level > 1) {
-      TryToAddCutGenerators(model_proto, ct, m, &relaxation);
-    }
+    TryToAddCutGenerators(model_proto, ct, m, &relaxation);
   }
 
   // Linearize the encoding of variable that are fully encoded in the proto.
@@ -1727,8 +1752,7 @@ bool UpdateDomain(int64 new_lb, int64 new_ub,
 }
 }  // namespace
 
-void SolveCpModelWithLNS(const CpModelProto& model_proto, int num_workers,
-                         int worker_id,
+void SolveCpModelWithLNS(const CpModelProto& model_proto, int worker_id,
                          SharedResponseManager* shared_response_manager,
                          SharedBoundsManager* shared_bounds_manager,
                          WallTimer* wall_timer, Model* model) {
@@ -1739,7 +1763,11 @@ void SolveCpModelWithLNS(const CpModelProto& model_proto, int num_workers,
 
   const bool focus_on_decision_variables =
       parameters->lns_focus_on_decision_variables();
+
+  // This mutex should protect all access to the helper or time_limit.
+  absl::Mutex mutex;
   CpModelProto mutable_model_proto = model_proto;
+  TimeLimit* limit = model->GetOrCreate<TimeLimit>();
   NeighborhoodGeneratorHelper helper(&mutable_model_proto,
                                      focus_on_decision_variables);
 
@@ -1791,190 +1819,201 @@ void SolveCpModelWithLNS(const CpModelProto& model_proto, int num_workers,
     return;
   }
 
-  // The "optimal" difficulties do not have to be the same for different
-  // generators.
-  //
-  // TODO(user): This should be shared across LNS threads! create a thread
-  // safe class that accept signals of the form (difficulty and result) and
-  // properly update the difficulties.
-  std::vector<AdaptiveParameterValue> difficulties(generators.size(),
-                                                   AdaptiveParameterValue(0.5));
+  const auto synchronize_and_maybe_stop_function = [&]() {
+    // Update the bounds on mutable model proto.
+    if (shared_bounds_manager != nullptr) {
+      absl::MutexLock mutex_lock(&mutex);
+      std::vector<int> model_variables;
+      std::vector<int64> new_lower_bounds;
+      std::vector<int64> new_upper_bounds;
+      shared_bounds_manager->GetChangedBounds(
+          worker_id, &model_variables, &new_lower_bounds, &new_upper_bounds);
 
-  TimeLimit* limit = model->GetOrCreate<TimeLimit>();
-  double deterministic_time = 0.1;
-  int num_consecutive_not_fully_solved = 0;
-
-  const int num_threads = std::max(1, parameters->lns_num_threads());
-  int64 total_num_calls = 0;
-  OptimizeWithLNS(
-      num_threads,
-      [&]() {
-        // Synchronize with external world.
-        response = shared_response_manager->GetResponse();
-
-        // Update the bounds on mutable model proto.
-        if (shared_bounds_manager != nullptr) {
-          std::vector<int> model_variables;
-          std::vector<int64> new_lower_bounds;
-          std::vector<int64> new_upper_bounds;
-          shared_bounds_manager->GetChangedBounds(worker_id, &model_variables,
-                                                  &new_lower_bounds,
-                                                  &new_upper_bounds);
-
-          for (int i = 0; i < model_variables.size(); ++i) {
-            const int var = model_variables[i];
-            const int64 new_lb = new_lower_bounds[i];
-            const int64 new_ub = new_upper_bounds[i];
-            if (VLOG_IS_ON(3)) {
-              const auto& domain = mutable_model_proto.variables(var).domain();
-              const int64 old_lb = domain.Get(0);
-              const int64 old_ub = domain.Get(domain.size() - 1);
-              VLOG(3) << "Variable: " << var << " old domain: [" << old_lb
-                      << ", " << old_ub << "] new domain: [" << new_lb << ", "
-                      << new_ub << "]";
-            }
-            if (!UpdateDomain(new_lb, new_ub,
-                              mutable_model_proto.mutable_variables(var))) {
-              // Model is unsat.
-              return true;
-            }
-          }
-          if (!model_variables.empty()) {
-            helper.UpdateHelperData(focus_on_decision_variables);
-          }
+      for (int i = 0; i < model_variables.size(); ++i) {
+        const int var = model_variables[i];
+        const int64 new_lb = new_lower_bounds[i];
+        const int64 new_ub = new_upper_bounds[i];
+        if (VLOG_IS_ON(3)) {
+          const auto& domain = mutable_model_proto.variables(var).domain();
+          const int64 old_lb = domain.Get(0);
+          const int64 old_ub = domain.Get(domain.size() - 1);
+          VLOG(3) << "Variable: " << var << " old domain: [" << old_lb << ", "
+                  << old_ub << "] new domain: [" << new_lb << ", " << new_ub
+                  << "]";
         }
+        if (!UpdateDomain(new_lb, new_ub,
+                          mutable_model_proto.mutable_variables(var))) {
+          // Model is unsat.
+          return true;
+        }
+      }
+      if (!model_variables.empty()) {
+        helper.UpdateHelperData(focus_on_decision_variables);
+      }
+    }
 
-        // If we didn't see any progress recently, bump the time limit.
-        // TODO(user): Tune the logic and expose the parameters.
-        if (num_consecutive_not_fully_solved > 100) {
-          deterministic_time *= 1.1;
-          num_consecutive_not_fully_solved = 0;
-        }
-        return limit->LimitReached() ||
-               response.objective_value() == response.best_objective_bound();
-      },
-      [&](int64 seed) {
-        int selected_generator = seed % generators.size();
-        while (response.status() == CpSolverStatus::UNKNOWN &&
-               generators[selected_generator]->NeedsFirstSolution()) {
-          selected_generator = (selected_generator + 1) % generators.size();
-        }
-        AdaptiveParameterValue& difficulty = difficulties[selected_generator];
-        const double saved_difficulty = difficulty.value();
-        Neighborhood neighborhood = generators[selected_generator]->Generate(
-            response, num_workers * seed + worker_id, saved_difficulty);
-        if (!neighborhood.is_generated) {
-          std::function<void()> update_function = []() {};
-          return update_function;
-        }
-        CpModelProto& local_problem = neighborhood.cp_model;
-        const std::string solution_info = absl::StrFormat(
-            "%s(d=%0.2f s=%i t=%0.2f)", generators[selected_generator]->name(),
-            saved_difficulty, seed, deterministic_time);
+    // Synchronize the solution repository and process all the latest
+    // "SolveData" since the last synchronization point.
+    shared_response_manager->MutableSolutionsRepository()->Synchronize();
+    for (std::unique_ptr<NeighborhoodGenerator>& generator : generators) {
+      generator->Synchronize();
+    }
+
+    absl::MutexLock mutex_lock(&mutex);
+    response = shared_response_manager->GetResponse();
+    return limit->LimitReached() ||
+           response.objective_value() == response.best_objective_bound();
+  };
+
+  const auto generate_and_solve_function = [&](int64 seed) {
+    const int num_solutions =
+        shared_response_manager->SolutionsRepository().NumSolutions();
+    int selected_generator = seed % generators.size();
+    while (num_solutions == 0 &&
+           generators[selected_generator]->NeedsFirstSolution()) {
+      selected_generator = (selected_generator + 1) % generators.size();
+    }
+
+    CpSolverResponse base_response;
+    if (num_solutions > 0) {
+      base_response.set_status(CpSolverStatus::FEASIBLE);
+      const int selected_solution = seed / generators.size() % num_solutions;
+      const SharedSolutionRepository::Solution solution =
+          shared_response_manager->SolutionsRepository().GetSolution(
+              selected_solution);
+      for (const int64 value : solution.variable_values) {
+        base_response.add_solution(value);
+      }
+    } else {
+      base_response.set_status(CpSolverStatus::UNKNOWN);
+    }
+
+    NeighborhoodGenerator* generator = generators[selected_generator].get();
+
+    const double saved_difficulty = generator->difficulty();
+    const double saved_limit = generator->deterministic_limit();
+    Neighborhood neighborhood;
+    {
+      absl::MutexLock mutex_lock(&mutex);
+
+      // TODO(user): currently the full neigbhorhood generation cannot be
+      // parallelized since we can change the underlying helper data when
+      // synchronizing new bounds. Improve?
+      if (limit->LimitReached()) return;
+      neighborhood = generator->Generate(base_response, seed, saved_difficulty);
+    }
+    if (!neighborhood.is_generated) return;
+
+    CHECK_NE(saved_limit, 0);
+    CpModelProto& local_problem = neighborhood.cp_model;
+    const std::string solution_info = absl::StrFormat(
+        "%s(d=%0.2f s=%i t=%0.2f p=%0.2f)", generator->name(), saved_difficulty,
+        seed, saved_limit,
+        static_cast<double>(generator->num_fully_solved_calls()) /
+            std::max(int64{1}, generator->num_calls()));
 
 #if !defined(__PORTABLE_PLATFORM__)
-        if (FLAGS_cp_model_dump_lns_problems) {
-          const int id = num_workers * seed + worker_id;
-          const std::string name = absl::StrCat("/tmp/lns_", id, ".pb.txt");
-          LOG(INFO) << "Dumping LNS model to '" << name << "'.";
-          CHECK_OK(file::SetTextProto(name, local_problem, file::Defaults()));
-        }
+    if (FLAGS_cp_model_dump_lns_problems) {
+      const std::string name = absl::StrCat("/tmp/lns_", seed, ".pb.txt");
+      LOG(INFO) << "Dumping LNS model to '" << name << "'.";
+      CHECK_OK(file::SetTextProto(name, local_problem, file::Defaults()));
+    }
 #endif  // __PORTABLE_PLATFORM__
 
-        Model local_model;
-        {
-          SatParameters local_parameters;
-          local_parameters = *parameters;
-          local_parameters.set_max_deterministic_time(deterministic_time);
-          local_parameters.set_stop_after_first_solution(false);
-          local_model.Add(NewSatParameters(local_parameters));
-        }
-        local_model.GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(limit);
+    Model local_model;
+    {
+      SatParameters local_parameters;
+      local_parameters = *parameters;
+      local_parameters.set_max_deterministic_time(saved_limit);
+      local_parameters.set_stop_after_first_solution(false);
+      local_model.Add(NewSatParameters(local_parameters));
+    }
+    {
+      absl::MutexLock mutex_lock(&mutex);
+      local_model.GetOrCreate<TimeLimit>()->MergeWithGlobalTimeLimit(limit);
+    }
 
-        // Presolve and solve the LNS fragment.
-        CpModelProto mapping_proto;
-        std::vector<int> postsolve_mapping;
-        PresolveOptions options;
-        options.log_info = VLOG_IS_ON(3);
-        options.parameters = *local_model.GetOrCreate<SatParameters>();
-        options.time_limit = local_model.GetOrCreate<TimeLimit>();
-        PresolveCpModel(options, &local_problem, &mapping_proto,
-                        &postsolve_mapping);
-        CpSolverResponse local_response =
-            LocalSolve(local_problem, wall_timer, &local_model);
+    // Presolve and solve the LNS fragment.
+    CpModelProto mapping_proto;
+    std::vector<int> postsolve_mapping;
+    PresolveOptions options;
+    options.log_info = VLOG_IS_ON(3);
+    options.parameters = *local_model.GetOrCreate<SatParameters>();
+    options.time_limit = local_model.GetOrCreate<TimeLimit>();
+    PresolveCpModel(options, &local_problem, &mapping_proto,
+                    &postsolve_mapping);
+    CpSolverResponse local_response =
+        LocalSolve(local_problem, wall_timer, &local_model);
 
-        // TODO(user): we actually do not need to postsolve if the solution is
-        // not going to be used...
-        PostsolveResponse(model_proto, mapping_proto, postsolve_mapping,
-                          wall_timer, &local_response);
-        if (local_response.solution_info().empty()) {
-          local_response.set_solution_info(solution_info);
-        } else {
-          local_response.set_solution_info(
-              absl::StrCat(local_response.solution_info(), " ", solution_info));
-        }
+    // TODO(user): we actually do not need to postsolve if the solution is
+    // not going to be used...
+    PostsolveResponse(model_proto, mapping_proto, postsolve_mapping, wall_timer,
+                      &local_response);
+    if (local_response.solution_info().empty()) {
+      local_response.set_solution_info(solution_info);
+    } else {
+      local_response.set_solution_info(
+          absl::StrCat(local_response.solution_info(), " ", solution_info));
+    }
 
-        const bool neighborhood_is_reduced = neighborhood.is_reduced;
-        std::function<void()> update_function =
-            [neighborhood_is_reduced, &num_consecutive_not_fully_solved,
-             &shared_response_manager, &response, &difficulty, local_response,
-             &generators, selected_generator, &total_num_calls]() {
-              // TODO(user): This is not ideal in multithread because even
-              // though the saved_difficulty will be the same for all thread, we
-              // will Increase()/Decrease() the difficuty sequentially more than
-              // once.
-              if (local_response.status() == CpSolverStatus::OPTIMAL ||
-                  local_response.status() == CpSolverStatus::INFEASIBLE) {
-                num_consecutive_not_fully_solved = 0;
-                difficulty.Increase();
-              } else {
-                ++num_consecutive_not_fully_solved;
-                difficulty.Decrease();
-              }
+    NeighborhoodGenerator::SolveData data;
+    data.status = local_response.status();
+    data.difficulty = saved_difficulty;
+    data.deterministic_time = local_response.deterministic_time();
 
-              // Update the generator record.
-              double objective_diff = 0.0;
-              if (local_response.status() == CpSolverStatus::OPTIMAL ||
-                  local_response.status() == CpSolverStatus::FEASIBLE) {
-                objective_diff = std::abs(local_response.objective_value() -
-                                          response.objective_value());
-              }
-              total_num_calls++;
-              generators[selected_generator]->AddSolveData(
-                  objective_diff, local_response.deterministic_time());
-              VLOG(2) << generators[selected_generator]->name()
-                      << ": [difficulty: " << difficulty.value()
-                      << ", deterministic time: "
-                      << local_response.deterministic_time() << ", status: "
-                      << ProtoEnumToString<CpSolverStatus>(
-                             local_response.status())
-                      << ", num calls: "
-                      << generators[selected_generator]->num_calls()
-                      << ", UCB1 Score: "
-                      << generators[selected_generator]->GetUCBScore(
-                             total_num_calls)
-                      << "]";
+    data.objective_diff = 0.0;
+    if (local_response.status() == CpSolverStatus::OPTIMAL ||
+        local_response.status() == CpSolverStatus::FEASIBLE) {
+      // TODO(user): Compute the diff with respect to the base solution
+      // instead.
+      data.objective_diff = std::abs(local_response.objective_value() -
+                                     response.objective_value());
+    }
 
-              // Report any feasible solution we have. Note that we do not want
-              // to keep the full model in this lambda, so for now we do not
-              // report local stats in the solution.
-              //
-              // TODO(user): depending on the problem, the bound sharing may or
-              // may not restrict the objective though. Uniformize the behavior.
-              if (local_response.status() == CpSolverStatus::OPTIMAL ||
-                  local_response.status() == CpSolverStatus::FEASIBLE) {
-                shared_response_manager->NewSolution(local_response,
-                                                     /*model=*/nullptr);
-              }
-              if (!neighborhood_is_reduced &&
-                  (local_response.status() == CpSolverStatus::OPTIMAL ||
-                   local_response.status() == CpSolverStatus::INFEASIBLE)) {
-                shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
-                    local_response.solution_info());
-              }
-            };
-        return update_function;
-      });
+    generator->AddSolveData(data);
+
+    // The total number of call when this was called is the same as the
+    // seed.
+    // TODO(user): maybe rename? Also move to the synchronize part...
+    const int total_num_calls = seed;
+    VLOG(2) << generator->name() << ": [difficulty: " << saved_difficulty
+            << ", deterministic time: " << local_response.deterministic_time()
+            << ", status: "
+            << ProtoEnumToString<CpSolverStatus>(local_response.status())
+            << ", num calls: " << generator->num_calls()
+            << ", UCB1 Score: " << generator->GetUCBScore(total_num_calls)
+            << "]";
+
+    // Report any feasible solution we have. Note that we do not want
+    // to keep the full model in this lambda, so for now we do not
+    // report local stats in the solution.
+    //
+    // TODO(user): depending on the problem, the bound sharing may or
+    // may not restrict the objective though. Uniformize the behavior.
+    if (local_response.status() == CpSolverStatus::OPTIMAL ||
+        local_response.status() == CpSolverStatus::FEASIBLE) {
+      shared_response_manager->NewSolution(local_response,
+                                           /*model=*/nullptr);
+    }
+    if (!neighborhood.is_reduced &&
+        (local_response.status() == CpSolverStatus::OPTIMAL ||
+         local_response.status() == CpSolverStatus::INFEASIBLE)) {
+      shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
+          local_response.solution_info());
+    }
+  };
+
+  const int num_threads = std::max(1, parameters->lns_num_threads());
+  if (parameters->lns_is_deterministic()) {
+    const int batch_size = 4 * num_threads;
+    OptimizeWithLNS(num_threads, batch_size,
+                    synchronize_and_maybe_stop_function,
+                    generate_and_solve_function);
+  } else {
+    NonDeterministicOptimizeWithLNS(num_threads,
+                                    synchronize_and_maybe_stop_function,
+                                    generate_and_solve_function);
+  }
 }
 
 #if !defined(__PORTABLE_PLATFORM__)
@@ -2048,12 +2087,25 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
         shared_response_manager->UnregisterCallback(callback_id);
       });
 
+  // The LNS threads are handled differently.
+  int num_lns_workers = 0;
+  int lns_worker_id = 0;
+  for (int worker_id = 0; worker_id < num_search_workers; ++worker_id) {
+    const SatParameters local_params = worker_parameters[worker_id];
+    if (local_params.use_lns()) {
+      lns_worker_id = worker_id;
+      ++num_lns_workers;
+    }
+  }
+
   ThreadPool pool("Parallel_search", num_search_workers);
   pool.StartWorkers();
 
   for (int worker_id = 0; worker_id < num_search_workers; ++worker_id) {
     const std::string worker_name = worker_names[worker_id];
     const SatParameters local_params = worker_parameters[worker_id];
+    if (local_params.use_lns()) continue;
+
     pool.Schedule([&model_proto, stopped, local_params, worker_id, &mutex,
                    num_search_workers, wall_timer,
                    &first_solution_found_or_search_finished,
@@ -2074,28 +2126,19 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       worker_info->worker_name = worker_name;
       worker_info->worker_id = worker_id;
 
-      if (local_params.use_lns()) {
-        first_solution_found_or_search_finished.WaitForNotification();
-        // TODO(user,user): Provide a better diversification for different
-        // seeds.
-        SolveCpModelWithLNS(
-            model_proto, num_search_workers, worker_id, shared_response_manager,
-            shared_bounds_manager.get(), wall_timer, &local_model);
-      } else {
-        LoadCpModel(model_proto, shared_response_manager, &local_model);
+      LoadCpModel(model_proto, shared_response_manager, &local_model);
 
-        // Level zero variable bounds sharing.
-        //
-        // TODO(user): move these function to the shared_bounds_manager class?
-        if (shared_bounds_manager != nullptr) {
-          RegisterVariableBoundsLevelZeroExport(
-              model_proto, shared_bounds_manager.get(), &local_model);
-          RegisterVariableBoundsLevelZeroImport(
-              model_proto, shared_bounds_manager.get(), &local_model);
-        }
-
-        SolveLoadedCpModel(model_proto, shared_response_manager, &local_model);
+      // Level zero variable bounds sharing.
+      //
+      // TODO(user): move these function to the shared_bounds_manager class?
+      if (shared_bounds_manager != nullptr) {
+        RegisterVariableBoundsLevelZeroExport(
+            model_proto, shared_bounds_manager.get(), &local_model);
+        RegisterVariableBoundsLevelZeroImport(
+            model_proto, shared_bounds_manager.get(), &local_model);
       }
+
+      SolveLoadedCpModel(model_proto, shared_response_manager, &local_model);
 
       // TODO(user): Accumulate the stats?
       //
@@ -2108,6 +2151,40 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
         if (!first_solution_found_or_search_finished.HasBeenNotified()) {
           first_solution_found_or_search_finished.Notify();
         }
+      }
+    });
+  }
+
+  // Schedule the LNS worker that itself will contain a thread-pool.
+  if (num_lns_workers > 0) {
+    pool.Schedule([&] {
+      // Wait for a solution before starting the LNS threads.
+      first_solution_found_or_search_finished.WaitForNotification();
+
+      // Note that because the other worker are not deterministic, there is
+      // no point having a deterministic LNS here as it will pull out
+      // non-deterministic info like bounds and best solutions...
+      Model local_model;
+      local_model.GetOrCreate<SatParameters>()->set_use_lns(true);
+      local_model.GetOrCreate<SatParameters>()->set_lns_num_threads(
+          num_lns_workers);
+      local_model.GetOrCreate<SatParameters>()->set_lns_is_deterministic(false);
+      local_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
+          stopped);
+
+      // Stores info that will be used for logs in the local model.
+      WorkerInfo* worker_info = local_model.GetOrCreate<WorkerInfo>();
+      worker_info->worker_name = worker_names[lns_worker_id];
+      worker_info->worker_id = lns_worker_id;
+
+      SolveCpModelWithLNS(model_proto, lns_worker_id, shared_response_manager,
+                          shared_bounds_manager.get(), wall_timer,
+                          &local_model);
+
+      absl::MutexLock lock(&mutex);
+      *stopped = true;
+      if (!first_solution_found_or_search_finished.HasBeenNotified()) {
+        first_solution_found_or_search_finished.Notify();
       }
     });
   }
@@ -2306,8 +2383,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
              !params.enumerate_all_solutions()) {
     // TODO(user,user): Provide a better diversification for different
     // seeds.
-    const int random_seed = model->GetOrCreate<SatParameters>()->random_seed();
-    SolveCpModelWithLNS(new_cp_model_proto, 1, random_seed,
+    SolveCpModelWithLNS(new_cp_model_proto, /*worker_id=*/1,
                         &shared_response_manager,
                         /*shared_bounds_manager=*/nullptr, &wall_timer, model);
   } else {

@@ -428,6 +428,15 @@ void CpModelMapping::DetectOptionalVariables(const CpModelProto& model_proto,
   if (!parameters.use_optional_variables()) return;
   if (parameters.enumerate_all_solutions()) return;
 
+  // The variables from the objective cannot be marked as optional!
+  const int num_proto_variables = model_proto.variables_size();
+  std::vector<bool> already_seen(num_proto_variables, false);
+  if (model_proto.has_objective()) {
+    for (const int ref : model_proto.objective().vars()) {
+      already_seen[PositiveRef(ref)] = true;
+    }
+  }
+
   // Compute for each variables the intersection of the enforcement literals
   // of the constraints in which they appear.
   //
@@ -436,8 +445,6 @@ void CpModelMapping::DetectOptionalVariables(const CpModelProto& model_proto,
   // appear to false. This can be done with a LCA computation in the tree of
   // Boolean implication (once the presolve remove cycles). Not sure if we can
   // properly exploit that afterwards though. Do some research!
-  const int num_proto_variables = model_proto.variables_size();
-  std::vector<bool> already_seen(num_proto_variables, false);
   std::vector<std::vector<int>> enforcement_intersection(num_proto_variables);
   std::set<int> literals_set;
   for (int c = 0; c < model_proto.constraints_size(); ++c) {

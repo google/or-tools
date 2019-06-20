@@ -97,7 +97,7 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
 //   values. This could be relaxed, but for now it should always be the case, so
 //   we log a message and abort if not, to ease debugging.
 // - The IntegerVariable of the cuts are not used here. We assumes that the
-//   first three vectors are in one to one correspondance with the initial order
+//   first three vectors are in one to one correspondence with the initial order
 //   of the variable in the cut.
 //
 // TODO(user): There is a bunch of heuristic involved here, and we could spend
@@ -254,6 +254,16 @@ bool LiftKnapsackCut(
 CutGenerator CreateKnapsackCoverCutGenerator(
     const std::vector<LinearConstraint>& base_constraints,
     const std::vector<IntegerVariable>& vars, Model* model);
+
+// A cut generator for z = x * y (x and y >= 0)
+CutGenerator CreatePositiveMultiplicationCutGenerator(
+    IntegerVariable target_var, IntegerVariable v1, IntegerVariable v2,
+    Model* model);
+
+// A cut generator for y = x ^ 2. (x >= 0).
+// It will dynamically add a linear inequality to push y closer to the parabola.
+CutGenerator CreateSquareCutGenerator(IntegerVariable target_var,
+                                      IntegerVariable int_var, Model* model);
 
 }  // namespace sat
 }  // namespace operations_research

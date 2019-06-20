@@ -223,6 +223,20 @@ std::string ValidateObjective(const CpModelProto& model,
   return "";
 }
 
+std::string ValidateSolutionHint(const CpModelProto& model) {
+  if (!model.has_solution_hint()) return "";
+  const auto& hint = model.solution_hint();
+  if (hint.vars().size() != hint.values().size()) {
+    return "Invalid solution hint: vars and values do not have the same size.";
+  }
+  for (const int ref : hint.vars()) {
+    if (!VariableReferenceIsValid(model, ref)) {
+      return absl::StrCat("Invalid variable reference in solution hint: ", ref);
+    }
+  }
+  return "";
+}
+
 }  // namespace
 
 std::string ValidateCpModel(const CpModelProto& model) {
@@ -277,6 +291,7 @@ std::string ValidateCpModel(const CpModelProto& model) {
     RETURN_IF_NOT_EMPTY(ValidateObjective(model, model.objective()));
   }
 
+  RETURN_IF_NOT_EMPTY(ValidateSolutionHint(model));
   return "";
 }
 

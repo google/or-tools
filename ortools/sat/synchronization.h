@@ -29,14 +29,74 @@
 namespace operations_research {
 namespace sat {
 
+// Thread-safe. Keeps a set of n unique best solution found so far.
+//
+// TODO(user): Maybe add some criteria to only keep solution with an objective
+// really close to the best solution.
+class SharedSolutionRepository {
+ public:
+  explicit SharedSolutionRepository(int num_solutions_to_keep)
+      : num_solutions_to_keep_(num_solutions_to_keep) {
+    CHECK_GE(num_solutions_to_keep_, 1);
+  }
+
+  // The solution format used by this class.
+  // We use the unscaled internal minimization objective.
+  struct Solution {
+    int64 internal_objective;
+    std::vector<int64> variable_values;
+
+    bool operator==(const Solution& other) const {
+      return internal_objective == other.internal_objective &&
+             variable_values == other.variable_values;
+    }
+    bool operator<(const Solution& other) const {
+      if (internal_objective != other.internal_objective) {
+        return internal_objective < other.internal_objective;
+      }
+      return variable_values < other.variable_values;
+    }
+  };
+
+  // Returns the number of current solution in the pool. This will never
+  // decrease.
+  int NumSolutions() const;
+
+  // Returns the solution #i where i must be smaller than NumSolutions().
+  Solution GetSolution(int index) const;
+
+  // Add a new solution. Note that it will not be added to the pool of solution
+  // right away. One must call Synchronize for this to happen.
+  //
+  // Works in O(num_solutions_to_keep_).
+  void Add(const Solution& solution);
+
+  // Updates the current pool of solution with the one recently added. Note that
+  // we use a stable ordering of solutions, so the final pool will be
+  // independent on the order of the calls to AddSolution() provided that the
+  // set of added solutions is the same.
+  //
+  // Works in O(num_solutions_to_keep_).
+  void Synchronize();
+
+ private:
+  const int num_solutions_to_keep_;
+  mutable absl::Mutex mutex_;
+
+  // Our two solutions pools, the current one and the new one that will be
+  // merged into the current one on each Synchronize() calls.
+  std::vector<Solution> solutions_;
+  std::vector<Solution> new_solutions_;
+};
+
 // Manages the global best response kept by the solver.
 // All functions are thread-safe.
 class SharedResponseManager {
  public:
   // If log_updates is true, then all updates to the global "state" will be
   // logged. This class is responsible for our solver log progress.
-  explicit SharedResponseManager(bool log_updates_, const CpModelProto* proto,
-                                 const WallTimer* wall_timer);
+  SharedResponseManager(bool log_updates_, const CpModelProto* proto,
+                        const WallTimer* wall_timer);
 
   // Returns the current solver response. That is the best known response at the
   // time of the call with the best feasible solution and objective bounds.
@@ -91,6 +151,13 @@ class SharedResponseManager {
   // TODO(user): Also support merging statistics together.
   void SetStatsFromModel(Model* model);
 
+  // Returns the underlying solution repository where we keep a set of best
+  // solutions.
+  const SharedSolutionRepository& SolutionsRepository() const {
+    return solutions_;
+  }
+  SharedSolutionRepository* MutableSolutionsRepository() { return &solutions_; }
+
  private:
   void FillObjectiveValuesInBestResponse();
   void SetStatsFromModelInternal(Model* model);
@@ -102,6 +169,7 @@ class SharedResponseManager {
   absl::Mutex mutex_;
 
   CpSolverResponse best_response_;
+  SharedSolutionRepository solutions_;
 
   int num_solutions_ = 0;
   int64 inner_objective_lower_bound_ = kint64min;

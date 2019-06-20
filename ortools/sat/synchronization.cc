@@ -14,6 +14,7 @@
 #include "ortools/sat/synchronization.h"
 
 #include "absl/container/flat_hash_set.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_search.h"
@@ -26,18 +27,70 @@
 namespace operations_research {
 namespace sat {
 
+int SharedSolutionRepository::NumSolutions() const {
+  absl::MutexLock mutex_lock(&mutex_);
+  return solutions_.size();
+}
+
+SharedSolutionRepository::Solution SharedSolutionRepository::GetSolution(
+    int i) const {
+  absl::MutexLock mutex_lock(&mutex_);
+  return solutions_[i];
+}
+
+void SharedSolutionRepository::Add(const Solution& solution) {
+  absl::MutexLock mutex_lock(&mutex_);
+  if (new_solutions_.size() < num_solutions_to_keep_) {
+    new_solutions_.push_back(solution);
+    return;
+  }
+  int worse_solution_index = 0;
+  for (int i = 0; i < new_solutions_.size(); ++i) {
+    // Do not add identical solution.
+    if (new_solutions_[i] == solution) return;
+    if (new_solutions_[worse_solution_index] < new_solutions_[i]) {
+      worse_solution_index = i;
+    }
+  }
+  if (solution < new_solutions_[worse_solution_index]) {
+    new_solutions_[worse_solution_index] = solution;
+  }
+}
+
+void SharedSolutionRepository::Synchronize() {
+  absl::MutexLock mutex_lock(&mutex_);
+  solutions_.insert(solutions_.end(), new_solutions_.begin(),
+                    new_solutions_.end());
+  new_solutions_.clear();
+  gtl::STLSortAndRemoveDuplicates(&solutions_);
+  if (solutions_.size() > num_solutions_to_keep_) {
+    solutions_.resize(num_solutions_to_keep_);
+  }
+}
+
+// TODO(user): Experiments and play with the num_solutions_to_keep parameter.
 SharedResponseManager::SharedResponseManager(bool log_updates,
                                              const CpModelProto* proto,
                                              const WallTimer* wall_timer)
     : log_updates_(log_updates),
       model_proto_(*proto),
-      wall_timer_(*wall_timer) {}
+      wall_timer_(*wall_timer),
+      solutions_(/*num_solutions_to_keep=*/10) {}
 
 void SharedResponseManager::UpdateInnerObjectiveBounds(
     const std::string& worker_info, IntegerValue lb, IntegerValue ub) {
+  absl::MutexLock mutex_lock(&mutex_);
   CHECK(model_proto_.has_objective());
 
-  absl::MutexLock mutex_lock(&mutex_);
+  // The problem is already solved!
+  //
+  // TODO(user): A thread might not be notified right away that the new bounds
+  // that it is pushing make the problem infeasible. Fix that. For now we just
+  // abort early here to avoid logging the "#Done" message multiple times.
+  if (inner_objective_lower_bound_ > inner_objective_upper_bound_) {
+    return;
+  }
+
   bool change = false;
   if (lb > inner_objective_lower_bound_) {
     change = true;
@@ -173,6 +226,15 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
       const int var = PositiveRef(ref);
       if (!RefIsPositive(ref)) coeff = -coeff;
       objective_value += coeff * repeated_field_values[var];
+    }
+
+    // Add this solution to the pool, even if it is not improving.
+    if (!response.solution().empty()) {
+      SharedSolutionRepository::Solution solution;
+      solution.variable_values.assign(response.solution().begin(),
+                                      response.solution().end());
+      solution.internal_objective = objective_value;
+      solutions_.Add(solution);
     }
 
     // Ignore any non-strictly improving solution.

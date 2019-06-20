@@ -20,6 +20,7 @@
 #include <vector>
 
 #if !defined(__PORTABLE_PLATFORM__)
+#include "absl/synchronization/mutex.h"
 #include "ortools/base/threadpool.h"
 #endif  // __PORTABLE_PLATFORM__
 
@@ -28,28 +29,34 @@ namespace sat {
 
 // A simple deterministic and multithreaded LNS design.
 //
-// While !stop_function(), we call a batch of num_threads
-// generate_and_solve_function() in parallel. Each such functions should return
-// an update_global_solution() function. These update functions will only be
-// called sequentially (and in seed order) once the batch is done.
+// While !synchronize_and_maybe_stop(), we call a batch of batch_size
+// generate_and_solve() in parallel using num_threads threads. The
+// two given functions must be thread-safe.
 //
-// The seed starts at zero and will be increased one by one. Each
-// generate_and_solve_function() will get a different seed.
+// The general idea to enforce determinism is that each
+// generate_and_solve() can update a global state asynchronously, but
+// should still use the past state until the synchronize_and_maybe_stop() call
+// has been done.
 //
-// Only the generate_and_solve_function(int seed) need to be thread-safe.
+// The seed starts at zero and will be increased one by one, so it also
+// represent the number of calls to generate_and_solve(). Each
+// generate_and_solve() will get a different seed.
 //
 // The two templated types should behave like:
 // - StopFunction: std::function<bool()>
-// - SolveNeighborhoodFunction: std::function<std::function<void()>(int seed)>
-//
-// TODO(user): As the improving solution become more difficult to find, we
-// should trigger a lot more parallel LNS than the number of threads, so that we
-// have a better utilization. For this, add a simple mecanism so that we always
-// have num_threads working LNS, and do the barrier sync at the end when all the
-// LNS task have been executed.
-template <class StopFunction, class SolveNeighborhoodFunction>
-void OptimizeWithLNS(int num_threads, StopFunction stop_function,
-                     SolveNeighborhoodFunction generate_and_solve_function);
+// - SubSolveFunction: std::function<void(int64 seed)>
+template <class StopFunction, class SubSolveFunction>
+void OptimizeWithLNS(int num_threads, int batch_size,
+                     const StopFunction& synchronize_and_maybe_stop,
+                     const SubSolveFunction& generate_and_solve);
+
+// This one just keep num_threads tasks always in flight and call
+// synchronize_and_maybe_stop() before each generate_and_solve(). It is not
+// deterministic.
+template <class StopFunction, class SubSolveFunction>
+void NonDeterministicOptimizeWithLNS(
+    int num_threads, const StopFunction& synchronize_and_maybe_stop,
+    const SubSolveFunction& generate_and_solve);
 
 // Basic adaptive [0.0, 1.0] parameter that can be increased or decreased with a
 // step that get smaller and smaller with the number of updates.
@@ -98,41 +105,67 @@ class AdaptiveParameterValue {
 // Implementation.
 // ============================================================================
 
-template <class StopFunction, class SolveNeighborhoodFunction>
-inline void OptimizeWithLNS(
-    int num_threads, StopFunction stop_function,
-    SolveNeighborhoodFunction generate_and_solve_function) {
+template <class StopFunction, class SubSolveFunction>
+inline void OptimizeWithLNS(int num_threads, int batch_size,
+                            const StopFunction& synchronize_and_maybe_stop,
+                            const SubSolveFunction& generate_and_solve) {
   int64_t seed = 0;
-#if !defined(__PORTABLE_PLATFORM__)
-  while (!stop_function()) {
-    if (num_threads > 1) {
-      std::vector<std::function<void()>> update_functions(num_threads);
-      {
-        ThreadPool pool("Parallel_LNS", num_threads);
-        pool.StartWorkers();
-        for (int i = 0; i < num_threads; ++i) {
-          pool.Schedule(
-              [&update_functions, &generate_and_solve_function, i, seed]() {
-                update_functions[i] = generate_and_solve_function(seed + i);
-              });
-        }
-      }
 
-      seed += num_threads;
-      for (int i = 0; i < num_threads; ++i) {
-        update_functions[i]();
-      }
-    } else {
-      std::function<void()> update_function =
-          generate_and_solve_function(seed++);
-      update_function();
+#if defined(__PORTABLE_PLATFORM__)
+  while (!synchronize_and_maybe_stop()) generate_and_solve(seed++);
+  return;
+#else   // __PORTABLE_PLATFORM__
+
+  if (num_threads == 1) {
+    while (!synchronize_and_maybe_stop()) generate_and_solve(seed++);
+    return;
+  }
+
+  // TODO(user): We could reuse the same ThreadPool as long as we wait for all
+  // the task in a batch to finish before scheduling new ones. Not sure how
+  // to easily do that, so for now we just recreate the pool for each batch.
+  while (!synchronize_and_maybe_stop()) {
+    // We simply rely on the fact that a ThreadPool will only schedule
+    // num_threads workers in parallel.
+    ThreadPool pool("Deterministic_Parallel_LNS", num_threads);
+    pool.StartWorkers();
+    for (int i = 0; i < batch_size; ++i) {
+      pool.Schedule(
+          [&generate_and_solve, seed]() { generate_and_solve(seed); });
+      ++seed;
     }
   }
-#else   // __PORTABLE_PLATFORM__
-  while (!stop_function()) {
-    std::function<void()> update_function = generate_and_solve_function(seed++);
-    update_function();
+#endif  // __PORTABLE_PLATFORM__
+}
+
+template <class StopFunction, class SubSolveFunction>
+inline void NonDeterministicOptimizeWithLNS(
+    int num_threads, const StopFunction& synchronize_and_maybe_stop,
+    const SubSolveFunction& generate_and_solve) {
+  int64_t seed = 0;
+
+#if defined(__PORTABLE_PLATFORM__)
+  while (!synchronize_and_maybe_stop()) {
+    generate_and_solve(seed++);
   }
+#else  // __PORTABLE_PLATFORM__
+
+  if (num_threads == 1) {
+    while (!synchronize_and_maybe_stop()) generate_and_solve(seed++);
+    return;
+  }
+
+  // The lambda below are using little space, but there is no reason
+  // to create millions of them, so we use the blocking nature of
+  // pool.Schedule() when the queue capacity is set.
+  ThreadPool pool("Parallel_LNS", num_threads);
+  // pool.SetQueueCapacity(10 * num_threads);
+  pool.StartWorkers();
+  while (!synchronize_and_maybe_stop()) {
+    pool.Schedule([&generate_and_solve, seed]() { generate_and_solve(seed); });
+    ++seed;
+  }
+
 #endif  // __PORTABLE_PLATFORM__
 }
 

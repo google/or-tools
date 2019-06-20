@@ -3173,6 +3173,9 @@ void ExpandObjective(PresolveContext* context) {
     for (int i = 0; i < context->working_model->objective().vars_size(); ++i) {
       const int ref = context->working_model->objective().vars(i);
       const int64 coeff = context->working_model->objective().coeffs(i);
+      // NOTE: Domain multiplication with zero coeff returns empty domain so we
+      // avoid it by skipping the terms with zero coeff.
+      if (coeff == 0) continue;
       implied_domain =
           implied_domain
               .AdditionWith(context->DomainOf(ref).MultiplicationBy(coeff))
@@ -3185,8 +3188,12 @@ void ExpandObjective(PresolveContext* context) {
     if (!mutable_objective->domain().empty()) {
       old_domain = ReadDomainFromProto(*mutable_objective);
     }
-    FillDomainInProto(old_domain.SimplifyUsingImpliedDomain(implied_domain),
-                      mutable_objective);
+    const Domain simplified_domain =
+        old_domain.SimplifyUsingImpliedDomain(implied_domain);
+    if (simplified_domain.IsEmpty()) {
+      return (void)context->NotifyThatModelIsUnsat();
+    }
+    FillDomainInProto(simplified_domain, mutable_objective);
   }
 
   // Convert the objective linear expression to a map for ease of use below.
@@ -3223,7 +3230,7 @@ void ExpandObjective(PresolveContext* context) {
   // If the objective is a single variable, then we can usually remove this
   // variable if it is only used in one linear equality constraint and we do
   // just one expansion. This is because the domain of the variable will be
-  // transfered to our objective_domain.
+  // transferred to our objective_domain.
   int unique_expanded_constraint = -1;
   const bool objective_was_a_single_variable = objective_map.size() == 1;
 
@@ -3449,8 +3456,12 @@ void ExpandObjective(PresolveContext* context) {
                      .AdditionWith(Domain(-objective_offset_change))
                      .InverseMultiplicationBy(objective_divisor);
   }
-  FillDomainInProto(old_domain.SimplifyUsingImpliedDomain(implied_domain),
-                    mutable_objective);
+  const Domain simplified_domain =
+      old_domain.SimplifyUsingImpliedDomain(implied_domain);
+  if (simplified_domain.IsEmpty()) {
+    return (void)context->NotifyThatModelIsUnsat();
+  }
+  FillDomainInProto(simplified_domain, mutable_objective);
   mutable_objective->set_offset(mutable_objective->offset() +
                                 objective_offset_change);
   if (objective_divisor > 1) {
@@ -4306,6 +4317,13 @@ bool PresolveCpModel(const PresolveOptions& options,
     PresolveToFixPoint(options, &context);
   }
 
+  // Regroup no-overlaps into max-cliques.
+  if (!context.ModelIsUnsat()) MergeNoOverlapConstraints(&context);
+
+  if (context.working_model->has_objective() && !context.ModelIsUnsat()) {
+    ExpandObjective(&context);
+  }
+
   if (context.ModelIsUnsat()) {
     if (options.log_info) LogInfoFromContext(context);
 
@@ -4313,13 +4331,6 @@ bool PresolveCpModel(const PresolveOptions& options,
     presolved_model->Clear();
     presolved_model->add_constraints()->mutable_bool_or();
     return true;
-  }
-
-  // Regroup no-overlaps into max-cliques.
-  MergeNoOverlapConstraints(&context);
-
-  if (context.working_model->has_objective()) {
-    ExpandObjective(&context);
   }
 
   // Note: Removing unused equivalent variables should be done at the end.
