@@ -256,14 +256,15 @@ CutGenerator CreateKnapsackCoverCutGenerator(
     const std::vector<IntegerVariable>& vars, Model* model);
 
 // A cut generator for z = x * y (x and y >= 0)
-CutGenerator CreatePositiveMultiplicationCutGenerator(
-    IntegerVariable target_var, IntegerVariable v1, IntegerVariable v2,
-    Model* model);
+CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
+                                                      IntegerVariable x,
+                                                      IntegerVariable y,
+                                                      Model* model);
 
 // A cut generator for y = x ^ 2. (x >= 0).
 // It will dynamically add a linear inequality to push y closer to the parabola.
-CutGenerator CreateSquareCutGenerator(IntegerVariable target_var,
-                                      IntegerVariable int_var, Model* model);
+CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
+                                      Model* model);
 
 }  // namespace sat
 }  // namespace operations_research

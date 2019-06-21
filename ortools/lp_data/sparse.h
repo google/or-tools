@@ -734,6 +734,18 @@ class TriangularMatrix : private CompactSparseMatrix {
   void TransposeLowerSolveInternal(DenseColumn* rhs) const;
   template <bool diagonal_of_ones>
   void TransposeUpperSolveInternal(DenseColumn* rhs) const;
+  template <bool diagonal_of_ones>
+  void HyperSparseSolveInternal(DenseColumn* rhs,
+                                RowIndexVector* non_zero_rows) const;
+  template <bool diagonal_of_ones>
+  void HyperSparseSolveWithReversedNonZerosInternal(
+      DenseColumn* rhs, RowIndexVector* non_zero_rows) const;
+  template <bool diagonal_of_ones>
+  void TransposeHyperSparseSolveInternal(DenseColumn* rhs,
+                                         RowIndexVector* non_zero_rows) const;
+  template <bool diagonal_of_ones>
+  void TransposeHyperSparseSolveWithReversedNonZerosInternal(
+      DenseColumn* rhs, RowIndexVector* non_zero_rows) const;
 
   // Internal function used by the Add*() functions to finish adding
   // a new column to a triangular matrix.

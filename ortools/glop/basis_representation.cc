@@ -310,7 +310,7 @@ void BasisFactorization::LeftSolve(ScatteredRow* y) const {
   if (use_middle_product_form_update_) {
     lu_factorization_.LeftSolveUWithNonZeros(y);
     rank_one_factorization_.LeftSolveWithNonZeros(y);
-    lu_factorization_.LeftSolveLWithNonZeros(y, nullptr);
+    lu_factorization_.LeftSolveLWithNonZeros(y);
     y->SortNonZerosIfNeeded();
   } else {
     y->non_zeros.clear();
@@ -341,8 +341,8 @@ const DenseColumn& BasisFactorization::RightSolveForTau(
   BumpDeterministicTimeForSolve(compact_matrix_.num_rows().value());
   if (use_middle_product_form_update_) {
     if (tau_computation_can_be_optimized_) {
-      // Once used, the intermediate result is overridden, so RightSolveForTau()
-      // can no longer use the optimized algorithm.
+      // Once used, the intermediate result is overwritten, so
+      // RightSolveForTau() can no longer use the optimized algorithm.
       tau_computation_can_be_optimized_ = false;
       lu_factorization_.RightSolveLWithPermutedInput(a.values, &tau_.values);
       tau_.non_zeros.clear();
@@ -409,7 +409,7 @@ void BasisFactorization::LeftSolveForUnitRow(ColIndex j,
     tau_.non_zeros.clear();
   } else {
     tau_computation_can_be_optimized_ = false;
-    lu_factorization_.LeftSolveLWithNonZeros(y, nullptr);
+    lu_factorization_.LeftSolveLWithNonZeros(y);
   }
   y->SortNonZerosIfNeeded();
 }
@@ -423,7 +423,7 @@ void BasisFactorization::TemporaryLeftSolveForUnitRow(ColIndex j,
   ClearAndResizeVectorWithNonZeros(RowToColIndex(compact_matrix_.num_rows()),
                                    y);
   lu_factorization_.LeftSolveUForUnitRow(j, y);
-  lu_factorization_.LeftSolveLWithNonZeros(y, nullptr);
+  lu_factorization_.LeftSolveLWithNonZeros(y);
   y->SortNonZerosIfNeeded();
 }
 

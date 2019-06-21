@@ -180,7 +180,7 @@ class LinearProgram {
   // modifying the matrix does not change the result of any function in this
   // class until UseTransposeMatrixAsReference() is called. This is because the
   // transpose matrix is only used by GetTransposeSparseMatrix() and this
-  // function will recompute the whole tranpose from the matrix. In particular,
+  // function will recompute the whole transpose from the matrix. In particular,
   // do not call GetTransposeSparseMatrix() while you modify the matrix returned
   // by GetMutableTransposeSparseMatrix() otherwise all your changes will be
   // lost.
@@ -570,7 +570,7 @@ class LinearProgram {
   SparseMatrix matrix_;
 
   // The transpose of matrix_. This will be lazily recomputed by
-  // GetTransposeSparseMatrix() if tranpose_matrix_is_consistent_ is false.
+  // GetTransposeSparseMatrix() if transpose_matrix_is_consistent_ is false.
   mutable SparseMatrix transpose_matrix_;
 
   // Constraint related quantities.

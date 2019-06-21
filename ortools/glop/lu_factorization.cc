@@ -388,6 +388,10 @@ bool LuFactorization::LeftSolveLWithNonZeros(
   }
 }
 
+void LuFactorization::LeftSolveLWithNonZeros(ScatteredRow* y) const {
+  LeftSolveLWithNonZeros(y, nullptr);
+}
+
 ColIndex LuFactorization::LeftSolveUForUnitRow(ColIndex col,
                                                ScatteredRow* y) const {
   SCOPED_TIME_STAT(&stats_);

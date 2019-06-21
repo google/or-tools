@@ -99,6 +99,7 @@ class LuFactorization {
   // then false is returned.
   bool LeftSolveLWithNonZeros(ScatteredRow* y,
                               ScatteredColumn* result_before_permutation) const;
+  void LeftSolveLWithNonZeros(ScatteredRow* y) const;
 
   // Specialized version of RightSolveLWithNonZeros() that takes a SparseColumn
   // or a ScatteredColumn as input. non_zeros will either be cleared or set to

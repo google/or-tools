@@ -709,9 +709,9 @@ void ProportionalColumnPreprocessor::RecoverSolution(
     const ColIndex representative = merged_columns_[col];
     if (representative != kInvalidCol) {
       if (IsFinite(distance_to_bound[representative])) {
-        // If the distance if finite, then each variable is set to its
+        // If the distance is finite, then each variable is set to its
         // corresponding bound (the one from which the distance is computed) and
-        // is then changed by has much as possible until the distance is zero.
+        // is then changed by as much as possible until the distance is zero.
         const Fractional bound_factor =
             column_factors_[col] / column_factors_[representative];
         const Fractional scaled_distance =

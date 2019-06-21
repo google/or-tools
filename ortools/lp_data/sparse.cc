@@ -859,16 +859,26 @@ void TriangularMatrix::TransposeLowerSolveInternal(DenseColumn* rhs) const {
   }
 }
 
-// TODO(user): exploit all_diagonal_coefficients_are_one_ when true in
-// all the hyper-sparse functions.
 void TriangularMatrix::HyperSparseSolve(DenseColumn* rhs,
                                         RowIndexVector* non_zero_rows) const {
+  if (all_diagonal_coefficients_are_one_) {
+    HyperSparseSolveInternal<true>(rhs, non_zero_rows);
+  } else {
+    HyperSparseSolveInternal<false>(rhs, non_zero_rows);
+  }
+}
+
+template <bool diagonal_of_ones>
+void TriangularMatrix::HyperSparseSolveInternal(
+    DenseColumn* rhs, RowIndexVector* non_zero_rows) const {
   RETURN_IF_NULL(rhs);
   int new_size = 0;
   for (const RowIndex row : *non_zero_rows) {
     if ((*rhs)[row] == 0.0) continue;
     const ColIndex row_as_col = RowToColIndex(row);
-    const Fractional coeff = (*rhs)[row] / diagonal_coefficients_[row_as_col];
+    const Fractional coeff =
+        diagonal_of_ones ? (*rhs)[row]
+                         : (*rhs)[row] / diagonal_coefficients_[row_as_col];
     (*rhs)[row] = coeff;
     for (const EntryIndex i : Column(row_as_col)) {
       (*rhs)[EntryRow(i)] -= coeff * EntryCoefficient(i);
@@ -881,12 +891,24 @@ void TriangularMatrix::HyperSparseSolve(DenseColumn* rhs,
 
 void TriangularMatrix::HyperSparseSolveWithReversedNonZeros(
     DenseColumn* rhs, RowIndexVector* non_zero_rows) const {
+  if (all_diagonal_coefficients_are_one_) {
+    HyperSparseSolveWithReversedNonZerosInternal<true>(rhs, non_zero_rows);
+  } else {
+    HyperSparseSolveWithReversedNonZerosInternal<false>(rhs, non_zero_rows);
+  }
+}
+
+template <bool diagonal_of_ones>
+void TriangularMatrix::HyperSparseSolveWithReversedNonZerosInternal(
+    DenseColumn* rhs, RowIndexVector* non_zero_rows) const {
   RETURN_IF_NULL(rhs);
   int new_start = non_zero_rows->size();
   for (const RowIndex row : Reverse(*non_zero_rows)) {
     if ((*rhs)[row] == 0.0) continue;
     const ColIndex row_as_col = RowToColIndex(row);
-    const Fractional coeff = (*rhs)[row] / diagonal_coefficients_[row_as_col];
+    const Fractional coeff =
+        diagonal_of_ones ? (*rhs)[row]
+                         : (*rhs)[row] / diagonal_coefficients_[row_as_col];
     (*rhs)[row] = coeff;
     for (const EntryIndex i : Column(row_as_col)) {
       (*rhs)[EntryRow(i)] -= coeff * EntryCoefficient(i);
@@ -900,6 +922,16 @@ void TriangularMatrix::HyperSparseSolveWithReversedNonZeros(
 
 void TriangularMatrix::TransposeHyperSparseSolve(
     DenseColumn* rhs, RowIndexVector* non_zero_rows) const {
+  if (all_diagonal_coefficients_are_one_) {
+    TransposeHyperSparseSolveInternal<true>(rhs, non_zero_rows);
+  } else {
+    TransposeHyperSparseSolveInternal<false>(rhs, non_zero_rows);
+  }
+}
+
+template <bool diagonal_of_ones>
+void TriangularMatrix::TransposeHyperSparseSolveInternal(
+    DenseColumn* rhs, RowIndexVector* non_zero_rows) const {
   RETURN_IF_NULL(rhs);
   int new_size = 0;
   for (const RowIndex row : *non_zero_rows) {
@@ -908,7 +940,8 @@ void TriangularMatrix::TransposeHyperSparseSolve(
     for (const EntryIndex i : Column(row_as_col)) {
       sum -= EntryCoefficient(i) * (*rhs)[EntryRow(i)];
     }
-    (*rhs)[row] = sum / diagonal_coefficients_[row_as_col];
+    (*rhs)[row] =
+        diagonal_of_ones ? sum : sum / diagonal_coefficients_[row_as_col];
     if (sum != 0.0) {
       (*non_zero_rows)[new_size] = row;
       ++new_size;
@@ -918,6 +951,18 @@ void TriangularMatrix::TransposeHyperSparseSolve(
 }
 
 void TriangularMatrix::TransposeHyperSparseSolveWithReversedNonZeros(
+    DenseColumn* rhs, RowIndexVector* non_zero_rows) const {
+  if (all_diagonal_coefficients_are_one_) {
+    TransposeHyperSparseSolveWithReversedNonZerosInternal<true>(rhs,
+                                                                non_zero_rows);
+  } else {
+    TransposeHyperSparseSolveWithReversedNonZerosInternal<false>(rhs,
+                                                                 non_zero_rows);
+  }
+}
+
+template <bool diagonal_of_ones>
+void TriangularMatrix::TransposeHyperSparseSolveWithReversedNonZerosInternal(
     DenseColumn* rhs, RowIndexVector* non_zero_rows) const {
   RETURN_IF_NULL(rhs);
   int new_start = non_zero_rows->size();
@@ -932,7 +977,8 @@ void TriangularMatrix::TransposeHyperSparseSolveWithReversedNonZeros(
     for (; i >= i_end; --i) {
       sum -= EntryCoefficient(i) * (*rhs)[EntryRow(i)];
     }
-    (*rhs)[row] = sum / diagonal_coefficients_[row_as_col];
+    (*rhs)[row] =
+        diagonal_of_ones ? sum : sum / diagonal_coefficients_[row_as_col];
     if (sum != 0.0) {
       --new_start;
       (*non_zero_rows)[new_start] = row;

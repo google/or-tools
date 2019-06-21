@@ -180,9 +180,7 @@ class ReducedCosts {
   bool IsValidPrimalEnteringCandidate(ColIndex col) const;
 
   // Visible for testing.
-  const DenseRow& GetCostPerturbations() const {
-    return objective_perturbation_;
-  }
+  const DenseRow& GetCostPerturbations() const { return cost_perturbations_; }
 
  private:
   // Statistics about this class.
@@ -256,10 +254,7 @@ class ReducedCosts {
 
   // Perturbations to the objective function. This may be introduced to
   // counter degenerecency. It will be removed at the end of the algorithm.
-  //
-  // TODO(user): rename this cost_perturbations_ to be more consistent with
-  // the literature.
-  DenseRow objective_perturbation_;
+  DenseRow cost_perturbations_;
 
   // Reduced costs of the relevant columns of A.
   DenseRow reduced_costs_;

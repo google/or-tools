@@ -379,11 +379,6 @@ std::string Summarize(const std::string& input) {
                       input.substr(input.size() - half, half));
 }
 
-bool IsPositive(IntegerVariable v, Model* m) {
-  IntegerTrail* const integer_trail = m->GetOrCreate<IntegerTrail>();
-  return integer_trail->LevelZeroLowerBound(v) >= 0;
-}
-
 }  // namespace.
 
 // =============================================================================
@@ -733,17 +728,46 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
     if (HasEnforcementLiteral(ct)) return;
     if (ct.int_prod().vars_size() != 2) return;
 
-    const int target = ct.int_prod().target();
-    const IntegerVariable v0 = mapping->Integer(ct.int_prod().vars(0));
-    const IntegerVariable v1 = mapping->Integer(ct.int_prod().vars(1));
+    // Constraint is z == x * y.
 
-    if (v0 == v1 && IsPositive(v0, m)) {
+    IntegerVariable z = mapping->Integer(ct.int_prod().target());
+    IntegerVariable x = mapping->Integer(ct.int_prod().vars(0));
+    IntegerVariable y = mapping->Integer(ct.int_prod().vars(1));
+
+    IntegerTrail* const integer_trail = m->GetOrCreate<IntegerTrail>();
+    IntegerValue x_lb = integer_trail->LowerBound(x);
+    IntegerValue x_ub = integer_trail->UpperBound(x);
+    IntegerValue y_lb = integer_trail->LowerBound(y);
+    IntegerValue y_ub = integer_trail->UpperBound(y);
+
+    if (x == y) {
+      // We currently only support variables with non-negative domains.
+      if (x_lb < 0 && x_ub > 0) return;
+
+      // Change the sigh of x if its domain is non-positive.
+      if (x_ub <= 0) {
+        x = NegationOf(x);
+      }
+
+      relaxation->cut_generators.push_back(CreateSquareCutGenerator(z, x, m));
+    } else {
+      // We currently only support variables with non-negative domains.
+      if (x_lb < 0 && x_ub > 0) return;
+      if (y_lb < 0 && y_ub > 0) return;
+
+      // Change signs to return to the case where all variables are a domain
+      // with non negative values only.
+      if (x_ub <= 0) {
+        x = NegationOf(x);
+        z = NegationOf(z);
+      }
+      if (y_ub <= 0) {
+        y = NegationOf(y);
+        z = NegationOf(z);
+      }
+
       relaxation->cut_generators.push_back(
-          CreateSquareCutGenerator(mapping->Integer(target), v0, m));
-    } else if (IsPositive(v0, m) && IsPositive(v1, m)) {
-      relaxation->cut_generators.push_back(
-          CreatePositiveMultiplicationCutGenerator(mapping->Integer(target), v0,
-                                                   v1, m));
+          CreatePositiveMultiplicationCutGenerator(z, x, y, m));
     }
   }
 }

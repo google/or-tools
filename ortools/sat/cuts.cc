@@ -784,140 +784,157 @@ void IntegerRoundingCut(RoundingOptions options, std::vector<double> lp_values,
   DivideByGCD(cut);
 }
 
-CutGenerator CreatePositiveMultiplicationCutGenerator(
-    IntegerVariable target_var, IntegerVariable v1, IntegerVariable v2,
-    Model* model) {
+CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
+                                                      IntegerVariable x,
+                                                      IntegerVariable y,
+                                                      Model* model) {
   CutGenerator result;
-  result.vars = {target_var, v1, v2};
+  result.vars = {z, x, y};
 
-  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
   result.generate_cuts =
-      [target_var, v1, v2, model, integer_trail](
+      [z, x, y, integer_trail](
           const gtl::ITIVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
-        const int64 v1_ub = integer_trail->LevelZeroUpperBound(v1).value();
-        const int64 v1_lb = integer_trail->LevelZeroLowerBound(v1).value();
-        const int64 v2_ub = integer_trail->LevelZeroUpperBound(v2).value();
-        const int64 v2_lb = integer_trail->LevelZeroLowerBound(v2).value();
+        const int64 x_lb = integer_trail->LevelZeroLowerBound(x).value();
+        const int64 x_ub = integer_trail->LevelZeroUpperBound(x).value();
+        const int64 y_lb = integer_trail->LevelZeroLowerBound(y).value();
+        const int64 y_ub = integer_trail->LevelZeroUpperBound(y).value();
 
-        const int64 kMaxSafeInteger = int64{9007199254740991};  // 2 ^ 53 - 1.
+        // TODO(user): Compute a better bound (int_max / 4 ?).
+        const int64 kMaxSafeInteger = (int64{1} << 53) - 1;
 
-        if (CapProd(v1_ub, v2_ub) >= kMaxSafeInteger) {
+        if (CapProd(x_ub, y_ub) >= kMaxSafeInteger) {
           VLOG(3) << "Potential overflow in PositiveMultiplicationCutGenerator";
           return;
         }
 
-        const double target_value = lp_values[target_var];
-        const double v1_value = lp_values[v1];
-        const double v2_value = lp_values[v2];
+        const double x_value = lp_values[x];
+        const double y_value = lp_values[y];
+        const double z_value = lp_values[z];
 
-        if (target_value <= v1_value * v2_lb + v2_value * v1_lb -
-                                v1_lb * v2_lb - kMinCutViolation) {
-          // cut: target >= v1 * v2_lb + v2 * v2_lb - v1_lb * v2_lb
-          LinearConstraint cut;
-          cut.vars.push_back(target_var);
-          cut.coeffs.push_back(IntegerValue(1));
-          if (v2_lb != 0) {
-            cut.vars.push_back(v1);
-            cut.coeffs.push_back(IntegerValue(-v2_lb));
+        // TODO: As the bounds change monotonically, these cuts dominate any
+        // previous one.  try to keep a reference to the cut and replace it.
+        // Alternatively, add an API for a level-zero bound change callback.
+
+        // We implement the McCormick relaxation of bilinear constraints.
+
+        // Cut -z + x_coeff * x + y_coeff* y <= rhs
+        auto try_add_above_cut = [manager, z_value, x_value, y_value, x, y, z,
+                                  lp_values](int64 x_coeff, int64 y_coeff,
+                                             int64 rhs) {
+          if (-z_value + x_value * x_coeff + y_value * y_coeff >=
+              rhs + kMinCutViolation) {
+            // cut: -z + x * x_coeff + y * y_coeff <= rhs
+            LinearConstraint cut;
+            cut.vars.push_back(z);
+            cut.coeffs.push_back(IntegerValue(-1));
+            if (x_coeff != 0) {
+              cut.vars.push_back(x);
+              cut.coeffs.push_back(IntegerValue(x_coeff));
+            }
+            if (y_coeff != 0) {
+              cut.vars.push_back(y);
+              cut.coeffs.push_back(IntegerValue(y_coeff));
+            }
+            cut.lb = kMinIntegerValue;
+            cut.ub = IntegerValue(rhs);
+            manager->AddCut(cut, "PositiveProduct", lp_values);
           }
-          if (v1_lb != 0) {
-            cut.vars.push_back(v2);
-            cut.coeffs.push_back(IntegerValue(-v1_lb));
+        };
+
+        // Cut -z + x_coeff * x + y_coeff* y >= rhs
+        auto try_add_below_cut = [manager, z_value, x_value, y_value, x, y, z,
+                                  lp_values](int64 x_coeff, int64 y_coeff,
+                                             int64 rhs) {
+          if (-z_value + x_value * x_coeff + y_value * y_coeff <=
+              rhs - kMinCutViolation) {
+            // cut: -z + x * x_coeff + y * y_coeff >= rhs
+            LinearConstraint cut;
+            cut.vars.push_back(z);
+            cut.coeffs.push_back(IntegerValue(-1));
+            if (x_coeff != 0) {
+              cut.vars.push_back(x);
+              cut.coeffs.push_back(IntegerValue(x_coeff));
+            }
+            if (y_coeff != 0) {
+              cut.vars.push_back(y);
+              cut.coeffs.push_back(IntegerValue(y_coeff));
+            }
+            cut.lb = IntegerValue(rhs);
+            cut.ub = kMaxIntegerValue;
+            manager->AddCut(cut, "PositiveProduct", lp_values);
           }
-          cut.lb = IntegerValue(-v1_lb * v2_lb);
-          cut.ub = kMaxIntegerValue;
-          manager->AddCut(cut, "PositiveProduct", lp_values);
-        }
+        };
 
-        if (target_value >= v2_value * v1_ub + kMinCutViolation) {
-          // cut: target <= v2 * v1_ub.
-          LinearConstraint cut;
-          cut.vars.push_back(target_var);
-          cut.coeffs.push_back(IntegerValue(1));
-          cut.vars.push_back(v2);
-          cut.coeffs.push_back(IntegerValue(-v1_ub));
-          cut.lb = kMinIntegerValue;
-          cut.ub = IntegerValue(0);
-          manager->AddCut(cut, "PositiveProduct", lp_values);
-        }
+        // McCormick cuts.
+        try_add_above_cut(y_lb, x_lb, x_lb * y_lb);
+        try_add_above_cut(y_ub, x_ub, x_ub * y_ub);
 
-        if (target_value >= v1_value * v2_ub + kMinCutViolation) {
-          // cut: target <= v1 * v2_ub.
-          LinearConstraint cut;
-          cut.vars.push_back(target_var);
-          cut.coeffs.push_back(IntegerValue(1));
-          cut.vars.push_back(v1);
-          cut.coeffs.push_back(IntegerValue(-v2_ub));
-          cut.lb = kMinIntegerValue;
-          cut.ub = IntegerValue(0);
-          manager->AddCut(cut, "PositiveProduct", lp_values);
-        }
+        try_add_below_cut(y_ub, x_lb, x_lb * y_ub);
+        try_add_below_cut(y_lb, x_ub, x_ub * y_lb);
       };
 
   return result;
 }
 
-CutGenerator CreateSquareCutGenerator(IntegerVariable target_var,
-                                      IntegerVariable int_var, Model* model) {
+CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
+                                      Model* model) {
   CutGenerator result;
-  result.vars = {target_var, int_var};
+  result.vars = {y, x};
 
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   result.generate_cuts =
-      [target_var, int_var, model, integer_trail](
+      [y, x, model, integer_trail](
           const gtl::ITIVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
-        const int64 var_ub =
-            integer_trail->LevelZeroUpperBound(int_var).value();
-        const int64 var_lb =
-            integer_trail->LevelZeroLowerBound(int_var).value();
+        const int64 x_ub = integer_trail->LevelZeroUpperBound(x).value();
+        const int64 x_lb = integer_trail->LevelZeroLowerBound(x).value();
 
-        if (var_lb == var_ub) return;
+        if (x_lb == x_ub) return;
 
         // Check for potential overflows.
-        if (var_ub > int64{1000000000}) return;
-        DCHECK_GE(var_lb, 0);
+        if (x_ub > int64{1000000000}) return;
+        DCHECK_GE(x_lb, 0);
 
-        const double target_value = lp_values[target_var];
-        const double var_value = lp_values[int_var];
+        const double y_value = lp_values[y];
+        const double x_value = lp_values[x];
 
         // First cut: target should be below the line:
-        //     (var_lb, val_lb ^ 2) to (var_ub, var_ub ^ 2).
+        //     (x_lb, val_lb ^ 2) to (x_ub, x_ub ^ 2).
         // The slope of that line is (ub^2 - lb^2) / (ub - lb) = ub + lb.
-        const int64 target_lb = var_lb * var_lb;
-        const int64 above_slope = var_ub + var_lb;
-        const double max_target =
-            target_lb + above_slope * (var_value - var_lb);
-        if (target_value >= max_target + kMinCutViolation) {
-          // cut: target <= (var_lb + var_ub) * int_var - var_lb * var_ub
+        const int64 y_lb = x_lb * x_lb;
+        const int64 above_slope = x_ub + x_lb;
+        const double max_y = y_lb + above_slope * (x_value - x_lb);
+        if (y_value >= max_y + kMinCutViolation) {
+          // cut: target <= (x_lb + x_ub) * x - x_lb * x_ub
           LinearConstraint above_cut;
-          above_cut.vars.push_back(target_var);
+          above_cut.vars.push_back(y);
           above_cut.coeffs.push_back(IntegerValue(1));
-          above_cut.vars.push_back(int_var);
+          above_cut.vars.push_back(x);
           above_cut.coeffs.push_back(IntegerValue(-above_slope));
           above_cut.lb = kMinIntegerValue;
-          above_cut.ub = IntegerValue(-var_lb * var_ub);
+          above_cut.ub = IntegerValue(-x_lb * x_ub);
           manager->AddCut(above_cut, "SquareUpper", lp_values);
         }
 
         // Second cut: target should be above all the lines
         //     (value, value ^ 2) to (value + 1, (value + 1) ^ 2)
         // The slope of that line is 2 * value + 1
-        const int64 var_floor = static_cast<int64>(std::floor(var_value));
-        const int64 below_slope = 2 * var_floor + 1;
-        const double min_target =
-            below_slope * var_value - var_floor - var_floor * var_floor;
-        if (min_target >= target_value + kMinCutViolation) {
-          // cut: target >= below_slope * (int_var - var_floor) +
-          //                var_floor * var_floor
-          //    : target >= below_slope * int_var - var_floor ^ 2 - var_floor
+        const int64 x_floor = static_cast<int64>(std::floor(x_value));
+        const int64 below_slope = 2 * x_floor + 1;
+        const double min_y =
+            below_slope * x_value - x_floor - x_floor * x_floor;
+        if (min_y >= y_value + kMinCutViolation) {
+          // cut: target >= below_slope * (x - x_floor) +
+          //                x_floor * x_floor
+          //    : target >= below_slope * x - x_floor ^ 2 - x_floor
           LinearConstraint below_cut;
-          below_cut.vars.push_back(target_var);
+          below_cut.vars.push_back(y);
           below_cut.coeffs.push_back(IntegerValue(1));
-          below_cut.vars.push_back(int_var);
+          below_cut.vars.push_back(x);
           below_cut.coeffs.push_back(-IntegerValue(below_slope));
-          below_cut.lb = IntegerValue(-var_floor - var_floor * var_floor);
+          below_cut.lb = IntegerValue(-x_floor - x_floor * x_floor);
           below_cut.ub = kMaxIntegerValue;
           manager->AddCut(below_cut, "SquareLower", lp_values);
         }

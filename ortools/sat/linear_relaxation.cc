@@ -249,6 +249,8 @@ void AppendEnforcedUpperBound(const Literal enforcing_lit,
 // constraints. The highest linearization_level is, the more types of constraint
 // we encode. This method should be called only for linearization_level > 0.
 //
+// Note: IntProd is linearized dynamically using the cut generators.
+//
 // TODO(user): In full generality, we could encode all the constraint as an LP.
 // TODO(user,user): Add unit tests for this method.
 void TryToLinearizeConstraint(const CpModelProto& model_proto,
@@ -320,84 +322,6 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
         NegationOf(mapping->Integers(ct.int_min().vars()));
     AppendMaxRelaxation(negative_target, negative_vars, linearization_level,
                         model, relaxation);
-
-  } else if (ct.constraint_case() ==
-             ConstraintProto::ConstraintCase::kIntProd) {
-    if (HasEnforcementLiteral(ct)) return;
-    if (ct.int_prod().vars_size() != 2) return;
-
-    IntegerVariable target = mapping->Integer(ct.int_prod().target());
-    IntegerVariable v0 = mapping->Integer(ct.int_prod().vars(0));
-    IntegerVariable v1 = mapping->Integer(ct.int_prod().vars(1));
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-
-    // We just linearize x = y^2 by x >= y which is far from ideal but at
-    // least pushes x when y moves away from zero. Note that if y is negative,
-    // we should probably also add x >= -y, but then this do not happen in
-    // our test set.
-    if (v0 == v1) {  // target = v0 ^ 2
-      if (integer_trail->UpperBound(v0) <= 0) {
-        v0 = NegationOf(v0);
-      }
-
-      const IntegerValue var_lb = integer_trail->LowerBound(v0);
-      const IntegerValue var_ub = integer_trail->UpperBound(v0);
-      CHECK_GE(var_lb, 0);
-
-      // target >= (2 * var_lb + 1) * v0 - var_lb - var_lb ^ 2.
-      LinearConstraintBuilder lc_below(model, -var_lb - var_lb * var_lb,
-                                       kMaxIntegerValue);
-      lc_below.AddTerm(target, IntegerValue(1));
-      lc_below.AddTerm(v0, 2 * var_lb + 1);
-      relaxation->linear_constraints.push_back(lc_below.Build());
-
-      // target <= (var_lb + var_ub) * v0 - var_lb * var_ub
-      LinearConstraintBuilder lc_above(model, kMinIntegerValue,
-                                       -var_lb * var_ub);
-      lc_above.AddTerm(target, IntegerValue(1));
-      lc_above.AddTerm(v0, -(var_lb + var_ub));
-      relaxation->linear_constraints.push_back(lc_above.Build());
-    } else {  // target = v0 * v1
-      // Change signs if needed.
-      if (integer_trail->UpperBound(v0) <= 0) {
-        v0 = NegationOf(v0);
-        target = NegationOf(target);
-      }
-      if (integer_trail->UpperBound(v1) <= 0) {
-        v1 = NegationOf(v1);
-        target = NegationOf(target);
-      }
-
-      const IntegerValue v0_lb = integer_trail->LowerBound(v0);
-      const IntegerValue v0_ub = integer_trail->UpperBound(v0);
-      const IntegerValue v1_lb = integer_trail->LowerBound(v1);
-      const IntegerValue v1_ub = integer_trail->UpperBound(v1);
-      CHECK_GE(v0_lb, 0);
-      CHECK_GE(v1_lb, 0);
-
-      // target >= v1 * v0_lb + v0 * v1_lb - v0_lb * v1_lb
-      LinearConstraintBuilder lc_below(model, -v0_lb * v1_lb, kMaxIntegerValue);
-      lc_below.AddTerm(target, IntegerValue(1));
-      if (v1_lb > 0) {
-        lc_below.AddTerm(v0, v1_lb);
-      }
-      if (v0_lb > 0) {
-        lc_below.AddTerm(v1, v0_lb);
-      }
-      relaxation->linear_constraints.push_back(lc_below.Build());
-
-      // target <= v0 * v1_ub
-      LinearConstraintBuilder lc_v0(model, kMinIntegerValue, IntegerValue(0));
-      lc_v0.AddTerm(target, IntegerValue(1));
-      lc_v0.AddTerm(v0, -v1_ub);
-      relaxation->linear_constraints.push_back(lc_v0.Build());
-
-      // target <= v1 * v0_ub
-      LinearConstraintBuilder lc_v1(model, kMinIntegerValue, IntegerValue(0));
-      lc_v1.AddTerm(target, IntegerValue(1));
-      lc_v1.AddTerm(v1, -v0_ub);
-      relaxation->linear_constraints.push_back(lc_v1.Build());
-    }
   } else if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
     AppendLinearConstraintRelaxation(ct, linearization_level, *model,
                                      relaxation);
