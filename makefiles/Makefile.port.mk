@@ -135,7 +135,13 @@ ifeq ($(SYSTEM),win)
         VISUAL_STUDIO_MAJOR = 15
         VS_RELEASE = v141
       else
-        $(warning "Unrecognized visual studio version")
+        ifeq ("$(VisualStudioVersion)","16.0")
+          VISUAL_STUDIO_YEAR = 2019
+          VISUAL_STUDIO_MAJOR = 16
+          VS_RELEASE = v142
+        else
+          $(warning "Unrecognized visual studio version")
+        endif
       endif
     endif
   endif
