@@ -255,13 +255,13 @@ CutGenerator CreateKnapsackCoverCutGenerator(
     const std::vector<LinearConstraint>& base_constraints,
     const std::vector<IntegerVariable>& vars, Model* model);
 
-// A cut generator for z = x * y (x and y >= 0)
+// A cut generator for z = x * y (x and y >= 0).
 CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
                                                       IntegerVariable x,
                                                       IntegerVariable y,
                                                       Model* model);
 
-// A cut generator for y = x ^ 2. (x >= 0).
+// A cut generator for y = x ^ 2 (x >= 0).
 // It will dynamically add a linear inequality to push y closer to the parabola.
 CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
                                       Model* model);

@@ -809,23 +809,21 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
           return;
         }
 
-        const double x_value = lp_values[x];
-        const double y_value = lp_values[y];
-        const double z_value = lp_values[z];
+        const double x_lp_value = lp_values[x];
+        const double y_lp_value = lp_values[y];
+        const double z_lp_value = lp_values[z];
 
-        // TODO: As the bounds change monotonically, these cuts dominate any
-        // previous one.  try to keep a reference to the cut and replace it.
-        // Alternatively, add an API for a level-zero bound change callback.
-
-        // We implement the McCormick relaxation of bilinear constraints.
+        // TODO(user): As the bounds change monotonically, these cuts
+        // dominate any previous one.  try to keep a reference to the cut and
+        // replace it. Alternatively, add an API for a level-zero bound change
+        // callback.
 
         // Cut -z + x_coeff * x + y_coeff* y <= rhs
-        auto try_add_above_cut = [manager, z_value, x_value, y_value, x, y, z,
-                                  lp_values](int64 x_coeff, int64 y_coeff,
-                                             int64 rhs) {
-          if (-z_value + x_value * x_coeff + y_value * y_coeff >=
+        auto try_add_above_cut = [manager, z_lp_value, x_lp_value, y_lp_value,
+                                  x, y, z, lp_values](
+                                     int64 x_coeff, int64 y_coeff, int64 rhs) {
+          if (-z_lp_value + x_lp_value * x_coeff + y_lp_value * y_coeff >=
               rhs + kMinCutViolation) {
-            // cut: -z + x * x_coeff + y * y_coeff <= rhs
             LinearConstraint cut;
             cut.vars.push_back(z);
             cut.coeffs.push_back(IntegerValue(-1));
@@ -844,12 +842,11 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
         };
 
         // Cut -z + x_coeff * x + y_coeff* y >= rhs
-        auto try_add_below_cut = [manager, z_value, x_value, y_value, x, y, z,
-                                  lp_values](int64 x_coeff, int64 y_coeff,
-                                             int64 rhs) {
-          if (-z_value + x_value * x_coeff + y_value * y_coeff <=
+        auto try_add_below_cut = [manager, z_lp_value, x_lp_value, y_lp_value,
+                                  x, y, z, lp_values](
+                                     int64 x_coeff, int64 y_coeff, int64 rhs) {
+          if (-z_lp_value + x_lp_value * x_coeff + y_lp_value * y_coeff <=
               rhs - kMinCutViolation) {
-            // cut: -z + x * x_coeff + y * y_coeff >= rhs
             LinearConstraint cut;
             cut.vars.push_back(z);
             cut.coeffs.push_back(IntegerValue(-1));
@@ -867,10 +864,15 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
           }
         };
 
-        // McCormick cuts.
+        // McCormick relaxation of bilinear constraints. These 4 cuts are the
+        // exact facets of the x * y polyhedron for a bounded x and y.
+        //
+        // Each cut correspond to plane that contains two of the line
+        // (x=x_lb), (x=x_ub), (y=y_lb), (y=y_ub). The easiest to
+        // understand them is to draw the x*y curves and see the 4
+        // planes that correspond to the convex hull of the graph.
         try_add_above_cut(y_lb, x_lb, x_lb * y_lb);
         try_add_above_cut(y_ub, x_ub, x_ub * y_ub);
-
         try_add_below_cut(y_ub, x_lb, x_lb * y_ub);
         try_add_below_cut(y_lb, x_ub, x_ub * y_lb);
       };
@@ -885,7 +887,7 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
 
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   result.generate_cuts =
-      [y, x, model, integer_trail](
+      [y, x, integer_trail](
           const gtl::ITIVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
         const int64 x_ub = integer_trail->LevelZeroUpperBound(x).value();
@@ -894,14 +896,14 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
         if (x_lb == x_ub) return;
 
         // Check for potential overflows.
-        if (x_ub > int64{1000000000}) return;
+        if (x_ub > (int64{1} << 31)) return;
         DCHECK_GE(x_lb, 0);
 
         const double y_value = lp_values[y];
         const double x_value = lp_values[x];
 
         // First cut: target should be below the line:
-        //     (x_lb, val_lb ^ 2) to (x_ub, x_ub ^ 2).
+        //     (x_lb, x_lb ^ 2) to (x_ub, x_ub ^ 2).
         // The slope of that line is (ub^2 - lb^2) / (ub - lb) = ub + lb.
         const int64 y_lb = x_lb * x_lb;
         const int64 above_slope = x_ub + x_lb;
@@ -921,14 +923,16 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
         // Second cut: target should be above all the lines
         //     (value, value ^ 2) to (value + 1, (value + 1) ^ 2)
         // The slope of that line is 2 * value + 1
+        //
+        // Note that we only add one of these cuts. The one for x_lp_value in
+        // [value, value + 1].
         const int64 x_floor = static_cast<int64>(std::floor(x_value));
         const int64 below_slope = 2 * x_floor + 1;
         const double min_y =
             below_slope * x_value - x_floor - x_floor * x_floor;
         if (min_y >= y_value + kMinCutViolation) {
-          // cut: target >= below_slope * (x - x_floor) +
-          //                x_floor * x_floor
-          //    : target >= below_slope * x - x_floor ^ 2 - x_floor
+          // cut: y >= below_slope * (x - x_floor) + x_floor ^ 2
+          //    : y >= below_slope * x - x_floor ^ 2 - x_floor
           LinearConstraint below_cut;
           below_cut.vars.push_back(y);
           below_cut.coeffs.push_back(IntegerValue(1));

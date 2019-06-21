@@ -24,12 +24,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/memory/memory.h"
-#include "glog/vlog_is_on.h"
-#include "ortools/sat/cuts.h"
-#include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/util/saturated_arithmetic.h"
-
 #if !defined(__PORTABLE_PLATFORM__)
 #include "absl/synchronization/notification.h"
 #include "google/protobuf/text_format.h"
@@ -37,10 +31,12 @@
 #endif  // __PORTABLE_PLATFORM__
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/synchronization/mutex.h"
+#include "glog/vlog_is_on.h"
 #include "ortools/base/cleanup.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/int_type.h"
@@ -63,6 +59,7 @@
 #include "ortools/sat/cp_model_presolve.h"
 #include "ortools/sat/cp_model_search.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/cuts.h"
 #include "ortools/sat/drat_checker.h"
 #include "ortools/sat/drat_proof_handler.h"
 #include "ortools/sat/integer.h"
@@ -76,6 +73,7 @@
 #include "ortools/sat/probing.h"
 #include "ortools/sat/rins.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/simplification.h"
 #include "ortools/sat/synchronization.h"
