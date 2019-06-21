@@ -867,7 +867,6 @@ std::string SolutionString(
     solution_string.append(SolutionString(output_spec, value_func));
     solution_string.append("\n");
   }
-  solution_string.append("----------");
   return solution_string;
 }
 
@@ -877,6 +876,21 @@ void LogInFlatzincFormat(const std::string& multi_line_input) {
   for (const std::string& line : lines) {
     FZLOG << line << FZENDL;
   }
+}
+
+void OutputFlatzincStats(const CpSolverResponse &response) {
+  std::cout << "%%%mzn-stat objective=" << response.objective_value()
+            << std::endl;
+  std::cout << "%%%mzn-stat objectiveBound=" << response.best_objective_bound()
+            << std::endl;
+  std::cout << "%%%mzn-stat boolVariables=" << response.num_booleans()
+            << std::endl;
+  std::cout << "%%%mzn-stat failures=" << response.num_conflicts() << std::endl;
+  std::cout << "%%%mzn-stat propagations="
+            << response.num_binary_propagations() +
+                   response.num_integer_propagations()
+            << std::endl;
+  std::cout << "%%%mzn-stat solveTime=" << response.wall_time() << std::endl;
 }
 
 }  // namespace
@@ -995,12 +1009,16 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   // We only need an observer if 'p.all_solutions' is true.
   std::function<void(const CpSolverResponse&)> solution_observer = nullptr;
   if (p.display_all_solutions && FLAGS_use_flatzinc_format) {
-    solution_observer = [&fz_model, &m](const CpSolverResponse& r) {
+    solution_observer = [&fz_model, &m, &p](const CpSolverResponse &r) {
       const std::string solution_string =
           SolutionString(fz_model, [&m, &r](fz::IntegerVariable* v) {
             return r.solution(gtl::FindOrDie(m.fz_var_to_index, v));
           });
       std::cout << solution_string << std::endl;
+      if (p.display_statistics && FLAGS_use_flatzinc_format) {
+        OutputFlatzincStats(r);
+      }
+      std::cout << "----------" << std::endl;      
     };
   }
 
@@ -1030,9 +1048,9 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
               return response.solution(gtl::FindOrDie(m.fz_var_to_index, v));
             });
         std::cout << solution_string << std::endl;
+        std::cout << "----------" << std::endl;
       }
-      if (response.status() == CpSolverStatus::OPTIMAL ||
-          response.all_solutions_were_found()) {
+      if (response.status() == CpSolverStatus::OPTIMAL) {
         std::cout << "==========" << std::endl;
       }
     } else if (response.status() == CpSolverStatus::INFEASIBLE) {
@@ -1041,7 +1059,11 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
       std::cout << "%% TIMEOUT" << std::endl;
     }
     if (p.display_statistics) {
-      LogInFlatzincFormat(CpSolverResponseStats(response));
+      if (FLAGS_use_flatzinc_format) {
+        OutputFlatzincStats(response);
+      } else {
+        LOG(INFO) << CpSolverResponseStats(response);
+      }
     }
   }
 }
