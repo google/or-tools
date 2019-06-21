@@ -1058,12 +1058,8 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     } else {
       std::cout << "%% TIMEOUT" << std::endl;
     }
-    if (p.display_statistics) {
-      if (FLAGS_use_flatzinc_format) {
-        OutputFlatzincStats(response);
-      } else {
-        LOG(INFO) << CpSolverResponseStats(response);
-      }
+    if (p.display_statistics && FLAGS_use_flatzinc_format) {
+      OutputFlatzincStats(response);
     }
   }
 }
