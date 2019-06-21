@@ -879,18 +879,18 @@ void LogInFlatzincFormat(const std::string& multi_line_input) {
 }
 
 void OutputFlatzincStats(const CpSolverResponse &response) {
-  std::cout << "%%%mzn-stat objective=" << response.objective_value()
+  std::cout << "%%%mzn-stat: objective=" << response.objective_value()
             << std::endl;
-  std::cout << "%%%mzn-stat objectiveBound=" << response.best_objective_bound()
+  std::cout << "%%%mzn-stat: objectiveBound=" << response.best_objective_bound()
             << std::endl;
-  std::cout << "%%%mzn-stat boolVariables=" << response.num_booleans()
+  std::cout << "%%%mzn-stat: boolVariables=" << response.num_booleans()
             << std::endl;
-  std::cout << "%%%mzn-stat failures=" << response.num_conflicts() << std::endl;
-  std::cout << "%%%mzn-stat propagations="
+  std::cout << "%%%mzn-stat: failures=" << response.num_conflicts() << std::endl;
+  std::cout << "%%%mzn-stat: propagations="
             << response.num_binary_propagations() +
                    response.num_integer_propagations()
             << std::endl;
-  std::cout << "%%%mzn-stat solveTime=" << response.wall_time() << std::endl;
+  std::cout << "%%%mzn-stat: solveTime=" << response.wall_time() << std::endl;
 }
 
 }  // namespace
