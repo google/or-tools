@@ -97,7 +97,6 @@ ifeq ($(SYSTEM),win)
   ifeq ("$(Platform)","X64")  # Visual Studio 2017/2019 64 bit
     PLATFORM = WIN64
     PTRLENGTH = 64
-    CMAKE_SUFFIX = Win64
     CBC_PLATFORM_PREFIX = x64
     GLPK_PLATFORM = w64
     NETPLATFORM = x64
@@ -105,7 +104,6 @@ ifeq ($(SYSTEM),win)
     ifeq ("$(Platform)","x64")  # Visual Studio 2017/2019 64 bit
       PLATFORM = WIN64
       PTRLENGTH = 64
-      CMAKE_SUFFIX = Win64
       CBC_PLATFORM_PREFIX = x64
       GLPK_PLATFORM = w64
       NETPLATFORM = x64
@@ -119,6 +117,7 @@ ifeq ($(SYSTEM),win)
     VISUAL_STUDIO_YEAR = 2017
     VISUAL_STUDIO_MAJOR = 15
     VS_RELEASE = v141
+    CMAKE_SUFFIX = Win64
   else
     ifeq ("$(VisualStudioVersion)","16.0")
       VISUAL_STUDIO_YEAR = 2019
