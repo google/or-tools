@@ -117,12 +117,13 @@ ifeq ($(SYSTEM),win)
     VISUAL_STUDIO_YEAR = 2017
     VISUAL_STUDIO_MAJOR = 15
     VS_RELEASE = v141
-    CMAKE_SUFFIX = Win64
+    CMAKE_PLATFORM = "Visual Studio 15 2019 Win64"
   else
     ifeq ("$(VisualStudioVersion)","16.0")
       VISUAL_STUDIO_YEAR = 2019
       VISUAL_STUDIO_MAJOR = 16
       VS_RELEASE = v142
+      CMAKE_PLATFORM = "Visual Studio 16 2019" -A x64
     else
       $(warning "Unrecognized visual studio version")
     endif
@@ -136,12 +137,6 @@ ifeq ($(SYSTEM),win)
   # Compiler specific
   PORT = VisualStudio$(VISUAL_STUDIO_YEAR)-$(PTRLENGTH)bit
   VS_COMTOOLS = $(VISUAL_STUDIO_MAJOR)0
-
-  ifeq ("$(CMAKE_SUFFIX)","")
-    CMAKE_PLATFORM = "Visual Studio $(VISUAL_STUDIO_MAJOR) $(VISUAL_STUDIO_YEAR)"
-  else
-    CMAKE_PLATFORM = "Visual Studio $(VISUAL_STUDIO_MAJOR) $(VISUAL_STUDIO_YEAR) $(CMAKE_SUFFIX)"
-  endif
 
   # Third party specific
   CBC_PLATFORM = $(CBC_PLATFORM_PREFIX)-$(VS_RELEASE)-Release
