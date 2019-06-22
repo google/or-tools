@@ -102,7 +102,16 @@ ifeq ($(SYSTEM),win)
     GLPK_PLATFORM = w64
     NETPLATFORM = x64
   else
-    $(warning "Only visual studio 2017 and up 64 bit is supported")
+    ifeq ("$(Platform)","x64")  # Visual Studio 2017/2019 64 bit
+      PLATFORM = WIN64
+      PTRLENGTH = 64
+      CMAKE_SUFFIX = Win64
+      CBC_PLATFORM_PREFIX = x64
+      GLPK_PLATFORM = w64
+      NETPLATFORM = x64
+    else
+      $(warning "Only visual studio 2017 and up 64 bit is supported")
+    endif
   endif
 
   # Detect visual studio version
