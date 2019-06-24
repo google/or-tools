@@ -598,12 +598,9 @@ class CpModelTest(unittest.TestCase):
         obj = 100 * b + x - 2 * y
         model.Minimize(obj)
 
-        print(model.Proto())
-
         solver = cp_model.CpSolver()
         status = solver.Solve(model)
-
-        print(solver.ObjectiveValue())
+        self.assertEqual(solver.ObjectiveValue(), -19.0)
 
     def testWindowsProtobufOverflow(self):
         print('testWindowsProtobufOverflow')
