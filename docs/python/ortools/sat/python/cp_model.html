@@ -21,18 +21,35 @@
 </header>
 <section id="section-intro">
 <p>Methods for building and solving CP-SAT models.</p>
-<p>The following sections describe methods for building and solving</p>
-<p>CP-SAT models, and related tasks:</p>
+<p>The following two sections describe the main
+methods for building and solving CP-SAT models.</p>
 <ul>
-<li><a href="#ortools.sat.python.cp_model.CpModel">Create model</a>: Methods for creating
+<li><a href="#ortools.sat.python.cp_model.CpModel"><code>CpModel</code></a>: Methods for creating
 models, including variables and constraints.</li>
-<li><a href="#ortools.sat.python.cp_model.CpSolver">Solve</a>: Methods for solving
+<li><a href="#ortools.sat.python.cp_model.CpSolver"><code>CPSolver</code></a>: Methods for solving
 a model and evaluating solutions.</li>
-<li><a href="#ortools.sat.python.cp_model.CpSolverSolutionCallback">Solution callback</a>:
-Create a callback that is invoked every time the solver finds a new solution.</li>
-<li><a href="#ortools.sat.python.cp_model.ObjectiveSolutionPrinter">Solution printer</a>:
-Print objective values and elapsed time for intermediate solutions.</li>
 </ul>
+<p>The following methods implement callbacks that the
+solver calls each time it finds a new solution.</p>
+<ul>
+<li><a href="#cpsolversolutioncallback"><code>CpSolverSolutionCallback</code></a>: A general method for
+implementing callbacks.</li>
+<li><a href="#objectivesolutionprinter"><code>ObjectiveSolutionPrinter</code></a>: Print objective
+values and elapsed time for intermediate solutions.</li>
+<li><a href="#vararraysolutionprinter"><code>VarArraySolutionPrinter</code></a>: Print intermediate
+solutions (variable values, time).</li>
+<li><a href="#vararrayandobjectivesolutionprinter"><code>VarArrayAndObjectiveSolutionPrinter</code></a>:
+Print both intermediate solutions and objective values.</li>
+</ul>
+<p>Additional methods for solving CP-SAT models:</p>
+<ul>
+<li><a href="#constraint"><code>Constraint</code></a>: A few utility methods for modifying
+contraints created by <a title="cp_model.CpModel" href="#cp_model.CpModel"><code>CpModel</code></a>.</li>
+<li><a href="#linearexpr"><code>LinearExpr</code></a>: Methods for creating constraints and the
+objective from large arrays.</li>
+</ul>
+<p>Other methods and functions listed are primarily used for developing OR-Tools,
+rather than for solving specific optimization problems.</p>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python"># Copyright 2010-2018 Google LLC
@@ -49,18 +66,35 @@ Print objective values and elapsed time for intermediate solutions.</li>
 # limitations under the License.
 &#34;&#34;&#34;Methods for building and solving CP-SAT models.
 
-The following sections describe methods for building and solving
+The following two sections describe the main
+methods for building and solving CP-SAT models.
 
-CP-SAT models, and related tasks:
-
-* [Create model](#ortools.sat.python.cp_model.CpModel): Methods for creating
+* [`CpModel`](#ortools.sat.python.cp_model.CpModel): Methods for creating
 models, including variables and constraints.
-* [Solve](#ortools.sat.python.cp_model.CpSolver): Methods for solving
+* [`CPSolver`](#ortools.sat.python.cp_model.CpSolver): Methods for solving
 a model and evaluating solutions.
-* [Solution callback](#ortools.sat.python.cp_model.CpSolverSolutionCallback):
-Create a callback that is invoked every time the solver finds a new solution.
-* [Solution printer](#ortools.sat.python.cp_model.ObjectiveSolutionPrinter):
-Print objective values and elapsed time for intermediate solutions.
+
+The following methods implement callbacks that the
+solver calls each time it finds a new solution.
+
+* [`CpSolverSolutionCallback`](#cpsolversolutioncallback): A general method for
+  implementing callbacks.
+* [`ObjectiveSolutionPrinter`](#objectivesolutionprinter): Print objective
+  values and elapsed time for intermediate solutions.
+* [`VarArraySolutionPrinter`](#vararraysolutionprinter): Print intermediate
+  solutions (variable values, time).
+* [`VarArrayAndObjectiveSolutionPrinter`](#vararrayandobjectivesolutionprinter):
+  Print both intermediate solutions and objective values.
+
+Additional methods for solving CP-SAT models:
+
+* [`Constraint`](#constraint): A few utility methods for modifying
+  contraints created by `CpModel`.
+* [`LinearExpr`](#linearexpr): Methods for creating constraints and the
+  objective from large arrays.
+
+Other methods and functions listed are primarily used for developing OR-Tools,
+rather than for solving specific optimization problems.
 &#34;&#34;&#34;
 
 from __future__ import absolute_import
@@ -89,7 +123,7 @@ INT_MAX = 9223372036854775807
 INT32_MAX = 2147483647
 INT32_MIN = -2147483648
 
-# Cp Solver status (exported to avoid importing cp_model_cp2).
+# CpSolver status (exported to avoid importing cp_model_cp2).
 UNKNOWN = cp_model_pb2.UNKNOWN
 MODEL_INVALID = cp_model_pb2.MODEL_INVALID
 FEASIBLE = cp_model_pb2.FEASIBLE
@@ -154,12 +188,12 @@ class LinearExpr(object):
 
   * To define constraints. For example
 
-    model.Add(x + 2 * y &lt;= 5)
-    model.Add(sum(array_of_vars) == 5)
+      model.Add(x + 2 * y &lt;= 5)
+      model.Add(sum(array_of_vars) == 5)
 
   * To define the objective function. For example
 
-    model.Minimize(x + 2 * y + z)
+      model.Minimize(x + 2 * y + z)
 
   For large arrays, you can create constraints and the objective
   from lists of linear expressions or coefficients as follows:
@@ -598,10 +632,10 @@ class Constraint(object):
     BoolOr, BoolAnd, and linear constraints all support enforcement literals.
 
     Args:
-        boolvar: A boolean literal or a list of boolean literals.
+      boolvar: A boolean literal or a list of boolean literals.
 
     Returns:
-        self.
+      self.
     &#34;&#34;&#34;
 
         if isinstance(boolvar, numbers.Integral) and boolvar == 1:
@@ -703,14 +737,32 @@ class CpModel(object):
     # Integer variable.
 
     def NewIntVar(self, lb, ub, name):
-        &#34;&#34;&#34;Create an integer variable with domain [lb, ub].&#34;&#34;&#34;
+        &#34;&#34;&#34;Create an integer variable with domain [lb, ub].
+
+    The CP-SAT solver is limited to integer variables. If you have fractional
+    values, scale them up so that they become integers; if you have strings,
+    encode them as integers.
+
+    Args:
+      lb: Lower bound for the variable.
+      ub: Upper bound for the variable.
+      name: The name of the variable.
+
+    Returns:
+      a variable whose domain is [lb, ub].
+    &#34;&#34;&#34;
+
         return IntVar(self.__model, Domain(lb, ub), name)
 
     def NewIntVarFromDomain(self, domain, name):
-        &#34;&#34;&#34;Create an integer variable from domain.
+        &#34;&#34;&#34;Create an integer variable from a domain.
+
+    A domain is a set of integers specified by a collection of intervals.
+    For example, `model.NewIntVarFromDomain(cp_model.
+         Domain.FromIntervals([[1, 2], [4, 6]]), &#39;x&#39;)`
 
     Args:
-      domain: A instance of the Domain class.
+      domain: An instance of the Domain class.
       name: The name of the variable.
 
     Returns:
@@ -733,7 +785,7 @@ class CpModel(object):
         return self.AddLinearExpressionInDomain(linear_expr, Domain(lb, ub))
 
     def AddLinearExpressionInDomain(self, linear_expr, domain):
-        &#34;&#34;&#34;Adds the constraint: `linear_expr in domain`.&#34;&#34;&#34;
+        &#34;&#34;&#34;Adds the constraint: `linear_expr` in `domain`.&#34;&#34;&#34;
         if isinstance(linear_expr, LinearExpr):
             ct = Constraint(self.__model.constraints)
             model_ct = self.__model.constraints[ct.Index()]
@@ -759,13 +811,20 @@ class CpModel(object):
                 str(linear_expr) + &#39; &#39; + str(domain) + &#39;)&#39;)
 
     def Add(self, ct):
-        &#34;&#34;&#34;Adds a BoundedLinearExpression to the model.&#34;&#34;&#34;
+        &#34;&#34;&#34;Adds a `BoundedLinearExpression` to the model.
+
+    Args:
+      ct: A [`BoundedLinearExpression`](#boundedlinearexpression).
+
+    Returns:
+      An instance of the `Constraint` class.
+    &#34;&#34;&#34;
         if isinstance(ct, BoundedLinearExpression):
             return self.AddLinearExpressionInDomain(ct.Expression(),
                                                     Domain.FromFlatIntervals(
                                                         ct.Bounds()))
         elif ct and isinstance(ct, bool):
-            pass  # Nothing to do, was already evaluated to true.
+            return self.AddBoolOr([True])
         elif not ct and isinstance(ct, bool):
             return self.AddBoolOr([])  # Evaluate to false.
         else:
@@ -842,10 +901,9 @@ class CpModel(object):
     def AddAllowedAssignments(self, variables, tuples_list):
         &#34;&#34;&#34;Adds AllowedAssignments(variables, tuples_list).
 
-    An AllowedAssignments constraint is a constraint on an array of variables
-    that forces, when all variables are fixed to a single value, the
-    corresponding list of values to be equal to one of the tuples of
-    `tuple_list`.
+    An AllowedAssignments constraint is a constraint on an array of variables,
+    which requires that when all variables are assigned values, the resulting
+    array equals one of the  tuples in `tuple_list`.
 
     Args:
       variables: A list of variables.
@@ -888,8 +946,8 @@ class CpModel(object):
     Args:
       variables: A list of variables.
       tuples_list: A list of forbidden tuples. Each tuple must have the same
-        length as the variables, and the ith value of a tuple corresponds to the
-        ith variable.
+        length as the variables, and the *i*th value of a tuple corresponds
+        to the *i*th variable.
 
     Returns:
       An instance of the `Constraint` class.
@@ -914,22 +972,22 @@ class CpModel(object):
                      transition_triples):
         &#34;&#34;&#34;Adds an automaton constraint.
 
-    An automaton constraint takes a list of variables (of size n), an initial
+    An automaton constraint takes a list of variables (of size *n*), an initial
     state, a set of final states, and a set of transitions. A transition is a
     triplet (*tail*, *transition*, *head*), where *tail* and *head* are states,
     and *transition* is the label of an arc from *head* to *tail*,
     corresponding to the value of one variable in the list of variables.
 
-    This automaton will be unrolled into a flow with n + 1 phases. Each phase
+    This automaton will be unrolled into a flow with *n* + 1 phases. Each phase
     contains the possible states of the automaton. The first state contains the
     initial state. The last phase contains the final states.
 
-    Between two consecutive phases i and i + 1, the automaton creates a set of
-    arcs. For each transition (*tail*, *transition*, *head*), it will add an arc
-    from the state *tail* of phase i and the state *head* of phase i + 1. This
-    arc is labeled by the value *transition* of the variables `variables[i]`.
-    That is, this arc can only be selected if `variables[i]` is assigned the
-    value *transition*.
+    Between two consecutive phases *i* and *i* + 1, the automaton creates a set
+    of arcs. For each transition (*tail*, *transition*, *head*), it will add
+    an arc from the state *tail* of phase *i* and the state *head* of phase
+    *i* + 1. This arc is labeled by the value *transition* of the variables
+    `variables[i]`. That is, this arc can only be selected if `variables[i]`
+    is assigned the value *transition*.
 
     A feasible solution of this constraint is an assignment of variables such
     that, starting from the initial state in phase 0, there is a path labeled by
@@ -948,8 +1006,8 @@ class CpModel(object):
       An instance of the `Constraint` class.
 
     Raises:
-      ValueError: if transition_variables, final_states, or transition_triples
-        are empty.
+      ValueError: if `transition_variables`, `final_states`, or
+        `transition_triples` are empty.
     &#34;&#34;&#34;
 
         if not transition_variables:
@@ -1021,7 +1079,7 @@ class CpModel(object):
 
     Maintains a reservoir level within bounds. The water level starts at 0, and
     at any time &gt;= 0, it must be between min_level and max_level. Furthermore,
-    this constraints expect all times variables to be &gt;= 0.
+    this constraint expects all times variables to be &gt;= 0.
     If the variable `times[i]` is assigned a value t, then the current level
     changes by `demands[i]`, which is constant, at time t.
 
@@ -1035,7 +1093,7 @@ class CpModel(object):
       times: A list of positive integer variables which specify the time of the
         filling or emptying the reservoir.
       demands: A list of integer values that specifies the amount of the
-        emptying or feeling.
+        emptying or filling.
       min_level: At any time &gt;= 0, the level of the reservoir must be greater of
         equal than the min level.
       max_level: At any time &gt;= 0, the level of the reservoir must be less or
@@ -1085,7 +1143,7 @@ class CpModel(object):
       times: A list of positive integer variables which specify the time of the
         filling or emptying the reservoir.
       demands: A list of integer values that specifies the amount of the
-        emptying or feeling.
+        emptying or filling.
       actives: a list of boolean variables. They indicates if the
         emptying/refilling events actually take place.
       min_level: At any time &gt;= 0, the level of the reservoir must be greater of
@@ -1136,7 +1194,7 @@ class CpModel(object):
                 model_ct.linear.domain.extend([offset + i + 1, INT_MAX])
 
     def AddImplication(self, a, b):
-        &#34;&#34;&#34;Adds `a =&gt; b`.&#34;&#34;&#34;
+        &#34;&#34;&#34;Adds `a =&gt; b` (`a` implies `b`).&#34;&#34;&#34;
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.bool_or.literals.append(self.GetOrMakeBooleanIndex(b))
@@ -1263,7 +1321,7 @@ class CpModel(object):
     constraints like NoOverlap. This constraint is protected by an is_present
     literal that indicates if it is active or not.
 
-    Internally, it ensures that `is_present implies start + size == end`.
+    Internally, it ensures that `is_present` implies `start + size == end`.
 
     Args:
       start: The start of the interval. It can be an integer value, or an
@@ -1361,14 +1419,14 @@ class CpModel(object):
         return str(self.__model)
 
     def Proto(self):
-        &#34;&#34;&#34;Returns the underling CpModelProto.&#34;&#34;&#34;
+        &#34;&#34;&#34;Returns the underlying CpModelProto.&#34;&#34;&#34;
         return self.__model
 
     def Negated(self, index):
         return -index - 1
 
     def GetOrMakeIndex(self, arg):
-        &#34;&#34;&#34;Returns the index of a variables, its negation, or a number.&#34;&#34;&#34;
+        &#34;&#34;&#34;Returns the index of a variable, its negation, or a number.&#34;&#34;&#34;
         if isinstance(arg, IntVar):
             return arg.Index()
         elif (isinstance(arg, _ProductCst) and
@@ -2050,10 +2108,10 @@ model.Add(x + 2 * y == 5).OnlyEnforceIf(b.Not())
     BoolOr, BoolAnd, and linear constraints all support enforcement literals.
 
     Args:
-        boolvar: A boolean literal or a list of boolean literals.
+      boolvar: A boolean literal or a list of boolean literals.
 
     Returns:
-        self.
+      self.
     &#34;&#34;&#34;
 
         if isinstance(boolvar, numbers.Integral) and boolvar == 1:
@@ -2123,10 +2181,10 @@ must be enforced. If it is false, then the constraint is ignored.
 BoolOr, BoolAnd, and linear constraints all support enforcement literals.
 
 Args:
-    boolvar: A boolean literal or a list of boolean literals.
+  boolvar: A boolean literal or a list of boolean literals.
 
 Returns:
-    self.
+  self.
 &#34;&#34;&#34;
 
     if isinstance(boolvar, numbers.Integral) and boolvar == 1:
@@ -2186,14 +2244,32 @@ Returns:
     # Integer variable.
 
     def NewIntVar(self, lb, ub, name):
-        &#34;&#34;&#34;Create an integer variable with domain [lb, ub].&#34;&#34;&#34;
+        &#34;&#34;&#34;Create an integer variable with domain [lb, ub].
+
+    The CP-SAT solver is limited to integer variables. If you have fractional
+    values, scale them up so that they become integers; if you have strings,
+    encode them as integers.
+
+    Args:
+      lb: Lower bound for the variable.
+      ub: Upper bound for the variable.
+      name: The name of the variable.
+
+    Returns:
+      a variable whose domain is [lb, ub].
+    &#34;&#34;&#34;
+
         return IntVar(self.__model, Domain(lb, ub), name)
 
     def NewIntVarFromDomain(self, domain, name):
-        &#34;&#34;&#34;Create an integer variable from domain.
+        &#34;&#34;&#34;Create an integer variable from a domain.
+
+    A domain is a set of integers specified by a collection of intervals.
+    For example, `model.NewIntVarFromDomain(cp_model.
+         Domain.FromIntervals([[1, 2], [4, 6]]), &#39;x&#39;)`
 
     Args:
-      domain: A instance of the Domain class.
+      domain: An instance of the Domain class.
       name: The name of the variable.
 
     Returns:
@@ -2216,7 +2292,7 @@ Returns:
         return self.AddLinearExpressionInDomain(linear_expr, Domain(lb, ub))
 
     def AddLinearExpressionInDomain(self, linear_expr, domain):
-        &#34;&#34;&#34;Adds the constraint: `linear_expr in domain`.&#34;&#34;&#34;
+        &#34;&#34;&#34;Adds the constraint: `linear_expr` in `domain`.&#34;&#34;&#34;
         if isinstance(linear_expr, LinearExpr):
             ct = Constraint(self.__model.constraints)
             model_ct = self.__model.constraints[ct.Index()]
@@ -2242,13 +2318,20 @@ Returns:
                 str(linear_expr) + &#39; &#39; + str(domain) + &#39;)&#39;)
 
     def Add(self, ct):
-        &#34;&#34;&#34;Adds a BoundedLinearExpression to the model.&#34;&#34;&#34;
+        &#34;&#34;&#34;Adds a `BoundedLinearExpression` to the model.
+
+    Args:
+      ct: A [`BoundedLinearExpression`](#boundedlinearexpression).
+
+    Returns:
+      An instance of the `Constraint` class.
+    &#34;&#34;&#34;
         if isinstance(ct, BoundedLinearExpression):
             return self.AddLinearExpressionInDomain(ct.Expression(),
                                                     Domain.FromFlatIntervals(
                                                         ct.Bounds()))
         elif ct and isinstance(ct, bool):
-            pass  # Nothing to do, was already evaluated to true.
+            return self.AddBoolOr([True])
         elif not ct and isinstance(ct, bool):
             return self.AddBoolOr([])  # Evaluate to false.
         else:
@@ -2325,10 +2408,9 @@ Returns:
     def AddAllowedAssignments(self, variables, tuples_list):
         &#34;&#34;&#34;Adds AllowedAssignments(variables, tuples_list).
 
-    An AllowedAssignments constraint is a constraint on an array of variables
-    that forces, when all variables are fixed to a single value, the
-    corresponding list of values to be equal to one of the tuples of
-    `tuple_list`.
+    An AllowedAssignments constraint is a constraint on an array of variables,
+    which requires that when all variables are assigned values, the resulting
+    array equals one of the  tuples in `tuple_list`.
 
     Args:
       variables: A list of variables.
@@ -2371,8 +2453,8 @@ Returns:
     Args:
       variables: A list of variables.
       tuples_list: A list of forbidden tuples. Each tuple must have the same
-        length as the variables, and the ith value of a tuple corresponds to the
-        ith variable.
+        length as the variables, and the *i*th value of a tuple corresponds
+        to the *i*th variable.
 
     Returns:
       An instance of the `Constraint` class.
@@ -2397,22 +2479,22 @@ Returns:
                      transition_triples):
         &#34;&#34;&#34;Adds an automaton constraint.
 
-    An automaton constraint takes a list of variables (of size n), an initial
+    An automaton constraint takes a list of variables (of size *n*), an initial
     state, a set of final states, and a set of transitions. A transition is a
     triplet (*tail*, *transition*, *head*), where *tail* and *head* are states,
     and *transition* is the label of an arc from *head* to *tail*,
     corresponding to the value of one variable in the list of variables.
 
-    This automaton will be unrolled into a flow with n + 1 phases. Each phase
+    This automaton will be unrolled into a flow with *n* + 1 phases. Each phase
     contains the possible states of the automaton. The first state contains the
     initial state. The last phase contains the final states.
 
-    Between two consecutive phases i and i + 1, the automaton creates a set of
-    arcs. For each transition (*tail*, *transition*, *head*), it will add an arc
-    from the state *tail* of phase i and the state *head* of phase i + 1. This
-    arc is labeled by the value *transition* of the variables `variables[i]`.
-    That is, this arc can only be selected if `variables[i]` is assigned the
-    value *transition*.
+    Between two consecutive phases *i* and *i* + 1, the automaton creates a set
+    of arcs. For each transition (*tail*, *transition*, *head*), it will add
+    an arc from the state *tail* of phase *i* and the state *head* of phase
+    *i* + 1. This arc is labeled by the value *transition* of the variables
+    `variables[i]`. That is, this arc can only be selected if `variables[i]`
+    is assigned the value *transition*.
 
     A feasible solution of this constraint is an assignment of variables such
     that, starting from the initial state in phase 0, there is a path labeled by
@@ -2431,8 +2513,8 @@ Returns:
       An instance of the `Constraint` class.
 
     Raises:
-      ValueError: if transition_variables, final_states, or transition_triples
-        are empty.
+      ValueError: if `transition_variables`, `final_states`, or
+        `transition_triples` are empty.
     &#34;&#34;&#34;
 
         if not transition_variables:
@@ -2504,7 +2586,7 @@ Returns:
 
     Maintains a reservoir level within bounds. The water level starts at 0, and
     at any time &gt;= 0, it must be between min_level and max_level. Furthermore,
-    this constraints expect all times variables to be &gt;= 0.
+    this constraint expects all times variables to be &gt;= 0.
     If the variable `times[i]` is assigned a value t, then the current level
     changes by `demands[i]`, which is constant, at time t.
 
@@ -2518,7 +2600,7 @@ Returns:
       times: A list of positive integer variables which specify the time of the
         filling or emptying the reservoir.
       demands: A list of integer values that specifies the amount of the
-        emptying or feeling.
+        emptying or filling.
       min_level: At any time &gt;= 0, the level of the reservoir must be greater of
         equal than the min level.
       max_level: At any time &gt;= 0, the level of the reservoir must be less or
@@ -2568,7 +2650,7 @@ Returns:
       times: A list of positive integer variables which specify the time of the
         filling or emptying the reservoir.
       demands: A list of integer values that specifies the amount of the
-        emptying or feeling.
+        emptying or filling.
       actives: a list of boolean variables. They indicates if the
         emptying/refilling events actually take place.
       min_level: At any time &gt;= 0, the level of the reservoir must be greater of
@@ -2619,7 +2701,7 @@ Returns:
                 model_ct.linear.domain.extend([offset + i + 1, INT_MAX])
 
     def AddImplication(self, a, b):
-        &#34;&#34;&#34;Adds `a =&gt; b`.&#34;&#34;&#34;
+        &#34;&#34;&#34;Adds `a =&gt; b` (`a` implies `b`).&#34;&#34;&#34;
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.bool_or.literals.append(self.GetOrMakeBooleanIndex(b))
@@ -2746,7 +2828,7 @@ Returns:
     constraints like NoOverlap. This constraint is protected by an is_present
     literal that indicates if it is active or not.
 
-    Internally, it ensures that `is_present implies start + size == end`.
+    Internally, it ensures that `is_present` implies `start + size == end`.
 
     Args:
       start: The start of the interval. It can be an integer value, or an
@@ -2844,14 +2926,14 @@ Returns:
         return str(self.__model)
 
     def Proto(self):
-        &#34;&#34;&#34;Returns the underling CpModelProto.&#34;&#34;&#34;
+        &#34;&#34;&#34;Returns the underlying CpModelProto.&#34;&#34;&#34;
         return self.__model
 
     def Negated(self, index):
         return -index - 1
 
     def GetOrMakeIndex(self, arg):
-        &#34;&#34;&#34;Returns the index of a variables, its negation, or a number.&#34;&#34;&#34;
+        &#34;&#34;&#34;Returns the index of a variable, its negation, or a number.&#34;&#34;&#34;
         if isinstance(arg, IntVar):
             return arg.Index()
         elif (isinstance(arg, _ProductCst) and
@@ -2986,17 +3068,31 @@ Returns:
 <span>def <span class="ident">Add</span></span>(<span>self, ct)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds a BoundedLinearExpression to the model.</p></section>
+<section class="desc"><p>Adds a <a title="cp_model.BoundedLinearExpression" href="#cp_model.BoundedLinearExpression"><code>BoundedLinearExpression</code></a> to the model.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>ct</code></strong></dt>
+<dd>A <a href="#boundedlinearexpression"><code>BoundedLinearExpression</code></a>.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>An instance of the <a title="cp_model.Constraint" href="#cp_model.Constraint"><code>Constraint</code></a> class.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def Add(self, ct):
-    &#34;&#34;&#34;Adds a BoundedLinearExpression to the model.&#34;&#34;&#34;
+    &#34;&#34;&#34;Adds a `BoundedLinearExpression` to the model.
+
+Args:
+  ct: A [`BoundedLinearExpression`](#boundedlinearexpression).
+
+Returns:
+  An instance of the `Constraint` class.
+&#34;&#34;&#34;
     if isinstance(ct, BoundedLinearExpression):
         return self.AddLinearExpressionInDomain(ct.Expression(),
                                                 Domain.FromFlatIntervals(
                                                     ct.Bounds()))
     elif ct and isinstance(ct, bool):
-        pass  # Nothing to do, was already evaluated to true.
+        return self.AddBoolOr([True])
     elif not ct and isinstance(ct, bool):
         return self.AddBoolOr([])  # Evaluate to false.
     else:
@@ -3058,10 +3154,10 @@ Returns:
 </code></dt>
 <dd>
 <section class="desc"><p>Adds AllowedAssignments(variables, tuples_list).</p>
-<p>An AllowedAssignments constraint is a constraint on an array of variables
-that forces, when all variables are fixed to a single value, the
-corresponding list of values to be equal to one of the tuples of
-<code>tuple_list</code>.</p>
+<p>An AllowedAssignments constraint is a constraint on an array of variables,
+which requires that when all variables are assigned values, the resulting
+array equals one of the
+tuples in <code>tuple_list</code>.</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>variables</code></strong></dt>
@@ -3086,10 +3182,9 @@ variables.</dd>
 <pre><code class="python">def AddAllowedAssignments(self, variables, tuples_list):
     &#34;&#34;&#34;Adds AllowedAssignments(variables, tuples_list).
 
-An AllowedAssignments constraint is a constraint on an array of variables
-that forces, when all variables are fixed to a single value, the
-corresponding list of values to be equal to one of the tuples of
-`tuple_list`.
+An AllowedAssignments constraint is a constraint on an array of variables,
+which requires that when all variables are assigned values, the resulting
+array equals one of the  tuples in `tuple_list`.
 
 Args:
   variables: A list of variables.
@@ -3129,20 +3224,20 @@ Raises:
 </code></dt>
 <dd>
 <section class="desc"><p>Adds an automaton constraint.</p>
-<p>An automaton constraint takes a list of variables (of size n), an initial
+<p>An automaton constraint takes a list of variables (of size <em>n</em>), an initial
 state, a set of final states, and a set of transitions. A transition is a
 triplet (<em>tail</em>, <em>transition</em>, <em>head</em>), where <em>tail</em> and <em>head</em> are states,
 and <em>transition</em> is the label of an arc from <em>head</em> to <em>tail</em>,
 corresponding to the value of one variable in the list of variables.</p>
-<p>This automaton will be unrolled into a flow with n + 1 phases. Each phase
+<p>This automaton will be unrolled into a flow with <em>n</em> + 1 phases. Each phase
 contains the possible states of the automaton. The first state contains the
 initial state. The last phase contains the final states.</p>
-<p>Between two consecutive phases i and i + 1, the automaton creates a set of
-arcs. For each transition (<em>tail</em>, <em>transition</em>, <em>head</em>), it will add an arc
-from the state <em>tail</em> of phase i and the state <em>head</em> of phase i + 1. This
-arc is labeled by the value <em>transition</em> of the variables <code>variables[i]</code>.
-That is, this arc can only be selected if <code>variables[i]</code> is assigned the
-value <em>transition</em>.</p>
+<p>Between two consecutive phases <em>i</em> and <em>i</em> + 1, the automaton creates a set
+of arcs. For each transition (<em>tail</em>, <em>transition</em>, <em>head</em>), it will add
+an arc from the state <em>tail</em> of phase <em>i</em> and the state <em>head</em> of phase
+<em>i</em> + 1. This arc is labeled by the value <em>transition</em> of the variables
+<code>variables[i]</code>. That is, this arc can only be selected if <code>variables[i]</code>
+is assigned the value <em>transition</em>.</p>
 <p>A feasible solution of this constraint is an assignment of variables such
 that, starting from the initial state in phase 0, there is a path labeled by
 the values of the variables that ends in one of the final states in the
@@ -3165,8 +3260,8 @@ following format (current_state, variable_value, next_state).</dd>
 <h2 id="raises">Raises</h2>
 <dl>
 <dt><strong><code>ValueError</code></strong></dt>
-<dd>if transition_variables, final_states, or transition_triples
-are empty.</dd>
+<dd>if <code>transition_variables</code>, <code>final_states</code>, or
+<code>transition_triples</code> are empty.</dd>
 </dl></section>
 <details class="source">
 <summary>Source code</summary>
@@ -3174,22 +3269,22 @@ are empty.</dd>
                  transition_triples):
     &#34;&#34;&#34;Adds an automaton constraint.
 
-An automaton constraint takes a list of variables (of size n), an initial
+An automaton constraint takes a list of variables (of size *n*), an initial
 state, a set of final states, and a set of transitions. A transition is a
 triplet (*tail*, *transition*, *head*), where *tail* and *head* are states,
 and *transition* is the label of an arc from *head* to *tail*,
 corresponding to the value of one variable in the list of variables.
 
-This automaton will be unrolled into a flow with n + 1 phases. Each phase
+This automaton will be unrolled into a flow with *n* + 1 phases. Each phase
 contains the possible states of the automaton. The first state contains the
 initial state. The last phase contains the final states.
 
-Between two consecutive phases i and i + 1, the automaton creates a set of
-arcs. For each transition (*tail*, *transition*, *head*), it will add an arc
-from the state *tail* of phase i and the state *head* of phase i + 1. This
-arc is labeled by the value *transition* of the variables `variables[i]`.
-That is, this arc can only be selected if `variables[i]` is assigned the
-value *transition*.
+Between two consecutive phases *i* and *i* + 1, the automaton creates a set
+of arcs. For each transition (*tail*, *transition*, *head*), it will add
+an arc from the state *tail* of phase *i* and the state *head* of phase
+*i* + 1. This arc is labeled by the value *transition* of the variables
+`variables[i]`. That is, this arc can only be selected if `variables[i]`
+is assigned the value *transition*.
 
 A feasible solution of this constraint is an assignment of variables such
 that, starting from the initial state in phase 0, there is a path labeled by
@@ -3208,8 +3303,8 @@ Returns:
   An instance of the `Constraint` class.
 
 Raises:
-  ValueError: if transition_variables, final_states, or transition_triples
-    are empty.
+  ValueError: if `transition_variables`, `final_states`, or
+    `transition_triples` are empty.
 &#34;&#34;&#34;
 
     if not transition_variables:
@@ -3502,8 +3597,8 @@ where the list of impossible combinations is provided in the tuples list.</p>
 <dd>A list of variables.</dd>
 <dt><strong><code>tuples_list</code></strong></dt>
 <dd>A list of forbidden tuples. Each tuple must have the same
-length as the variables, and the ith value of a tuple corresponds to the
-ith variable.</dd>
+length as the variables, and the <em>i</em>th value of a tuple corresponds
+to the <em>i</em>th variable.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <p>An instance of the <a title="cp_model.Constraint" href="#cp_model.Constraint"><code>Constraint</code></a> class.</p>
@@ -3526,8 +3621,8 @@ where the list of impossible combinations is provided in the tuples list.
 Args:
   variables: A list of variables.
   tuples_list: A list of forbidden tuples. Each tuple must have the same
-    length as the variables, and the ith value of a tuple corresponds to the
-    ith variable.
+    length as the variables, and the *i*th value of a tuple corresponds
+    to the *i*th variable.
 
 Returns:
   An instance of the `Constraint` class.
@@ -3553,11 +3648,11 @@ Raises:
 <span>def <span class="ident">AddImplication</span></span>(<span>self, a, b)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds <code>a =&gt; b</code>.</p></section>
+<section class="desc"><p>Adds <code>a =&gt; b</code> (<code>a</code> implies <code>b</code>).</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def AddImplication(self, a, b):
-    &#34;&#34;&#34;Adds `a =&gt; b`.&#34;&#34;&#34;
+    &#34;&#34;&#34;Adds `a =&gt; b` (`a` implies `b`).&#34;&#34;&#34;
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.bool_or.literals.append(self.GetOrMakeBooleanIndex(b))
@@ -3639,11 +3734,11 @@ Raises:
 <span>def <span class="ident">AddLinearExpressionInDomain</span></span>(<span>self, linear_expr, domain)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds the constraint: <code>linear_expr in domain</code>.</p></section>
+<section class="desc"><p>Adds the constraint: <code>linear_expr</code> in <code>domain</code>.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def AddLinearExpressionInDomain(self, linear_expr, domain):
-    &#34;&#34;&#34;Adds the constraint: `linear_expr in domain`.&#34;&#34;&#34;
+    &#34;&#34;&#34;Adds the constraint: `linear_expr` in `domain`.&#34;&#34;&#34;
     if isinstance(linear_expr, LinearExpr):
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
@@ -3863,7 +3958,7 @@ Returns:
 <section class="desc"><p>Adds Reservoir(times, demands, min_level, max_level).</p>
 <p>Maintains a reservoir level within bounds. The water level starts at 0, and
 at any time &gt;= 0, it must be between min_level and max_level. Furthermore,
-this constraints expect all times variables to be &gt;= 0.
+this constraint expects all times variables to be &gt;= 0.
 If the variable <code>times[i]</code> is assigned a value t, then the current level
 changes by <code>demands[i]</code>, which is constant, at time t.</p>
 <p>Note that level min can be &gt; 0, or level max can be &lt; 0. It just forces
@@ -3878,7 +3973,7 @@ bounds with the executed demands. Therefore, at any time t &gt;= 0:</p>
 filling or emptying the reservoir.</dd>
 <dt><strong><code>demands</code></strong></dt>
 <dd>A list of integer values that specifies the amount of the
-emptying or feeling.</dd>
+emptying or filling.</dd>
 <dt><strong><code>min_level</code></strong></dt>
 <dd>At any time &gt;= 0, the level of the reservoir must be greater of
 equal than the min level.</dd>
@@ -3900,7 +3995,7 @@ equal than the max level.</dd>
 
 Maintains a reservoir level within bounds. The water level starts at 0, and
 at any time &gt;= 0, it must be between min_level and max_level. Furthermore,
-this constraints expect all times variables to be &gt;= 0.
+this constraint expects all times variables to be &gt;= 0.
 If the variable `times[i]` is assigned a value t, then the current level
 changes by `demands[i]`, which is constant, at time t.
 
@@ -3914,7 +4009,7 @@ Args:
   times: A list of positive integer variables which specify the time of the
     filling or emptying the reservoir.
   demands: A list of integer values that specifies the amount of the
-    emptying or feeling.
+    emptying or filling.
   min_level: At any time &gt;= 0, the level of the reservoir must be greater of
     equal than the min level.
   max_level: At any time &gt;= 0, the level of the reservoir must be less or
@@ -3966,7 +4061,7 @@ actions are actually performed.</p>
 filling or emptying the reservoir.</dd>
 <dt><strong><code>demands</code></strong></dt>
 <dd>A list of integer values that specifies the amount of the
-emptying or feeling.</dd>
+emptying or filling.</dd>
 <dt><strong><code>actives</code></strong></dt>
 <dd>a list of boolean variables. They indicates if the
 emptying/refilling events actually take place.</dd>
@@ -4011,7 +4106,7 @@ Args:
   times: A list of positive integer variables which specify the time of the
     filling or emptying the reservoir.
   demands: A list of integer values that specifies the amount of the
-    emptying or feeling.
+    emptying or filling.
   actives: a list of boolean variables. They indicates if the
     emptying/refilling events actually take place.
   min_level: At any time &gt;= 0, the level of the reservoir must be greater of
@@ -4099,11 +4194,11 @@ Raises:
 <span>def <span class="ident">GetOrMakeIndex</span></span>(<span>self, arg)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the index of a variables, its negation, or a number.</p></section>
+<section class="desc"><p>Returns the index of a variable, its negation, or a number.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def GetOrMakeIndex(self, arg):
-    &#34;&#34;&#34;Returns the index of a variables, its negation, or a number.&#34;&#34;&#34;
+    &#34;&#34;&#34;Returns the index of a variable, its negation, or a number.&#34;&#34;&#34;
     if isinstance(arg, IntVar):
         return arg.Index()
     elif (isinstance(arg, _ProductCst) and
@@ -4220,11 +4315,39 @@ Raises:
 <span>def <span class="ident">NewIntVar</span></span>(<span>self, lb, ub, name)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Create an integer variable with domain [lb, ub].</p></section>
+<section class="desc"><p>Create an integer variable with domain [lb, ub].</p>
+<p>The CP-SAT solver is limited to integer variables. If you have fractional
+values, scale them up so that they become integers; if you have strings,
+encode them as integers.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>lb</code></strong></dt>
+<dd>Lower bound for the variable.</dd>
+<dt><strong><code>ub</code></strong></dt>
+<dd>Upper bound for the variable.</dd>
+<dt><strong><code>name</code></strong></dt>
+<dd>The name of the variable.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>a variable whose domain is [lb, ub].</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def NewIntVar(self, lb, ub, name):
-    &#34;&#34;&#34;Create an integer variable with domain [lb, ub].&#34;&#34;&#34;
+    &#34;&#34;&#34;Create an integer variable with domain [lb, ub].
+
+The CP-SAT solver is limited to integer variables. If you have fractional
+values, scale them up so that they become integers; if you have strings,
+encode them as integers.
+
+Args:
+  lb: Lower bound for the variable.
+  ub: Upper bound for the variable.
+  name: The name of the variable.
+
+Returns:
+  a variable whose domain is [lb, ub].
+&#34;&#34;&#34;
+
     return IntVar(self.__model, Domain(lb, ub), name)</code></pre>
 </details>
 </dd>
@@ -4232,11 +4355,14 @@ Raises:
 <span>def <span class="ident">NewIntVarFromDomain</span></span>(<span>self, domain, name)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Create an integer variable from domain.</p>
+<section class="desc"><p>Create an integer variable from a domain.</p>
+<p>A domain is a set of integers specified by a collection of intervals.
+For example, <code>model.NewIntVarFromDomain(cp_model.
+Domain.FromIntervals([[1, 2], [4, 6]]), 'x')</code></p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>domain</code></strong></dt>
-<dd>A instance of the Domain class.</dd>
+<dd>An instance of the Domain class.</dd>
 <dt><strong><code>name</code></strong></dt>
 <dd>The name of the variable.</dd>
 </dl>
@@ -4245,10 +4371,14 @@ Raises:
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def NewIntVarFromDomain(self, domain, name):
-    &#34;&#34;&#34;Create an integer variable from domain.
+    &#34;&#34;&#34;Create an integer variable from a domain.
+
+A domain is a set of integers specified by a collection of intervals.
+For example, `model.NewIntVarFromDomain(cp_model.
+     Domain.FromIntervals([[1, 2], [4, 6]]), &#39;x&#39;)`
 
 Args:
-  domain: A instance of the Domain class.
+  domain: An instance of the Domain class.
   name: The name of the variable.
 
 Returns:
@@ -4319,7 +4449,7 @@ Returns:
 <p>An optional interval variable is a constraint, that is itself used in other
 constraints like NoOverlap. This constraint is protected by an is_present
 literal that indicates if it is active or not.</p>
-<p>Internally, it ensures that <code>is_present implies start + size == end</code>.</p>
+<p>Internally, it ensures that <code>is_present</code> implies <code>start + size == end</code>.</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>start</code></strong></dt>
@@ -4348,7 +4478,7 @@ An optional interval variable is a constraint, that is itself used in other
 constraints like NoOverlap. This constraint is protected by an is_present
 literal that indicates if it is active or not.
 
-Internally, it ensures that `is_present implies start + size == end`.
+Internally, it ensures that `is_present` implies `start + size == end`.
 
 Args:
   start: The start of the interval. It can be an integer value, or an
@@ -4376,11 +4506,11 @@ Returns:
 <span>def <span class="ident">Proto</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the underling CpModelProto.</p></section>
+<section class="desc"><p>Returns the underlying CpModelProto.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def Proto(self):
-    &#34;&#34;&#34;Returns the underling CpModelProto.&#34;&#34;&#34;
+    &#34;&#34;&#34;Returns the underlying CpModelProto.&#34;&#34;&#34;
     return self.__model</code></pre>
 </details>
 </dd>
@@ -5315,14 +5445,16 @@ intervals into the schedule.</p></section>
 For example, x + 2 * (y - z + 1).</p>
 <p>Linear expressions are used in CP-SAT models in two ways:</p>
 <ul>
-<li>To define constraints. For example</li>
-</ul>
+<li>
+<p>To define constraints. For example</p>
 <p>model.Add(x + 2 * y &lt;= 5)
 model.Add(sum(array_of_vars) == 5)</p>
-<ul>
-<li>To define the objective function. For example</li>
-</ul>
+</li>
+<li>
+<p>To define the objective function. For example</p>
 <p>model.Minimize(x + 2 * y + z)</p>
+</li>
+</ul>
 <p>For large arrays, you can create constraints and the objective
 from lists of linear expressions or coefficients as follows:</p>
 <pre><code>model.Minimize(cp_model.LinearExpr.Sum(expressions))
@@ -5340,12 +5472,12 @@ model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) &gt;= 0)
 
   * To define constraints. For example
 
-    model.Add(x + 2 * y &lt;= 5)
-    model.Add(sum(array_of_vars) == 5)
+      model.Add(x + 2 * y &lt;= 5)
+      model.Add(sum(array_of_vars) == 5)
 
   * To define the objective function. For example
 
-    model.Minimize(x + 2 * y + z)
+      model.Minimize(x + 2 * y + z)
 
   For large arrays, you can create constraints and the objective
   from lists of linear expressions or coefficients as follows:
