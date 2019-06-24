@@ -110,6 +110,7 @@ ifeq ("$(SYSTEM)","win")
     VISUAL_STUDIO_MAJOR = 15
     VS_RELEASE = v141
     CMAKE_PLATFORM = "Visual Studio 15 2017 Win64"
+  endif
   ifeq ("$(VisualStudioVersion)","16.0")
     VISUAL_STUDIO_YEAR = 2019
     VISUAL_STUDIO_MAJOR = 16
