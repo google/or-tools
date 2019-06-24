@@ -12,18 +12,35 @@
 # limitations under the License.
 """Methods for building and solving CP-SAT models.
 
-The following sections describe methods for building and solving
+The following two sections describe the main
+methods for building and solving CP-SAT models.
 
-CP-SAT models, and related tasks:
-
-* [Create model](#ortools.sat.python.cp_model.CpModel): Methods for creating
+* [`CpModel`](#ortools.sat.python.cp_model.CpModel): Methods for creating
 models, including variables and constraints.
-* [Solve](#ortools.sat.python.cp_model.CpSolver): Methods for solving
+* [`CPSolver`](#ortools.sat.python.cp_model.CpSolver): Methods for solving
 a model and evaluating solutions.
-* [Solution callback](#ortools.sat.python.cp_model.CpSolverSolutionCallback):
-Create a callback that is invoked every time the solver finds a new solution.
-* [Solution printer](#ortools.sat.python.cp_model.ObjectiveSolutionPrinter):
-Print objective values and elapsed time for intermediate solutions.
+
+The following methods implement callbacks that the
+solver calls each time it finds a new solution.
+
+* [`CpSolverSolutionCallback`](#cpsolversolutioncallback): A general method for
+  implementing callbacks.
+* [`ObjectiveSolutionPrinter`](#objectivesolutionprinter): Print objective
+  values and elapsed time for intermediate solutions.
+* [`VarArraySolutionPrinter`](#vararraysolutionprinter): Print intermediate
+  solutions (variable values, time).
+* [`VarArrayAndObjectiveSolutionPrinter`](#vararrayandobjectivesolutionprinter):
+  Print both intermediate solutions and objective values.
+
+Additional methods for solving CP-SAT models:
+
+* [`Constraint`](#constraint): A few utility methods for modifying
+  contraints created by `CpModel`.
+* [`LinearExpr`](#linearexpr): Methods for creating constraints and the
+  objective from large arrays.
+
+Other methods and functions listed are primarily used for developing OR-Tools,
+rather than for solving specific optimization problems.
 """
 
 from __future__ import absolute_import
@@ -117,12 +134,12 @@ class LinearExpr(object):
 
   * To define constraints. For example
 
-    model.Add(x + 2 * y <= 5)
-    model.Add(sum(array_of_vars) == 5)
+      model.Add(x + 2 * y <= 5)
+      model.Add(sum(array_of_vars) == 5)
 
   * To define the objective function. For example
 
-    model.Minimize(x + 2 * y + z)
+      model.Minimize(x + 2 * y + z)
 
   For large arrays, you can create constraints and the objective
   from lists of linear expressions or coefficients as follows:
@@ -666,14 +683,32 @@ class CpModel(object):
     # Integer variable.
 
     def NewIntVar(self, lb, ub, name):
-        """Create an integer variable with domain [lb, ub]."""
+        """Create an integer variable with domain [lb, ub].
+
+    The CP-SAT solver is limited to integer variables. If you have fractional
+    values, scale them up so that they become integers; if you have strings,
+    encode them as integers.
+
+    Args:
+      lb: Lower bound for the variable.
+      ub: Upper bound for the variable.
+      name: The name of the variable.
+
+    Returns:
+      a variable whose domain is [lb, ub].
+    """
+
         return IntVar(self.__model, Domain(lb, ub), name)
 
     def NewIntVarFromDomain(self, domain, name):
-        """Create an integer variable from domain.
+        """Create an integer variable from a domain.
+
+    A domain is a set of integers specified by a collection of intervals.
+    For example, `model.NewIntVarFromDomain(cp_model.
+         Domain.FromIntervals([[1, 2], [4, 6]]), 'x')`
 
     Args:
-      domain: A instance of the Domain class.
+      domain: An instance of the Domain class.
       name: The name of the variable.
 
     Returns:
@@ -696,7 +731,7 @@ class CpModel(object):
         return self.AddLinearExpressionInDomain(linear_expr, Domain(lb, ub))
 
     def AddLinearExpressionInDomain(self, linear_expr, domain):
-        """Adds the constraint: `linear_expr in domain`."""
+        """Adds the constraint: `linear_expr` in `domain`."""
         if isinstance(linear_expr, LinearExpr):
             ct = Constraint(self.__model.constraints)
             model_ct = self.__model.constraints[ct.Index()]
@@ -722,7 +757,14 @@ class CpModel(object):
                 str(linear_expr) + ' ' + str(domain) + ')')
 
     def Add(self, ct):
-        """Adds a BoundedLinearExpression to the model."""
+        """Adds a `BoundedLinearExpression` to the model.
+
+    Args:
+      ct: A [`BoundedLinearExpression`](#boundedlinearexpression).
+
+    Returns:
+      An instance of the `Constraint` class.
+    """
         if isinstance(ct, BoundedLinearExpression):
             return self.AddLinearExpressionInDomain(ct.Expression(),
                                                     Domain.FromFlatIntervals(
@@ -805,10 +847,9 @@ class CpModel(object):
     def AddAllowedAssignments(self, variables, tuples_list):
         """Adds AllowedAssignments(variables, tuples_list).
 
-    An AllowedAssignments constraint is a constraint on an array of variables
-    that forces, when all variables are fixed to a single value, the
-    corresponding list of values to be equal to one of the tuples of
-    `tuple_list`.
+    An AllowedAssignments constraint is a constraint on an array of variables,
+    which requires that when all variables are assigned values, the resulting
+    array equals one of the  tuples in `tuple_list`.
 
     Args:
       variables: A list of variables.
@@ -851,8 +892,8 @@ class CpModel(object):
     Args:
       variables: A list of variables.
       tuples_list: A list of forbidden tuples. Each tuple must have the same
-        length as the variables, and the ith value of a tuple corresponds to the
-        ith variable.
+        length as the variables, and the *i*th value of a tuple corresponds
+        to the *i*th variable.
 
     Returns:
       An instance of the `Constraint` class.
@@ -877,22 +918,22 @@ class CpModel(object):
                      transition_triples):
         """Adds an automaton constraint.
 
-    An automaton constraint takes a list of variables (of size n), an initial
+    An automaton constraint takes a list of variables (of size *n*), an initial
     state, a set of final states, and a set of transitions. A transition is a
     triplet (*tail*, *transition*, *head*), where *tail* and *head* are states,
     and *transition* is the label of an arc from *head* to *tail*,
     corresponding to the value of one variable in the list of variables.
 
-    This automaton will be unrolled into a flow with n + 1 phases. Each phase
+    This automaton will be unrolled into a flow with *n* + 1 phases. Each phase
     contains the possible states of the automaton. The first state contains the
     initial state. The last phase contains the final states.
 
-    Between two consecutive phases i and i + 1, the automaton creates a set of
-    arcs. For each transition (*tail*, *transition*, *head*), it will add an arc
-    from the state *tail* of phase i and the state *head* of phase i + 1. This
-    arc is labeled by the value *transition* of the variables `variables[i]`.
-    That is, this arc can only be selected if `variables[i]` is assigned the
-    value *transition*.
+    Between two consecutive phases *i* and *i* + 1, the automaton creates a set
+    of arcs. For each transition (*tail*, *transition*, *head*), it will add
+    an arc from the state *tail* of phase *i* and the state *head* of phase
+    *i* + 1. This arc is labeled by the value *transition* of the variables
+    `variables[i]`. That is, this arc can only be selected if `variables[i]`
+    is assigned the value *transition*.
 
     A feasible solution of this constraint is an assignment of variables such
     that, starting from the initial state in phase 0, there is a path labeled by
@@ -911,8 +952,8 @@ class CpModel(object):
       An instance of the `Constraint` class.
 
     Raises:
-      ValueError: if transition_variables, final_states, or transition_triples
-        are empty.
+      ValueError: if `transition_variables`, `final_states`, or
+        `transition_triples` are empty.
     """
 
         if not transition_variables:
@@ -984,7 +1025,7 @@ class CpModel(object):
 
     Maintains a reservoir level within bounds. The water level starts at 0, and
     at any time >= 0, it must be between min_level and max_level. Furthermore,
-    this constraints expect all times variables to be >= 0.
+    this constraint expects all times variables to be >= 0.
     If the variable `times[i]` is assigned a value t, then the current level
     changes by `demands[i]`, which is constant, at time t.
 
@@ -998,7 +1039,7 @@ class CpModel(object):
       times: A list of positive integer variables which specify the time of the
         filling or emptying the reservoir.
       demands: A list of integer values that specifies the amount of the
-        emptying or feeling.
+        emptying or filling.
       min_level: At any time >= 0, the level of the reservoir must be greater of
         equal than the min level.
       max_level: At any time >= 0, the level of the reservoir must be less or
@@ -1048,7 +1089,7 @@ class CpModel(object):
       times: A list of positive integer variables which specify the time of the
         filling or emptying the reservoir.
       demands: A list of integer values that specifies the amount of the
-        emptying or feeling.
+        emptying or filling.
       actives: a list of boolean variables. They indicates if the
         emptying/refilling events actually take place.
       min_level: At any time >= 0, the level of the reservoir must be greater of
@@ -1099,7 +1140,7 @@ class CpModel(object):
                 model_ct.linear.domain.extend([offset + i + 1, INT_MAX])
 
     def AddImplication(self, a, b):
-        """Adds `a => b`."""
+        """Adds `a => b` (`a` implies `b`)."""
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
         model_ct.bool_or.literals.append(self.GetOrMakeBooleanIndex(b))
@@ -1226,7 +1267,7 @@ class CpModel(object):
     constraints like NoOverlap. This constraint is protected by an is_present
     literal that indicates if it is active or not.
 
-    Internally, it ensures that `is_present implies start + size == end`.
+    Internally, it ensures that `is_present` implies `start + size == end`.
 
     Args:
       start: The start of the interval. It can be an integer value, or an
@@ -1324,14 +1365,14 @@ class CpModel(object):
         return str(self.__model)
 
     def Proto(self):
-        """Returns the underling CpModelProto."""
+        """Returns the underlying CpModelProto."""
         return self.__model
 
     def Negated(self, index):
         return -index - 1
 
     def GetOrMakeIndex(self, arg):
-        """Returns the index of a variables, its negation, or a number."""
+        """Returns the index of a variable, its negation, or a number."""
         if isinstance(arg, IntVar):
             return arg.Index()
         elif (isinstance(arg, _ProductCst) and
