@@ -791,17 +791,11 @@ WARN_LOGFILE           =
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  = \
-  ortools/constraint_solver/constraint_solver.h \
-  ortools/constraint_solver/constraint_solveri.h \
-  ortools/constraint_solver/routing.h \
-  ortools/constraint_solver/routing_flags.h \
-  ortools/constraint_solver/routing_index_manager.h \
-  ortools/constraint_solver/routing_lp_scheduling.h \
-  ortools/constraint_solver/routing_neighborhoods.h \
-  ortools/constraint_solver/routing_parameters.h \
-  ortools/constraint_solver/routing_types.h \
-  ortools/gen/ortools/constraint_solver/routing_enums.pb.h \
-  ortools/gen/ortools/constraint_solver/routing_parameters.pb.h
+  ortools/linear_solver/linear_solver.h \
+  ortools/linear_solver/model_exporter.h \
+  ortools/linear_solver/model_exporter_swig_helper.h \
+  ortools/linear_solver/model_validator.h \
+  ortools/gen/ortools/linear_solver/linear_solver.pb.h
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -914,7 +908,7 @@ IMAGE_PATH             =
 # need to set EXTENSION_MAPPING for the extension otherwise the files are not
 # properly processed by doxygen.
 
-INPUT_FILTER           = "python3 tools/doxygen_filter.py"
+INPUT_FILTER           = "python3 tools/doc/doxygen_filter.py"
 
 # The FILTER_PATTERNS tag can be used to specify filters on a per file pattern
 # basis. Doxygen will compare the file name with each pattern and apply the
@@ -1078,7 +1072,7 @@ GENERATE_HTML          = YES
 # The default directory is: html.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_OUTPUT            = cpp_routing
+HTML_OUTPUT            = cpp_linear
 
 # The HTML_FILE_EXTENSION tag can be used to specify the file extension for each
 # generated HTML page (for example: .htm, .php, .asp).
@@ -1105,7 +1099,7 @@ HTML_FILE_EXTENSION    = .html
 # of the possible markers and block names see the documentation.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_HEADER            = tools/ortools.header.html
+HTML_HEADER            = tools/doc/ortools.header.html
 
 # The HTML_FOOTER tag can be used to specify a user-defined HTML footer for each
 # generated HTML page. If the tag is left blank doxygen will generate a standard
@@ -1115,7 +1109,7 @@ HTML_HEADER            = tools/ortools.header.html
 # that doxygen normally uses.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_FOOTER            = tools/ortools.footer.html
+HTML_FOOTER            = tools/doc/ortools.footer.html
 
 # The HTML_STYLESHEET tag can be used to specify a user-defined cascading style
 # sheet that is used by each HTML page. It can be used to fine-tune the look of
@@ -1140,7 +1134,7 @@ HTML_STYLESHEET        =
 # list). For an example see the documentation.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_EXTRA_STYLESHEET  = tools/ortools.css
+HTML_EXTRA_STYLESHEET  = tools/doc/ortools.css
 
 # The HTML_EXTRA_FILES tag can be used to specify one or more extra images or
 # other source files which should be copied to the HTML output directory. Note
@@ -2099,7 +2093,7 @@ TAGFILES               =
 # tag file that is based on the input files it reads. See section "Linking to
 # external documentation" for more information about the usage of tag files.
 
-GENERATE_TAGFILE       = docs/cpp_routing.tag
+GENERATE_TAGFILE       = docs/cpp_linear.tag
 
 # If the ALLEXTERNALS tag is set to YES, all external class will be listed in
 # the class index. If set to NO, only the inherited external classes will be

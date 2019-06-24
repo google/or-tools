@@ -791,25 +791,12 @@ WARN_LOGFILE           =
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  = \
-  ortools/graph/christofides.h \
-  ortools/graph/cliques.h \
-  ortools/graph/connected_components.h \
-  ortools/graph/connectivity.h \
-  ortools/graph/ebert_graph.h \
-  ortools/graph/eulerian_path.h \
-  ortools/graph/graph.h \
-  ortools/graph/graphs.h \
-  ortools/graph/hamiltonian_path.h \
-  ortools/graph/io.h \
-  ortools/graph/iterators.h \
-  ortools/graph/linear_assignment.h \
-  ortools/graph/max_flow.h \
-  ortools/graph/min_cost_flow.h \
-  ortools/graph/minimum_spanning_tree.h \
-  ortools/graph/one_tree_lower_bound.h \
-  ortools/graph/shortestpaths.h \
-  ortools/graph/strongly_connected_components.h \
-  ortools/graph/util.h
+  ortools/sat/cp_model.h \
+  ortools/sat/cp_model_solver.h \
+  ortools/sat/model.h \
+  ortools/util/sorted_interval_list.h \
+  ortools/gen/ortools/sat/cp_model.pb.h \
+  ortools/gen/ortools/sat/sat_parameters.pb.h
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -875,7 +862,7 @@ EXCLUDE_PATTERNS       =
 # Note that the wildcards are matched against the file with absolute path, so to
 # exclude all test directories use the pattern */test/*
 
-EXCLUDE_SYMBOLS        = *internal*
+EXCLUDE_SYMBOLS        =
 
 # The EXAMPLE_PATH tag can be used to specify one or more files or directories
 # that contain example code fragments that are included (see the \include
@@ -922,7 +909,7 @@ IMAGE_PATH             =
 # need to set EXTENSION_MAPPING for the extension otherwise the files are not
 # properly processed by doxygen.
 
-INPUT_FILTER           = "python3 tools/doxygen_filter.py"
+INPUT_FILTER           = "python3 tools/doc/doxygen_filter.py"
 
 # The FILTER_PATTERNS tag can be used to specify filters on a per file pattern
 # basis. Doxygen will compare the file name with each pattern and apply the
@@ -1086,7 +1073,7 @@ GENERATE_HTML          = YES
 # The default directory is: html.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_OUTPUT            = cpp_graph
+HTML_OUTPUT            = cpp_sat
 
 # The HTML_FILE_EXTENSION tag can be used to specify the file extension for each
 # generated HTML page (for example: .htm, .php, .asp).
@@ -1113,7 +1100,7 @@ HTML_FILE_EXTENSION    = .html
 # of the possible markers and block names see the documentation.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_HEADER            = tools/ortools.header.html
+HTML_HEADER            = tools/doc/ortools.header.html
 
 # The HTML_FOOTER tag can be used to specify a user-defined HTML footer for each
 # generated HTML page. If the tag is left blank doxygen will generate a standard
@@ -1123,7 +1110,7 @@ HTML_HEADER            = tools/ortools.header.html
 # that doxygen normally uses.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_FOOTER            = tools/ortools.footer.html
+HTML_FOOTER            = tools/doc/ortools.footer.html
 
 # The HTML_STYLESHEET tag can be used to specify a user-defined cascading style
 # sheet that is used by each HTML page. It can be used to fine-tune the look of
@@ -1148,7 +1135,7 @@ HTML_STYLESHEET        =
 # list). For an example see the documentation.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_EXTRA_STYLESHEET  = tools/ortools.css
+HTML_EXTRA_STYLESHEET  = tools/doc/ortools.css
 
 # The HTML_EXTRA_FILES tag can be used to specify one or more extra images or
 # other source files which should be copied to the HTML output directory. Note
@@ -2107,7 +2094,7 @@ TAGFILES               =
 # tag file that is based on the input files it reads. See section "Linking to
 # external documentation" for more information about the usage of tag files.
 
-GENERATE_TAGFILE       = docs/cpp_graph.tag
+GENERATE_TAGFILE       = docs/cpp_sat.tag
 
 # If the ALLEXTERNALS tag is set to YES, all external class will be listed in
 # the class index. If set to NO, only the inherited external classes will be

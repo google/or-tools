@@ -1,17 +1,17 @@
 # Generate documentation
 
 cpp-doc:
-	doxygen tools/cpp_graph.doxy
-	doxygen tools/cpp_linear.doxy
-	doxygen tools/cpp_routing.doxy
-	doxygen tools/cpp_sat.doxy
+	doxygen tools/doc/cpp_graph.doxy
+	doxygen tools/doc/cpp_linear.doxy
+	doxygen tools/doc/cpp_routing.doxy
+	doxygen tools/doc/cpp_sat.doxy
 
 dotnet-doc:
-	doxygen tools/dotnet.doxy
+	doxygen tools/doc/dotnet.doxy
 
 java-doc:
-	doxygen tools/java.doxy
+	doxygen tools/doc/java.doxy
 
 python-doc:
-	$(SET_PYTHONPATH) pdoc3 --html -o docs/python/ortools/sat/python/ ortools/sat/python/cp_model.py
-	$(SET_PYTHONPATH) pdoc3 --html -o docs/python/ortools/util/ ortools/gen/ortools/util/sorted_interval_list.py
+	$(SET_PYTHONPATH) pdoc3 --force --html -o docs/python/ortools/sat/python/ ortools/sat/python/cp_model.py
+	$(SET_PYTHONPATH) pdoc3 --html --force -o docs/python/ortools/util/ ortools/gen/ortools/util/sorted_interval_list.py

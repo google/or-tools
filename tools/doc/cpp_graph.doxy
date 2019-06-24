@@ -791,8 +791,25 @@ WARN_LOGFILE           =
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  = \
-  ortools/gen \
-  ortools
+  ortools/graph/christofides.h \
+  ortools/graph/cliques.h \
+  ortools/graph/connected_components.h \
+  ortools/graph/connectivity.h \
+  ortools/graph/ebert_graph.h \
+  ortools/graph/eulerian_path.h \
+  ortools/graph/graph.h \
+  ortools/graph/graphs.h \
+  ortools/graph/hamiltonian_path.h \
+  ortools/graph/io.h \
+  ortools/graph/iterators.h \
+  ortools/graph/linear_assignment.h \
+  ortools/graph/max_flow.h \
+  ortools/graph/min_cost_flow.h \
+  ortools/graph/minimum_spanning_tree.h \
+  ortools/graph/one_tree_lower_bound.h \
+  ortools/graph/shortestpaths.h \
+  ortools/graph/strongly_connected_components.h \
+  ortools/graph/util.h
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -817,12 +834,12 @@ INPUT_ENCODING         = UTF-8
 # *.m, *.markdown, *.md, *.mm, *.dox, *.py, *.pyw, *.f90, *.f95, *.f03, *.f08,
 # *.f, *.for, *.tcl, *.vhd, *.vhdl, *.ucf and *.qsf.
 
-FILE_PATTERNS          = *.java
+FILE_PATTERNS          = *.h
 # The RECURSIVE tag can be used to specify whether or not subdirectories should
 # be searched for input files as well.
 # The default value is: NO.
 
-RECURSIVE              = YES
+RECURSIVE              = NO
 
 # The EXCLUDE tag can be used to specify files and/or directories that should be
 # excluded from the INPUT source files. This way you can easily exclude a
@@ -831,7 +848,7 @@ RECURSIVE              = YES
 # Note that relative paths are relative to the directory from which doxygen is
 # run.
 
-EXCLUDE                = 
+EXCLUDE                = SWIGTYPE* swig* Swig*
 
 # The EXCLUDE_SYMLINKS tag can be used to select whether or not files or
 # directories that are symbolic links (a Unix file system feature) are excluded
@@ -847,7 +864,7 @@ EXCLUDE_SYMLINKS       = NO
 # Note that the wildcards are matched against the file with absolute path, so to
 # exclude all test directories for example use the pattern */test/*
 
-EXCLUDE_PATTERNS       = */SWIGTYPE* */*swig* */*Swig* */mainJNI*
+EXCLUDE_PATTERNS       =
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names
 # (namespaces, classes, functions, etc.) that should be excluded from the
@@ -858,7 +875,7 @@ EXCLUDE_PATTERNS       = */SWIGTYPE* */*swig* */*Swig* */mainJNI*
 # Note that the wildcards are matched against the file with absolute path, so to
 # exclude all test directories use the pattern */test/*
 
-EXCLUDE_SYMBOLS        = */mainJNI*
+EXCLUDE_SYMBOLS        = *internal*
 
 # The EXAMPLE_PATH tag can be used to specify one or more files or directories
 # that contain example code fragments that are included (see the \include
@@ -905,7 +922,7 @@ IMAGE_PATH             =
 # need to set EXTENSION_MAPPING for the extension otherwise the files are not
 # properly processed by doxygen.
 
-INPUT_FILTER           =
+INPUT_FILTER           = "python3 tools/doc/doxygen_filter.py"
 
 # The FILTER_PATTERNS tag can be used to specify filters on a per file pattern
 # basis. Doxygen will compare the file name with each pattern and apply the
@@ -1069,7 +1086,7 @@ GENERATE_HTML          = YES
 # The default directory is: html.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_OUTPUT            = java
+HTML_OUTPUT            = cpp_graph
 
 # The HTML_FILE_EXTENSION tag can be used to specify the file extension for each
 # generated HTML page (for example: .htm, .php, .asp).
@@ -1096,7 +1113,7 @@ HTML_FILE_EXTENSION    = .html
 # of the possible markers and block names see the documentation.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_HEADER            = tools/ortools.header.html
+HTML_HEADER            = tools/doc/ortools.header.html
 
 # The HTML_FOOTER tag can be used to specify a user-defined HTML footer for each
 # generated HTML page. If the tag is left blank doxygen will generate a standard
@@ -1106,7 +1123,7 @@ HTML_HEADER            = tools/ortools.header.html
 # that doxygen normally uses.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_FOOTER            = tools/ortools.footer.html
+HTML_FOOTER            = tools/doc/ortools.footer.html
 
 # The HTML_STYLESHEET tag can be used to specify a user-defined cascading style
 # sheet that is used by each HTML page. It can be used to fine-tune the look of
@@ -1118,7 +1135,7 @@ HTML_FOOTER            = tools/ortools.footer.html
 # obsolete.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_STYLESHEET        = tools/ortools.css
+HTML_STYLESHEET        =
 
 # The HTML_EXTRA_STYLESHEET tag can be used to specify additional user-defined
 # cascading style sheets that are included after the standard style sheets
@@ -1131,7 +1148,7 @@ HTML_STYLESHEET        = tools/ortools.css
 # list). For an example see the documentation.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_EXTRA_STYLESHEET  = tools/ortools.css
+HTML_EXTRA_STYLESHEET  = tools/doc/ortools.css
 
 # The HTML_EXTRA_FILES tag can be used to specify one or more extra images or
 # other source files which should be copied to the HTML output directory. Note
@@ -2090,7 +2107,7 @@ TAGFILES               =
 # tag file that is based on the input files it reads. See section "Linking to
 # external documentation" for more information about the usage of tag files.
 
-GENERATE_TAGFILE       = docs/java.tag
+GENERATE_TAGFILE       = docs/cpp_graph.tag
 
 # If the ALLEXTERNALS tag is set to YES, all external class will be listed in
 # the class index. If set to NO, only the inherited external classes will be
