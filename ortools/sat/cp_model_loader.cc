@@ -201,6 +201,9 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
 // The logic assumes that the linear constraints have been presolved, so that
 // equality with a domain bound have been converted to <= or >= and so that we
 // never have any trivial inequalities.
+//
+// TODO(user): Regroup/presolve two encoding like b => x > 2 and the same
+// Boolean b => x > 5. These shouldn't happen if we merge linear constraints.
 void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
                                      Model* m) {
   IntegerEncoder* encoder = m->GetOrCreate<IntegerEncoder>();

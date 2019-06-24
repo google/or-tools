@@ -899,17 +899,17 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
         if (x_ub > (int64{1} << 31)) return;
         DCHECK_GE(x_lb, 0);
 
-        const double y_value = lp_values[y];
-        const double x_value = lp_values[x];
+        const double y_lp_value = lp_values[y];
+        const double x_lp_value = lp_values[x];
 
         // First cut: target should be below the line:
         //     (x_lb, x_lb ^ 2) to (x_ub, x_ub ^ 2).
         // The slope of that line is (ub^2 - lb^2) / (ub - lb) = ub + lb.
         const int64 y_lb = x_lb * x_lb;
         const int64 above_slope = x_ub + x_lb;
-        const double max_y = y_lb + above_slope * (x_value - x_lb);
-        if (y_value >= max_y + kMinCutViolation) {
-          // cut: target <= (x_lb + x_ub) * x - x_lb * x_ub
+        const double max_lp_y = y_lb + above_slope * (x_lp_value - x_lb);
+        if (y_lp_value >= max_lp_y + kMinCutViolation) {
+          // cut: y <= (x_lb + x_ub) * x - x_lb * x_ub
           LinearConstraint above_cut;
           above_cut.vars.push_back(y);
           above_cut.coeffs.push_back(IntegerValue(1));
@@ -926,11 +926,11 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
         //
         // Note that we only add one of these cuts. The one for x_lp_value in
         // [value, value + 1].
-        const int64 x_floor = static_cast<int64>(std::floor(x_value));
+        const int64 x_floor = static_cast<int64>(std::floor(x_lp_value));
         const int64 below_slope = 2 * x_floor + 1;
-        const double min_y =
-            below_slope * x_value - x_floor - x_floor * x_floor;
-        if (min_y >= y_value + kMinCutViolation) {
+        const double min_lp_y =
+            below_slope * x_lp_value - x_floor - x_floor * x_floor;
+        if (min_lp_y >= y_lp_value + kMinCutViolation) {
           // cut: y >= below_slope * (x - x_floor) + x_floor ^ 2
           //    : y >= below_slope * x - x_floor ^ 2 - x_floor
           LinearConstraint below_cut;

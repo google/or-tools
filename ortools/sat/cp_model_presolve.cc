@@ -1422,50 +1422,94 @@ bool PresolveLinear(ConstraintProto* ct, PresolveContext* context) {
 //
 // This operation is similar to coefficient strengthening in the MIP world.
 //
-// TODO(user): If the constraint is boxed, split it in two if enforcement
-// literals can be extracted this way. This would just be better for the CP
-// propagation, and for the LP it will improve the relaxation at the cost of
-// an extra row in the matrix, but this should still be better.
+// TODO(user): For non-binary variable, we should also reduce large coefficient
+// by using the same logic (i.e. real coefficient strengthening).
 void ExtractEnforcementLiteralFromLinearConstraint(ConstraintProto* ct,
                                                    PresolveContext* context) {
   if (context->ModelIsUnsat()) return;
+  if (context->affine_constraints.contains(ct)) return;
 
   const LinearConstraintProto& arg = ct->linear();
   const int num_vars = arg.vars_size();
+
+  // No need to process size one constraints, they will be presolved separately.
+  // We also do not want to split them in two.
+  if (num_vars <= 1) return;
+
   int64 min_sum = 0;
   int64 max_sum = 0;
+  int64 max_coeff_magnitude = 0;
   for (int i = 0; i < num_vars; ++i) {
     const int ref = arg.vars(i);
     const int64 coeff = arg.coeffs(i);
     const int64 term_a = coeff * context->MinOf(ref);
     const int64 term_b = coeff * context->MaxOf(ref);
+    max_coeff_magnitude = std::max(max_coeff_magnitude, std::abs(coeff));
     min_sum += std::min(term_a, term_b);
     max_sum += std::max(term_a, term_b);
   }
 
-  // We only deal with the case of a single bounded constraint. This is because
-  // if a constraint has two non-trivial finite bounds, then there can be no
-  // literal that will make the constraint always true.
+  // We can only extract enforcement literals if the maximum coefficient
+  // magnitude is greater or equal to max_sum - rhs_domain.Max() or
+  // rhs_domain.Min() - min_sum.
   Domain rhs_domain = ReadDomainFromProto(ct->linear());
-  const bool not_lower_bounded = min_sum >= rhs_domain.Min();
-  const bool not_upper_bounded = max_sum <= rhs_domain.Max();
-  if (not_lower_bounded == not_upper_bounded) return;
+  if (max_coeff_magnitude <
+      std::max(max_sum - rhs_domain.Max(), rhs_domain.Min() - min_sum)) {
+    return;
+  }
+
+  // We need the constraint to be only bounded on one side in order to extract
+  // enforcement literal.
+  //
+  // If it is boxed and we know that some coefficient are big enough (see test
+  // above), then we split the constraint in two. That might not seems always
+  // good, but for the CP propagation engine, we don't loose anything by doing
+  // so, and for the LP we will regroup the constraints if they still have the
+  // exact same coeff after the presolve.
+  //
+  // TODO(user): Creating two new constraints and removing the current one might
+  // not be the most efficient, but it simplify the presolve code by not having
+  // to do anything special to trigger a new presolving of these constraints.
+  // Try to improve if this becomes a problem.
+  //
+  // TODO(user): At the end of the presolve we should probably remerge any
+  // identical linear constraints. That also cover the corner cases where
+  // constraints are just redundant...
+  const bool lower_bounded = min_sum < rhs_domain.Min();
+  const bool upper_bounded = max_sum > rhs_domain.Max();
+  if (!lower_bounded && !upper_bounded) return;
+  if (lower_bounded && upper_bounded) {
+    context->UpdateRuleStats("linear: split boxed constraint");
+    ConstraintProto* new_ct1 = context->working_model->add_constraints();
+    *new_ct1 = *ct;
+    if (!ct->name().empty()) {
+      new_ct1->set_name(absl::StrCat(ct->name(), " (part 1)"));
+    }
+    FillDomainInProto(Domain(min_sum, rhs_domain.Max()),
+                      new_ct1->mutable_linear());
+
+    ConstraintProto* new_ct2 = context->working_model->add_constraints();
+    *new_ct2 = *ct;
+    if (!ct->name().empty()) {
+      new_ct2->set_name(absl::StrCat(ct->name(), " (part 2)"));
+    }
+    FillDomainInProto(rhs_domain.UnionWith(Domain(rhs_domain.Max(), max_sum)),
+                      new_ct2->mutable_linear());
+
+    context->UpdateNewConstraintsVariableUsage();
+    return (void)RemoveConstraint(ct, context);
+  }
 
   // To avoid a quadratic loop, we will rewrite the linear expression at the
   // same time as we extract enforcement literals.
   int new_size = 0;
   LinearConstraintProto* mutable_arg = ct->mutable_linear();
   for (int i = 0; i < arg.vars_size(); ++i) {
-    // Only work with binary variables.
-    //
-    // TODO(user,user): This could be generalized to non-binary variable
-    // but that would require introducing the encoding "literal <=> integer
-    // variable at is min/max" and using this literal in the enforcement list.
-    // It is thus a bit more involved, and might not be as useful.
+    // We currently only process binary variables.
     const int ref = arg.vars(i);
     if (context->MinOf(ref) == 0 && context->MaxOf(ref) == 1) {
       const int64 coeff = arg.coeffs(i);
-      if (not_lower_bounded) {
+      if (!lower_bounded) {
         if (max_sum - std::abs(coeff) <= rhs_domain.front().end) {
           if (coeff > 0) {
             // Fix the variable to 1 in the constraint and add it as enforcement
@@ -1486,7 +1530,7 @@ void ExtractEnforcementLiteralFromLinearConstraint(ConstraintProto* ct,
           continue;
         }
       } else {
-        DCHECK(not_upper_bounded);
+        DCHECK(!upper_bounded);
         if (min_sum + std::abs(coeff) >= rhs_domain.back().start) {
           if (coeff > 0) {
             // Fix the variable to 0 in the constraint and add its negation as
@@ -1764,6 +1808,7 @@ bool PresolveLinearOnBooleans(ConstraintProto* ct, PresolveContext* context) {
     }
   }
 
+  context->UpdateNewConstraintsVariableUsage();
   return RemoveConstraint(ct, context);
 }
 
@@ -3663,18 +3708,24 @@ bool PresolveOneConstraint(int c, PresolveContext* context) {
       if (PresolveLinear(ct, context)) {
         context->UpdateConstraintVariableUsage(c);
       }
-
+      if (ct->constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
+        if (PresolveLinearOnBooleans(ct, context)) {
+          context->UpdateConstraintVariableUsage(c);
+        }
+      }
       if (ct->constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
         const int old_num_enforcement_literals = ct->enforcement_literal_size();
         ExtractEnforcementLiteralFromLinearConstraint(ct, context);
+        if (ct->constraint_case() ==
+            ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET) {
+          context->UpdateConstraintVariableUsage(c);
+          return true;
+        }
         if (ct->enforcement_literal_size() > old_num_enforcement_literals) {
           if (PresolveLinear(ct, context)) {
             context->UpdateConstraintVariableUsage(c);
           }
         }
-      }
-      if (ct->constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
-        return PresolveLinearOnBooleans(ct, context);
       }
       return false;
     }
@@ -4046,30 +4097,10 @@ void PresolveToFixPoint(const PresolveOptions& options,
     TryToSimplifyDomains(context);
     in_queue.resize(context->working_model->constraints_size(), false);
 
-    // Re-add to the queue constraints that have unique variables. Note that to
-    // not enter an infinite loop, we call each (var, constraint) pair at most
-    // once.
-    for (int v = 0; v < context->var_to_constraints.size(); ++v) {
-      const auto& constraints = context->var_to_constraints[v];
-      if (constraints.size() != 1) continue;
-      const int c = *constraints.begin();
-      if (c < 0) continue;
-      if (gtl::ContainsKey(var_constraint_pair_already_called,
-                           std::pair<int, int>(v, c))) {
-        continue;
-      }
-      var_constraint_pair_already_called.insert({v, c});
-      if (!in_queue[c]) {
-        in_queue[c] = true;
-        queue.push_back(c);
-      }
-    }
-
     // Re-add to the queue the constraints that touch a variable that changed.
     //
     // TODO(user): Avoid reprocessing the constraints that changed the variables
     // with the use of timestamp.
-    const int old_queue_size = queue.size();
     if (context->ModelIsUnsat()) return;
     for (const int v : context->modified_domains.PositionsSetAtLeastOnce()) {
       if (context->IsFixed(v)) context->ExploitFixedDomain(v);
@@ -4081,9 +4112,29 @@ void PresolveToFixPoint(const PresolveOptions& options,
       }
     }
 
+    // Re-add to the queue constraints that have unique variables. Note that to
+    // not enter an infinite loop, we call each (var, constraint) pair at most
+    // once.
+    for (int v = 0; v < context->var_to_constraints.size(); ++v) {
+      const auto& constraints = context->var_to_constraints[v];
+      if (constraints.size() != 1) continue;
+      const int c = *constraints.begin();
+      if (c < 0) continue;
+      if (in_queue[c]) continue;
+      if (gtl::ContainsKey(var_constraint_pair_already_called,
+                           std::pair<int, int>(v, c))) {
+        continue;
+      }
+      var_constraint_pair_already_called.insert({v, c});
+      if (!in_queue[c]) {
+        in_queue[c] = true;
+        queue.push_back(c);
+      }
+    }
+
     // Make sure the order is deterministic! because var_to_constraints[]
     // order changes from one run to the next.
-    std::sort(queue.begin() + old_queue_size, queue.end());
+    std::sort(queue.begin(), queue.end());
     context->modified_domains.SparseClearAll();
   }
 
@@ -4261,6 +4312,13 @@ bool PresolveCpModel(const PresolveOptions& options,
   }
 
   // Main propagation loop.
+  //
+  // TODO(user): The presolve transformations we do after this is called might
+  // result in even more presolve if we where to call this again! improve the
+  // code. See for instance plusexample_6_sat.fzn were represolving the
+  // presolved problem reduces it even more. This is probably due to
+  // RemoveUnusedEquivalentVariables(). We should really improve the handling of
+  // equivalence.
   PresolveToFixPoint(options, &context);
 
   // Runs the probing.
