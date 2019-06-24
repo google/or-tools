@@ -270,6 +270,7 @@ PY_PROTO_TYPEMAP(ortools.linear_solver.linear_solver_pb2,
 %rename (LookupConstraint)
     operations_research::MPSolver::LookupConstraintOrNull;
 %rename (LookupVariable) operations_research::MPSolver::LookupVariableOrNull;
+%unignore operations_research::MPSolver::SeNumThreads;  // No unit test
 %unignore operations_research::MPSolver::SetSolverSpecificParametersAsString;
 %unignore operations_research::MPSolver::NextSolution;
 %unignore operations_research::MPSolver::ExportModelAsLpFormat;
