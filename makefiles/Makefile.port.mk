@@ -93,23 +93,14 @@ endif # ($(SYSTEM),unix)
 
 # Windows specific part.
 ifeq ($(SYSTEM),win)
-  # Detect 32/64bit
-  ifeq ("$(Platform)","X64")  # Visual Studio 2017/2019 64 bit
-    PLATFORM = WIN64
-    PTRLENGTH = 64
-    CBC_PLATFORM_PREFIX = x64
-    GLPK_PLATFORM = w64
-    NETPLATFORM = x64
-  else
-    ifeq ("$(Platform)","x64")  # Visual Studio 2017/2019 64 bit
-      PLATFORM = WIN64
-      PTRLENGTH = 64
-      CBC_PLATFORM_PREFIX = x64
-      GLPK_PLATFORM = w64
-      NETPLATFORM = x64
-    else
-      $(warning "Only visual studio 2017 and up 64 bit is supported")
-    endif
+  PLATFORM = WIN64
+  PTRLENGTH = 64
+  CBC_PLATFORM_PREFIX = x64
+  GLPK_PLATFORM = w64
+  NETPLATFORM = x64
+  # Check 64 bit.
+  ifneq ("$(Platform)","x64")  # Visual Studio 2017/2019 64 bit
+    $(warning "Only 64 bit compilation is supported")
   endif
 
   # Detect visual studio version
@@ -117,18 +108,19 @@ ifeq ($(SYSTEM),win)
     VISUAL_STUDIO_YEAR = 2017
     VISUAL_STUDIO_MAJOR = 15
     VS_RELEASE = v141
-    CMAKE_PLATFORM = "Visual Studio 15 2019 Win64"
-  else
-    ifeq ("$(VisualStudioVersion)","16.0")
-      VISUAL_STUDIO_YEAR = 2019
-      VISUAL_STUDIO_MAJOR = 16
-      VS_RELEASE = v142
-      CMAKE_PLATFORM = "Visual Studio 16 2019" -A x64
-    else
-      $(warning "Unrecognized visual studio version")
-    endif
+    CMAKE_PLATFORM = "Visual Studio 15 2017 Win64"
   endif
-  # OS Specific
+  ifeq ("$(VisualStudioVersion)","16.0")
+    VISUAL_STUDIO_YEAR = 2019
+    VISUAL_STUDIO_MAJOR = 16
+    VS_RELEASE = v142
+    CMAKE_PLATFORM = "Visual Studio 16 2019" -A x64
+  endif
+  ifeq("$(VISUAL_STUDIO_YEAR","")
+    $(warning "Unrecognized visual studio version")
+  endif
+
+# OS Specific
   OS = Windows
   OR_TOOLS_TOP_AUX = $(shell cd)
   OR_TOOLS_TOP = $(shell echo $(OR_TOOLS_TOP_AUX) | tools\\win\\sed.exe -e "s/\\/\\\\/g" | tools\\win\\sed.exe -e "s/ //g")
