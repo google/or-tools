@@ -1018,6 +1018,7 @@ cc_library(
         "//ortools/base:threadpool",
         "//ortools/util:random_engine",
         "//ortools/util:time_limit",
+        "@com_google_absl//absl/synchronization",        
     ],
 )
 

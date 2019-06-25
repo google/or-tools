@@ -20,8 +20,7 @@
 #include <vector>
 
 #if !defined(__PORTABLE_PLATFORM__)
-#include "absl/synchronization/mutex.h"
-#include "ortools/base/threadpool.h"
+ #include "ortools/base/threadpool.h"
 #endif  // __PORTABLE_PLATFORM__
 
 namespace operations_research {
