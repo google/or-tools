@@ -42,7 +42,7 @@ class ThreadPool {
   bool waiting_to_finish_ = false;
   bool waiting_for_capacity_ = false;
   bool started_ = false;
-  int queue_capacity_ = 2000000000;
+  int queue_capacity_ = 2e9;
   std::vector<std::thread> all_workers_;
 };
 }  // namespace operations_research

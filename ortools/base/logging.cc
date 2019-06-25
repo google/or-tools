@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <mutex>
+
 #include "ortools/base/logging.h"
 
 #include "ortools/base/commandlineflags.h"
@@ -18,12 +20,12 @@
 DECLARE_bool(log_prefix);
 DECLARE_bool(logtostderr);
 
+namespace {
+std::once_flag init_done;
+}  // namespace
+ 
 void FixFlagsAndEnvironmentForSwig() {
-  static bool initialized = false;
-  if (!initialized) {
-    google::InitGoogleLogging("swig_helper");
-    initialized = true;
-  }
+  std::call_once(init_done, []{google::InitGoogleLogging("swig_helper"); });
   FLAGS_logtostderr = true;
   FLAGS_log_prefix = false;
 }
