@@ -50,6 +50,9 @@
 <div class="title">com.google.ortools.util.SortedDisjointIntervalList Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p>This class represents a sorted list of disjoint, closed intervals.  
+ <a href="classcom_1_1google_1_1ortools_1_1util_1_1SortedDisjointIntervalList.html#details">More...</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -60,18 +63,23 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a4e4c70acd52c11885f1be85d7ef8d01e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1SortedDisjointIntervalList.html#a4e4c70acd52c11885f1be85d7ef8d01e">SortedDisjointIntervalList</a> (SWIGTYPE_p_std__vectorT_operations_research__ClosedInterval_t intervals)</td></tr>
 <tr class="separator:a4e4c70acd52c11885f1be85d7ef8d01e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1f6d0b6faabd64e3624054a6658fb9a4"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1SortedDisjointIntervalList.html#a1f6d0b6faabd64e3624054a6658fb9a4">SortedDisjointIntervalList</a> (long[] starts, long[] ends)</td></tr>
+<tr class="memdesc:a1f6d0b6faabd64e3624054a6658fb9a4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a <a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1SortedDisjointIntervalList.html" title="This class represents a sorted list of disjoint, closed intervals.">SortedDisjointIntervalList</a> and fills it with intervals [starts[i]..ends[i]].  <a href="#a1f6d0b6faabd64e3624054a6658fb9a4">More...</a><br /></td></tr>
 <tr class="separator:a1f6d0b6faabd64e3624054a6658fb9a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0c7fc8c7edfbe5941806f02d4684d172"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1SortedDisjointIntervalList.html#a0c7fc8c7edfbe5941806f02d4684d172">SortedDisjointIntervalList</a> (int[] starts, int[] ends)</td></tr>
 <tr class="separator:a0c7fc8c7edfbe5941806f02d4684d172"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b4e9592fa16ff6a67bcdf0520ae4a9f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1SortedDisjointIntervalList.html">SortedDisjointIntervalList</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1SortedDisjointIntervalList.html#a8b4e9592fa16ff6a67bcdf0520ae4a9f">buildComplementOnInterval</a> (long start, long end)</td></tr>
+<tr class="memdesc:a8b4e9592fa16ff6a67bcdf0520ae4a9f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Builds the complement of the interval list on the interval [start, end].  <a href="#a8b4e9592fa16ff6a67bcdf0520ae4a9f">More...</a><br /></td></tr>
 <tr class="separator:a8b4e9592fa16ff6a67bcdf0520ae4a9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af662fd2f5bb14d39873a123d410290fe"><td class="memItemLeft" align="right" valign="top">SWIGTYPE_p_std__setT_operations_research__ClosedInterval_operations_research__SortedDisjointIntervalList__IntervalComparator_t__iterator&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1SortedDisjointIntervalList.html#af662fd2f5bb14d39873a123d410290fe">insertInterval</a> (long start, long end)</td></tr>
+<tr class="memdesc:af662fd2f5bb14d39873a123d410290fe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds the interval [start..end] to the list, and merges overlapping or immediately adjacent intervals ([2, 5] and [6, 7] are adjacent, but [2, 5] and [7, 8] are not).  <a href="#af662fd2f5bb14d39873a123d410290fe">More...</a><br /></td></tr>
 <tr class="separator:af662fd2f5bb14d39873a123d410290fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3718baa8fd2cdbd7806908600d182611"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1SortedDisjointIntervalList.html#a3718baa8fd2cdbd7806908600d182611">insertIntervals</a> (long[] starts, long[] ends)</td></tr>
+<tr class="memdesc:a3718baa8fd2cdbd7806908600d182611"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds all intervals [starts[i]..ends[i]].  <a href="#a3718baa8fd2cdbd7806908600d182611">More...</a><br /></td></tr>
 <tr class="separator:a3718baa8fd2cdbd7806908600d182611"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac4976df8cba0b2b6b562162fa0b57cbe"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1SortedDisjointIntervalList.html#ac4976df8cba0b2b6b562162fa0b57cbe">insertIntervals</a> (int[] starts, int[] ends)</td></tr>
 <tr class="separator:ac4976df8cba0b2b6b562162fa0b57cbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1885d2022862877e95e3bf2639ccb8f7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1SortedDisjointIntervalList.html#a1885d2022862877e95e3bf2639ccb8f7">numIntervals</a> ()</td></tr>
+<tr class="memdesc:a1885d2022862877e95e3bf2639ccb8f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of disjoint intervals in the list.  <a href="#a1885d2022862877e95e3bf2639ccb8f7">More...</a><br /></td></tr>
 <tr class="separator:a1885d2022862877e95e3bf2639ccb8f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7544de574928391a1019a158216db05b"><td class="memItemLeft" align="right" valign="top">String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1SortedDisjointIntervalList.html#a7544de574928391a1019a158216db05b">toString</a> ()</td></tr>
 <tr class="separator:a7544de574928391a1019a158216db05b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -94,8 +102,10 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:aa24e2f170b5b4169f38f96143ee7024c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00011">11</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
+<div class="textblock"><p>This class represents a sorted list of disjoint, closed intervals. </p>
+<p>When an interval is inserted, all intervals that overlap it or that are even adjacent to it are merged into one. I.e. [0,14] and [15,30] will be merged to [0,30]. Iterators returned by this class are invalidated by non-const operations. TODO(user): Templatize the class on the type of the bounds. </p>
+
+<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00014">14</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a10bfcaa2a676e8fb580b3e676fd1c492"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a10bfcaa2a676e8fb580b3e676fd1c492">&#9670;&nbsp;</a></span>SortedDisjointIntervalList() <span class="overload">[1/5]</span></h2>
@@ -131,7 +141,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00015">15</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00018">18</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
 
 </div>
 </div>
@@ -158,7 +168,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00038">38</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00042">42</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
 
 </div>
 </div>
@@ -186,7 +196,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00042">42</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00046">46</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
 
 </div>
 </div>
@@ -224,7 +234,10 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00046">46</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
+<p>Creates a <a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1SortedDisjointIntervalList.html" title="This class represents a sorted list of disjoint, closed intervals.">SortedDisjointIntervalList</a> and fills it with intervals [starts[i]..ends[i]]. </p>
+<p>All intervals must be consistent (starts[i] &lt;= ends[i]). There's two version, one for int64, one for int. TODO(user): Explain why we favored this API to the more natural input std::vector&lt;ClosedInterval&gt; or std::vector&lt;std::pair&lt;int, int&gt;&gt;. </p>
+
+<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00053">53</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
 
 </div>
 </div>
@@ -262,7 +275,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00050">50</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00057">57</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
 
 </div>
 </div>
@@ -301,7 +314,9 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00054">54</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
+<p>Builds the complement of the interval list on the interval [start, end]. </p>
+
+<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00064">64</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
 
 </div>
 </div>
@@ -328,7 +343,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00028">28</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00032">32</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
 
 </div>
 </div>
@@ -355,7 +370,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00024">24</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00028">28</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
 
 </div>
 </div>
@@ -383,7 +398,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00020">20</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00023">23</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
 
 </div>
 </div>
@@ -421,7 +436,10 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00058">58</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
+<p>Adds the interval [start..end] to the list, and merges overlapping or immediately adjacent intervals ([2, 5] and [6, 7] are adjacent, but [2, 5] and [7, 8] are not). </p>
+<p>Returns an iterator to the inserted interval (possibly merged with others). If start &gt; end, it does LOG(DFATAL) and returns end() (no interval added). </p>
+
+<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00071">71</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
 
 </div>
 </div>
@@ -459,7 +477,10 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00062">62</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
+<p>Adds all intervals [starts[i]..ends[i]]. </p>
+<p>Same behavior as InsertInterval() upon invalid intervals. There's a version with int64 and int32. </p>
+
+<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00078">78</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
 
 </div>
 </div>
@@ -497,7 +518,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00066">66</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00082">82</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
 
 </div>
 </div>
@@ -524,7 +545,9 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00070">70</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
+<p>Returns the number of disjoint intervals in the list. </p>
+
+<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00089">89</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
 
 </div>
 </div>
@@ -551,7 +574,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00074">74</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00093">93</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
 
 </div>
 </div>
@@ -576,7 +599,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00013">13</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SortedDisjointIntervalList_8java_source.html#l00016">16</a> of file <a class="el" href="SortedDisjointIntervalList_8java_source.html">SortedDisjointIntervalList.java</a>.</p>
 
 </div>
 </div>

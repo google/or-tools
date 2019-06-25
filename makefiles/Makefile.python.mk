@@ -467,7 +467,7 @@ $(GEN_DIR)/ortools/util/sorted_interval_list.py: \
  $(SRC_DIR)/ortools/util/python/sorted_interval_list.i \
  $(UTIL_DEPS) \
  | $(GEN_DIR)/ortools/util
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) \
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python -doxygen $(SWIG_PYTHON3_FLAG) \
  -o $(GEN_PATH)$Sortools$Sutil$Ssorted_interval_list_python_wrap.cc \
  -module sorted_interval_list \
  $(SRC_DIR)$Sortools$Sutil$Spython$Ssorted_interval_list.i
