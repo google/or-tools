@@ -16,11 +16,9 @@
 #include "absl/container/flat_hash_set.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_search.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
-#include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 
@@ -76,6 +74,27 @@ SharedResponseManager::SharedResponseManager(bool log_updates,
       model_proto_(*proto),
       wall_timer_(*wall_timer),
       solutions_(/*num_solutions_to_keep=*/10) {}
+
+namespace {
+
+void LogNewSolution(const std::string& event_or_solution_count,
+                    double time_in_seconds, double obj_best, double obj_lb,
+                    double obj_ub, const std::string& solution_info) {
+  const std::string obj_next =
+      absl::StrFormat("next:[%.9g,%.9g]", obj_lb, obj_ub);
+  LOG(INFO) << absl::StrFormat("#%-5s %6.2fs best:%-5.9g %-15s %s",
+                               event_or_solution_count, time_in_seconds,
+                               obj_best, obj_next, solution_info);
+}
+
+void LogNewSatSolution(const std::string& event_or_solution_count,
+                       double time_in_seconds,
+                       const std::string& solution_info) {
+  LOG(INFO) << absl::StrFormat("#%-5s %6.2fs  %s", event_or_solution_count,
+                               time_in_seconds, solution_info);
+}
+
+}  // namespace
 
 void SharedResponseManager::UpdateInnerObjectiveBounds(
     const std::string& worker_info, IntegerValue lb, IntegerValue ub) {
@@ -272,7 +291,7 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
     std::string solution_info = response.solution_info();
     if (model != nullptr) {
       absl::StrAppend(&solution_info,
-                      " num_bool:", model->Get<SatSolver>()->NumVariables());
+                      " num_bool:", model->Get<Trail>()->NumVariables());
     }
 
     if (model_proto_.has_objective()) {
@@ -405,220 +424,6 @@ void SharedBoundsManager::GetChangedBounds(
     }
     changed_variables_per_workers_[worker_id].ClearAll();
   }
-}
-
-void RegisterVariableBoundsLevelZeroExport(
-    const CpModelProto& model_proto, SharedBoundsManager* shared_bounds_manager,
-    Model* model) {
-  CHECK(shared_bounds_manager != nullptr);
-  int saved_trail_index = 0;
-  const auto broadcast_level_zero_bounds =
-      [&model_proto, saved_trail_index, model, shared_bounds_manager](
-          const std::vector<IntegerVariable>& modified_vars) mutable {
-        CpModelMapping* const mapping = model->GetOrCreate<CpModelMapping>();
-
-        std::vector<int> model_variables;
-        std::vector<int64> new_lower_bounds;
-        std::vector<int64> new_upper_bounds;
-        absl::flat_hash_set<int> visited_variables;
-
-        // Inspect the modified IntegerVariables.
-        auto* integer_trail = model->Get<IntegerTrail>();
-        for (const IntegerVariable& var : modified_vars) {
-          const IntegerVariable positive_var = PositiveVariable(var);
-          const int model_var =
-              mapping->GetProtoVariableFromIntegerVariable(positive_var);
-          if (model_var == -1 || visited_variables.contains(model_var)) {
-            // TODO(user): I don't think we should see the same model_var twice
-            // here so maybe we don't need the visited_variables.contains()
-            // part.
-            continue;
-          }
-
-          visited_variables.insert(model_var);
-          const int64 new_lb =
-              integer_trail->LevelZeroLowerBound(positive_var).value();
-          const int64 new_ub =
-              integer_trail->LevelZeroUpperBound(positive_var).value();
-          // TODO(user): We could imagine an API based on atomic<int64>
-          // that could preemptively check if this new bounds are improving.
-          model_variables.push_back(model_var);
-          new_lower_bounds.push_back(new_lb);
-          new_upper_bounds.push_back(new_ub);
-        }
-
-        // Inspect the newly modified Booleans.
-        auto* trail = model->Get<Trail>();
-        for (; saved_trail_index < trail->Index(); ++saved_trail_index) {
-          const Literal fixed_literal = (*trail)[saved_trail_index];
-          const int model_var = mapping->GetProtoVariableFromBooleanVariable(
-              fixed_literal.Variable());
-          if (model_var == -1 || visited_variables.contains(model_var)) {
-            // If the variable is already visited, it should mean that this
-            // Boolean also has an IntegerVariable view, and we should already
-            // have set its bound correctly.
-            continue;
-          }
-
-          visited_variables.insert(model_var);
-          model_variables.push_back(model_var);
-          if (fixed_literal.IsPositive()) {
-            new_lower_bounds.push_back(1);
-            new_upper_bounds.push_back(1);
-          } else {
-            new_lower_bounds.push_back(0);
-            new_upper_bounds.push_back(0);
-          }
-        }
-
-        if (!model_variables.empty()) {
-          const WorkerInfo* const worker_info =
-              model->GetOrCreate<WorkerInfo>();
-          shared_bounds_manager->ReportPotentialNewBounds(
-              model_proto, worker_info->worker_id, worker_info->worker_name,
-              model_variables, new_lower_bounds, new_upper_bounds);
-        }
-      };
-
-  model->GetOrCreate<GenericLiteralWatcher>()
-      ->RegisterLevelZeroModifiedVariablesCallback(broadcast_level_zero_bounds);
-}
-
-void RegisterVariableBoundsLevelZeroImport(
-    const CpModelProto& model_proto, SharedBoundsManager* shared_bounds_manager,
-    Model* model) {
-  CHECK(shared_bounds_manager != nullptr);
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  const WorkerInfo* const worker_info = model->GetOrCreate<WorkerInfo>();
-  CpModelMapping* const mapping = model->GetOrCreate<CpModelMapping>();
-
-  const auto& import_level_zero_bounds = [&model_proto, shared_bounds_manager,
-                                          model, integer_trail, worker_info,
-                                          mapping]() {
-    std::vector<int> model_variables;
-    std::vector<int64> new_lower_bounds;
-    std::vector<int64> new_upper_bounds;
-    shared_bounds_manager->GetChangedBounds(worker_info->worker_id,
-                                            &model_variables, &new_lower_bounds,
-                                            &new_upper_bounds);
-    bool new_bounds_have_been_imported = false;
-    for (int i = 0; i < model_variables.size(); ++i) {
-      const int model_var = model_variables[i];
-      // This can happen if a boolean variables is forced to have an
-      // integer view in one thread, and not in another thread.
-      if (!mapping->IsInteger(model_var)) continue;
-      const IntegerVariable var = mapping->Integer(model_var);
-      const IntegerValue new_lb(new_lower_bounds[i]);
-      const IntegerValue new_ub(new_upper_bounds[i]);
-      const IntegerValue old_lb = integer_trail->LowerBound(var);
-      const IntegerValue old_ub = integer_trail->UpperBound(var);
-      const bool changed_lb = new_lb > old_lb;
-      const bool changed_ub = new_ub < old_ub;
-      if (!changed_lb && !changed_ub) continue;
-
-      new_bounds_have_been_imported = true;
-      if (VLOG_IS_ON(2)) {
-        const IntegerVariableProto& var_proto =
-            model_proto.variables(model_var);
-        const std::string& var_name =
-            var_proto.name().empty()
-                ? absl::StrCat("anonymous_var(", model_var, ")")
-                : var_proto.name();
-        LOG(INFO) << "  '" << worker_info->worker_name
-                  << "' imports new bounds for " << var_name << ": from ["
-                  << old_lb << ", " << old_ub << "] to [" << new_lb << ", "
-                  << new_ub << "]";
-      }
-
-      if (changed_lb &&
-          !integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(var, new_lb),
-                                  {}, {})) {
-        return false;
-      }
-      if (changed_ub &&
-          !integer_trail->Enqueue(IntegerLiteral::LowerOrEqual(var, new_ub), {},
-                                  {})) {
-        return false;
-      }
-    }
-    if (new_bounds_have_been_imported &&
-        !model->GetOrCreate<SatSolver>()->FinishPropagation()) {
-      return false;
-    }
-    return true;
-  };
-  model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
-      import_level_zero_bounds);
-}
-
-void RegisterObjectiveBestBoundExport(
-    IntegerVariable objective_var,
-    SharedResponseManager* shared_response_manager, Model* model) {
-  std::string worker_name = model->GetOrCreate<WorkerInfo>()->worker_name;
-  auto* integer_trail = model->Get<IntegerTrail>();
-  const auto broadcast_objective_lower_bound =
-      [worker_name, objective_var, integer_trail,
-       shared_response_manager](const std::vector<IntegerVariable>& unused) {
-        shared_response_manager->UpdateInnerObjectiveBounds(
-            worker_name, integer_trail->LevelZeroLowerBound(objective_var),
-            integer_trail->LevelZeroUpperBound(objective_var));
-      };
-  model->GetOrCreate<GenericLiteralWatcher>()
-      ->RegisterLevelZeroModifiedVariablesCallback(
-          broadcast_objective_lower_bound);
-}
-
-void RegisterObjectiveBoundsImport(
-    SharedResponseManager* shared_response_manager, Model* model) {
-  auto* solver = model->GetOrCreate<SatSolver>();
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  auto* worker_info = model->GetOrCreate<WorkerInfo>();
-  auto* objective = model->GetOrCreate<ObjectiveDefinition>();
-  const auto import_objective_bounds = [solver, integer_trail, worker_info,
-                                        objective, shared_response_manager]() {
-    if (solver->AssumptionLevel() != 0) return true;
-    bool propagate = false;
-
-    const IntegerValue external_lb =
-        shared_response_manager->GetInnerObjectiveLowerBound();
-    const IntegerValue current_lb =
-        integer_trail->LowerBound(objective->objective_var);
-    if (external_lb > current_lb) {
-      if (!integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(
-                                      objective->objective_var, external_lb),
-                                  {}, {})) {
-        return false;
-      }
-      propagate = true;
-    }
-
-    const IntegerValue external_ub =
-        shared_response_manager->GetInnerObjectiveUpperBound();
-    const IntegerValue current_ub =
-        integer_trail->UpperBound(objective->objective_var);
-    if (external_ub < current_ub) {
-      if (!integer_trail->Enqueue(IntegerLiteral::LowerOrEqual(
-                                      objective->objective_var, external_ub),
-                                  {}, {})) {
-        return false;
-      }
-      propagate = true;
-    }
-
-    if (!propagate) return true;
-
-    VLOG(1) << "'" << worker_info->worker_name
-            << "' imports objective bounds: external ["
-            << objective->ScaleIntegerObjective(external_lb) << ", "
-            << objective->ScaleIntegerObjective(external_ub) << "], current ["
-            << objective->ScaleIntegerObjective(current_lb) << ", "
-            << objective->ScaleIntegerObjective(current_ub) << "]";
-
-    return solver->FinishPropagation();
-  };
-
-  model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
-      import_objective_bounds);
 }
 
 }  // namespace sat

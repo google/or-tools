@@ -206,16 +206,6 @@ std::vector<std::function<LiteralIndex()>> CompleteHeuristics(
     const std::vector<std::function<LiteralIndex()>>& incomplete_heuristics,
     const std::function<LiteralIndex()>& completion_heuristic);
 
-// Prints out a new optimization solution in a fixed format.
-void LogNewSolution(const std::string& event_or_solution_count,
-                    double time_in_seconds, double obj_best, double obj_lb,
-                    double obj_ub, const std::string& solution_info);
-
-// Prints out a new satisfiability solution in a fixed format.
-void LogNewSatSolution(const std::string& event_or_solution_count,
-                       double time_in_seconds,
-                       const std::string& solution_info);
-
 }  // namespace sat
 }  // namespace operations_research
 

@@ -759,22 +759,5 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(Model* model) {
   return ResetAndSolveIntegerProblem(/*assumptions=*/{}, model);
 }
 
-void LogNewSolution(const std::string& event_or_solution_count,
-                    double time_in_seconds, double obj_best, double obj_lb,
-                    double obj_ub, const std::string& solution_info) {
-  const std::string obj_next =
-      absl::StrFormat("next:[%.9g,%.9g]", obj_lb, obj_ub);
-  LOG(INFO) << absl::StrFormat("#%-5s %6.2fs best:%-5.9g %-15s %s",
-                               event_or_solution_count, time_in_seconds,
-                               obj_best, obj_next, solution_info);
-}
-
-void LogNewSatSolution(const std::string& event_or_solution_count,
-                       double time_in_seconds,
-                       const std::string& solution_info) {
-  LOG(INFO) << absl::StrFormat("#%-5s %6.2fs  %s", event_or_solution_count,
-                               time_in_seconds, solution_info);
-}
-
 }  // namespace sat
 }  // namespace operations_research

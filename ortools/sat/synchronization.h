@@ -211,31 +211,6 @@ class SharedBoundsManager {
   absl::Mutex mutex_;
 };
 
-// Registers a callback to import new variables bounds stored in the
-// shared_bounds_manager. These bounds are imported at level 0 of the search
-// in the linear scan minimize function.
-void RegisterVariableBoundsLevelZeroImport(
-    const CpModelProto& model_proto, SharedBoundsManager* shared_bounds_manager,
-    Model* model);
-
-// Registers a callback that will export variables bounds fixed at level 0 of
-// the search. This should not be registered to a LNS search.
-void RegisterVariableBoundsLevelZeroExport(
-    const CpModelProto& model_proto, SharedBoundsManager* shared_bounds_manager,
-    Model* model);
-
-// Registers a callback to import new objective bounds. It will be called each
-// time the search main loop is back to level zero. Note that it the presence of
-// assumptions, this will not happend until the set of assumptions is changed.
-void RegisterObjectiveBoundsImport(
-    SharedResponseManager* shared_response_manager, Model* model);
-
-// Registers a callback that will report improving objective best bound.
-// It will be called each time new objective bound are propagated at level zero.
-void RegisterObjectiveBestBoundExport(
-    IntegerVariable objective_var,
-    SharedResponseManager* shared_response_manager, Model* model);
-
 // Stores information on the worker in the parallel context.
 struct WorkerInfo {
   std::string worker_name;
