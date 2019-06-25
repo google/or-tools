@@ -13,5 +13,5 @@ java-doc:
 	doxygen tools/doc/java.doxy
 
 python-doc:
-	$(SET_PYTHONPATH) pdoc3 --force --html -o docs/python/ortools/sat/python/ ortools/sat/python/cp_model.py
-	$(SET_PYTHONPATH) pdoc3 --html --force -o docs/python/ortools/util/ ortools/gen/ortools/util/sorted_interval_list.py
+	$(SET_PYTHONPATH) pdoc3 --force --html --template-dir tools/doc/templates -o docs/python/ortools/sat/python/ ortools/sat/python/cp_model.py
+	$(SET_PYTHONPATH) pdoc3 --html --force --template-dir tools/doc/templates -o docs/python/ortools/util/ ortools/gen/ortools/util/sorted_interval_list.py
