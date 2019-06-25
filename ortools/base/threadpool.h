@@ -31,14 +31,18 @@ class ThreadPool {
   void StartWorkers();
   void Schedule(std::function<void()> closure);
   std::function<void()> GetNextTask();
+  void SetQueueCapacity(int capacity);
 
  private:
   const int num_workers_;
   std::list<std::function<void()>> tasks_;
   std::mutex mutex_;
   std::condition_variable condition_;
-  bool waiting_to_finish_;
-  bool started_;
+  std::condition_variable capacity_condition_;
+  bool waiting_to_finish_ = false;
+  bool waiting_for_capacity_ = false;
+  bool started_ = false;
+  int queue_capacity_ = 2000000000;
   std::vector<std::thread> all_workers_;
 };
 }  // namespace operations_research

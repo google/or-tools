@@ -159,7 +159,7 @@ inline void NonDeterministicOptimizeWithLNS(
   // to create millions of them, so we use the blocking nature of
   // pool.Schedule() when the queue capacity is set.
   ThreadPool pool("Parallel_LNS", num_threads);
-  // pool.SetQueueCapacity(10 * num_threads);
+  pool.SetQueueCapacity(10 * num_threads);
   pool.StartWorkers();
   while (!synchronize_and_maybe_stop()) {
     pool.Schedule([&generate_and_solve, seed]() { generate_and_solve(seed); });
