@@ -60,6 +60,13 @@ from ortools.util import sorted_interval_list
 
 Domain = sorted_interval_list.Domain
 
+# Documentation cleaning.
+__pdoc__ = {}
+__pdoc__['DisplayBounds'] = False
+__pdoc__['EvaluateLinearExpr'] = False
+__pdoc__['EvaluateBooleanExpression'] = False
+__pdoc__['ShortName'] = False
+
 # The classes below allow linear expressions to be expressed naturally with the
 # usual arithmetic operators +-*/ and with constant numbers, which makes the
 # python API very intuitive. See ../samples/*.py for examples.

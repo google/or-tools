@@ -119,6 +119,13 @@ from ortools.util import sorted_interval_list
 
 Domain = sorted_interval_list.Domain
 
+# Documentation cleaning.
+__pdoc__ = {}
+__pdoc__[&#39;DisplayBounds&#39;] = False
+__pdoc__[&#39;EvaluateLinearExpr&#39;] = False
+__pdoc__[&#39;EvaluateBooleanExpression&#39;] = False
+__pdoc__[&#39;ShortName&#39;] = False
+
 # The classes below allow linear expressions to be expressed naturally with the
 # usual arithmetic operators +-*/ and with constant numbers, which makes the
 # python API very intuitive. See ../samples/*.py for examples.
@@ -1885,104 +1892,6 @@ class VarArraySolutionPrinter(CpSolverSolutionCallback):
 <section>
 </section>
 <section>
-<h2 class="section-title" id="header-functions">Functions</h2>
-<dl>
-<dt id="cp_model.DisplayBounds"><code class="name flex">
-<span>def <span class="ident">DisplayBounds</span></span>(<span>bounds)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Displays a flattened list of intervals.</p></section>
-<details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def DisplayBounds(bounds):
-    &#34;&#34;&#34;Displays a flattened list of intervals.&#34;&#34;&#34;
-    out = &#39;&#39;
-    for i in range(0, len(bounds), 2):
-        if i != 0:
-            out += &#39;, &#39;
-        if bounds[i] == bounds[i + 1]:
-            out += str(bounds[i])
-        else:
-            out += str(bounds[i]) + &#39;..&#39; + str(bounds[i + 1])
-    return out</code></pre>
-</details>
-</dd>
-<dt id="cp_model.EvaluateBooleanExpression"><code class="name flex">
-<span>def <span class="ident">EvaluateBooleanExpression</span></span>(<span>literal, solution)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Evaluate a boolean expression against a solution.</p></section>
-<details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def EvaluateBooleanExpression(literal, solution):
-    &#34;&#34;&#34;Evaluate a boolean expression against a solution.&#34;&#34;&#34;
-    if isinstance(literal, numbers.Integral):
-        return bool(literal)
-    elif isinstance(literal, IntVar) or isinstance(literal,
-                                                   _NotBooleanVariable):
-        index = literal.Index()
-        if index &gt;= 0:
-            return bool(solution.solution[index])
-        else:
-            return not solution.solution[-index - 1]
-    else:
-        raise TypeError(
-            &#39;Cannot interpret %s as a boolean expression.&#39; % literal)</code></pre>
-</details>
-</dd>
-<dt id="cp_model.EvaluateLinearExpr"><code class="name flex">
-<span>def <span class="ident">EvaluateLinearExpr</span></span>(<span>expression, solution)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Evaluate a linear expression against a solution.</p></section>
-<details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def EvaluateLinearExpr(expression, solution):
-    &#34;&#34;&#34;Evaluate a linear expression against a solution.&#34;&#34;&#34;
-    if isinstance(expression, numbers.Integral):
-        return expression
-    value = 0
-    to_process = [(expression, 1)]
-    while to_process:
-        expr, coef = to_process.pop()
-        if isinstance(expr, _ProductCst):
-            to_process.append((expr.Expression(), coef * expr.Coefficient()))
-        elif isinstance(expr, _SumArray):
-            for e in expr.Expressions():
-                to_process.append((e, coef))
-            value += expr.Constant() * coef
-        elif isinstance(expr, _ScalProd):
-            for e, c in zip(expr.Expressions(), expr.Coefficients()):
-                to_process.append((e, coef * c))
-            value += expr.Constant() * coef
-        elif isinstance(expr, IntVar):
-            value += coef * solution.solution[expr.Index()]
-        elif isinstance(expr, _NotBooleanVariable):
-            value += coef * (1 - solution.solution[expr.Not().Index()])
-    return value</code></pre>
-</details>
-</dd>
-<dt id="cp_model.ShortName"><code class="name flex">
-<span>def <span class="ident">ShortName</span></span>(<span>model, i)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Returns a short name of an integer variable, or its negation.</p></section>
-<details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def ShortName(model, i):
-    &#34;&#34;&#34;Returns a short name of an integer variable, or its negation.&#34;&#34;&#34;
-    if i &lt; 0:
-        return &#39;Not(%s)&#39; % ShortName(model, -i - 1)
-    v = model.variables[i]
-    if v.name:
-        return v.name
-    elif len(v.domain) == 2 and v.domain[0] == v.domain[1]:
-        return str(v.domain[0])
-    else:
-        return &#39;[%s]&#39; % DisplayBounds(v.domain)</code></pre>
-</details>
-</dd>
-</dl>
 </section>
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
@@ -5971,14 +5880,6 @@ def Sum(cls, expressions):
 <ul></ul>
 </div>
 <ul id="index">
-<li><h3><a href="#header-functions">Functions</a></h3>
-<ul class="">
-<li><code><a title="cp_model.DisplayBounds" href="#cp_model.DisplayBounds">DisplayBounds</a></code></li>
-<li><code><a title="cp_model.EvaluateBooleanExpression" href="#cp_model.EvaluateBooleanExpression">EvaluateBooleanExpression</a></code></li>
-<li><code><a title="cp_model.EvaluateLinearExpr" href="#cp_model.EvaluateLinearExpr">EvaluateLinearExpr</a></code></li>
-<li><code><a title="cp_model.ShortName" href="#cp_model.ShortName">ShortName</a></code></li>
-</ul>
-</li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
