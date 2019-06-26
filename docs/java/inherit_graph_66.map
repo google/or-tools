@@ -1,3 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classcom_1_1google_1_1ortools_1_1sat_1_1CpSolver.html" title="Wrapper around the SAT solver." alt="" coords="5,5,182,44"/>
+<area shape="rect" id="node1" href="$classcom_1_1google_1_1ortools_1_1sat_1_1SolutionCallback.html" title=" " alt="" coords="5,5,213,44"/>
+<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverSolutionCallback.html" title="Parent class to create a callback called at each solution." alt="" coords="261,5,437,44"/>
 </map>

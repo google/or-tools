@@ -792,7 +792,8 @@ WARN_LOGFILE           =
 
 INPUT                  = \
   ortools/gen \
-  ortools
+  ortools/com/google/ortools/sat \
+  ortools/com/google/ortools/constraint_solver
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -853,7 +854,7 @@ EXCLUDE_SYMLINKS       = NO
 # Note that the wildcards are matched against the file with absolute path, so to
 # exclude all test directories for example use the pattern */test/*
 
-EXCLUDE_PATTERNS       = */SWIGTYPE* */*swig* */*Swig* */mainJNI*
+EXCLUDE_PATTERNS       = */SWIGTYPE* */*swig* */*Swig* */mainJNI.java */main.java
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names
 # (namespaces, classes, functions, etc.) that should be excluded from the
