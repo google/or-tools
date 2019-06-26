@@ -22,6 +22,15 @@
 #include "ortools/util/sorted_interval_list.h"
 %}
 
+%pythonbegin %{
+__pdoc__ = {}
+__pdoc__['Domain_AllValues'] = False
+__pdoc__['Domain_FromFlatIntervals'] = False
+__pdoc__['Domain_FromIntervals'] = False
+__pdoc__['Domain_FromValues'] = False
+__pdoc__['Domain.thisown'] = False
+%}
+
 %ignoreall
 
 %unignore operations_research;

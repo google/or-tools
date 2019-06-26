@@ -33,6 +33,16 @@ a:link { color: #46641e; text-decoration: none}
 # Do not make changes to this file unless you know what you are doing--modify
 # the SWIG interface file instead.
 
+
+__pdoc__ = {}
+__pdoc__[&#39;Domain_AllValues&#39;] = False
+__pdoc__[&#39;Domain_FromFlatIntervals&#39;] = False
+__pdoc__[&#39;Domain_FromIntervals&#39;] = False
+__pdoc__[&#39;Domain_FromValues&#39;] = False
+__pdoc__[&#39;Domain.thisown&#39;] = False
+
+
+
 from sys import version_info as _swig_python_version_info
 if _swig_python_version_info &lt; (2, 7, 0):
     raise RuntimeError(&#39;Python 2.7 or later required&#39;)
@@ -250,57 +260,6 @@ def __lshift__(*args) -&gt; &#34;std::ostream &amp;&#34;:
 <section>
 </section>
 <section>
-<h2 class="section-title" id="header-functions">Functions</h2>
-<dl>
-<dt id="sorted_interval_list.Domain_AllValues"><code class="name flex">
-<span>def <span class="ident">Domain_AllValues</span></span>(<span>)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Returns the full domain Int64.</p></section>
-<details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def Domain_AllValues() -&gt; &#34;operations_research::Domain&#34;:
-    r&#34;&#34;&#34; Returns the full domain Int64.&#34;&#34;&#34;
-    return _sorted_interval_list.Domain_AllValues()</code></pre>
-</details>
-</dd>
-<dt id="sorted_interval_list.Domain_FromFlatIntervals"><code class="name flex">
-<span>def <span class="ident">Domain_FromFlatIntervals</span></span>(<span>flat_intervals)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>This method is available in Python, Java and .NET. It allows building a Domain object from a flattened list of intervals (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).</p></section>
-<details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def Domain_FromFlatIntervals(flat_intervals: &#39;std::vector&lt; int64 &gt; const &amp;&#39;) -&gt; &#34;operations_research::Domain&#34;:
-    r&#34;&#34;&#34; This method is available in Python, Java and .NET. It allows building a Domain object from a flattened list of intervals (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).&#34;&#34;&#34;
-    return _sorted_interval_list.Domain_FromFlatIntervals(flat_intervals)</code></pre>
-</details>
-</dd>
-<dt id="sorted_interval_list.Domain_FromIntervals"><code class="name flex">
-<span>def <span class="ident">Domain_FromIntervals</span></span>(<span>intervals)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>This method is available in Python, Java and .NET. It allows building a Domain object from a list of intervals (long[][] in Java and .NET, [[0, 2], [5, 5], [8, 10]] in python).</p></section>
-<details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def Domain_FromIntervals(intervals: &#39;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#39;) -&gt; &#34;operations_research::Domain&#34;:
-    r&#34;&#34;&#34; This method is available in Python, Java and .NET. It allows building a Domain object from a list of intervals (long[][] in Java and .NET, [[0, 2], [5, 5], [8, 10]] in python).&#34;&#34;&#34;
-    return _sorted_interval_list.Domain_FromIntervals(intervals)</code></pre>
-</details>
-</dd>
-<dt id="sorted_interval_list.Domain_FromValues"><code class="name flex">
-<span>def <span class="ident">Domain_FromValues</span></span>(<span>values)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Creates a domain from the union of an unsorted list of integer values. Input values may be repeated, with no consequence on the output</p></section>
-<details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def Domain_FromValues(values: &#39;std::vector&lt; int64 &gt;&#39;) -&gt; &#34;operations_research::Domain&#34;:
-    r&#34;&#34;&#34; Creates a domain from the union of an unsorted list of integer values. Input values may be repeated, with no consequence on the output&#34;&#34;&#34;
-    return _sorted_interval_list.Domain_FromValues(values)</code></pre>
-</details>
-</dd>
-</dl>
 </section>
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
@@ -478,17 +437,6 @@ def FromValues(values: &#39;std::vector&lt; int64 &gt;&#39;) -&gt; &#34;operatio
 </details>
 </dd>
 </dl>
-<h3>Instance variables</h3>
-<dl>
-<dt id="sorted_interval_list.Domain.thisown"><code class="name">var <span class="ident">thisown</span></code></dt>
-<dd>
-<section class="desc"><p>The membership flag</p></section>
-<details class="source">
-<summary>Source code</summary>
-<pre><code class="python">thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)</code></pre>
-</details>
-</dd>
-</dl>
 <h3>Methods</h3>
 <dl>
 <dt id="sorted_interval_list.Domain.AdditionWith"><code class="name flex">
@@ -639,14 +587,6 @@ def FromValues(values: &#39;std::vector&lt; int64 &gt;&#39;) -&gt; &#34;operatio
 <ul></ul>
 </div>
 <ul id="index">
-<li><h3><a href="#header-functions">Functions</a></h3>
-<ul class="">
-<li><code><a title="sorted_interval_list.Domain_AllValues" href="#sorted_interval_list.Domain_AllValues">Domain_AllValues</a></code></li>
-<li><code><a title="sorted_interval_list.Domain_FromFlatIntervals" href="#sorted_interval_list.Domain_FromFlatIntervals">Domain_FromFlatIntervals</a></code></li>
-<li><code><a title="sorted_interval_list.Domain_FromIntervals" href="#sorted_interval_list.Domain_FromIntervals">Domain_FromIntervals</a></code></li>
-<li><code><a title="sorted_interval_list.Domain_FromValues" href="#sorted_interval_list.Domain_FromValues">Domain_FromValues</a></code></li>
-</ul>
-</li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
@@ -667,7 +607,6 @@ def FromValues(values: &#39;std::vector&lt; int64 &gt;&#39;) -&gt; &#34;operatio
 <li><code><a title="sorted_interval_list.Domain.Negation" href="#sorted_interval_list.Domain.Negation">Negation</a></code></li>
 <li><code><a title="sorted_interval_list.Domain.Size" href="#sorted_interval_list.Domain.Size">Size</a></code></li>
 <li><code><a title="sorted_interval_list.Domain.UnionWith" href="#sorted_interval_list.Domain.UnionWith">UnionWith</a></code></li>
-<li><code><a title="sorted_interval_list.Domain.thisown" href="#sorted_interval_list.Domain.thisown">thisown</a></code></li>
 </ul>
 </li>
 </ul>
