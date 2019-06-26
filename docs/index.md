@@ -22,3 +22,4 @@
 ## Python documentation
 
 - [CP-SAT module](python/ortools/sat/python/cp_model.html)
+- [Domain module](python/ortools/util/sorted_interval_list.html)
