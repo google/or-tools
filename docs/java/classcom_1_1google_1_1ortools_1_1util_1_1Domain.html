@@ -44,8 +44,6 @@
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
-<a href="#pro-static-methods">Static Protected Member Functions</a> &#124;
-<a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="classcom_1_1google_1_1ortools_1_1util_1_1Domain-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">com.google.ortools.util.Domain Class Reference</div>  </div>
@@ -69,6 +67,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:afe97c8f4886e8389fa0e675153d79aad"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor for the common case of a single interval [left, right].  <a href="#afe97c8f4886e8389fa0e675153d79aad">More...</a><br /></td></tr>
 <tr class="separator:afe97c8f4886e8389fa0e675153d79aad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e5a2a9635145a40646cdc5cad96f179"><td class="memItemLeft" align="right" valign="top">long []&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1Domain.html#a2e5a2a9635145a40646cdc5cad96f179">flattenedIntervals</a> ()</td></tr>
+<tr class="memdesc:a2e5a2a9635145a40646cdc5cad96f179"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method returns the flattened list of interval bounds of the domain.  <a href="#a2e5a2a9635145a40646cdc5cad96f179">More...</a><br /></td></tr>
 <tr class="separator:a2e5a2a9635145a40646cdc5cad96f179"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab43592f4c67c462b52e147242b4f2860"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1Domain.html#ab43592f4c67c462b52e147242b4f2860">isEmpty</a> ()</td></tr>
 <tr class="memdesc:ab43592f4c67c462b52e147242b4f2860"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if this is the empty set.  <a href="#ab43592f4c67c462b52e147242b4f2860">More...</a><br /></td></tr>
@@ -77,9 +76,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:ad8f9aabb9756d040c04d373e23edc7f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of elements in the domain.  <a href="#ad8f9aabb9756d040c04d373e23edc7f0">More...</a><br /></td></tr>
 <tr class="separator:ad8f9aabb9756d040c04d373e23edc7f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8d18576ab944addefccc823796ea777d"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1Domain.html#a8d18576ab944addefccc823796ea777d">min</a> ()</td></tr>
-<tr class="memdesc:a8d18576ab944addefccc823796ea777d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the domain min/max value.  <a href="#a8d18576ab944addefccc823796ea777d">More...</a><br /></td></tr>
+<tr class="memdesc:a8d18576ab944addefccc823796ea777d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the domain min value.  <a href="#a8d18576ab944addefccc823796ea777d">More...</a><br /></td></tr>
 <tr class="separator:a8d18576ab944addefccc823796ea777d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a35f0d751cdaf0896574aa3e7da4fa9d7"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1Domain.html#a35f0d751cdaf0896574aa3e7da4fa9d7">max</a> ()</td></tr>
+<tr class="memdesc:a35f0d751cdaf0896574aa3e7da4fa9d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the domain max value.  <a href="#a35f0d751cdaf0896574aa3e7da4fa9d7">More...</a><br /></td></tr>
 <tr class="separator:a35f0d751cdaf0896574aa3e7da4fa9d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1e28fb70f8dba8d6195f1d15c51fafa7"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1Domain.html#a1e28fb70f8dba8d6195f1d15c51fafa7">contains</a> (long value)</td></tr>
 <tr class="memdesc:a1e28fb70f8dba8d6195f1d15c51fafa7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true iff value is in <a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1Domain.html" title="We call &quot;domain&quot; any subset of Int64 = [kint64min, kint64max].">Domain</a>.  <a href="#a1e28fb70f8dba8d6195f1d15c51fafa7">More...</a><br /></td></tr>
@@ -112,27 +112,16 @@ Static Public Member Functions</h2></td></tr>
 <tr class="memdesc:a299b2f810835cd5f39d5a892140409e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a domain from the union of an unsorted list of integer values.  <a href="#a299b2f810835cd5f39d5a892140409e8">More...</a><br /></td></tr>
 <tr class="separator:a299b2f810835cd5f39d5a892140409e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a19c054d5f6543797b1ad6b402d5f3404"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1Domain.html">Domain</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1Domain.html#a19c054d5f6543797b1ad6b402d5f3404">fromIntervals</a> (long[][] intervals)</td></tr>
-<tr class="memdesc:a19c054d5f6543797b1ad6b402d5f3404"><td class="mdescLeft">&#160;</td><td class="mdescRight">Used in non-C++ languages.  <a href="#a19c054d5f6543797b1ad6b402d5f3404">More...</a><br /></td></tr>
+<tr class="memdesc:a19c054d5f6543797b1ad6b402d5f3404"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method is available in Python, Java and .NET.  <a href="#a19c054d5f6543797b1ad6b402d5f3404">More...</a><br /></td></tr>
 <tr class="separator:a19c054d5f6543797b1ad6b402d5f3404"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0fd1b8ab1206e8c10f6fa6dc5dd21e12"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1Domain.html">Domain</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1Domain.html#a0fd1b8ab1206e8c10f6fa6dc5dd21e12">fromFlatIntervals</a> (long[] flat_intervals)</td></tr>
+<tr class="memdesc:a0fd1b8ab1206e8c10f6fa6dc5dd21e12"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method is available in Python, Java and .NET.  <a href="#a0fd1b8ab1206e8c10f6fa6dc5dd21e12">More...</a><br /></td></tr>
 <tr class="separator:a0fd1b8ab1206e8c10f6fa6dc5dd21e12"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
 <tr class="memitem:af815910dab415f43bb698be41e858c0b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1Domain.html#af815910dab415f43bb698be41e858c0b">Domain</a> (long cPtr, boolean cMemoryOwn)</td></tr>
 <tr class="separator:af815910dab415f43bb698be41e858c0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7b0325f0eca6f353082a6c9248e5e5bf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1Domain.html#a7b0325f0eca6f353082a6c9248e5e5bf">finalize</a> ()</td></tr>
-<tr class="separator:a7b0325f0eca6f353082a6c9248e5e5bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-static-methods"></a>
-Static Protected Member Functions</h2></td></tr>
-<tr class="memitem:ab5f3ed5777872605474f1aa0fbe8e81a"><td class="memItemLeft" align="right" valign="top">static long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1Domain.html#ab5f3ed5777872605474f1aa0fbe8e81a">getCPtr</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1Domain.html">Domain</a> obj)</td></tr>
-<tr class="separator:ab5f3ed5777872605474f1aa0fbe8e81a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
-Protected Attributes</h2></td></tr>
-<tr class="memitem:a363d6de2be7fef82653297dbc3a8da1f"><td class="memItemLeft" align="right" valign="top">transient boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1Domain.html#a363d6de2be7fef82653297dbc3a8da1f">swigCMemOwn</a></td></tr>
-<tr class="separator:a363d6de2be7fef82653297dbc3a8da1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>We call "domain" any subset of Int64 = [kint64min, kint64max]. </p>
@@ -305,7 +294,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns {x ∈ Int64, ∃ a ∈ D, ∃ b ∈ domain, x = a + b}. </p>
 
-<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00155">155</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00164">164</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
 
 </div>
 </div>
@@ -363,7 +352,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the set Int64 ∖ D. </p>
 
-<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00127">127</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00136">136</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
 
 </div>
 </div>
@@ -393,7 +382,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns true iff value is in <a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1Domain.html" title="We call &quot;domain&quot; any subset of Int64 = [kint64min, kint64max].">Domain</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00120">120</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00129">129</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
 
 </div>
 </div>
@@ -424,33 +413,6 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a7b0325f0eca6f353082a6c9248e5e5bf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7b0325f0eca6f353082a6c9248e5e5bf">&#9670;&nbsp;</a></span>finalize()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void com.google.ortools.util.Domain.finalize </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00028">28</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
-
-</div>
-</div>
 <a id="a2e5a2a9635145a40646cdc5cad96f179"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2e5a2a9635145a40646cdc5cad96f179">&#9670;&nbsp;</a></span>flattenedIntervals()</h2>
 
@@ -474,7 +436,10 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00088">88</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
+<p>This method returns the flattened list of interval bounds of the domain. </p>
+<p>Thus the domain {0, 1, 2, 5, 8, 9, 10} will return <a href="as a C++ std::vector&amp;lt;int64&amp;gt;, as a java or C# long[], as a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
+
+<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00094">94</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
 
 </div>
 </div>
@@ -502,7 +467,10 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00084">84</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
+<p>This method is available in Python, Java and .NET. </p>
+<p>It allows building a <a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1Domain.html" title="We call &quot;domain&quot; any subset of Int64 = [kint64min, kint64max].">Domain</a> object from a flattened list of intervals (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python). </p>
+
+<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00087">87</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
 
 </div>
 </div>
@@ -530,8 +498,8 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Used in non-C++ languages. </p>
-<p>Do not use directly. </p>
+<p>This method is available in Python, Java and .NET. </p>
+<p>It allows building a <a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1Domain.html" title="We call &quot;domain&quot; any subset of Int64 = [kint64min, kint64max].">Domain</a> object from a list of intervals (long[][] in Java and .NET, [[0, 2], [5, 5], [8, 10]] in python). </p>
 
 <p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00080">80</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
 
@@ -568,34 +536,6 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="ab5f3ed5777872605474f1aa0fbe8e81a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab5f3ed5777872605474f1aa0fbe8e81a">&#9670;&nbsp;</a></span>getCPtr()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static long com.google.ortools.util.Domain.getCPtr </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1Domain.html">Domain</a>&#160;</td>
-          <td class="paramname"><em>obj</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span><span class="mlabel">protected</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00023">23</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
-
-</div>
-</div>
 <a id="ab2f20e0b44bbcd89b238ff313b362f1e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab2f20e0b44bbcd89b238ff313b362f1e">&#9670;&nbsp;</a></span>intersectionWith()</h2>
 
@@ -622,7 +562,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the set D ∩ domain. </p>
 
-<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00141">141</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00150">150</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
 
 </div>
 </div>
@@ -651,7 +591,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns true if this is the empty set. </p>
 
-<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00095">95</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00101">101</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
 
 </div>
 </div>
@@ -678,7 +618,10 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00113">113</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
+<p>Returns the domain max value. </p>
+<p>It checks that the domain is not empty. </p>
+
+<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00122">122</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
 
 </div>
 </div>
@@ -705,10 +648,10 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Returns the domain min/max value. </p>
-<p>This Checks that the domain is not empty. </p>
+<p>Returns the domain min value. </p>
+<p>It checks that the domain is not empty. </p>
 
-<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00109">109</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00115">115</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
 
 </div>
 </div>
@@ -738,7 +681,7 @@ Protected Attributes</h2></td></tr>
 <p>Returns {x ∈ Int64, ∃ e ∈ D, x = -e}. </p>
 <p>Note in particular that if the negation of Int64 is not Int64 but Int64 \ {kint64min} !! </p>
 
-<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00134">134</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00143">143</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
 
 </div>
 </div>
@@ -768,7 +711,7 @@ Protected Attributes</h2></td></tr>
 <p>Returns the number of elements in the domain. </p>
 <p>It is capped at kint64max. </p>
 
-<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00102">102</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00108">108</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
 
 </div>
 </div>
@@ -797,7 +740,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns a compact std::string of a vector of intervals like "[1,4][6][10,20]". </p>
 
-<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00162">162</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00171">171</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
 
 </div>
 </div>
@@ -827,32 +770,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the set D ∪ domain. </p>
 
-<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00148">148</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Member Data Documentation</h2>
-<a id="a363d6de2be7fef82653297dbc3a8da1f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a363d6de2be7fef82653297dbc3a8da1f">&#9670;&nbsp;</a></span>swigCMemOwn</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">transient boolean com.google.ortools.util.Domain.swigCMemOwn</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00016">16</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Domain_8java_source.html#l00157">157</a> of file <a class="el" href="Domain_8java_source.html">Domain.java</a>.</p>
 
 </div>
 </div>

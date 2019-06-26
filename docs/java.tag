@@ -94,12 +94,6 @@
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
-    <name>BinPackingProblemSat.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/sat/samples/</path>
-    <filename>BinPackingProblemSat_8java</filename>
-    <class kind="class">BinPackingProblemSat</class>
-  </compound>
-  <compound kind="file">
     <name>BoolArgumentProto.java</name>
     <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/sat/</path>
     <filename>BoolArgumentProto_8java</filename>
@@ -122,12 +116,6 @@
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
-    <name>BoolOrSampleSat.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/sat/samples/</path>
-    <filename>BoolOrSampleSat_8java</filename>
-    <class kind="class">BoolOrSampleSat</class>
-  </compound>
-  <compound kind="file">
     <name>CastConstraint.java</name>
     <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>CastConstraint_8java</filename>
@@ -140,12 +128,6 @@
     <filename>ChangeValue_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::ChangeValue</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>ChannelingSampleSat.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/sat/samples/</path>
-    <filename>ChannelingSampleSat_8java</filename>
-    <class kind="class">ChannelingSampleSat</class>
   </compound>
   <compound kind="file">
     <name>CheapestAdditionFilteredDecisionBuilder.java</name>
@@ -257,12 +239,6 @@
     <filename>CPFeasibilityFilter_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::CPFeasibilityFilter</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>CpIsFunSat.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/sat/samples/</path>
-    <filename>CpIsFunSat_8java</filename>
-    <class kind="class">CpIsFunSat</class>
   </compound>
   <compound kind="file">
     <name>CpModel.java</name>
@@ -437,12 +413,6 @@
     <namespace>com::google::ortools::util</namespace>
   </compound>
   <compound kind="file">
-    <name>EarlinessTardinessCostSampleSat.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/sat/samples/</path>
-    <filename>EarlinessTardinessCostSampleSat_8java</filename>
-    <class kind="class">EarlinessTardinessCostSampleSat</class>
-  </compound>
-  <compound kind="file">
     <name>ElementConstraintProto.java</name>
     <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/sat/</path>
     <filename>ElementConstraintProto_8java</filename>
@@ -538,12 +508,6 @@
     <filename>IntervalConstraintProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::IntervalConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
-  </compound>
-  <compound kind="file">
-    <name>IntervalSampleSat.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/sat/samples/</path>
-    <filename>IntervalSampleSat_8java</filename>
-    <class kind="class">IntervalSampleSat</class>
   </compound>
   <compound kind="file">
     <name>gen/com/google/ortools/constraintsolver/IntervalVar.java</name>
@@ -673,12 +637,6 @@
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
-    <name>Knapsack.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/algorithms/samples/</path>
-    <filename>Knapsack_8java</filename>
-    <class kind="class">Knapsack</class>
-  </compound>
-  <compound kind="file">
     <name>KnapsackSolver.java</name>
     <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/algorithms/</path>
     <filename>KnapsackSolver_8java</filename>
@@ -709,12 +667,6 @@
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
-    <name>LinearProgrammingExample.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/linear_solver/samples/</path>
-    <filename>LinearProgrammingExample_8java</filename>
-    <class kind="class">LinearProgrammingExample</class>
-  </compound>
-  <compound kind="file">
     <name>LinearSumAssignment.java</name>
     <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/graph/</path>
     <filename>LinearSumAssignment_8java</filename>
@@ -728,12 +680,6 @@
     <filename>Literal_8java</filename>
     <class kind="interface">com::google::ortools::sat::Literal</class>
     <namespace>com::google::ortools::sat</namespace>
-  </compound>
-  <compound kind="file">
-    <name>LiteralSampleSat.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/sat/samples/</path>
-    <filename>LiteralSampleSat_8java</filename>
-    <class kind="class">LiteralSampleSat</class>
   </compound>
   <compound kind="file">
     <name>LocalCheapestInsertionFilteredDecisionBuilder.java</name>
@@ -975,12 +921,6 @@
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
-    <name>NoOverlapSampleSat.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/sat/samples/</path>
-    <filename>NoOverlapSampleSat_8java</filename>
-    <class kind="class">NoOverlapSampleSat</class>
-  </compound>
-  <compound kind="file">
     <name>NotBooleanVariable.java</name>
     <path>/Users/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
     <filename>NotBooleanVariable_8java</filename>
@@ -1007,12 +947,6 @@
     <filename>OptionalBooleanOuterClass_8java</filename>
     <class kind="class">com::google::ortools::util::OptionalBooleanOuterClass</class>
     <namespace>com::google::ortools::util</namespace>
-  </compound>
-  <compound kind="file">
-    <name>OptionalIntervalSampleSat.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/sat/samples/</path>
-    <filename>OptionalIntervalSampleSat_8java</filename>
-    <class kind="class">OptionalIntervalSampleSat</class>
   </compound>
   <compound kind="file">
     <name>Pack.java</name>
@@ -1072,18 +1006,6 @@
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
-    <name>RabbitsAndPheasantsSat.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/sat/samples/</path>
-    <filename>RabbitsAndPheasantsSat_8java</filename>
-    <class kind="class">RabbitsAndPheasantsSat</class>
-  </compound>
-  <compound kind="file">
-    <name>RankingSampleSat.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/sat/samples/</path>
-    <filename>RankingSampleSat_8java</filename>
-    <class kind="class">RankingSampleSat</class>
-  </compound>
-  <compound kind="file">
     <name>RegularLimit.java</name>
     <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RegularLimit_8java</filename>
@@ -1104,12 +1026,6 @@
     <filename>RegularLimitParametersOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::RegularLimitParametersOrBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>ReifiedSampleSat.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/sat/samples/</path>
-    <filename>ReifiedSampleSat_8java</filename>
-    <class kind="class">ReifiedSampleSat</class>
   </compound>
   <compound kind="file">
     <name>ReservoirConstraintProto.java</name>
@@ -1306,12 +1222,6 @@
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
-    <name>SearchForAllSolutionsSampleSat.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/sat/samples/</path>
-    <filename>SearchForAllSolutionsSampleSat_8java</filename>
-    <class kind="class">SearchForAllSolutionsSampleSat</class>
-  </compound>
-  <compound kind="file">
     <name>SearchLimit.java</name>
     <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SearchLimit_8java</filename>
@@ -1382,36 +1292,6 @@
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
-    <name>SimpleCpProgram.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/constraint_solver/samples/</path>
-    <filename>SimpleCpProgram_8java</filename>
-    <class kind="class">SimpleCpProgram</class>
-  </compound>
-  <compound kind="file">
-    <name>SimpleLpProgram.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/linear_solver/samples/</path>
-    <filename>SimpleLpProgram_8java</filename>
-    <class kind="class">SimpleLpProgram</class>
-  </compound>
-  <compound kind="file">
-    <name>SimpleMipProgram.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/linear_solver/samples/</path>
-    <filename>SimpleMipProgram_8java</filename>
-    <class kind="class">SimpleMipProgram</class>
-  </compound>
-  <compound kind="file">
-    <name>SimpleRoutingProgram.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/constraint_solver/samples/</path>
-    <filename>SimpleRoutingProgram_8java</filename>
-    <class kind="class">SimpleRoutingProgram</class>
-  </compound>
-  <compound kind="file">
-    <name>SimpleSatProgram.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/sat/samples/</path>
-    <filename>SimpleSatProgram_8java</filename>
-    <class kind="class">SimpleSatProgram</class>
-  </compound>
-  <compound kind="file">
     <name>SolutionCallback.java</name>
     <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/sat/</path>
     <filename>SolutionCallback_8java</filename>
@@ -1433,12 +1313,6 @@
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
-    <name>SolveAndPrintIntermediateSolutionsSampleSat.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/sat/samples/</path>
-    <filename>SolveAndPrintIntermediateSolutionsSampleSat_8java</filename>
-    <class kind="class">SolveAndPrintIntermediateSolutionsSampleSat</class>
-  </compound>
-  <compound kind="file">
     <name>Solver.java</name>
     <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>Solver_8java</filename>
@@ -1455,29 +1329,11 @@
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
-    <name>SolveWithTimeLimitSampleSat.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/sat/samples/</path>
-    <filename>SolveWithTimeLimitSampleSat_8java</filename>
-    <class kind="class">SolveWithTimeLimitSampleSat</class>
-  </compound>
-  <compound kind="file">
     <name>SortedDisjointIntervalList.java</name>
     <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/util/</path>
     <filename>SortedDisjointIntervalList_8java</filename>
     <class kind="class">com::google::ortools::util::SortedDisjointIntervalList</class>
     <namespace>com::google::ortools::util</namespace>
-  </compound>
-  <compound kind="file">
-    <name>StepFunctionSampleSat.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/sat/samples/</path>
-    <filename>StepFunctionSampleSat_8java</filename>
-    <class kind="class">StepFunctionSampleSat</class>
-  </compound>
-  <compound kind="file">
-    <name>StopAfterNSolutionsSampleSat.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/sat/samples/</path>
-    <filename>StopAfterNSolutionsSampleSat_8java</filename>
-    <class kind="class">StopAfterNSolutionsSampleSat</class>
   </compound>
   <compound kind="file">
     <name>SumOfVariables.java</name>
@@ -1509,30 +1365,6 @@
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
-    <name>Tsp.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/constraint_solver/samples/</path>
-    <filename>Tsp_8java</filename>
-    <class kind="class">Tsp</class>
-  </compound>
-  <compound kind="file">
-    <name>TspCircuitBoard.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/constraint_solver/samples/</path>
-    <filename>TspCircuitBoard_8java</filename>
-    <class kind="class">TspCircuitBoard</class>
-  </compound>
-  <compound kind="file">
-    <name>TspCities.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/constraint_solver/samples/</path>
-    <filename>TspCities_8java</filename>
-    <class kind="class">TspCities</class>
-  </compound>
-  <compound kind="file">
-    <name>TspDistanceMatrix.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/constraint_solver/samples/</path>
-    <filename>TspDistanceMatrix_8java</filename>
-    <class kind="class">TspDistanceMatrix</class>
-  </compound>
-  <compound kind="file">
     <name>TypeIncompatibilityChecker.java</name>
     <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>TypeIncompatibilityChecker_8java</filename>
@@ -1559,78 +1391,6 @@
     <filename>TypeRequirementChecker_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::TypeRequirementChecker</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>Vrp.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/constraint_solver/samples/</path>
-    <filename>Vrp_8java</filename>
-    <class kind="class">Vrp</class>
-  </compound>
-  <compound kind="file">
-    <name>VrpCapacity.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/constraint_solver/samples/</path>
-    <filename>VrpCapacity_8java</filename>
-    <class kind="class">VrpCapacity</class>
-  </compound>
-  <compound kind="file">
-    <name>VrpDropNodes.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/constraint_solver/samples/</path>
-    <filename>VrpDropNodes_8java</filename>
-    <class kind="class">VrpDropNodes</class>
-  </compound>
-  <compound kind="file">
-    <name>VrpGlobalSpan.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/constraint_solver/samples/</path>
-    <filename>VrpGlobalSpan_8java</filename>
-    <class kind="class">VrpGlobalSpan</class>
-  </compound>
-  <compound kind="file">
-    <name>VrpInitialRoutes.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/constraint_solver/samples/</path>
-    <filename>VrpInitialRoutes_8java</filename>
-    <class kind="class">VrpInitialRoutes</class>
-  </compound>
-  <compound kind="file">
-    <name>VrpPickupDelivery.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/constraint_solver/samples/</path>
-    <filename>VrpPickupDelivery_8java</filename>
-    <class kind="class">VrpPickupDelivery</class>
-  </compound>
-  <compound kind="file">
-    <name>VrpPickupDeliveryFifo.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/constraint_solver/samples/</path>
-    <filename>VrpPickupDeliveryFifo_8java</filename>
-    <class kind="class">VrpPickupDeliveryFifo</class>
-  </compound>
-  <compound kind="file">
-    <name>VrpPickupDeliveryLifo.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/constraint_solver/samples/</path>
-    <filename>VrpPickupDeliveryLifo_8java</filename>
-    <class kind="class">VrpPickupDeliveryLifo</class>
-  </compound>
-  <compound kind="file">
-    <name>VrpResources.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/constraint_solver/samples/</path>
-    <filename>VrpResources_8java</filename>
-    <class kind="class">VrpResources</class>
-  </compound>
-  <compound kind="file">
-    <name>VrpStartsEnds.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/constraint_solver/samples/</path>
-    <filename>VrpStartsEnds_8java</filename>
-    <class kind="class">VrpStartsEnds</class>
-  </compound>
-  <compound kind="file">
-    <name>VrpTimeWindows.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/constraint_solver/samples/</path>
-    <filename>VrpTimeWindows_8java</filename>
-    <class kind="class">VrpTimeWindows</class>
-  </compound>
-  <compound kind="file">
-    <name>VrpWithTimeLimit.java</name>
-    <path>/Users/lperron/Work/or-tools/ortools/constraint_solver/samples/</path>
-    <filename>VrpWithTimeLimit_8java</filename>
-    <class kind="class">VrpWithTimeLimit</class>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::sat::DecisionStrategyProto::AffineTransformation</name>
@@ -3000,41 +2760,6 @@
       <anchor>a70f1c08839c86d0bfc0c8ffdf0d481f5</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html</anchorfile>
-      <anchor>aadbf4a27ebc20623e3ec7dad72b6e164</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html</anchorfile>
-      <anchor>a707b24f1a76b75dac38a50a616da79d7</anchor>
-      <arglist>(Assignment obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html</anchorfile>
-      <anchor>a995fc7a29862ea990fcbbfc350c81a8b</anchor>
-      <arglist>(PropagationBaseObject obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::constraintsolver::AssignmentElement</name>
@@ -3080,27 +2805,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentElement.html</anchorfile>
       <anchor>a128fbc021dacba7893e448261d104c85</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentElement.html</anchorfile>
-      <anchor>a695d50858b1d3cb4c29eb2e27813e082</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentElement.html</anchorfile>
-      <anchor>adc898e166a48a898881b8220170544f7</anchor>
-      <arglist>(AssignmentElement obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentElement.html</anchorfile>
-      <anchor>ad2b85cacb5929d8c0e6b7040a768094a</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -3246,27 +2950,6 @@
       <anchor>a6b4011078eeb7a80a51b1a72c88ff130</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentIntContainer.html</anchorfile>
-      <anchor>a9e1186f36a4247707a5257dec2309cef</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentIntContainer.html</anchorfile>
-      <anchor>ab989f6ee0a8583be4f1df339385f53c2</anchor>
-      <arglist>(AssignmentIntContainer obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentIntContainer.html</anchorfile>
-      <anchor>a831579c7c6833a950838aada411f4463</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::constraintsolver::AssignmentIntervalContainer</name>
@@ -3411,27 +3094,6 @@
       <anchor>aee1022abb6e0e72b9d5c8e91b21e4a0e</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentIntervalContainer.html</anchorfile>
-      <anchor>a125993b64cc4fabd0693df0f2081e01f</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentIntervalContainer.html</anchorfile>
-      <anchor>ad30b8b9f48ecf9ae5e3ea73c6b3cc410</anchor>
-      <arglist>(AssignmentIntervalContainer obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentIntervalContainer.html</anchorfile>
-      <anchor>a1c67d4cdea9b0b09ef377a37e8180512</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::constraintsolver::AssignmentSequenceContainer</name>
@@ -3575,27 +3237,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentSequenceContainer.html</anchorfile>
       <anchor>aba0e407252ee52518cc3cfa3dfb21255</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentSequenceContainer.html</anchorfile>
-      <anchor>ae77a3a1f81ee90613f9688d6f2cfd206</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentSequenceContainer.html</anchorfile>
-      <anchor>ade9edb102b9085c1412cb176620244d2</anchor>
-      <arglist>(AssignmentSequenceContainer obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentSequenceContainer.html</anchorfile>
-      <anchor>a9ceee0df6f2f82091b503dee27668fd7</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -4291,48 +3932,6 @@
       <anchor>a68cd1c626f8ce2d56f654fd40b94e99f</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseIntExpr.html</anchorfile>
-      <anchor>a3cbe53ba6f7e501c1e35b89f5810fdc4</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseIntExpr.html</anchorfile>
-      <anchor>a87656ae86acf9e319b718ecd4ec785ef</anchor>
-      <arglist>(BaseIntExpr obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html</anchorfile>
-      <anchor>a2353181559087d7bf91cb959a01b51d1</anchor>
-      <arglist>(IntExpr obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html</anchorfile>
-      <anchor>a995fc7a29862ea990fcbbfc350c81a8b</anchor>
-      <arglist>(PropagationBaseObject obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::constraintsolver::BaseLns</name>
@@ -4522,13 +4121,6 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseLns.html</anchorfile>
-      <anchor>aa56aada0b54d01f8ac0127763e5b5c7b</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseLns.html</anchorfile>
       <anchor>a81ca011b3252b5b2710bd7dcf2b1e5db</anchor>
@@ -4540,48 +4132,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperator.html</anchorfile>
       <anchor>abde08482ebc8b49e8c278b876b829967</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseLns.html</anchorfile>
-      <anchor>a429983f3afd0f2d55251c050811ae4a0</anchor>
-      <arglist>(BaseLns obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperator.html</anchorfile>
-      <anchor>ae0afca5fe4873dd8bfef5b2bf896148f</anchor>
-      <arglist>(IntVarLocalSearchOperator obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html</anchorfile>
-      <anchor>a6ad224b3a59ae94fa35f90b68565635d</anchor>
-      <arglist>(IntVarLocalSearchOperatorTemplate obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html</anchorfile>
-      <anchor>a8176d5687daba07e0feb858b6691dde9</anchor>
-      <arglist>(LocalSearchOperator obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -4614,27 +4164,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
       <anchor>a7146e63876ebbd7e45a375e76615e84d</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a592ad32c16e7218db6ff28d7c888c560</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -4762,52 +4291,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BasePathFilter.html</anchorfile>
-      <anchor>af62a0dcbeac3f8ff969cb13126a71149</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html</anchorfile>
       <anchor>a08e04f9736f6ffadc24c160d7c16d3d8</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BasePathFilter.html</anchorfile>
-      <anchor>a90ebcaa3b6b583a307d0c23bd2b92756</anchor>
-      <arglist>(BasePathFilter obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html</anchorfile>
-      <anchor>adfcffbf7a04e887c388cb2d55982d3bb</anchor>
-      <arglist>(IntVarLocalSearchFilter obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html</anchorfile>
-      <anchor>af14eec40bd63f64b610ef589326fcc0c</anchor>
-      <arglist>(LocalSearchFilter obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="enum">
@@ -4991,17 +4478,6 @@
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1BinaryMinizationAlgorithm.html</anchorfile>
       <anchor>acdf9b42498ac5cad9304d3695ff78927</anchor>
       <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>BinPackingProblemSat</name>
-    <filename>classBinPackingProblemSat.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classBinPackingProblemSat.html</anchorfile>
-      <anchor>afa9e5ac747bed45c6c2b421e3c8bcf21</anchor>
-      <arglist>(String[] args)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -5640,66 +5116,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BooleanVar.html</anchorfile>
       <anchor>a5587825bf88231c2e55b3ac87e24d4b9</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BooleanVar.html</anchorfile>
-      <anchor>a67b50eda3257ec4ee1a16f2c2b60d681</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BooleanVar.html</anchorfile>
-      <anchor>a9a2733dcb4b758b1187159cbf02f5303</anchor>
-      <arglist>(BooleanVar obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html</anchorfile>
-      <anchor>a50ae111ba920d913405309f10df98f13</anchor>
-      <arglist>(IntVar obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html</anchorfile>
-      <anchor>a2353181559087d7bf91cb959a01b51d1</anchor>
-      <arglist>(IntExpr obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html</anchorfile>
-      <anchor>a995fc7a29862ea990fcbbfc350c81a8b</anchor>
-      <arglist>(PropagationBaseObject obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>BoolOrSampleSat</name>
-    <filename>classBoolOrSampleSat.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classBoolOrSampleSat.html</anchorfile>
-      <anchor>a38d97381f4f63285851824f27602352e</anchor>
-      <arglist>(String[] args)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -20895,48 +20311,6 @@
       <anchor>a0a88193baaa092bc11c34c6d3916fcf0</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CastConstraint.html</anchorfile>
-      <anchor>aae02143386893b443e677e319dd54cb2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CastConstraint.html</anchorfile>
-      <anchor>aa0a7e38a0df9fab0dcf85c4224f09748</anchor>
-      <arglist>(CastConstraint obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html</anchorfile>
-      <anchor>a0ad5f96c0944de8b3fa7b25b7ed18e0f</anchor>
-      <arglist>(Constraint obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html</anchorfile>
-      <anchor>a995fc7a29862ea990fcbbfc350c81a8b</anchor>
-      <arglist>(PropagationBaseObject obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::constraintsolver::ChangeValue</name>
@@ -21105,13 +20479,6 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ChangeValue.html</anchorfile>
-      <anchor>a734fc08a2df35f1c67e76ef242b57ca9</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ChangeValue.html</anchorfile>
       <anchor>a66298c61e4041c20cb4644291935a5db</anchor>
@@ -21123,59 +20490,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ChangeValue.html</anchorfile>
       <anchor>ab804629a992effb9e6be4416bd6a380e</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ChangeValue.html</anchorfile>
-      <anchor>a9d4de7f6fe88add7f24905743eff703c</anchor>
-      <arglist>(ChangeValue obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperator.html</anchorfile>
-      <anchor>ae0afca5fe4873dd8bfef5b2bf896148f</anchor>
-      <arglist>(IntVarLocalSearchOperator obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html</anchorfile>
-      <anchor>a6ad224b3a59ae94fa35f90b68565635d</anchor>
-      <arglist>(IntVarLocalSearchOperatorTemplate obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html</anchorfile>
-      <anchor>a8176d5687daba07e0feb858b6691dde9</anchor>
-      <arglist>(LocalSearchOperator obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>ChannelingSampleSat</name>
-    <filename>classChannelingSampleSat.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classChannelingSampleSat.html</anchorfile>
-      <anchor>aa38d0268322dc5961f11b1f2fd3809b2</anchor>
-      <arglist>(String[] args)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -21282,59 +20596,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CheapestAdditionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a1125287814c81e8d144ddc61d629f6f8</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
       <anchor>a537c035d613b4940217479bcd83d542d</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CheapestAdditionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a3f81af2455468e487c1ee476409e6fa0</anchor>
-      <arglist>(CheapestAdditionFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a0d31debb12fc1a1196de53d8a72f42a0</anchor>
-      <arglist>(RoutingFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ac4fbd86893628f36e1c989e169f291be</anchor>
-      <arglist>(IntVarFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a59f1100e495eba9d3210feb258105c21</anchor>
-      <arglist>(DecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -21441,59 +20706,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a1b6a75795f79b4a3de167c385a14f59c</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
       <anchor>a537c035d613b4940217479bcd83d542d</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>add460632c9879f9b8cb2e42bc22c568a</anchor>
-      <arglist>(CheapestInsertionFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a0d31debb12fc1a1196de53d8a72f42a0</anchor>
-      <arglist>(RoutingFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ac4fbd86893628f36e1c989e169f291be</anchor>
-      <arglist>(IntVarFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a59f1100e495eba9d3210feb258105c21</anchor>
-      <arglist>(DecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -21600,59 +20816,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ChristofidesFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ae68a03bdbc5608f084dac75c6247efa5</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
       <anchor>a537c035d613b4940217479bcd83d542d</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ChristofidesFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ab8577a5e5b7523ee1e1e3f98a53f4c81</anchor>
-      <arglist>(ChristofidesFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a0d31debb12fc1a1196de53d8a72f42a0</anchor>
-      <arglist>(RoutingFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ac4fbd86893628f36e1c989e169f291be</anchor>
-      <arglist>(IntVarFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a59f1100e495eba9d3210feb258105c21</anchor>
-      <arglist>(DecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -22634,66 +21801,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ComparatorCheapestAdditionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a7c39cfcc976d6cab275d297b3082a776</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
       <anchor>a537c035d613b4940217479bcd83d542d</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ComparatorCheapestAdditionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a81793eb6ff744af758f1bd0600f56694</anchor>
-      <arglist>(ComparatorCheapestAdditionFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CheapestAdditionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a3f81af2455468e487c1ee476409e6fa0</anchor>
-      <arglist>(CheapestAdditionFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a0d31debb12fc1a1196de53d8a72f42a0</anchor>
-      <arglist>(RoutingFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ac4fbd86893628f36e1c989e169f291be</anchor>
-      <arglist>(IntVarFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a59f1100e495eba9d3210feb258105c21</anchor>
-      <arglist>(DecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="enum">
@@ -22994,41 +22105,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html</anchorfile>
       <anchor>aceb242f6a3fc562b0f298ba426bd190d</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html</anchorfile>
-      <anchor>a62348969b3a2d555a3e87bb0340252ea</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html</anchorfile>
-      <anchor>a0ad5f96c0944de8b3fa7b25b7ed18e0f</anchor>
-      <arglist>(Constraint obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html</anchorfile>
-      <anchor>a995fc7a29862ea990fcbbfc350c81a8b</anchor>
-      <arglist>(PropagationBaseObject obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="enum">
@@ -25618,63 +24694,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CPFeasibilityFilter.html</anchorfile>
-      <anchor>a28324865dd1388d4813be2efc0e93e5d</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html</anchorfile>
       <anchor>a08e04f9736f6ffadc24c160d7c16d3d8</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CPFeasibilityFilter.html</anchorfile>
-      <anchor>a45d26dc63e20b7a8764427bd01390c0e</anchor>
-      <arglist>(CPFeasibilityFilter obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html</anchorfile>
-      <anchor>adfcffbf7a04e887c388cb2d55982d3bb</anchor>
-      <arglist>(IntVarLocalSearchFilter obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html</anchorfile>
-      <anchor>af14eec40bd63f64b610ef589326fcc0c</anchor>
-      <arglist>(LocalSearchFilter obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>CpIsFunSat</name>
-    <filename>classCpIsFunSat.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classCpIsFunSat.html</anchorfile>
-      <anchor>ad50660486b5ec63ca03abe6c768d23db</anchor>
-      <arglist>(String[] args)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -28219,31 +27242,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SolutionCallback.html</anchorfile>
-      <anchor>a1f5586feedd9ecb75cea151aeefed4ad</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SolutionCallback.html</anchorfile>
       <anchor>ae5f58d09a9f920413ac3e8705a4fb09e</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SolutionCallback.html</anchorfile>
-      <anchor>a56358a0b0ac4d54964acdc367e841f09</anchor>
-      <arglist>(SolutionCallback obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SolutionCallback.html</anchorfile>
-      <anchor>ab59f2fb130ea4a2c94e90d79d71c9199</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="enum">
@@ -28791,38 +27793,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Decision.html</anchorfile>
-      <anchor>a1201a83d01874dbb22cbb67ffa9f43e2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Decision.html</anchorfile>
       <anchor>aa9f3ce68e59b8d0b659c5e629566a5ab</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Decision.html</anchorfile>
-      <anchor>a8effc3d9d31f1f6138f22cd95fb1a1b3</anchor>
-      <arglist>(Decision obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -28880,38 +27854,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a1dd2e7d4117b1973d9431f6a65e40ce3</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
       <anchor>a537c035d613b4940217479bcd83d542d</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a59f1100e495eba9d3210feb258105c21</anchor>
-      <arglist>(DecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -29431,38 +28377,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionVisitor.html</anchorfile>
-      <anchor>a998a8b1f78e098e8269a90654a185de7</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionVisitor.html</anchorfile>
       <anchor>a757bfc53ea68fe65bbca0395728fdcd8</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionVisitor.html</anchorfile>
-      <anchor>aafcca24ef26dac706dd9395c943ad03a</anchor>
-      <arglist>(DecisionVisitor obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -29699,27 +28617,6 @@
       <anchor>a23325697362152ac46a65c8fdf8b2cf5</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DefaultPhaseParameters.html</anchorfile>
-      <anchor>a4e842ab66b03698cac713802def79100</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DefaultPhaseParameters.html</anchorfile>
-      <anchor>a1e6fe261deb6b06c530c829572a9297f</anchor>
-      <arglist>(DefaultPhaseParameters obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DefaultPhaseParameters.html</anchorfile>
-      <anchor>aacd3e87280bb27fc8d790f13ca7b4bbe</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::constraintsolver::Demon</name>
@@ -29773,34 +28670,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Demon.html</anchorfile>
       <anchor>a86dfcdfeab9aa975ecff78da8664a0ca</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Demon.html</anchorfile>
-      <anchor>a0c0b981b86a70fa0e81d1b4f328b2738</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Demon.html</anchorfile>
-      <anchor>a937b9b6c4b951f95d0358f9927cd8bf0</anchor>
-      <arglist>(Demon obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -29968,48 +28837,6 @@
       <anchor>ad68976366d4b0375b41e5888f4d4ed09</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DisjunctiveConstraint.html</anchorfile>
-      <anchor>af8a44312b5dc713d49b6b43ece19334c</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DisjunctiveConstraint.html</anchorfile>
-      <anchor>a0a1a2e654a41ff0182c49cecafd6b1b2</anchor>
-      <arglist>(DisjunctiveConstraint obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html</anchorfile>
-      <anchor>a0ad5f96c0944de8b3fa7b25b7ed18e0f</anchor>
-      <arglist>(Constraint obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html</anchorfile>
-      <anchor>a995fc7a29862ea990fcbbfc350c81a8b</anchor>
-      <arglist>(PropagationBaseObject obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::util::Domain</name>
@@ -30160,27 +28987,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1util_1_1Domain.html</anchorfile>
       <anchor>af815910dab415f43bb698be41e858c0b</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1util_1_1Domain.html</anchorfile>
-      <anchor>a7b0325f0eca6f353082a6c9248e5e5bf</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1util_1_1Domain.html</anchorfile>
-      <anchor>ab5f3ed5777872605474f1aa0fbe8e81a</anchor>
-      <arglist>(Domain obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1util_1_1Domain.html</anchorfile>
-      <anchor>a363d6de2be7fef82653297dbc3a8da1f</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="enum">
@@ -30343,17 +29149,6 @@
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverParameters_1_1DoubleParam.html</anchorfile>
       <anchor>a77ef384badf8cb5efc56a86d525b8c44</anchor>
       <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>EarlinessTardinessCostSampleSat</name>
-    <filename>classEarlinessTardinessCostSampleSat.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classEarlinessTardinessCostSampleSat.html</anchorfile>
-      <anchor>a5c318643790f23ab3a689a57117233e1</anchor>
-      <arglist>(String[] args)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -30771,66 +29566,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1EvaluatorCheapestAdditionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ac6313d4965b00ef4accfa6b2cbda1f2a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
       <anchor>a537c035d613b4940217479bcd83d542d</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1EvaluatorCheapestAdditionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a471be6779adfcebbcd162844ab56edbf</anchor>
-      <arglist>(EvaluatorCheapestAdditionFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CheapestAdditionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a3f81af2455468e487c1ee476409e6fa0</anchor>
-      <arglist>(CheapestAdditionFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a0d31debb12fc1a1196de53d8a72f42a0</anchor>
-      <arglist>(RoutingFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ac4fbd86893628f36e1c989e169f291be</anchor>
-      <arglist>(IntVarFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a59f1100e495eba9d3210feb258105c21</anchor>
-      <arglist>(DecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -31176,66 +29915,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>abecd023273ea27ecffb2fd2ac283a223</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
       <anchor>a537c035d613b4940217479bcd83d542d</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ad69b62d1996e7cd7676480d9c13f1b4c</anchor>
-      <arglist>(GlobalCheapestInsertionFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>add460632c9879f9b8cb2e42bc22c568a</anchor>
-      <arglist>(CheapestInsertionFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a0d31debb12fc1a1196de53d8a72f42a0</anchor>
-      <arglist>(RoutingFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ac4fbd86893628f36e1c989e169f291be</anchor>
-      <arglist>(IntVarFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a59f1100e495eba9d3210feb258105c21</anchor>
-      <arglist>(DecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -31388,48 +30071,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1GlobalVehicleBreaksConstraint.html</anchorfile>
       <anchor>a0dfd2df4645ba0ae52812c835bf67c07</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1GlobalVehicleBreaksConstraint.html</anchorfile>
-      <anchor>aa0c68857b3c8117a717ceba5b4be01ab</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1GlobalVehicleBreaksConstraint.html</anchorfile>
-      <anchor>a61b74cf8326912ae36ca8b9f16da455a</anchor>
-      <arglist>(GlobalVehicleBreaksConstraint obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html</anchorfile>
-      <anchor>a0ad5f96c0944de8b3fa7b25b7ed18e0f</anchor>
-      <arglist>(Constraint obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html</anchorfile>
-      <anchor>a995fc7a29862ea990fcbbfc350c81a8b</anchor>
-      <arglist>(PropagationBaseObject obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="enum">
@@ -31826,27 +30467,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver_1_1IntegerCastInfo.html</anchorfile>
       <anchor>a4a6dc8f45063670adeed0254ac35e8a6</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver_1_1IntegerCastInfo.html</anchorfile>
-      <anchor>a70d3c0dba78dd0added559b56bff35ec</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver_1_1IntegerCastInfo.html</anchorfile>
-      <anchor>add1ff77d626bc309e987f88c2c22c9d9</anchor>
-      <arglist>(IntegerCastInfo obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver_1_1IntegerCastInfo.html</anchorfile>
-      <anchor>a2a8c653dcf2947de439922be3c9e16d4</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="enum">
@@ -32483,49 +31103,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>IntervalSampleSat</name>
-    <filename>classIntervalSampleSat.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classIntervalSampleSat.html</anchorfile>
-      <anchor>adb0a7021f6d6ff29480eb2e0119ab7ae</anchor>
-      <arglist>(String[] args)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>com::google::ortools::sat::IntervalVar</name>
-    <filename>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html</filename>
-    <member kind="function">
-      <type>String</type>
-      <name>toString</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html</anchorfile>
-      <anchor>a72c4a19a46d818e96f75f1dd0656eb95</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getIndex</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html</anchorfile>
-      <anchor>a2f139da660ca25a5304de5ec13aed1bb</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>IntervalConstraintProto.Builder</type>
-      <name>getBuilder</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html</anchorfile>
-      <anchor>a01cc300102e599254774137a4d6d133d</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>String</type>
-      <name>getName</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html</anchorfile>
-      <anchor>a4ac201fc8f7fc730a436217ca10dd588</anchor>
-      <arglist>()</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>com::google::ortools::constraintsolver::IntervalVar</name>
     <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html</filename>
     <base>com::google::ortools::constraintsolver::PropagationBaseObject</base>
@@ -32998,40 +31575,37 @@
       <anchor>a22e5beed258e0f6eaf9aa122ba8369fc</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html</anchorfile>
-      <anchor>a0319bf25e0c96280f4c4328773381d33</anchor>
+  </compound>
+  <compound kind="class">
+    <name>com::google::ortools::sat::IntervalVar</name>
+    <filename>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html</filename>
+    <member kind="function">
+      <type>String</type>
+      <name>toString</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html</anchorfile>
+      <anchor>a72c4a19a46d818e96f75f1dd0656eb95</anchor>
       <arglist>()</arglist>
     </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html</anchorfile>
-      <anchor>a33e422f298d91634f322c69b45e18e4d</anchor>
-      <arglist>(IntervalVar obj)</arglist>
+    <member kind="function">
+      <type>int</type>
+      <name>getIndex</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html</anchorfile>
+      <anchor>a2f139da660ca25a5304de5ec13aed1bb</anchor>
+      <arglist>()</arglist>
     </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html</anchorfile>
-      <anchor>a995fc7a29862ea990fcbbfc350c81a8b</anchor>
-      <arglist>(PropagationBaseObject obj)</arglist>
+    <member kind="function">
+      <type>IntervalConstraintProto.Builder</type>
+      <name>getBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html</anchorfile>
+      <anchor>a01cc300102e599254774137a4d6d133d</anchor>
+      <arglist>()</arglist>
     </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
+    <member kind="function">
+      <type>String</type>
+      <name>getName</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html</anchorfile>
+      <anchor>a4ac201fc8f7fc730a436217ca10dd588</anchor>
+      <arglist>()</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -33339,34 +31913,6 @@
       <anchor>a0369898f3c87111a572addb40e0171ef</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVarElement.html</anchorfile>
-      <anchor>ac2db79cf19f8892f9afa7b0f833f8ebd</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVarElement.html</anchorfile>
-      <anchor>a860544eb7bd4e1d6f607c119c89b3967</anchor>
-      <arglist>(IntervalVarElement obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentElement.html</anchorfile>
-      <anchor>adc898e166a48a898881b8220170544f7</anchor>
-      <arglist>(AssignmentElement obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentElement.html</anchorfile>
-      <anchor>ad2b85cacb5929d8c0e6b7040a768094a</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::constraintsolver::IntExpr</name>
@@ -33568,41 +32114,6 @@
       <anchor>ab5a74e62d4d0f5450603a2341dc612cf</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html</anchorfile>
-      <anchor>aac9f9333caec22fc344876be5f980c7e</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html</anchorfile>
-      <anchor>a2353181559087d7bf91cb959a01b51d1</anchor>
-      <arglist>(IntExpr obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html</anchorfile>
-      <anchor>a995fc7a29862ea990fcbbfc350c81a8b</anchor>
-      <arglist>(PropagationBaseObject obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="interface">
     <name>com::google::ortools::constraintsolver::IntIntToLongFunction</name>
@@ -33757,27 +32268,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntTupleSet.html</anchorfile>
       <anchor>abb0078f2c454528a87bec018cd9f59ce</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntTupleSet.html</anchorfile>
-      <anchor>a9b2ee61898a1a72d449cb76c9422614c</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntTupleSet.html</anchorfile>
-      <anchor>a22d8f31ae47c0e9bb5c93f916e854cd9</anchor>
-      <arglist>(IntTupleSet obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntTupleSet.html</anchorfile>
-      <anchor>a328369584c7b064c6233a75608f707d9</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -34224,48 +32714,6 @@
       <anchor>ad46cf9205e4421f721a6c0870ae38d4a</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html</anchorfile>
-      <anchor>a87f803f69817261acf77ecc23bbef61c</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html</anchorfile>
-      <anchor>a50ae111ba920d913405309f10df98f13</anchor>
-      <arglist>(IntVar obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html</anchorfile>
-      <anchor>a2353181559087d7bf91cb959a01b51d1</anchor>
-      <arglist>(IntExpr obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html</anchorfile>
-      <anchor>a995fc7a29862ea990fcbbfc350c81a8b</anchor>
-      <arglist>(PropagationBaseObject obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::constraintsolver::IntVarElement</name>
@@ -34425,34 +32873,6 @@
       <anchor>ad45049c80bbd6d431055e2f4d5409d6c</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarElement.html</anchorfile>
-      <anchor>abd1b857e714ca9520991646624f4b628</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarElement.html</anchorfile>
-      <anchor>a81ee2500672dff9e53aa5dda6bbaff2e</anchor>
-      <arglist>(IntVarElement obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentElement.html</anchorfile>
-      <anchor>adc898e166a48a898881b8220170544f7</anchor>
-      <arglist>(AssignmentElement obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentElement.html</anchorfile>
-      <anchor>ad2b85cacb5929d8c0e6b7040a768094a</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::constraintsolver::IntVarFilteredDecisionBuilder</name>
@@ -34523,45 +32943,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a42d3e51844abd5763bac8bf1b2895267</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
       <anchor>a537c035d613b4940217479bcd83d542d</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ac4fbd86893628f36e1c989e169f291be</anchor>
-      <arglist>(IntVarFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a59f1100e495eba9d3210feb258105c21</anchor>
-      <arglist>(DecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -34616,34 +33001,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarIterator.html</anchorfile>
       <anchor>aa9a2bc3dba8d4571e7325453b81eee03</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarIterator.html</anchorfile>
-      <anchor>a742b9c1fb53ddde071b4a3c73f554a72</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarIterator.html</anchorfile>
-      <anchor>a372f34fe8605d459921681cd577371a4</anchor>
-      <arglist>(IntVarIterator obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -34778,13 +33135,6 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html</anchorfile>
-      <anchor>aff4bad56896454a936794f7658885822</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html</anchorfile>
       <anchor>a08e04f9736f6ffadc24c160d7c16d3d8</anchor>
@@ -34796,34 +33146,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html</anchorfile>
       <anchor>affb1ea9c822e8a62306ccce3d48aaf6d</anchor>
       <arglist>(Assignment delta)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html</anchorfile>
-      <anchor>adfcffbf7a04e887c388cb2d55982d3bb</anchor>
-      <arglist>(IntVarLocalSearchFilter obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html</anchorfile>
-      <anchor>af14eec40bd63f64b610ef589326fcc0c</anchor>
-      <arglist>(LocalSearchFilter obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -34877,27 +33199,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchHandler.html</anchorfile>
       <anchor>a456b889c480df48a0d73e1a7e57ba17f</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchHandler.html</anchorfile>
-      <anchor>aab553e264698bb899216d739c46920a2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchHandler.html</anchorfile>
-      <anchor>a8b3de3af212528d6ad050b8b97e575cf</anchor>
-      <arglist>(IntVarLocalSearchHandler obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchHandler.html</anchorfile>
-      <anchor>acde7ef7aecaaf03abd7e2b233311b6a7</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -35067,13 +33368,6 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperator.html</anchorfile>
-      <anchor>ad5c2b836039deb8ea72b6557200df8e6</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperator.html</anchorfile>
       <anchor>a051cb591b8fa6038020c07df01ff86c9</anchor>
@@ -35085,41 +33379,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperator.html</anchorfile>
       <anchor>abde08482ebc8b49e8c278b876b829967</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperator.html</anchorfile>
-      <anchor>ae0afca5fe4873dd8bfef5b2bf896148f</anchor>
-      <arglist>(IntVarLocalSearchOperator obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html</anchorfile>
-      <anchor>a6ad224b3a59ae94fa35f90b68565635d</anchor>
-      <arglist>(IntVarLocalSearchOperatorTemplate obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html</anchorfile>
-      <anchor>a8176d5687daba07e0feb858b6691dde9</anchor>
-      <arglist>(LocalSearchOperator obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -35275,45 +33534,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html</anchorfile>
-      <anchor>ae310f3ba416eae4331cfd9e88ed73da3</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html</anchorfile>
       <anchor>a26c8a4baa24485557d6e663f317f4897</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html</anchorfile>
-      <anchor>a6ad224b3a59ae94fa35f90b68565635d</anchor>
-      <arglist>(IntVarLocalSearchOperatorTemplate obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html</anchorfile>
-      <anchor>a8176d5687daba07e0feb858b6691dde9</anchor>
-      <arglist>(LocalSearchOperator obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -35682,49 +33906,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a1dd2e7d4117b1973d9431f6a65e40ce3</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
       <anchor>a537c035d613b4940217479bcd83d542d</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a59f1100e495eba9d3210feb258105c21</anchor>
-      <arglist>(DecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Knapsack</name>
-    <filename>classKnapsack.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classKnapsack.html</anchorfile>
-      <anchor>a448ef0fd2279d08c3f9dba7d0e8e774c</anchor>
-      <arglist>(String[] args)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -35814,27 +33999,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver.html</anchorfile>
       <anchor>a4af9744830d1c4b8a1428f6987a83848</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver.html</anchorfile>
-      <anchor>af57e9a9349265829119acdea78c39cd9</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver.html</anchorfile>
-      <anchor>a2b8709d4d363ac4ba81e8c63f6520784</anchor>
-      <arglist>(KnapsackSolver obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver.html</anchorfile>
-      <anchor>a90008253c561a5b93cd61dd4ee6f98cc</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -36251,17 +34415,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>LinearProgrammingExample</name>
-    <filename>classLinearProgrammingExample.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classLinearProgrammingExample.html</anchorfile>
-      <anchor>a03e8a2d4956b7236c215b78f89926bd9</anchor>
-      <arglist>(String[] args)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>com::google::ortools::graph::LinearSumAssignment</name>
     <filename>classcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment.html</filename>
     <class kind="enum">com::google::ortools::graph::LinearSumAssignment::Status</class>
@@ -36356,27 +34509,6 @@
       <anchor>a9325c9fe28a205e3b27df9a287887abf</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment.html</anchorfile>
-      <anchor>ab7bd978dd2ca8f0b85b64880f02048e6</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment.html</anchorfile>
-      <anchor>a4aebe9368e2e39a543483107dece8819</anchor>
-      <arglist>(LinearSumAssignment obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment.html</anchorfile>
-      <anchor>ad1369be8e3901af3d41c5b6164f14214</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="interface">
     <name>com::google::ortools::sat::Literal</name>
@@ -36401,17 +34533,6 @@
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1Literal.html</anchorfile>
       <anchor>a9644e520a4b60d89f2d9ce352d9f685f</anchor>
       <arglist>()</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>LiteralSampleSat</name>
-    <filename>classLiteralSampleSat.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classLiteralSampleSat.html</anchorfile>
-      <anchor>a69cde3173cb0ea29d41ee006949c2d6e</anchor>
-      <arglist>(String[] args)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -36518,66 +34639,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>aecfa2984fe6c6dafecf6d164890e1021</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
       <anchor>a537c035d613b4940217479bcd83d542d</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a27cb8bab13d729fc7ab83ce0d23d5b0f</anchor>
-      <arglist>(LocalCheapestInsertionFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>add460632c9879f9b8cb2e42bc22c568a</anchor>
-      <arglist>(CheapestInsertionFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a0d31debb12fc1a1196de53d8a72f42a0</anchor>
-      <arglist>(RoutingFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ac4fbd86893628f36e1c989e169f291be</anchor>
-      <arglist>(IntVarFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a59f1100e495eba9d3210feb258105c21</anchor>
-      <arglist>(DecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -36663,38 +34728,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html</anchorfile>
-      <anchor>a7e2a1ce81905e46412af1a696a402096</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html</anchorfile>
       <anchor>ae95c70be0228ed67bf543badd810902a</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html</anchorfile>
-      <anchor>af14eec40bd63f64b610ef589326fcc0c</anchor>
-      <arglist>(LocalSearchFilter obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -37211,45 +35248,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMonitor.html</anchorfile>
-      <anchor>a2790e06c7d030d8809a561f834675065</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html</anchorfile>
       <anchor>a345c4bf7839c37e416d9e67c9ab99dfb</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMonitor.html</anchorfile>
-      <anchor>afd1dca12804075b6305421257cb476a8</anchor>
-      <arglist>(LocalSearchMonitor obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html</anchorfile>
-      <anchor>acd268169dca11904ec48015defcf8aac</anchor>
-      <arglist>(SearchMonitor obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -38465,38 +36467,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html</anchorfile>
-      <anchor>a3b970138c0a2a78da3cbaf9f3ecb77d9</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html</anchorfile>
       <anchor>a26c8a4baa24485557d6e663f317f4897</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html</anchorfile>
-      <anchor>a8176d5687daba07e0feb858b6691dde9</anchor>
-      <arglist>(LocalSearchOperator obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -38522,27 +36496,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchPhaseParameters.html</anchorfile>
       <anchor>a6a16e7d9285de65fa174debe9604af90</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchPhaseParameters.html</anchorfile>
-      <anchor>a8e71f921cc4dc543466361f3b9917a12</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchPhaseParameters.html</anchorfile>
-      <anchor>a3362be3987d0af437e55a9753b963164</anchor>
-      <arglist>(LocalSearchPhaseParameters obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchPhaseParameters.html</anchorfile>
-      <anchor>af07114691587d5a1c3c63e3bee21c5a7</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="interface">
@@ -38614,12 +36567,16 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>com::google::ortools::sat::main</name>
-    <filename>classcom_1_1google_1_1ortools_1_1sat_1_1main.html</filename>
-  </compound>
-  <compound kind="class">
     <name>com::google::ortools::algorithms::main</name>
     <filename>classcom_1_1google_1_1ortools_1_1algorithms_1_1main.html</filename>
+  </compound>
+  <compound kind="class">
+    <name>com::google::ortools::util::main</name>
+    <filename>classcom_1_1google_1_1ortools_1_1util_1_1main.html</filename>
+  </compound>
+  <compound kind="class">
+    <name>com::google::ortools::sat::main</name>
+    <filename>classcom_1_1google_1_1ortools_1_1sat_1_1main.html</filename>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::constraintsolver::main</name>
@@ -38797,10 +36754,6 @@
   <compound kind="class">
     <name>com::google::ortools::graph::main</name>
     <filename>classcom_1_1google_1_1ortools_1_1graph_1_1main.html</filename>
-  </compound>
-  <compound kind="class">
-    <name>com::google::ortools::util::main</name>
-    <filename>classcom_1_1google_1_1ortools_1_1util_1_1main.html</filename>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::linearsolver::main_research_linear_solver</name>
@@ -39805,27 +37758,6 @@
       <anchor>ad82f18129cbdcf8a27d52bcab258b941</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow.html</anchorfile>
-      <anchor>a45aafa701f5df8347c4351a7eb0e87bc</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow.html</anchorfile>
-      <anchor>a318808d3ba727534e058e654a1dbb446</anchor>
-      <arglist>(MaxFlow obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow.html</anchorfile>
-      <anchor>a794396959a51fc585a57173edd029407</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="enum">
     <name>com::google::ortools::sat::SatParameters::MaxSatAssumptionOrder</name>
@@ -40154,34 +38086,6 @@
       <anchor>ad58b119eaf20047121d87ecca64d3f86</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1graph_1_1MinCostFlow.html</anchorfile>
-      <anchor>acdabd06e250a7192d22674f10372c59f</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1graph_1_1MinCostFlow.html</anchorfile>
-      <anchor>ab6ae9f5b5a2d0e4a223ef70f93dbe577</anchor>
-      <arglist>(MinCostFlow obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1graph_1_1MinCostFlowBase.html</anchorfile>
-      <anchor>a967746eebc77157b5c5497154a1d7d2e</anchor>
-      <arglist>(MinCostFlowBase obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1graph_1_1MinCostFlowBase.html</anchorfile>
-      <anchor>a4866e5ae87e7978b1de2c57f18998702</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::graph::MinCostFlowBase</name>
@@ -40207,27 +38111,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1graph_1_1MinCostFlowBase.html</anchorfile>
       <anchor>a849f38a9b53a535a44644731480c9f56</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1graph_1_1MinCostFlowBase.html</anchorfile>
-      <anchor>a3efe2c89cb6c2b77d2888479021e0eca</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1graph_1_1MinCostFlowBase.html</anchorfile>
-      <anchor>a967746eebc77157b5c5497154a1d7d2e</anchor>
-      <arglist>(MinCostFlowBase obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1graph_1_1MinCostFlowBase.html</anchorfile>
-      <anchor>a4866e5ae87e7978b1de2c57f18998702</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -40852,27 +38735,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html</anchorfile>
       <anchor>ab27e78a5c69d1df7b285837ad9da1e62</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html</anchorfile>
-      <anchor>ad4417b1c79ef8b0e8784d4d614d85df6</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html</anchorfile>
-      <anchor>a5e49793c63eada9fe869f3a68069c42c</anchor>
-      <arglist>(ModelCache obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html</anchorfile>
-      <anchor>a7fba718aa9c2b260fb83c33b80e48272</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -42195,34 +40057,6 @@
       <anchor>a0977085e9bafefe4041f25a173b33d19</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html</anchorfile>
-      <anchor>acd9b29d09fba00af37b89203512601d7</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html</anchorfile>
-      <anchor>ad6805463810b08d57623d39c702d2327</anchor>
-      <arglist>(ModelVisitor obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::linearsolver::MPConstraint</name>
@@ -42332,27 +40166,6 @@
       <anchor>a654792eee57a5c3525aaee5ca4725692</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html</anchorfile>
-      <anchor>a1cb25ab2ae21951549c022f1d9fae4a0</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html</anchorfile>
-      <anchor>af4076457e5de839e25d7475925332f71</anchor>
-      <arglist>(MPConstraint obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html</anchorfile>
-      <anchor>a39a35c8d9b115bbba96ba35181e066e8</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::linearsolver::MPModelExportOptions</name>
@@ -42433,27 +40246,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelExportOptions.html</anchorfile>
       <anchor>af8341fbd5cdf9210ced1053f02fd0fe1</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelExportOptions.html</anchorfile>
-      <anchor>a2f4f7770c7b44f717d489f919391e6ae</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelExportOptions.html</anchorfile>
-      <anchor>a5ff5fddfc12102fd15f76b63c8938cb5</anchor>
-      <arglist>(MPModelExportOptions obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelExportOptions.html</anchorfile>
-      <anchor>ad025bbe45409122e2d919c5acb172ea2</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -42556,27 +40348,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPObjective.html</anchorfile>
       <anchor>a0414116eb848ca29727cd59f84c972b1</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPObjective.html</anchorfile>
-      <anchor>a50257f0cb09241c72a7d12e640860188</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPObjective.html</anchorfile>
-      <anchor>acdaa7b0cd36cb56963c98c93f3af3182</anchor>
-      <arglist>(MPObjective obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPObjective.html</anchorfile>
-      <anchor>a5bab1b67ddd8d12283bc9a4920ba6359</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -42907,27 +40678,6 @@
       <anchor>a6d6bb58d5db8f6b6c5b7e66229d2a815</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
-      <anchor>aab4118d5847faa375cce9f3ceb3f2c92</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
-      <anchor>a4d6c5eee1ce0399aa85bbaa063953948</anchor>
-      <arglist>(MPSolver obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
-      <anchor>a0c09f1e0f4d378b22b804b96117b81eb</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::linearsolver::MPSolverParameters</name>
@@ -43021,27 +40771,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverParameters.html</anchorfile>
       <anchor>aa9d297881f54a39c43de294763dcf5e4</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverParameters.html</anchorfile>
-      <anchor>a5d14062b0c41da8c8ea6c1f27bb2fa0a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverParameters.html</anchorfile>
-      <anchor>a66cbea8187ec23c7092ca33d71fef19c</anchor>
-      <arglist>(MPSolverParameters obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverParameters.html</anchorfile>
-      <anchor>add56391336fea85a70231d3498afda77</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -43137,27 +40866,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html</anchorfile>
       <anchor>a1de5b8aecba1386644e22b57c067031f</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html</anchorfile>
-      <anchor>ac8b25dd3d2135135395dfa2a70c0efa5</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html</anchorfile>
-      <anchor>a5421e2ac142e10e6c3a9d09eaceacb7f</anchor>
-      <arglist>(MPVariable obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html</anchorfile>
-      <anchor>a7d8ec4c2af12d9dc1d9d58c5644d720e</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -43748,17 +41456,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>NoOverlapSampleSat</name>
-    <filename>classNoOverlapSampleSat.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classNoOverlapSampleSat.html</anchorfile>
-      <anchor>a7cb1ba6b9320fb7a065d9d9de458c533</anchor>
-      <arglist>(String[] args)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>com::google::ortools::sat::NotBooleanVariable</name>
     <filename>classcom_1_1google_1_1ortools_1_1sat_1_1NotBooleanVariable.html</filename>
     <base>com::google::ortools::sat::Literal</base>
@@ -44095,45 +41792,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1OptimizeVar.html</anchorfile>
-      <anchor>a29a797476e6c24871fc15161e9708273</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html</anchorfile>
       <anchor>a345c4bf7839c37e416d9e67c9ab99dfb</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1OptimizeVar.html</anchorfile>
-      <anchor>a5ce63720a387760430c19adf9333a433</anchor>
-      <arglist>(OptimizeVar obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html</anchorfile>
-      <anchor>acd268169dca11904ec48015defcf8aac</anchor>
-      <arglist>(SearchMonitor obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="enum">
@@ -44268,17 +41930,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1util_1_1OptionalBooleanOuterClass.html</anchorfile>
       <anchor>a4b844e7cf0ebfc70a11238e4ba437b4a</anchor>
       <arglist>()</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>OptionalIntervalSampleSat</name>
-    <filename>classOptionalIntervalSampleSat.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classOptionalIntervalSampleSat.html</anchorfile>
-      <anchor>aaefe7634b5c2e51b4d08cd09f9103211</anchor>
-      <arglist>(String[] args)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -44614,48 +42265,6 @@
       <anchor>aebccdc2e85703d9470a601aa672e549a</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Pack.html</anchorfile>
-      <anchor>a9425680afb937477762488862dff8321</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Pack.html</anchorfile>
-      <anchor>a87ffb96347db7354b91ba552e25e7ad1</anchor>
-      <arglist>(Pack obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html</anchorfile>
-      <anchor>a0ad5f96c0944de8b3fa7b25b7ed18e0f</anchor>
-      <arglist>(Constraint obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html</anchorfile>
-      <anchor>a995fc7a29862ea990fcbbfc350c81a8b</anchor>
-      <arglist>(PropagationBaseObject obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::constraintsolver::ParallelSavingsFilteredDecisionBuilder</name>
@@ -44761,66 +42370,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ParallelSavingsFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a9613c6adc19ae5fd1a604376dab79641</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
       <anchor>a537c035d613b4940217479bcd83d542d</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ParallelSavingsFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ac34b510c8e9c7247c25647208195ead4</anchor>
-      <arglist>(ParallelSavingsFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a25bab8564c1f809c225fb2780c2710ea</anchor>
-      <arglist>(SavingsFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a0d31debb12fc1a1196de53d8a72f42a0</anchor>
-      <arglist>(RoutingFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ac4fbd86893628f36e1c989e169f291be</anchor>
-      <arglist>(IntVarFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a59f1100e495eba9d3210feb258105c21</anchor>
-      <arglist>(DecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -45308,13 +42861,6 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathOperator.html</anchorfile>
-      <anchor>ae18ac0509cbfdf9742bc5ae2d90d90b2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathOperator.html</anchorfile>
       <anchor>ae4606a3bec9be834d377173b9e4caf27</anchor>
@@ -45361,48 +42907,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathOperator.html</anchorfile>
       <anchor>abad98b82496eb3659626299a2f902a52</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathOperator.html</anchorfile>
-      <anchor>ae02036968b026592830ff245e0fdd1d6</anchor>
-      <arglist>(PathOperator obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperator.html</anchorfile>
-      <anchor>ae0afca5fe4873dd8bfef5b2bf896148f</anchor>
-      <arglist>(IntVarLocalSearchOperator obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html</anchorfile>
-      <anchor>a6ad224b3a59ae94fa35f90b68565635d</anchor>
-      <arglist>(IntVarLocalSearchOperatorTemplate obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html</anchorfile>
-      <anchor>a8176d5687daba07e0feb858b6691dde9</anchor>
-      <arglist>(LocalSearchOperator obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -45579,13 +43083,6 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathWithPreviousNodesOperator.html</anchorfile>
-      <anchor>a78c9a05b5da6bc8632126c97ab74b034</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathOperator.html</anchorfile>
       <anchor>ae4606a3bec9be834d377173b9e4caf27</anchor>
@@ -45632,55 +43129,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathOperator.html</anchorfile>
       <anchor>abad98b82496eb3659626299a2f902a52</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathWithPreviousNodesOperator.html</anchorfile>
-      <anchor>ae7d5dc44999888cf0200fa45fbb1790a</anchor>
-      <arglist>(PathWithPreviousNodesOperator obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathOperator.html</anchorfile>
-      <anchor>ae02036968b026592830ff245e0fdd1d6</anchor>
-      <arglist>(PathOperator obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperator.html</anchorfile>
-      <anchor>ae0afca5fe4873dd8bfef5b2bf896148f</anchor>
-      <arglist>(IntVarLocalSearchOperator obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html</anchorfile>
-      <anchor>a6ad224b3a59ae94fa35f90b68565635d</anchor>
-      <arglist>(IntVarLocalSearchOperatorTemplate obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html</anchorfile>
-      <anchor>a8176d5687daba07e0feb858b6691dde9</anchor>
-      <arglist>(LocalSearchOperator obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="enum">
@@ -45953,34 +43401,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html</anchorfile>
       <anchor>a55f200c3527d3c0eaee70c8fa803e57e</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html</anchorfile>
-      <anchor>a4c50783144b6a9801d3c11c85df53e0d</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html</anchorfile>
-      <anchor>a995fc7a29862ea990fcbbfc350c81a8b</anchor>
-      <arglist>(PropagationBaseObject obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -46465,67 +43885,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationMonitor.html</anchorfile>
-      <anchor>a3b75838e795986a62c3b6b43173508a0</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html</anchorfile>
       <anchor>a345c4bf7839c37e416d9e67c9ab99dfb</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationMonitor.html</anchorfile>
-      <anchor>a38f3ef7a9d2214e99e4a84e660b1901c</anchor>
-      <arglist>(PropagationMonitor obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html</anchorfile>
-      <anchor>acd268169dca11904ec48015defcf8aac</anchor>
-      <arglist>(SearchMonitor obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>RabbitsAndPheasantsSat</name>
-    <filename>classRabbitsAndPheasantsSat.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classRabbitsAndPheasantsSat.html</anchorfile>
-      <anchor>af1e3a13d7cb329a3a050f1be325d6125</anchor>
-      <arglist>(String[] args)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>RankingSampleSat</name>
-    <filename>classRankingSampleSat.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classRankingSampleSat.html</anchorfile>
-      <anchor>a06e775d6535b4a4e69b2b45361c53fab</anchor>
-      <arglist>(String[] args)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -46849,52 +44212,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimit.html</anchorfile>
-      <anchor>a7e1b1e028aa346142fff39cdd54e434a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html</anchorfile>
       <anchor>a345c4bf7839c37e416d9e67c9ab99dfb</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimit.html</anchorfile>
-      <anchor>a5189fea6e2547dfd32037a1595e72ee2</anchor>
-      <arglist>(RegularLimit obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchLimit.html</anchorfile>
-      <anchor>acb12878834ef4ab7d1fd4c349203b827</anchor>
-      <arglist>(SearchLimit obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html</anchorfile>
-      <anchor>acd268169dca11904ec48015defcf8aac</anchor>
-      <arglist>(SearchMonitor obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -47241,17 +44562,6 @@
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParametersOrBuilder.html</anchorfile>
       <anchor>aac1b989e2073617bec4e8170703f7a33</anchor>
       <arglist>()</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>ReifiedSampleSat</name>
-    <filename>classReifiedSampleSat.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classReifiedSampleSat.html</anchorfile>
-      <anchor>adb5d15f826d5afe5c9e4079b6541091b</anchor>
-      <arglist>(String[] args)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -47891,27 +45201,6 @@
       <anchor>aced3b522e62639ee5246678dbc08816b</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RevBool.html</anchorfile>
-      <anchor>abe92f4cfcf940e6c7259ce23d37eee8d</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RevBool.html</anchorfile>
-      <anchor>adce8eb8f5a96145e06315ba2ebb92d40</anchor>
-      <arglist>(RevBool obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RevBool.html</anchorfile>
-      <anchor>a6bd9031477cb8fb91a5bf89bfb9d4379</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::constraintsolver::RevInteger</name>
@@ -47951,27 +45240,6 @@
       <anchor>a2a249701777f8563acf3172bfda29b44</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RevInteger.html</anchorfile>
-      <anchor>aa3c759432f9f70ce29a6620cd6f94edb</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RevInteger.html</anchorfile>
-      <anchor>a2ef34e14397325db7ced33755af6773f</anchor>
-      <arglist>(RevInteger obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RevInteger.html</anchorfile>
-      <anchor>adf707f4e4d0119d4ca0535f41b122667</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::constraintsolver::RevLong</name>
@@ -48010,27 +45278,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RevLong.html</anchorfile>
       <anchor>ac511e2cfa66361beface566b20cc6e40</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RevLong.html</anchorfile>
-      <anchor>aa26daef2ade59906a181ed0856e365a1</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RevLong.html</anchorfile>
-      <anchor>a66d8d953ea1fbe3c28b01b0ef12f706e</anchor>
-      <arglist>(RevLong obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RevLong.html</anchorfile>
-      <anchor>a5750cc079d7f86ec8c27ff973cd376ad</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -48112,27 +45359,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RevPartialSequence.html</anchorfile>
       <anchor>a855d0df61c96aadb2be8c2bfc5ad482a</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RevPartialSequence.html</anchorfile>
-      <anchor>a56f1f99fa54acce9520bec29e01a2854</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RevPartialSequence.html</anchorfile>
-      <anchor>a855df2dba61d8bc1ec16e5759fa08b78</anchor>
-      <arglist>(RevPartialSequence obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RevPartialSequence.html</anchorfile>
-      <anchor>a5d564c2ffdd8dc29076447a314f27796</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -48897,27 +46123,6 @@
       <anchor>ac62dfe9f6dd13ac482249d3e229173bb</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html</anchorfile>
-      <anchor>acb2d92371ddfb88bb03eca2b8945e34f</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html</anchorfile>
-      <anchor>a049baefdf921c63a6a7e44515855d17e</anchor>
-      <arglist>(RoutingDimension obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html</anchorfile>
-      <anchor>ad7f7774bd5cc96b2948ce6243ef953dd</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::constraintsolver::RoutingEnums</name>
@@ -49048,52 +46253,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a5d3c1f22645b7150fb37b4738a10304f</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
       <anchor>a537c035d613b4940217479bcd83d542d</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a0d31debb12fc1a1196de53d8a72f42a0</anchor>
-      <arglist>(RoutingFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ac4fbd86893628f36e1c989e169f291be</anchor>
-      <arglist>(IntVarFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a59f1100e495eba9d3210feb258105c21</anchor>
-      <arglist>(DecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -49168,27 +46331,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingIndexManager.html</anchorfile>
       <anchor>ac66340cc431369998410747f45a68024</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingIndexManager.html</anchorfile>
-      <anchor>ad8bee5a7e252547867cb183c7d6da4f9</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingIndexManager.html</anchorfile>
-      <anchor>a9bc4655d94832bc43b2f0d20ea34646e</anchor>
-      <arglist>(RoutingIndexManager obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingIndexManager.html</anchorfile>
-      <anchor>a8dd61986c26e0d6e0e2cf67a2120b8f9</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -50181,27 +47323,6 @@
       <anchor>acbb6d3c19a361089b20077b743e5a9e4</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
-      <anchor>ac35229833f2c5747a243d21090f584b7</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
-      <anchor>a535ba2fde10a038977327d54b0d4ae5b</anchor>
-      <arglist>(RoutingModel obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
-      <anchor>a1f2be45580d051da26c1ebeb4a4d3afc</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::constraintsolver::RoutingModelParameters</name>
@@ -50566,34 +47687,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModelVisitor.html</anchorfile>
       <anchor>a544bd9c2f7873ff6cd7dc196a77cb8f9</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModelVisitor.html</anchorfile>
-      <anchor>ad39c7dbe9a0eb3baef4bbc00cea23f07</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModelVisitor.html</anchorfile>
-      <anchor>a406904375aca2137ddb346ac5ad7790d</anchor>
-      <arglist>(RoutingModelVisitor obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -51552,27 +48645,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatHelper.html</anchorfile>
       <anchor>af461b74035ee13e5d4e1eaff109da305</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatHelper.html</anchorfile>
-      <anchor>a741c736002650ba8f51d2558173bdd3c</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatHelper.html</anchorfile>
-      <anchor>ae194005eda4baf43fcfa7c37ddc677ae</anchor>
-      <arglist>(SatHelper obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatHelper.html</anchorfile>
-      <anchor>ac5dfcf9adc2495dd853c4b679d44dfb4</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -55925,59 +52997,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a9a8eb74d9713e9a13ea54e973a147b36</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
       <anchor>a537c035d613b4940217479bcd83d542d</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a25bab8564c1f809c225fb2780c2710ea</anchor>
-      <arglist>(SavingsFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a0d31debb12fc1a1196de53d8a72f42a0</anchor>
-      <arglist>(RoutingFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ac4fbd86893628f36e1c989e169f291be</anchor>
-      <arglist>(IntVarFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a59f1100e495eba9d3210feb258105c21</anchor>
-      <arglist>(DecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -56059,27 +53082,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
       <anchor>a8f68f29fbb5475e11fb25048fc170b1d</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
-      <anchor>aed9b1ccd7b5bfc46997eeed4aba66736</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
-      <anchor>aef52b4246dbd36edc274a2b1feb329b0</anchor>
-      <arglist>(SavingsParameters obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
-      <anchor>a19c886b31be64d038b607a518ace2696</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="enum">
@@ -56310,17 +53312,6 @@
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1SearchBranching.html</anchorfile>
       <anchor>a0ffe5bdaa87b868f155437c3a962604b</anchor>
       <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>SearchForAllSolutionsSampleSat</name>
-    <filename>classSearchForAllSolutionsSampleSat.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classSearchForAllSolutionsSampleSat.html</anchorfile>
-      <anchor>a5a6d4edcb5b5e1c584ea11a68265b0cd</anchor>
-      <arglist>(String[] args)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -56581,45 +53572,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchLimit.html</anchorfile>
-      <anchor>a2287ccfa781ed137e8592e41e6131def</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html</anchorfile>
       <anchor>a345c4bf7839c37e416d9e67c9ab99dfb</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchLimit.html</anchorfile>
-      <anchor>acb12878834ef4ab7d1fd4c349203b827</anchor>
-      <arglist>(SearchLimit obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html</anchorfile>
-      <anchor>acd268169dca11904ec48015defcf8aac</anchor>
-      <arglist>(SearchMonitor obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -56891,45 +53847,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchLog.html</anchorfile>
-      <anchor>aa17f077f02fbe5dafda9d9607d68a7c9</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html</anchorfile>
       <anchor>a345c4bf7839c37e416d9e67c9ab99dfb</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchLog.html</anchorfile>
-      <anchor>a1ee74d6f818ead01c7b548ff53e3ae15</anchor>
-      <arglist>(SearchLog obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html</anchorfile>
-      <anchor>acd268169dca11904ec48015defcf8aac</anchor>
-      <arglist>(SearchMonitor obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -57162,38 +54083,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html</anchorfile>
-      <anchor>abf25178ca4cb2c0da37d634fbc42fb98</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html</anchorfile>
       <anchor>a345c4bf7839c37e416d9e67c9ab99dfb</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html</anchorfile>
-      <anchor>acd268169dca11904ec48015defcf8aac</anchor>
-      <arglist>(SearchMonitor obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -57368,41 +54261,6 @@
       <anchor>a616e2beb8466b013fe91c06d9a01b6cf</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVar.html</anchorfile>
-      <anchor>a6a7df971569a09d589c1a60b7bc7ccfd</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVar.html</anchorfile>
-      <anchor>af79daf26c45832a0dbf62cac89c3b745</anchor>
-      <arglist>(SequenceVar obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html</anchorfile>
-      <anchor>a995fc7a29862ea990fcbbfc350c81a8b</anchor>
-      <arglist>(PropagationBaseObject obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::constraintsolver::SequenceVarElement</name>
@@ -57562,34 +54420,6 @@
       <anchor>a813f461e731bb91a025e81cae11f5ec0</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarElement.html</anchorfile>
-      <anchor>a85679d33fa2330c25509afc726aff504</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarElement.html</anchorfile>
-      <anchor>ac9d28dca1963851af19bd98c94c01a1e</anchor>
-      <arglist>(SequenceVarElement obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentElement.html</anchorfile>
-      <anchor>adc898e166a48a898881b8220170544f7</anchor>
-      <arglist>(AssignmentElement obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentElement.html</anchorfile>
-      <anchor>ad2b85cacb5929d8c0e6b7040a768094a</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::constraintsolver::SequenceVarLocalSearchHandler</name>
@@ -57656,27 +54486,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchHandler.html</anchorfile>
       <anchor>a87a0fda8b8b3ff764ce4a78f89642550</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchHandler.html</anchorfile>
-      <anchor>a1c20bd6e2d1fa7c1b4189deb226d1966</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchHandler.html</anchorfile>
-      <anchor>ad8158462a683b623b5e243e31132d6fa</anchor>
-      <arglist>(SequenceVarLocalSearchHandler obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchHandler.html</anchorfile>
-      <anchor>a24a4dcc6126cc1ae19ccf45f55a13249</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -57846,52 +54655,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperator.html</anchorfile>
-      <anchor>a3de7994cdc7947d3473a19e4dc5324e7</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperator.html</anchorfile>
       <anchor>a8c2edfeb6eeabc0da3bc0e93d8dcec79</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperator.html</anchorfile>
-      <anchor>ae0e19934d28e65c08477e0818a5a456c</anchor>
-      <arglist>(SequenceVarLocalSearchOperator obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperatorTemplate.html</anchorfile>
-      <anchor>ad968b8c4d146d8104aadb02aef15ccaa</anchor>
-      <arglist>(SequenceVarLocalSearchOperatorTemplate obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html</anchorfile>
-      <anchor>a8176d5687daba07e0feb858b6691dde9</anchor>
-      <arglist>(LocalSearchOperator obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -58047,45 +54814,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperatorTemplate.html</anchorfile>
-      <anchor>a28b94f64a62363b54ad3880e2a9e99bb</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html</anchorfile>
       <anchor>a26c8a4baa24485557d6e663f317f4897</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperatorTemplate.html</anchorfile>
-      <anchor>ad968b8c4d146d8104aadb02aef15ccaa</anchor>
-      <arglist>(SequenceVarLocalSearchOperatorTemplate obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html</anchorfile>
-      <anchor>a8176d5687daba07e0feb858b6691dde9</anchor>
-      <arglist>(LocalSearchOperator obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -58192,121 +54924,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequentialSavingsFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a21bae559c00694f10e2d58f88bf971e0</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
       <anchor>a537c035d613b4940217479bcd83d542d</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequentialSavingsFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a7d9b80e4a5e59ac2b93bee8b9c5785ad</anchor>
-      <arglist>(SequentialSavingsFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a25bab8564c1f809c225fb2780c2710ea</anchor>
-      <arglist>(SavingsFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a0d31debb12fc1a1196de53d8a72f42a0</anchor>
-      <arglist>(RoutingFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ac4fbd86893628f36e1c989e169f291be</anchor>
-      <arglist>(IntVarFilteredDecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a59f1100e495eba9d3210feb258105c21</anchor>
-      <arglist>(DecisionBuilder obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>SimpleCpProgram</name>
-    <filename>classSimpleCpProgram.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classSimpleCpProgram.html</anchorfile>
-      <anchor>ae61c794c1132670c653935b54683b6ee</anchor>
-      <arglist>(String[] args)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>SimpleLpProgram</name>
-    <filename>classSimpleLpProgram.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classSimpleLpProgram.html</anchorfile>
-      <anchor>aa596586de66b76c2a449e4ef80bc70a5</anchor>
-      <arglist>(String[] args)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>SimpleMipProgram</name>
-    <filename>classSimpleMipProgram.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classSimpleMipProgram.html</anchorfile>
-      <anchor>a60be224759b9e2c1670e37a1de001e69</anchor>
-      <arglist>(String[] args)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>SimpleRoutingProgram</name>
-    <filename>classSimpleRoutingProgram.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classSimpleRoutingProgram.html</anchorfile>
-      <anchor>a5e9d05f23c3562e7b1e50a9907b2a811</anchor>
-      <arglist>(String[] args)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>SimpleSatProgram</name>
-    <filename>classSimpleSatProgram.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classSimpleSatProgram.html</anchorfile>
-      <anchor>ad1ff23de8bf3a0653ee4c45a8a60fa29</anchor>
-      <arglist>(String[] args)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -58440,31 +55061,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SolutionCallback.html</anchorfile>
-      <anchor>a1f5586feedd9ecb75cea151aeefed4ad</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SolutionCallback.html</anchorfile>
       <anchor>ae5f58d09a9f920413ac3e8705a4fb09e</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SolutionCallback.html</anchorfile>
-      <anchor>a56358a0b0ac4d54964acdc367e841f09</anchor>
-      <arglist>(SolutionCallback obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SolutionCallback.html</anchorfile>
-      <anchor>ab59f2fb130ea4a2c94e90d79d71c9199</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -58851,45 +55451,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html</anchorfile>
-      <anchor>abaf85f0b7d03d8367e9ef965973036f5</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html</anchorfile>
       <anchor>a345c4bf7839c37e416d9e67c9ab99dfb</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html</anchorfile>
-      <anchor>a6cec82ed82d77d995dfacbeb93380eb3</anchor>
-      <arglist>(SolutionCollector obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html</anchorfile>
-      <anchor>acd268169dca11904ec48015defcf8aac</anchor>
-      <arglist>(SearchMonitor obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -58944,45 +55509,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionPool.html</anchorfile>
       <anchor>ab8f469ca6c932d4cc135e46e59fd8e2e</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionPool.html</anchorfile>
-      <anchor>a3f516498f7135d23fa5f5e4c67ec2a38</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionPool.html</anchorfile>
-      <anchor>a93ed37d4546123628ef9a9ef17ebdd70</anchor>
-      <arglist>(SolutionPool obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>SolveAndPrintIntermediateSolutionsSampleSat</name>
-    <filename>classSolveAndPrintIntermediateSolutionsSampleSat.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classSolveAndPrintIntermediateSolutionsSampleSat.html</anchorfile>
-      <anchor>a653286a887fda027b400351318c81815</anchor>
-      <arglist>(String[] args)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -62693,27 +59219,6 @@
       <anchor>a39e6d4c1bef15b6e715a5c9fac70e92f</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html</anchorfile>
-      <anchor>a618a4b0f8620b185460e06af0e0deac6</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html</anchorfile>
-      <anchor>aba6ca8b905ae942742b9b40412635597</anchor>
-      <arglist>(Solver obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html</anchorfile>
-      <anchor>ab752402b9f75a727a4641b3fc3ebace6</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::constraintsolver::SolverParameters</name>
@@ -62791,17 +59296,6 @@
       <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
       <anchor>a01954933c623c5525a6c1cfdfaa05de7</anchor>
       <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>SolveWithTimeLimitSampleSat</name>
-    <filename>classSolveWithTimeLimitSampleSat.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classSolveWithTimeLimitSampleSat.html</anchorfile>
-      <anchor>a86883f5153e8969b78ec22c7e6f8cda3</anchor>
-      <arglist>(String[] args)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -62890,27 +59384,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1util_1_1SortedDisjointIntervalList.html</anchorfile>
       <anchor>a10bfcaa2a676e8fb580b3e676fd1c492</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1util_1_1SortedDisjointIntervalList.html</anchorfile>
-      <anchor>af862ad055d833226a567213b426fffde</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1util_1_1SortedDisjointIntervalList.html</anchorfile>
-      <anchor>a8016f31f79585c1c7f187103b48dfbaf</anchor>
-      <arglist>(SortedDisjointIntervalList obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1util_1_1SortedDisjointIntervalList.html</anchorfile>
-      <anchor>aa24e2f170b5b4169f38f96143ee7024c</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="enum">
@@ -63063,28 +59536,6 @@
       <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MinCostFlowBase_1_1Status.html</anchorfile>
       <anchor>a47ee6496ebd61dcc326ecd98f7bde971</anchor>
       <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>StepFunctionSampleSat</name>
-    <filename>classStepFunctionSampleSat.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classStepFunctionSampleSat.html</anchorfile>
-      <anchor>a97df3edd25ad352a58534bf73a88b9f2</anchor>
-      <arglist>(String[] args)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>StopAfterNSolutionsSampleSat</name>
-    <filename>classStopAfterNSolutionsSampleSat.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classStopAfterNSolutionsSampleSat.html</anchorfile>
-      <anchor>a8e39fb60ce7dd8044f57713d7db1adc3</anchor>
-      <arglist>(String[] args)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -63259,45 +59710,10 @@
     </member>
     <member kind="function" protection="protected">
       <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SymmetryBreaker.html</anchorfile>
-      <anchor>a6d724de70445d474381c4ed05822d0c2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SymmetryBreaker.html</anchorfile>
       <anchor>a3a0168993c1581f30cf7f7ca1714284b</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SymmetryBreaker.html</anchorfile>
-      <anchor>a4e13591df984bdf117acad6b8832e0e0</anchor>
-      <arglist>(SymmetryBreaker obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionVisitor.html</anchorfile>
-      <anchor>aafcca24ef26dac706dd9395c943ad03a</anchor>
-      <arglist>(DecisionVisitor obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -63735,50 +60151,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Tsp</name>
-    <filename>classTsp.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classTsp.html</anchorfile>
-      <anchor>a13881b173e6b4fabf0becf65951184c0</anchor>
-      <arglist>(String[] args)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>TspCircuitBoard</name>
-    <filename>classTspCircuitBoard.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classTspCircuitBoard.html</anchorfile>
-      <anchor>a949222d413de6993f3f933586fac8aa1</anchor>
-      <arglist>(String[] args)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>TspCities</name>
-    <filename>classTspCities.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classTspCities.html</anchorfile>
-      <anchor>a68edbcc11b319bd4161f625e0019166d</anchor>
-      <arglist>(String[] args)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>TspDistanceMatrix</name>
-    <filename>classTspDistanceMatrix.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classTspDistanceMatrix.html</anchorfile>
-      <anchor>a95c0297dde3bb17695082f27f637e7d5</anchor>
-      <arglist>(String[] args)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>com::google::ortools::constraintsolver::TypeIncompatibilityChecker</name>
     <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1TypeIncompatibilityChecker.html</filename>
     <base>com::google::ortools::constraintsolver::TypeRegulationsChecker</base>
@@ -63810,34 +60182,6 @@
       <anchor>af1c68587f418b00f9ab1095cb054c28f</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1TypeIncompatibilityChecker.html</anchorfile>
-      <anchor>a9ce99e5d6a0cf1f613a54f73e6ba8e9b</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1TypeIncompatibilityChecker.html</anchorfile>
-      <anchor>ac239938471e816f2b6998131230f74d2</anchor>
-      <arglist>(TypeIncompatibilityChecker obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1TypeRegulationsChecker.html</anchorfile>
-      <anchor>aa1db892332ff5cd11f70abe4d01ef717</anchor>
-      <arglist>(TypeRegulationsChecker obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1TypeRegulationsChecker.html</anchorfile>
-      <anchor>a01581b87e66b88dba01a375a9a8f3be5</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::constraintsolver::TypeRegulationsChecker</name>
@@ -63862,27 +60206,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1TypeRegulationsChecker.html</anchorfile>
       <anchor>ab6a6156256feb50a3feae65b963df7ff</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1TypeRegulationsChecker.html</anchorfile>
-      <anchor>ad7e701612f1ea22345d6683b00d7d029</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1TypeRegulationsChecker.html</anchorfile>
-      <anchor>aa1db892332ff5cd11f70abe4d01ef717</anchor>
-      <arglist>(TypeRegulationsChecker obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1TypeRegulationsChecker.html</anchorfile>
-      <anchor>a01581b87e66b88dba01a375a9a8f3be5</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -64036,48 +60359,6 @@
       <anchor>a5d03872837dcb1e67e407b90f443b84f</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1TypeRegulationsConstraint.html</anchorfile>
-      <anchor>a32f6f1cb21d01963b59f99982b3f2b5d</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1TypeRegulationsConstraint.html</anchorfile>
-      <anchor>a253eabb174277a7fbd93a6bafd9cfa23</anchor>
-      <arglist>(TypeRegulationsConstraint obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html</anchorfile>
-      <anchor>a0ad5f96c0944de8b3fa7b25b7ed18e0f</anchor>
-      <arglist>(Constraint obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html</anchorfile>
-      <anchor>a995fc7a29862ea990fcbbfc350c81a8b</anchor>
-      <arglist>(PropagationBaseObject obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>aaf73107e0d9c0a622c8ddae40f17f67c</anchor>
-      <arglist>(BaseObject obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html</anchorfile>
-      <anchor>a2eee4aae15d39bff9e94114cd29895e0</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::constraintsolver::TypeRequirementChecker</name>
@@ -64110,34 +60391,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1TypeRequirementChecker.html</anchorfile>
       <anchor>a8cc913980955cada602315c77a6bdc17</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>finalize</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1TypeRequirementChecker.html</anchorfile>
-      <anchor>a616f1ffedf13ba7212d8c864ee337ba1</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1TypeRequirementChecker.html</anchorfile>
-      <anchor>a1c01b3b98ab8bd95c4428af3d1570ca5</anchor>
-      <arglist>(TypeRequirementChecker obj)</arglist>
-    </member>
-    <member kind="function" protection="protected" static="yes">
-      <type>static long</type>
-      <name>getCPtr</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1TypeRegulationsChecker.html</anchorfile>
-      <anchor>aa1db892332ff5cd11f70abe4d01ef717</anchor>
-      <arglist>(TypeRegulationsChecker obj)</arglist>
-    </member>
-    <member kind="variable" protection="protected">
-      <type>transient boolean</type>
-      <name>swigCMemOwn</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1TypeRegulationsChecker.html</anchorfile>
-      <anchor>a01581b87e66b88dba01a375a9a8f3be5</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="enum">
@@ -64833,138 +61086,6 @@
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1VariableSelectionStrategy.html</anchorfile>
       <anchor>a0a803a1f1d8e83a6dde6a0daf765414e</anchor>
       <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Vrp</name>
-    <filename>classVrp.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classVrp.html</anchorfile>
-      <anchor>ab91539821b9b52176e61ee2aa50a670d</anchor>
-      <arglist>(String[] args)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>VrpCapacity</name>
-    <filename>classVrpCapacity.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classVrpCapacity.html</anchorfile>
-      <anchor>a75902ee2a948f2c39e0099315f4a08bd</anchor>
-      <arglist>(String[] args)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>VrpDropNodes</name>
-    <filename>classVrpDropNodes.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classVrpDropNodes.html</anchorfile>
-      <anchor>ae01b6f7686704635dc932d5e95f6ea8e</anchor>
-      <arglist>(String[] args)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>VrpGlobalSpan</name>
-    <filename>classVrpGlobalSpan.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classVrpGlobalSpan.html</anchorfile>
-      <anchor>ac770c3986be6cb8933975085878a088e</anchor>
-      <arglist>(String[] args)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>VrpInitialRoutes</name>
-    <filename>classVrpInitialRoutes.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classVrpInitialRoutes.html</anchorfile>
-      <anchor>afc77b7c19649a6b339d5604f505b7106</anchor>
-      <arglist>(String[] args)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>VrpPickupDelivery</name>
-    <filename>classVrpPickupDelivery.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classVrpPickupDelivery.html</anchorfile>
-      <anchor>a78d0d0dd4c7ddb78d045e2152fbbef3f</anchor>
-      <arglist>(String[] args)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>VrpPickupDeliveryFifo</name>
-    <filename>classVrpPickupDeliveryFifo.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classVrpPickupDeliveryFifo.html</anchorfile>
-      <anchor>aa1cbe62bf65686220bda9b85306d64ea</anchor>
-      <arglist>(String[] args)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>VrpPickupDeliveryLifo</name>
-    <filename>classVrpPickupDeliveryLifo.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classVrpPickupDeliveryLifo.html</anchorfile>
-      <anchor>a7ceacc276327678bf445d60bbbe7fd9c</anchor>
-      <arglist>(String[] args)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>VrpResources</name>
-    <filename>classVrpResources.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classVrpResources.html</anchorfile>
-      <anchor>ace35c95992198526a99c5b639af7797a</anchor>
-      <arglist>(String[] args)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>VrpStartsEnds</name>
-    <filename>classVrpStartsEnds.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classVrpStartsEnds.html</anchorfile>
-      <anchor>afbbf5f83e4675851e1c13014629cc637</anchor>
-      <arglist>(String[] args)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>VrpTimeWindows</name>
-    <filename>classVrpTimeWindows.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classVrpTimeWindows.html</anchorfile>
-      <anchor>a870b58dbc02859a7dee1c65cf9ebbce3</anchor>
-      <arglist>(String[] args)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>VrpWithTimeLimit</name>
-    <filename>classVrpWithTimeLimit.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classVrpWithTimeLimit.html</anchorfile>
-      <anchor>a2798a3fca9dafbbf73b9a5189a0cb88c</anchor>
-      <arglist>(String[] args)</arglist>
     </member>
   </compound>
   <compound kind="class">

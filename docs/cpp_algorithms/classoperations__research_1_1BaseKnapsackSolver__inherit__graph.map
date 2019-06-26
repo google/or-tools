@@ -1,0 +1,4 @@
+<map id="operations_research::BaseKnapsackSolver" name="operations_research::BaseKnapsackSolver">
+<area shape="rect" id="node1" title="&#45;&#45;— BaseKnapsackSolver &#45;&#45;— This is the base class for knapsack solvers." alt="" coords="13,5,169,44"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1KnapsackGenericSolver.html" title="&#45;&#45;— KnapsackGenericSolver &#45;&#45;— KnapsackGenericSolver is the multi&#45;dimensional knapsack solver class." alt="" coords="5,92,177,131"/>
+</map>

@@ -1,6 +1,7 @@
 # Generate documentation
 
 cpp-doc:
+	doxygen tools/doc/cpp_algorithms.doxy
 	doxygen tools/doc/cpp_graph.doxy
 	doxygen tools/doc/cpp_linear.doxy
 	doxygen tools/doc/cpp_routing.doxy

@@ -154,14 +154,16 @@ class Domain(object):
 
     @staticmethod
     def FromIntervals(intervals: &#39;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#39;) -&gt; &#34;operations_research::Domain&#34;:
-        r&#34;&#34;&#34; Used in non-C++ languages. Do not use directly.&#34;&#34;&#34;
+        r&#34;&#34;&#34; This method is available in Python, Java and .NET. It allows building a Domain object from a list of intervals (long[][] in Java and .NET, [[0, 2], [5, 5], [8, 10]] in python).&#34;&#34;&#34;
         return _sorted_interval_list.Domain_FromIntervals(intervals)
 
     @staticmethod
     def FromFlatIntervals(flat_intervals: &#39;std::vector&lt; int64 &gt; const &amp;&#39;) -&gt; &#34;operations_research::Domain&#34;:
+        r&#34;&#34;&#34; This method is available in Python, Java and .NET. It allows building a Domain object from a flattened list of intervals (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).&#34;&#34;&#34;
         return _sorted_interval_list.Domain_FromFlatIntervals(flat_intervals)
 
     def FlattenedIntervals(self) -&gt; &#34;std::vector&lt; int64 &gt;&#34;:
+        r&#34;&#34;&#34; This method returns the flattened list of interval bounds of the domain. Thus the domain {0, 1, 2, 5, 8, 9, 10} will return [0, 2, 5, 5, 8, 10] (as a C++ std::vector&lt;int64&gt;, as a java or C# long[], as a python list of integers).&#34;&#34;&#34;
         return _sorted_interval_list.Domain_FlattenedIntervals(self)
 
     def IsEmpty(self) -&gt; &#34;bool&#34;:
@@ -173,10 +175,11 @@ class Domain(object):
         return _sorted_interval_list.Domain_Size(self)
 
     def Min(self) -&gt; &#34;int64&#34;:
-        r&#34;&#34;&#34; Returns the domain min/max value. This Checks that the domain is not empty.&#34;&#34;&#34;
+        r&#34;&#34;&#34; Returns the domain min value. It checks that the domain is not empty.&#34;&#34;&#34;
         return _sorted_interval_list.Domain_Min(self)
 
     def Max(self) -&gt; &#34;int64&#34;:
+        r&#34;&#34;&#34; Returns the domain max value. It checks that the domain is not empty.&#34;&#34;&#34;
         return _sorted_interval_list.Domain_Max(self)
 
     def Contains(self, value: &#39;int64&#39;) -&gt; &#34;bool&#34;:
@@ -230,10 +233,11 @@ def Domain_FromValues(values: &#39;std::vector&lt; int64 &gt;&#39;) -&gt; &#34;o
     return _sorted_interval_list.Domain_FromValues(values)
 
 def Domain_FromIntervals(intervals: &#39;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#39;) -&gt; &#34;operations_research::Domain&#34;:
-    r&#34;&#34;&#34; Used in non-C++ languages. Do not use directly.&#34;&#34;&#34;
+    r&#34;&#34;&#34; This method is available in Python, Java and .NET. It allows building a Domain object from a list of intervals (long[][] in Java and .NET, [[0, 2], [5, 5], [8, 10]] in python).&#34;&#34;&#34;
     return _sorted_interval_list.Domain_FromIntervals(intervals)
 
 def Domain_FromFlatIntervals(flat_intervals: &#39;std::vector&lt; int64 &gt; const &amp;&#39;) -&gt; &#34;operations_research::Domain&#34;:
+    r&#34;&#34;&#34; This method is available in Python, Java and .NET. It allows building a Domain object from a flattened list of intervals (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).&#34;&#34;&#34;
     return _sorted_interval_list.Domain_FromFlatIntervals(flat_intervals)
 
 
@@ -264,10 +268,11 @@ def __lshift__(*args) -&gt; &#34;std::ostream &amp;&#34;:
 <span>def <span class="ident">Domain_FromFlatIntervals</span></span>(<span>flat_intervals)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>This method is available in Python, Java and .NET. It allows building a Domain object from a flattened list of intervals (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def Domain_FromFlatIntervals(flat_intervals: &#39;std::vector&lt; int64 &gt; const &amp;&#39;) -&gt; &#34;operations_research::Domain&#34;:
+    r&#34;&#34;&#34; This method is available in Python, Java and .NET. It allows building a Domain object from a flattened list of intervals (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).&#34;&#34;&#34;
     return _sorted_interval_list.Domain_FromFlatIntervals(flat_intervals)</code></pre>
 </details>
 </dd>
@@ -275,11 +280,11 @@ def __lshift__(*args) -&gt; &#34;std::ostream &amp;&#34;:
 <span>def <span class="ident">Domain_FromIntervals</span></span>(<span>intervals)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Used in non-C++ languages. Do not use directly.</p></section>
+<section class="desc"><p>This method is available in Python, Java and .NET. It allows building a Domain object from a list of intervals (long[][] in Java and .NET, [[0, 2], [5, 5], [8, 10]] in python).</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def Domain_FromIntervals(intervals: &#39;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#39;) -&gt; &#34;operations_research::Domain&#34;:
-    r&#34;&#34;&#34; Used in non-C++ languages. Do not use directly.&#34;&#34;&#34;
+    r&#34;&#34;&#34; This method is available in Python, Java and .NET. It allows building a Domain object from a list of intervals (long[][] in Java and .NET, [[0, 2], [5, 5], [8, 10]] in python).&#34;&#34;&#34;
     return _sorted_interval_list.Domain_FromIntervals(intervals)</code></pre>
 </details>
 </dd>
@@ -351,14 +356,16 @@ Constructor for the common case of a single interval [left, right]. If left &gt;
 
     @staticmethod
     def FromIntervals(intervals: &#39;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#39;) -&gt; &#34;operations_research::Domain&#34;:
-        r&#34;&#34;&#34; Used in non-C++ languages. Do not use directly.&#34;&#34;&#34;
+        r&#34;&#34;&#34; This method is available in Python, Java and .NET. It allows building a Domain object from a list of intervals (long[][] in Java and .NET, [[0, 2], [5, 5], [8, 10]] in python).&#34;&#34;&#34;
         return _sorted_interval_list.Domain_FromIntervals(intervals)
 
     @staticmethod
     def FromFlatIntervals(flat_intervals: &#39;std::vector&lt; int64 &gt; const &amp;&#39;) -&gt; &#34;operations_research::Domain&#34;:
+        r&#34;&#34;&#34; This method is available in Python, Java and .NET. It allows building a Domain object from a flattened list of intervals (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).&#34;&#34;&#34;
         return _sorted_interval_list.Domain_FromFlatIntervals(flat_intervals)
 
     def FlattenedIntervals(self) -&gt; &#34;std::vector&lt; int64 &gt;&#34;:
+        r&#34;&#34;&#34; This method returns the flattened list of interval bounds of the domain. Thus the domain {0, 1, 2, 5, 8, 9, 10} will return [0, 2, 5, 5, 8, 10] (as a C++ std::vector&lt;int64&gt;, as a java or C# long[], as a python list of integers).&#34;&#34;&#34;
         return _sorted_interval_list.Domain_FlattenedIntervals(self)
 
     def IsEmpty(self) -&gt; &#34;bool&#34;:
@@ -370,10 +377,11 @@ Constructor for the common case of a single interval [left, right]. If left &gt;
         return _sorted_interval_list.Domain_Size(self)
 
     def Min(self) -&gt; &#34;int64&#34;:
-        r&#34;&#34;&#34; Returns the domain min/max value. This Checks that the domain is not empty.&#34;&#34;&#34;
+        r&#34;&#34;&#34; Returns the domain min value. It checks that the domain is not empty.&#34;&#34;&#34;
         return _sorted_interval_list.Domain_Min(self)
 
     def Max(self) -&gt; &#34;int64&#34;:
+        r&#34;&#34;&#34; Returns the domain max value. It checks that the domain is not empty.&#34;&#34;&#34;
         return _sorted_interval_list.Domain_Max(self)
 
     def Contains(self, value: &#39;int64&#39;) -&gt; &#34;bool&#34;:
@@ -434,11 +442,12 @@ def AllValues() -&gt; &#34;operations_research::Domain&#34;:
 <span>def <span class="ident">FromFlatIntervals</span></span>(<span>flat_intervals)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>This method is available in Python, Java and .NET. It allows building a Domain object from a flattened list of intervals (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">@staticmethod
 def FromFlatIntervals(flat_intervals: &#39;std::vector&lt; int64 &gt; const &amp;&#39;) -&gt; &#34;operations_research::Domain&#34;:
+    r&#34;&#34;&#34; This method is available in Python, Java and .NET. It allows building a Domain object from a flattened list of intervals (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).&#34;&#34;&#34;
     return _sorted_interval_list.Domain_FromFlatIntervals(flat_intervals)</code></pre>
 </details>
 </dd>
@@ -446,12 +455,12 @@ def FromFlatIntervals(flat_intervals: &#39;std::vector&lt; int64 &gt; const &amp
 <span>def <span class="ident">FromIntervals</span></span>(<span>intervals)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Used in non-C++ languages. Do not use directly.</p></section>
+<section class="desc"><p>This method is available in Python, Java and .NET. It allows building a Domain object from a list of intervals (long[][] in Java and .NET, [[0, 2], [5, 5], [8, 10]] in python).</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">@staticmethod
 def FromIntervals(intervals: &#39;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#39;) -&gt; &#34;operations_research::Domain&#34;:
-    r&#34;&#34;&#34; Used in non-C++ languages. Do not use directly.&#34;&#34;&#34;
+    r&#34;&#34;&#34; This method is available in Python, Java and .NET. It allows building a Domain object from a list of intervals (long[][] in Java and .NET, [[0, 2], [5, 5], [8, 10]] in python).&#34;&#34;&#34;
     return _sorted_interval_list.Domain_FromIntervals(intervals)</code></pre>
 </details>
 </dd>
@@ -522,10 +531,11 @@ def FromValues(values: &#39;std::vector&lt; int64 &gt;&#39;) -&gt; &#34;operatio
 <span>def <span class="ident">FlattenedIntervals</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>This method returns the flattened list of interval bounds of the domain. Thus the domain {0, 1, 2, 5, 8, 9, 10} will return [0, 2, 5, 5, 8, 10] (as a C++ std::vector<int64>, as a java or C# long[], as a python list of integers).</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def FlattenedIntervals(self) -&gt; &#34;std::vector&lt; int64 &gt;&#34;:
+    r&#34;&#34;&#34; This method returns the flattened list of interval bounds of the domain. Thus the domain {0, 1, 2, 5, 8, 9, 10} will return [0, 2, 5, 5, 8, 10] (as a C++ std::vector&lt;int64&gt;, as a java or C# long[], as a python list of integers).&#34;&#34;&#34;
     return _sorted_interval_list.Domain_FlattenedIntervals(self)</code></pre>
 </details>
 </dd>
@@ -557,10 +567,11 @@ def FromValues(values: &#39;std::vector&lt; int64 &gt;&#39;) -&gt; &#34;operatio
 <span>def <span class="ident">Max</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Returns the domain max value. It checks that the domain is not empty.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def Max(self) -&gt; &#34;int64&#34;:
+    r&#34;&#34;&#34; Returns the domain max value. It checks that the domain is not empty.&#34;&#34;&#34;
     return _sorted_interval_list.Domain_Max(self)</code></pre>
 </details>
 </dd>
@@ -568,11 +579,11 @@ def FromValues(values: &#39;std::vector&lt; int64 &gt;&#39;) -&gt; &#34;operatio
 <span>def <span class="ident">Min</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the domain min/max value. This Checks that the domain is not empty.</p></section>
+<section class="desc"><p>Returns the domain min value. It checks that the domain is not empty.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def Min(self) -&gt; &#34;int64&#34;:
-    r&#34;&#34;&#34; Returns the domain min/max value. This Checks that the domain is not empty.&#34;&#34;&#34;
+    r&#34;&#34;&#34; Returns the domain min value. It checks that the domain is not empty.&#34;&#34;&#34;
     return _sorted_interval_list.Domain_Min(self)</code></pre>
 </details>
 </dd>

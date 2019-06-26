@@ -87,10 +87,22 @@ class Domain {
   /// Creates a domain from the union of an unsorted list of intervals.
   static Domain FromIntervals(absl::Span<const ClosedInterval> intervals);
 
-  /// Used in non-C++ languages. Do not use directly.
+  /// This method is available in Python, Java and .NET. It allows
+  /// building a Domain object from a list of intervals (long[][] in Java and
+  /// .NET, [[0, 2], [5, 5], [8, 10]] in python).
   static Domain FromVectorIntervals(
       const std::vector<std::vector<int64> >& intervals);
+
+  /// This method is available in Python, Java and .NET. It allows
+  /// building a Domain object from a flattened list of intervals
+  /// (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).
   static Domain FromFlatIntervals(const std::vector<int64>& flat_intervals);
+
+  /// This method returns the flattened list of interval bounds of the domain.
+  ///
+  /// Thus the domain {0, 1, 2, 5, 8, 9, 10} will return [0, 2, 5, 5,
+  /// 8, 10] (as a C++ std::vector<int64>, as a java or C# long[], as
+  /// a python list of integers).
   std::vector<int64> FlattenedIntervals() const;
 
   /// Returns true if this is the empty set.
@@ -99,9 +111,12 @@ class Domain {
   /// Returns the number of elements in the domain. It is capped at kint64max.
   int64 Size() const;
 
-  /// Returns the domain min/max value.
-  /// This Checks that the domain is not empty.
+  /// Returns the domain min value.
+  /// It checks that the domain is not empty.
   int64 Min() const;
+
+  /// Returns the domain max value.
+  /// It checks that the domain is not empty.
   int64 Max() const;
 
   /// Returns true iff value is in Domain.
@@ -150,6 +165,17 @@ class Domain {
   /// look for {x ∈ Int64, ∃ e ∈ D, x / coeff = e}, then we will get [2, 201] in
   /// the case above.
   Domain ContinuousMultiplicationBy(int64 coeff) const;
+
+  /// Returns a super-set of MultiplicationBy() to avoid the explosion in the
+  /// representation size. This behaves as if we replace the set D of
+  /// non-adjacent integer intervals by the set of floating-point element in the
+  /// same intervals.
+  ///
+  /// For instance, [1, 100] * 2 will be transformed in [2, 200] and not in
+  /// [2][4][6]...[200] like in MultiplicationBy(). Note that this would be
+  /// similar to a InverseDivisionBy(), but not quite the same because if we
+  /// look for {x ∈ Int64, ∃ e ∈ D, x / coeff = e}, then we will get [2, 201] in
+  /// the case above.
   Domain ContinuousMultiplicationBy(const Domain& domain) const;
 
   /// Returns {x ∈ Int64, ∃ e ∈ D, x = e / coeff}.
@@ -202,6 +228,7 @@ class Domain {
   /// size() which might be confused with the number of values in the
   /// domain.
   int NumIntervals() const { return intervals_.size(); }
+
   ClosedInterval front() const { return intervals_.front(); }
   ClosedInterval back() const { return intervals_.back(); }
   ClosedInterval operator[](int i) const { return intervals_[i]; }

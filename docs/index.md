@@ -1,7 +1,8 @@
-# OR=Tools reference manuals
+# OR-Tools reference manuals
 
 ## C++ Documentation
 
+- [Algorithms](cpp_algorithms/index.html)
 - [Graph](cpp_graph/index.html)
 - [Routing](cpp_routing/index.html)
 - [Linear Solver](cpp_linear/index.html)

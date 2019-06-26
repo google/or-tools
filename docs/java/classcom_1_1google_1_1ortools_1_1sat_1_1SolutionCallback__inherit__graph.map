@@ -1,8 +1,4 @@
 <map id="com.google.ortools.sat.SolutionCallback" name="com.google.ortools.sat.SolutionCallback">
-<area shape="rect" id="node1" title=" " alt="" coords="5,103,213,141"/>
-<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverSolutionCallback.html" title="Parent class to create a callback called at each solution." alt="" coords="261,103,437,141"/>
-<area shape="rect" id="node3" title=" " alt="" coords="510,5,705,44"/>
-<area shape="rect" id="node4" title=" " alt="" coords="508,68,707,107"/>
-<area shape="rect" id="node5" title=" " alt="" coords="485,131,730,183"/>
-<area shape="rect" id="node6" title=" " alt="" coords="488,207,727,245"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,5,213,44"/>
+<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverSolutionCallback.html" title="Parent class to create a callback called at each solution." alt="" coords="21,92,197,131"/>
 </map>
