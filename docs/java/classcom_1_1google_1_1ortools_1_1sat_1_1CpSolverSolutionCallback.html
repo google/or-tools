@@ -48,16 +48,26 @@
 <div class="title">com.google.ortools.sat.CpSolverSolutionCallback Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
+<div class="textblock"><p>Parent class to create a callback called at each solution. </p>
+<p>From the parent class, it inherits the methods:</p>
+<div class="fragment"><div class="line"><span class="keywordtype">long</span> numBooleans() </div></div><!-- fragment --><p> to query the number of boolean variables created.</p>
+<div class="fragment"><div class="line"><span class="keywordtype">long</span> numBranches() </div></div><!-- fragment --><p> to query the number of branches explored so far.</p>
+<div class="fragment"><div class="line"><span class="keywordtype">long</span> numConflicts() </div></div><!-- fragment --><p> to query the number of conflicts created so far.</p>
+<div class="fragment"><div class="line"><span class="keywordtype">long</span> numBinaryPropagations() </div></div><!-- fragment --><p> to query the number of boolean propagations in the SAT solver so far.</p>
+<div class="fragment"><div class="line"><span class="keywordtype">long</span> numIntegerPropagations() </div></div><!-- fragment --><p> to query the number of integer propagations in the SAT solver so far.</p>
+<div class="fragment"><div class="line"><span class="keywordtype">double</span> wallTime() </div></div><!-- fragment --><p> to query wall time passed in the search so far.</p>
+<div class="fragment"><div class="line"><span class="keywordtype">double</span> userTime() </div></div><!-- fragment --><p> to query the user time passed in the search so far.</p>
+<div class="fragment"><div class="line"><span class="keywordtype">long</span> objectiveValue() </div></div><!-- fragment --><p> to get the best objective value found so far. </p>
 
-<p>Parent class to create a callback called at each solution.  
- <a href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverSolutionCallback.html#details">More...</a></p>
-<div class="dynheader">
+<p class="definition">Definition at line <a class="el" href="CpSolverSolutionCallback_8java_source.html#l00039">39</a> of file <a class="el" href="CpSolverSolutionCallback_8java_source.html">CpSolverSolutionCallback.java</a>.</p>
+</div><div class="dynheader">
 Inheritance diagram for com.google.ortools.sat.CpSolverSolutionCallback:</div>
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverSolutionCallback__inherit__graph.png" border="0" usemap="#com_8google_8ortools_8sat_8CpSolverSolutionCallback_inherit__map" alt="Inheritance graph"/></div>
 <map name="com_8google_8ortools_8sat_8CpSolverSolutionCallback_inherit__map" id="com_8google_8ortools_8sat_8CpSolverSolutionCallback_inherit__map">
-<area shape="rect"  title="Parent class to create a callback called at each solution." alt="" coords="5,79,182,117"/>
-<area shape="rect"  title=" " alt="" coords="33,5,154,31"/>
+<area shape="rect"  title="Parent class to create a callback called at each solution." alt="" coords="5,80,180,121"/>
+<area shape="rect"  title=" " alt="" coords="33,5,153,32"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <div class="dynheader">
@@ -65,8 +75,8 @@ Collaboration diagram for com.google.ortools.sat.CpSolverSolutionCallback:</div>
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverSolutionCallback__coll__graph.png" border="0" usemap="#com_8google_8ortools_8sat_8CpSolverSolutionCallback_coll__map" alt="Collaboration graph"/></div>
 <map name="com_8google_8ortools_8sat_8CpSolverSolutionCallback_coll__map" id="com_8google_8ortools_8sat_8CpSolverSolutionCallback_coll__map">
-<area shape="rect"  title="Parent class to create a callback called at each solution." alt="" coords="5,79,182,117"/>
-<area shape="rect"  title=" " alt="" coords="33,5,154,31"/>
+<area shape="rect"  title="Parent class to create a callback called at each solution." alt="" coords="5,80,180,121"/>
+<area shape="rect"  title=" " alt="" coords="33,5,153,32"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -82,20 +92,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a7bf7d9db1f8c2b54808658a8ff6c7254"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback method to override.  <a href="#a7bf7d9db1f8c2b54808658a8ff6c7254">More...</a><br /></td></tr>
 <tr class="separator:a7bf7d9db1f8c2b54808658a8ff6c7254"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Parent class to create a callback called at each solution. </p>
-<p>From the parent class, it inherits the methods:</p>
-<div class="fragment"><div class="line"><span class="keywordtype">long</span> numBooleans() </div></div><!-- fragment --><p> to query the number of boolean variables created.</p>
-<div class="fragment"><div class="line"><span class="keywordtype">long</span> numBranches() </div></div><!-- fragment --><p> to query the number of branches explored so far.</p>
-<div class="fragment"><div class="line"><span class="keywordtype">long</span> numConflicts() </div></div><!-- fragment --><p> to query the number of conflicts created so far.</p>
-<div class="fragment"><div class="line"><span class="keywordtype">long</span> numBinaryPropagations() </div></div><!-- fragment --><p> to query the number of boolean propagations in the SAT solver so far.</p>
-<div class="fragment"><div class="line"><span class="keywordtype">long</span> numIntegerPropagations() </div></div><!-- fragment --><p> to query the number of integer propagations in the SAT solver so far.</p>
-<div class="fragment"><div class="line"><span class="keywordtype">double</span> wallTime() </div></div><!-- fragment --><p> to query wall time passed in the search so far.</p>
-<div class="fragment"><div class="line"><span class="keywordtype">double</span> userTime() </div></div><!-- fragment --><p> to query the user time passed in the search so far.</p>
-<div class="fragment"><div class="line"><span class="keywordtype">long</span> objectiveValue() </div></div><!-- fragment --><p> to get the best objective value found so far. </p>
-
-<p class="definition">Definition at line <a class="el" href="CpSolverSolutionCallback_8java_source.html#l00039">39</a> of file <a class="el" href="CpSolverSolutionCallback_8java_source.html">CpSolverSolutionCallback.java</a>.</p>
-</div><h2 class="groupheader">Member Function Documentation</h2>
+<h2 class="groupheader">Member Function Documentation</h2>
 <a id="abff660d4b7d7cb5b5d4b5ba20fdd460e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abff660d4b7d7cb5b5d4b5ba20fdd460e">&#9670;&nbsp;</a></span>booleanValue()</h2>
 

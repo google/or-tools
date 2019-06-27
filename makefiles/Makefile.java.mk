@@ -200,7 +200,7 @@ $(GEN_DIR)/ortools/util/util_java_wrap.cc: \
  $(SRC_DIR)/ortools/base/base.i \
  $(UTIL_DEPS) \
  | $(GEN_DIR)/ortools/util $(GEN_DIR)/com/google/ortools/util
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -java \
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -java $(SWIG_DOXYGEN) \
  -o $(GEN_PATH)$Sortools$Sutil$Sutil_java_wrap.cc \
  -package com.google.ortools.util \
  -module main \

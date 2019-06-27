@@ -761,6 +761,10 @@ OR_TOOLS_LNK += $(COIN_LNK)
 # Swig is only needed when building .Net, Java or Python wrapper
 SWIG_BINARY = $(shell $(WHICH) $(UNIX_SWIG_BINARY))
 #$(error "Can't find $(UNIX_SWIG_BINARY). Please verify UNIX_SWIG_BINARY")
+SWIG_VERSION = $(shell $(SWIG_BINARY) -version | grep Version | cut -d " " -f 3)
+ifeq ("$(SWIG_VERSION)","4.0.0")
+SWIG_DOXYGEN = -doxygen
+endif
 
 .PHONY: clean_third_party # Clean everything. Remember to also delete archived dependencies, i.e. in the event of download failure, etc.
 clean_third_party:
@@ -838,4 +842,5 @@ ifdef UNIX_GUROBI_DIR
 	@echo GUROBI_INC = $(GUROBI_INC)
 	@echo GUROBI_LNK = $(GUROBI_LNK)
 endif
+	@echo SWIG_VERSION = $(SWIG_VERSION)
 	@echo

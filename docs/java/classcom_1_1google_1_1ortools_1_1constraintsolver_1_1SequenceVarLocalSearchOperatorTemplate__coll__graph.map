@@ -1,5 +1,5 @@
 <map id="com.google.ortools.constraintsolver.SequenceVarLocalSearchOperatorTemplate" name="com.google.ortools.constraintsolver.SequenceVarLocalSearchOperatorTemplate">
-<area shape="rect" id="node1" title=" " alt="" coords="5,179,287,217"/>
-<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html" title=" " alt="" coords="29,92,263,131"/>
-<area shape="rect" id="node3" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="29,5,263,44"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,184,281,225"/>
+<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html" title=" " alt="" coords="27,95,259,136"/>
+<area shape="rect" id="node3" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="27,5,259,47"/>
 </map>

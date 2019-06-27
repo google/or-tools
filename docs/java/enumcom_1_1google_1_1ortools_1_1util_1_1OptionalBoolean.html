@@ -51,13 +51,24 @@
 <div class="title">com.google.ortools.util.OptionalBoolean Enum Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="dynheader">
+<a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
+<div class="textblock"><pre>
+A "three-way" boolean: unspecified, false or true.
+We don't use the value of 1 to increase the chance to catch bugs: eg. in
+python, a user may set a proto field of this type enum to a boolean value
+without type checks, if they set it to True, the proto validity code will
+catch it (because it'll be cast to 1, which is an invalid enum value).
+Note that if the user sets if to False (i.e. 0), it will be caught by the
+routing library's parameter validity check too.
+</pre><p>Protobuf enum</p><div class="fragment"><div class="line">operations_research.OptionalBoolean </div></div><!-- fragment --> 
+<p class="definition">Definition at line <a class="el" href="OptionalBoolean_8java_source.html#l00019">19</a> of file <a class="el" href="OptionalBoolean_8java_source.html">OptionalBoolean.java</a>.</p>
+</div><div class="dynheader">
 Inheritance diagram for com.google.ortools.util.OptionalBoolean:</div>
 <div class="dyncontent">
 <div class="center"><img src="enumcom_1_1google_1_1ortools_1_1util_1_1OptionalBoolean__inherit__graph.png" border="0" usemap="#com_8google_8ortools_8util_8OptionalBoolean_inherit__map" alt="Inheritance graph"/></div>
 <map name="com_8google_8ortools_8util_8OptionalBoolean_inherit__map" id="com_8google_8ortools_8util_8OptionalBoolean_inherit__map">
-<area shape="rect"  title=" " alt="" coords="6,79,164,117"/>
-<area shape="rect"  title=" " alt="" coords="5,5,165,31"/>
+<area shape="rect"  title=" " alt="" coords="5,80,163,121"/>
+<area shape="rect"  title=" " alt="" coords="5,5,163,32"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <div class="dynheader">
@@ -65,8 +76,8 @@ Collaboration diagram for com.google.ortools.util.OptionalBoolean:</div>
 <div class="dyncontent">
 <div class="center"><img src="enumcom_1_1google_1_1ortools_1_1util_1_1OptionalBoolean__coll__graph.png" border="0" usemap="#com_8google_8ortools_8util_8OptionalBoolean_coll__map" alt="Collaboration graph"/></div>
 <map name="com_8google_8ortools_8util_8OptionalBoolean_coll__map" id="com_8google_8ortools_8util_8OptionalBoolean_coll__map">
-<area shape="rect"  title=" " alt="" coords="6,79,164,117"/>
-<area shape="rect"  title=" " alt="" coords="5,5,165,31"/>
+<area shape="rect"  title=" " alt="" coords="5,80,163,121"/>
+<area shape="rect"  title=" " alt="" coords="5,5,163,32"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -118,18 +129,7 @@ Static Public Attributes</h2></td></tr>
 <tr class="memdesc:a2adba5238ea6ce3242bbb3e8d3ceebb9"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>BOOL_TRUE = 3;</code>  <a href="#a2adba5238ea6ce3242bbb3e8d3ceebb9">More...</a><br /></td></tr>
 <tr class="separator:a2adba5238ea6ce3242bbb3e8d3ceebb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><pre>
-A "three-way" boolean: unspecified, false or true.
-We don't use the value of 1 to increase the chance to catch bugs: eg. in
-python, a user may set a proto field of this type enum to a boolean value
-without type checks, if they set it to True, the proto validity code will
-catch it (because it'll be cast to 1, which is an invalid enum value).
-Note that if the user sets if to False (i.e. 0), it will be caught by the
-routing library's parameter validity check too.
-</pre><p>Protobuf enum</p><div class="fragment"><div class="line">operations_research.OptionalBoolean </div></div><!-- fragment --> 
-<p class="definition">Definition at line <a class="el" href="OptionalBoolean_8java_source.html#l00019">19</a> of file <a class="el" href="OptionalBoolean_8java_source.html">OptionalBoolean.java</a>.</p>
-</div><h2 class="groupheader">Member Function Documentation</h2>
+<h2 class="groupheader">Member Function Documentation</h2>
 <a id="ab0c8724a6accf0641867fcc940d7c73f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab0c8724a6accf0641867fcc940d7c73f">&#9670;&nbsp;</a></span>forNumber()</h2>
 

@@ -44,7 +44,7 @@ CGL_TAG = 0.60.2
 CLP_TAG = 1.17.3
 OSI_TAG = 0.108.4
 COINUTILS_TAG = 2.11.2
-SWIG_TAG = 3.0.12
+SWIG_TAG = 4.0.0
 
 # Added in support of clean third party targets
 TSVNCACHE_EXE = TSVNCache.exe

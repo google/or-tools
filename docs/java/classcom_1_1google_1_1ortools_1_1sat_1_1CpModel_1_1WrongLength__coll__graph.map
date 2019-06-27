@@ -1,5 +1,5 @@
 <map id="com.google.ortools.sat.CpModel.WrongLength" name="com.google.ortools.sat.CpModel.WrongLength">
-<area shape="rect" id="node1" title="Exception thrown when an array has a wrong length." alt="" coords="5,165,182,204"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,79,182,117"/>
-<area shape="rect" id="node3" title=" " alt="" coords="54,5,133,31"/>
+<area shape="rect" id="node1" title="Exception thrown when an array has a wrong length." alt="" coords="5,169,180,211"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,80,180,121"/>
+<area shape="rect" id="node3" title=" " alt="" coords="53,5,133,32"/>
 </map>
