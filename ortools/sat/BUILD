@@ -191,6 +191,7 @@ cc_library(
         "//ortools/base:threadpool",
         "//ortools/graph:connectivity",
         "//ortools/port:proto_utils",
+        "//ortools/util:sigint",
         "//ortools/util:sorted_interval_list",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/base:core_headers",
@@ -1134,7 +1135,5 @@ cc_library(
         ":model",
         ":sat_parameters_cc_proto",
         "//ortools/base",
-        "//ortools/util:sigint",
-        "//ortools/util:time_limit",
     ],
 )

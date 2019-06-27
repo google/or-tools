@@ -1438,10 +1438,10 @@ objs/sat/cp_model_solver.$O: ortools/sat/cp_model_solver.cc \
  ortools/gen/ortools/sat/cp_model.pb.h ortools/sat/model.h \
  ortools/base/logging.h ortools/base/macros.h ortools/base/map_util.h \
  ortools/base/typeid.h ortools/gen/ortools/sat/sat_parameters.pb.h \
- ortools/base/file.h ortools/base/status.h ortools/base/cleanup.h \
- ortools/base/commandlineflags.h ortools/base/int_type.h \
- ortools/base/int_type_indexed_vector.h ortools/base/threadpool.h \
- ortools/base/timer.h ortools/base/basictypes.h \
+ ortools/base/file.h ortools/base/status.h ortools/util/sigint.h \
+ ortools/base/cleanup.h ortools/base/commandlineflags.h \
+ ortools/base/int_type.h ortools/base/int_type_indexed_vector.h \
+ ortools/base/threadpool.h ortools/base/timer.h ortools/base/basictypes.h \
  ortools/graph/connectivity.h ortools/port/proto_utils.h \
  ortools/sat/circuit.h ortools/sat/integer.h ortools/base/hash.h \
  ortools/graph/iterators.h ortools/sat/sat_base.h ortools/util/bitset.h \

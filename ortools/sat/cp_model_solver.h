@@ -39,7 +39,6 @@ std::string CpSolverResponseStats(const CpSolverResponse& response);
 // easy to set custom parameters or interrupt the solver will calls like:
 //  - model->Add(NewSatParameters(parameters_as_string_or_proto));
 //  - model->GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stop);
-//  - model->GetOrCreate<SigintHandler>()->Register([&stop]() { stop = true; });
 CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model);
 
 // Solves the given cp_model and returns an instance of CpSolverResponse.

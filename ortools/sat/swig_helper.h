@@ -21,7 +21,6 @@
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/util/sigint.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -104,41 +103,23 @@ class SatHelper {
   static operations_research::sat::CpSolverResponse Solve(
       const operations_research::sat::CpModelProto& model_proto) {
     FixFlagsAndEnvironmentForSwig();
-    Model model;
-    std::atomic<bool> stopped(false);
-    model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped);
-    model.GetOrCreate<SigintHandler>()->Register(
-        [&stopped]() { stopped = true; });
-
-    return operations_research::sat::SolveCpModel(model_proto, &model);
+    return operations_research::sat::Solve(model_proto);
   }
 
   static operations_research::sat::CpSolverResponse SolveWithParameters(
       const operations_research::sat::CpModelProto& model_proto,
       const operations_research::sat::SatParameters& parameters) {
     FixFlagsAndEnvironmentForSwig();
-    Model model;
-    model.Add(NewSatParameters(parameters));
-    std::atomic<bool> stopped(false);
-    model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped);
-    model.GetOrCreate<SigintHandler>()->Register(
-        [&stopped]() { stopped = true; });
-
-    return SolveCpModel(model_proto, &model);
+    return operations_research::sat::SolveWithParameters(model_proto,
+                                                         parameters);
   }
 
   static operations_research::sat::CpSolverResponse SolveWithStringParameters(
       const operations_research::sat::CpModelProto& model_proto,
       const std::string& parameters) {
     FixFlagsAndEnvironmentForSwig();
-    Model model;
-    model.Add(NewSatParameters(parameters));
-    std::atomic<bool> stopped(false);
-    model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped);
-    model.GetOrCreate<SigintHandler>()->Register(
-        [&stopped]() { stopped = true; });
-
-    return SolveCpModel(model_proto, &model);
+    return operations_research::sat::SolveWithParameters(model_proto,
+                                                         parameters);
   }
 
   static operations_research::sat::CpSolverResponse
@@ -153,8 +134,6 @@ class SatHelper {
         [&callback](const CpSolverResponse& r) { return callback.Run(r); }));
     model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
         callback.stopped());
-    model.GetOrCreate<SigintHandler>()->Register(
-        [&callback]() { *callback.stopped() = true; });
 
     return SolveCpModel(model_proto, &model);
   }
@@ -170,8 +149,6 @@ class SatHelper {
         [&callback](const CpSolverResponse& r) { return callback.Run(r); }));
     model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
         callback.stopped());
-    model.GetOrCreate<SigintHandler>()->Register(
-        [&callback]() { *callback.stopped() = true; });
 
     return SolveCpModel(model_proto, &model);
   }

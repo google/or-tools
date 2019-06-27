@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <atomic>
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
@@ -50,7 +49,6 @@
 #include "ortools/sat/simplification.h"
 #include "ortools/sat/symmetry.h"
 #include "ortools/util/file_util.h"
-#include "ortools/util/sigint.h"
 #include "ortools/util/time_limit.h"
 
 DEFINE_string(
@@ -196,9 +194,6 @@ int Run() {
     LOG(FATAL) << "Please supply a data file with --input=";
   }
 
-  // In the algorithms below, this seems like a good parameter.
-  parameters.set_count_assumption_levels_in_lbd(false);
-
   // Parse the --params flag.
   if (!FLAGS_params.empty()) {
     CHECK(google::protobuf::TextFormat::MergeFromString(FLAGS_params,
@@ -216,7 +211,6 @@ int Run() {
   if (!LoadBooleanProblem(FLAGS_input, &problem, &cp_model)) {
     CpSolverResponse response;
     response.set_status(CpSolverStatus::MODEL_INVALID);
-    LOG(INFO) << CpSolverResponseStats(response);
     return EXIT_SUCCESS;
   }
   if (FLAGS_use_cp_model && cp_model.variables_size() == 0) {
@@ -228,15 +222,9 @@ int Run() {
   // completely replaced by the more general CpModelProto.
   if (!cp_model.variables().empty()) {
     problem.Clear();  // We no longer need it, release memory.
-    std::atomic<bool> stopped(false);
     Model model;
     model.Add(NewSatParameters(parameters));
-    model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped);
-    model.GetOrCreate<SigintHandler>()->Register(
-        [&stopped]() { stopped = true; });
-    LOG(INFO) << CpModelStats(cp_model);
     const CpSolverResponse response = SolveCpModel(cp_model, &model);
-    LOG(INFO) << CpSolverResponseStats(response);
 
     if (!FLAGS_output.empty()) {
       if (absl::EndsWith(FLAGS_output, ".txt")) {

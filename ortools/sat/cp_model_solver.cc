@@ -28,6 +28,7 @@
 #include "absl/synchronization/notification.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/file.h"
+#include "ortools/util/sigint.h"
 #endif  // __PORTABLE_PLATFORM__
 
 #include "absl/container/flat_hash_set.h"
@@ -113,260 +114,6 @@ namespace operations_research {
 namespace sat {
 
 namespace {
-
-// =============================================================================
-// A class that detects when variables should be fully encoded by computing a
-// fixed point.
-// =============================================================================
-
-// This class is will ask the underlying Model to fully encode IntegerVariables
-// of the model using constraint processors PropagateConstraintXXX(), until no
-// such processor wants to fully encode a variable. The workflow is to call
-// PropagateFullEncoding() on a set of constraints, then ComputeFixedPoint() to
-// launch the fixed point computation.
-class FullEncodingFixedPointComputer {
- public:
-  FullEncodingFixedPointComputer(const CpModelProto& model_proto, Model* model)
-      : model_proto_(model_proto),
-        parameters_(*(model->GetOrCreate<SatParameters>())),
-        model_(model),
-        mapping_(model->GetOrCreate<CpModelMapping>()),
-        integer_encoder_(model->GetOrCreate<IntegerEncoder>()) {}
-
-  void ComputeFixedPoint();
-
- private:
-  DEFINE_INT_TYPE(ConstraintIndex, int32);
-
-  // Constraint ct is interested by (full-encoding) state of variable.
-  void Register(ConstraintIndex ct_index, int variable) {
-    variable = PositiveRef(variable);
-    constraint_is_registered_[ct_index] = true;
-    if (variable_watchers_.size() <= variable) {
-      variable_watchers_.resize(variable + 1);
-      variable_was_added_in_to_propagate_.resize(variable + 1);
-    }
-    variable_watchers_[variable].push_back(ct_index);
-  }
-
-  void AddVariableToPropagationQueue(int variable) {
-    variable = PositiveRef(variable);
-    if (variable_was_added_in_to_propagate_.size() <= variable) {
-      variable_watchers_.resize(variable + 1);
-      variable_was_added_in_to_propagate_.resize(variable + 1);
-    }
-    if (!variable_was_added_in_to_propagate_[variable]) {
-      variable_was_added_in_to_propagate_[variable] = true;
-      variables_to_propagate_.push_back(variable);
-    }
-  }
-
-  // Note that we always consider a fixed variable to be fully encoded here.
-  const bool IsFullyEncoded(int v) {
-    const IntegerVariable variable = mapping_->Integer(v);
-    return model_->Get(IsFixed(variable)) ||
-           integer_encoder_->VariableIsFullyEncoded(variable);
-  }
-
-  void FullyEncode(int v) {
-    v = PositiveRef(v);
-    const IntegerVariable variable = mapping_->Integer(v);
-    if (!model_->Get(IsFixed(variable))) {
-      model_->Add(FullyEncodeVariable(variable));
-    }
-    AddVariableToPropagationQueue(v);
-  }
-
-  bool PropagateFullEncoding(ConstraintIndex ct_index);
-  bool PropagateElement(ConstraintIndex ct_index);
-  bool PropagateTable(ConstraintIndex ct_index);
-  bool PropagateAutomaton(ConstraintIndex ct_index);
-  bool PropagateInverse(ConstraintIndex ct_index);
-  bool PropagateLinear(ConstraintIndex ct_index);
-
-  const CpModelProto& model_proto_;
-  const SatParameters& parameters_;
-
-  Model* model_;
-  CpModelMapping* mapping_;
-  IntegerEncoder* integer_encoder_;
-
-  std::vector<bool> variable_was_added_in_to_propagate_;
-  std::vector<int> variables_to_propagate_;
-  std::vector<std::vector<ConstraintIndex>> variable_watchers_;
-
-  gtl::ITIVector<ConstraintIndex, bool> constraint_is_finished_;
-  gtl::ITIVector<ConstraintIndex, bool> constraint_is_registered_;
-};
-
-// We only add to the propagation queue variable that are fully encoded.
-// Note that if a variable was already added once, we never add it again.
-void FullEncodingFixedPointComputer::ComputeFixedPoint() {
-  const int num_constraints = model_proto_.constraints_size();
-  constraint_is_registered_.assign(num_constraints, false);
-  constraint_is_finished_.assign(num_constraints, false);
-  for (ConstraintIndex ct_index(0); ct_index < num_constraints; ++ct_index) {
-    PropagateFullEncoding(ct_index);
-  }
-
-  // Make sure all fully encoded variables of interest are in the queue.
-  for (int v = 0; v < variable_watchers_.size(); v++) {
-    if (!variable_watchers_[v].empty() && IsFullyEncoded(v)) {
-      AddVariableToPropagationQueue(v);
-    }
-  }
-
-  // Propagate until no additional variable can be fully encoded.
-  while (!variables_to_propagate_.empty()) {
-    const int variable = variables_to_propagate_.back();
-    variables_to_propagate_.pop_back();
-    for (const ConstraintIndex ct_index : variable_watchers_[variable]) {
-      if (constraint_is_finished_[ct_index]) continue;
-      constraint_is_finished_[ct_index] = PropagateFullEncoding(ct_index);
-    }
-  }
-}
-
-// Returns true if the constraint has finished encoding what it wants.
-bool FullEncodingFixedPointComputer::PropagateFullEncoding(
-    ConstraintIndex ct_index) {
-  const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
-  switch (ct.constraint_case()) {
-    case ConstraintProto::ConstraintProto::kElement:
-      return PropagateElement(ct_index);
-    case ConstraintProto::ConstraintProto::kTable:
-      return PropagateTable(ct_index);
-    case ConstraintProto::ConstraintProto::kAutomaton:
-      return PropagateAutomaton(ct_index);
-    case ConstraintProto::ConstraintProto::kInverse:
-      return PropagateInverse(ct_index);
-    case ConstraintProto::ConstraintProto::kLinear:
-      return PropagateLinear(ct_index);
-    default:
-      return true;
-  }
-}
-
-bool FullEncodingFixedPointComputer::PropagateElement(
-    ConstraintIndex ct_index) {
-  const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
-
-  // Index must always be full encoded.
-  FullyEncode(ct.element().index());
-
-  // If target is a constant or fully encoded, variables must be fully encoded.
-  const int target = ct.element().target();
-  if (IsFullyEncoded(target)) {
-    for (const int v : ct.element().vars()) FullyEncode(v);
-  }
-
-  // If all non-target variables are fully encoded, target must be too.
-  bool all_variables_are_fully_encoded = true;
-  for (const int v : ct.element().vars()) {
-    if (v == target) continue;
-    if (!IsFullyEncoded(v)) {
-      all_variables_are_fully_encoded = false;
-      break;
-    }
-  }
-  if (all_variables_are_fully_encoded) {
-    if (!IsFullyEncoded(target)) FullyEncode(target);
-    return true;
-  }
-
-  // If some variables are not fully encoded, register on those.
-  if (constraint_is_registered_[ct_index]) {
-    for (const int v : ct.element().vars()) Register(ct_index, v);
-    Register(ct_index, target);
-  }
-  return false;
-}
-
-// If a constraint uses its variables in a symbolic (vs. numeric) manner,
-// always encode its variables.
-bool FullEncodingFixedPointComputer::PropagateTable(ConstraintIndex ct_index) {
-  const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
-  if (ct.table().negated()) return true;
-  for (const int variable : ct.table().vars()) {
-    FullyEncode(variable);
-  }
-  return true;
-}
-
-bool FullEncodingFixedPointComputer::PropagateAutomaton(
-    ConstraintIndex ct_index) {
-  const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
-  for (const int variable : ct.automaton().vars()) {
-    FullyEncode(variable);
-  }
-  return true;
-}
-
-bool FullEncodingFixedPointComputer::PropagateInverse(
-    ConstraintIndex ct_index) {
-  const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
-  for (const int variable : ct.inverse().f_direct()) {
-    FullyEncode(variable);
-  }
-  for (const int variable : ct.inverse().f_inverse()) {
-    FullyEncode(variable);
-  }
-  return true;
-}
-
-bool FullEncodingFixedPointComputer::PropagateLinear(ConstraintIndex ct_index) {
-  const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
-  if (parameters_.boolean_encoding_level() == 0) return true;
-
-  // Only act when the constraint is an equality.
-  if (ct.linear().domain(0) != ct.linear().domain(1)) return true;
-
-  // If some domain is too large, abort;
-  if (!constraint_is_registered_[ct_index]) {
-    for (const int v : ct.linear().vars()) {
-      const IntegerVariable var = mapping_->Integer(v);
-      IntegerTrail* integer_trail = model_->GetOrCreate<IntegerTrail>();
-      const IntegerValue lb = integer_trail->LowerBound(var);
-      const IntegerValue ub = integer_trail->UpperBound(var);
-      if (ub - lb > 1024) return true;  // Arbitrary limit value.
-    }
-  }
-
-  if (HasEnforcementLiteral(ct)) {
-    // Fully encode x in half-reified equality b => x == constant.
-    const auto& vars = ct.linear().vars();
-    if (vars.size() == 1) {
-      FullyEncode(vars.Get(0));
-    }
-    return true;
-  } else {
-    // If all variables but one are fully encoded,
-    // force the last one to be fully encoded.
-    int variable_not_fully_encoded;
-    int num_fully_encoded = 0;
-    for (const int var : ct.linear().vars()) {
-      if (IsFullyEncoded(var)) {
-        num_fully_encoded++;
-      } else {
-        variable_not_fully_encoded = var;
-      }
-    }
-    const int num_vars = ct.linear().vars_size();
-    if (num_fully_encoded == num_vars - 1) {
-      FullyEncode(variable_not_fully_encoded);
-      return true;
-    }
-    if (num_fully_encoded == num_vars) return true;
-
-    // Register on remaining variables if not already done.
-    if (!constraint_is_registered_[ct_index]) {
-      for (const int var : ct.linear().vars()) {
-        if (!IsFullyEncoded(var)) Register(ct_index, var);
-      }
-    }
-    return false;
-  }
-}
 
 // Makes the std::string fit in one line by cutting it in the middle if
 // necessary.
@@ -1338,11 +1085,7 @@ void LoadCpModel(const CpModelProto& model_proto,
   mapping->ExtractEncoding(model_proto, model);
 
   // Force some variables to be fully encoded.
-  // This takes some memory, so release it right away.
-  {
-    FullEncodingFixedPointComputer fixpoint(model_proto, model);
-    fixpoint.ComputeFixedPoint();
-  }
+  MaybeFullyEncodeMoreVariables(model_proto, model);
 
   // Load the constraints.
   std::set<std::string> unsupported_types;
@@ -2437,6 +2180,19 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                                                         &flag_params));
     params.MergeFrom(flag_params);
     model->Add(NewSatParameters(params));
+  }
+
+  // Register SIGINT handler if requested by the parameters.
+  std::atomic<bool> stopped_boolean(false);
+  SigintHandler handler;
+  if (model->GetOrCreate<SatParameters>()->catch_sigint_signal()) {
+    std::atomic<bool>* stopped =
+        model->GetOrCreate<TimeLimit>()->ExternalBooleanAsLimit();
+    if (stopped == nullptr) {
+      stopped = &stopped_boolean;
+      model->GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(stopped);
+    }
+    handler.Register([stopped]() { *stopped = true; });
   }
 #endif  // __PORTABLE_PLATFORM__
 

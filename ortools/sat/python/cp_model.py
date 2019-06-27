@@ -15,29 +15,30 @@
 The following two sections describe the main
 methods for building and solving CP-SAT models.
 
-* [`CpModel`](#ortools.sat.python.cp_model.CpModel): Methods for creating
+* [`CpModel`](#cp_model.CpModel): Methods for creating
 models, including variables and constraints.
-* [`CPSolver`](#ortools.sat.python.cp_model.CpSolver): Methods for solving
+* [`CPSolver`](#cp_model.CpSolver): Methods for solving
 a model and evaluating solutions.
 
 The following methods implement callbacks that the
 solver calls each time it finds a new solution.
 
-* [`CpSolverSolutionCallback`](#cpsolversolutioncallback): A general method for
-  implementing callbacks.
-* [`ObjectiveSolutionPrinter`](#objectivesolutionprinter): Print objective
-  values and elapsed time for intermediate solutions.
-* [`VarArraySolutionPrinter`](#vararraysolutionprinter): Print intermediate
-  solutions (variable values, time).
-* [`VarArrayAndObjectiveSolutionPrinter`](#vararrayandobjectivesolutionprinter):
+* [`CpSolverSolutionCallback`](#cp_model.CpSolverSolutionCallback):
+  A general method for implementing callbacks.
+* [`ObjectiveSolutionPrinter`](#cp_model.ObjectiveSolutionPrinter):
+  Print objective values and elapsed time for intermediate solutions.
+* [`VarArraySolutionPrinter`](#cp_model.VarArraySolutionPrinter):
+  Print intermediate solutions (variable values, time).
+* [`VarArrayAndObjectiveSolutionPrinter`]
+      (#cp_model.VarArrayAndObjectiveSolutionPrinter):
   Print both intermediate solutions and objective values.
 
 Additional methods for solving CP-SAT models:
 
-* [`Constraint`](#constraint): A few utility methods for modifying
+* [`Constraint`](#cp_model.Constraint): A few utility methods for modifying
   contraints created by `CpModel`.
-* [`LinearExpr`](#linearexpr): Methods for creating constraints and the
-  objective from large arrays.
+* [`LinearExpr`](#lineacp_model.LinearExpr): Methods for creating constraints
+  and the objective from large arrays of coefficients.
 
 Other methods and functions listed are primarily used for developing OR-Tools,
 rather than for solving specific optimization problems.

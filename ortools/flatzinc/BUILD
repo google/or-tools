@@ -148,7 +148,6 @@ cc_library(
         "//ortools/sat:optimization",
         "//ortools/sat:sat_solver",
         "//ortools/sat:table",
-        "//ortools/util:sigint",
         ":checker",
         ":logging",
         ":model",

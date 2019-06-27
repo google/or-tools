@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 135
+// NEXT TAG: 136
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -765,4 +765,9 @@ message SatParameters {
   // cannot, we will report MODEL_INVALID if the relative preicision is larger
   // than this parameter.
   optional double mip_check_precision = 128 [default = 1e-4];
+
+  // Indicates if the CP-SAT layer should catch Control-C (SIGINT) signals
+  // when calling solve. If set, catching the SIGINT signal will terminate the
+  // search gracefully, as if a time limit was reached.
+  optional bool catch_sigint_signal = 135 [default = true];
 }

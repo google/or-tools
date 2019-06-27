@@ -43,8 +43,6 @@
 #include "ortools/sat/optimization.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/table.h"
-#include "ortools/util/sigint.h"
-#include "ortools/util/time_limit.h"
 
 DEFINE_bool(use_flatzinc_format, true, "Output uses the flatzinc format");
 
@@ -1002,10 +1000,6 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
       << sat_params;
   m.parameters.MergeFrom(flag_parameters);
 
-  std::atomic<bool> stopped(false);
-  SigintHandler handler;
-  handler.Register([&stopped]() { stopped = true; });
-
   // We only need an observer if 'p.all_solutions' is true.
   std::function<void(const CpSolverResponse&)> solution_observer = nullptr;
   if (p.display_all_solutions && FLAGS_use_flatzinc_format) {
@@ -1024,7 +1018,6 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
 
   Model sat_model;
   sat_model.Add(NewSatParameters(m.parameters));
-  sat_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped);
   if (solution_observer != nullptr) {
     sat_model.Add(NewFeasibleSolutionObserver(solution_observer));
   }
