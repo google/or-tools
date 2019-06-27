@@ -606,7 +606,7 @@ class TriangularMatrix : private CompactSparseMatrix {
   // order for the Reverse*() versions).
   //
   // The non-zero vector is mutable so that the symbolic non-zeros that are
-  // actually zero because of numerical cancelations can be removed.
+  // actually zero because of numerical cancellations can be removed.
   //
   // The non-zeros can be computed by one of these two methods:
   // - ComputeRowsToConsiderWithDfs() which will give them in the reverse order
