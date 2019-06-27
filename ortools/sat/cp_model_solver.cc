@@ -2192,6 +2192,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       stopped = &stopped_boolean;
       model->GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(stopped);
     }
+
     handler.Register([stopped]() { *stopped = true; });
   }
 #endif  // __PORTABLE_PLATFORM__
