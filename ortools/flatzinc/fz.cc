@@ -100,10 +100,11 @@ void FixAndParseParameters(int* argc, char*** argv) {
     if (strcmp((*argv)[i], "-d") == 0) {
       (*argv)[i] = debug_param;
     }
-     if (strcmp((*argv)[i], "-t") == 0) {
+    if (strcmp((*argv)[i], "-t") == 0) {
       (*argv)[i] = time_param;
       use_time_param = true;
-    } }
+    }
+  }
   const char kUsage[] =
       "Usage: see flags.\nThis program parses and solve a flatzinc problem.";
 
