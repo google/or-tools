@@ -62,6 +62,8 @@ from ortools.util import sorted_interval_list
 Domain = sorted_interval_list.Domain
 
 # Documentation cleaning.
+# Remove the documentation of some functions.
+# See https://pdoc3.github.io/pdoc/doc/pdoc/#overriding-docstrings-with-
 __pdoc__ = {}
 __pdoc__['DisplayBounds'] = False
 __pdoc__['EvaluateLinearExpr'] = False

@@ -23,6 +23,8 @@
 %}
 
 %pythonbegin %{
+# Remove the documentation of some functions.
+# See https://pdoc3.github.io/pdoc/doc/pdoc/#overriding-docstrings-with-
 __pdoc__ = {}
 __pdoc__['Domain_AllValues'] = False
 __pdoc__['Domain_FromFlatIntervals'] = False
