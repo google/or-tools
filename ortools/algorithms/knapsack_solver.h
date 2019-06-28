@@ -40,7 +40,7 @@
 // That's the reason why the most of the following code is based on branch and
 // bound search.
 //
-// For instance to solve a 2-dimension knapsack problem with 9 items,
+// For instance to solve a 2-dimensional knapsack problem with 9 items,
 // one just has to feed a profit vector with the 9 profits, a vector of 2
 // vectors for weights, and a vector of capacities.
 // E.g.:
@@ -49,11 +49,33 @@
 //                                 [1, 1, 1, 1, 1, 1, 1, 1, 1]]
 //   vector: capacities = [34, 4]
 // And then:
-//   KnapsackSolver solver(KnapsackSolver::KNAPSACK_MULTIDIMENSION_SOLVER,
-//                         "Multi-dimensional solver");
+//   KnapsackSolver solver(
+//       KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+//       "Multi-dimensional solver");
 //   solver.Init(profits, weights, capacities);
 //   int64 profit = solver.Solve();
-
+//
+// Currently four algorithms are implemented:
+//  - KNAPSACK_BRUTE_FORCE_SOLVER: Limited to 30 items and one dimension, this
+//    solver uses a brute force algorithm, ie. explores all possible states.
+//    Experiments show competitive performance for instances with less than
+//    15 items.
+//  - KNAPSACK_64ITEMS_SOLVER: Limited to 64 items and one dimension, this
+//    solver uses a branch & bound algorithm. This solver is about 4 times
+//    faster than KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER.
+//  - KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER: Limited to one dimension, this solver
+//    is based on a dynamic programming algorithm. The time and space
+//    complexity is O(capacity * number_of_items).
+//  - KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER: This solver can deal
+//    with both large number of items and several dimensions. This solver is
+//    based on branch and bound.
+//  - KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER: This solver can deal with both
+//    large number of items and several dimensions. This solver is based on
+//    Integer Programming solver CBC.
+//  - KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER: This solver can deal with both
+//    large number of items and several dimensions. This solver is based on
+//    Integer Programming solver SCIP.
+//
 #ifndef OR_TOOLS_ALGORITHMS_KNAPSACK_SOLVER_H_
 #define OR_TOOLS_ALGORITHMS_KNAPSACK_SOLVER_H_
 
@@ -75,29 +97,10 @@ namespace operations_research {
 // ----- KnapsackSolver -----
 // KnapsackSolver is a factory for knapsack solvers. Several solvers are
 // implemented, some can deal with a limited number of items, some can deal with
-// several dimensions...
-// Currently 4 algorithms are implemented:
-//  - KNAPSACK_BRUTE_FORCE_SOLVER: Limited to 30 items and one dimension, this
-//    solver uses a brute force algorithm, ie. explores all possible states.
-//    Experiments show competitive performance for instances with less than
-//    15 items.
-//  - KNAPSACK_64ITEMS_SOLVER: Limited to 64 items and one dimension, this
-//    solver uses a branch & bound algorithm. This solver is about 4 times
-//    faster than KNAPSACK_MULTIDIMENSION_SOLVER.
-//  - KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER: Limited to one dimension, this solver
-//    is based on a dynamic programming algorithm. The time and space
-//    complexity is O(capacity * number_of_items).
-//  - KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER: This solver can deal
-//    with both large number of items and several dimensions. This solver is
-//    based on branch and bound.
-//  - KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER: This solver can deal with both
-//    large number of items and several dimensions. This solver is based on
-//    Integer Programming solver CBC.
-//  - KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER: This solver can deal with both
-//    large number of items and several dimensions. This solver is based on
-//    Integer Programming solver SCIP.
+// several dimensions.
 //
-// KnapsackSolver also implements a problem reduction algorithm based on lower
+// Besides the four algorithms listed above, KnapsackSolver also implements a
+// problem reduction algorithm based on lower
 // and upper bounds (see Ingargolia and Korsh: A reduction algorithm for
 // zero-one single knapsack problems. Management Science, 1973). This reduction
 // method is preferred to better algorithms (see, for instance, Martello
