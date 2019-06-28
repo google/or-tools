@@ -22,6 +22,7 @@
 #include "absl/strings/string_view.h"
 #include "ortools/base/map_util.h"
 #include "ortools/flatzinc/logging.h"
+#include "ortools/flatzinc/model.h"
 #include "ortools/graph/cliques.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/vector_map.h"
@@ -2431,8 +2432,8 @@ Presolver::RuleStatus Presolver::RemoveAbsFromIntLeReif(Constraint* ct,
 // Remove abs from int_le.
 // Input : int_le(x, 0, b) or int_le(x,c) with x == abs(y)
 // Output: int_eq(y, 0, b) or set_in(y, [-c, c], b)
-Presolver::RuleStatus Presolver::RemoveAbsFromIntLe(Constraint *ct,
-                                                    std::string *log) {
+Presolver::RuleStatus Presolver::RemoveAbsFromIntLe(Constraint* ct,
+                                                    std::string* log) {
   if (ct->arguments[1].HasOneValue() &&
       gtl::ContainsKey(abs_map_, ct->arguments[0].Var())) {
     log->append("remove abs from constraint");
@@ -2952,7 +2953,7 @@ Presolver::RuleStatus Presolver::PresolveRegular(Constraint* ct,
   return NOT_CHANGED;
 }
 
-// Tranforms diffn into all_different_int when sizes and y positions are all 1.
+// Transforms diffn into all_different_int when sizes and y positions are all 1.
 //
 // Input : diffn([x1, .. xn], [1, .., 1], [1, .., 1], [1, .., 1])
 // Output: all_different_int([x1, .. xn])
@@ -3363,6 +3364,14 @@ bool Presolver::RegroupDifferent(Model* model) {
 }
 
 bool Presolver::Run(Model* model) {
+  // Check the validity of variable domains.
+  for (const IntegerVariable* var : model->variables()) {
+    if (var->domain.empty()) {
+      FZLOG << var->DebugString() << " has an empty domain, exiting.";
+      return false;
+    }
+  }
+
   auto constraint = [model](int index) { return model->constraints()[index]; };
 
   // Rebuild var_constraint map if empty.

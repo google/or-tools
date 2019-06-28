@@ -24,21 +24,21 @@
    LexerInfo struct and the %token declarations in ./parser.yy. */
 
 %%
-"array"         { return ARRAY;     }
-"bool"          { return TOKEN_BOOL;}
-"constraint"    { return CONSTRAINT;}
+"array"         { return ARRAY;      }
+"bool"          { return TOKEN_BOOL; }
+"constraint"    { return CONSTRAINT; }
 "float"         { return TOKEN_FLOAT;}
 "int"           { return TOKEN_INT;  }
-"maximize"      { return MAXIMIZE;  }
-"minimize"      { return MINIMIZE;  }
-"of"            { return OF;        }
-"predicate"     { return PREDICATE; }
-"satisfy"       { return SATISFY;   }
-"set"           { return SET;       }
-"solve"         { return SOLVE;     }
-"var"           { return VAR;       }
-\.\.            { return DOTDOT;    }
-::              { return COLONCOLON;}
+"maximize"      { return MAXIMIZE;   }
+"minimize"      { return MINIMIZE;   }
+"of"            { return OF;         }
+"predicate"     { return PREDICATE;  }
+"satisfy"       { return SATISFY;    }
+"set"           { return SET;        }
+"solve"         { return SOLVE;      }
+"var"           { return VAR;        }
+\.\.            { return DOTDOT;     }
+::              { return COLONCOLON; }
 
 "true" {
   yylval->integer_value = 1;
