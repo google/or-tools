@@ -39,7 +39,8 @@ BASE_DEPS = \
  $(SRC_DIR)/ortools/base/thorough_hash.h \
  $(SRC_DIR)/ortools/base/threadpool.h \
  $(SRC_DIR)/ortools/base/timer.h \
- $(SRC_DIR)/ortools/base/typeid.h
+ $(SRC_DIR)/ortools/base/typeid.h \
+ $(SRC_DIR)/ortools/base/version.h \
 
 BASE_LIB_OBJS = \
  $(OBJ_DIR)/base/bitmap.$O \
@@ -49,7 +50,8 @@ BASE_LIB_OBJS = \
  $(OBJ_DIR)/base/recordio.$O \
  $(OBJ_DIR)/base/sysinfo.$O \
  $(OBJ_DIR)/base/threadpool.$O \
- $(OBJ_DIR)/base/timer.$O
+ $(OBJ_DIR)/base/timer.$O \
+ $(OBJ_DIR)/base/version.$O
 
 objs/base/bitmap.$O: ortools/base/bitmap.cc ortools/base/bitmap.h \
  ortools/base/basictypes.h ortools/base/integral_types.h \
@@ -90,6 +92,11 @@ objs/base/timer.$O: ortools/base/timer.cc ortools/base/timer.h \
  ortools/base/basictypes.h ortools/base/integral_types.h \
  ortools/base/logging.h ortools/base/macros.h | $(OBJ_DIR)/base
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sbase$Stimer.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Stimer.$O
+
+objs/base/version.$O: ortools/base/version.cc ortools/base/version.h \
+ ortools/base/basictypes.h ortools/base/integral_types.h \
+ ortools/base/logging.h ortools/base/macros.h | $(OBJ_DIR)/base
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sbase$Sversion.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Sversion.$O
 
 PORT_DEPS = \
  $(SRC_DIR)/ortools/port/file.h \
@@ -3781,4 +3788,3 @@ $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h: \
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: \
  $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sconstraint_solver$Ssolver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
-
