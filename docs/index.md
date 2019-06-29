@@ -23,3 +23,4 @@
 
 - [CP-SAT module](python/ortools/sat/python/cp_model.html)
 - [Domain module](python/ortools/util/sorted_interval_list.html)
+- [Linear Solver module](python/ortools/linear_solver/pywraplp.html)
