@@ -10,6 +10,7 @@ set_target_properties(${NAME} PROPERTIES
   CXX_EXTENSIONS OFF
   POSITION_INDEPENDENT_CODE ON
 )
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DOR_TOOLS_MAJOR=7 -DOR_TOOLS_MINOR=2")
 # CMake < 3.12: CMakeError: Object library may not link to anything.
 #target_link_libraries(${NAME} PRIVATE
 #  ZLIB::ZLIB
