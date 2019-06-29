@@ -222,24 +222,41 @@ PY_PROTO_TYPEMAP(ortools.linear_solver.linear_solver_pb2,
                  MPSolutionResponse,
                  operations_research::MPSolutionResponse);
 
-// Convert lists of MPVariable*.
+// Actual conversions. This also includes the conversion to std::vector<Class>.
+%define PY_CONVERT(Class)
 %{
 template<>
-bool PyObjAs(PyObject *py_obj, operations_research::MPVariable** b) {
+bool PyObjAs(PyObject *py_obj, operations_research::Class** b) {
   return SWIG_ConvertPtr(py_obj, reinterpret_cast<void**>(b),
-                         SWIGTYPE_p_operations_research__MPVariable,
+                         SWIGTYPE_p_operations_research__ ## Class,
                          SWIG_POINTER_EXCEPTION) >= 0;
 }
 
-bool CanConvertToMPVariable(PyObject *py_obj) {
-  operations_research::MPVariable* tmp;
+PyObject* FromObject ## Class(operations_research::Class* obj) {
+  return SWIG_NewPointerObj(obj, 
+                            SWIGTYPE_p_operations_research__ ## Class, 
+                            SWIG_POINTER_NOSHADOW);
+}
+
+bool CanConvertTo ## Class(PyObject *py_obj) {
+  operations_research::Class* tmp;
   return PyObjAs(py_obj, &tmp);
 }
 %}
+%typemap(in) operations_research::Class* const {
+  if (!PyObjAs($input, &$1)) SWIG_fail;
+}
+%typecheck(SWIG_TYPECHECK_POINTER) operations_research::Class* const {
+  $1 = CanConvertTo ## Class($input);
+  if ($1 == 0) PyErr_Clear();
+}
+PY_LIST_OUTPUT_TYPEMAP(operations_research::Class*, CanConvertTo ## Class,
+                       FromObject ## Class);
+%enddef
 
-PY_LIST_OUTPUT_TYPEMAP(operations_research::MPVariable*,
-                       CanConvertToMPVariable,
-                       PyObjAs<operations_research::MPVariable>);
+PY_CONVERT(MPConstraint);
+PY_CONVERT(MPVariable);
+#undef PY_CONVERT
 
 %ignoreall
 
@@ -309,8 +326,10 @@ PY_LIST_OUTPUT_TYPEMAP(operations_research::MPVariable*,
 %unignore operations_research::MPSolver::SupportsProblemType;  // No unit test
 %unignore operations_research::MPSolver::wall_time;  // No unit test
 %unignore operations_research::MPSolver::Clear;  // No unit test
-%unignore operations_research::MPSolver::NumVariables;
+%unignore operations_research::MPSolver::constraints;
+%unignore operations_research::MPSolver::variables;
 %unignore operations_research::MPSolver::NumConstraints;
+%unignore operations_research::MPSolver::NumVariables;
 %unignore operations_research::MPSolver::EnableOutput;  // No unit test
 %unignore operations_research::MPSolver::SuppressOutput;  // No unit test
 %rename (LookupConstraint)
