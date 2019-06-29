@@ -257,9 +257,11 @@ class Solver(object):
         return _pywraplp.Solver_ExportModelAsMpsFormat(self, *args)
 
     def SetHint(self, variables: &#39;std::vector&lt; operations_research::MPVariable * &gt; const &amp;&#39;, values: &#39;std::vector&lt; double &gt; const &amp;&#39;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Set a hint for solution. If a feasible or almost-feasible solution to the problem is already known, it may be helpful to pass it to the solver so that it can be used. A solver that supports this feature will try to use this information to create its initial feasible solution. Note that it may not always be faster to give a hint like this to the solver. There is also no guarantee that the solver will use this hint or try to return a solution &#34;close&#34; to this assignment in case of multiple optimal solutions.&#34;&#34;&#34;
         return _pywraplp.Solver_SetHint(self, variables, values)
 
     def SetNumThreads(self, num_theads: &#39;int&#39;) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34; Sets the number of threads to be used by the solver.&#34;&#34;&#34;
         return _pywraplp.Solver_SetNumThreads(self, num_theads)
 
     def Add(self, constraint, name=&#39;&#39;):
@@ -1472,9 +1474,11 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
         return _pywraplp.Solver_ExportModelAsMpsFormat(self, *args)
 
     def SetHint(self, variables: &#39;std::vector&lt; operations_research::MPVariable * &gt; const &amp;&#39;, values: &#39;std::vector&lt; double &gt; const &amp;&#39;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Set a hint for solution. If a feasible or almost-feasible solution to the problem is already known, it may be helpful to pass it to the solver so that it can be used. A solver that supports this feature will try to use this information to create its initial feasible solution. Note that it may not always be faster to give a hint like this to the solver. There is also no guarantee that the solver will use this hint or try to return a solution &#34;close&#34; to this assignment in case of multiple optimal solutions.&#34;&#34;&#34;
         return _pywraplp.Solver_SetHint(self, variables, values)
 
     def SetNumThreads(self, num_theads: &#39;int&#39;) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34; Sets the number of threads to be used by the solver.&#34;&#34;&#34;
         return _pywraplp.Solver_SetNumThreads(self, num_theads)
 
     def Add(self, constraint, name=&#39;&#39;):
@@ -1972,10 +1976,11 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">SetHint</span></span>(<span>self, variables, values)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Set a hint for solution. If a feasible or almost-feasible solution to the problem is already known, it may be helpful to pass it to the solver so that it can be used. A solver that supports this feature will try to use this information to create its initial feasible solution. Note that it may not always be faster to give a hint like this to the solver. There is also no guarantee that the solver will use this hint or try to return a solution "close" to this assignment in case of multiple optimal solutions.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def SetHint(self, variables: &#39;std::vector&lt; operations_research::MPVariable * &gt; const &amp;&#39;, values: &#39;std::vector&lt; double &gt; const &amp;&#39;) -&gt; &#34;void&#34;:
+    r&#34;&#34;&#34; Set a hint for solution. If a feasible or almost-feasible solution to the problem is already known, it may be helpful to pass it to the solver so that it can be used. A solver that supports this feature will try to use this information to create its initial feasible solution. Note that it may not always be faster to give a hint like this to the solver. There is also no guarantee that the solver will use this hint or try to return a solution &#34;close&#34; to this assignment in case of multiple optimal solutions.&#34;&#34;&#34;
     return _pywraplp.Solver_SetHint(self, variables, values)</code></pre>
 </details>
 </dd>
@@ -1983,10 +1988,11 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">SetNumThreads</span></span>(<span>self, num_theads)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Sets the number of threads to be used by the solver.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def SetNumThreads(self, num_theads: &#39;int&#39;) -&gt; &#34;bool&#34;:
+    r&#34;&#34;&#34; Sets the number of threads to be used by the solver.&#34;&#34;&#34;
     return _pywraplp.Solver_SetNumThreads(self, num_theads)</code></pre>
 </details>
 </dd>
