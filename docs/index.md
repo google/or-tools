@@ -23,7 +23,7 @@
 
 - [CP-SAT module](python/ortools/sat/python/cp_model.html)
 - [Domain module](python/ortools/util/sorted_interval_list.html)
-- [Graph module](python/ortools/util/pywrapgraph.html)
+- [Graph module](python/ortools/graph/pywrapgraph.html)
 - [Knapsack Solver module](python/ortools/algorithms/pywrapknapsack_solver.html)
 - [Linear Solver module](python/ortools/linear_solver/pywraplp.html)
 - [Routing module](python/ortools/constraint_solver/pywrapcp.html)
