@@ -34,6 +34,8 @@ a:link { color: #46641e; text-decoration: none}
 # the SWIG interface file instead.
 
 
+# Remove the documentation of some functions.
+# See https://pdoc3.github.io/pdoc/doc/pdoc/#overriding-docstrings-with-
 __pdoc__ = {}
 __pdoc__[&#39;Domain_AllValues&#39;] = False
 __pdoc__[&#39;Domain_FromFlatIntervals&#39;] = False
@@ -130,98 +132,65 @@ class _SwigNonDynamicMeta(type):
 
 
 class Domain(object):
-    r&#34;&#34;&#34; We call &#34;domain&#34; any subset of Int64 = [kint64min, kint64max]. This class can be used to represent such set efficiently as a sorted and non-adjacent list of intervals. This is efficient as long as the size of such list stays reasonable. In the comments below, the domain of *this will always be written &#39;D&#39;. Note that all the functions are safe with respect to integer overflow.&#34;&#34;&#34;
-
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
     __repr__ = _swig_repr
 
     def __init__(self, *args):
-        r&#34;&#34;&#34;
-        *Overload 1:*
-        By default, Domain will be empty.
-
-        |
-
-        *Overload 2:*
-        Constructor for the common case of a singleton domain.
-
-        |
-
-        *Overload 3:*
-        Constructor for the common case of a single interval [left, right]. If left &gt; right, this will result in the empty domain.
-        &#34;&#34;&#34;
         _sorted_interval_list.Domain_swiginit(self, _sorted_interval_list.new_Domain(*args))
 
     @staticmethod
     def AllValues() -&gt; &#34;operations_research::Domain&#34;:
-        r&#34;&#34;&#34; Returns the full domain Int64.&#34;&#34;&#34;
         return _sorted_interval_list.Domain_AllValues()
 
     @staticmethod
     def FromValues(values: &#39;std::vector&lt; int64 &gt;&#39;) -&gt; &#34;operations_research::Domain&#34;:
-        r&#34;&#34;&#34; Creates a domain from the union of an unsorted list of integer values. Input values may be repeated, with no consequence on the output&#34;&#34;&#34;
         return _sorted_interval_list.Domain_FromValues(values)
 
     @staticmethod
     def FromIntervals(intervals: &#39;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#39;) -&gt; &#34;operations_research::Domain&#34;:
-        r&#34;&#34;&#34; This method is available in Python, Java and .NET. It allows building a Domain object from a list of intervals (long[][] in Java and .NET, [[0, 2], [5, 5], [8, 10]] in python).&#34;&#34;&#34;
         return _sorted_interval_list.Domain_FromIntervals(intervals)
 
     @staticmethod
     def FromFlatIntervals(flat_intervals: &#39;std::vector&lt; int64 &gt; const &amp;&#39;) -&gt; &#34;operations_research::Domain&#34;:
-        r&#34;&#34;&#34; This method is available in Python, Java and .NET. It allows building a Domain object from a flattened list of intervals (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).&#34;&#34;&#34;
         return _sorted_interval_list.Domain_FromFlatIntervals(flat_intervals)
 
     def FlattenedIntervals(self) -&gt; &#34;std::vector&lt; int64 &gt;&#34;:
-        r&#34;&#34;&#34; This method returns the flattened list of interval bounds of the domain. Thus the domain {0, 1, 2, 5, 8, 9, 10} will return [0, 2, 5, 5, 8, 10] (as a C++ std::vector&lt;int64&gt;, as a java or C# long[], as a python list of integers).&#34;&#34;&#34;
         return _sorted_interval_list.Domain_FlattenedIntervals(self)
 
     def IsEmpty(self) -&gt; &#34;bool&#34;:
-        r&#34;&#34;&#34; Returns true if this is the empty set.&#34;&#34;&#34;
         return _sorted_interval_list.Domain_IsEmpty(self)
 
     def Size(self) -&gt; &#34;int64&#34;:
-        r&#34;&#34;&#34; Returns the number of elements in the domain. It is capped at kint64max.&#34;&#34;&#34;
         return _sorted_interval_list.Domain_Size(self)
 
     def Min(self) -&gt; &#34;int64&#34;:
-        r&#34;&#34;&#34; Returns the domain min value. It checks that the domain is not empty.&#34;&#34;&#34;
         return _sorted_interval_list.Domain_Min(self)
 
     def Max(self) -&gt; &#34;int64&#34;:
-        r&#34;&#34;&#34; Returns the domain max value. It checks that the domain is not empty.&#34;&#34;&#34;
         return _sorted_interval_list.Domain_Max(self)
 
     def Contains(self, value: &#39;int64&#39;) -&gt; &#34;bool&#34;:
-        r&#34;&#34;&#34; Returns true iff value is in Domain.&#34;&#34;&#34;
         return _sorted_interval_list.Domain_Contains(self, value)
 
     def Complement(self) -&gt; &#34;operations_research::Domain&#34;:
-        r&#34;&#34;&#34; Returns the set Int64 ∖ D.&#34;&#34;&#34;
         return _sorted_interval_list.Domain_Complement(self)
 
     def Negation(self) -&gt; &#34;operations_research::Domain&#34;:
-        r&#34;&#34;&#34; Returns {x ∈ Int64, ∃ e ∈ D, x = -e}. Note in particular that if the negation of Int64 is not Int64 but Int64 \ {kint64min} !!&#34;&#34;&#34;
         return _sorted_interval_list.Domain_Negation(self)
 
     def IntersectionWith(self, domain: &#39;Domain&#39;) -&gt; &#34;operations_research::Domain&#34;:
-        r&#34;&#34;&#34; Returns the set D ∩ domain.&#34;&#34;&#34;
         return _sorted_interval_list.Domain_IntersectionWith(self, domain)
 
     def UnionWith(self, domain: &#39;Domain&#39;) -&gt; &#34;operations_research::Domain&#34;:
-        r&#34;&#34;&#34; Returns the set D ∪ domain.&#34;&#34;&#34;
         return _sorted_interval_list.Domain_UnionWith(self, domain)
 
     def AdditionWith(self, domain: &#39;Domain&#39;) -&gt; &#34;operations_research::Domain&#34;:
-        r&#34;&#34;&#34; Returns {x ∈ Int64, ∃ a ∈ D, ∃ b ∈ domain, x = a + b}.&#34;&#34;&#34;
         return _sorted_interval_list.Domain_AdditionWith(self, domain)
 
     def __str__(self) -&gt; &#34;std::string&#34;:
-        r&#34;&#34;&#34; Returns a compact std::string of a vector of intervals like &#34;[1,4][6][10,20]&#34;.&#34;&#34;&#34;
         return _sorted_interval_list.Domain___str__(self)
 
     def __lt__(self, other: &#39;Domain&#39;) -&gt; &#34;bool&#34;:
-        r&#34;&#34;&#34; Lexicographic order on the intervals() representation.&#34;&#34;&#34;
         return _sorted_interval_list.Domain___lt__(self, other)
 
     def __eq__(self, other: &#39;Domain&#39;) -&gt; &#34;bool&#34;:
@@ -235,19 +204,15 @@ class Domain(object):
 _sorted_interval_list.Domain_swigregister(Domain)
 
 def Domain_AllValues() -&gt; &#34;operations_research::Domain&#34;:
-    r&#34;&#34;&#34; Returns the full domain Int64.&#34;&#34;&#34;
     return _sorted_interval_list.Domain_AllValues()
 
 def Domain_FromValues(values: &#39;std::vector&lt; int64 &gt;&#39;) -&gt; &#34;operations_research::Domain&#34;:
-    r&#34;&#34;&#34; Creates a domain from the union of an unsorted list of integer values. Input values may be repeated, with no consequence on the output&#34;&#34;&#34;
     return _sorted_interval_list.Domain_FromValues(values)
 
 def Domain_FromIntervals(intervals: &#39;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#39;) -&gt; &#34;operations_research::Domain&#34;:
-    r&#34;&#34;&#34; This method is available in Python, Java and .NET. It allows building a Domain object from a list of intervals (long[][] in Java and .NET, [[0, 2], [5, 5], [8, 10]] in python).&#34;&#34;&#34;
     return _sorted_interval_list.Domain_FromIntervals(intervals)
 
 def Domain_FromFlatIntervals(flat_intervals: &#39;std::vector&lt; int64 &gt; const &amp;&#39;) -&gt; &#34;operations_research::Domain&#34;:
-    r&#34;&#34;&#34; This method is available in Python, Java and .NET. It allows building a Domain object from a flattened list of intervals (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).&#34;&#34;&#34;
     return _sorted_interval_list.Domain_FromFlatIntervals(flat_intervals)
 
 
@@ -269,110 +234,69 @@ def __lshift__(*args) -&gt; &#34;std::ostream &amp;&#34;:
 <span>(</span><span>*args)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>We call "domain" any subset of Int64 = [kint64min, kint64max]. This class can be used to represent such set efficiently as a sorted and non-adjacent list of intervals. This is efficient as long as the size of such list stays reasonable. In the comments below, the domain of *this will always be written 'D'. Note that all the functions are safe with respect to integer overflow.</p>
-<p><em>Overload 1:</em>
-By default, Domain will be empty.</p>
-<p>|</p>
-<p><em>Overload 2:</em>
-Constructor for the common case of a singleton domain.</p>
-<p>|</p>
-<p><em>Overload 3:</em>
-Constructor for the common case of a single interval [left, right]. If left &gt; right, this will result in the empty domain.</p></section>
+<section class="desc"></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">class Domain(object):
-    r&#34;&#34;&#34; We call &#34;domain&#34; any subset of Int64 = [kint64min, kint64max]. This class can be used to represent such set efficiently as a sorted and non-adjacent list of intervals. This is efficient as long as the size of such list stays reasonable. In the comments below, the domain of *this will always be written &#39;D&#39;. Note that all the functions are safe with respect to integer overflow.&#34;&#34;&#34;
-
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
     __repr__ = _swig_repr
 
     def __init__(self, *args):
-        r&#34;&#34;&#34;
-        *Overload 1:*
-        By default, Domain will be empty.
-
-        |
-
-        *Overload 2:*
-        Constructor for the common case of a singleton domain.
-
-        |
-
-        *Overload 3:*
-        Constructor for the common case of a single interval [left, right]. If left &gt; right, this will result in the empty domain.
-        &#34;&#34;&#34;
         _sorted_interval_list.Domain_swiginit(self, _sorted_interval_list.new_Domain(*args))
 
     @staticmethod
     def AllValues() -&gt; &#34;operations_research::Domain&#34;:
-        r&#34;&#34;&#34; Returns the full domain Int64.&#34;&#34;&#34;
         return _sorted_interval_list.Domain_AllValues()
 
     @staticmethod
     def FromValues(values: &#39;std::vector&lt; int64 &gt;&#39;) -&gt; &#34;operations_research::Domain&#34;:
-        r&#34;&#34;&#34; Creates a domain from the union of an unsorted list of integer values. Input values may be repeated, with no consequence on the output&#34;&#34;&#34;
         return _sorted_interval_list.Domain_FromValues(values)
 
     @staticmethod
     def FromIntervals(intervals: &#39;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#39;) -&gt; &#34;operations_research::Domain&#34;:
-        r&#34;&#34;&#34; This method is available in Python, Java and .NET. It allows building a Domain object from a list of intervals (long[][] in Java and .NET, [[0, 2], [5, 5], [8, 10]] in python).&#34;&#34;&#34;
         return _sorted_interval_list.Domain_FromIntervals(intervals)
 
     @staticmethod
     def FromFlatIntervals(flat_intervals: &#39;std::vector&lt; int64 &gt; const &amp;&#39;) -&gt; &#34;operations_research::Domain&#34;:
-        r&#34;&#34;&#34; This method is available in Python, Java and .NET. It allows building a Domain object from a flattened list of intervals (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).&#34;&#34;&#34;
         return _sorted_interval_list.Domain_FromFlatIntervals(flat_intervals)
 
     def FlattenedIntervals(self) -&gt; &#34;std::vector&lt; int64 &gt;&#34;:
-        r&#34;&#34;&#34; This method returns the flattened list of interval bounds of the domain. Thus the domain {0, 1, 2, 5, 8, 9, 10} will return [0, 2, 5, 5, 8, 10] (as a C++ std::vector&lt;int64&gt;, as a java or C# long[], as a python list of integers).&#34;&#34;&#34;
         return _sorted_interval_list.Domain_FlattenedIntervals(self)
 
     def IsEmpty(self) -&gt; &#34;bool&#34;:
-        r&#34;&#34;&#34; Returns true if this is the empty set.&#34;&#34;&#34;
         return _sorted_interval_list.Domain_IsEmpty(self)
 
     def Size(self) -&gt; &#34;int64&#34;:
-        r&#34;&#34;&#34; Returns the number of elements in the domain. It is capped at kint64max.&#34;&#34;&#34;
         return _sorted_interval_list.Domain_Size(self)
 
     def Min(self) -&gt; &#34;int64&#34;:
-        r&#34;&#34;&#34; Returns the domain min value. It checks that the domain is not empty.&#34;&#34;&#34;
         return _sorted_interval_list.Domain_Min(self)
 
     def Max(self) -&gt; &#34;int64&#34;:
-        r&#34;&#34;&#34; Returns the domain max value. It checks that the domain is not empty.&#34;&#34;&#34;
         return _sorted_interval_list.Domain_Max(self)
 
     def Contains(self, value: &#39;int64&#39;) -&gt; &#34;bool&#34;:
-        r&#34;&#34;&#34; Returns true iff value is in Domain.&#34;&#34;&#34;
         return _sorted_interval_list.Domain_Contains(self, value)
 
     def Complement(self) -&gt; &#34;operations_research::Domain&#34;:
-        r&#34;&#34;&#34; Returns the set Int64 ∖ D.&#34;&#34;&#34;
         return _sorted_interval_list.Domain_Complement(self)
 
     def Negation(self) -&gt; &#34;operations_research::Domain&#34;:
-        r&#34;&#34;&#34; Returns {x ∈ Int64, ∃ e ∈ D, x = -e}. Note in particular that if the negation of Int64 is not Int64 but Int64 \ {kint64min} !!&#34;&#34;&#34;
         return _sorted_interval_list.Domain_Negation(self)
 
     def IntersectionWith(self, domain: &#39;Domain&#39;) -&gt; &#34;operations_research::Domain&#34;:
-        r&#34;&#34;&#34; Returns the set D ∩ domain.&#34;&#34;&#34;
         return _sorted_interval_list.Domain_IntersectionWith(self, domain)
 
     def UnionWith(self, domain: &#39;Domain&#39;) -&gt; &#34;operations_research::Domain&#34;:
-        r&#34;&#34;&#34; Returns the set D ∪ domain.&#34;&#34;&#34;
         return _sorted_interval_list.Domain_UnionWith(self, domain)
 
     def AdditionWith(self, domain: &#39;Domain&#39;) -&gt; &#34;operations_research::Domain&#34;:
-        r&#34;&#34;&#34; Returns {x ∈ Int64, ∃ a ∈ D, ∃ b ∈ domain, x = a + b}.&#34;&#34;&#34;
         return _sorted_interval_list.Domain_AdditionWith(self, domain)
 
     def __str__(self) -&gt; &#34;std::string&#34;:
-        r&#34;&#34;&#34; Returns a compact std::string of a vector of intervals like &#34;[1,4][6][10,20]&#34;.&#34;&#34;&#34;
         return _sorted_interval_list.Domain___str__(self)
 
     def __lt__(self, other: &#39;Domain&#39;) -&gt; &#34;bool&#34;:
-        r&#34;&#34;&#34; Lexicographic order on the intervals() representation.&#34;&#34;&#34;
         return _sorted_interval_list.Domain___lt__(self, other)
 
     def __eq__(self, other: &#39;Domain&#39;) -&gt; &#34;bool&#34;:
@@ -388,12 +312,11 @@ Constructor for the common case of a single interval [left, right]. If left &gt;
 <span>def <span class="ident">AllValues</span></span>(<span>)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the full domain Int64.</p></section>
+<section class="desc"></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">@staticmethod
 def AllValues() -&gt; &#34;operations_research::Domain&#34;:
-    r&#34;&#34;&#34; Returns the full domain Int64.&#34;&#34;&#34;
     return _sorted_interval_list.Domain_AllValues()</code></pre>
 </details>
 </dd>
@@ -401,12 +324,11 @@ def AllValues() -&gt; &#34;operations_research::Domain&#34;:
 <span>def <span class="ident">FromFlatIntervals</span></span>(<span>flat_intervals)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>This method is available in Python, Java and .NET. It allows building a Domain object from a flattened list of intervals (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).</p></section>
+<section class="desc"></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">@staticmethod
 def FromFlatIntervals(flat_intervals: &#39;std::vector&lt; int64 &gt; const &amp;&#39;) -&gt; &#34;operations_research::Domain&#34;:
-    r&#34;&#34;&#34; This method is available in Python, Java and .NET. It allows building a Domain object from a flattened list of intervals (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).&#34;&#34;&#34;
     return _sorted_interval_list.Domain_FromFlatIntervals(flat_intervals)</code></pre>
 </details>
 </dd>
@@ -414,12 +336,11 @@ def FromFlatIntervals(flat_intervals: &#39;std::vector&lt; int64 &gt; const &amp
 <span>def <span class="ident">FromIntervals</span></span>(<span>intervals)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>This method is available in Python, Java and .NET. It allows building a Domain object from a list of intervals (long[][] in Java and .NET, [[0, 2], [5, 5], [8, 10]] in python).</p></section>
+<section class="desc"></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">@staticmethod
 def FromIntervals(intervals: &#39;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#39;) -&gt; &#34;operations_research::Domain&#34;:
-    r&#34;&#34;&#34; This method is available in Python, Java and .NET. It allows building a Domain object from a list of intervals (long[][] in Java and .NET, [[0, 2], [5, 5], [8, 10]] in python).&#34;&#34;&#34;
     return _sorted_interval_list.Domain_FromIntervals(intervals)</code></pre>
 </details>
 </dd>
@@ -427,12 +348,11 @@ def FromIntervals(intervals: &#39;std::vector&lt; std::vector&lt; int64 &gt; &gt
 <span>def <span class="ident">FromValues</span></span>(<span>values)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Creates a domain from the union of an unsorted list of integer values. Input values may be repeated, with no consequence on the output</p></section>
+<section class="desc"></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">@staticmethod
 def FromValues(values: &#39;std::vector&lt; int64 &gt;&#39;) -&gt; &#34;operations_research::Domain&#34;:
-    r&#34;&#34;&#34; Creates a domain from the union of an unsorted list of integer values. Input values may be repeated, with no consequence on the output&#34;&#34;&#34;
     return _sorted_interval_list.Domain_FromValues(values)</code></pre>
 </details>
 </dd>
@@ -443,11 +363,10 @@ def FromValues(values: &#39;std::vector&lt; int64 &gt;&#39;) -&gt; &#34;operatio
 <span>def <span class="ident">AdditionWith</span></span>(<span>self, domain)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns {x ∈ Int64, ∃ a ∈ D, ∃ b ∈ domain, x = a + b}.</p></section>
+<section class="desc"></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def AdditionWith(self, domain: &#39;Domain&#39;) -&gt; &#34;operations_research::Domain&#34;:
-    r&#34;&#34;&#34; Returns {x ∈ Int64, ∃ a ∈ D, ∃ b ∈ domain, x = a + b}.&#34;&#34;&#34;
     return _sorted_interval_list.Domain_AdditionWith(self, domain)</code></pre>
 </details>
 </dd>
@@ -455,11 +374,10 @@ def FromValues(values: &#39;std::vector&lt; int64 &gt;&#39;) -&gt; &#34;operatio
 <span>def <span class="ident">Complement</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the set Int64 ∖ D.</p></section>
+<section class="desc"></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def Complement(self) -&gt; &#34;operations_research::Domain&#34;:
-    r&#34;&#34;&#34; Returns the set Int64 ∖ D.&#34;&#34;&#34;
     return _sorted_interval_list.Domain_Complement(self)</code></pre>
 </details>
 </dd>
@@ -467,11 +385,10 @@ def FromValues(values: &#39;std::vector&lt; int64 &gt;&#39;) -&gt; &#34;operatio
 <span>def <span class="ident">Contains</span></span>(<span>self, value)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns true iff value is in Domain.</p></section>
+<section class="desc"></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def Contains(self, value: &#39;int64&#39;) -&gt; &#34;bool&#34;:
-    r&#34;&#34;&#34; Returns true iff value is in Domain.&#34;&#34;&#34;
     return _sorted_interval_list.Domain_Contains(self, value)</code></pre>
 </details>
 </dd>
@@ -479,11 +396,10 @@ def FromValues(values: &#39;std::vector&lt; int64 &gt;&#39;) -&gt; &#34;operatio
 <span>def <span class="ident">FlattenedIntervals</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>This method returns the flattened list of interval bounds of the domain. Thus the domain {0, 1, 2, 5, 8, 9, 10} will return [0, 2, 5, 5, 8, 10] (as a C++ std::vector<int64>, as a java or C# long[], as a python list of integers).</p></section>
+<section class="desc"></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def FlattenedIntervals(self) -&gt; &#34;std::vector&lt; int64 &gt;&#34;:
-    r&#34;&#34;&#34; This method returns the flattened list of interval bounds of the domain. Thus the domain {0, 1, 2, 5, 8, 9, 10} will return [0, 2, 5, 5, 8, 10] (as a C++ std::vector&lt;int64&gt;, as a java or C# long[], as a python list of integers).&#34;&#34;&#34;
     return _sorted_interval_list.Domain_FlattenedIntervals(self)</code></pre>
 </details>
 </dd>
@@ -491,11 +407,10 @@ def FromValues(values: &#39;std::vector&lt; int64 &gt;&#39;) -&gt; &#34;operatio
 <span>def <span class="ident">IntersectionWith</span></span>(<span>self, domain)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the set D ∩ domain.</p></section>
+<section class="desc"></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def IntersectionWith(self, domain: &#39;Domain&#39;) -&gt; &#34;operations_research::Domain&#34;:
-    r&#34;&#34;&#34; Returns the set D ∩ domain.&#34;&#34;&#34;
     return _sorted_interval_list.Domain_IntersectionWith(self, domain)</code></pre>
 </details>
 </dd>
@@ -503,11 +418,10 @@ def FromValues(values: &#39;std::vector&lt; int64 &gt;&#39;) -&gt; &#34;operatio
 <span>def <span class="ident">IsEmpty</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns true if this is the empty set.</p></section>
+<section class="desc"></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def IsEmpty(self) -&gt; &#34;bool&#34;:
-    r&#34;&#34;&#34; Returns true if this is the empty set.&#34;&#34;&#34;
     return _sorted_interval_list.Domain_IsEmpty(self)</code></pre>
 </details>
 </dd>
@@ -515,11 +429,10 @@ def FromValues(values: &#39;std::vector&lt; int64 &gt;&#39;) -&gt; &#34;operatio
 <span>def <span class="ident">Max</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the domain max value. It checks that the domain is not empty.</p></section>
+<section class="desc"></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def Max(self) -&gt; &#34;int64&#34;:
-    r&#34;&#34;&#34; Returns the domain max value. It checks that the domain is not empty.&#34;&#34;&#34;
     return _sorted_interval_list.Domain_Max(self)</code></pre>
 </details>
 </dd>
@@ -527,11 +440,10 @@ def FromValues(values: &#39;std::vector&lt; int64 &gt;&#39;) -&gt; &#34;operatio
 <span>def <span class="ident">Min</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the domain min value. It checks that the domain is not empty.</p></section>
+<section class="desc"></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def Min(self) -&gt; &#34;int64&#34;:
-    r&#34;&#34;&#34; Returns the domain min value. It checks that the domain is not empty.&#34;&#34;&#34;
     return _sorted_interval_list.Domain_Min(self)</code></pre>
 </details>
 </dd>
@@ -539,11 +451,10 @@ def FromValues(values: &#39;std::vector&lt; int64 &gt;&#39;) -&gt; &#34;operatio
 <span>def <span class="ident">Negation</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns {x ∈ Int64, ∃ e ∈ D, x = -e}. Note in particular that if the negation of Int64 is not Int64 but Int64 \ {kint64min} !!</p></section>
+<section class="desc"></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def Negation(self) -&gt; &#34;operations_research::Domain&#34;:
-    r&#34;&#34;&#34; Returns {x ∈ Int64, ∃ e ∈ D, x = -e}. Note in particular that if the negation of Int64 is not Int64 but Int64 \ {kint64min} !!&#34;&#34;&#34;
     return _sorted_interval_list.Domain_Negation(self)</code></pre>
 </details>
 </dd>
@@ -551,11 +462,10 @@ def FromValues(values: &#39;std::vector&lt; int64 &gt;&#39;) -&gt; &#34;operatio
 <span>def <span class="ident">Size</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the number of elements in the domain. It is capped at kint64max.</p></section>
+<section class="desc"></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def Size(self) -&gt; &#34;int64&#34;:
-    r&#34;&#34;&#34; Returns the number of elements in the domain. It is capped at kint64max.&#34;&#34;&#34;
     return _sorted_interval_list.Domain_Size(self)</code></pre>
 </details>
 </dd>
@@ -563,11 +473,10 @@ def FromValues(values: &#39;std::vector&lt; int64 &gt;&#39;) -&gt; &#34;operatio
 <span>def <span class="ident">UnionWith</span></span>(<span>self, domain)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the set D ∪ domain.</p></section>
+<section class="desc"></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def UnionWith(self, domain: &#39;Domain&#39;) -&gt; &#34;operations_research::Domain&#34;:
-    r&#34;&#34;&#34; Returns the set D ∪ domain.&#34;&#34;&#34;
     return _sorted_interval_list.Domain_UnionWith(self, domain)</code></pre>
 </details>
 </dd>

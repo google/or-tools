@@ -29,29 +29,30 @@ a:link { color: #46641e; text-decoration: none}
 <p>The following two sections describe the main
 methods for building and solving CP-SAT models.</p>
 <ul>
-<li><a href="#ortools.sat.python.cp_model.CpModel"><code>CpModel</code></a>: Methods for creating
+<li><a href="#cp_model.CpModel"><code>CpModel</code></a>: Methods for creating
 models, including variables and constraints.</li>
-<li><a href="#ortools.sat.python.cp_model.CpSolver"><code>CPSolver</code></a>: Methods for solving
+<li><a href="#cp_model.CpSolver"><code>CPSolver</code></a>: Methods for solving
 a model and evaluating solutions.</li>
 </ul>
 <p>The following methods implement callbacks that the
 solver calls each time it finds a new solution.</p>
 <ul>
-<li><a href="#cpsolversolutioncallback"><code>CpSolverSolutionCallback</code></a>: A general method for
-implementing callbacks.</li>
-<li><a href="#objectivesolutionprinter"><code>ObjectiveSolutionPrinter</code></a>: Print objective
-values and elapsed time for intermediate solutions.</li>
-<li><a href="#vararraysolutionprinter"><code>VarArraySolutionPrinter</code></a>: Print intermediate
-solutions (variable values, time).</li>
-<li><a href="#vararrayandobjectivesolutionprinter"><code>VarArrayAndObjectiveSolutionPrinter</code></a>:
+<li><a href="#cp_model.CpSolverSolutionCallback"><code>CpSolverSolutionCallback</code></a>:
+A general method for implementing callbacks.</li>
+<li><a href="#cp_model.ObjectiveSolutionPrinter"><code>ObjectiveSolutionPrinter</code></a>:
+Print objective values and elapsed time for intermediate solutions.</li>
+<li><a href="#cp_model.VarArraySolutionPrinter"><code>VarArraySolutionPrinter</code></a>:
+Print intermediate solutions (variable values, time).</li>
+<li>[<code>VarArrayAndObjectiveSolutionPrinter</code>]
+(#cp_model.VarArrayAndObjectiveSolutionPrinter):
 Print both intermediate solutions and objective values.</li>
 </ul>
 <p>Additional methods for solving CP-SAT models:</p>
 <ul>
-<li><a href="#constraint"><code>Constraint</code></a>: A few utility methods for modifying
+<li><a href="#cp_model.Constraint"><code>Constraint</code></a>: A few utility methods for modifying
 contraints created by <a title="cp_model.CpModel" href="#cp_model.CpModel"><code>CpModel</code></a>.</li>
-<li><a href="#linearexpr"><code>LinearExpr</code></a>: Methods for creating constraints and the
-objective from large arrays.</li>
+<li><a href="#lineacp_model.LinearExpr"><code>LinearExpr</code></a>: Methods for creating constraints
+and the objective from large arrays of coefficients.</li>
 </ul>
 <p>Other methods and functions listed are primarily used for developing OR-Tools,
 rather than for solving specific optimization problems.</p>
@@ -74,29 +75,30 @@ rather than for solving specific optimization problems.</p>
 The following two sections describe the main
 methods for building and solving CP-SAT models.
 
-* [`CpModel`](#ortools.sat.python.cp_model.CpModel): Methods for creating
+* [`CpModel`](#cp_model.CpModel): Methods for creating
 models, including variables and constraints.
-* [`CPSolver`](#ortools.sat.python.cp_model.CpSolver): Methods for solving
+* [`CPSolver`](#cp_model.CpSolver): Methods for solving
 a model and evaluating solutions.
 
 The following methods implement callbacks that the
 solver calls each time it finds a new solution.
 
-* [`CpSolverSolutionCallback`](#cpsolversolutioncallback): A general method for
-  implementing callbacks.
-* [`ObjectiveSolutionPrinter`](#objectivesolutionprinter): Print objective
-  values and elapsed time for intermediate solutions.
-* [`VarArraySolutionPrinter`](#vararraysolutionprinter): Print intermediate
-  solutions (variable values, time).
-* [`VarArrayAndObjectiveSolutionPrinter`](#vararrayandobjectivesolutionprinter):
+* [`CpSolverSolutionCallback`](#cp_model.CpSolverSolutionCallback):
+  A general method for implementing callbacks.
+* [`ObjectiveSolutionPrinter`](#cp_model.ObjectiveSolutionPrinter):
+  Print objective values and elapsed time for intermediate solutions.
+* [`VarArraySolutionPrinter`](#cp_model.VarArraySolutionPrinter):
+  Print intermediate solutions (variable values, time).
+* [`VarArrayAndObjectiveSolutionPrinter`]
+      (#cp_model.VarArrayAndObjectiveSolutionPrinter):
   Print both intermediate solutions and objective values.
 
 Additional methods for solving CP-SAT models:
 
-* [`Constraint`](#constraint): A few utility methods for modifying
+* [`Constraint`](#cp_model.Constraint): A few utility methods for modifying
   contraints created by `CpModel`.
-* [`LinearExpr`](#linearexpr): Methods for creating constraints and the
-  objective from large arrays.
+* [`LinearExpr`](#lineacp_model.LinearExpr): Methods for creating constraints
+  and the objective from large arrays of coefficients.
 
 Other methods and functions listed are primarily used for developing OR-Tools,
 rather than for solving specific optimization problems.
@@ -120,6 +122,8 @@ from ortools.util import sorted_interval_list
 Domain = sorted_interval_list.Domain
 
 # Documentation cleaning.
+# Remove the documentation of some functions.
+# See https://pdoc3.github.io/pdoc/doc/pdoc/#overriding-docstrings-with-
 __pdoc__ = {}
 __pdoc__[&#39;DisplayBounds&#39;] = False
 __pdoc__[&#39;EvaluateLinearExpr&#39;] = False
