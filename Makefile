@@ -140,7 +140,7 @@ else
 	@echo
 endif
 
-print-%  : ; @echo $* = $($*)
+print-%  : ; @echo $* = \'$($*)\'
 
 .PHONY: FORCE
 FORCE:

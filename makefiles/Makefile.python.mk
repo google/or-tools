@@ -36,6 +36,15 @@ PYTHON3_CFLAGS := -DPY3
 endif
 endif
 
+# Set -doxygen tag for swig if possible
+ifeq ("$(SWIG_VERSION)","4.0.0")
+  ifneq ("$(PYTHON_EXECUTABLE)","")
+    ifeq ($(shell "$(PYTHON_EXECUTABLE)" -c "from sys import version_info as v; print (str(v[0]))"),3)
+SWIG_PY_DOXYGEN = -doxygen
+    endif
+  endif
+endif
+
 # All libraries and dependecies
 PYALGORITHMS_LIBS = $(LIB_DIR)/_pywrapknapsack_solver.$(SWIG_PYTHON_LIB_SUFFIX)
 PYGRAPH_LIBS = $(LIB_DIR)/_pywrapgraph.$(SWIG_PYTHON_LIB_SUFFIX)

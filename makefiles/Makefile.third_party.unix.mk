@@ -764,12 +764,16 @@ SWIG_BINARY = $(shell $(WHICH) $(UNIX_SWIG_BINARY))
 SWIG_VERSION = $(shell $(SWIG_BINARY) -version | grep Version | cut -d " " -f 3)
 ifeq ("$(SWIG_VERSION)","4.0.0")
 SWIG_DOXYGEN = -doxygen
-ifneq ($(PYTHON_EXECUTABLE),)
+endif
+
+test_doxy:
+ifneq ("$(PYTHON_EXECUTABLE)","")
+	echo "Pass 1"
 ifeq ($(shell "$(PYTHON_EXECUTABLE)" -c "from sys import version_info as v; print (str(v[0]))"),3)
-SWIG_PY_DOXYGEN = -doxygen
+	echo "SWIG_PY_DOXYGEN = -doxygen"
 endif
 endif
-endif
+	echo \'$(shell "$(PYTHON_EXECUTABLE)" -c "from sys import version_info as v; print (str(v[0]))")\'
 
 .PHONY: clean_third_party # Clean everything. Remember to also delete archived dependencies, i.e. in the event of download failure, etc.
 clean_third_party:
