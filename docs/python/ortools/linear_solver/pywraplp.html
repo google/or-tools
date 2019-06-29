@@ -153,6 +153,9 @@ class Solver(object):
     def NumVariables(self) -&gt; &#34;int&#34;:
         return _pywraplp.Solver_NumVariables(self)
 
+    def variables(self) -&gt; &#34;std::vector&lt; operations_research::MPVariable * &gt; const &amp;&#34;:
+        return _pywraplp.Solver_variables(self)
+
     def LookupVariable(self, var_name: &#39;std::string const &amp;&#39;) -&gt; &#34;operations_research::MPVariable *&#34;:
         return _pywraplp.Solver_LookupVariable(self, var_name)
 
@@ -170,6 +173,9 @@ class Solver(object):
 
     def NumConstraints(self) -&gt; &#34;int&#34;:
         return _pywraplp.Solver_NumConstraints(self)
+
+    def constraints(self) -&gt; &#34;std::vector&lt; operations_research::MPConstraint * &gt; const &amp;&#34;:
+        return _pywraplp.Solver_constraints(self)
 
     def LookupConstraint(self, constraint_name: &#39;std::string const &amp;&#39;) -&gt; &#34;operations_research::MPConstraint *&#34;:
         return _pywraplp.Solver_LookupConstraint(self, constraint_name)
@@ -1370,6 +1376,9 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
     def NumVariables(self) -&gt; &#34;int&#34;:
         return _pywraplp.Solver_NumVariables(self)
 
+    def variables(self) -&gt; &#34;std::vector&lt; operations_research::MPVariable * &gt; const &amp;&#34;:
+        return _pywraplp.Solver_variables(self)
+
     def LookupVariable(self, var_name: &#39;std::string const &amp;&#39;) -&gt; &#34;operations_research::MPVariable *&#34;:
         return _pywraplp.Solver_LookupVariable(self, var_name)
 
@@ -1387,6 +1396,9 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 
     def NumConstraints(self) -&gt; &#34;int&#34;:
         return _pywraplp.Solver_NumConstraints(self)
+
+    def constraints(self) -&gt; &#34;std::vector&lt; operations_research::MPConstraint * &gt; const &amp;&#34;:
+        return _pywraplp.Solver_constraints(self)
 
     def LookupConstraint(self, constraint_name: &#39;std::string const &amp;&#39;) -&gt; &#34;operations_research::MPConstraint *&#34;:
         return _pywraplp.Solver_LookupConstraint(self, constraint_name)
@@ -2085,6 +2097,17 @@ def infinity() -&gt; &#34;double&#34;:
     return _pywraplp.Solver_WallTime(self)</code></pre>
 </details>
 </dd>
+<dt id="pywraplp.Solver.constraints"><code class="name flex">
+<span>def <span class="ident">constraints</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def constraints(self) -&gt; &#34;std::vector&lt; operations_research::MPConstraint * &gt; const &amp;&#34;:
+    return _pywraplp.Solver_constraints(self)</code></pre>
+</details>
+</dd>
 <dt id="pywraplp.Solver.iterations"><code class="name flex">
 <span>def <span class="ident">iterations</span></span>(<span>self)</span>
 </code></dt>
@@ -2116,6 +2139,17 @@ def infinity() -&gt; &#34;double&#34;:
 <summary>Source code</summary>
 <pre><code class="python">def set_time_limit(self, time_limit_milliseconds: &#39;int64&#39;) -&gt; &#34;void&#34;:
     return _pywraplp.Solver_set_time_limit(self, time_limit_milliseconds)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.variables"><code class="name flex">
+<span>def <span class="ident">variables</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def variables(self) -&gt; &#34;std::vector&lt; operations_research::MPVariable * &gt; const &amp;&#34;:
+    return _pywraplp.Solver_variables(self)</code></pre>
 </details>
 </dd>
 <dt id="pywraplp.Solver.wall_time"><code class="name flex">
@@ -2556,11 +2590,13 @@ def infinity() -&gt; &#34;double&#34;:
 <li><code><a title="pywraplp.Solver.Var" href="#pywraplp.Solver.Var">Var</a></code></li>
 <li><code><a title="pywraplp.Solver.VerifySolution" href="#pywraplp.Solver.VerifySolution">VerifySolution</a></code></li>
 <li><code><a title="pywraplp.Solver.WallTime" href="#pywraplp.Solver.WallTime">WallTime</a></code></li>
+<li><code><a title="pywraplp.Solver.constraints" href="#pywraplp.Solver.constraints">constraints</a></code></li>
 <li><code><a title="pywraplp.Solver.infinity" href="#pywraplp.Solver.infinity">infinity</a></code></li>
 <li><code><a title="pywraplp.Solver.iterations" href="#pywraplp.Solver.iterations">iterations</a></code></li>
 <li><code><a title="pywraplp.Solver.nodes" href="#pywraplp.Solver.nodes">nodes</a></code></li>
 <li><code><a title="pywraplp.Solver.set_time_limit" href="#pywraplp.Solver.set_time_limit">set_time_limit</a></code></li>
 <li><code><a title="pywraplp.Solver.thisown" href="#pywraplp.Solver.thisown">thisown</a></code></li>
+<li><code><a title="pywraplp.Solver.variables" href="#pywraplp.Solver.variables">variables</a></code></li>
 <li><code><a title="pywraplp.Solver.wall_time" href="#pywraplp.Solver.wall_time">wall_time</a></code></li>
 </ul>
 </li>

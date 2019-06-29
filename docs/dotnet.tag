@@ -858,6 +858,16 @@
     <namespace>Google::OrTools::LinearSolver</namespace>
   </compound>
   <compound kind="file">
+    <name>MPVariableVector.cs</name>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
+    <filename>MPVariableVector_8cs</filename>
+    <class kind="class">Google::OrTools::LinearSolver::MPVariableVector</class>
+    <class kind="class">Google::OrTools::LinearSolver::MPVariableVector::MPVariableVectorEnumerator</class>
+    <namespace>Google</namespace>
+    <namespace>Google::OrTools</namespace>
+    <namespace>Google::OrTools::LinearSolver</namespace>
+  </compound>
+  <compound kind="file">
     <name>NestedArrayHelper.cs</name>
     <path>/Users/lperron/Work/or-tools/ortools/util/csharp/</path>
     <filename>NestedArrayHelper_8cs</filename>
@@ -1882,6 +1892,7 @@
     <path>/Users/lperron/Work/or-tools/ortools/linear_solver/csharp/</path>
     <filename>VariableHelper_8cs</filename>
     <class kind="class">Google::OrTools::LinearSolver::Variable</class>
+    <class kind="class">Google::OrTools::LinearSolver::MPVariableVector</class>
     <namespace>Google</namespace>
     <namespace>Google::OrTools</namespace>
     <namespace>Google::OrTools::LinearSolver</namespace>
@@ -2208,13 +2219,6 @@
     <name>Google::OrTools::ConstraintSolver::Assignment</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Assignment.html</filename>
     <base>Google::OrTools::ConstraintSolver::PropagationBaseObject</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Assignment.html</anchorfile>
-      <anchor>a9896a007e0e345f53df62c87e28cc9c5</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function">
       <type></type>
       <name>Assignment</name>
@@ -2909,6 +2913,13 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
       <type>Solver</type>
       <name>solver</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PropagationBaseObject.html</anchorfile>
@@ -2985,6 +2996,13 @@
       <anchor>ad8a7fbe48043dd1ff195b1abc72e2273</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Assignment.html</anchorfile>
+      <anchor>a1b71dad20727d4edb7d841e00ca53f95</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -2996,11 +3014,11 @@
   <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::AssignmentElement</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentElement.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentElement.html</anchorfile>
-      <anchor>a103751f857b0e8ba6161afb96e5c6cd2</anchor>
+      <anchor>ad8b51fe309e4da98079af3feac19a278</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -3031,6 +3049,13 @@
       <anchor>a1c7485e08cdb3f18dd83d3b2d2017efb</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentElement.html</anchorfile>
+      <anchor>a7dd523c74314e8e82b8eab7ae0cb03f6</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -3042,11 +3067,11 @@
   <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::AssignmentIntContainer</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentIntContainer.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentIntContainer.html</anchorfile>
-      <anchor>acf4fd3b98bcb96f7f6bcfd03f70c6891</anchor>
+      <anchor>a01ced53facce088a62b5d94dd68815e6</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -3161,6 +3186,13 @@
       <anchor>a84367b68544935a4ceb2de7a342e570a</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentIntContainer.html</anchorfile>
+      <anchor>a112517d6c455e238cb4e8d4cf2c861be</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -3172,11 +3204,11 @@
   <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::AssignmentIntervalContainer</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentIntervalContainer.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentIntervalContainer.html</anchorfile>
-      <anchor>ade2f74e1181d11019f2525bbd44241fd</anchor>
+      <anchor>af499544bc8b3e0872740a63ed50093de</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -3291,6 +3323,13 @@
       <anchor>abba8647b5f04bb6345697c879d138ad1</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentIntervalContainer.html</anchorfile>
+      <anchor>a01370ce2c70e5329610d70de3a76c66d</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -3302,11 +3341,11 @@
   <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::AssignmentSequenceContainer</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentSequenceContainer.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentSequenceContainer.html</anchorfile>
-      <anchor>a9012eb0f9a6eeb402bc03681f1320e38</anchor>
+      <anchor>a86b755b7558afd1cae37a7f00a4dc072</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -3420,6 +3459,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentSequenceContainer.html</anchorfile>
       <anchor>a82c79eee4c9a90eb431ad5a0d41fe90b</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentSequenceContainer.html</anchorfile>
+      <anchor>a5a456700b6ebc96562f3e111da6113db</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -3849,13 +3895,6 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseIntExpr.html</filename>
     <base>Google::OrTools::ConstraintSolver::IntExpr</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseIntExpr.html</anchorfile>
-      <anchor>a7460b8a6aedde37c4de38d48130b7b0a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type>override IntVar</type>
       <name>Var</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseIntExpr.html</anchorfile>
@@ -3867,6 +3906,13 @@
       <name>CastToVar</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseIntExpr.html</anchorfile>
       <anchor>a6714a11e840354fcd6dab3ce78238093</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" virtualness="virtual">
@@ -4373,6 +4419,13 @@
       <anchor>a690f9e2ee43a9157bd9b592dab6a6001</anchor>
       <arglist>(IntExpr a, IntExpr b)</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseIntExpr.html</anchorfile>
+      <anchor>ab3dbce325615192b726ac1733a097261</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -4385,13 +4438,6 @@
     <name>Google::OrTools::ConstraintSolver::BaseLns</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseLns.html</filename>
     <base>Google::OrTools::ConstraintSolver::IntVarLocalSearchOperator</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseLns.html</anchorfile>
-      <anchor>a30b0e1f009be3a9244357f69d27bcc56</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function">
       <type></type>
       <name>BaseLns</name>
@@ -4481,6 +4527,13 @@
       <name>SwigDelegateBaseLns_6</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseLns.html</anchorfile>
       <anchor>a5126942dde5f18e65ec43cfc830f0a4e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -4686,6 +4739,13 @@
       <anchor>a44fd87a1bb196bc88bc8f3f70aaa0af2</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseLns.html</anchorfile>
+      <anchor>a14583aacbf6c2d7d76640cfbf4e8979e</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="function" protection="protected" virtualness="virtual">
       <type>virtual bool</type>
       <name>MakeOneNeighbor</name>
@@ -4704,11 +4764,11 @@
   <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::BaseObject</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
-      <anchor>a6d111ce15be6e0401d69e62b16c85673</anchor>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -4725,6 +4785,13 @@
       <anchor>a44fd87a1bb196bc88bc8f3f70aaa0af2</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>adaa428ccb6dd468a11d19823afa18a87</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -4738,13 +4805,6 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BasePathFilter.html</filename>
     <base>Google::OrTools::ConstraintSolver::IntVarLocalSearchFilter</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BasePathFilter.html</anchorfile>
-      <anchor>a6e1b5237f33a549230e1eeab2cf6468f</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type>override bool</type>
       <name>Accept</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BasePathFilter.html</anchorfile>
@@ -4757,6 +4817,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BasePathFilter.html</anchorfile>
       <anchor>ae41aae016875da3582f8fb1d5f7a0352</anchor>
       <arglist>(Assignment delta)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>override void</type>
@@ -4926,6 +4993,13 @@
       <anchor>a44fd87a1bb196bc88bc8f3f70aaa0af2</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BasePathFilter.html</anchorfile>
+      <anchor>a23ccc74fc1cc0496c77c645f66f1f9f3</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -5051,13 +5125,6 @@
     <name>Google::OrTools::ConstraintSolver::BooleanVar</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BooleanVar.html</filename>
     <base>Google::OrTools::ConstraintSolver::IntVar</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BooleanVar.html</anchorfile>
-      <anchor>aa1964993edc654e080ecea390db22270</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function">
       <type>override long</type>
       <name>Min</name>
@@ -5217,6 +5284,13 @@
       <name>RawValue</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BooleanVar.html</anchorfile>
       <anchor>ad21efe20f261340e60dd063547080e50</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -5702,6 +5776,13 @@
       <anchor>a690f9e2ee43a9157bd9b592dab6a6001</anchor>
       <arglist>(IntExpr a, IntExpr b)</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BooleanVar.html</anchorfile>
+      <anchor>a587cf195b32cbaaee162d7c82e33c168</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -5847,17 +5928,17 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CastConstraint.html</filename>
     <base>Google::OrTools::ConstraintSolver::Constraint</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CastConstraint.html</anchorfile>
-      <anchor>ac8410d560f49d61733e79652f8751cd5</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type>IntVar</type>
       <name>TargetVar</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CastConstraint.html</anchorfile>
       <anchor>a51c94f91c7d19832148039cd148b80f3</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" virtualness="virtual">
@@ -6252,6 +6333,13 @@
       <anchor>a2fad267141dfca02f8676034ba11c06f</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CastConstraint.html</anchorfile>
+      <anchor>a9dd0f467b15af5e72ec9718ca488e769</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -6264,13 +6352,6 @@
     <name>Google::OrTools::ConstraintSolver::ChangeValue</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ChangeValue.html</filename>
     <base>Google::OrTools::ConstraintSolver::IntVarLocalSearchOperator</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ChangeValue.html</anchorfile>
-      <anchor>adfd8948d6a51370cea304bed0cc5cc46</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function">
       <type></type>
       <name>ChangeValue</name>
@@ -6340,6 +6421,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ChangeValue.html</anchorfile>
       <anchor>a9a80549d362cfda4fd8b191d47d2d2a1</anchor>
       <arglist>(long index, long value)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>delegate string</type>
@@ -6551,6 +6639,13 @@
       <anchor>a44fd87a1bb196bc88bc8f3f70aaa0af2</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ChangeValue.html</anchorfile>
+      <anchor>a3169690b8281ce65ae0ce23c6b1e2949</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="function" protection="protected" virtualness="virtual">
       <type>virtual new bool</type>
       <name>MakeOneNeighbor</name>
@@ -6575,17 +6670,17 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CheapestAdditionFilteredDecisionBuilder.html</filename>
     <base>Google::OrTools::ConstraintSolver::RoutingFilteredDecisionBuilder</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CheapestAdditionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a569b46dc121c3a0e930e691655488e29</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type>override bool</type>
       <name>BuildSolution</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CheapestAdditionFilteredDecisionBuilder.html</anchorfile>
       <anchor>a1498aa2cb5fbaaaf4f7b601972e1166d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -6665,6 +6760,13 @@
       <anchor>ac6ed418771752fb032aacc562e38fb05</anchor>
       <arglist>(global::System.IntPtr s)</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CheapestAdditionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ae71d6b1c9e0e179b657d0bc565f43d25</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -6678,10 +6780,10 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CheapestInsertionFilteredDecisionBuilder.html</filename>
     <base>Google::OrTools::ConstraintSolver::RoutingFilteredDecisionBuilder</base>
     <member kind="function">
-      <type>override void</type>
+      <type>void</type>
       <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ad5ecdad4205f9a584815f067569f39cf</anchor>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -6768,6 +6870,13 @@
       <anchor>ac6ed418771752fb032aacc562e38fb05</anchor>
       <arglist>(global::System.IntPtr s)</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ab9aa934e122e07fac1919f50018e7cdf</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -6781,13 +6890,6 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ChristofidesFilteredDecisionBuilder.html</filename>
     <base>Google::OrTools::ConstraintSolver::RoutingFilteredDecisionBuilder</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ChristofidesFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a865fefcc311fea0293d650981620bbf2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type>override bool</type>
       <name>BuildSolution</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ChristofidesFilteredDecisionBuilder.html</anchorfile>
@@ -6799,6 +6901,13 @@
       <name>ToString</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ChristofidesFilteredDecisionBuilder.html</anchorfile>
       <anchor>a1d08c87b15b731435bb7ecd50372f72a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -6870,6 +6979,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html</anchorfile>
       <anchor>ac6ed418771752fb032aacc562e38fb05</anchor>
       <arglist>(global::System.IntPtr s)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ChristofidesFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a0a194b5e4a85a58c05e0284becf4fca6</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -7144,17 +7260,17 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ComparatorCheapestAdditionFilteredDecisionBuilder.html</filename>
     <base>Google::OrTools::ConstraintSolver::CheapestAdditionFilteredDecisionBuilder</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ComparatorCheapestAdditionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a6508d11ca9d676533843d5687ca986d9</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type>override string</type>
       <name>ToString</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ComparatorCheapestAdditionFilteredDecisionBuilder.html</anchorfile>
       <anchor>a050270e9dc2d18b0cf1739c86a7287c4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -7234,6 +7350,13 @@
       <anchor>ac6ed418771752fb032aacc562e38fb05</anchor>
       <arglist>(global::System.IntPtr s)</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ComparatorCheapestAdditionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a39678f228a085878b9bf1e3799086f71</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -7284,11 +7407,11 @@
   <compound kind="class">
     <name>Google::OrTools::LinearSolver::Constraint</name>
     <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
-      <anchor>a67eacb49dc71bd1ddb2e246a94cde9e9</anchor>
+      <anchor>a2388363390901b3e766c5da4df7fb3a4</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -7382,6 +7505,13 @@
       <anchor>afe2c1949807524f1fafe47a196e61796</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html</anchorfile>
+      <anchor>af2dec4aa8ce016080d54274502c6799f</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -7397,13 +7527,6 @@
     <base>Google::OrTools::ConstraintSolver::IConstraintWithStatus</base>
     <base>Google::OrTools::ConstraintSolver::PropagationBaseObject</base>
     <base>Google::OrTools::ConstraintSolver::IConstraintWithStatus</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>ac1405ae8235e0b9061c018e572457861</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function">
       <type></type>
       <name>Constraint</name>
@@ -7500,6 +7623,13 @@
       <name>Square</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
       <anchor>af05d956c77c9e14018c3accd4ee318b3</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -7802,6 +7932,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
       <anchor>aeb83700abc57767431ae9ca2c77bec91</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
+      <anchor>abd8960f1ee293a966345706e0e182ec1</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -9058,13 +9195,6 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CPFeasibilityFilter.html</filename>
     <base>Google::OrTools::ConstraintSolver::IntVarLocalSearchFilter</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CPFeasibilityFilter.html</anchorfile>
-      <anchor>a759265e1bb4873019654a4af09fde82e</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type></type>
       <name>CPFeasibilityFilter</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CPFeasibilityFilter.html</anchorfile>
@@ -9091,6 +9221,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CPFeasibilityFilter.html</anchorfile>
       <anchor>a4d88dfe094af091948aa8b0f82c97f21</anchor>
       <arglist>(Assignment delta)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>override void</type>
@@ -9253,6 +9390,13 @@
       <anchor>ae7096dee8a957041e87be036de61960c</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CPFeasibilityFilter.html</anchorfile>
+      <anchor>a5a8e5de9807e978db63f1ad03185d311</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -9265,19 +9409,26 @@
     <name>Google::OrTools::ConstraintSolver::CpInt64Vector</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CpInt64Vector.html</filename>
     <class kind="class">Google::OrTools::ConstraintSolver::CpInt64Vector::CpInt64VectorEnumerator</class>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CpInt64Vector.html</anchorfile>
-      <anchor>a5f74afc9faeb5435fb6326439a1add39</anchor>
+      <anchor>aefeebd7cc5a739b0ae9e8173435475d1</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type></type>
       <name>CpInt64Vector</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CpInt64Vector.html</anchorfile>
-      <anchor>af0f0c56fbf3e229bf717656ddbc36ffe</anchor>
-      <arglist>(global::System.Collections.ICollection c)</arglist>
+      <anchor>a52bd5a5c196370b644f2a199e1201d70</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>CpInt64Vector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CpInt64Vector.html</anchorfile>
+      <anchor>a9fc8aa28e0674fa94d4e14db186bdc9f</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; long &gt; c)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -9299,6 +9450,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CpInt64Vector.html</anchorfile>
       <anchor>a0935aba895b653597c4fcfe1e021b5ca</anchor>
       <arglist>(int index, long[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>long []</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CpInt64Vector.html</anchorfile>
+      <anchor>ac16febcee81118301f36dd76b41e5ba6</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>CpInt64VectorEnumerator</type>
@@ -9440,6 +9598,13 @@
       <anchor>a4844ca1cf392dee3d2ba2e90dcb067d2</anchor>
       <arglist>(long value, int count)</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CpInt64Vector.html</anchorfile>
+      <anchor>a39af3fb5804b95d5b38069cbf5dc922a</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -9533,19 +9698,26 @@
     <name>Google::OrTools::ConstraintSolver::CpInt64VectorVector</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CpInt64VectorVector.html</filename>
     <class kind="class">Google::OrTools::ConstraintSolver::CpInt64VectorVector::CpInt64VectorVectorEnumerator</class>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CpInt64VectorVector.html</anchorfile>
-      <anchor>a4c96eef273e92651533161a510bd13fc</anchor>
+      <anchor>a8e7b463e911431bd5ac27389503e2f45</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type></type>
       <name>CpInt64VectorVector</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CpInt64VectorVector.html</anchorfile>
-      <anchor>a4d9dc9162d398134f053eb9348326a81</anchor>
-      <arglist>(global::System.Collections.ICollection c)</arglist>
+      <anchor>a0efc252a6395cca1bfa0796481dacd7b</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>CpInt64VectorVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CpInt64VectorVector.html</anchorfile>
+      <anchor>ae3219f1927802a1273749a4c79c620c3</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; CpInt64Vector &gt; c)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -9567,6 +9739,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CpInt64VectorVector.html</anchorfile>
       <anchor>a9bf426bd5254a1979b0f07f5b2e33729</anchor>
       <arglist>(int index, CpInt64Vector[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>CpInt64Vector []</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CpInt64VectorVector.html</anchorfile>
+      <anchor>af847ca0a80c5481958b260a861c3bc7d</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>CpInt64VectorVectorEnumerator</type>
@@ -9680,6 +9859,13 @@
       <anchor>ade8bd223fd1f2b760afee5965feb490a</anchor>
       <arglist>(CpInt64Vector value, int count)</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CpInt64VectorVector.html</anchorfile>
+      <anchor>a88c0600c7dc9de5e148813a24134f827</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -9773,19 +9959,26 @@
     <name>Google::OrTools::ConstraintSolver::CpIntVector</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CpIntVector.html</filename>
     <class kind="class">Google::OrTools::ConstraintSolver::CpIntVector::CpIntVectorEnumerator</class>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CpIntVector.html</anchorfile>
-      <anchor>a0473499237a430e75a72b120b20e814b</anchor>
+      <anchor>af98fe75cd98823ac6765578b332b604e</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type></type>
       <name>CpIntVector</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CpIntVector.html</anchorfile>
-      <anchor>ab699f2cbb7ac5a82be6df1da31959e6a</anchor>
-      <arglist>(global::System.Collections.ICollection c)</arglist>
+      <anchor>aa67a30b9389a5324ffa305883a8a1cf8</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>CpIntVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CpIntVector.html</anchorfile>
+      <anchor>afffd0182ba25156cc7321dd9e8cc7955</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; int &gt; c)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -9807,6 +10000,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CpIntVector.html</anchorfile>
       <anchor>a325083366d969bf44643f3f700e19100</anchor>
       <arglist>(int index, int[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>int []</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CpIntVector.html</anchorfile>
+      <anchor>a400497de076f5ee29007ad5c7b2ea664</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>CpIntVectorEnumerator</type>
@@ -9947,6 +10147,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CpIntVector.html</anchorfile>
       <anchor>a5a91af717b8f27489499e9ca9b9aa02e</anchor>
       <arglist>(int value, int count)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CpIntVector.html</anchorfile>
+      <anchor>a32229d8c12f23dd7fefb25495f82452a</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -11175,11 +11382,11 @@
       <anchor>a1e329c00be8a46032b3edfb455e4631d</anchor>
       <arglist>(ILiteral literal)</arglist>
     </member>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SolutionCallback.html</anchorfile>
-      <anchor>a104d5724b45621b33327f722482fc10f</anchor>
+      <anchor>aa4c2c4e35ff144f2c4ff35aa15cf0d1d</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" virtualness="virtual">
@@ -11286,6 +11493,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SolutionCallback.html</anchorfile>
       <anchor>acd57884e36f19e263b247f4684680a7b</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SolutionCallback.html</anchorfile>
+      <anchor>a07bc774e53cda9d660041e1c8b5dcd08</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -11437,13 +11651,6 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Decision.html</filename>
     <base>Google::OrTools::ConstraintSolver::BaseObject</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Decision.html</anchorfile>
-      <anchor>aa3bd1051945acd9f5694f718cf69980a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type></type>
       <name>Decision</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Decision.html</anchorfile>
@@ -11506,6 +11713,20 @@
       <anchor>afb8a896a3129098b2aa890708576ab22</anchor>
       <arglist>(global::System.IntPtr visitor)</arglist>
     </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Decision.html</anchorfile>
+      <anchor>a35b333de78561566532c099e3fe60d61</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -11518,13 +11739,6 @@
     <name>Google::OrTools::ConstraintSolver::DecisionBuilder</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html</filename>
     <base>Google::OrTools::ConstraintSolver::BaseObject</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a2859510da846a9d740f6e411317e80b1</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function">
       <type></type>
       <name>DecisionBuilder</name>
@@ -11560,6 +11774,20 @@
       <anchor>ac6ed418771752fb032aacc562e38fb05</anchor>
       <arglist>(global::System.IntPtr s)</arglist>
     </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html</anchorfile>
+      <anchor>a5991c96e988fc3c1626a0c098d2bf11b</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -11572,19 +11800,26 @@
     <name>Google::OrTools::ConstraintSolver::DecisionBuilderVector</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilderVector.html</filename>
     <class kind="class">Google::OrTools::ConstraintSolver::DecisionBuilderVector::DecisionBuilderVectorEnumerator</class>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilderVector.html</anchorfile>
-      <anchor>ac9c11b6de50f1a5f824c382f4f4d6146</anchor>
+      <anchor>a884806c267b09bdcbbf0e3ae1cbd283f</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type></type>
       <name>DecisionBuilderVector</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilderVector.html</anchorfile>
-      <anchor>aadde208853f33c2c68ab1695e0b1c987</anchor>
-      <arglist>(global::System.Collections.ICollection c)</arglist>
+      <anchor>a8fa70c4182d6108b6dc9a005bf3e52bc</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>DecisionBuilderVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilderVector.html</anchorfile>
+      <anchor>ac064775b20ea9cd7dfaee3c33cd9aeb5</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; DecisionBuilder &gt; c)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -11606,6 +11841,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilderVector.html</anchorfile>
       <anchor>a815e801958db3542d580695d45dc3974</anchor>
       <arglist>(int index, DecisionBuilder[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>DecisionBuilder []</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilderVector.html</anchorfile>
+      <anchor>a87423130e4f4bf03814c3ffa5dbb1bff</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>DecisionBuilderVectorEnumerator</type>
@@ -11760,6 +12002,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilderVector.html</anchorfile>
       <anchor>a0e03c65d73a4e635ddec3a7e2a112389</anchor>
       <arglist>(DecisionBuilderVector inVal)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilderVector.html</anchorfile>
+      <anchor>abddb1d04232a84f3547f15d343835983</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -12007,13 +12256,6 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionVisitor.html</filename>
     <base>Google::OrTools::ConstraintSolver::BaseObject</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionVisitor.html</anchorfile>
-      <anchor>a9fdf351e4af651ab4de95219c2dda25a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type></type>
       <name>DecisionVisitor</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionVisitor.html</anchorfile>
@@ -12069,12 +12311,26 @@
       <anchor>a56dad101c6b4dbc7bc305c76aca9ab1a</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
+    </member>
     <member kind="function" virtualness="virtual">
       <type>virtual string</type>
       <name>ToString</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
       <anchor>a44fd87a1bb196bc88bc8f3f70aaa0af2</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionVisitor.html</anchorfile>
+      <anchor>a1631bee0e2ba9a7d8c581e3b946d876f</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -12087,11 +12343,11 @@
   <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::DefaultPhaseParameters</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DefaultPhaseParameters.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DefaultPhaseParameters.html</anchorfile>
-      <anchor>a3894cebfa7b6924ad79ce2197ebab928</anchor>
+      <anchor>a2ca60678fc5eda1caa5ec722626efe57</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -12156,6 +12412,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DefaultPhaseParameters.html</anchorfile>
       <anchor>aa240024effc53b3609399501ea105194</anchor>
       <arglist></arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DefaultPhaseParameters.html</anchorfile>
+      <anchor>a53ea6ab07fb77669b79e0ffba45f717e</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -12247,13 +12510,6 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Demon.html</filename>
     <base>Google::OrTools::ConstraintSolver::BaseObject</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Demon.html</anchorfile>
-      <anchor>a9e5ba6fcfaaac6d251e1da7afd3f2929</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type></type>
       <name>Demon</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Demon.html</anchorfile>
@@ -12316,6 +12572,20 @@
       <anchor>acad1e5fa4c7704fe20cd27936f212f47</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Demon.html</anchorfile>
+      <anchor>a8a911b6d47f1d0670d7db46b7430fa63</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -12328,13 +12598,6 @@
     <name>Google::OrTools::ConstraintSolver::DisjunctiveConstraint</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DisjunctiveConstraint.html</filename>
     <base>Google::OrTools::ConstraintSolver::Constraint</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DisjunctiveConstraint.html</anchorfile>
-      <anchor>a229ec0aa7ebad91b63a1129442318d8f</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function" virtualness="virtual">
       <type>virtual SequenceVar</type>
       <name>SequenceVar</name>
@@ -12355,6 +12618,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DisjunctiveConstraint.html</anchorfile>
       <anchor>a9e6b8fd14b42efe86e027a0a845fdeaa</anchor>
       <arglist>(int before_index, int after_index)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function" virtualness="virtual">
       <type>virtual void</type>
@@ -12748,6 +13018,13 @@
       <anchor>a2fad267141dfca02f8676034ba11c06f</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DisjunctiveConstraint.html</anchorfile>
+      <anchor>ab6419c52071ca6989aea050a760175ba</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -12759,11 +13036,11 @@
   <compound kind="class">
     <name>Google::OrTools::Util::Domain</name>
     <filename>classGoogle_1_1OrTools_1_1Util_1_1Domain.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Domain.html</anchorfile>
-      <anchor>a77206a2408fa2aaf0e2a62cab7468277</anchor>
+      <anchor>aeee79188dbf1de12b39db753aae9fa43</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -12898,6 +13175,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Domain.html</anchorfile>
       <anchor>a56cf4974ffeb68abe265d1df505179f0</anchor>
       <arglist>(long[] flat_intervals)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1Domain.html</anchorfile>
+      <anchor>a31eb6f97ff0b933f6ae4a206fadc332d</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -13086,17 +13370,17 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1EvaluatorCheapestAdditionFilteredDecisionBuilder.html</filename>
     <base>Google::OrTools::ConstraintSolver::CheapestAdditionFilteredDecisionBuilder</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1EvaluatorCheapestAdditionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ac5813d0a5352114287481a33d22210ac</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type>override string</type>
       <name>ToString</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1EvaluatorCheapestAdditionFilteredDecisionBuilder.html</anchorfile>
       <anchor>a82b24f088266e5ae8bb1f0551a726c0e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -13175,6 +13459,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html</anchorfile>
       <anchor>ac6ed418771752fb032aacc562e38fb05</anchor>
       <arglist>(global::System.IntPtr s)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1EvaluatorCheapestAdditionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a55774f404dd8607e9af27fc1e309a7b2</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -13285,13 +13576,6 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html</filename>
     <base>Google::OrTools::ConstraintSolver::CheapestInsertionFilteredDecisionBuilder</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2b9718caa3cf6ac6a1efe742f481edc1</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type>override bool</type>
       <name>BuildSolution</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
@@ -13303,6 +13587,13 @@
       <name>ToString</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
       <anchor>ac0c93375d445cfb0b11b68f4ee46b02a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -13375,6 +13666,13 @@
       <anchor>ac6ed418771752fb032aacc562e38fb05</anchor>
       <arglist>(global::System.IntPtr s)</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ab1086f435001b49de588a445a902435e</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -13387,13 +13685,6 @@
     <name>Google::OrTools::ConstraintSolver::GlobalVehicleBreaksConstraint</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1GlobalVehicleBreaksConstraint.html</filename>
     <base>Google::OrTools::ConstraintSolver::Constraint</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1GlobalVehicleBreaksConstraint.html</anchorfile>
-      <anchor>a2b319d90225fdffb7a7174d6417e5e3b</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function">
       <type></type>
       <name>GlobalVehicleBreaksConstraint</name>
@@ -13413,6 +13704,13 @@
       <name>InitialPropagateWrapper</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1GlobalVehicleBreaksConstraint.html</anchorfile>
       <anchor>ab37daef831c44e91ef5b06ac7e1724bc</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -13793,6 +14091,13 @@
       <anchor>a2fad267141dfca02f8676034ba11c06f</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1GlobalVehicleBreaksConstraint.html</anchorfile>
+      <anchor>a0764df4f1120086a23b8a544ce794b30</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -13992,11 +14297,11 @@
   <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::Solver::IntegerCastInfo</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver_1_1IntegerCastInfo.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver_1_1IntegerCastInfo.html</anchorfile>
-      <anchor>ac67e0f8aede58050fa364f7085887884</anchor>
+      <anchor>aaffb5678962e6e31426d59f001b1ade0</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -14012,6 +14317,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver_1_1IntegerCastInfo.html</anchorfile>
       <anchor>a8439921064ba8e03d5af7bcd3c301a30</anchor>
       <arglist>(IntVar v, IntExpr e, Constraint c)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver_1_1IntegerCastInfo.html</anchorfile>
+      <anchor>af437d8e5c5022e4399037e6add65d13c</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -14356,13 +14668,6 @@
     <name>Google::OrTools::ConstraintSolver::IntervalVar</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntervalVar.html</filename>
     <base>Google::OrTools::ConstraintSolver::PropagationBaseObject</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntervalVar.html</anchorfile>
-      <anchor>a53e9cbdf07439d11f81357659278d51c</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function" virtualness="virtual">
       <type>virtual long</type>
       <name>StartMin</name>
@@ -14903,6 +15208,13 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
       <type>override string</type>
       <name>ToString</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PropagationBaseObject.html</anchorfile>
@@ -14986,6 +15298,13 @@
       <anchor>ad8a7fbe48043dd1ff195b1abc72e2273</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntervalVar.html</anchorfile>
+      <anchor>ad1b97a2b292a28f1e40cbf1da90914e5</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -15037,13 +15356,6 @@
     <name>Google::OrTools::ConstraintSolver::IntervalVarElement</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntervalVarElement.html</filename>
     <base>Google::OrTools::ConstraintSolver::AssignmentElement</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntervalVarElement.html</anchorfile>
-      <anchor>a49cb54b0a80f08232e50e2fcb2aacc41</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function">
       <type></type>
       <name>IntervalVarElement</name>
@@ -15312,6 +15624,13 @@
     </member>
     <member kind="function">
       <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentElement.html</anchorfile>
+      <anchor>ad8b51fe309e4da98079af3feac19a278</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
       <name>Activate</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentElement.html</anchorfile>
       <anchor>a98256ef6a0de87ae04e4a2f0b7fbe1ad</anchor>
@@ -15331,6 +15650,13 @@
       <anchor>a1c7485e08cdb3f18dd83d3b2d2017efb</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntervalVarElement.html</anchorfile>
+      <anchor>a4a95f2b61ba59567f3718d240cc81c43</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -15343,19 +15669,26 @@
     <name>Google::OrTools::ConstraintSolver::IntervalVarVector</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntervalVarVector.html</filename>
     <class kind="class">Google::OrTools::ConstraintSolver::IntervalVarVector::IntervalVarVectorEnumerator</class>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntervalVarVector.html</anchorfile>
-      <anchor>ae5c588eded4af9d63670f23b9b050c9c</anchor>
+      <anchor>a0105647f96b4d30083f2b04eb564fb81</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type></type>
       <name>IntervalVarVector</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntervalVarVector.html</anchorfile>
-      <anchor>a2a73f83f7561024bcf3a458694ff46ef</anchor>
-      <arglist>(global::System.Collections.ICollection c)</arglist>
+      <anchor>ac1563930cd8a8678fb445773266d2dfc</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntervalVarVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntervalVarVector.html</anchorfile>
+      <anchor>a24659443aff782df8d239b838c752f91</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; IntervalVar &gt; c)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -15377,6 +15710,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntervalVarVector.html</anchorfile>
       <anchor>a4acc167a078086d0701245d2d2048080</anchor>
       <arglist>(int index, IntervalVar[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntervalVar []</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntervalVarVector.html</anchorfile>
+      <anchor>a246dba52742205bd41d723849732f57c</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>IntervalVarVectorEnumerator</type>
@@ -15532,6 +15872,13 @@
       <anchor>a5582c9cdf1f28b762acaa577b4423a1d</anchor>
       <arglist>(IntervalVarVector inVal)</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntervalVarVector.html</anchorfile>
+      <anchor>a68d8c789da8a55f48fe0889c1dd03b28</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -15626,13 +15973,6 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</filename>
     <base>Google::OrTools::ConstraintSolver::PropagationBaseObject</base>
     <base>Google::OrTools::ConstraintSolver::PropagationBaseObject</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
-      <anchor>a2a3612ea1a21bb6a7efcf44f2f5b9780</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function" virtualness="virtual">
       <type>virtual long</type>
       <name>Min</name>
@@ -15893,6 +16233,13 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
       <type>override string</type>
       <name>ToString</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PropagationBaseObject.html</anchorfile>
@@ -16143,6 +16490,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
       <anchor>a690f9e2ee43a9157bd9b592dab6a6001</anchor>
       <arglist>(IntExpr a, IntExpr b)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExpr.html</anchorfile>
+      <anchor>a947ce19a59dedd49fef9c45dddac3957</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -16433,11 +16787,11 @@
   <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::IntTupleSet</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntTupleSet.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntTupleSet.html</anchorfile>
-      <anchor>a2c7260f4d924135f7825f18e7efe06d8</anchor>
+      <anchor>aede3672489430866d52ddc74ee07037c</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -16565,6 +16919,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntTupleSet.html</anchorfile>
       <anchor>a3e57444e89deaaa179cd05a2473707b6</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntTupleSet.html</anchorfile>
+      <anchor>a35f8ab1cb855e408a79ed1f2ec41e680</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -16858,13 +17219,6 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVar.html</filename>
     <base>Google::OrTools::ConstraintSolver::IntExpr</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVar.html</anchorfile>
-      <anchor>adb664f62b3db734291fb3f1d9e57e430</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type>override bool</type>
       <name>IsVar</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVar.html</anchorfile>
@@ -17030,6 +17384,13 @@
       <name>GetHoles</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVar.html</anchorfile>
       <anchor>a0078e72d940c71255e7496f5816de810</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" virtualness="virtual">
@@ -17494,6 +17855,13 @@
       <anchor>a690f9e2ee43a9157bd9b592dab6a6001</anchor>
       <arglist>(IntExpr a, IntExpr b)</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVar.html</anchorfile>
+      <anchor>a137e74c08401fe38b62a3973079cadbe</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -17669,13 +18037,6 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarElement.html</filename>
     <base>Google::OrTools::ConstraintSolver::AssignmentElement</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarElement.html</anchorfile>
-      <anchor>a8989957f2e7ddd4ed919e3fc81224d9e</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type></type>
       <name>IntVarElement</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarElement.html</anchorfile>
@@ -17796,6 +18157,13 @@
     </member>
     <member kind="function">
       <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentElement.html</anchorfile>
+      <anchor>ad8b51fe309e4da98079af3feac19a278</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
       <name>Activate</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentElement.html</anchorfile>
       <anchor>a98256ef6a0de87ae04e4a2f0b7fbe1ad</anchor>
@@ -17814,6 +18182,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentElement.html</anchorfile>
       <anchor>a1c7485e08cdb3f18dd83d3b2d2017efb</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarElement.html</anchorfile>
+      <anchor>a33c308aac36e51f3a4e5aa42f5397dc5</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -17860,13 +18235,6 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarFilteredDecisionBuilder.html</filename>
     <base>Google::OrTools::ConstraintSolver::DecisionBuilder</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>afcb5ceaf5f890a1b22a5a89b8a036cfc</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type>Decision</type>
       <name>NextWrapper</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
@@ -17895,6 +18263,13 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
       <type>override string</type>
       <name>ToString</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html</anchorfile>
@@ -17915,6 +18290,13 @@
       <anchor>ac6ed418771752fb032aacc562e38fb05</anchor>
       <arglist>(global::System.IntPtr s)</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ad06d037e67b330ac385469c394bb8ee8</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -17928,13 +18310,6 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarIterator.html</filename>
     <base>Google::OrTools::ConstraintSolver::BaseObject</base>
     <base>Google::OrTools::ConstraintSolver::BaseObject</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarIterator.html</anchorfile>
-      <anchor>a3a8664c15b9c0d5464db1c15d62fbb53</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function" virtualness="virtual">
       <type>virtual void</type>
       <name>Init</name>
@@ -17977,6 +18352,20 @@
       <anchor>a940ee4a10b2f64a8d279246f0a4a4c22</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarIterator.html</anchorfile>
+      <anchor>a180b1182dcb2da045eddd5a7625de99c</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -17989,13 +18378,6 @@
     <name>Google::OrTools::ConstraintSolver::IntVarLocalSearchFilter</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarLocalSearchFilter.html</filename>
     <base>Google::OrTools::ConstraintSolver::LocalSearchFilter</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarLocalSearchFilter.html</anchorfile>
-      <anchor>a8a0b17d93a13d65ee210594bfd7be534</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function">
       <type></type>
       <name>IntVarLocalSearchFilter</name>
@@ -18101,6 +18483,13 @@
       <anchor>a9119b8bdce8f6ea0130bd82a8150786a</anchor>
       <arglist>(global::System.IntPtr delta)</arglist>
     </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
+    </member>
     <member kind="function" virtualness="virtual">
       <type>virtual bool</type>
       <name>Accept</name>
@@ -18178,6 +18567,13 @@
       <anchor>a44fd87a1bb196bc88bc8f3f70aaa0af2</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarLocalSearchFilter.html</anchorfile>
+      <anchor>ac88fc2b3cf571502b906f3c1ac13af82</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="function" protection="protected" virtualness="virtual">
       <type>virtual void</type>
       <name>OnSynchronize</name>
@@ -18197,13 +18593,6 @@
     <name>Google::OrTools::ConstraintSolver::IntVarLocalSearchOperator</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarLocalSearchOperator.html</filename>
     <base>Google::OrTools::ConstraintSolver::IntVarLocalSearchOperatorTemplate</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarLocalSearchOperator.html</anchorfile>
-      <anchor>ad80b8e40718322e080fb38cdcbca1e78</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function">
       <type></type>
       <name>IntVarLocalSearchOperator</name>
@@ -18268,6 +18657,13 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
       <type>override bool</type>
       <name>HoldsDelta</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarLocalSearchOperatorTemplate.html</anchorfile>
@@ -18427,6 +18823,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
       <anchor>a44fd87a1bb196bc88bc8f3f70aaa0af2</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarLocalSearchOperator.html</anchorfile>
+      <anchor>a3fe7aeb82344fbd01ec35c1eff9c1b9d</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="function" protection="protected" virtualness="virtual">
       <type>virtual bool</type>
@@ -18448,13 +18851,6 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarLocalSearchOperatorTemplate.html</filename>
     <base>Google::OrTools::ConstraintSolver::LocalSearchOperator</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarLocalSearchOperatorTemplate.html</anchorfile>
-      <anchor>a1a23835d3cd318559b88d8b84236f972</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type>override bool</type>
       <name>HoldsDelta</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarLocalSearchOperatorTemplate.html</anchorfile>
@@ -18538,6 +18934,13 @@
       <anchor>a3b90c73f4ccdb9981d3ff504e8026b63</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
+    </member>
     <member kind="function" virtualness="virtual">
       <type>virtual bool</type>
       <name>MakeNextNeighbor</name>
@@ -18615,6 +19018,13 @@
       <anchor>a44fd87a1bb196bc88bc8f3f70aaa0af2</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarLocalSearchOperatorTemplate.html</anchorfile>
+      <anchor>a4bc13f9ab5f1c1bdf3a1f11bf22f66bc</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -18627,19 +19037,26 @@
     <name>Google::OrTools::ConstraintSolver::IntVarVector</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarVector.html</filename>
     <class kind="class">Google::OrTools::ConstraintSolver::IntVarVector::IntVarVectorEnumerator</class>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarVector.html</anchorfile>
-      <anchor>ab3a8fe1f75f824212fbe9aacacc253c2</anchor>
+      <anchor>a5702511ab2a3de52dd09a13a3c9aa995</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type></type>
       <name>IntVarVector</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarVector.html</anchorfile>
-      <anchor>a1ff0ff578e181cbf111ddcb50889b60d</anchor>
-      <arglist>(global::System.Collections.ICollection c)</arglist>
+      <anchor>aa343e113fccb54057fc78ca22b27e093</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>IntVarVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarVector.html</anchorfile>
+      <anchor>a4005fcccb811053f9ff094c550af3d69</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; IntVar &gt; c)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -18661,6 +19078,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarVector.html</anchorfile>
       <anchor>a4683c0ea55e6e1929e7141d042dffe20</anchor>
       <arglist>(int index, IntVar[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVar []</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarVector.html</anchorfile>
+      <anchor>a3867e29e367ba2eeaacfb8ce90ee5787</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>IntVarVectorEnumerator</type>
@@ -18815,6 +19239,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarVector.html</anchorfile>
       <anchor>a123acee666a754f05c36bab42a539875</anchor>
       <arglist>(IntVarVector inVal)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarVector.html</anchorfile>
+      <anchor>a8b5f1d4e89e05caee5bc26eed60c3589</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -19032,19 +19463,26 @@
     <name>Google::OrTools::Algorithms::KInt64Vector</name>
     <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1KInt64Vector.html</filename>
     <class kind="class">Google::OrTools::Algorithms::KInt64Vector::KInt64VectorEnumerator</class>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1KInt64Vector.html</anchorfile>
-      <anchor>a53970888b387da7fa3e5474967715fbc</anchor>
+      <anchor>a3f734844407524978f93184b5298d284</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type></type>
       <name>KInt64Vector</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1KInt64Vector.html</anchorfile>
-      <anchor>aa5b52f3b00ed745807ecfe0bf39da0e9</anchor>
-      <arglist>(global::System.Collections.ICollection c)</arglist>
+      <anchor>a6f86b3618408e7bd43d87cdd7aa11418</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>KInt64Vector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1KInt64Vector.html</anchorfile>
+      <anchor>a988116b3a464c8ee312d7fb0a9584843</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; long &gt; c)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -19066,6 +19504,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1KInt64Vector.html</anchorfile>
       <anchor>a3d72153ca77183fdfa8a9cc5560b50b8</anchor>
       <arglist>(int index, long[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>long []</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1KInt64Vector.html</anchorfile>
+      <anchor>af2de9d13305b86e0b2bd23684a68ca95</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>KInt64VectorEnumerator</type>
@@ -19207,6 +19652,13 @@
       <anchor>a3a81e6113784eb3749d1e423d7975af2</anchor>
       <arglist>(long value, int count)</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1KInt64Vector.html</anchorfile>
+      <anchor>ac42a0f9be4119cb8e599b13cd061f761</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -19300,19 +19752,26 @@
     <name>Google::OrTools::Algorithms::KInt64VectorVector</name>
     <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1KInt64VectorVector.html</filename>
     <class kind="class">Google::OrTools::Algorithms::KInt64VectorVector::KInt64VectorVectorEnumerator</class>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1KInt64VectorVector.html</anchorfile>
-      <anchor>a9f368fc123a3c6ee3207d17983f41a9a</anchor>
+      <anchor>a38f76a17251ff21af6aebc06e01a59b5</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type></type>
       <name>KInt64VectorVector</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1KInt64VectorVector.html</anchorfile>
-      <anchor>a95ebeb9c28aeddfcd6cdda6209e09099</anchor>
-      <arglist>(global::System.Collections.ICollection c)</arglist>
+      <anchor>ae7c15c3f0ddfd377158a98e6f330d7e4</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>KInt64VectorVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1KInt64VectorVector.html</anchorfile>
+      <anchor>a269d106eb1e347f514ff725f2c9c3809</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; KInt64Vector &gt; c)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -19334,6 +19793,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1KInt64VectorVector.html</anchorfile>
       <anchor>a93d751dd3f968cbecaf4cd6853a698e8</anchor>
       <arglist>(int index, KInt64Vector[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>KInt64Vector []</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1KInt64VectorVector.html</anchorfile>
+      <anchor>a82e913a5133053e6f86db671f2b45ddf</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>KInt64VectorVectorEnumerator</type>
@@ -19447,6 +19913,13 @@
       <anchor>ae4a23a49c30bc114ce746921ec5a7ab9</anchor>
       <arglist>(KInt64Vector value, int count)</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1KInt64VectorVector.html</anchorfile>
+      <anchor>a7621c8a4fdb98740c1a216b733e95d75</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -19555,11 +20028,11 @@
       <enumvalue file="classGoogle_1_1OrTools_1_1Algorithms_1_1KnapsackSolver.html" anchor="a180be4ef2d77bbae6f96dbcfe13eb758a4d05f61469074b5aa0e447c7784eb723">KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Algorithms_1_1KnapsackSolver.html" anchor="a180be4ef2d77bbae6f96dbcfe13eb758a5f4d7c17c6be76a0a8aac60d9e40aa2a">KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER</enumvalue>
     </member>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1KnapsackSolver.html</anchorfile>
-      <anchor>a48541de89d8ab401819d12235688cc40</anchor>
+      <anchor>ada6fbde5f1b0725b06b8cd0ca79c2b1e</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -19631,6 +20104,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1KnapsackSolver.html</anchorfile>
       <anchor>a06fcd0790f7bc5b532399927133155a3</anchor>
       <arglist>(double time_limit_seconds)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1KnapsackSolver.html</anchorfile>
+      <anchor>a2036e808b392c21de129c53ce25f7231</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -20237,11 +20717,11 @@
       <enumvalue file="classGoogle_1_1OrTools_1_1Graph_1_1LinearSumAssignment.html" anchor="a878b9807230bd580917f56f530af0f31a6faaca695f728b47f47dd389f31e4a93">INFEASIBLE</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Graph_1_1LinearSumAssignment.html" anchor="a878b9807230bd580917f56f530af0f31a93719d687f73d1e8dacfe3ee4aa7ffd1">POSSIBLE_OVERFLOW</enumvalue>
     </member>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1LinearSumAssignment.html</anchorfile>
-      <anchor>a3403362183e9b0fafafe69834105173a</anchor>
+      <anchor>ab32d3c4ad1b9ae40dbdbb03926679d93</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -20321,6 +20801,13 @@
       <anchor>a010c9785e001a1ef43ab8ca929880f9a</anchor>
       <arglist>(int left_node)</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1LinearSumAssignment.html</anchorfile>
+      <anchor>ae378d80baf1d5e5246a40d9ae3c9f6aa</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -20338,13 +20825,6 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalCheapestInsertionFilteredDecisionBuilder.html</filename>
     <base>Google::OrTools::ConstraintSolver::CheapestInsertionFilteredDecisionBuilder</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a866fc88aa02c59c6f3534bfa7c1ce7e0</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type>override bool</type>
       <name>BuildSolution</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
@@ -20356,6 +20836,13 @@
       <name>ToString</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
       <anchor>aea15d7152975d2a579ffa267107b5ba6</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -20428,6 +20915,13 @@
       <anchor>ac6ed418771752fb032aacc562e38fb05</anchor>
       <arglist>(global::System.IntPtr s)</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>af55129bf1b702c343050f301c9f065d0</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -20440,13 +20934,6 @@
     <name>Google::OrTools::ConstraintSolver::LocalSearchFilter</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchFilter.html</filename>
     <base>Google::OrTools::ConstraintSolver::BaseObject</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchFilter.html</anchorfile>
-      <anchor>acaca6f51d650eba05d6d6c09b2740b70</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function" virtualness="virtual">
       <type>virtual bool</type>
       <name>Accept</name>
@@ -20531,12 +21018,26 @@
       <anchor>ae7096dee8a957041e87be036de61960c</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
+    </member>
     <member kind="function" virtualness="virtual">
       <type>virtual string</type>
       <name>ToString</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
       <anchor>a44fd87a1bb196bc88bc8f3f70aaa0af2</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchFilter.html</anchorfile>
+      <anchor>a84d9f07d7d7adc2a0350429a167dde59</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -20550,19 +21051,26 @@
     <name>Google::OrTools::ConstraintSolver::LocalSearchFilterVector</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchFilterVector.html</filename>
     <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchFilterVector::LocalSearchFilterVectorEnumerator</class>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchFilterVector.html</anchorfile>
-      <anchor>a3418e63e6b5f8c6b3f669079d53b0757</anchor>
+      <anchor>aad9843b57e1b1e560590a2306ee6474c</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type></type>
       <name>LocalSearchFilterVector</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchFilterVector.html</anchorfile>
-      <anchor>a055e0f7bb0c662303d44028ba255e370</anchor>
-      <arglist>(global::System.Collections.ICollection c)</arglist>
+      <anchor>aa2c2acaaae17cb214d239ac22cffc970</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>LocalSearchFilterVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchFilterVector.html</anchorfile>
+      <anchor>afe96f60cdace6f2b6fc24a077aef5110</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; LocalSearchFilter &gt; c)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -20584,6 +21092,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchFilterVector.html</anchorfile>
       <anchor>a7095c96ddf0258eb8e8e037ba54ef4a3</anchor>
       <arglist>(int index, LocalSearchFilter[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>LocalSearchFilter []</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchFilterVector.html</anchorfile>
+      <anchor>a1857ba9435e49828922980c9168d2bdd</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>LocalSearchFilterVectorEnumerator</type>
@@ -20738,6 +21253,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchFilterVector.html</anchorfile>
       <anchor>a5916c90d9bfbb450d0f5504d330d1cd0</anchor>
       <arglist>(LocalSearchFilterVector inVal)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchFilterVector.html</anchorfile>
+      <anchor>acf4f7aa03b262ac603ad7327d40f71a1</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -20929,13 +21451,6 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMonitor.html</filename>
     <base>Google::OrTools::ConstraintSolver::SearchMonitor</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMonitor.html</anchorfile>
-      <anchor>adb113befd8a98c2dc27019df97537b4a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type>override string</type>
       <name>ToString</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMonitor.html</anchorfile>
@@ -21017,6 +21532,13 @@
       <name>Install</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMonitor.html</anchorfile>
       <anchor>a2ef39799e2d37845d0c7cb55c009921c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" virtualness="virtual">
@@ -21368,6 +21890,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchMonitor.html</anchorfile>
       <anchor>a77bcc440c50a9bfd54ec23d56cf922f8</anchor>
       <arglist></arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMonitor.html</anchorfile>
+      <anchor>ae8b20f48f25338ed783d71f3dc998821</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -21841,13 +22370,6 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchOperator.html</filename>
     <base>Google::OrTools::ConstraintSolver::BaseObject</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchOperator.html</anchorfile>
-      <anchor>a28ce487250a9521cd4be0e83bef9c406</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type></type>
       <name>LocalSearchOperator</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchOperator.html</anchorfile>
@@ -21931,12 +22453,26 @@
       <anchor>ae963743f3c75670676e887154856c41b</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
+    </member>
     <member kind="function" virtualness="virtual">
       <type>virtual string</type>
       <name>ToString</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
       <anchor>a44fd87a1bb196bc88bc8f3f70aaa0af2</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchOperator.html</anchorfile>
+      <anchor>aa46fbc56df2b20b81449bdaf78b21b44</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -21950,19 +22486,26 @@
     <name>Google::OrTools::ConstraintSolver::LocalSearchOperatorVector</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchOperatorVector.html</filename>
     <class kind="class">Google::OrTools::ConstraintSolver::LocalSearchOperatorVector::LocalSearchOperatorVectorEnumerator</class>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchOperatorVector.html</anchorfile>
-      <anchor>a83bbdcf7a654fa71a021ffc68c04c59c</anchor>
+      <anchor>a054479a55574a43d3150a0af1a973272</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type></type>
       <name>LocalSearchOperatorVector</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchOperatorVector.html</anchorfile>
-      <anchor>a94f2a226110186aa4f76b151b98ebe7c</anchor>
-      <arglist>(global::System.Collections.ICollection c)</arglist>
+      <anchor>aa2ed99285a7244f87f638bf013203a63</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>LocalSearchOperatorVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchOperatorVector.html</anchorfile>
+      <anchor>a61e86b779a3658927e9e22412463271f</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; LocalSearchOperator &gt; c)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -21984,6 +22527,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchOperatorVector.html</anchorfile>
       <anchor>a43472c914f47faf537bb41c94d8d6993</anchor>
       <arglist>(int index, LocalSearchOperator[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>LocalSearchOperator []</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchOperatorVector.html</anchorfile>
+      <anchor>a14b56ece9f1d4a35df75523287d98dd3</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>LocalSearchOperatorVectorEnumerator</type>
@@ -22139,6 +22689,13 @@
       <anchor>a051a1c21a3e8f21739138603945284bf</anchor>
       <arglist>(LocalSearchOperatorVector inVal)</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchOperatorVector.html</anchorfile>
+      <anchor>a8724d73bb56089d6f39d8cc0623ddf5b</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -22231,11 +22788,11 @@
   <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::LocalSearchPhaseParameters</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchPhaseParameters.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchPhaseParameters.html</anchorfile>
-      <anchor>af093eea8c6405d696abfeb0884d8bb50</anchor>
+      <anchor>a182042149f3372f387c97a920886f561</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -22244,6 +22801,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchPhaseParameters.html</anchorfile>
       <anchor>a20165ddd781bc6cb9842aff0d2ba64da</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchPhaseParameters.html</anchorfile>
+      <anchor>a1fa082e43602c04dbac194ad9f7642b5</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -22267,11 +22831,11 @@
       <enumvalue file="classGoogle_1_1OrTools_1_1Graph_1_1MaxFlow.html" anchor="a2d40430f8d48317094acb9ab132de194a5a159a4278f76743500af8ba0211ea03">BAD_INPUT</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Graph_1_1MaxFlow.html" anchor="a2d40430f8d48317094acb9ab132de194a8fda903fe54ff9d62d5afb7cb1f1abe3">BAD_RESULT</enumvalue>
     </member>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1MaxFlow.html</anchorfile>
-      <anchor>ad55ce7fa32a95bc679393bb2b8f43e9a</anchor>
+      <anchor>aab9aa0f0a64d40ec2b96d7cccf54b94f</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -22344,6 +22908,13 @@
       <anchor>a21927482a0c291c9a79b94a582c3534f</anchor>
       <arglist>(int arc)</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1MaxFlow.html</anchorfile>
+      <anchor>a21203224c61b6674008fe8f892d35a18</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -22369,13 +22940,6 @@
       <enumvalue file="classGoogle_1_1OrTools_1_1Graph_1_1MinCostFlowBase.html" anchor="a4bbe399944f29f1569a2cebc1411deb3a8088b08d8189557b570d67f3af22a6a1">UNBALANCED</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Graph_1_1MinCostFlowBase.html" anchor="a4bbe399944f29f1569a2cebc1411deb3a8fda903fe54ff9d62d5afb7cb1f1abe3">BAD_RESULT</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Graph_1_1MinCostFlowBase.html" anchor="a4bbe399944f29f1569a2cebc1411deb3a1e78bc7d628bbaaa844ebdb78a3b12b6">BAD_COST_RANGE</enumvalue>
-    </member>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1MinCostFlow.html</anchorfile>
-      <anchor>a7cbc6a6327d261b5bc55090f3a0d3f59</anchor>
-      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type></type>
@@ -22482,6 +23046,20 @@
       <anchor>a9c9d907384cadb2b4619e274a934148c</anchor>
       <arglist>(int arc)</arglist>
     </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1MinCostFlowBase.html</anchorfile>
+      <anchor>a808a5fee1f354098f7c4730f6ccfbd81</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1MinCostFlow.html</anchorfile>
+      <anchor>a3629f334113e771f28e632fe8a23fbff</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -22507,11 +23085,11 @@
       <enumvalue file="classGoogle_1_1OrTools_1_1Graph_1_1MinCostFlowBase.html" anchor="a4bbe399944f29f1569a2cebc1411deb3a8fda903fe54ff9d62d5afb7cb1f1abe3">BAD_RESULT</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1Graph_1_1MinCostFlowBase.html" anchor="a4bbe399944f29f1569a2cebc1411deb3a1e78bc7d628bbaaa844ebdb78a3b12b6">BAD_COST_RANGE</enumvalue>
     </member>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1MinCostFlowBase.html</anchorfile>
-      <anchor>a7e641a4dc2fe2e0d9a78e0e7d107a541</anchor>
+      <anchor>a808a5fee1f354098f7c4730f6ccfbd81</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -22520,6 +23098,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1MinCostFlowBase.html</anchorfile>
       <anchor>ab8bfc4b9259f4c45a8731f846b78eb1e</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1MinCostFlowBase.html</anchorfile>
+      <anchor>a1929290d281060f4d40f0bc50ceb8e85</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -22532,11 +23117,11 @@
   <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::ModelCache</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ModelCache.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ModelCache.html</anchorfile>
-      <anchor>a6a3323e5015be1c35202d59ad384a5a2</anchor>
+      <anchor>a643da03ce99a4d898ff8add0b2f83368</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" virtualness="virtual">
@@ -23134,6 +23719,13 @@
       <anchor>abad1e9227b69f54c89d36cc84efda0f1</anchor>
       <arglist></arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ModelCache.html</anchorfile>
+      <anchor>a7116e7d27f4faa9a63b1230fd4e5e6c6</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -23146,13 +23738,6 @@
     <name>Google::OrTools::ConstraintSolver::ModelVisitor</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ModelVisitor.html</filename>
     <base>Google::OrTools::ConstraintSolver::BaseObject</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ModelVisitor.html</anchorfile>
-      <anchor>ab02408cf3716c895570bbc81bb24d3b4</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function" virtualness="virtual">
       <type>virtual void</type>
       <name>BeginVisitModel</name>
@@ -23213,22 +23798,22 @@
       <type>virtual void</type>
       <name>VisitIntegerVariable</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ModelVisitor.html</anchorfile>
-      <anchor>a15ef0e59b7711001d67726ada9b8f91b</anchor>
-      <arglist>(IntVar variable, IntExpr arg1)</arglist>
+      <anchor>a8d1aaa52e8ca2bf4e7e34f4f055fa281</anchor>
+      <arglist>(IntVar variable, IntExpr delegate_)</arglist>
     </member>
     <member kind="function" virtualness="virtual">
       <type>virtual void</type>
       <name>VisitIntegerVariable</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ModelVisitor.html</anchorfile>
-      <anchor>ac6a8a0967e1ccf074bc6c105261607a4</anchor>
-      <arglist>(IntVar variable, string operation, long value, IntVar arg3)</arglist>
+      <anchor>a4143128c4fa01f438b1e5177238917b9</anchor>
+      <arglist>(IntVar variable, string operation, long value, IntVar delegate_)</arglist>
     </member>
     <member kind="function" virtualness="virtual">
       <type>virtual void</type>
       <name>VisitIntervalVariable</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ModelVisitor.html</anchorfile>
-      <anchor>ac070a14bbd754fc6f8308ee78fc8d7cd</anchor>
-      <arglist>(IntervalVar variable, string operation, long value, IntervalVar arg3)</arglist>
+      <anchor>a935c66443093fea79b2afcce5777cc00</anchor>
+      <arglist>(IntervalVar variable, string operation, long value, IntervalVar delegate_)</arglist>
     </member>
     <member kind="function" virtualness="virtual">
       <type>virtual void</type>
@@ -23307,12 +23892,26 @@
       <anchor>a66533d33f5eff20ed26f2d9e2e093ab5</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
+    </member>
     <member kind="function" virtualness="virtual">
       <type>virtual string</type>
       <name>ToString</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
       <anchor>a44fd87a1bb196bc88bc8f3f70aaa0af2</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ModelVisitor.html</anchorfile>
+      <anchor>a23d98c0fe19a9e497cc8cfb05d7c438e</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -24467,19 +25066,26 @@
     <name>Google::OrTools::LinearSolver::MpDoubleVector</name>
     <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1MpDoubleVector.html</filename>
     <class kind="class">Google::OrTools::LinearSolver::MpDoubleVector::MpDoubleVectorEnumerator</class>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MpDoubleVector.html</anchorfile>
-      <anchor>a0602e4b7080950503d4ea45026242335</anchor>
+      <anchor>a65fb55db62c080eb6fb96ef2c591f17a</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type></type>
       <name>MpDoubleVector</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MpDoubleVector.html</anchorfile>
-      <anchor>a19da5a96e5f409e08583291e31a97fd2</anchor>
-      <arglist>(global::System.Collections.ICollection c)</arglist>
+      <anchor>a10494164f52fd650d03702af681f1390</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>MpDoubleVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MpDoubleVector.html</anchorfile>
+      <anchor>aafdf7023e43ecdd08d8eac693a1f5145</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; double &gt; c)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -24501,6 +25107,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MpDoubleVector.html</anchorfile>
       <anchor>a1e3d81c8c4a6a2af2d89be40e1fba20a</anchor>
       <arglist>(int index, double[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>double []</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MpDoubleVector.html</anchorfile>
+      <anchor>a1e545277d817e564217577a0bbce42b7</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>MpDoubleVectorEnumerator</type>
@@ -24656,6 +25269,13 @@
       <anchor>ace56b8bc63c5c26a975d0919c84efe77</anchor>
       <arglist>(MpDoubleVector inVal)</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MpDoubleVector.html</anchorfile>
+      <anchor>ac1888a9ef847d17dca841a35e0b9c6d1</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -24806,11 +25426,11 @@
       <enumvalue file="classGoogle_1_1OrTools_1_1LinearSolver_1_1MPSolverParameters.html" anchor="aa2bab457afe123bea4588991e14c3a15a45f50d457807f1c0b5354cda1d4bdfbf">SCALING_OFF</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1LinearSolver_1_1MPSolverParameters.html" anchor="aa2bab457afe123bea4588991e14c3a15a7eb013f072b0169ff79abf5738c743ff">SCALING_ON</enumvalue>
     </member>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPSolverParameters.html</anchorfile>
-      <anchor>ac010fd00bdde0c541a959bf5ba5ed7c5</anchor>
+      <anchor>aa50c41e7300439384d9abd3decf57080</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -24847,6 +25467,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPSolverParameters.html</anchorfile>
       <anchor>a2db1c23aeae6ba602a18fef4aa9a26cd</anchor>
       <arglist>(MPSolverParameters.IntegerParam param)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPSolverParameters.html</anchorfile>
+      <anchor>acfcb19fe39f70f63878e1b154b6153bd</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -24888,6 +25515,309 @@
       <name>kDefaultIncrementality</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPSolverParameters.html</anchorfile>
       <anchor>a5ca05e11cd897d5b884208dfe7ffb669</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::LinearSolver::MPVariableVector</name>
+    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</filename>
+    <class kind="class">Google::OrTools::LinearSolver::MPVariableVector::MPVariableVectorEnumerator</class>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>a90669a045d6d9998460225de2dc8efc1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>MPVariableVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>a6a384570ca215e3b64d900ea7e283e76</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>MPVariableVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>a530453a4aa4ecb226316f9ea2b57fa08</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; Variable &gt; c)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>ac12e80ee26aa8c5b88a0696754a79d0b</anchor>
+      <arglist>(Variable[] array)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>a89592f4c57b162f25dd8b073eea4a041</anchor>
+      <arglist>(Variable[] array, int arrayIndex)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CopyTo</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>a80b4b27ed10d48cf21927fcd0b242e95</anchor>
+      <arglist>(int index, Variable[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>Variable []</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>a11dc08c6c3fb74682993168fe47f1589</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>MPVariableVectorEnumerator</type>
+      <name>GetEnumerator</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>a55e1acd6e254315fb1b02ce1cf8192c5</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Clear</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>a8e26f65a8ecbb1db8360b585b0747d6a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Add</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>adaa25763a5bfee13ce7389dfdfa756aa</anchor>
+      <arglist>(Variable x)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>MPVariableVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>a9b9a64ab0ebbd2bea6c2fc74aba79eac</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>MPVariableVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>ae427e3311e42d6c2d082fa167f1134bb</anchor>
+      <arglist>(MPVariableVector other)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>MPVariableVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>a2a49f41a27b86cb0c1f64d98f22a12a8</anchor>
+      <arglist>(int capacity)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>aa1b665fd48b583773ec3c8ffa469d1d1</anchor>
+      <arglist>(MPVariableVector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>MPVariableVector</type>
+      <name>GetRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>a4bb0fbf4e3d6adc46f1f5c82a1ddc522</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Insert</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>a622ecba3e19ebeba970818d387117255</anchor>
+      <arglist>(int index, Variable x)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>InsertRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>afc806b179852cfa22839c61875ad60a6</anchor>
+      <arglist>(int index, MPVariableVector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>RemoveAt</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>ac852c0e9caa17820129630f29ba69dc5</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>RemoveRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>a444cda6ddeab916de0b8f965c3654472</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reverse</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>a12569d7dc30e223d7f40f1fdf42f14dc</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reverse</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>aec251e010e5b73d61b81673edc6498e4</anchor>
+      <arglist>(int index, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>a84bf08a9994a0a12bb7a05ff76443312</anchor>
+      <arglist>(int index, MPVariableVector values)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Contains</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>abbd1c9f3420ae8e8a001984caa342c2e</anchor>
+      <arglist>(Variable value)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>IndexOf</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>aeca328675b97be4bbd1e7ef8fa904b93</anchor>
+      <arglist>(Variable value)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>LastIndexOf</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>a93d17b04c4d1751c7a054cd9c1de8276</anchor>
+      <arglist>(Variable value)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Remove</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>a411e561e877f1c177af8d7dc60955a56</anchor>
+      <arglist>(Variable value)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static MPVariableVector</type>
+      <name>Repeat</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>a79ac238d4ebdb1544ea878c547476325</anchor>
+      <arglist>(Variable value, int count)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static implicit</type>
+      <name>operator MPVariableVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>ac84ab6ed5647f3032131344bf38a3b97</anchor>
+      <arglist>(Variable[] inVal)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static implicit</type>
+      <name>operator Variable[]</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>ae0cfa79e350d67e33814690d03640aee</anchor>
+      <arglist>(MPVariableVector inVal)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>a8d4b02911eabd37ed6867fbb95c82f78</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>bool</type>
+      <name>swigCMemOwn</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>a23185c6aa04f669d8c20703832419292</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsFixedSize</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>a5c1ebadddb97a097a52627b038157084</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsReadOnly</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>acbc5e71a6b9db94c2d26eed881955485</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>Variable</type>
+      <name>this[int index]</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>afab18e0f9a12f7c9c4c63d0f756e960d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>Capacity</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>a159f55a676f5c083c39311086f1a461b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>int</type>
+      <name>Count</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>afe53abc94978a6ddbc3bf27c62a11ee1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="property">
+      <type>bool</type>
+      <name>IsSynchronized</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html</anchorfile>
+      <anchor>ae2b0e444204c091517828638d57cf423</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::LinearSolver::MPVariableVector::MPVariableVectorEnumerator</name>
+    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector_1_1MPVariableVectorEnumerator.html</filename>
+    <member kind="function">
+      <type></type>
+      <name>MPVariableVectorEnumerator</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector_1_1MPVariableVectorEnumerator.html</anchorfile>
+      <anchor>af0504a6055dca36474873d9817a99ea8</anchor>
+      <arglist>(MPVariableVector collection)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>MoveNext</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector_1_1MPVariableVectorEnumerator.html</anchorfile>
+      <anchor>a3407426ea00b9d803735f98586ad93b1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reset</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector_1_1MPVariableVectorEnumerator.html</anchorfile>
+      <anchor>ae25e34570b1cdcd4499f0a8dd5c0e1d4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector_1_1MPVariableVectorEnumerator.html</anchorfile>
+      <anchor>af34c7eeb4da3152438038d96ef8682d4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="property">
+      <type>Variable</type>
+      <name>Current</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector_1_1MPVariableVectorEnumerator.html</anchorfile>
+      <anchor>a0facd90091444117479d4500ab479388</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -24949,10 +25879,10 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>override void</type>
+      <type>void</type>
       <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
-      <anchor>ac1405ae8235e0b9061c018e572457861</anchor>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" virtualness="virtual">
@@ -25333,6 +26263,13 @@
       <anchor>a2fad267141dfca02f8676034ba11c06f</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html</anchorfile>
+      <anchor>abd8960f1ee293a966345706e0e182ec1</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -25374,10 +26311,10 @@
       <arglist>(Solver solver)</arglist>
     </member>
     <member kind="function">
-      <type>override void</type>
+      <type>void</type>
       <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Decision.html</anchorfile>
-      <anchor>aa3bd1051945acd9f5694f718cf69980a</anchor>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -25422,6 +26359,13 @@
       <anchor>afb8a896a3129098b2aa890708576ab22</anchor>
       <arglist>(global::System.IntPtr visitor)</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Decision.html</anchorfile>
+      <anchor>a35b333de78561566532c099e3fe60d61</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -25449,10 +26393,10 @@
       <arglist>(Solver solver)</arglist>
     </member>
     <member kind="function">
-      <type>override void</type>
+      <type>void</type>
       <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a2859510da846a9d740f6e411317e80b1</anchor>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -25475,6 +26419,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html</anchorfile>
       <anchor>ac6ed418771752fb032aacc562e38fb05</anchor>
       <arglist>(global::System.IntPtr s)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html</anchorfile>
+      <anchor>a5991c96e988fc3c1626a0c098d2bf11b</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -25517,10 +26468,10 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>override void</type>
+      <type>void</type>
       <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Demon.html</anchorfile>
-      <anchor>a9e5ba6fcfaaac6d251e1da7afd3f2929</anchor>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -25557,6 +26508,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Demon.html</anchorfile>
       <anchor>acad1e5fa4c7704fe20cd27936f212f47</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Demon.html</anchorfile>
+      <anchor>a8a911b6d47f1d0670d7db46b7430fa63</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -26070,11 +27028,11 @@
   <compound kind="class">
     <name>Google::OrTools::LinearSolver::Objective</name>
     <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1Objective.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Objective.html</anchorfile>
-      <anchor>a4c35e4cc7b1749b17cd9617718898882</anchor>
+      <anchor>a8b15c52cfc42af27000848f1a7e420c4</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -26161,6 +27119,13 @@
       <anchor>a54cc6e9447f4be4e5ebe453b4a9b32b7</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Objective.html</anchorfile>
+      <anchor>ad980a67015b6c3d2fb0f161d6299b88b</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -26208,11 +27173,11 @@
       <anchor>a1e329c00be8a46032b3edfb455e4631d</anchor>
       <arglist>(ILiteral literal)</arglist>
     </member>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SolutionCallback.html</anchorfile>
-      <anchor>a104d5724b45621b33327f722482fc10f</anchor>
+      <anchor>aa4c2c4e35ff144f2c4ff35aa15cf0d1d</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -26312,6 +27277,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SolutionCallback.html</anchorfile>
       <anchor>acd57884e36f19e263b247f4684680a7b</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SolutionCallback.html</anchorfile>
+      <anchor>a07bc774e53cda9d660041e1c8b5dcd08</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -43928,6 +44900,188 @@
       <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
     </member>
     <member kind="function">
+      <type>static void</type>
+      <name>MPVariableVector_Clear</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>aaf08e693002f2c14a94c717b69eccf08</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>MPVariableVector_Add</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>ae009104652768b2ce4319c83b3a79d19</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.Runtime.InteropServices.HandleRef jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static uint</type>
+      <name>MPVariableVector_size</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>a6c615c6590a6a6a3c70434a79f6ef1bd</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static uint</type>
+      <name>MPVariableVector_capacity</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>a0ac13486013827f8ff48f1b3fec535a8</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>MPVariableVector_reserve</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>acdc8d46fb45f57ed51ce8cf25c266a49</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, uint jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>new_MPVariableVector__SWIG_0</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>a50cebe87bd9ddb31c1395e390678980f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>new_MPVariableVector__SWIG_1</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>a27e1620de68929f983023ea1df8998af</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>new_MPVariableVector__SWIG_2</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>a3b972005d4b5d9854a05ce9a17aa5d7b</anchor>
+      <arglist>(int jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>MPVariableVector_getitemcopy</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>ac7ae75f82621cf7eb9d886658de80676</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>MPVariableVector_getitem</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>a6423a19da0c41a9ac28947ded8484503</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>MPVariableVector_setitem</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>acf7e9b0b578af3fedbf0d85e44edf524</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2, global::System.Runtime.InteropServices.HandleRef jarg3)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>MPVariableVector_AddRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>a30be2bf8eb9d4e6926f4e016aa8f308a</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.Runtime.InteropServices.HandleRef jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>MPVariableVector_GetRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>a7d8cd2347ea3be51383f73d0aa8e48cb</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2, int jarg3)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>MPVariableVector_Insert</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>ac7e6f204b08a77f4c2baf7a188a73b15</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2, global::System.Runtime.InteropServices.HandleRef jarg3)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>MPVariableVector_InsertRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>a115e9a7ba4984063e181dddfdddd19b8</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2, global::System.Runtime.InteropServices.HandleRef jarg3)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>MPVariableVector_RemoveAt</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>a0c35d8e138d354ace4a121857ae0e36b</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>MPVariableVector_RemoveRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>aa188836a9fa3a21dcbeeeac76fad5d20</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2, int jarg3)</arglist>
+    </member>
+    <member kind="function">
+      <type>static global::System.IntPtr</type>
+      <name>MPVariableVector_Repeat</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>af5a9c5666d25773d437215e9d5ef8fba</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>MPVariableVector_Reverse__SWIG_0</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>ac90b8f75824077a9ff1876d9d891b764</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>MPVariableVector_Reverse__SWIG_1</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>a1633fac3fc7a05554353f21e26ca7157</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2, int jarg3)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>MPVariableVector_SetRange</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>ac432bde5de20dc9565403e1512bcfc9c</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2, global::System.Runtime.InteropServices.HandleRef jarg3)</arglist>
+    </member>
+    <member kind="function">
+      <type>static bool</type>
+      <name>MPVariableVector_Contains</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>a0dc93b5632eb08d7410864cce10fd36f</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.Runtime.InteropServices.HandleRef jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static int</type>
+      <name>MPVariableVector_IndexOf</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>af52c70598e118600c2b5e5712afd77cf</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.Runtime.InteropServices.HandleRef jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static int</type>
+      <name>MPVariableVector_LastIndexOf</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>a5f6e4ae4c162766481d21a6a82f004d1</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.Runtime.InteropServices.HandleRef jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static bool</type>
+      <name>MPVariableVector_Remove</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>a5ebff26e73b250130f8426878009b193</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.Runtime.InteropServices.HandleRef jarg2)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>delete_MPVariableVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>ae98aa8e7b156373b532d514bd4fc2130</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1)</arglist>
+    </member>
+    <member kind="function">
       <type>static global::System.IntPtr</type>
       <name>new_Solver</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
@@ -44157,6 +45311,20 @@
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
       <anchor>ae9b9648ca365a5c9fdd0a05cb32a60db</anchor>
       <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, bool jarg2, bool jarg3)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>Solver_SetHint</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>a95a3b63a56c73da3951bf996a145cecb</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, global::System.Runtime.InteropServices.HandleRef jarg2, int length3, double[] jarg3)</arglist>
+    </member>
+    <member kind="function">
+      <type>static bool</type>
+      <name>Solver_SetNumThreads</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE.html</anchorfile>
+      <anchor>a296b122418dab5b1dc42cf116889a130</anchor>
+      <arglist>(global::System.Runtime.InteropServices.HandleRef jarg1, int jarg2)</arglist>
     </member>
     <member kind="function">
       <type>static void</type>
@@ -45222,13 +46390,6 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1OptimizeVar.html</filename>
     <base>Google::OrTools::ConstraintSolver::SearchMonitor</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1OptimizeVar.html</anchorfile>
-      <anchor>a9405b5a6c7f5f8b622915fef16ededc2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type></type>
       <name>OptimizeVar</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1OptimizeVar.html</anchorfile>
@@ -45499,6 +46660,13 @@
       <name>SwigDelegateOptimizeVar_25</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1OptimizeVar.html</anchorfile>
       <anchor>a9ca5c6601b9dd3a9574daf022f3d5f6f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" virtualness="virtual">
@@ -45809,6 +46977,13 @@
       <anchor>a77bcc440c50a9bfd54ec23d56cf922f8</anchor>
       <arglist></arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1OptimizeVar.html</anchorfile>
+      <anchor>a9efbb4c353dc794cde69e3c7bea01060</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -45836,13 +47011,6 @@
     <name>Google::OrTools::ConstraintSolver::Pack</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Pack.html</filename>
     <base>Google::OrTools::ConstraintSolver::Constraint</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Pack.html</anchorfile>
-      <anchor>ac631fcc2d81133467bb91260347d9bd9</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function">
       <type></type>
       <name>Pack</name>
@@ -46059,6 +47227,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Pack.html</anchorfile>
       <anchor>a546949b3f943bee5eef2d7d37f146a47</anchor>
       <arglist>(ModelVisitor visitor)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -46424,6 +47599,13 @@
       <anchor>a2fad267141dfca02f8676034ba11c06f</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Pack.html</anchorfile>
+      <anchor>a9ee3fc90d4165aba5345495f7e7f7754</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -46437,17 +47619,17 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ParallelSavingsFilteredDecisionBuilder.html</filename>
     <base>Google::OrTools::ConstraintSolver::SavingsFilteredDecisionBuilder</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ParallelSavingsFilteredDecisionBuilder.html</anchorfile>
-      <anchor>af9c441bd86c86c2a3913ec55624518ab</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type>override string</type>
       <name>ToString</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ParallelSavingsFilteredDecisionBuilder.html</anchorfile>
       <anchor>a20083def8ff0329b65fcfe1b88b26b7b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -46526,6 +47708,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html</anchorfile>
       <anchor>ac6ed418771752fb032aacc562e38fb05</anchor>
       <arglist>(global::System.IntPtr s)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ParallelSavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a7f881aa127a14c34b85fb402b47c7fe8</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -46662,13 +47851,6 @@
     <name>Google::OrTools::ConstraintSolver::PathOperator</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PathOperator.html</filename>
     <base>Google::OrTools::ConstraintSolver::IntVarLocalSearchOperator</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PathOperator.html</anchorfile>
-      <anchor>a7e05aabcf2f853cae4293847d9b616e5</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function" virtualness="virtual">
       <type>virtual bool</type>
       <name>MakeNeighbor</name>
@@ -46772,6 +47954,13 @@
       <name>SwigDelegatePathOperator_12</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PathOperator.html</anchorfile>
       <anchor>a5b1b45166ff5c5e2abcce5bbd6c762f9</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -46977,6 +48166,13 @@
       <anchor>a44fd87a1bb196bc88bc8f3f70aaa0af2</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PathOperator.html</anchorfile>
+      <anchor>ae7b6f4fb3735a2d5458ebeb8c3b0ce1f</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="function" protection="protected" virtualness="virtual">
       <type>virtual new bool</type>
       <name>MakeOneNeighbor</name>
@@ -47032,13 +48228,6 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PathWithPreviousNodesOperator.html</filename>
     <base>Google::OrTools::ConstraintSolver::PathOperator</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PathWithPreviousNodesOperator.html</anchorfile>
-      <anchor>a0c2d2c28021059e816d6cb90f00c75bf</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type>bool</type>
       <name>IsPathStart</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PathWithPreviousNodesOperator.html</anchorfile>
@@ -47057,6 +48246,13 @@
       <name>ToString</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PathWithPreviousNodesOperator.html</anchorfile>
       <anchor>aebc054c30829dc117fbfb36fc1b336f0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" virtualness="virtual">
@@ -47360,6 +48556,13 @@
       <anchor>ae963743f3c75670676e887154856c41b</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PathWithPreviousNodesOperator.html</anchorfile>
+      <anchor>af5eda50e34f4031841b1939f92e08991</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="function" protection="protected" virtualness="virtual">
       <type>virtual new bool</type>
       <name>MakeOneNeighbor</name>
@@ -47408,6 +48611,186 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
       <anchor>af5ca0abe53afcaf49512c29f0184e532</anchor>
       <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::LinearSolver::ProductCst</name>
+    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1ProductCst.html</filename>
+    <base>Google::OrTools::LinearSolver::LinearExpr</base>
+    <member kind="function">
+      <type></type>
+      <name>ProductCst</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1ProductCst.html</anchorfile>
+      <anchor>a868e30feda2c61af85dbecc6d483d3d6</anchor>
+      <arglist>(LinearExpr expr, double coeff)</arglist>
+    </member>
+    <member kind="function">
+      <type>override String</type>
+      <name>ToString</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1ProductCst.html</anchorfile>
+      <anchor>abad5abae6c5561ec48742643b12c6664</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>override double</type>
+      <name>DoVisit</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1ProductCst.html</anchorfile>
+      <anchor>adb170602b65feac36da193065e76cc09</anchor>
+      <arglist>(Dictionary&lt; Variable, double &gt; coefficients, double multiplier)</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>Visit</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>ad946b2f73071b326274f0c613d629869</anchor>
+      <arglist>(Dictionary&lt; Variable, double &gt; coefficients)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator+</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>af97443654abf7d24c5c8266b0f8055be</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator+</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a6e2adc7f7d97e43901927f6ebc422c18</anchor>
+      <arglist>(double v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator+</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a043c8d9fa3dd8654a42ace5fb229587b</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator-</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a5b56505a5c0513ff190b6d7d77e9cdd9</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator-</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>afd683a94e6cc07c160c8aa5425105cd3</anchor>
+      <arglist>(double v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator-</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>aea948d15fcb492ce7689bd8cf42808a0</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator-</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a68891ed3a9693f3b3e84bed1b42cabbc</anchor>
+      <arglist>(LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator *</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>abe9803667146dba3851bf2b5f09270e3</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator *</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a0bffd81f842fc694130e2b323402e19e</anchor>
+      <arglist>(double v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>operator/</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a28c1108075014da78214096c5a83735e</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator==</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a7f265073d62455084e822e773005841c</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator==</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a84dc3d0b7bf4dccb912b415129d85bff</anchor>
+      <arglist>(double v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Equality</type>
+      <name>operator==</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a60a5b87eed78c91082498ae9d4733ebc</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator!=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a5e6dae7dfaa903a96b2362dd3bb1a5a1</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator!=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>acb609d016cb5feee3e8de78652ad76aa</anchor>
+      <arglist>(double v, LinearExpr a)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Equality</type>
+      <name>operator!=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a30fc97dcd8f3c2722f354d998fc69310</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator&lt;=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>ae9c49d855e561a8d029fa92e69f0dcab</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator&lt;=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>aeeec2249f0c910dfc3d83aa55564ad82</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator&gt;=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>ad282d8ea2a344bf114226a9bb31297ee</anchor>
+      <arglist>(LinearExpr a, double v)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RangeConstraint</type>
+      <name>operator&gt;=</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>a612caf2c4477e79643607e6fa683c741</anchor>
+      <arglist>(LinearExpr a, LinearExpr b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static implicit</type>
+      <name>operator LinearExpr</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
+      <anchor>ad85501464d2199d9611cc55d95e99d76</anchor>
+      <arglist>(Variable a)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -47675,186 +49058,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::LinearSolver::ProductCst</name>
-    <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1ProductCst.html</filename>
-    <base>Google::OrTools::LinearSolver::LinearExpr</base>
-    <member kind="function">
-      <type></type>
-      <name>ProductCst</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1ProductCst.html</anchorfile>
-      <anchor>a868e30feda2c61af85dbecc6d483d3d6</anchor>
-      <arglist>(LinearExpr expr, double coeff)</arglist>
-    </member>
-    <member kind="function">
-      <type>override String</type>
-      <name>ToString</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1ProductCst.html</anchorfile>
-      <anchor>abad5abae6c5561ec48742643b12c6664</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>override double</type>
-      <name>DoVisit</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1ProductCst.html</anchorfile>
-      <anchor>adb170602b65feac36da193065e76cc09</anchor>
-      <arglist>(Dictionary&lt; Variable, double &gt; coefficients, double multiplier)</arglist>
-    </member>
-    <member kind="function">
-      <type>double</type>
-      <name>Visit</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ad946b2f73071b326274f0c613d629869</anchor>
-      <arglist>(Dictionary&lt; Variable, double &gt; coefficients)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator+</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>af97443654abf7d24c5c8266b0f8055be</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator+</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a6e2adc7f7d97e43901927f6ebc422c18</anchor>
-      <arglist>(double v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator+</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a043c8d9fa3dd8654a42ace5fb229587b</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator-</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a5b56505a5c0513ff190b6d7d77e9cdd9</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator-</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>afd683a94e6cc07c160c8aa5425105cd3</anchor>
-      <arglist>(double v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator-</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>aea948d15fcb492ce7689bd8cf42808a0</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator-</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a68891ed3a9693f3b3e84bed1b42cabbc</anchor>
-      <arglist>(LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator *</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>abe9803667146dba3851bf2b5f09270e3</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator *</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a0bffd81f842fc694130e2b323402e19e</anchor>
-      <arglist>(double v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>operator/</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a28c1108075014da78214096c5a83735e</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator==</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a7f265073d62455084e822e773005841c</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator==</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a84dc3d0b7bf4dccb912b415129d85bff</anchor>
-      <arglist>(double v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static Equality</type>
-      <name>operator==</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a60a5b87eed78c91082498ae9d4733ebc</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator!=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a5e6dae7dfaa903a96b2362dd3bb1a5a1</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator!=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>acb609d016cb5feee3e8de78652ad76aa</anchor>
-      <arglist>(double v, LinearExpr a)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static Equality</type>
-      <name>operator!=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a30fc97dcd8f3c2722f354d998fc69310</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator&lt;=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ae9c49d855e561a8d029fa92e69f0dcab</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator&lt;=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>aeeec2249f0c910dfc3d83aa55564ad82</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator&gt;=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ad282d8ea2a344bf114226a9bb31297ee</anchor>
-      <arglist>(LinearExpr a, double v)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static RangeConstraint</type>
-      <name>operator&gt;=</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>a612caf2c4477e79643607e6fa683c741</anchor>
-      <arglist>(LinearExpr a, LinearExpr b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static implicit</type>
-      <name>operator LinearExpr</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html</anchorfile>
-      <anchor>ad85501464d2199d9611cc55d95e99d76</anchor>
-      <arglist>(Variable a)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>CreateSigningKey::Program</name>
     <filename>classCreateSigningKey_1_1Program.html</filename>
     <member kind="function" static="yes">
@@ -47869,13 +49072,6 @@
     <name>Google::OrTools::ConstraintSolver::PropagationBaseObject</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PropagationBaseObject.html</filename>
     <base>Google::OrTools::ConstraintSolver::BaseObject</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PropagationBaseObject.html</anchorfile>
-      <anchor>af9dafe3993be9b2f9a0c60055f45dda3</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function">
       <type></type>
       <name>PropagationBaseObject</name>
@@ -47967,6 +49163,20 @@
       <anchor>ad8a7fbe48043dd1ff195b1abc72e2273</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>ace37d91e2d6a5de741e68136c168b367</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -47979,13 +49189,6 @@
     <name>Google::OrTools::ConstraintSolver::PropagationMonitor</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PropagationMonitor.html</filename>
     <base>Google::OrTools::ConstraintSolver::SearchMonitor</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PropagationMonitor.html</anchorfile>
-      <anchor>a0a4e450483f16a795b0b45f447f6ca31</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function">
       <type>override string</type>
       <name>ToString</name>
@@ -48257,6 +49460,13 @@
       <name>Install</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PropagationMonitor.html</anchorfile>
       <anchor>a4d6acd77ea827b0186d6c971849d1834</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" virtualness="virtual">
@@ -48609,6 +49819,13 @@
       <anchor>a77bcc440c50a9bfd54ec23d56cf922f8</anchor>
       <arglist></arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PropagationMonitor.html</anchorfile>
+      <anchor>ab8912ea6ea692d099104e7adebf80662</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -48673,13 +49890,6 @@
     <name>Google::OrTools::ConstraintSolver::RegularLimit</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RegularLimit.html</filename>
     <base>Google::OrTools::ConstraintSolver::SearchLimit</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RegularLimit.html</anchorfile>
-      <anchor>a98e4b881d588c3cfad76a197b11540a8</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function">
       <type></type>
       <name>RegularLimit</name>
@@ -48805,6 +50015,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RegularLimit.html</anchorfile>
       <anchor>a402a55dcaa22140c75a3e7ce37d3d721</anchor>
       <arglist>(ModelVisitor visitor)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -49345,6 +50562,13 @@
       <anchor>a77bcc440c50a9bfd54ec23d56cf922f8</anchor>
       <arglist></arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RegularLimit.html</anchorfile>
+      <anchor>aeb341a33e8190d0c3847b7e6c7228686</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -49704,11 +50928,11 @@
   <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::RevBool</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RevBool.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RevBool.html</anchorfile>
-      <anchor>a9e90952cba7f73fec8f9537d7747abe0</anchor>
+      <anchor>a2078fd1936f36477f9b7acc872d33167</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -49732,6 +50956,13 @@
       <anchor>a3537b853acf9377bf828bc48c1abc080</anchor>
       <arglist>(Solver s, bool val)</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RevBool.html</anchorfile>
+      <anchor>afb585a63a3b7d66081b75918a73611aa</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -49743,11 +50974,11 @@
   <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::RevInteger</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RevInteger.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RevInteger.html</anchorfile>
-      <anchor>a678e76671d01243e945c01953721b5c6</anchor>
+      <anchor>a7bd6d6081f68dd0ffaadd14b9336480a</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -49771,6 +51002,13 @@
       <anchor>a830cb0a4969c9d9e087801d6708876ef</anchor>
       <arglist>(Solver s, long val)</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RevInteger.html</anchorfile>
+      <anchor>a4404c05f343ffdaa1e40996f56356015</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -49782,11 +51020,11 @@
   <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::RevPartialSequence</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RevPartialSequence.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RevPartialSequence.html</anchorfile>
-      <anchor>a10009d5082c23e265183bc434b845e0e</anchor>
+      <anchor>a5fc854e9f8c02e947c2eeb3329c87c89</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -49851,6 +51089,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RevPartialSequence.html</anchorfile>
       <anchor>aeb167ee02b822ae974c2d4ced187f7bd</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RevPartialSequence.html</anchorfile>
+      <anchor>a332a5a95a5f09b923b07b8a901a1f2de</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -50028,11 +51273,11 @@
   <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::RoutingDimension</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingDimension.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingDimension.html</anchorfile>
-      <anchor>af5f79f37e7eea1b711fb7cb06fd8250b</anchor>
+      <anchor>a14dbc9a77f5823145a5a22b1d45dac97</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -50343,6 +51588,13 @@
       <anchor>ac5989ed3b0364de5fffec144d00e75bb</anchor>
       <arglist>(int vehicle)</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingDimension.html</anchorfile>
+      <anchor>abf07a981a8f7ca8e29bebcfc9f88534c</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -50366,13 +51618,6 @@
     <name>Google::OrTools::ConstraintSolver::RoutingFilteredDecisionBuilder</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingFilteredDecisionBuilder.html</filename>
     <base>Google::OrTools::ConstraintSolver::IntVarFilteredDecisionBuilder</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a9d72dec354cf4d89d3bf1c465728879b</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function">
       <type>RoutingModel</type>
       <name>Model</name>
@@ -50406,6 +51651,13 @@
       <name>MakeUnassignedNodesUnperformed</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
       <anchor>aee0193d1095f3389278648b56c330f78</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -50457,6 +51709,13 @@
       <anchor>ac6ed418771752fb032aacc562e38fb05</anchor>
       <arglist>(global::System.IntPtr s)</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a2fc96886279cb9a7c14e53b8ec817451</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -50468,11 +51727,11 @@
   <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::RoutingIndexManager</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingIndexManager.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingIndexManager.html</anchorfile>
-      <anchor>a16d22d1f191da1c7afe6258ead3f3fa0</anchor>
+      <anchor>a6fdc9dced452d6b973838ed444f37306</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -50531,6 +51790,13 @@
       <anchor>a73532fcd3b9c51484737f7c5163cbaa4</anchor>
       <arglist>(long index)</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingIndexManager.html</anchorfile>
+      <anchor>a5efd1d47139d5852ff81b0eaa6ef44a7</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -50542,11 +51808,11 @@
   <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::RoutingModel</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
-      <anchor>ad31ddbc28a8f9b8a77fdbab09f52247a</anchor>
+      <anchor>a1b9ddb2630492deb07ce3afb9f5244c9</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -51494,6 +52760,13 @@
       <anchor>a51867eda3e3e3a3b87147a6fd5f6280e</anchor>
       <arglist></arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html</anchorfile>
+      <anchor>ae325f918ec4dd8b1df8d6b15bc9b2ca6</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -51665,17 +52938,17 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModelVisitor.html</filename>
     <base>Google::OrTools::ConstraintSolver::BaseObject</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModelVisitor.html</anchorfile>
-      <anchor>a9d0284e4141cf704ebc0c8e566c21995</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type></type>
       <name>RoutingModelVisitor</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModelVisitor.html</anchorfile>
       <anchor>a446774a0e9d7db14a14d5a7fa5584077</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" virtualness="virtual">
@@ -51684,6 +52957,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
       <anchor>a44fd87a1bb196bc88bc8f3f70aaa0af2</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModelVisitor.html</anchorfile>
+      <anchor>a8c21233a38bac906ff6e8c42c5aed639</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -52160,11 +53440,11 @@
   <compound kind="class">
     <name>Google::OrTools::Sat::SatHelper</name>
     <filename>classGoogle_1_1OrTools_1_1Sat_1_1SatHelper.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatHelper.html</anchorfile>
-      <anchor>a2e39b2252d2b1bb480ba2df476fd71ca</anchor>
+      <anchor>a4486f34716150797d1722abdb6e6a3e6</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -52216,6 +53496,13 @@
       <anchor>af7f4f31c1204ec357839d32e937b1cb1</anchor>
       <arglist>(Google.OrTools.Sat.CpModelProto model_proto)</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatHelper.html</anchorfile>
+      <anchor>aa595de718afd1d09e70fc23b4c9bfdc7</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -52230,17 +53517,17 @@
     <base>Google::OrTools::ConstraintSolver::RoutingFilteredDecisionBuilder</base>
     <class kind="class">Google::OrTools::ConstraintSolver::SavingsFilteredDecisionBuilder::SavingsParameters</class>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a9b7036747ddbc9a7d48947e69bb998b9</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type>override bool</type>
       <name>BuildSolution</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
       <anchor>a0d3174b457ae6f786bb9fe8484a247a5</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -52320,6 +53607,13 @@
       <anchor>ac6ed418771752fb032aacc562e38fb05</anchor>
       <arglist>(global::System.IntPtr s)</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a574e48ccfcf81f1e51ac7303ef022e50</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -52331,11 +53625,11 @@
   <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::SavingsFilteredDecisionBuilder::SavingsParameters</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
-      <anchor>a272db16c3693d8712e228f4b49585209</anchor>
+      <anchor>a6501c9eab349a5cc02be093341e6fdc1</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -52344,6 +53638,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
       <anchor>ad99b2557ed073a25a18c4dfce9aa0afa</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
+      <anchor>a060814396bdc6c3033f4abaa3fde444c</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -52389,13 +53690,6 @@
     <name>Google::OrTools::ConstraintSolver::SearchLimit</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchLimit.html</filename>
     <base>Google::OrTools::ConstraintSolver::SearchMonitor</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchLimit.html</anchorfile>
-      <anchor>a4ab3b374e9a83539db2943c856988add</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function">
       <type></type>
       <name>SearchLimit</name>
@@ -52674,6 +53968,13 @@
       <name>SwigDelegateSearchLimit_28</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchLimit.html</anchorfile>
       <anchor>a29c5be63a96183c491007ef22c9590ee</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" virtualness="virtual">
@@ -53005,6 +54306,13 @@
       <anchor>a77bcc440c50a9bfd54ec23d56cf922f8</anchor>
       <arglist></arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchLimit.html</anchorfile>
+      <anchor>aa42744cb222f39db4e792da1efe038f3</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -53028,13 +54336,6 @@
     <name>Google::OrTools::ConstraintSolver::SearchLog</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchLog.html</filename>
     <base>Google::OrTools::ConstraintSolver::SearchMonitor</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchLog.html</anchorfile>
-      <anchor>a48066f8c3cd6e89e373707e3b1f30e0e</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function">
       <type>override void</type>
       <name>EnterSearch</name>
@@ -53124,6 +54425,13 @@
       <name>ToString</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchLog.html</anchorfile>
       <anchor>a419fb005dd440b6424c905d0711b4a32</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" virtualness="virtual">
@@ -53413,6 +54721,13 @@
       <anchor>a77bcc440c50a9bfd54ec23d56cf922f8</anchor>
       <arglist></arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchLog.html</anchorfile>
+      <anchor>aaf9855a682c36781504152823bbaf9c8</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -53425,13 +54740,6 @@
     <name>Google::OrTools::ConstraintSolver::SearchMonitor</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchMonitor.html</filename>
     <base>Google::OrTools::ConstraintSolver::BaseObject</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchMonitor.html</anchorfile>
-      <anchor>a355f24dd94c80c5a36fd2f4751e9bd04</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function">
       <type></type>
       <name>SearchMonitor</name>
@@ -53789,6 +55097,13 @@
       <anchor>ac555733321a89f33d09b07eea247e5dc</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
+    </member>
     <member kind="function" virtualness="virtual">
       <type>virtual string</type>
       <name>ToString</name>
@@ -53803,6 +55118,13 @@
       <anchor>a77bcc440c50a9bfd54ec23d56cf922f8</anchor>
       <arglist></arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchMonitor.html</anchorfile>
+      <anchor>abb3d8b6c0d8777c99bba76a7d8b91e53</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -53815,19 +55137,26 @@
     <name>Google::OrTools::ConstraintSolver::SearchMonitorVector</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchMonitorVector.html</filename>
     <class kind="class">Google::OrTools::ConstraintSolver::SearchMonitorVector::SearchMonitorVectorEnumerator</class>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchMonitorVector.html</anchorfile>
-      <anchor>aa2e338100d576335b93c9ebd5e464e05</anchor>
+      <anchor>a419eda2328dcb33704cc338568bb770b</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type></type>
       <name>SearchMonitorVector</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchMonitorVector.html</anchorfile>
-      <anchor>ac43ff6ef1f84fbd03a5a46125db44ff3</anchor>
-      <arglist>(global::System.Collections.ICollection c)</arglist>
+      <anchor>a473c12cc7f2a8be8bc0c9908ddc92ddd</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>SearchMonitorVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchMonitorVector.html</anchorfile>
+      <anchor>a579e9522b09e919a889521db129866f9</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; SearchMonitor &gt; c)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -53849,6 +55178,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchMonitorVector.html</anchorfile>
       <anchor>a039c443582d17865942e493e3db04263</anchor>
       <arglist>(int index, SearchMonitor[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>SearchMonitor []</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchMonitorVector.html</anchorfile>
+      <anchor>a2f3c06dc05708e2e348417c4ad1a0078</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>SearchMonitorVectorEnumerator</type>
@@ -54004,6 +55340,13 @@
       <anchor>ad1e5d80afcc076bed0900451e6a8d117</anchor>
       <arglist>(SearchMonitorVector inVal)</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchMonitorVector.html</anchorfile>
+      <anchor>ad3e05b3ff6a6fd8671c0b6f0405a5653</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -54098,13 +55441,6 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVar.html</filename>
     <base>Google::OrTools::ConstraintSolver::PropagationBaseObject</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVar.html</anchorfile>
-      <anchor>a6c0731e19b1a1cb78ed404385a01fa6c</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type></type>
       <name>SequenceVar</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVar.html</anchorfile>
@@ -54180,6 +55516,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVar.html</anchorfile>
       <anchor>a959d6513e812f38351924da8d8d9b5f1</anchor>
       <arglist>(ModelVisitor visitor)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>Solver</type>
@@ -54258,6 +55601,13 @@
       <anchor>ad8a7fbe48043dd1ff195b1abc72e2273</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVar.html</anchorfile>
+      <anchor>ad400b9a8c577f584236e2c94f8afa947</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -54270,13 +55620,6 @@
     <name>Google::OrTools::ConstraintSolver::SequenceVarElement</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarElement.html</filename>
     <base>Google::OrTools::ConstraintSolver::AssignmentElement</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarElement.html</anchorfile>
-      <anchor>a8d1ea867a7c25693a8046c315a4ef78d</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function">
       <type></type>
       <name>SequenceVarElement</name>
@@ -54398,6 +55741,13 @@
     </member>
     <member kind="function">
       <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentElement.html</anchorfile>
+      <anchor>ad8b51fe309e4da98079af3feac19a278</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
       <name>Activate</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentElement.html</anchorfile>
       <anchor>a98256ef6a0de87ae04e4a2f0b7fbe1ad</anchor>
@@ -54417,6 +55767,13 @@
       <anchor>a1c7485e08cdb3f18dd83d3b2d2017efb</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarElement.html</anchorfile>
+      <anchor>a57d6cd402ab2c47662a606c591132b4f</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -54429,13 +55786,6 @@
     <name>Google::OrTools::ConstraintSolver::SequenceVarLocalSearchOperator</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarLocalSearchOperator.html</filename>
     <base>Google::OrTools::ConstraintSolver::SequenceVarLocalSearchOperatorTemplate</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarLocalSearchOperator.html</anchorfile>
-      <anchor>af42ce68fc63fc3f9c9475c37657e37cb</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function">
       <type></type>
       <name>SequenceVarLocalSearchOperator</name>
@@ -54514,6 +55864,13 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
       <type>override bool</type>
       <name>HoldsDelta</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarLocalSearchOperatorTemplate.html</anchorfile>
@@ -54673,6 +56030,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
       <anchor>a44fd87a1bb196bc88bc8f3f70aaa0af2</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarLocalSearchOperator.html</anchorfile>
+      <anchor>a663eddc5def29bd3b463f4a64f498152</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -54687,13 +56051,6 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarLocalSearchOperatorTemplate.html</filename>
     <base>Google::OrTools::ConstraintSolver::LocalSearchOperator</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarLocalSearchOperatorTemplate.html</anchorfile>
-      <anchor>a5d672fc692eb57230ea188aefc7cc499</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type>override bool</type>
       <name>HoldsDelta</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarLocalSearchOperatorTemplate.html</anchorfile>
@@ -54777,6 +56134,13 @@
       <anchor>aea2df92f8d0020134f5efdd6726b22b7</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
+    </member>
     <member kind="function" virtualness="virtual">
       <type>virtual bool</type>
       <name>MakeNextNeighbor</name>
@@ -54854,6 +56218,13 @@
       <anchor>a44fd87a1bb196bc88bc8f3f70aaa0af2</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarLocalSearchOperatorTemplate.html</anchorfile>
+      <anchor>af6aa03c9923a4af0125dac9d2746c2a1</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -54866,19 +56237,26 @@
     <name>Google::OrTools::ConstraintSolver::SequenceVarVector</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarVector.html</filename>
     <class kind="class">Google::OrTools::ConstraintSolver::SequenceVarVector::SequenceVarVectorEnumerator</class>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarVector.html</anchorfile>
-      <anchor>ad3ef81ee07ccddfcfcd4c2bbc51b6493</anchor>
+      <anchor>a59846b0b626040b9f5c2e0bf688da9c7</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type></type>
       <name>SequenceVarVector</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarVector.html</anchorfile>
-      <anchor>ae73b20d3cb86ec2d003f39b39f8da25d</anchor>
-      <arglist>(global::System.Collections.ICollection c)</arglist>
+      <anchor>a781d1ec4916ddd4ca8d90056a2f01e91</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>SequenceVarVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarVector.html</anchorfile>
+      <anchor>a9eb5493da056821186ec498ce2f36b47</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; SequenceVar &gt; c)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -54900,6 +56278,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarVector.html</anchorfile>
       <anchor>a6d1761f476b7543e4d85d24351ab5788</anchor>
       <arglist>(int index, SequenceVar[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>SequenceVar []</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarVector.html</anchorfile>
+      <anchor>a0ce29bd1f6a501c59b7e6ee84c3a8894</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>SequenceVarVectorEnumerator</type>
@@ -55055,6 +56440,13 @@
       <anchor>a7265e32595a9ee1d35cff5bbc2be89cc</anchor>
       <arglist>(SequenceVarVector inVal)</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarVector.html</anchorfile>
+      <anchor>a8a7a2c9a33b91d5d95e74f5751567b2d</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -55149,17 +56541,17 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequentialSavingsFilteredDecisionBuilder.html</filename>
     <base>Google::OrTools::ConstraintSolver::SavingsFilteredDecisionBuilder</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequentialSavingsFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a8f66fa7a775549a045a793b7c36c7149</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type>override string</type>
       <name>ToString</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequentialSavingsFilteredDecisionBuilder.html</anchorfile>
       <anchor>a38eca9d651d687d3003e24b2bc1944bf</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -55239,6 +56631,13 @@
       <anchor>ac6ed418771752fb032aacc562e38fb05</anchor>
       <arglist>(global::System.IntPtr s)</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequentialSavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a16a3c8c1cdd580c2b6c33894cbaeab8c</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -55292,11 +56691,11 @@
   <compound kind="class">
     <name>Google::OrTools::Sat::SolutionCallback</name>
     <filename>classGoogle_1_1OrTools_1_1Sat_1_1SolutionCallback.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SolutionCallback.html</anchorfile>
-      <anchor>a104d5724b45621b33327f722482fc10f</anchor>
+      <anchor>aa4c2c4e35ff144f2c4ff35aa15cf0d1d</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" virtualness="virtual">
@@ -55411,6 +56810,13 @@
       <anchor>acd57884e36f19e263b247f4684680a7b</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SolutionCallback.html</anchorfile>
+      <anchor>a07bc774e53cda9d660041e1c8b5dcd08</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -55423,13 +56829,6 @@
     <name>Google::OrTools::ConstraintSolver::SolutionCollector</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SolutionCollector.html</filename>
     <base>Google::OrTools::ConstraintSolver::SearchMonitor</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SolutionCollector.html</anchorfile>
-      <anchor>a043d11a4dcdee11040fb07859a09e622</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function">
       <type></type>
       <name>SolutionCollector</name>
@@ -55778,6 +57177,13 @@
       <name>SwigDelegateSolutionCollector_24</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SolutionCollector.html</anchorfile>
       <anchor>ab92b223f9658f4660c451a981b52f1b9</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function" virtualness="virtual">
@@ -56130,6 +57536,13 @@
       <anchor>a77bcc440c50a9bfd54ec23d56cf922f8</anchor>
       <arglist></arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SolutionCollector.html</anchorfile>
+      <anchor>a2801a04aa06da4d513a000042254149e</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -56142,13 +57555,6 @@
     <name>Google::OrTools::ConstraintSolver::SolutionPool</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SolutionPool.html</filename>
     <base>Google::OrTools::ConstraintSolver::BaseObject</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SolutionPool.html</anchorfile>
-      <anchor>ad7c503bcbc3f328d3bbb171b2a1b91bc</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function" virtualness="virtual">
       <type>virtual void</type>
       <name>Initialize</name>
@@ -56177,12 +57583,26 @@
       <anchor>aa7b0377c084051f4892b85cf6bd99592</anchor>
       <arglist>(Assignment local_assignment)</arglist>
     </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
+    </member>
     <member kind="function" virtualness="virtual">
       <type>virtual string</type>
       <name>ToString</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
       <anchor>a44fd87a1bb196bc88bc8f3f70aaa0af2</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SolutionPool.html</anchorfile>
+      <anchor>ad4b2221ecc82b30dbb7e2c8365bd45a0</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -56235,11 +57655,11 @@
       <enumvalue file="classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html" anchor="ada5a801b11b5ec9f691309b268d115d1ae91836db656214f9797e10c15928e501">FIXED_VALUE</enumvalue>
       <enumvalue file="classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html" anchor="ada5a801b11b5ec9f691309b268d115d1ae4ac03f6c9f00665644e868dd1fb9f1e">BASIC</enumvalue>
     </member>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html</anchorfile>
-      <anchor>af667cb5248d4f24ba1aaf82659134183</anchor>
+      <anchor>a02750f600bd2e3dd9abd119b42f332e4</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -56460,6 +57880,20 @@
       <arglist>(bool fixed_format, bool obfuscated)</arglist>
     </member>
     <member kind="function">
+      <type>void</type>
+      <name>SetHint</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html</anchorfile>
+      <anchor>a45ab77b2f55f9081ce9c9a997879ed77</anchor>
+      <arglist>(MPVariableVector variables, double[] values)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>SetNumThreads</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html</anchorfile>
+      <anchor>a7e66c99ecd87374c256c860f2d20459f</anchor>
+      <arglist>(int num_theads)</arglist>
+    </member>
+    <member kind="function">
       <type>Variable []</type>
       <name>MakeVarArray</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html</anchorfile>
@@ -56627,6 +58061,13 @@
       <anchor>a88a112924d519f7ef1fc705fd498e01a</anchor>
       <arglist>(String name, String type)</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html</anchorfile>
+      <anchor>a1861d37e66f2bcd7a978741dc1209ba1</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -56639,11 +58080,11 @@
     <name>Google::OrTools::ConstraintSolver::Solver</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</filename>
     <class kind="class">Google::OrTools::ConstraintSolver::Solver::IntegerCastInfo</class>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>a9488c56449f42e557561cd833b45fe55</anchor>
+      <anchor>a2f75f82c9809869c76b3e1a2cfb1b812</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -59457,8 +60898,8 @@
       <type>bool</type>
       <name>HasName</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
-      <anchor>a1b104624e771bd833940ca9d84e2a5ca</anchor>
-      <arglist>(PropagationBaseObject arg0)</arglist>
+      <anchor>abeca9ab9d258f280741eee55c467e163</anchor>
+      <arglist>(PropagationBaseObject object_)</arglist>
     </member>
     <member kind="function">
       <type>Demon</type>
@@ -60481,6 +61922,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
       <anchor>a0b49f3f306df6594196de5e383ed239a</anchor>
       <arglist></arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html</anchorfile>
+      <anchor>ab0d327150e2565e31e50596a447b578f</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -61604,38 +63052,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::Algorithms::operations_research_algorithmsPINVOKE::SWIGExceptionHelper</name>
-    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</filename>
-    <member kind="function">
-      <type>delegate void</type>
-      <name>ExceptionDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a71ee7d46d2fea5a153798908f3c4300a</anchor>
-      <arglist>(string message)</arglist>
-    </member>
-    <member kind="function">
-      <type>delegate void</type>
-      <name>ExceptionArgumentDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a464d98657acca38088ac7823d4606fad</anchor>
-      <arglist>(string message, string paramName)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterExceptionCallbacks_operations_research_algorithms</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a93e231cbae5eb0e50d26d712db20c9d8</anchor>
-      <arglist>(ExceptionDelegate applicationDelegate, ExceptionDelegate arithmeticDelegate, ExceptionDelegate divideByZeroDelegate, ExceptionDelegate indexOutOfRangeDelegate, ExceptionDelegate invalidCastDelegate, ExceptionDelegate invalidOperationDelegate, ExceptionDelegate ioDelegate, ExceptionDelegate nullReferenceDelegate, ExceptionDelegate outOfMemoryDelegate, ExceptionDelegate overflowDelegate, ExceptionDelegate systemExceptionDelegate)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterExceptionCallbacksArgument_operations_research_algorithms</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>adc6661f160677e91f62d9a54ccaba6bd</anchor>
-      <arglist>(ExceptionArgumentDelegate argumentDelegate, ExceptionArgumentDelegate argumentNullDelegate, ExceptionArgumentDelegate argumentOutOfRangeDelegate)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>Google::OrTools::Graph::operations_research_graphPINVOKE::SWIGExceptionHelper</name>
     <filename>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGExceptionHelper.html</filename>
     <member kind="function">
@@ -61668,34 +63084,34 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::Sat::operations_research_satPINVOKE::SWIGExceptionHelper</name>
-    <filename>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGExceptionHelper.html</filename>
+    <name>Google::OrTools::Algorithms::operations_research_algorithmsPINVOKE::SWIGExceptionHelper</name>
+    <filename>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</filename>
     <member kind="function">
       <type>delegate void</type>
       <name>ExceptionDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>abb831faac4ab373340ac31e83e980393</anchor>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a71ee7d46d2fea5a153798908f3c4300a</anchor>
       <arglist>(string message)</arglist>
     </member>
     <member kind="function">
       <type>delegate void</type>
       <name>ExceptionArgumentDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a642357a41408bcf324ff32acc7c5613b</anchor>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a464d98657acca38088ac7823d4606fad</anchor>
       <arglist>(string message, string paramName)</arglist>
     </member>
     <member kind="function">
       <type>static void</type>
-      <name>SWIGRegisterExceptionCallbacks_operations_research_sat</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a274343ac2c4eb0ad9fdf46956c6d550b</anchor>
+      <name>SWIGRegisterExceptionCallbacks_operations_research_algorithms</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a93e231cbae5eb0e50d26d712db20c9d8</anchor>
       <arglist>(ExceptionDelegate applicationDelegate, ExceptionDelegate arithmeticDelegate, ExceptionDelegate divideByZeroDelegate, ExceptionDelegate indexOutOfRangeDelegate, ExceptionDelegate invalidCastDelegate, ExceptionDelegate invalidOperationDelegate, ExceptionDelegate ioDelegate, ExceptionDelegate nullReferenceDelegate, ExceptionDelegate outOfMemoryDelegate, ExceptionDelegate overflowDelegate, ExceptionDelegate systemExceptionDelegate)</arglist>
     </member>
     <member kind="function">
       <type>static void</type>
-      <name>SWIGRegisterExceptionCallbacksArgument_operations_research_sat</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
-      <anchor>a18cb3773aab5c33c6c1c638a5896433d</anchor>
+      <name>SWIGRegisterExceptionCallbacksArgument_operations_research_algorithms</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Algorithms_1_1operations__research__algorithmsPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>adc6661f160677e91f62d9a54ccaba6bd</anchor>
       <arglist>(ExceptionArgumentDelegate argumentDelegate, ExceptionArgumentDelegate argumentNullDelegate, ExceptionArgumentDelegate argumentOutOfRangeDelegate)</arglist>
     </member>
   </compound>
@@ -61728,6 +63144,38 @@
       <name>SWIGRegisterExceptionCallbacksArgument_operations_research_util</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
       <anchor>a11df40a0bf04e515e70733f95be03f54</anchor>
+      <arglist>(ExceptionArgumentDelegate argumentDelegate, ExceptionArgumentDelegate argumentNullDelegate, ExceptionArgumentDelegate argumentOutOfRangeDelegate)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Sat::operations_research_satPINVOKE::SWIGExceptionHelper</name>
+    <filename>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGExceptionHelper.html</filename>
+    <member kind="function">
+      <type>delegate void</type>
+      <name>ExceptionDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>abb831faac4ab373340ac31e83e980393</anchor>
+      <arglist>(string message)</arglist>
+    </member>
+    <member kind="function">
+      <type>delegate void</type>
+      <name>ExceptionArgumentDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a642357a41408bcf324ff32acc7c5613b</anchor>
+      <arglist>(string message, string paramName)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>SWIGRegisterExceptionCallbacks_operations_research_sat</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a274343ac2c4eb0ad9fdf46956c6d550b</anchor>
+      <arglist>(ExceptionDelegate applicationDelegate, ExceptionDelegate arithmeticDelegate, ExceptionDelegate divideByZeroDelegate, ExceptionDelegate indexOutOfRangeDelegate, ExceptionDelegate invalidCastDelegate, ExceptionDelegate invalidOperationDelegate, ExceptionDelegate ioDelegate, ExceptionDelegate nullReferenceDelegate, ExceptionDelegate outOfMemoryDelegate, ExceptionDelegate overflowDelegate, ExceptionDelegate systemExceptionDelegate)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>SWIGRegisterExceptionCallbacksArgument_operations_research_sat</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGExceptionHelper.html</anchorfile>
+      <anchor>a18cb3773aab5c33c6c1c638a5896433d</anchor>
       <arglist>(ExceptionArgumentDelegate argumentDelegate, ExceptionArgumentDelegate argumentNullDelegate, ExceptionArgumentDelegate argumentOutOfRangeDelegate)</arglist>
     </member>
   </compound>
@@ -61782,27 +63230,27 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::Sat::operations_research_satPINVOKE::SWIGPendingException</name>
-    <filename>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGPendingException.html</filename>
+    <name>Google::OrTools::Util::operations_research_utilPINVOKE::SWIGPendingException</name>
+    <filename>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGPendingException.html</filename>
     <member kind="function" static="yes">
       <type>static void</type>
       <name>Set</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>aafcc60a3020a979ec6e8cd347b52ae58</anchor>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a66860dd3c1bafd86cc83822ec4f1e0b0</anchor>
       <arglist>(global::System.Exception e)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static global::System.Exception</type>
       <name>Retrieve</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a60894f5ee23f22483cad23f34aa9a41d</anchor>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>aecd3ecab149ee4726ae459dc96f6d10b</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="property" static="yes">
       <type>static bool</type>
       <name>Pending</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a5f552a4a9720b7fa226ba52337d1809b</anchor>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a92e915713dc95136eef23d796308b473</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -61832,6 +63280,31 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>Google::OrTools::Sat::operations_research_satPINVOKE::SWIGPendingException</name>
+    <filename>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGPendingException.html</filename>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>Set</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>aafcc60a3020a979ec6e8cd347b52ae58</anchor>
+      <arglist>(global::System.Exception e)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static global::System.Exception</type>
+      <name>Retrieve</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a60894f5ee23f22483cad23f34aa9a41d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="property" static="yes">
+      <type>static bool</type>
+      <name>Pending</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGPendingException.html</anchorfile>
+      <anchor>a5f552a4a9720b7fa226ba52337d1809b</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>Google::OrTools::LinearSolver::operations_research_linear_solverPINVOKE::SWIGPendingException</name>
     <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</filename>
     <member kind="function" static="yes">
@@ -61854,85 +63327,6 @@
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1operations__research__linear__solverPINVOKE_1_1SWIGPendingException.html</anchorfile>
       <anchor>a42dfd1bff4e318d5fc6b858bd659427b</anchor>
       <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Util::operations_research_utilPINVOKE::SWIGPendingException</name>
-    <filename>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGPendingException.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>Set</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a66860dd3c1bafd86cc83822ec4f1e0b0</anchor>
-      <arglist>(global::System.Exception e)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static global::System.Exception</type>
-      <name>Retrieve</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>aecd3ecab149ee4726ae459dc96f6d10b</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="property" static="yes">
-      <type>static bool</type>
-      <name>Pending</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGPendingException.html</anchorfile>
-      <anchor>a92e915713dc95136eef23d796308b473</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Graph::operations_research_graphPINVOKE::SWIGStringHelper</name>
-    <filename>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGStringHelper.html</filename>
-    <member kind="function">
-      <type>delegate string</type>
-      <name>SWIGStringDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGStringHelper.html</anchorfile>
-      <anchor>a2d329890b9e74d6a44be1e9b684e3d44</anchor>
-      <arglist>(string message)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterStringCallback_operations_research_graph</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGStringHelper.html</anchorfile>
-      <anchor>a76793ef5aae75b8a949f659d5e0def65</anchor>
-      <arglist>(SWIGStringDelegate stringDelegate)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Sat::operations_research_satPINVOKE::SWIGStringHelper</name>
-    <filename>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGStringHelper.html</filename>
-    <member kind="function">
-      <type>delegate string</type>
-      <name>SWIGStringDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGStringHelper.html</anchorfile>
-      <anchor>adcd7ca60747821229cf807fa95dac2d4</anchor>
-      <arglist>(string message)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterStringCallback_operations_research_sat</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGStringHelper.html</anchorfile>
-      <anchor>a01caa9cba5af20a31d079af6a2282438</anchor>
-      <arglist>(SWIGStringDelegate stringDelegate)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>Google::OrTools::Util::operations_research_utilPINVOKE::SWIGStringHelper</name>
-    <filename>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGStringHelper.html</filename>
-    <member kind="function">
-      <type>delegate string</type>
-      <name>SWIGStringDelegate</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGStringHelper.html</anchorfile>
-      <anchor>ab980cddb87101e6b3479cceb710c2f2a</anchor>
-      <arglist>(string message)</arglist>
-    </member>
-    <member kind="function">
-      <type>static void</type>
-      <name>SWIGRegisterStringCallback_operations_research_util</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGStringHelper.html</anchorfile>
-      <anchor>a84b5cc876b8d1e710c2315093ba27c2e</anchor>
-      <arglist>(SWIGStringDelegate stringDelegate)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -61990,16 +63384,63 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>Google::OrTools::Util::operations_research_utilPINVOKE::SWIGStringHelper</name>
+    <filename>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGStringHelper.html</filename>
+    <member kind="function">
+      <type>delegate string</type>
+      <name>SWIGStringDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGStringHelper.html</anchorfile>
+      <anchor>ab980cddb87101e6b3479cceb710c2f2a</anchor>
+      <arglist>(string message)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>SWIGRegisterStringCallback_operations_research_util</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1operations__research__utilPINVOKE_1_1SWIGStringHelper.html</anchorfile>
+      <anchor>a84b5cc876b8d1e710c2315093ba27c2e</anchor>
+      <arglist>(SWIGStringDelegate stringDelegate)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Sat::operations_research_satPINVOKE::SWIGStringHelper</name>
+    <filename>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGStringHelper.html</filename>
+    <member kind="function">
+      <type>delegate string</type>
+      <name>SWIGStringDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGStringHelper.html</anchorfile>
+      <anchor>adcd7ca60747821229cf807fa95dac2d4</anchor>
+      <arglist>(string message)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>SWIGRegisterStringCallback_operations_research_sat</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE_1_1SWIGStringHelper.html</anchorfile>
+      <anchor>a01caa9cba5af20a31d079af6a2282438</anchor>
+      <arglist>(SWIGStringDelegate stringDelegate)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>Google::OrTools::Graph::operations_research_graphPINVOKE::SWIGStringHelper</name>
+    <filename>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGStringHelper.html</filename>
+    <member kind="function">
+      <type>delegate string</type>
+      <name>SWIGStringDelegate</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGStringHelper.html</anchorfile>
+      <anchor>a2d329890b9e74d6a44be1e9b684e3d44</anchor>
+      <arglist>(string message)</arglist>
+    </member>
+    <member kind="function">
+      <type>static void</type>
+      <name>SWIGRegisterStringCallback_operations_research_graph</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Graph_1_1operations__research__graphPINVOKE_1_1SWIGStringHelper.html</anchorfile>
+      <anchor>a76793ef5aae75b8a949f659d5e0def65</anchor>
+      <arglist>(SWIGStringDelegate stringDelegate)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::SymmetryBreaker</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SymmetryBreaker.html</filename>
     <base>Google::OrTools::ConstraintSolver::DecisionVisitor</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SymmetryBreaker.html</anchorfile>
-      <anchor>acdfcfdd04c02229cdf9b97798a6a778e</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function">
       <type></type>
       <name>SymmetryBreaker</name>
@@ -62084,6 +63525,13 @@
       <anchor>a277308bc2d5f8990dcd40604b9cefba5</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
+      <arglist>()</arglist>
+    </member>
     <member kind="function" virtualness="virtual">
       <type>virtual void</type>
       <name>VisitSetVariableValue</name>
@@ -62140,6 +63588,13 @@
       <anchor>a44fd87a1bb196bc88bc8f3f70aaa0af2</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SymmetryBreaker.html</anchorfile>
+      <anchor>a8fb5caed2991c1bc2df64a8e2bd09a17</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -62152,19 +63607,26 @@
     <name>Google::OrTools::ConstraintSolver::SymmetryBreakerVector</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SymmetryBreakerVector.html</filename>
     <class kind="class">Google::OrTools::ConstraintSolver::SymmetryBreakerVector::SymmetryBreakerVectorEnumerator</class>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SymmetryBreakerVector.html</anchorfile>
-      <anchor>a537ecbe3cd16d84e3dfab01a9492fc94</anchor>
+      <anchor>ad690d04c95aeeb2e1ca194b7df44c8b6</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type></type>
       <name>SymmetryBreakerVector</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SymmetryBreakerVector.html</anchorfile>
-      <anchor>abeeeb99fe31eb515fac002c1026543f1</anchor>
-      <arglist>(global::System.Collections.ICollection c)</arglist>
+      <anchor>ad19af6163af1575bc25524f74e30bf43</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>SymmetryBreakerVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SymmetryBreakerVector.html</anchorfile>
+      <anchor>aba8200f4ccf4a58ebdc914a2c00cc811</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; SymmetryBreaker &gt; c)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -62186,6 +63648,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SymmetryBreakerVector.html</anchorfile>
       <anchor>a4d20838e1e1a2f5c84adc66894248db4</anchor>
       <arglist>(int index, SymmetryBreaker[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>SymmetryBreaker []</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SymmetryBreakerVector.html</anchorfile>
+      <anchor>a1727cf79294e9281acfac96a3a1e511b</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>SymmetryBreakerVectorEnumerator</type>
@@ -62340,6 +63809,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SymmetryBreakerVector.html</anchorfile>
       <anchor>af9d2c73d0fd58a9ac743d3801556287f</anchor>
       <arglist>(SymmetryBreakerVector inVal)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SymmetryBreakerVector.html</anchorfile>
+      <anchor>a5ab50fc4ea285461e73a243f2f3c25f5</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -62616,13 +64092,6 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeIncompatibilityChecker.html</filename>
     <base>Google::OrTools::ConstraintSolver::TypeRegulationsChecker</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeIncompatibilityChecker.html</anchorfile>
-      <anchor>a744ae2b614f1d17f26bf60f442ae218d</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type></type>
       <name>TypeIncompatibilityChecker</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeIncompatibilityChecker.html</anchorfile>
@@ -62630,11 +64099,25 @@
       <arglist>(RoutingModel model, bool check_hard_incompatibilities)</arglist>
     </member>
     <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>aaea25a2c196aebb295c835760877082d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
       <type>bool</type>
       <name>CheckVehicle</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeRegulationsChecker.html</anchorfile>
       <anchor>a28651bb649058f06b2b2c77cdd0df23e</anchor>
       <arglist>(int vehicle, SWIGTYPE_p_std__functionT_long_long_flong_longF_t next_accessor)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeIncompatibilityChecker.html</anchorfile>
+      <anchor>a5b1c435b5485b836f691b225b3002034</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -62647,11 +64130,11 @@
   <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::TypeRegulationsChecker</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeRegulationsChecker.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeRegulationsChecker.html</anchorfile>
-      <anchor>a387ba6556ee60020044eeb49f27568c2</anchor>
+      <anchor>aaea25a2c196aebb295c835760877082d</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -62660,6 +64143,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeRegulationsChecker.html</anchorfile>
       <anchor>a28651bb649058f06b2b2c77cdd0df23e</anchor>
       <arglist>(int vehicle, SWIGTYPE_p_std__functionT_long_long_flong_longF_t next_accessor)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a3f19ecc3b4596cb19e4b4af708103955</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -62673,13 +64163,6 @@
     <name>Google::OrTools::ConstraintSolver::TypeRegulationsConstraint</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeRegulationsConstraint.html</filename>
     <base>Google::OrTools::ConstraintSolver::Constraint</base>
-    <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeRegulationsConstraint.html</anchorfile>
-      <anchor>a64343d2a9b2667bce254f85434a8cf1a</anchor>
-      <arglist>()</arglist>
-    </member>
     <member kind="function">
       <type></type>
       <name>TypeRegulationsConstraint</name>
@@ -62699,6 +64182,13 @@
       <name>InitialPropagateWrapper</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeRegulationsConstraint.html</anchorfile>
       <anchor>aea118205c97b44b0185620c31eb55d6b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html</anchorfile>
+      <anchor>a17cd051e7654294f5712d5a3b59e12cd</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -63079,6 +64569,13 @@
       <anchor>a2fad267141dfca02f8676034ba11c06f</anchor>
       <arglist>(Constraint a, Constraint b)</arglist>
     </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeRegulationsConstraint.html</anchorfile>
+      <anchor>a98568af68a213cc5dcd167ea5a152165</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -63092,13 +64589,6 @@
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeRequirementChecker.html</filename>
     <base>Google::OrTools::ConstraintSolver::TypeRegulationsChecker</base>
     <member kind="function">
-      <type>override void</type>
-      <name>Dispose</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeRequirementChecker.html</anchorfile>
-      <anchor>a237f77f348bf868b0a147130c7cb285f</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
       <type></type>
       <name>TypeRequirementChecker</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeRequirementChecker.html</anchorfile>
@@ -63106,11 +64596,25 @@
       <arglist>(RoutingModel model)</arglist>
     </member>
     <member kind="function">
+      <type>void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>aaea25a2c196aebb295c835760877082d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
       <type>bool</type>
       <name>CheckVehicle</name>
       <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeRegulationsChecker.html</anchorfile>
       <anchor>a28651bb649058f06b2b2c77cdd0df23e</anchor>
       <arglist>(int vehicle, SWIGTYPE_p_std__functionT_long_long_flong_longF_t next_accessor)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>override void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeRequirementChecker.html</anchorfile>
+      <anchor>a902f7dadc99e4b0e1f66534deec4e392</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -63121,30 +64625,21 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::ConstraintSolver::FirstSolutionStrategy::Types</name>
-    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html</filename>
+    <name>Google::OrTools::ConstraintSolver::LocalSearchMetaheuristic::Types</name>
+    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html</filename>
     <member kind="enumeration">
       <type></type>
       <name>Value</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html</anchorfile>
-      <anchor>a46b0af629b907cebcfdee6028dc7132f</anchor>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html</anchorfile>
+      <anchor>ac75e77f5030fa7ea89a3deb77b8904f6</anchor>
       <arglist></arglist>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fac9f88e098f6fe4e4e112eeb05ccb9671">Unset</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fa086247a9b57fde6eefee2a0c4752242d">Automatic</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fafabfac3f293171b27129b62f01763ea5">PathCheapestArc</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fa1e0911afce171548016e1262ca4cfc78">PathMostConstrainedArc</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132faa5ffc082c74d7f8c702155a6efce4cf4">EvaluatorStrategy</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132faab0da0e987457927aebb5111d5d32c12">Savings</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fa8e9014ddfce21beb1b3cd7da888cbdea">Sweep</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fa6c8581a1eb3b87228f884a7c05f0c34e">Christofides</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fa1d6156004a7044ffd2929ad295beb903">AllUnperformed</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fade71c45f580d33ad42d2adfc24cb4e95">BestInsertion</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fa7a02e970bff8e147c24df62820ab6b83">ParallelCheapestInsertion</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fafe9e99a60a3db81b85536bc3e66d2957">SequentialCheapestInsertion</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fa64c868f9c5a4ff2fd61a48e64f633cc1">LocalCheapestInsertion</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fa0830ffde34397bae96ca6d7301dfbb3a">GlobalCheapestArc</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fad8f6fc249fb502b8ad0fb30eea3e67c7">LocalCheapestArc</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fabde1196f82e1896a9b57b7a13c796967">FirstUnboundMinValue</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="ac75e77f5030fa7ea89a3deb77b8904f6ac9f88e098f6fe4e4e112eeb05ccb9671">Unset</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="ac75e77f5030fa7ea89a3deb77b8904f6a086247a9b57fde6eefee2a0c4752242d">Automatic</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="ac75e77f5030fa7ea89a3deb77b8904f6acb6fff8d60b88e3ae5fe6c65141fc29d">GreedyDescent</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="ac75e77f5030fa7ea89a3deb77b8904f6a497dd969cdc61ecfd0418e401b94ceb3">GuidedLocalSearch</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="ac75e77f5030fa7ea89a3deb77b8904f6a9e54e50d057e08825382c09877dede7f">SimulatedAnnealing</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="ac75e77f5030fa7ea89a3deb77b8904f6a6053a07fb774ef5a566d217916fb3d45">TabuSearch</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="ac75e77f5030fa7ea89a3deb77b8904f6af85ec2ae77c650ad26da12d7a8e11259">GenericTabuSearch</enumvalue>
     </member>
   </compound>
   <compound kind="class">
@@ -63176,24 +64671,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>Google::OrTools::ConstraintSolver::LocalSearchMetaheuristic::Types</name>
-    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html</filename>
-    <member kind="enumeration">
-      <type></type>
-      <name>Value</name>
-      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html</anchorfile>
-      <anchor>ac75e77f5030fa7ea89a3deb77b8904f6</anchor>
-      <arglist></arglist>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="ac75e77f5030fa7ea89a3deb77b8904f6ac9f88e098f6fe4e4e112eeb05ccb9671">Unset</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="ac75e77f5030fa7ea89a3deb77b8904f6a086247a9b57fde6eefee2a0c4752242d">Automatic</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="ac75e77f5030fa7ea89a3deb77b8904f6acb6fff8d60b88e3ae5fe6c65141fc29d">GreedyDescent</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="ac75e77f5030fa7ea89a3deb77b8904f6a497dd969cdc61ecfd0418e401b94ceb3">GuidedLocalSearch</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="ac75e77f5030fa7ea89a3deb77b8904f6a9e54e50d057e08825382c09877dede7f">SimulatedAnnealing</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="ac75e77f5030fa7ea89a3deb77b8904f6a6053a07fb774ef5a566d217916fb3d45">TabuSearch</enumvalue>
-      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic_1_1Types.html" anchor="ac75e77f5030fa7ea89a3deb77b8904f6af85ec2ae77c650ad26da12d7a8e11259">GenericTabuSearch</enumvalue>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>Google::OrTools::ConstraintSolver::RoutingSearchParameters::Types</name>
     <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types.html</filename>
     <class kind="class">Google::OrTools::ConstraintSolver::RoutingSearchParameters::Types::LocalSearchNeighborhoodOperators</class>
@@ -63212,22 +64689,56 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>Google::OrTools::ConstraintSolver::FirstSolutionStrategy::Types</name>
+    <filename>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html</filename>
+    <member kind="enumeration">
+      <type></type>
+      <name>Value</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html</anchorfile>
+      <anchor>a46b0af629b907cebcfdee6028dc7132f</anchor>
+      <arglist></arglist>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fac9f88e098f6fe4e4e112eeb05ccb9671">Unset</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fa086247a9b57fde6eefee2a0c4752242d">Automatic</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fafabfac3f293171b27129b62f01763ea5">PathCheapestArc</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fa1e0911afce171548016e1262ca4cfc78">PathMostConstrainedArc</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132faa5ffc082c74d7f8c702155a6efce4cf4">EvaluatorStrategy</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132faab0da0e987457927aebb5111d5d32c12">Savings</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fa8e9014ddfce21beb1b3cd7da888cbdea">Sweep</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fa6c8581a1eb3b87228f884a7c05f0c34e">Christofides</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fa1d6156004a7044ffd2929ad295beb903">AllUnperformed</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fade71c45f580d33ad42d2adfc24cb4e95">BestInsertion</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fa7a02e970bff8e147c24df62820ab6b83">ParallelCheapestInsertion</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fafe9e99a60a3db81b85536bc3e66d2957">SequentialCheapestInsertion</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fa64c868f9c5a4ff2fd61a48e64f633cc1">LocalCheapestInsertion</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fa0830ffde34397bae96ca6d7301dfbb3a">GlobalCheapestArc</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fad8f6fc249fb502b8ad0fb30eea3e67c7">LocalCheapestArc</enumvalue>
+      <enumvalue file="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy_1_1Types.html" anchor="a46b0af629b907cebcfdee6028dc7132fabde1196f82e1896a9b57b7a13c796967">FirstUnboundMinValue</enumvalue>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>Google::OrTools::Util::UtilInt64Vector</name>
     <filename>classGoogle_1_1OrTools_1_1Util_1_1UtilInt64Vector.html</filename>
     <class kind="class">Google::OrTools::Util::UtilInt64Vector::UtilInt64VectorEnumerator</class>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1UtilInt64Vector.html</anchorfile>
-      <anchor>ab3f8f508d62a1eb71b8dc72353e53367</anchor>
+      <anchor>a459ea8168ca338335ed4c2a7be19dd2d</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type></type>
       <name>UtilInt64Vector</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1UtilInt64Vector.html</anchorfile>
-      <anchor>a0513e3711f854ac6560da8ff2cbfba58</anchor>
-      <arglist>(global::System.Collections.ICollection c)</arglist>
+      <anchor>a86a5ed9325004655593f5cb4ad3f11ed</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>UtilInt64Vector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1UtilInt64Vector.html</anchorfile>
+      <anchor>af3b8cccd196619d5beee8d803cbf3d75</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; long &gt; c)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -63249,6 +64760,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1UtilInt64Vector.html</anchorfile>
       <anchor>a2490141941bd9d2e7e5d6bc633e1b342</anchor>
       <arglist>(int index, long[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>long []</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1UtilInt64Vector.html</anchorfile>
+      <anchor>aa2dadaf598960cdb3add0fe47cfe0bfd</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>UtilInt64VectorEnumerator</type>
@@ -63390,6 +64908,13 @@
       <anchor>a785a90f8e81febd5a696b90ca1566262</anchor>
       <arglist>(long value, int count)</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1UtilInt64Vector.html</anchorfile>
+      <anchor>a4384e2439a9c5c573d877a48ba3a0efd</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -63483,19 +65008,26 @@
     <name>Google::OrTools::Util::UtilInt64VectorVector</name>
     <filename>classGoogle_1_1OrTools_1_1Util_1_1UtilInt64VectorVector.html</filename>
     <class kind="class">Google::OrTools::Util::UtilInt64VectorVector::UtilInt64VectorVectorEnumerator</class>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1UtilInt64VectorVector.html</anchorfile>
-      <anchor>abeda3d7ebee54093a6a7b255838fbc79</anchor>
+      <anchor>a21aadc9afeb428945c23f71dd0009f76</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type></type>
       <name>UtilInt64VectorVector</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1UtilInt64VectorVector.html</anchorfile>
-      <anchor>a777b293a676aa6ba4b2c935c2fdb37e0</anchor>
-      <arglist>(global::System.Collections.ICollection c)</arglist>
+      <anchor>a0cbf2315516e299c20d4a82ab7b6651a</anchor>
+      <arglist>(global::System.Collections.IEnumerable c)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>UtilInt64VectorVector</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1UtilInt64VectorVector.html</anchorfile>
+      <anchor>a94d59ab501ed7c31c0d907eef838a7b1</anchor>
+      <arglist>(global::System.Collections.Generic.IEnumerable&lt; UtilInt64Vector &gt; c)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -63517,6 +65049,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1UtilInt64VectorVector.html</anchorfile>
       <anchor>a8a5362c0257299272605fbef2620a8b1</anchor>
       <arglist>(int index, UtilInt64Vector[] array, int arrayIndex, int count)</arglist>
+    </member>
+    <member kind="function">
+      <type>UtilInt64Vector []</type>
+      <name>ToArray</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1UtilInt64VectorVector.html</anchorfile>
+      <anchor>a89f0fbbb16e65e7d718c53181a2ed4da</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>UtilInt64VectorVectorEnumerator</type>
@@ -63629,6 +65168,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1UtilInt64VectorVector.html</anchorfile>
       <anchor>aaba8733a8d137408a7f666f623c5b6ce</anchor>
       <arglist>(UtilInt64Vector value, int count)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Util_1_1UtilInt64VectorVector.html</anchorfile>
+      <anchor>a34a0a6a792a4133dff7a2147ae4eaad6</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -63825,11 +65371,11 @@
       <anchor>a1e329c00be8a46032b3edfb455e4631d</anchor>
       <arglist>(ILiteral literal)</arglist>
     </member>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SolutionCallback.html</anchorfile>
-      <anchor>a104d5724b45621b33327f722482fc10f</anchor>
+      <anchor>aa4c2c4e35ff144f2c4ff35aa15cf0d1d</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -63929,6 +65475,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SolutionCallback.html</anchorfile>
       <anchor>acd57884e36f19e263b247f4684680a7b</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SolutionCallback.html</anchorfile>
+      <anchor>a07bc774e53cda9d660041e1c8b5dcd08</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -63977,11 +65530,11 @@
       <anchor>a1e329c00be8a46032b3edfb455e4631d</anchor>
       <arglist>(ILiteral literal)</arglist>
     </member>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SolutionCallback.html</anchorfile>
-      <anchor>a104d5724b45621b33327f722482fc10f</anchor>
+      <anchor>aa4c2c4e35ff144f2c4ff35aa15cf0d1d</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -64081,6 +65634,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SolutionCallback.html</anchorfile>
       <anchor>acd57884e36f19e263b247f4684680a7b</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SolutionCallback.html</anchorfile>
+      <anchor>a07bc774e53cda9d660041e1c8b5dcd08</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -64129,11 +65689,11 @@
       <anchor>a1e329c00be8a46032b3edfb455e4631d</anchor>
       <arglist>(ILiteral literal)</arglist>
     </member>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SolutionCallback.html</anchorfile>
-      <anchor>a104d5724b45621b33327f722482fc10f</anchor>
+      <anchor>aa4c2c4e35ff144f2c4ff35aa15cf0d1d</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -64234,6 +65794,13 @@
       <anchor>acd57884e36f19e263b247f4684680a7b</anchor>
       <arglist>()</arglist>
     </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SolutionCallback.html</anchorfile>
+      <anchor>a07bc774e53cda9d660041e1c8b5dcd08</anchor>
+      <arglist>(bool disposing)</arglist>
+    </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
       <name>swigCMemOwn</name>
@@ -64278,11 +65845,11 @@
   <compound kind="class">
     <name>Google::OrTools::LinearSolver::Variable</name>
     <filename>classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html</filename>
-    <member kind="function" virtualness="virtual">
-      <type>virtual void</type>
+    <member kind="function">
+      <type>void</type>
       <name>Dispose</name>
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html</anchorfile>
-      <anchor>aa8b81e4177035e39441108fc7c1d79b9</anchor>
+      <anchor>afc497238e0210aabd30e8c5ac410eba1</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -64592,6 +66159,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html</anchorfile>
       <anchor>a50101e437982e5090ca474491d1e6a30</anchor>
       <arglist>(LinearExpr a, Variable b)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Dispose</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html</anchorfile>
+      <anchor>addb1062f11e41a6581ceb9d54964bcc1</anchor>
+      <arglist>(bool disposing)</arglist>
     </member>
     <member kind="variable" protection="protected">
       <type>bool</type>
@@ -65450,6 +67024,7 @@
     <class kind="class">Google::OrTools::LinearSolver::LinearExprArrayHelper</class>
     <class kind="class">Google::OrTools::LinearSolver::MpDoubleVector</class>
     <class kind="class">Google::OrTools::LinearSolver::MPSolverParameters</class>
+    <class kind="class">Google::OrTools::LinearSolver::MPVariableVector</class>
     <class kind="class">Google::OrTools::LinearSolver::Objective</class>
     <class kind="class">Google::OrTools::LinearSolver::operations_research_linear_solver</class>
     <class kind="class">Google::OrTools::LinearSolver::operations_research_linear_solverPINVOKE</class>
