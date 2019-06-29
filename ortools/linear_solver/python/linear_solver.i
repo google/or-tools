@@ -50,6 +50,40 @@ class MPSolutionResponse;
 #include "ortools/linear_solver/model_exporter_swig_helper.h"
 %}
 
+// Actual conversions. This also includes the conversion to std::vector<Class>.
+%define PY_CONVERT(Class)
+%{
+
+template<>
+bool PyObjAs(PyObject *py_obj, operations_research::MPVariable** b) {
+  return SWIG_ConvertPtr(py_obj, reinterpret_cast<void**>(b),
+                         SWIGTYPE_p_operations_research__MPVariable,
+                         SWIG_POINTER_EXCEPTION) >= 0;
+}
+
+bool CanConvertTo ## Class(PyObject *py_obj) {
+  operations_research::Class* tmp;
+  return PyObjAs(py_obj, &tmp);
+}
+
+%}
+
+%typemap(in) operations_research::Class* const {
+  if (!PyObjAs($input, &$1)) SWIG_fail;
+}
+
+%typecheck(SWIG_TYPECHECK_POINTER) operations_research::Class* const {
+  $1 = CanConvertTo ## Class($input);
+  if ($1 == 0) PyErr_Clear();
+}
+
+PY_LIST_OUTPUT_TYPEMAP(operations_research::Class*, CanConvertTo ## Class,
+                       PyObjAs<operations_research::Class*>);
+%enddef
+
+PY_CONVERT(MPVariable);
+#undef PY_CONVERT
+
 namespace operations_research {
 
 %pythoncode {
@@ -102,6 +136,36 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
     operations_research::MPModelProto model;
     $self->ExportModelToProto(&model);
     return ExportModelAsMpsFormat(model, options).value_or("");
+  }
+
+  /// Set a hint for solution.
+  ///
+  /// If a feasible or almost-feasible solution to the problem is already known,
+  /// it may be helpful to pass it to the solver so that it can be used. A
+  /// solver that supports this feature will try to use this information to
+  /// create its initial feasible solution.
+  ///
+  /// Note that it may not always be faster to give a hint like this to the
+  /// solver. There is also no guarantee that the solver will use this hint or
+  /// try to return a solution "close" to this assignment in case of multiple
+  /// optimal solutions.
+  void SetHint(const std::vector<MPVariable*>& variables,
+               const std::vector<double>& values) {
+    if (variables.size() != values.size()) {
+      LOG(FATAL) << "Different number of variables and values when setting "
+                 << "hint.";
+    }
+    std::vector<std::pair<const operations_research::MPVariable*, double> >
+        hint(variables.size());
+    for (int i = 0; i < variables.size(); ++i) {
+      hint[i] = std::make_pair(variables[i], values[i]);
+    }
+    $self->SetHint(hint);
+  }
+
+  /// Sets the number of threads to be used by the solver.
+  bool SetNumThreads(int num_theads) {
+    return $self->SetNumThreads(num_theads).ok();
   }
 
   %pythoncode {
@@ -274,7 +338,6 @@ PY_PROTO_TYPEMAP(ortools.linear_solver.linear_solver_pb2,
 %unignore operations_research::MPSolver::NextSolution;
 %unignore operations_research::MPSolver::ExportModelAsLpFormat;
 %unignore operations_research::MPSolver::ExportModelAsMpsFormat;
-%unignore operations_research::MPSolver::SetNumThreads;
 
 // Expose very advanced parts of the MPSolver API. For expert users only.
 %unignore operations_research::MPSolver::ComputeConstraintActivities;

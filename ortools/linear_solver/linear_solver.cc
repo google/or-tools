@@ -1398,7 +1398,7 @@ bool MPSolver::ExportModelAsMpsFormat(bool fixed_format, bool obfuscate,
 //   if (fixed_format) {
 //     LOG_EVERY_N_SEC(WARNING, 10)
 //         << "Fixed format is deprecated. Using free format instead.";
-//   
+//
 
   MPModelProto proto;
   ExportModelToProto(&proto);

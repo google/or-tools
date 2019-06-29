@@ -188,4 +188,27 @@ public partial class Variable {
   }
 }
 
+// TODO(user): Try to move this code back to the .swig with @define macros.
+public partial class MPVariableVector: IDisposable, System.Collections.IEnumerable
+#if !SWIG_DOTNET_1
+    , System.Collections.Generic.IList<Variable>
+#endif
+{
+  // cast from C# MPVariable array
+  public static implicit operator MPVariableVector(Variable[] inVal) {
+    var outVal= new MPVariableVector();
+    foreach (Variable element in inVal) {
+      outVal.Add(element);
+    }
+    return outVal;
+  }
+
+  // cast to C# MPVariable array
+  public static implicit operator Variable[](MPVariableVector inVal) {
+    var outVal= new Variable[inVal.Count];
+    inVal.CopyTo(outVal);
+    return outVal;
+  }
+}
+
 }  // namespace Google.OrTools.LinearSolver

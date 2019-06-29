@@ -53,6 +53,15 @@ typedef uint64_t uint64;
 #include "ortools/linear_solver/model_exporter.h"
 %}
 
+%define CONVERT_VECTOR(CType, JavaType)
+CONVERT_VECTOR_WITH_CAST(CType, JavaType, REINTERPRET_CAST,
+    com/google/ortools/linearsolver);
+%enddef
+
+CONVERT_VECTOR(operations_research::MPVariable, MPVariable);
+
+#undef CONVERT_VECTOR
+
 %typemap(javaimports) SWIGTYPE %{
 import java.lang.reflect.*;
 %}
@@ -75,11 +84,22 @@ import java.lang.reflect.*;
     return ExportModelAsMpsFormat(model, options).value_or("");
   }
 
+  /// Set a hint for solution.
+  ///
+  /// If a feasible or almost-feasible solution to the problem is already known,
+  /// it may be helpful to pass it to the solver so that it can be used. A
+  /// solver that supports this feature will try to use this information to
+  /// create its initial feasible solution.
+  ///
+  /// Note that it may not always be faster to give a hint like this to the
+  /// solver. There is also no guarantee that the solver will use this hint or
+  /// try to return a solution "close" to this assignment in case of multiple
+  /// optimal solutions.
   void setHint(const std::vector<operations_research::MPVariable*>& variables,
                const std::vector<double>& values) {
     if (variables.size() != values.size()) {
       LOG(FATAL) << "Different number of variables and values when setting "
-          << "hint.";
+                 << "hint.";
     }
     std::vector<std::pair<const operations_research::MPVariable*, double> >
         hint(variables.size());
@@ -87,6 +107,11 @@ import java.lang.reflect.*;
       hint[i] = std::make_pair(variables[i], values[i]);
     }
     $self->SetHint(hint);
+  }
+
+  /// Sets the number of threads to be used by the solver.
+  bool setNumThreads(int num_theads) {
+    return $self->SetNumThreads(num_theads).ok();
   }
 }
 
