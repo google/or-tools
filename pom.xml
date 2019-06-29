@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.google.ortools</groupId>
   <artifactId>ortools-java</artifactId>
-  <version>7.1</version>
+  <version>7.2</version>
   <dependencies>
     <dependency>
       <groupId>com.google.protobuf</groupId>
