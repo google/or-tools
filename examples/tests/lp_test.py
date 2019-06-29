@@ -160,6 +160,28 @@ def SolveAndPrint(solver, variable_list, constraint_list):
            '               activity = %f' % (i, constraint.dual_value(),
                                              activities[constraint.index()])))
 
+def TestSetHint():
+  print('TestSetHint')
+  solver = pywraplp.Solver('RunBooleanExampleCppStyle',
+                           pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
+  infinity = solver.infinity()
+  # x1 and x2 are integer non-negative variables.
+  x1 = solver.BoolVar('x1')
+  x2 = solver.BoolVar('x2')
+
+  # Minimize 2 * x1 + x2.
+  objective = solver.Objective()
+  objective.SetCoefficient(x1, 2)
+  objective.SetCoefficient(x2, 1)
+  objective.SetMinimization()
+
+  # 1 <= x1 + 2 * x2 <= 3.
+  c0 = solver.Constraint(1, 3, 'c0')
+  c0.SetCoefficient(x1, 1)
+  c0.SetCoefficient(x2, 2)
+
+  solver.SetHint([x1, x2], [1.0, 0.0])
+
 
 def main():
   all_names_and_problem_types = (
@@ -183,6 +205,7 @@ def main():
       RunBooleanExampleCppStyleAPI(problem_type)
     else:
         print('ERROR: %s unsupported' % name)
+  TestSetHint()
 
 if __name__ == '__main__':
   main()

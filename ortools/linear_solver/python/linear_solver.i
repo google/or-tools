@@ -31,9 +31,10 @@
 %include "stdint.i"
 
 %include "ortools/base/base.i"
-%import "ortools/util/python/vector.i"
 
 %include "ortools/util/python/proto.i"
+
+%import "ortools/util/python/vector.i"
 
 // We need to forward-declare the proto here, so that the PROTO_* macros
 // involving them work correctly. The order matters very much: this declaration
@@ -50,42 +51,8 @@ class MPSolutionResponse;
 #include "ortools/linear_solver/model_exporter_swig_helper.h"
 %}
 
-// Actual conversions. This also includes the conversion to std::vector<Class>.
-%define PY_CONVERT(Class)
-%{
 
-template<>
-bool PyObjAs(PyObject *py_obj, operations_research::MPVariable** b) {
-  return SWIG_ConvertPtr(py_obj, reinterpret_cast<void**>(b),
-                         SWIGTYPE_p_operations_research__MPVariable,
-                         SWIG_POINTER_EXCEPTION) >= 0;
-}
-
-bool CanConvertTo ## Class(PyObject *py_obj) {
-  operations_research::Class* tmp;
-  return PyObjAs(py_obj, &tmp);
-}
-
-%}
-
-%typemap(in) operations_research::Class* const {
-  if (!PyObjAs($input, &$1)) SWIG_fail;
-}
-
-%typecheck(SWIG_TYPECHECK_POINTER) operations_research::Class* const {
-  $1 = CanConvertTo ## Class($input);
-  if ($1 == 0) PyErr_Clear();
-}
-
-PY_LIST_OUTPUT_TYPEMAP(operations_research::Class*, CanConvertTo ## Class,
-                       PyObjAs<operations_research::Class*>);
-%enddef
-
-PY_CONVERT(MPVariable);
-#undef PY_CONVERT
-
-namespace operations_research {
-
+ 
 %pythoncode {
 import numbers
 from ortools.linear_solver.linear_solver_natural_api import OFFSET_KEY
@@ -99,7 +66,7 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
 from ortools.linear_solver.linear_solver_natural_api import VariableExpr
 }  // %pythoncode
 
-%extend MPVariable {
+%extend operations_research::MPVariable {
   std::string __str__() {
     return $self->name();
   }
@@ -113,10 +80,10 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
   }  // %pythoncode
 }
 
-%extend MPSolver {
+%extend operations_research::MPSolver {
   // Change the API of LoadModelFromProto() to simply return the error message:
   // it will always be empty iff the model was valid.
-  std::string LoadModelFromProto(const MPModelProto& input_model) {
+  std::string LoadModelFromProto(const operations_research::MPModelProto& input_model) {
     std::string error_message;
     $self->LoadModelFromProto(input_model, &error_message);
     return error_message;
@@ -149,7 +116,7 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
   /// solver. There is also no guarantee that the solver will use this hint or
   /// try to return a solution "close" to this assignment in case of multiple
   /// optimal solutions.
-  void SetHint(const std::vector<MPVariable*>& variables,
+  void SetHint(const std::vector<operations_research::MPVariable*>& variables,
                const std::vector<double>& values) {
     if (variables.size() != values.size()) {
       LOG(FATAL) << "Different number of variables and values when setting "
@@ -209,9 +176,7 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
         for v, c, in list(coeffs.items()):
           objective.SetCoefficient(v, float(c))
   }  // %pythoncode
-}
 
-%extend MPSolver {
 // Catch runtime exceptions in class methods
 %exception MPSolver {
     try {
@@ -225,9 +190,9 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
   void SetTimeLimit(int64 x) { $self->set_time_limit(x); }
   int64 WallTime() const { return $self->wall_time(); }
   int64 Iterations() const { return $self->iterations(); }
-}  // extend MPSolver
+}  // extendoperations_research:: MPSolver
 
-%extend MPVariable {
+%extend operations_research::MPVariable {
   double SolutionValue() const { return $self->solution_value(); }
   bool Integer() const { return $self->integer(); }
   double Lb() const { return $self->lb(); }
@@ -235,9 +200,9 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
   void SetLb(double x) { $self->SetLB(x); }
   void SetUb(double x) { $self->SetUB(x); }
   double ReducedCost() const { return $self->reduced_cost(); }
-}  // extend MPVariable
+}  // extend operations_research::MPVariable
 
-%extend MPConstraint {
+%extend operations_research::MPConstraint {
   double Lb() const { return $self->lb(); }
   double Ub() const { return $self->ub(); }
   void SetLb(double x) { $self->SetLB(x); }
@@ -245,11 +210,9 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
   double DualValue() const { return $self->dual_value(); }
 }  // extend MPConstraint
 
-%extend MPObjective {
+%extend operations_research::MPObjective {
   double Offset() const { return $self->offset();}
-}  // extend MPObjective
-}  // namespace operations_research
-
+}  // extend operations_research::MPObjective
 
 PY_PROTO_TYPEMAP(ortools.linear_solver.linear_solver_pb2,
                  MPModelProto,
@@ -258,6 +221,25 @@ PY_PROTO_TYPEMAP(ortools.linear_solver.linear_solver_pb2,
 PY_PROTO_TYPEMAP(ortools.linear_solver.linear_solver_pb2,
                  MPSolutionResponse,
                  operations_research::MPSolutionResponse);
+
+// Convert lists of MPVariable*.
+%{
+template<>
+bool PyObjAs(PyObject *py_obj, operations_research::MPVariable** b) {
+  return SWIG_ConvertPtr(py_obj, reinterpret_cast<void**>(b),
+                         SWIGTYPE_p_operations_research__MPVariable,
+                         SWIG_POINTER_EXCEPTION) >= 0;
+}
+
+bool CanConvertToMPVariable(PyObject *py_obj) {
+  operations_research::MPVariable* tmp;
+  return PyObjAs(py_obj, &tmp);
+}
+%}
+
+PY_LIST_OUTPUT_TYPEMAP(operations_research::MPVariable*,
+                       CanConvertToMPVariable,
+                       PyObjAs<operations_research::MPVariable>);
 
 %ignoreall
 
