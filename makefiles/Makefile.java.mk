@@ -158,7 +158,7 @@ $(GEN_DIR)/ortools/linear_solver/linear_solver_java_wrap.cc: \
  $(SRC_DIR)/ortools/util/java/vector.i \
  $(LP_DEPS) \
  | $(GEN_DIR)/ortools/linear_solver $(GEN_DIR)/com/google/ortools/linearsolver
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -java \
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -java $(SWIG_DOXYGEN) \
  -o $(GEN_PATH)$Sortools$Slinear_solver$Slinear_solver_java_wrap.cc \
  -package com.google.ortools.linearsolver \
  -module main_research_linear_solver \

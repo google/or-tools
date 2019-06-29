@@ -575,6 +575,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:adeaab94450d51c13ce7dd1f54b320f78"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8122f25d56c18061a4500787e17bea5b"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html#a8122f25d56c18061a4500787e17bea5b">getMipCheckPrecision</a> ()</td></tr>
 <tr class="separator:a8122f25d56c18061a4500787e17bea5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2780b12451f12ba3a421e3ac91479ad7"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html#a2780b12451f12ba3a421e3ac91479ad7">hasCatchSigintSignal</a> ()</td></tr>
+<tr class="separator:a2780b12451f12ba3a421e3ac91479ad7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad719cc4674c3b6dd95f48ed2c566e4a5"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html#ad719cc4674c3b6dd95f48ed2c566e4a5">getCatchSigintSignal</a> ()</td></tr>
+<tr class="separator:ad719cc4674c3b6dd95f48ed2c566e4a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a741fd9f2ae0f0bbf0400f45468cdf6f3"></a>
@@ -830,6 +834,30 @@ Integer variables as Boolean.
 </pre><p><code>optional int32 boolean_encoding_level = 107 [default = 1];</code> </p>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a752992d4666b4cda9bbc731f763842e7">com.google.ortools.sat.SatParameters.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#a612d1593af5d0532b203f61b8a76a54c">com.google.ortools.sat.SatParameters</a>.</p>
+
+</div>
+</div>
+<a id="ad719cc4674c3b6dd95f48ed2c566e4a5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad719cc4674c3b6dd95f48ed2c566e4a5">&#9670;&nbsp;</a></span>getCatchSigintSignal()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">boolean com.google.ortools.sat.SatParametersOrBuilder.getCatchSigintSignal </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+Indicates if the CP-SAT layer should catch Control-C (SIGINT) signals
+when calling solve. If set, catching the SIGINT signal will terminate the
+search gracefully, as if a time limit was reached.
+</pre><p><code>optional bool catch_sigint_signal = 135 [default = true];</code> </p>
+
+<p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#ac32b75d0f1f3da2ed9f6cad76172c893">com.google.ortools.sat.SatParameters.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#ab068a893f613348054675aa162cae2e3">com.google.ortools.sat.SatParameters</a>.</p>
 
 </div>
 </div>
@@ -3594,6 +3622,30 @@ Integer variables as Boolean.
 </pre><p><code>optional int32 boolean_encoding_level = 107 [default = 1];</code> </p>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#acfa1a3f92642e19fd2fe20a75de491a5">com.google.ortools.sat.SatParameters.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#ab9906bef61fbe0f2497a40e648eb15c4">com.google.ortools.sat.SatParameters</a>.</p>
+
+</div>
+</div>
+<a id="a2780b12451f12ba3a421e3ac91479ad7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2780b12451f12ba3a421e3ac91479ad7">&#9670;&nbsp;</a></span>hasCatchSigintSignal()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">boolean com.google.ortools.sat.SatParametersOrBuilder.hasCatchSigintSignal </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+Indicates if the CP-SAT layer should catch Control-C (SIGINT) signals
+when calling solve. If set, catching the SIGINT signal will terminate the
+search gracefully, as if a time limit was reached.
+</pre><p><code>optional bool catch_sigint_signal = 135 [default = true];</code> </p>
+
+<p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a6fc1385bb29938888f828ebe5690cd94">com.google.ortools.sat.SatParameters.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#a0a03f02f6f21f364f49ceb180a775e4b">com.google.ortools.sat.SatParameters</a>.</p>
 
 </div>
 </div>

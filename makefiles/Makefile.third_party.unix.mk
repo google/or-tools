@@ -763,9 +763,10 @@ SWIG_BINARY = $(shell $(WHICH) $(UNIX_SWIG_BINARY))
 #$(error "Can't find $(UNIX_SWIG_BINARY). Please verify UNIX_SWIG_BINARY")
 SWIG_VERSION = $(shell $(SWIG_BINARY) -version | grep Version | cut -d " " -f 3)
 ifeq ("$(SWIG_VERSION)","4.0.0")
+SWIG_DOXYGEN = -doxygen
 ifneq ($(PYTHON_EXECUTABLE),)
 ifeq ($(shell "$(PYTHON_EXECUTABLE)" -c "from sys import version_info as v; print (str(v[0]))"),3)
-SWIG_DOXYGEN = -doxygen
+SWIG_PY_DOXYGEN = -doxygen
 endif
 endif
 endif
