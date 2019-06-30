@@ -379,10 +379,6 @@ namespace Google.OrTools.Sat
     public SumArray(IEnumerable<IntVar> vars)
     {
       expressions_ = new List<LinearExpr>(vars);
-      foreach (IntVar v in vars)
-      {
-        AddExpr(v);
-      }
       constant_ = 0L;
     }
 
