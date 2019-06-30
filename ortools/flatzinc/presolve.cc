@@ -2429,25 +2429,29 @@ Presolver::RuleStatus Presolver::RemoveAbsFromIntLeReif(Constraint* ct,
   return NOT_CHANGED;
 }
 
-// Remove abs from int_le.
-// Input : int_le(x, 0, b) or int_le(x,c) with x == abs(y)
-// Output: int_eq(y, 0, b) or set_in(y, [-c, c], b)
-Presolver::RuleStatus Presolver::RemoveAbsFromIntLe(Constraint* ct,
+// Propagates bounds between the var and the abs_var.
+Presolver::RuleStatus Presolver::PropagateAbsBounds(Constraint* ct,
                                                     std::string* log) {
-  if (ct->arguments[1].HasOneValue() &&
-      gtl::ContainsKey(abs_map_, ct->arguments[0].Var())) {
-    log->append("remove abs from constraint");
-    ct->arguments[0].variables[0] = abs_map_[ct->arguments[0].Var()];
-    const int64 value = ct->arguments[1].Value();
-    if (value == 0) {
-      ct->type = "int_eq";
-      return CONSTRAINT_REWRITTEN;
-    } else {
-      ct->type = "set_in";
-      ct->arguments[1] = Argument::Interval(-value, value);
-      return CONSTRAINT_REWRITTEN;
-    }
+  IntegerVariable* const var = ct->arguments[0].Var();
+  IntegerVariable* const abs_var = ct->arguments[1].Var();
+
+  if (abs_var == nullptr || var == nullptr) return NOT_CHANGED;
+
+  int64 var_min = var->domain.Min();
+  int64 var_max = var->domain.Max();
+
+  const int64 new_abs_max = std::max(std::abs(var_min), std::abs(var_max));
+  const int64 new_abs_min =
+      var_min >= 0 ? var_min : (var_max <= 0 ? -var_max : 0);
+  if (IntersectVarWithInterval(abs_var, new_abs_min, new_abs_max)) {
+    MarkChangedVariable(abs_var);
   }
+
+  int64 abs_var_max = abs_var->domain.Max();
+  if (IntersectVarWithInterval(var, -abs_var_max, abs_var_max)) {
+    MarkChangedVariable(var);
+  }
+
   return NOT_CHANGED;
 }
 
@@ -3027,6 +3031,7 @@ void Presolver::PresolveOneConstraint(int index, Constraint* ct) {
   CALL_TYPE(index, ct, "int_eq_reif", RemoveAbsFromIntEqNeReif);
   CALL_TYPE(index, ct, "int_ne", RemoveAbsFromIntEqNeReif);
   CALL_TYPE(index, ct, "int_ne_reif", RemoveAbsFromIntEqNeReif);
+  CALL_TYPE(index, ct, "int_abs", PropagateAbsBounds);
   CALL_TYPE(index, ct, "set_in", PresolveSetIn);
   CALL_TYPE(index, ct, "set_not_in", PresolveSetNotIn);
   CALL_TYPE(index, ct, "set_in_reif", PresolveSetInReif);
@@ -3066,7 +3071,6 @@ void Presolver::PresolveOneConstraint(int index, Constraint* ct) {
     CALL_TYPE(index, ct, "int_eq_reif", PropagateReifiedComparisons);
     CALL_TYPE(index, ct, "int_ne_reif", PropagateReifiedComparisons);
     CALL_TYPE(index, ct, "int_le_reif", RemoveAbsFromIntLeReif);
-    CALL_TYPE(index, ct, "int_le", RemoveAbsFromIntLe);
     CALL_TYPE(index, ct, "int_le_reif", PropagateReifiedComparisons);
     CALL_TYPE(index, ct, "int_lt_reif", PropagateReifiedComparisons);
     CALL_TYPE(index, ct, "int_ge_reif", PropagateReifiedComparisons);

@@ -157,8 +157,8 @@ class Presolver {
   RuleStatus PropagateReifiedComparisons(Constraint* ct, std::string* log);
   RuleStatus StoreAbs(Constraint* ct, std::string* log);
   RuleStatus RemoveAbsFromIntLeReif(Constraint* ct, std::string* log);
-  RuleStatus RemoveAbsFromIntLe(Constraint* ct, std::string* log);
   RuleStatus RemoveAbsFromIntEqNeReif(Constraint* ct, std::string* log);
+  RuleStatus PropagateAbsBounds(Constraint* ct, std::string* log);
   RuleStatus SimplifyUnaryLinear(Constraint* ct, std::string* log);
   RuleStatus SimplifyBinaryLinear(Constraint* ct, std::string* log);
   RuleStatus CheckIntLinReifBounds(Constraint* ct, std::string* log);
