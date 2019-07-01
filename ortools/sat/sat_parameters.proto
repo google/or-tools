@@ -670,10 +670,13 @@ message SatParameters {
 
   // Specify the number of parallel workers to use during search.
   // A number <= 1 means no parallelism.
-  //
-  // WARNING: For now the code is non-deterministic. There is plans to make it
-  // deterministic (or provide an options) soon.
   optional int32 num_search_workers = 100 [default = 0];
+
+  // Make the parallelization deterministic. Currently, this only work with
+  // use_lns_only().
+  //
+  // TODO(user): make it work without use_lns_only().
+  optional bool deterministic_parallel_search = 134 [default = false];
 
   // Allows objective sharing between workers.
   optional bool share_objective_bounds = 113 [default = true];
@@ -682,9 +685,7 @@ message SatParameters {
   optional bool share_level_zero_bounds = 114 [default = true];
 
   // LNS parameters.
-  optional bool use_lns = 101 [default = false];
-  optional int32 lns_num_threads = 102 [default = 1];
-  optional bool lns_is_deterministic = 134 [default = true];
+  optional bool use_lns_only = 101 [default = false];
   optional bool lns_focus_on_decision_variables = 105 [default = false];
 
   // Turns on relaxation induced neighborhood generator.

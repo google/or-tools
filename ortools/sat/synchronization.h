@@ -29,6 +29,48 @@
 namespace operations_research {
 namespace sat {
 
+// Wrapper around TimeLimit to make it thread safe and add Stop() support.
+class SharedTimeLimit {
+ public:
+  explicit SharedTimeLimit(TimeLimit* time_limit)
+      : time_limit_(time_limit), stopped_boolean_(false) {
+    // We use the one already registered if present or ours otherwise.
+    stopped_ = time_limit->ExternalBooleanAsLimit();
+    if (stopped_ == nullptr) {
+      stopped_ = &stopped_boolean_;
+      time_limit->RegisterExternalBooleanAsLimit(stopped_);
+    }
+
+    // We reset the Boolean to false in case it starts at true.
+    *stopped_ = false;
+  }
+
+  ~SharedTimeLimit() {
+    if (stopped_ == &stopped_boolean_) {
+      time_limit_->RegisterExternalBooleanAsLimit(nullptr);
+    }
+  }
+
+  bool LimitReached() const {
+    absl::MutexLock mutex_lock(&mutex_);
+    return time_limit_->LimitReached();
+  }
+
+  void Stop() { *stopped_ = true; }
+
+  void UpdateLocalLimit(TimeLimit* local_limit) {
+    absl::MutexLock mutex_lock(&mutex_);
+    local_limit->MergeWithGlobalTimeLimit(time_limit_);
+  }
+
+ private:
+  mutable absl::Mutex mutex_;
+  TimeLimit* time_limit_;
+
+  std::atomic<bool> stopped_boolean_;
+  std::atomic<bool>* stopped_;
+};
+
 // Thread-safe. Keeps a set of n unique best solution found so far.
 //
 // TODO(user): Maybe add some criteria to only keep solution with an objective
@@ -151,6 +193,10 @@ class SharedResponseManager {
   // TODO(user): Also support merging statistics together.
   void SetStatsFromModel(Model* model);
 
+  // Returns true if we found the optimal solution or the problem was proven
+  // infeasible.
+  bool ProblemIsSolved() const;
+
   // Returns the underlying solution repository where we keep a set of best
   // solutions.
   const SharedSolutionRepository& SolutionsRepository() const {
@@ -166,7 +212,7 @@ class SharedResponseManager {
   const CpModelProto& model_proto_;
   const WallTimer& wall_timer_;
 
-  absl::Mutex mutex_;
+  mutable absl::Mutex mutex_;
 
   CpSolverResponse best_response_;
   SharedSolutionRepository solutions_;

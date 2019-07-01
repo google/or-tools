@@ -351,8 +351,7 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
 
     // Use LNS for the remaining workers.
     new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-    new_params.set_use_lns(true);
-    new_params.set_lns_num_threads(1);
+    new_params.set_use_lns_only(true);
     *name = absl::StrFormat("lns_%i", index);
     return new_params;
   } else {

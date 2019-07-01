@@ -170,7 +170,7 @@ cc_library(
         ":integer_search",
         ":linear_programming_constraint",
         ":linear_relaxation",
-        ":lns",
+        ":subsolver",
         ":model",
         ":optimization",
         ":precedences",
@@ -1010,9 +1010,10 @@ cc_library(
         ":cp_model_loader",
         ":cp_model_utils",
         ":linear_programming_constraint",
-        ":lns",
         ":model",
         ":rins",
+        ":subsolver",
+        ":synchronization",
         "//ortools/base",
         "//ortools/base:threadpool",
         "//ortools/util:random_engine",
@@ -1038,12 +1039,16 @@ cc_library(
 )
 
 cc_library(
-    name = "lns",
-    hdrs = ["lns.h"],
+    name = "subsolver",
+    srcs = ["subsolver.cc"],
+    hdrs = ["subsolver.h"],
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
+        "//ortools/base:threadpool",
         "//ortools/util:time_limit",
+        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/time",
     ],
 )
 

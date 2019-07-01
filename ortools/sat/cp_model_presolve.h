@@ -229,6 +229,12 @@ class CpModelPresolver {
   // initial model is valid!
   bool Presolve();
 
+  // Executes presolve method for the given constraint. Public for testing only.
+  bool PresolveOneConstraint(int c);
+
+  // Public for testing only.
+  void SyncDomainAndRemoveEmptyConstraints();
+
  private:
   void PresolveToFixPoint();
 
@@ -246,7 +252,6 @@ class CpModelPresolver {
   // the current code. This way we shouldn't keep doing computation on an
   // inconsistent state.
   // TODO(user,user): Make these public and unit test.
-  bool PresolveOneConstraint(int c);
   bool PresolveAutomaton(ConstraintProto* ct);
   bool PresolveCircuit(ConstraintProto* ct);
   bool PresolveCumulative(ConstraintProto* ct);

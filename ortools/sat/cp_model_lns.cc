@@ -27,15 +27,67 @@ namespace operations_research {
 namespace sat {
 
 NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
-    CpModelProto const* model_proto, bool focus_on_decision_variables)
-    : model_proto_(*model_proto) {
-  UpdateHelperData(focus_on_decision_variables);
+    int id, const CpModelProto& model_proto, SatParameters const* parameters,
+    class SharedTimeLimit* shared_time_limit,
+    SharedBoundsManager* shared_bounds, SharedResponseManager* shared_response)
+    : SubSolver(id, "helper"),
+      model_proto_(model_proto),
+      parameters_(*parameters),
+      shared_time_limit_(shared_time_limit),
+      shared_bounds_(shared_bounds),
+      shared_response_(shared_response) {
+  RecomputeHelperData();
+  Synchronize();
 }
 
-void NeighborhoodGeneratorHelper::UpdateHelperData(
-    bool focus_on_decision_variables) {
-  var_to_constraint_.resize(model_proto_.variables_size());
-  constraint_to_var_.resize(model_proto_.constraints_size());
+void NeighborhoodGeneratorHelper::Synchronize() {
+  absl::MutexLock mutex_lock(&mutex_);
+  if (shared_bounds_ != nullptr) {
+    std::vector<int> model_variables;
+    std::vector<int64> new_lower_bounds;
+    std::vector<int64> new_upper_bounds;
+    shared_bounds_->GetChangedBounds(id_, &model_variables, &new_lower_bounds,
+                                     &new_upper_bounds);
+
+    for (int i = 0; i < model_variables.size(); ++i) {
+      const int var = model_variables[i];
+      const int64 new_lb = new_lower_bounds[i];
+      const int64 new_ub = new_upper_bounds[i];
+      if (VLOG_IS_ON(3)) {
+        const auto& domain = model_proto_.variables(var).domain();
+        const int64 old_lb = domain.Get(0);
+        const int64 old_ub = domain.Get(domain.size() - 1);
+        VLOG(3) << "Variable: " << var << " old domain: [" << old_lb << ", "
+                << old_ub << "] new domain: [" << new_lb << ", " << new_ub
+                << "]";
+      }
+      const Domain old_domain =
+          ReadDomainFromProto(model_proto_.variables(var));
+      const Domain new_domain =
+          old_domain.IntersectionWith(Domain(new_lb, new_ub));
+      if (new_domain.IsEmpty()) {
+        shared_response_->NotifyThatImprovingProblemIsInfeasible(
+            "LNS base problem");
+        if (shared_time_limit_ != nullptr) shared_time_limit_->Stop();
+        return;
+      }
+      FillDomainInProto(new_domain, model_proto_.mutable_variables(var));
+    }
+
+    // Only trigger the computation if needed.
+    if (!model_variables.empty()) {
+      RecomputeHelperData();
+    }
+  }
+  if (shared_response_ != nullptr) {
+    shared_response_->MutableSolutionsRepository()->Synchronize();
+  }
+}
+
+void NeighborhoodGeneratorHelper::RecomputeHelperData() {
+  // Recompute all the data in case new variables have been fixed.
+  var_to_constraint_.assign(model_proto_.variables_size(), {});
+  constraint_to_var_.assign(model_proto_.constraints_size(), {});
   for (int ct_index = 0; ct_index < model_proto_.constraints_size();
        ++ct_index) {
     for (const int var : UsedVariables(model_proto_.constraints(ct_index))) {
@@ -46,9 +98,20 @@ void NeighborhoodGeneratorHelper::UpdateHelperData(
       CHECK_LT(var, model_proto_.variables_size());
     }
   }
-  active_variables_set_.resize(model_proto_.variables_size(), false);
 
-  if (focus_on_decision_variables) {
+  type_to_constraints_.clear();
+  const int num_constraints = model_proto_.constraints_size();
+  for (int c = 0; c < num_constraints; ++c) {
+    const int type = model_proto_.constraints(c).constraint_case();
+    if (type >= type_to_constraints_.size()) {
+      type_to_constraints_.resize(type + 1);
+    }
+    type_to_constraints_[type].push_back(c);
+  }
+
+  bool add_all_variables = true;
+  active_variables_set_.assign(model_proto_.variables_size(), false);
+  if (parameters_.lns_focus_on_decision_variables()) {
     for (const auto& search_strategy : model_proto_.search_strategy()) {
       for (const int var : search_strategy.variables()) {
         const int pos_var = PositiveRef(var);
@@ -58,30 +121,17 @@ void NeighborhoodGeneratorHelper::UpdateHelperData(
         }
       }
     }
-    if (!active_variables_.empty()) {
-      // No decision variables, then no focus.
-      focus_on_decision_variables = false;
-    }
+
+    // Revert to no focus if active_variables_ is empty().
+    if (!active_variables_.empty()) add_all_variables = false;
   }
-  if (!focus_on_decision_variables) {  // Could have be set to false above.
+  if (add_all_variables) {
     for (int i = 0; i < model_proto_.variables_size(); ++i) {
       if (!IsConstant(i)) {
         active_variables_.push_back(i);
         active_variables_set_[i] = true;
       }
     }
-  }
-
-  type_to_constraints_.clear();
-  const int num_constraints = model_proto_.constraints_size();
-  for (int c = 0; c < num_constraints; ++c) {
-    const int type = model_proto_.constraints(c).constraint_case();
-    CHECK_GE(type, 0) << "Negative constraint case ??";
-    CHECK_LT(type, 10000) << "Large constraint case ??";
-    if (type >= type_to_constraints_.size()) {
-      type_to_constraints_.resize(type + 1);
-    }
-    type_to_constraints_[type].push_back(c);
   }
 }
 
@@ -204,6 +254,8 @@ void NeighborhoodGenerator::Synchronize() {
     } else {
       current_average_ = 0.9 * current_average_ + 0.1 * gain_per_time_unit;
     }
+
+    deterministic_time_ += data.deterministic_time;
   }
 
   // Bump the time limit if we saw no better solution in the last few calls.

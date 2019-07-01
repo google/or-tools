@@ -343,6 +343,12 @@ void SharedResponseManager::SetStatsFromModelInternal(Model* model) {
       time_limit->GetElapsedDeterministicTime());
 }
 
+bool SharedResponseManager::ProblemIsSolved() const {
+  absl::MutexLock mutex_lock(&mutex_);
+  return best_response_.status() == CpSolverStatus::OPTIMAL ||
+         best_response_.status() == CpSolverStatus::INFEASIBLE;
+}
+
 SharedBoundsManager::SharedBoundsManager(int num_workers,
                                          const CpModelProto& model_proto)
     : num_workers_(num_workers),

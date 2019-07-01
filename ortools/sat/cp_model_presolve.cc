@@ -425,6 +425,40 @@ bool CpModelPresolver::RemoveConstraint(ConstraintProto* ct) {
   return true;
 }
 
+void CpModelPresolver::SyncDomainAndRemoveEmptyConstraints() {
+  // Remove all empty constraints. Note that we need to remap the interval
+  // references.
+  std::vector<int> interval_mapping(context_.working_model->constraints_size(),
+                                    -1);
+  int new_num_constraints = 0;
+  const int old_num_constraints = context_.working_model->constraints_size();
+  for (int c = 0; c < old_num_constraints; ++c) {
+    const auto type = context_.working_model->constraints(c).constraint_case();
+    if (type == ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET) continue;
+    if (type == ConstraintProto::ConstraintCase::kInterval) {
+      interval_mapping[c] = new_num_constraints;
+    }
+    context_.working_model->mutable_constraints(new_num_constraints++)
+        ->Swap(context_.working_model->mutable_constraints(c));
+  }
+  context_.working_model->mutable_constraints()->DeleteSubrange(
+      new_num_constraints, old_num_constraints - new_num_constraints);
+  for (ConstraintProto& ct_ref :
+       *context_.working_model->mutable_constraints()) {
+    ApplyToAllIntervalIndices(
+        [&interval_mapping](int* ref) {
+          *ref = interval_mapping[*ref];
+          CHECK_NE(-1, *ref);
+        },
+        &ct_ref);
+  }
+
+  for (int i = 0; i < context_.working_model->variables_size(); ++i) {
+    FillDomainInProto(context_.DomainOf(i),
+                      context_.working_model->mutable_variables(i));
+  }
+}
+
 bool CpModelPresolver::PresolveEnforcementLiteral(ConstraintProto* ct) {
   if (context_.ModelIsUnsat()) return false;
   if (!HasEnforcementLiteral(*ct)) return false;
@@ -4377,32 +4411,7 @@ bool CpModelPresolver::Presolve() {
     DCHECK(context_.ConstraintVariableUsageIsConsistent());
   }
 
-  // Remove all empty constraints. Note that we need to remap the interval
-  // references.
-  std::vector<int> interval_mapping(context_.working_model->constraints_size(),
-                                    -1);
-  int new_num_constraints = 0;
-  const int old_num_constraints = context_.working_model->constraints_size();
-  for (int c = 0; c < old_num_constraints; ++c) {
-    const auto type = context_.working_model->constraints(c).constraint_case();
-    if (type == ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET) continue;
-    if (type == ConstraintProto::ConstraintCase::kInterval) {
-      interval_mapping[c] = new_num_constraints;
-    }
-    context_.working_model->mutable_constraints(new_num_constraints++)
-        ->Swap(context_.working_model->mutable_constraints(c));
-  }
-  context_.working_model->mutable_constraints()->DeleteSubrange(
-      new_num_constraints, old_num_constraints - new_num_constraints);
-  for (ConstraintProto& ct_ref :
-       *context_.working_model->mutable_constraints()) {
-    ApplyToAllIntervalIndices(
-        [&interval_mapping](int* ref) {
-          *ref = interval_mapping[*ref];
-          CHECK_NE(-1, *ref);
-        },
-        &ct_ref);
-  }
+  SyncDomainAndRemoveEmptyConstraints();
 
   // The strategy variable indices will be remapped in ApplyVariableMapping()
   // but first we use the representative of the affine relations for the
@@ -4453,12 +4462,6 @@ bool CpModelPresolver::Presolve() {
         strategy.add_variables(ref);
       }
     }
-  }
-
-  // Update the variables domain of the presolved_model.
-  for (int i = 0; i < context_.working_model->variables_size(); ++i) {
-    FillDomainInProto(context_.DomainOf(i),
-                      context_.working_model->mutable_variables(i));
   }
 
   // Set the variables of the mapping_model.
