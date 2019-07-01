@@ -28,6 +28,7 @@
 //
 // TODO(user): test all the APIs that are currently marked as 'untested'.
 
+%include "std_string.i"
 %include "stdint.i"
 
 %include "ortools/base/base.i"
@@ -184,6 +185,7 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
     }
   }
 
+
   static double Infinity() { return operations_research::MPSolver::infinity(); }
   void SetTimeLimit(int64 x) { $self->set_time_limit(x); }
   int64 WallTime() const { return $self->wall_time(); }
@@ -223,6 +225,7 @@ PY_PROTO_TYPEMAP(ortools.linear_solver.linear_solver_pb2,
 // Actual conversions. This also includes the conversion to std::vector<Class>.
 %define PY_CONVERT(Class)
 %{
+// Forcing SWIGTYPE_p_.... $descriptor( ) does not work outside of typemaps.
 template<>
 bool PyObjAs(PyObject *py_obj, operations_research::Class** b) {
   return SWIG_ConvertPtr(py_obj, reinterpret_cast<void**>(b),
@@ -231,8 +234,8 @@ bool PyObjAs(PyObject *py_obj, operations_research::Class** b) {
 }
 
 PyObject* FromObject ## Class(operations_research::Class* obj) {
-  return SWIG_NewPointerObj(obj, 
-                            SWIGTYPE_p_operations_research__ ## Class, 
+  return SWIG_NewPointerObj(obj,
+                            SWIGTYPE_p_operations_research__ ## Class,
                             SWIG_POINTER_NOSHADOW);
 }
 

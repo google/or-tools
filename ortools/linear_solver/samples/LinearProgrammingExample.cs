@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Linear optimization example.
 // [START program]
 using System;
 using Google.OrTools.LinearSolver;

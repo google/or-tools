@@ -263,6 +263,11 @@ $(GEN_DIR)/com/google/ortools/constraintsolver/RoutingEnums.java: \
  | $(GEN_DIR)/com/google/ortools/constraintsolver
 	$(PROTOC) --proto_path=$(SRC_DIR) --java_out=$(GEN_PATH) $(SRC_DIR)$Sortools$Sconstraint_solver$Srouting_enums.proto
 
+$(GEN_DIR)/com/google/ortools/linearsolver/MPModelProto.java: \
+ $(SRC_DIR)/ortools/linear_solver/linear_solver.proto \
+ | $(GEN_DIR)/com/google/ortools/linearsolver
+	$(PROTOC) --proto_path=$(SRC_DIR) --java_out=$(GEN_PATH) $(SRC_DIR)$Sortools$Slinear_solver$Slinear_solver.proto
+
 $(GEN_DIR)/com/google/ortools/sat/CpModel.java: \
  $(SRC_DIR)/ortools/sat/cp_model.proto \
  | $(GEN_DIR)/com/google/ortools/sat
@@ -285,6 +290,7 @@ $(JAVA_OR_TOOLS_LIBS): \
  $(GEN_DIR)/com/google/ortools/constraintsolver/SearchLimitProtobuf.java \
  $(GEN_DIR)/com/google/ortools/constraintsolver/RoutingParameters.java \
  $(GEN_DIR)/com/google/ortools/constraintsolver/RoutingEnums.java \
+ $(GEN_DIR)/com/google/ortools/linearsolver/MPModelProto.java \
  $(GEN_DIR)/com/google/ortools/sat/SatParameters.java \
  $(GEN_DIR)/com/google/ortools/util/OptionalBoolean.java \
  $(GEN_DIR)/com/google/ortools/sat/CpModel.java | \
