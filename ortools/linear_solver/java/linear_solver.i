@@ -30,11 +30,11 @@
 
 %include "ortools/base/base.i"
 
+%include "ortools/util/java/proto.i"
+
 // We prefer our in-house vector wrapper to std_vector.i, because it
 // converts to and from native java arrays.
 %import "ortools/util/java/vector.i"
-
-%include "ortools/util/java/proto.i"
 
 // We need to forward-declare the proto here, so that the PROTO_* macros
 // involving them work correctly. The order matters very much: this declaration
@@ -45,22 +45,15 @@ class MPModelRequest;
 class MPSolutionResponse;
 }  // namespace operations_research
 
-typedef int64_t int64;
-typedef uint64_t uint64;
-
 %{
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/model_exporter.h"
 %}
 
-%define CONVERT_VECTOR(CType, JavaType)
-CONVERT_VECTOR_WITH_CAST(CType, JavaType, REINTERPRET_CAST,
+CONVERT_VECTOR_WITH_CAST(operations_research::MPVariable, MPVariable, REINTERPRET_CAST,
     com/google/ortools/linearsolver);
-%enddef
-
-CONVERT_VECTOR(operations_research::MPVariable, MPVariable);
-
-#undef CONVERT_VECTOR
+CONVERT_VECTOR_WITH_CAST(operations_research::MPConstraint, MPConstraint, REINTERPRET_CAST,
+    com/google/ortools/linearsolver);
 
 %typemap(javaimports) SWIGTYPE %{
 import java.lang.reflect.*;
@@ -227,6 +220,8 @@ import java.lang.reflect.*;
 %rename (interruptSolve) operations_research::MPSolver::InterruptSolve;  // no test
 %rename (wallTime) operations_research::MPSolver::wall_time;
 %rename (clear) operations_research::MPSolver::Clear;  // no test
+%unignore operations_research::MPSolver::constraints;
+%unignore operations_research::MPSolver::variables;
 %rename (numVariables) operations_research::MPSolver::NumVariables;
 %rename (numConstraints) operations_research::MPSolver::NumConstraints;
 %rename (enableOutput) operations_research::MPSolver::EnableOutput;  // no test

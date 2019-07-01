@@ -51,8 +51,6 @@ class MPSolutionResponse;
 #include "ortools/linear_solver/model_exporter_swig_helper.h"
 %}
 
-
- 
 %pythoncode {
 import numbers
 from ortools.linear_solver.linear_solver_natural_api import OFFSET_KEY
@@ -190,7 +188,7 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
   void SetTimeLimit(int64 x) { $self->set_time_limit(x); }
   int64 WallTime() const { return $self->wall_time(); }
   int64 Iterations() const { return $self->iterations(); }
-}  // extendoperations_research:: MPSolver
+}  // extend operations_research::MPSolver
 
 %extend operations_research::MPVariable {
   double SolutionValue() const { return $self->solution_value(); }
@@ -208,7 +206,7 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
   void SetLb(double x) { $self->SetLB(x); }
   void SetUb(double x) { $self->SetUB(x); }
   double DualValue() const { return $self->dual_value(); }
-}  // extend MPConstraint
+}  // extend operations_research::MPConstraint
 
 %extend operations_research::MPObjective {
   double Offset() const { return $self->offset();}

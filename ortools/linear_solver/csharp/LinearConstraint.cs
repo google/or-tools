@@ -137,4 +137,27 @@ public class VarEquality : LinearConstraint
   private Variable right_;
   private bool equality_;
 }
+
+// TODO(user): Try to move this code back to the .swig with @define macros.
+public partial class MPConstraintVector: IDisposable, System.Collections.IEnumerable
+#if !SWIG_DOTNET_1
+    , System.Collections.Generic.IList<Constraint>
+#endif
+{
+  // cast from C# MPConstraint array
+  public static implicit operator MPConstraintVector(Constraint[] inVal) {
+    var outVal= new MPConstraintVector();
+    foreach (Constraint element in inVal) {
+      outVal.Add(element);
+    }
+    return outVal;
+  }
+
+  // cast to C# MPConstraint array
+  public static implicit operator Constraint[](MPConstraintVector inVal) {
+    var outVal= new Constraint[inVal.Count];
+    inVal.CopyTo(outVal);
+    return outVal;
+  }
+}
 }  // namespace Google.OrTools.LinearSolver

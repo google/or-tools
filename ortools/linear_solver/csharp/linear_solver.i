@@ -67,6 +67,7 @@ SWIG_STD_VECTOR_ENHANCED(CTYPE*);
 %template(TYPE ## Vector) std::vector<CTYPE*>;
 %enddef  // CONVERT_VECTOR
 
+CONVERT_VECTOR(operations_research::MPConstraint, MPConstraint)
 CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
 
 #undef CONVERT_VECTOR
@@ -134,8 +135,10 @@ CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
 %unignore operations_research::MPSolver::SetSolverSpecificParametersAsString;
 %rename (WallTime) operations_research::MPSolver::wall_time;
 %unignore operations_research::MPSolver::Clear;
-%unignore operations_research::MPSolver::NumVariables;
+%unignore operations_research::MPSolver::constraints;
 %unignore operations_research::MPSolver::NumConstraints;
+%unignore operations_research::MPSolver::NumVariables;
+%unignore operations_research::MPSolver::variables;
 %unignore operations_research::MPSolver::EnableOutput;
 %unignore operations_research::MPSolver::SuppressOutput;
 %unignore operations_research::MPSolver::LookupConstraintOrNull;
