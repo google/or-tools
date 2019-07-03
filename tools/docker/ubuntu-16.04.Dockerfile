@@ -28,7 +28,7 @@ RUN apt-get update -qq \
 && wget -q https://packages.microsoft.com/config/ubuntu/16.04/packages-microsoft-prod.deb \
 && dpkg -i packages-microsoft-prod.deb \
 && apt-get update -qq \
-&& apt-get install -yq dotnet-sdk-2.1 \
+&& apt-get install -yq dotnet-sdk-2.2 \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 

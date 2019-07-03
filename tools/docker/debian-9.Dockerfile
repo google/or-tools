@@ -19,7 +19,7 @@ RUN apt-get update -qq \
 && wget -q https://packages.microsoft.com/config/debian/9/prod.list \
 && mv prod.list /etc/apt/sources.list.d/microsoft-prod.list \
 && apt-get update -qq \
-&& apt-get install -qq dotnet-sdk-2.1 \
+&& apt-get install -qq dotnet-sdk-2.2 \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 

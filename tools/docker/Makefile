@@ -39,7 +39,7 @@ help:
 	@echo -e "\t${BOLD}<distro>${RESET}:"
 	@echo -e "\t\t${BOLD}centos-7${RESET} (latest)"
 	@echo -e "\t\t${BOLD}debian-9${RESET} (latest)"
-	@echo -e "\t\t${BOLD}ubuntu-18.10${RESET} (Ubuntu latest)"
+	@echo -e "\t\t${BOLD}ubuntu-19.04${RESET} (Ubuntu latest)"
 	@echo -e "\t\t${BOLD}ubuntu-18.04${RESET} (Ubuntu 18.04 LTS)"
 	@echo -e "\t\t${BOLD}ubuntu-16.04${RESET} (Ubuntu 16.04 LTS)"
 	@echo -e "\te.g. 'make test_ubuntu'"
@@ -128,7 +128,7 @@ export/python: | export
 #################
 
 # Currently supported distro
-DISTROS = centos-7 debian-9 ubuntu-18.10 ubuntu-18.04 ubuntu-16.04
+DISTROS = centos-7 debian-9 ubuntu-19.04 ubuntu-18.04 ubuntu-16.04
 
 # Create build docker images with OR-Tools built
 targets = $(addprefix docker_, $(DISTROS))
