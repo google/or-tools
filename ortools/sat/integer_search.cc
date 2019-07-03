@@ -27,6 +27,24 @@
 namespace operations_research {
 namespace sat {
 
+LiteralIndex BranchDown(IntegerVariable var, IntegerValue value, Model* model) {
+  auto* encoder = model->GetOrCreate<IntegerEncoder>();
+  auto* trail = model->GetOrCreate<Trail>();
+  const Literal le = encoder->GetOrCreateAssociatedLiteral(
+      IntegerLiteral::LowerOrEqual(var, value));
+  CHECK(!trail->Assignment().VariableIsAssigned(le.Variable()));
+  return le.Index();
+}
+
+LiteralIndex BranchUp(IntegerVariable var, IntegerValue value, Model* model) {
+  auto* encoder = model->GetOrCreate<IntegerEncoder>();
+  auto* trail = model->GetOrCreate<Trail>();
+  const Literal ge = encoder->GetOrCreateAssociatedLiteral(
+      IntegerLiteral::GreaterOrEqual(var, value));
+  CHECK(!trail->Assignment().VariableIsAssigned(ge.Variable()));
+  return ge.Index();
+}
+
 LiteralIndex AtMinValue(IntegerVariable var, IntegerTrail* integer_trail,
                         IntegerEncoder* integer_encoder) {
   DCHECK(!integer_trail->IsCurrentlyIgnored(var));
@@ -40,8 +58,6 @@ LiteralIndex AtMinValue(IntegerVariable var, IntegerTrail* integer_trail,
 }
 
 LiteralIndex GreaterOrEqualToMiddleValue(IntegerVariable var, Model* model) {
-  auto* encoder = model->GetOrCreate<IntegerEncoder>();
-  auto* trail = model->GetOrCreate<Trail>();
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   const IntegerValue var_lb = integer_trail->LowerBound(var);
   const IntegerValue var_ub = integer_trail->UpperBound(var);
@@ -49,42 +65,36 @@ LiteralIndex GreaterOrEqualToMiddleValue(IntegerVariable var, Model* model) {
 
   const IntegerValue chosen_value =
       var_lb + std::max(IntegerValue(1), (var_ub - var_lb) / IntegerValue(2));
-  const Literal ge = encoder->GetOrCreateAssociatedLiteral(
-      IntegerLiteral::GreaterOrEqual(var, chosen_value));
-  CHECK(!trail->Assignment().VariableIsAssigned(ge.Variable()));
-  VLOG(2) << "Chosen " << var << " >= " << chosen_value;
-  return ge.Index();
+  return BranchUp(var, chosen_value, model);
 }
 
 LiteralIndex SplitAroundGivenValue(IntegerVariable positive_var,
                                    IntegerValue value, Model* model) {
   DCHECK(VariableIsPositive(positive_var));
-  auto* encoder = model->GetOrCreate<IntegerEncoder>();
-  auto* trail = model->GetOrCreate<Trail>();
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
 
-  // The value might be out of bounds. In that case we return kNoLiteralIndex.
   const IntegerValue lb = integer_trail->LowerBound(positive_var);
   const IntegerValue ub = integer_trail->UpperBound(positive_var);
 
-  // We try first (<= value), but if this do not reduce the domain we
-  // try to enqueue (>= value).
-  //
-  // TODO(user): use GetOrCreateLiteralAssociatedToEquality() instead?
-  // It may replace two decision by only one. However this function
-  // cannot currently be called during search, but that should be easy
-  // enough to fix.
-  if (value >= lb && value < ub) {
-    const Literal le = encoder->GetOrCreateAssociatedLiteral(
-        IntegerLiteral::LowerOrEqual(positive_var, value));
-    CHECK(!trail->Assignment().VariableIsAssigned(le.Variable()));
-    return le.Index();
-  }
-  if (value > lb && value <= ub) {
-    const Literal ge = encoder->GetOrCreateAssociatedLiteral(
-        IntegerLiteral::GreaterOrEqual(positive_var, value));
-    CHECK(!trail->Assignment().VariableIsAssigned(ge.Variable()));
-    return ge.Index();
+  const absl::flat_hash_set<IntegerVariable>& variables =
+      model->GetOrCreate<ObjectiveDefinition>()->objective_impacting_variables;
+
+  // Heuristic: Prefer the objective direction first. Reference: Conflict-Driven
+  // Heuristics for Mixed Integer Programming (2019) by Jakob Witzig and Ambros
+  // Gleixner.
+  // NOTE: The value might be out of bounds. In that case we return
+  // kNoLiteralIndex.
+  const bool branch_down_feasible = value >= lb && value < ub;
+  const bool branch_up_feasible = value > lb && value <= ub;
+  if (variables.contains(positive_var) && branch_down_feasible) {
+    return BranchDown(positive_var, value, model);
+  } else if (variables.contains(NegationOf(positive_var)) &&
+             branch_up_feasible) {
+    return BranchUp(positive_var, value, model);
+  } else if (branch_down_feasible) {
+    return BranchDown(positive_var, value, model);
+  } else if (branch_up_feasible) {
+    return BranchUp(positive_var, value, model);
   }
   return kNoLiteralIndex;
 }

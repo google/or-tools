@@ -111,6 +111,10 @@ SatSolver::Status ResetAndSolveIntegerProblem(
 // and then call ResetAndSolveIntegerProblem() without any assumptions.
 SatSolver::Status SolveIntegerProblemWithLazyEncoding(Model* model);
 
+// Helper methods to return up (>=) and down (<=) branching decisions.
+LiteralIndex BranchDown(IntegerVariable var, IntegerValue value, Model* model);
+LiteralIndex BranchUp(IntegerVariable var, IntegerValue value, Model* model);
+
 // Returns decision corresponding to var at its lower bound. Returns
 // kNoLiteralIndex if the variable is fixed.
 LiteralIndex AtMinValue(IntegerVariable var, IntegerTrail* integer_trail,
