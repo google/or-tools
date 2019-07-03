@@ -783,20 +783,6 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
   return main_objective_var;
 }
 
-void ExtractLinearObjective(const CpModelProto& model_proto,
-                            const CpModelMapping& mapping,
-                            std::vector<IntegerVariable>* linear_vars,
-                            std::vector<IntegerValue>* linear_coeffs) {
-  CHECK(model_proto.has_objective());
-  const CpObjectiveProto& obj = model_proto.objective();
-  linear_vars->reserve(obj.vars_size());
-  linear_coeffs->reserve(obj.vars_size());
-  for (int i = 0; i < obj.vars_size(); ++i) {
-    linear_vars->push_back(mapping.Integer(obj.vars(i)));
-    linear_coeffs->push_back(IntegerValue(obj.coeffs(i)));
-  }
-}
-
 }  // namespace
 
 // Used by NewFeasibleSolutionObserver to register observers.
@@ -1071,6 +1057,14 @@ void LoadCpModel(const CpModelProto& model_proto,
                  SharedResponseManager* shared_response_manager, Model* model) {
   CHECK(shared_response_manager != nullptr);
 
+  // Simple function for the few places where we do "return unsat()".
+  const auto unsat = [shared_response_manager, model] {
+    model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+    shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
+        absl::StrCat(model->GetOrCreate<WorkerInfo>()->worker_name,
+                     " [loading]"));
+  };
+
   // We will add them all at once after model_proto is loaded.
   model->GetOrCreate<IntegerEncoder>()->DisableImplicationBetweenLiteral();
 
@@ -1103,14 +1097,12 @@ void LoadCpModel(const CpModelProto& model_proto,
     }
 
     // We propagate after each new Boolean constraint but not the integer
-    // ones. So we call FinishPropagation() manually here. Note that we do not
-    // do that in the postsolve as there is some corner case where propagating
-    // after each new constraint can have a quadratic behavior.
+    // ones. So we call FinishPropagation() manually here.
     //
     // Note that we only do that in debug mode as this can be really slow on
     // certain types of problems with millions of constraints.
     if (DEBUG_MODE) {
-      if (!sat_solver->FinishPropagation()) return;
+      if (!sat_solver->FinishPropagation()) return unsat();
       Trail* trail = model->GetOrCreate<Trail>();
       const int old_num_fixed = trail->Index();
       if (trail->Index() > old_num_fixed) {
@@ -1133,12 +1125,12 @@ void LoadCpModel(const CpModelProto& model_proto,
     for (const std::string& type : unsupported_types) {
       VLOG(1) << " - " << type;
     }
-    return;
+    return unsat();
   }
 
   model->GetOrCreate<IntegerEncoder>()
       ->AddAllImplicationsBetweenAssociatedLiterals();
-  if (!sat_solver->FinishPropagation()) return;
+  if (!sat_solver->FinishPropagation()) return unsat();
 
   // Auto detect "at least one of" constraints in the PrecedencesPropagator.
   // Note that we do that before we finish loading the problem (objective and
@@ -1148,7 +1140,7 @@ void LoadCpModel(const CpModelProto& model_proto,
       parameters.auto_detect_greater_than_at_least_one_of()) {
     model->Mutable<PrecedencesPropagator>()
         ->AddGreaterThanAtLeastOneOfConstraints(model);
-    if (!sat_solver->FinishPropagation()) return;
+    if (!sat_solver->FinishPropagation()) return unsat();
   }
 
   // TODO(user): This should be done in the presolve instead.
@@ -1157,12 +1149,11 @@ void LoadCpModel(const CpModelProto& model_proto,
   if (parameters.cp_model_probing_level() > 1) {
     ProbeBooleanVariables(/*deterministic_time_limit=*/1.0, model);
     if (model->GetOrCreate<SatSolver>()->IsModelUnsat()) {
-      return;
+      return unsat();
     }
     if (!model->GetOrCreate<BinaryImplicationGraph>()
              ->ComputeTransitiveReduction()) {
-      sat_solver->NotifyThatModelIsUnsat();
-      return;
+      return unsat();
     }
   }
 
@@ -1201,8 +1192,16 @@ void LoadCpModel(const CpModelProto& model_proto,
     objective_definition->offset = objective_proto.offset();
     objective_definition->objective_var = objective_var;
 
-    // Fill the objective heuristics data.
+    const int size = objective_proto.vars_size();
+    objective_definition->vars.resize(size);
+    objective_definition->coeffs.resize(size);
     for (int i = 0; i < objective_proto.vars_size(); ++i) {
+      // Note that if there is no mapping, then the variable will be
+      // kNoIntegerVariable.
+      objective_definition->vars[i] = mapping->Integer(objective_proto.vars(i));
+      objective_definition->coeffs[i] = IntegerValue(objective_proto.coeffs(i));
+
+      // Fill the objective heuristics data.
       const int ref = objective_proto.vars(i);
       if (mapping->IsInteger(ref)) {
         const IntegerVariable var = mapping->Integer(objective_proto.vars(i));
@@ -1227,8 +1226,7 @@ void LoadCpModel(const CpModelProto& model_proto,
         objective_var, user_domain);
     if (!ok) {
       VLOG(2) << "UNSAT due to the objective domain.";
-      sat_solver->NotifyThatModelIsUnsat();
-      return;
+      return unsat();
     }
 
     // Make sure the sum take a value inside the objective domain by adding
@@ -1254,7 +1252,7 @@ void LoadCpModel(const CpModelProto& model_proto,
 
   // Note that we do one last propagation at level zero once all the
   // constraints were added.
-  if (!sat_solver->FinishPropagation()) return;
+  if (!sat_solver->FinishPropagation()) return unsat();
 
   if (model_proto.has_objective()) {
     // Watch improved objective best bounds.
@@ -1288,6 +1286,33 @@ void LoadCpModel(const CpModelProto& model_proto,
       }
     }
   }
+
+  // Initialize the fixed_search strategy.
+  auto* search_heuristics = model->GetOrCreate<SearchHeuristics>();
+  search_heuristics->fixed_search = ConstructSearchStrategy(
+      model_proto, mapping->GetVariableMapping(), objective_var, model);
+  if (VLOG_IS_ON(3)) {
+    search_heuristics->fixed_search =
+        InstrumentSearchStrategy(model_proto, mapping->GetVariableMapping(),
+                                 search_heuristics->fixed_search, model);
+  }
+
+  // Initialize the "follow hint" strategy.
+  std::vector<BooleanOrIntegerVariable> vars;
+  std::vector<IntegerValue> values;
+  for (int i = 0; i < model_proto.solution_hint().vars_size(); ++i) {
+    const int ref = model_proto.solution_hint().vars(i);
+    CHECK(RefIsPositive(ref));
+    BooleanOrIntegerVariable var;
+    if (mapping->IsBoolean(ref)) {
+      var.bool_var = mapping->Literal(ref).Variable();
+    } else {
+      var.int_var = mapping->Integer(ref);
+    }
+    vars.push_back(var);
+    values.push_back(IntegerValue(model_proto.solution_hint().values(i)));
+  }
+  search_heuristics->hint_search = FollowHint(vars, values, model);
 }
 
 // Solves an already loaded cp_model_proto.
@@ -1299,29 +1324,10 @@ void LoadCpModel(const CpModelProto& model_proto,
 void SolveLoadedCpModel(const CpModelProto& model_proto,
                         SharedResponseManager* shared_response_manager,
                         Model* model) {
-  CHECK(shared_response_manager != nullptr);
-  std::string solution_info = model->GetOrCreate<WorkerInfo>()->worker_name;
-  if (model->GetOrCreate<SatSolver>()->IsModelUnsat()) {
-    shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
-        absl::StrCat(solution_info, " [loading]"));
-    return;
-  }
+  if (shared_response_manager->ProblemIsSolved()) return;
 
-  IntegerVariable objective_var = kNoIntegerVariable;
-  if (model_proto.has_objective()) {
-    objective_var = model->Get<ObjectiveDefinition>()->objective_var;
-    CHECK_NE(objective_var, kNoIntegerVariable);
-  }
-
-  // Initialize the search strategy function.
-  auto* mapping = model->Get<CpModelMapping>();
-  std::function<LiteralIndex()> fixed_search = ConstructSearchStrategy(
-      model_proto, mapping->GetVariableMapping(), objective_var, model);
-  if (VLOG_IS_ON(3)) {
-    fixed_search = InstrumentSearchStrategy(
-        model_proto, mapping->GetVariableMapping(), fixed_search, model);
-  }
-
+  const std::string& solution_info =
+      model->GetOrCreate<WorkerInfo>()->worker_name;
   const auto solution_observer = [&model_proto, &model, &solution_info,
                                   &shared_response_manager]() {
     CpSolverResponse response;
@@ -1330,80 +1336,11 @@ void SolveLoadedCpModel(const CpModelProto& model_proto,
     shared_response_manager->NewSolution(response, model);
   };
 
-  // Load solution hint.
-  // We follow it and allow for a tiny number of conflicts before giving up.
-  //
-  // TODO(user): When we get a feasible solution here, even with phase saving
-  // it seems we don't get the same solution while launching the optimization
-  // below. Understand why. Also just constrain the solver to find a better
-  // solution right away, it should be more efficient. Note that this is kind
-  // of already done when get_objective_value() is registered above.
-  const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
-  if (model_proto.has_solution_hint()) {
-    const int64 old_conflict_limit = parameters.max_number_of_conflicts();
-    model->GetOrCreate<SatParameters>()->set_max_number_of_conflicts(10);
-    std::vector<BooleanOrIntegerVariable> vars;
-    std::vector<IntegerValue> values;
-    for (int i = 0; i < model_proto.solution_hint().vars_size(); ++i) {
-      const int ref = model_proto.solution_hint().vars(i);
-      CHECK(RefIsPositive(ref));
-      BooleanOrIntegerVariable var;
-      if (mapping->IsBoolean(ref)) {
-        var.bool_var = mapping->Literal(ref).Variable();
-      } else {
-        var.int_var = mapping->Integer(ref);
-      }
-      vars.push_back(var);
-      values.push_back(IntegerValue(model_proto.solution_hint().values(i)));
-    }
-
-    SearchHeuristics& search_heuristics =
-        *model->GetOrCreate<SearchHeuristics>();
-    search_heuristics.policy_index = 0;
-    search_heuristics.decision_policies = {
-        SequentialSearch({FollowHint(vars, values, model),
-                          SatSolverHeuristic(model), fixed_search})};
-    auto no_restart = []() { return false; };
-    search_heuristics.restart_policies = {no_restart};
-    const SatSolver::Status status = ResetAndSolveIntegerProblem({}, model);
-
-    if (status == SatSolver::Status::FEASIBLE) {
-      const int old_size = solution_info.size();
-      solution_info += "[hint]";
-      solution_observer();
-      solution_info.resize(old_size);
-
-      if (!model_proto.has_objective()) {
-        if (parameters.enumerate_all_solutions()) {
-          model->Add(
-              ExcludeCurrentSolutionWithoutIgnoredVariableAndBacktrack());
-        } else {
-          return;
-        }
-      } else {
-        // Restrict the objective. Note that since we call the solution observer
-        // above, the shared_response_manager objective should be up to date.
-        model->GetOrCreate<SatSolver>()->Backtrack(0);
-        IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-        if (!integer_trail->Enqueue(
-                IntegerLiteral::LowerOrEqual(
-                    objective_var,
-                    shared_response_manager->GetInnerObjectiveUpperBound()),
-                {}, {})) {
-          shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
-              absl::StrCat(solution_info, "[hint]"));
-          shared_response_manager->SetStatsFromModel(model);
-          return;
-        }
-      }
-    }
-    // TODO(user): Remove conflicts used during hint search.
-    model->GetOrCreate<SatParameters>()->set_max_number_of_conflicts(
-        old_conflict_limit);
-  }
+  // Reconfigure search heuristic if it was changed.
+  ConfigureSearchHeuristics(model);
 
   SatSolver::Status status;
-  ConfigureSearchHeuristics(fixed_search, model);
+  const SatParameters& parameters = *model->GetOrCreate<SatParameters>();
   if (!model_proto.has_objective()) {
     while (true) {
       status = ResetAndSolveIntegerProblem(/*assumptions=*/{}, model);
@@ -1418,21 +1355,25 @@ void SolveLoadedCpModel(const CpModelProto& model_proto,
     }
   } else {
     // Optimization problem.
+    const auto& objective = *model->GetOrCreate<ObjectiveDefinition>();
+    const IntegerVariable objective_var = objective.objective_var;
+    CHECK_NE(objective_var, kNoIntegerVariable);
+
     if (parameters.optimize_with_core()) {
-      std::vector<IntegerVariable> linear_vars;
-      std::vector<IntegerValue> linear_coeffs;
-      ExtractLinearObjective(model_proto, *model->GetOrCreate<CpModelMapping>(),
-                             &linear_vars, &linear_coeffs);
+      // TODO(user): This doesn't work with splitting in chunk for now. It
+      // shouldn't be too hard to fix.
       if (parameters.optimize_with_max_hs()) {
         status = MinimizeWithHittingSetAndLazyEncoding(
-            objective_var, linear_vars, linear_coeffs, solution_observer,
+            objective_var, objective.vars, objective.coeffs, solution_observer,
             model);
       } else {
-        CoreBasedOptimizer core(objective_var, linear_vars, linear_coeffs,
+        CoreBasedOptimizer core(objective_var, objective.vars, objective.coeffs,
                                 solution_observer, model);
         status = core.Optimize();
       }
     } else {
+      // TODO(user): This parameter break the splitting in chunk of a Solve().
+      // It should probably be moved into another SubSolver altogether.
       if (parameters.binary_search_num_conflicts() >= 0) {
         RestrictObjectiveDomainWithBinarySearch(objective_var,
                                                 solution_observer, model);
@@ -1451,18 +1392,63 @@ void SolveLoadedCpModel(const CpModelProto& model_proto,
     }
   }
 
+  // TODO(user): Remove from here when we split in chunk. We just want to
+  // do that at the end.
   shared_response_manager->SetStatsFromModel(model);
 }
 
-// Thin wrapper for the postsolve "solve" and LNS local solve.
-CpSolverResponse LocalSolve(const CpModelProto& local_proto,
-                            WallTimer* wall_timer, Model* local_model) {
-  SharedResponseManager local_response_manager(
-      /*log_updates=*/false, &local_proto, wall_timer);
+// Try to find a solution by following the hint and using a low conflict limit.
+// The CpModelProto must already be loaded in the Model.
+void QuickSolveWithHint(const CpModelProto& model_proto,
+                        SharedResponseManager* shared_response_manager,
+                        Model* model) {
+  if (!model_proto.has_solution_hint()) return;
+  if (shared_response_manager->ProblemIsSolved()) return;
 
-  LoadCpModel(local_proto, &local_response_manager, local_model);
-  SolveLoadedCpModel(local_proto, &local_response_manager, local_model);
-  return local_response_manager.GetResponse();
+  // Temporarily change the parameters.
+  auto* parameters = model->GetOrCreate<SatParameters>();
+  const SatParameters saved_params = *parameters;
+  parameters->set_max_number_of_conflicts(10);
+  parameters->set_search_branching(SatParameters::HINT_SEARCH);
+  parameters->set_optimize_with_core(false);
+  auto cleanup = ::gtl::MakeCleanup(
+      [parameters, saved_params]() { *parameters = saved_params; });
+
+  // Solve decision problem.
+  ConfigureSearchHeuristics(model);
+  const SatSolver::Status status =
+      ResetAndSolveIntegerProblem(/*assumptions=*/{}, model);
+
+  const std::string& solution_info =
+      model->GetOrCreate<WorkerInfo>()->worker_name;
+  if (status == SatSolver::Status::FEASIBLE) {
+    CpSolverResponse response;
+    FillSolutionInResponse(model_proto, *model, &response);
+    response.set_solution_info(absl::StrCat(solution_info, " [hint]"));
+    shared_response_manager->NewSolution(response, model);
+
+    if (!model_proto.has_objective()) {
+      if (parameters->enumerate_all_solutions()) {
+        model->Add(ExcludeCurrentSolutionWithoutIgnoredVariableAndBacktrack());
+      }
+    } else {
+      // Restrict the objective.
+      const IntegerVariable objective_var =
+          model->GetOrCreate<ObjectiveDefinition>()->objective_var;
+      model->GetOrCreate<SatSolver>()->Backtrack(0);
+      IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+      if (!integer_trail->Enqueue(
+              IntegerLiteral::LowerOrEqual(
+                  objective_var,
+                  shared_response_manager->GetInnerObjectiveUpperBound()),
+              {}, {})) {
+        shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
+            absl::StrCat(solution_info, " [hint]"));
+        shared_response_manager->SetStatsFromModel(model);
+        return;
+      }
+    }
+  }
 }
 
 // TODO(user): If this ever shows up in the profile, we could avoid copying
@@ -1503,8 +1489,12 @@ void PostsolveResponse(const CpModelProto& model_proto,
     postsolve_model.Add(operations_research::sat::NewSatParameters(params));
   }
 
+  SharedResponseManager local_response_manager(
+      /*log_updates=*/false, &mapping_proto, wall_timer);
+  LoadCpModel(mapping_proto, &local_response_manager, &postsolve_model);
+  SolveLoadedCpModel(mapping_proto, &local_response_manager, &postsolve_model);
   const CpSolverResponse postsolve_response =
-      LocalSolve(mapping_proto, wall_timer, &postsolve_model);
+      local_response_manager.GetResponse();
   CHECK(postsolve_response.status() == CpSolverStatus::FEASIBLE ||
         postsolve_response.status() == CpSolverStatus::OPTIMAL);
 
@@ -1752,6 +1742,8 @@ class FullProblemSolver : public SubSolver {
     task_is_generated_ = true;
     return [this]() {
       LoadCpModel(*shared_->model_proto, shared_->response, local_model_.get());
+      QuickSolveWithHint(*shared_->model_proto, shared_->response,
+                         local_model_.get());
       SolveLoadedCpModel(*shared_->model_proto, shared_->response,
                          local_model_.get());
 
@@ -1810,6 +1802,8 @@ class LnsSolver : public SubSolver {
       const int num_solutions =
           shared_->response->SolutionsRepository().NumSolutions();
 
+      const IntegerValue initial_best_inner_objective =
+          shared_->response->BestSolutionInnerObjectiveValue();
       CpSolverResponse base_response;
       if (num_solutions > 0) {
         random_engine_t random;
@@ -1823,8 +1817,6 @@ class LnsSolver : public SubSolver {
         for (const int64 value : solution.variable_values) {
           base_response.add_solution(value);
         }
-        base_response.set_objective_value(ScaleObjectiveValue(
-            shared_->model_proto->objective(), solution.internal_objective));
       } else {
         base_response.set_status(CpSolverStatus::UNKNOWN);
       }
@@ -1875,13 +1867,25 @@ class LnsSolver : public SubSolver {
       options.time_limit = local_model.GetOrCreate<TimeLimit>();
       PresolveCpModel(options, &neighborhood.cp_model, &mapping_proto,
                       &postsolve_mapping);
-      CpSolverResponse local_response =
-          LocalSolve(neighborhood.cp_model, shared_->wall_timer, &local_model);
+
+      // TODO(user): Depending on the problem, we should probably use the
+      // parameters that work bests (core, linearization_level, etc...) or
+      // maybe we can just randomize them like for the base solution used.
+      SharedResponseManager local_response_manager(
+          /*log_updates=*/false, &neighborhood.cp_model, shared_->wall_timer);
+      LoadCpModel(neighborhood.cp_model, &local_response_manager, &local_model);
+      QuickSolveWithHint(neighborhood.cp_model, &local_response_manager,
+                         &local_model);
+      SolveLoadedCpModel(neighborhood.cp_model, &local_response_manager,
+                         &local_model);
+      CpSolverResponse local_response = local_response_manager.GetResponse();
 
       // TODO(user): we actually do not need to postsolve if the solution is
       // not going to be used...
       PostsolveResponse(*shared_->model_proto, mapping_proto, postsolve_mapping,
                         shared_->wall_timer, &local_response);
+
+      local_response_manager.BestSolutionInnerObjectiveValue();
 
       if (local_response.solution_info().empty()) {
         local_response.set_solution_info(solution_info);
@@ -1894,11 +1898,14 @@ class LnsSolver : public SubSolver {
       data.status = local_response.status();
       data.difficulty = saved_difficulty;
       data.deterministic_time = local_response.deterministic_time();
-      data.objective_diff = 0.0;
+      data.objective_improvement = 0.0;
       if (local_response.status() == CpSolverStatus::OPTIMAL ||
           local_response.status() == CpSolverStatus::FEASIBLE) {
-        data.objective_diff = std::abs(local_response.objective_value() -
-                                       base_response.objective_value());
+        const IntegerValue local_response_inner_objective =
+            IntegerValue(ComputeInnerObjective(
+                shared_->model_proto->objective(), local_response));
+        data.objective_improvement =
+            initial_best_inner_objective - local_response_inner_objective;
       }
       generator_->AddSolveData(data);
 
@@ -2266,6 +2273,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       LOG(INFO) << "Initial num_bool: "
                 << model->Get<SatSolver>()->NumVariables();
     }
+    QuickSolveWithHint(new_cp_model_proto, &shared_response_manager, model);
     SolveLoadedCpModel(new_cp_model_proto, &shared_response_manager, model);
   }
 

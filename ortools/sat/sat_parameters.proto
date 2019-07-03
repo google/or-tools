@@ -301,6 +301,12 @@ message SatParameters {
   optional double max_deterministic_time = 67 [default = inf];
 
   // Maximum number of conflicts allowed to solve a problem.
+  //
+  // TODO(user,user): Maybe change the way the conflict limit is enforced?
+  // currently it is enforced on each independent internal SAT solve, rather
+  // than on the overall number of conflicts across all solves. So in the
+  // context of an optimization problem, this is not really usable directly by a
+  // client.
   optional int64 max_number_of_conflicts = 37
       [default = 0x7FFFFFFFFFFFFFFF];  // kint64max
 
@@ -556,27 +562,33 @@ message SatParameters {
     AUTOMATIC_SEARCH = 0;
 
     // If used then all decisions taken by the solver are made using a fixed
-    // order as specified in the API or in the cp_model.proto search_order
+    // order as specified in the API or in the CpModelProto search_strategy
     // field.
-    //
-    // TODO(user): This is not working in all situation yet. The time limit is
-    // not really enforced properly, we don't support assumptions, and all the
-    // decisions variables must be integers.
     FIXED_SEARCH = 1;
 
     // If used, the solver will use various generic heuristics in turn.
     PORTFOLIO_SEARCH = 2;
 
-    // If used, the solver will use heuristics from the LP relaxation.
+    // If used, the solver will use heuristics from the LP relaxation. This
+    // exploit the reduced costs of the variables in the relaxation.
+    //
+    // TODO(user): Maybe rename REDUCED_COST_SEARCH?
     LP_SEARCH = 3;
 
-    // If used, the solver uses the pseudo costs for branching.
+    // If used, the solver uses the pseudo costs for branching. Pseudo costs
+    // are computed using the historical change in objective bounds when some
+    // decision are taken.
     PSEUDO_COST_SEARCH = 4;
 
     // Mainly exposed here for testing. This quickly tries a lot of randomized
     // heuristics with a low conflict limit. It usually provides a good first
     // solution.
     PORTFOLIO_WITH_QUICK_RESTART_SEARCH = 5;
+
+    // Mainly used internally. This is like FIXED_SEARCH, except we follow the
+    // solution_hint field of the CpModelProto rather than using the information
+    // provided in the search_strategy.
+    HINT_SEARCH = 6;
   }
   optional SearchBranching search_branching = 82 [default = AUTOMATIC_SEARCH];
 

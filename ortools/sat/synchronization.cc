@@ -158,6 +158,7 @@ void SharedResponseManager::NotifyThatImprovingProblemIsInfeasible(
       best_response_.set_all_solutions_were_found(true);
     }
   } else {
+    CHECK_EQ(num_solutions_, 0);
     best_response_.set_status(CpSolverStatus::INFEASIBLE);
   }
   if (log_updates_) LogNewSatSolution("Done", wall_timer_.Get(), worker_info);
@@ -171,6 +172,11 @@ IntegerValue SharedResponseManager::GetInnerObjectiveLowerBound() {
 IntegerValue SharedResponseManager::GetInnerObjectiveUpperBound() {
   absl::MutexLock mutex_lock(&mutex_);
   return IntegerValue(inner_objective_upper_bound_);
+}
+
+IntegerValue SharedResponseManager::BestSolutionInnerObjectiveValue() {
+  absl::MutexLock mutex_lock(&mutex_);
+  return IntegerValue(best_solution_objective_value_);
 }
 
 int SharedResponseManager::AddSolutionCallback(
@@ -233,19 +239,9 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
   absl::MutexLock mutex_lock(&mutex_);
   CHECK_NE(best_response_.status(), CpSolverStatus::INFEASIBLE);
 
-  int64 objective_value = 0;
   if (model_proto_.has_objective()) {
-    const CpObjectiveProto& obj = model_proto_.objective();
-    auto& repeated_field_values = response.solution().empty()
-                                      ? response.solution_lower_bounds()
-                                      : response.solution();
-    for (int i = 0; i < obj.vars_size(); ++i) {
-      int64 coeff = obj.coeffs(i);
-      const int ref = obj.vars(i);
-      const int var = PositiveRef(ref);
-      if (!RefIsPositive(ref)) coeff = -coeff;
-      objective_value += coeff * repeated_field_values[var];
-    }
+    const int64 objective_value =
+        ComputeInnerObjective(model_proto_.objective(), response);
 
     // Add this solution to the pool, even if it is not improving.
     if (!response.solution().empty()) {
@@ -381,40 +377,39 @@ void SharedBoundsManager::ReportPotentialNewBounds(
     const std::vector<int64>& new_upper_bounds) {
   CHECK_EQ(variables.size(), new_lower_bounds.size());
   CHECK_EQ(variables.size(), new_upper_bounds.size());
-  {
-    absl::MutexLock mutex_lock(&mutex_);
-    for (int i = 0; i < variables.size(); ++i) {
-      const int var = variables[i];
-      if (var >= num_variables_) continue;
-      const int64 old_lb = lower_bounds_[var];
-      const int64 old_ub = upper_bounds_[var];
-      const int64 new_lb = new_lower_bounds[i];
-      const int64 new_ub = new_upper_bounds[i];
-      const bool changed_lb = new_lb > old_lb;
-      const bool changed_ub = new_ub < old_ub;
-      CHECK_GE(var, 0);
-      if (!changed_lb && !changed_ub) continue;
 
-      if (changed_lb) {
-        lower_bounds_[var] = new_lb;
-      }
-      if (changed_ub) {
-        upper_bounds_[var] = new_ub;
-      }
+  absl::MutexLock mutex_lock(&mutex_);
+  for (int i = 0; i < variables.size(); ++i) {
+    const int var = variables[i];
+    if (var >= num_variables_) continue;
+    const int64 old_lb = lower_bounds_[var];
+    const int64 old_ub = upper_bounds_[var];
+    const int64 new_lb = new_lower_bounds[i];
+    const int64 new_ub = new_upper_bounds[i];
+    const bool changed_lb = new_lb > old_lb;
+    const bool changed_ub = new_ub < old_ub;
+    CHECK_GE(var, 0);
+    if (!changed_lb && !changed_ub) continue;
 
-      for (int j = 0; j < num_workers_; ++j) {
-        if (worker_id == j) continue;
-        changed_variables_per_workers_[j].Set(var);
-      }
-      if (VLOG_IS_ON(2)) {
-        const IntegerVariableProto& var_proto = model_proto.variables(var);
-        const std::string& var_name =
-            var_proto.name().empty() ? absl::StrCat("anonymous_var(", var, ")")
-                                     : var_proto.name();
-        LOG(INFO) << "  '" << worker_name << "' exports new bounds for "
-                  << var_name << ": from [" << old_lb << ", " << old_ub
-                  << "] to [" << new_lb << ", " << new_ub << "]";
-      }
+    if (changed_lb) {
+      lower_bounds_[var] = new_lb;
+    }
+    if (changed_ub) {
+      upper_bounds_[var] = new_ub;
+    }
+
+    for (int j = 0; j < num_workers_; ++j) {
+      if (worker_id == j) continue;
+      changed_variables_per_workers_[j].Set(var);
+    }
+    if (VLOG_IS_ON(2)) {
+      const IntegerVariableProto& var_proto = model_proto.variables(var);
+      const std::string& var_name =
+          var_proto.name().empty() ? absl::StrCat("anonymous_var(", var, ")")
+                                   : var_proto.name();
+      LOG(INFO) << "  '" << worker_name << "' exports new bounds for "
+                << var_name << ": from [" << old_lb << ", " << old_ub
+                << "] to [" << new_lb << ", " << new_ub << "]";
     }
   }
 }

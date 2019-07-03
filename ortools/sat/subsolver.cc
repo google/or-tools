@@ -11,11 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "absl/time/clock.h"
-#include "absl/synchronization/mutex.h"
-#include "ortools/base/logging.h"
 #include "ortools/sat/subsolver.h"
 
+#include "ortools/base/logging.h"
+
+#if !defined(__PORTABLE_PLATFORM__)
+#include "absl/synchronization/mutex.h"
+#include "absl/time/clock.h"
+#endif  // __PORTABLE_PLATFORM__
 
 namespace operations_research {
 namespace sat {

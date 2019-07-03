@@ -56,7 +56,10 @@ class SharedTimeLimit {
     return time_limit_->LimitReached();
   }
 
-  void Stop() { *stopped_ = true; }
+  void Stop() {
+    absl::MutexLock mutex_lock(&mutex_);
+    *stopped_ = true;
+  }
 
   void UpdateLocalLimit(TimeLimit* local_limit) {
     absl::MutexLock mutex_lock(&mutex_);
@@ -65,10 +68,9 @@ class SharedTimeLimit {
 
  private:
   mutable absl::Mutex mutex_;
-  TimeLimit* time_limit_;
-
-  std::atomic<bool> stopped_boolean_;
-  std::atomic<bool>* stopped_;
+  TimeLimit* time_limit_ GUARDED_BY(mutex_);
+  std::atomic<bool> stopped_boolean_ GUARDED_BY(mutex_);
+  std::atomic<bool>* stopped_ GUARDED_BY(mutex_);
 };
 
 // Thread-safe. Keeps a set of n unique best solution found so far.
@@ -127,8 +129,8 @@ class SharedSolutionRepository {
 
   // Our two solutions pools, the current one and the new one that will be
   // merged into the current one on each Synchronize() calls.
-  std::vector<Solution> solutions_;
-  std::vector<Solution> new_solutions_;
+  std::vector<Solution> solutions_ GUARDED_BY(mutex_);
+  std::vector<Solution> new_solutions_ GUARDED_BY(mutex_);
 };
 
 // Manages the global best response kept by the solver.
@@ -163,6 +165,10 @@ class SharedResponseManager {
   // always a valid bound for the global problem, but the upper bound is NOT.
   IntegerValue GetInnerObjectiveLowerBound();
   IntegerValue GetInnerObjectiveUpperBound();
+
+  // Returns the current best solution inner objective value or kInt64Max if
+  // there is no solution.
+  IntegerValue BestSolutionInnerObjectiveValue();
 
   // Updates the inner objective bounds.
   void UpdateInnerObjectiveBounds(const std::string& worker_info,
@@ -205,8 +211,8 @@ class SharedResponseManager {
   SharedSolutionRepository* MutableSolutionsRepository() { return &solutions_; }
 
  private:
-  void FillObjectiveValuesInBestResponse();
-  void SetStatsFromModelInternal(Model* model);
+  void FillObjectiveValuesInBestResponse() EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  void SetStatsFromModelInternal(Model* model) EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   const bool log_updates_;
   const CpModelProto& model_proto_;
@@ -214,17 +220,17 @@ class SharedResponseManager {
 
   mutable absl::Mutex mutex_;
 
-  CpSolverResponse best_response_;
-  SharedSolutionRepository solutions_;
+  CpSolverResponse best_response_ GUARDED_BY(mutex_);
+  SharedSolutionRepository solutions_ GUARDED_BY(mutex_);
 
-  int num_solutions_ = 0;
-  int64 inner_objective_lower_bound_ = kint64min;
-  int64 inner_objective_upper_bound_ = kint64max;
-  int64 best_solution_objective_value_ = kint64max;
+  int num_solutions_ GUARDED_BY(mutex_) = 0;
+  int64 inner_objective_lower_bound_ GUARDED_BY(mutex_) = kint64min;
+  int64 inner_objective_upper_bound_ GUARDED_BY(mutex_) = kint64max;
+  int64 best_solution_objective_value_ GUARDED_BY(mutex_) = kint64max;
 
-  int next_callback_id_ = 0;
+  int next_callback_id_ GUARDED_BY(mutex_) = 0;
   std::vector<std::pair<int, std::function<void(const CpSolverResponse&)>>>
-      callbacks_;
+      callbacks_ GUARDED_BY(mutex_);
 };
 
 // This class manages a pool of lower and upper bounds on a set of variables in
@@ -251,10 +257,13 @@ class SharedBoundsManager {
  private:
   const int num_workers_;
   const int num_variables_;
-  std::vector<SparseBitset<int64>> changed_variables_per_workers_;
-  std::vector<int64> lower_bounds_;
-  std::vector<int64> upper_bounds_;
+
   absl::Mutex mutex_;
+
+  std::vector<SparseBitset<int64>> changed_variables_per_workers_
+      GUARDED_BY(mutex_);
+  std::vector<int64> lower_bounds_ GUARDED_BY(mutex_);
+  std::vector<int64> upper_bounds_ GUARDED_BY(mutex_);
 };
 
 // Stores information on the worker in the parallel context.

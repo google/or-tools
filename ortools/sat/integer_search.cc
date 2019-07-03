@@ -475,9 +475,9 @@ std::function<bool()> SatSolverRestartPolicy(Model* model) {
   return [policy]() { return policy->ShouldRestart(); };
 }
 
-void ConfigureSearchHeuristics(
-    const std::function<LiteralIndex()>& fixed_search, Model* model) {
+void ConfigureSearchHeuristics(Model* model) {
   SearchHeuristics& heuristics = *model->GetOrCreate<SearchHeuristics>();
+  CHECK(heuristics.fixed_search != nullptr);
   heuristics.policy_index = 0;
   heuristics.decision_policies.clear();
   heuristics.restart_policies.clear();
@@ -491,7 +491,8 @@ void ConfigureSearchHeuristics(
       } else {
         decision_policy = SatSolverHeuristic(model);
       }
-      decision_policy = SequentialSearch({decision_policy, fixed_search});
+      decision_policy =
+          SequentialSearch({decision_policy, heuristics.fixed_search});
       decision_policy = IntegerValueSelectionHeuristic(decision_policy, model);
       heuristics.decision_policies = {decision_policy};
       heuristics.restart_policies = {SatSolverRestartPolicy(model)};
@@ -500,8 +501,8 @@ void ConfigureSearchHeuristics(
     case SatParameters::FIXED_SEARCH: {
       // Not all Boolean might appear in fixed_search(), so once there is no
       // decision left, we fix all Booleans that are still undecided.
-      heuristics.decision_policies = {
-          SequentialSearch({fixed_search, SatSolverHeuristic(model)})};
+      heuristics.decision_policies = {SequentialSearch(
+          {heuristics.fixed_search, SatSolverHeuristic(model)})};
 
       if (parameters.randomize_search()) {
         heuristics.restart_policies = {SatSolverRestartPolicy(model)};
@@ -514,10 +515,20 @@ void ConfigureSearchHeuristics(
       heuristics.restart_policies = {no_restart};
       return;
     }
+    case SatParameters::HINT_SEARCH: {
+      CHECK(heuristics.hint_search != nullptr);
+      heuristics.decision_policies = {
+          SequentialSearch({heuristics.hint_search, SatSolverHeuristic(model),
+                            heuristics.fixed_search})};
+      auto no_restart = []() { return false; };
+      heuristics.restart_policies = {no_restart};
+      return;
+    }
     case SatParameters::PORTFOLIO_SEARCH: {
       heuristics.decision_policies = CompleteHeuristics(
-          AddModelHeuristics({fixed_search}, model),
-          SequentialSearch({SatSolverHeuristic(model), fixed_search}));
+          AddModelHeuristics({heuristics.fixed_search}, model),
+          SequentialSearch(
+              {SatSolverHeuristic(model), heuristics.fixed_search}));
       for (auto& ref : heuristics.decision_policies) {
         ref = IntegerValueSelectionHeuristic(ref, model);
       }
@@ -526,7 +537,6 @@ void ConfigureSearchHeuristics(
       return;
     }
     case SatParameters::LP_SEARCH: {
-      // Fill portfolio with pseudocost heuristics.
       std::vector<std::function<LiteralIndex()>> lp_heuristics;
       for (const auto& ct :
            *(model->GetOrCreate<LinearProgrammingConstraintCollection>())) {
@@ -534,28 +544,29 @@ void ConfigureSearchHeuristics(
       }
       if (lp_heuristics.empty()) {  // Revert to fixed search.
         heuristics.decision_policies = {SequentialSearch(
-            {fixed_search, SatSolverHeuristic(model)})},
+            {heuristics.fixed_search, SatSolverHeuristic(model)})},
         heuristics.restart_policies = {SatSolverRestartPolicy(model)};
         return;
       }
       heuristics.decision_policies = CompleteHeuristics(
-          lp_heuristics,
-          SequentialSearch({SatSolverHeuristic(model), fixed_search}));
+          lp_heuristics, SequentialSearch({SatSolverHeuristic(model),
+                                           heuristics.fixed_search}));
       heuristics.restart_policies.assign(heuristics.decision_policies.size(),
                                          SatSolverRestartPolicy(model));
       return;
     }
     case SatParameters::PSEUDO_COST_SEARCH: {
-      std::function<LiteralIndex()> search = SequentialSearch(
-          {PseudoCost(model), SatSolverHeuristic(model), fixed_search});
+      std::function<LiteralIndex()> search =
+          SequentialSearch({PseudoCost(model), SatSolverHeuristic(model),
+                            heuristics.fixed_search});
       heuristics.decision_policies = {
           IntegerValueSelectionHeuristic(search, model)};
       heuristics.restart_policies = {SatSolverRestartPolicy(model)};
       return;
     }
     case SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH: {
-      std::function<LiteralIndex()> search =
-          SequentialSearch({RandomizeOnRestartHeuristic(model), fixed_search});
+      std::function<LiteralIndex()> search = SequentialSearch(
+          {RandomizeOnRestartHeuristic(model), heuristics.fixed_search});
       heuristics.decision_policies = {search};
       heuristics.restart_policies = {
           RestartEveryKFailures(10, model->GetOrCreate<SatSolver>())};
@@ -616,6 +627,13 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
   // already done because EnqueueDecisionAndBackjumpOnConflict() assumes that
   // the solver is in a "propagated" state.
   SatSolver* const solver = model->GetOrCreate<SatSolver>();
+
+  // TODO(user): We have the issue that at level zero. calling the propagation
+  // loop more than once can propagate more! This is because we call the LP
+  // again and again on each level zero propagation. This is causing some
+  // CHECKs() to fail in multithread (rarely) because when we associate new
+  // literals to integer ones, Propagate() is indirectly called. Not sure yet
+  // how to fix.
   if (!solver->FinishPropagation()) return solver->UnsatStatus();
 
   // Create and initialize pseudo costs.

@@ -118,7 +118,7 @@ std::vector<int64> AllValuesInDomain(const ProtoWithDomain& proto) {
   return result;
 }
 
-// Scale back a objective value to a double value from the original model.
+// Scales back a objective value to a double value from the original model.
 inline double ScaleObjectiveValue(const CpObjectiveProto& proto, int64 value) {
   double result = static_cast<double>(value);
   if (value == kint64min) result = -std::numeric_limits<double>::infinity();
@@ -127,6 +127,12 @@ inline double ScaleObjectiveValue(const CpObjectiveProto& proto, int64 value) {
   if (proto.scaling_factor() == 0) return result;
   return proto.scaling_factor() * result;
 }
+
+// Computes the "inner" objective of a response that contains a solution.
+// This is the objective without offset and scaling. Call ScaleObjectiveValue()
+// to get the user facing objective.
+int64 ComputeInnerObjective(const CpObjectiveProto& objective,
+                            const CpSolverResponse& response);
 
 }  // namespace sat
 }  // namespace operations_research

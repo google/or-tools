@@ -224,22 +224,24 @@ void NeighborhoodGenerator::Synchronize() {
   // SolveData.
   std::sort(solve_data_.begin(), solve_data_.end());
 
+  // This will be used to update the difficulty of this neighborhood.
+  int num_fully_solved_in_batch = 0;
+  int num_not_fully_solved_in_batch = 0;
+
   for (const SolveData& data : solve_data_) {
-    // TODO(user): we should use the original neighborhood difficulty in the
-    // formula that update the difficulty. Ideally, using all the recent data we
-    // want to aim for a given percentage of "solvable vs. unsolvable" problem
-    // so we are at an interesting spot. It seems the current code converges
-    // towards a 50% percentage though.
     if (data.status == CpSolverStatus::INFEASIBLE ||
         data.status == CpSolverStatus::OPTIMAL) {
-      num_fully_solved_calls_++;
-      difficulty_.Increase();
+      ++num_fully_solved_calls_;
+      ++num_fully_solved_in_batch;
     } else {
-      difficulty_.Decrease();
+      ++num_not_fully_solved_in_batch;
     }
 
     num_calls_++;
-    if (data.objective_diff > 0.0) {
+    if (data.objective_improvement > 0) {
+      // Note(user): For this to work properly, the objective diff should be
+      // computed with respect to the best solution at the time of the
+      // neighborhood generation.
       num_consecutive_non_improving_calls_ = 0;
     } else {
       num_consecutive_non_improving_calls_++;
@@ -248,7 +250,8 @@ void NeighborhoodGenerator::Synchronize() {
     // TODO(user): Weight more recent data.
     // degrade the current average to forget old learnings.
     const double gain_per_time_unit =
-        data.objective_diff / (1.0 + data.deterministic_time);
+        std::max(0.0, static_cast<double>(data.objective_improvement.value())) /
+        (1.0 + data.deterministic_time);
     if (num_calls_ <= 100) {
       current_average_ += (gain_per_time_unit - current_average_) / num_calls_;
     } else {
@@ -257,6 +260,10 @@ void NeighborhoodGenerator::Synchronize() {
 
     deterministic_time_ += data.deterministic_time;
   }
+
+  // Update the difficulty.
+  difficulty_.Update(/*num_decreases=*/num_not_fully_solved_in_batch,
+                     /*num_increases=*/num_fully_solved_in_batch);
 
   // Bump the time limit if we saw no better solution in the last few calls.
   // This means that as the search progress, we likely spend more and more time
@@ -281,7 +288,7 @@ void GetRandomSubset(int seed, double relative_size, std::vector<int>* base) {
   // TODO(user): we could generate this more efficiently than using random
   // shuffle.
   std::shuffle(base->begin(), base->end(), random);
-  const int target_size = std::ceil(relative_size * base->size());
+  const int target_size = std::round(relative_size * base->size());
   base->resize(target_size);
 }
 

@@ -200,14 +200,29 @@ class NeighborhoodGenerator {
     // The time it took to solve this neighborhood.
     double deterministic_time = 0.0;
 
-    // The objective improvement compared to the base solution.
-    double objective_diff = 0.0;
+    // The objective improvement compared to the BEST solution at the time of
+    // generation. Positive if better, negative if worse. Note that we use
+    // the inner objective (without scaling or offset) so we are exact and it is
+    // always in the minimization direction.
+    //
+    // Note(user): It seems to make more sense to compare to the base solution
+    // objective, not the best one. However this causes issue in our adaptive
+    // parameter logic and selection because on some problems, its seems that
+    // the neighbhorhood is always improving. For example if you have two
+    // solutions, one worse, and it is super easy to find the better one from
+    // the worse one. This might not be a final solution, but it does work ok
+    // for now.
+    //
+    // TODO(user): Probably clearer to have 3 fields base_objective,
+    // best_objective and new_objective here. So we can easily change the logic.
+    IntegerValue objective_improvement = IntegerValue(0);
 
     // This is just used to construct a deterministic order for the updates.
     bool operator<(const SolveData& o) const {
-      return std::tie(status, difficulty, deterministic_time, objective_diff) <
+      return std::tie(status, difficulty, deterministic_time,
+                      objective_improvement) <
              std::tie(o.status, o.difficulty, o.deterministic_time,
-                      o.objective_diff);
+                      o.objective_improvement);
     }
   };
   void AddSolveData(SolveData data) {

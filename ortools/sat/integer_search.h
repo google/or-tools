@@ -46,14 +46,18 @@ struct SearchHeuristics {
 
   // Index in the vector above that indicate the current configuration.
   int policy_index;
+
+  // Two special decision functions that are constructed at loading time.
+  // These are used by ConfigureSearchHeuristics() to fill the policies above.
+  std::function<LiteralIndex()> fixed_search = nullptr;
+  std::function<LiteralIndex()> hint_search = nullptr;
 };
 
 // Given a base "fixed_search" function that should mainly control in which
 // order integer variables are lazily instantiated (and at what value), this
 // uses the current solver parameters to set the SearchHeuristics class in the
 // given model.
-void ConfigureSearchHeuristics(
-    const std::function<LiteralIndex()>& fixed_search, Model* model);
+void ConfigureSearchHeuristics(Model* model);
 
 // For an optimization problem, this contains the internal integer objective
 // to minimize and information on how to display it correctly in the logs.
@@ -61,6 +65,13 @@ struct ObjectiveDefinition {
   double scaling_factor = 1.0;
   double offset = 0.0;
   IntegerVariable objective_var = kNoIntegerVariable;
+
+  // The objective linear expression that should be equal to objective_var.
+  // If not all proto variable have an IntegerVariable view, then some vars
+  // will be set to kNoIntegerVariable. In practice, when this is used, we make
+  // sure there is a view though.
+  std::vector<IntegerVariable> vars;
+  std::vector<IntegerValue> coeffs;
 
   // List of variable that when set to their lower bound should help getting a
   // better objective. This is used by some search heuristic to preferably
