@@ -17,6 +17,7 @@
 #ifndef OR_TOOLS_SAT_SUBSOLVER_H_
 #define OR_TOOLS_SAT_SUBSOLVER_H_
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <functional>
