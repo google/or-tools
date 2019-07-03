@@ -43,6 +43,7 @@
   <Target Name="ValidateRuntimeRef" BeforeTargets="Compile">
     <ItemGroup>
       <RefLinux Include="../Google.OrTools.runtime.linux-x64/bin/$(Configuration)/$(TargetFramework)/linux-x64/ref/*.dll" />
+      <RefCentosLinux Include="../Google.OrTools.runtime.linux-x64/bin/LINUX/$(Configuration)/$(TargetFramework)/linux-x64/ref/*.dll" />
       <RefOsx Include="../Google.OrTools.runtime.osx-x64/bin/$(Configuration)/$(TargetFramework)/osx-x64/ref/*.dll" />
       <RefWin Include="../Google.OrTools.runtime.win-x64/bin/x64/$(Configuration)/$(TargetFramework)/win-x64/ref/*.dll" />
     </ItemGroup>
@@ -54,6 +55,14 @@
       Importance="high"
       Text="RefAssembly from Google.OrTools.runtime.linux-x64: not found"
       Condition="!Exists('@(RefLinux)')" />
+    <Message
+      Importance="high"
+      Text="RefAssembly from Google.OrTools.runtime.linux-x64 (CentOs): found"
+      Condition="Exists('@(RefCentosLinux)')" />
+    <Message
+      Importance="high"
+      Text="RefAssembly from Google.OrTools.runtime.linux-x64 (CentOs): not found"
+      Condition="!Exists('@(RefCentosLinux)')" />
     <Message
       Importance="high"
       Text="RefAssembly from Google.OrTools.runtime.osx-x64: found"
@@ -72,17 +81,25 @@
       Condition="!Exists('@(RefWin)')" />
     <Error
       Text="You must locally 'dotnet build' at least one Google.OrTools.runtime.{rid} Project."
-      Condition="!Exists('@(RefLinux)') AND !Exists('@(RefOsx)') AND !Exists('@(RefWin)')" />
+      Condition="!Exists('@(RefLinux)') AND !Exists('@(RefOsx)') AND !Exists('@(RefWin)') AND !Exists('@(RefCentosLinux)')" />
   </Target>
 
   <!-- Need to copy one of the reference assembly generated -->
   <ItemGroup>
     <RefLinux Include="../Google.OrTools.runtime.linux-x64/bin/$(Configuration)/$(TargetFramework)/linux-x64/ref/*.dll" />
+    <RefCentosLinux Include="../Google.OrTools.runtime.linux-x64/bin/LINUX/$(Configuration)/$(TargetFramework)/linux-x64/ref/*.dll" />
     <RefOsx Include="../Google.OrTools.runtime.osx-x64/bin/$(Configuration)/$(TargetFramework)/osx-x64/ref/*.dll" />
     <RefWin Include="../Google.OrTools.runtime.win-x64/bin/x64/$(Configuration)/$(TargetFramework)/win-x64/ref/*.dll" />
     <Content
       Include="@(RefLinux)"
       Condition="Exists('@(RefLinux)')">
+      <PackagePath>ref/$(TargetFramework)/%(Filename)%(Extension)</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content
+      Include="@(RefCentosLinux)"
+      Condition="Exists('@(RefCentosLinux)')">
       <PackagePath>ref/$(TargetFramework)/%(Filename)%(Extension)</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
