@@ -454,7 +454,7 @@ public class ShiftSchedulingSat
         }
 
         // Just forbid any sequence of true variables with length hardMax + 1
-        foreach (var start in Range(works.Length - hardMax - 1))
+        foreach (var start in Range(works.Length - hardMax))
         {
             var temp = new List<ILiteral>();
 
