@@ -123,7 +123,7 @@ def add_soft_sequence_constraint(model, works, hard_min, soft_min, min_cost,
                 cost_coefficients.append(max_cost * (length - soft_max))
 
     # Just forbid any sequence of true variables with length hard_max + 1
-    for start in range(len(works) - hard_max - 1):
+    for start in range(len(works) - hard_max):
         model.AddBoolOr(
             [works[i].Not() for i in range(start, start + hard_max + 1)])
     return cost_literals, cost_coefficients
