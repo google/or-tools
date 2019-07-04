@@ -92,7 +92,7 @@ def add_soft_sequence_constraint(model, works, hard_min, soft_min, min_cost,
 
     # Forbid sequences that are too short.
     for length in range(1, hard_min):
-        for start in range(len(works) - length - 1):
+        for start in range(len(works) - length):
             model.AddBoolOr(negated_bounded_span(works, start, length))
 
     # Penalize sequences that are below the soft limit.
