@@ -92,13 +92,13 @@ def add_soft_sequence_constraint(model, works, hard_min, soft_min, min_cost,
 
     # Forbid sequences that are too short.
     for length in range(1, hard_min):
-        for start in range(len(works) - length):
+        for start in range(len(works) - length + 1):
             model.AddBoolOr(negated_bounded_span(works, start, length))
 
     # Penalize sequences that are below the soft limit.
     if min_cost > 0:
         for length in range(hard_min, soft_min):
-            for start in range(len(works) - length - 1):
+            for start in range(len(works) - length + 1):
                 span = negated_bounded_span(works, start, length)
                 name = ': under_span(start=%i, length=%i)' % (start, length)
                 lit = model.NewBoolVar(prefix + name)
@@ -112,7 +112,7 @@ def add_soft_sequence_constraint(model, works, hard_min, soft_min, min_cost,
     # Penalize sequences that are above the soft limit.
     if max_cost > 0:
         for length in range(soft_max + 1, hard_max + 1):
-            for start in range(len(works) - length - 1):
+            for start in range(len(works) - length + 1):
                 span = negated_bounded_span(works, start, length)
                 name = ': over_span(start=%i, length=%i)' % (start, length)
                 lit = model.NewBoolVar(prefix + name)
@@ -414,11 +414,7 @@ def solve_shift_scheduling(params, output_proto):
                       (var.Name(), solver.Value(var), obj_int_coeffs[i]))
 
     print()
-    print('Statistics')
-    print('  - status          : %s' % solver.StatusName(status))
-    print('  - conflicts       : %i' % solver.NumConflicts())
-    print('  - branches        : %i' % solver.NumBranches())
-    print('  - wall time       : %f s' % solver.WallTime())
+    print(solver.ResponseStats())
 
 
 def main(args):
