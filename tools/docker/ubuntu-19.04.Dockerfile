@@ -25,7 +25,7 @@ RUN apt-get update -qq \
 # Dotnet Install
 RUN apt-get update -qq \
 && apt-get install -yq apt-transport-https \
-&& wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb \
+&& wget -q https://packages.microsoft.com/config/ubuntu/19.04/packages-microsoft-prod.deb \
 && dpkg -i packages-microsoft-prod.deb \
 && apt-get update -qq \
 && apt-get install -yq dotnet-sdk-2.2 \
