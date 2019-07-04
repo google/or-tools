@@ -50,18 +50,20 @@
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="BaseLns_8java_source.html#l00011">11</a> of file <a class="el" href="BaseLns_8java_source.html">BaseLns.java</a>.</p>
+<div class="textblock"><p>This is the base class for building an Lns operator. </p>
+<p>An Lns fragment is a collection of variables which will be relaxed. Fragments are built with NextFragment(), which returns false if there are no more fragments to build. Optionally one can override InitFragments, which is called from LocalSearchOperator::Start to initialize fragment data. Here's a sample relaxing one variable at a time: class OneVarLns : public <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseLns.html" title="This is the base class for building an Lns operator.">BaseLns</a> { public: OneVarLns(const std::vector&lt;IntVar*&gt;&amp; vars) : BaseLns(vars), index_(0) {} virtual ~OneVarLns() {} virtual void InitFragments() { index_ = 0; } virtual bool NextFragment() { const int size = Size(); if (index_ &lt; size) { AppendToFragment(index_); ++index_; return true; } else { return false; } } private: int index_; }; </p>
+
+<p class="definition">Definition at line <a class="el" href="BaseLns_8java_source.html#l00014">14</a> of file <a class="el" href="BaseLns_8java_source.html">BaseLns.java</a>.</p>
 </div><div class="dynheader">
 Inheritance diagram for com.google.ortools.constraintsolver.BaseLns:</div>
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseLns__inherit__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8BaseLns_inherit__map" alt="Inheritance graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8BaseLns_inherit__map" id="com_8google_8ortools_8constraintsolver_8BaseLns_inherit__map">
-<area shape="rect"  title=" " alt="" coords="6,363,238,404"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperator.html" title=" " alt="" coords="6,273,238,315"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html" title=" " alt="" coords="5,184,239,225"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html" title=" " alt="" coords="6,95,238,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="6,5,238,47"/>
+<area shape="rect"  title="This is the base class for building an Lns operator." alt="" coords="6,363,238,404"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperator.html" title="clang&#45;format on" alt="" coords="6,273,238,315"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html" title="Base operator class for operators manipulating variables." alt="" coords="5,184,239,225"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html" title="This class represent a reversible FIFO structure." alt="" coords="6,95,238,136"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="6,5,238,47"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <div class="dynheader">
@@ -69,11 +71,11 @@ Collaboration diagram for com.google.ortools.constraintsolver.BaseLns:</div>
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseLns__coll__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8BaseLns_coll__map" alt="Collaboration graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8BaseLns_coll__map" id="com_8google_8ortools_8constraintsolver_8BaseLns_coll__map">
-<area shape="rect"  title=" " alt="" coords="6,363,238,404"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperator.html" title=" " alt="" coords="6,273,238,315"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html" title=" " alt="" coords="5,184,239,225"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html" title=" " alt="" coords="6,95,238,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="6,5,238,47"/>
+<area shape="rect"  title="This is the base class for building an Lns operator." alt="" coords="6,363,238,404"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperator.html" title="clang&#45;format on" alt="" coords="6,273,238,315"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html" title="Base operator class for operators manipulating variables." alt="" coords="5,184,239,225"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html" title="This class represent a reversible FIFO structure." alt="" coords="6,95,238,136"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="6,5,238,47"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -104,8 +106,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:abb98de4de8e8c7d8a96ef6e409bb3d0e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html#abb98de4de8e8c7d8a96ef6e409bb3d0e">size</a> ()</td></tr>
 <tr class="separator:abb98de4de8e8c7d8a96ef6e409bb3d0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5b37e7bb2f84c0fbb9bc6809c802831c"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html#a5b37e7bb2f84c0fbb9bc6809c802831c">value</a> (long index)</td></tr>
+<tr class="memdesc:a5b37e7bb2f84c0fbb9bc6809c802831c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the value in the current assignment of the variable of given index.  <a href="#a5b37e7bb2f84c0fbb9bc6809c802831c">More...</a><br /></td></tr>
 <tr class="separator:a5b37e7bb2f84c0fbb9bc6809c802831c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9d7d792d493e03badfffc651215cfa4a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html#a9d7d792d493e03badfffc651215cfa4a">var</a> (long index)</td></tr>
+<tr class="memdesc:a9d7d792d493e03badfffc651215cfa4a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the variable of given index.  <a href="#a9d7d792d493e03badfffc651215cfa4a">More...</a><br /></td></tr>
 <tr class="separator:a9d7d792d493e03badfffc651215cfa4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:accb998530e1bc5422706e0504311f915"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html#accb998530e1bc5422706e0504311f915">oldValue</a> (long index)</td></tr>
 <tr class="separator:accb998530e1bc5422706e0504311f915"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -120,6 +124,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a34d9d11bdb2148967f5d230e2f9254b8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html#a34d9d11bdb2148967f5d230e2f9254b8">addVars</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>[] vars)</td></tr>
 <tr class="separator:a34d9d11bdb2148967f5d230e2f9254b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8a25b7f06ebf5f3c12c4db4db73b0e3c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html#a8a25b7f06ebf5f3c12c4db4db73b0e3c">onStart</a> ()</td></tr>
+<tr class="memdesc:a8a25b7f06ebf5f3c12c4db4db73b0e3c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Called by Start() after synchronizing the operator with the current assignment.  <a href="#a8a25b7f06ebf5f3c12c4db4db73b0e3c">More...</a><br /></td></tr>
 <tr class="separator:a8a25b7f06ebf5f3c12c4db4db73b0e3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5c751f5cab0211844096083c617d0785"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html#a5c751f5cab0211844096083c617d0785">nextNeighbor</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html">Assignment</a> delta, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html">Assignment</a> deltadelta)</td></tr>
 <tr class="separator:a5c751f5cab0211844096083c617d0785"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -137,6 +142,7 @@ Protected Member Functions</h2></td></tr>
 <tr class="memitem:a81ca011b3252b5b2710bd7dcf2b1e5db"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseLns.html#a81ca011b3252b5b2710bd7dcf2b1e5db">swigDirectorDisconnect</a> ()</td></tr>
 <tr class="separator:a81ca011b3252b5b2710bd7dcf2b1e5db"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abde08482ebc8b49e8c278b876b829967"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperator.html#abde08482ebc8b49e8c278b876b829967">oneNeighbor</a> ()</td></tr>
+<tr class="memdesc:abde08482ebc8b49e8c278b876b829967"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a new neighbor.  <a href="#abde08482ebc8b49e8c278b876b829967">More...</a><br /></td></tr>
 <tr class="separator:abde08482ebc8b49e8c278b876b829967"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
@@ -174,7 +180,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseLns_8java_source.html#l00014">14</a> of file <a class="el" href="BaseLns_8java_source.html">BaseLns.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseLns_8java_source.html#l00017">17</a> of file <a class="el" href="BaseLns_8java_source.html">BaseLns.java</a>.</p>
 
 </div>
 </div>
@@ -202,7 +208,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseLns_8java_source.html#l00054">54</a> of file <a class="el" href="BaseLns_8java_source.html">BaseLns.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseLns_8java_source.html#l00057">57</a> of file <a class="el" href="BaseLns_8java_source.html">BaseLns.java</a>.</p>
 
 </div>
 </div>
@@ -231,7 +237,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00072">72</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00081">81</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -259,7 +265,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00068">68</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00077">77</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -287,7 +293,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00080">80</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00089">89</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -315,7 +321,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseLns_8java_source.html#l00067">67</a> of file <a class="el" href="BaseLns_8java_source.html">BaseLns.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseLns_8java_source.html#l00070">70</a> of file <a class="el" href="BaseLns_8java_source.html">BaseLns.java</a>.</p>
 
 </div>
 </div>
@@ -343,7 +349,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00076">76</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00085">85</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -370,7 +376,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseLns_8java_source.html#l00028">28</a> of file <a class="el" href="BaseLns_8java_source.html">BaseLns.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseLns_8java_source.html#l00031">31</a> of file <a class="el" href="BaseLns_8java_source.html">BaseLns.java</a>.</p>
 
 </div>
 </div>
@@ -397,7 +403,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseLns_8java_source.html#l00071">71</a> of file <a class="el" href="BaseLns_8java_source.html">BaseLns.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseLns_8java_source.html#l00074">74</a> of file <a class="el" href="BaseLns_8java_source.html">BaseLns.java</a>.</p>
 
 </div>
 </div>
@@ -424,7 +430,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseLns_8java_source.html#l00075">75</a> of file <a class="el" href="BaseLns_8java_source.html">BaseLns.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseLns_8java_source.html#l00078">78</a> of file <a class="el" href="BaseLns_8java_source.html">BaseLns.java</a>.</p>
 
 </div>
 </div>
@@ -451,7 +457,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00039">39</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00042">42</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -478,7 +484,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseLns_8java_source.html#l00059">59</a> of file <a class="el" href="BaseLns_8java_source.html">BaseLns.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseLns_8java_source.html#l00062">62</a> of file <a class="el" href="BaseLns_8java_source.html">BaseLns.java</a>.</p>
 
 </div>
 </div>
@@ -505,7 +511,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00043">43</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00046">46</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -532,7 +538,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseLns_8java_source.html#l00063">63</a> of file <a class="el" href="BaseLns_8java_source.html">BaseLns.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseLns_8java_source.html#l00066">66</a> of file <a class="el" href="BaseLns_8java_source.html">BaseLns.java</a>.</p>
 
 </div>
 </div>
@@ -570,7 +576,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00059">59</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00062">62</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
 
 </div>
 </div>
@@ -598,7 +604,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00060">60</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00069">69</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -625,7 +631,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperator_8java_source.html#l00064">64</a> of file <a class="el" href="IntVarLocalSearchOperator_8java_source.html">IntVarLocalSearchOperator.java</a>.</p>
+<p>Creates a new neighbor. </p>
+<p>It returns false when the neighborhood is completely explored. MakeNextNeighbor() in a subclass of <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperator.html" title="clang-format on">IntVarLocalSearchOperator</a>. </p>
+
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperator_8java_source.html#l00070">70</a> of file <a class="el" href="IntVarLocalSearchOperator_8java_source.html">IntVarLocalSearchOperator.java</a>.</p>
 
 </div>
 </div>
@@ -652,7 +661,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00084">84</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
+<p>Called by Start() after synchronizing the operator with the current assignment. </p>
+<p>Should be overridden instead of Start() to avoid calling VarLocalSearchOperator::Start explicitly. </p>
+
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00096">96</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -679,7 +691,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00067">67</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00070">70</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
 
 </div>
 </div>
@@ -717,7 +729,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00064">64</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00073">73</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -744,7 +756,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00047">47</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00050">50</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -772,7 +784,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00063">63</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00066">66</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
 
 </div>
 </div>
@@ -799,7 +811,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseLns_8java_source.html#l00039">39</a> of file <a class="el" href="BaseLns_8java_source.html">BaseLns.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseLns_8java_source.html#l00042">42</a> of file <a class="el" href="BaseLns_8java_source.html">BaseLns.java</a>.</p>
 
 </div>
 </div>
@@ -826,7 +838,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseLns_8java_source.html#l00044">44</a> of file <a class="el" href="BaseLns_8java_source.html">BaseLns.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseLns_8java_source.html#l00047">47</a> of file <a class="el" href="BaseLns_8java_source.html">BaseLns.java</a>.</p>
 
 </div>
 </div>
@@ -853,7 +865,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseLns_8java_source.html#l00049">49</a> of file <a class="el" href="BaseLns_8java_source.html">BaseLns.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseLns_8java_source.html#l00052">52</a> of file <a class="el" href="BaseLns_8java_source.html">BaseLns.java</a>.</p>
 
 </div>
 </div>
@@ -880,7 +892,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseObject_8java_source.html#l00043">43</a> of file <a class="el" href="BaseObject_8java_source.html">BaseObject.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseObject_8java_source.html#l00046">46</a> of file <a class="el" href="BaseObject_8java_source.html">BaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -908,7 +920,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00051">51</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
+<p>Returns the value in the current assignment of the variable of given index. </p>
+
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00057">57</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -936,7 +950,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00055">55</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
+<p>Returns the variable of given index. </p>
+
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00064">64</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>

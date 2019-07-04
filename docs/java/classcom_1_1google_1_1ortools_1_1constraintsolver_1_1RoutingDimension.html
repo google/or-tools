@@ -50,26 +50,20 @@
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
-<div class="textblock"><p>Dimensions represent quantities accumulated at nodes along the routes. </p>
-<p>They represent quantities such as weights or volumes carried along the route, or distance or times. Quantities at a node are represented by "cumul" variables and the increase or decrease of quantities between nodes are represented by "transit" variables. These variables are linked as follows: if j == next(i), cumuls(j) = cumuls(i) + transits(i) + slacks(i) + state_dependent_transits(i) where slack is a positive slack variable (can represent waiting times for a time dimension), and state_dependent_transits is a non-purely functional version of transits_. Favour transits over state_dependent_transits when possible, because purely functional callbacks allow more optimisations and make the model faster and easier to solve. TODO: (user): Break constraints need to know the service time of nodes for a given vehicle, it is passed as an external vector, it would be better to have this information here. </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00018">18</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<div class="textblock">
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00015">15</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:abbb69298b43a79a370833f031de52a56"><td class="memItemLeft" align="right" valign="top">synchronized void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#abbb69298b43a79a370833f031de52a56">delete</a> ()</td></tr>
 <tr class="separator:abbb69298b43a79a370833f031de52a56"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a70e2b4c27631f60ef28eae69a3225127"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html">RoutingModel</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a70e2b4c27631f60ef28eae69a3225127">model</a> ()</td></tr>
-<tr class="memdesc:a70e2b4c27631f60ef28eae69a3225127"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the model on which the dimension was created.  <a href="#a70e2b4c27631f60ef28eae69a3225127">More...</a><br /></td></tr>
 <tr class="separator:a70e2b4c27631f60ef28eae69a3225127"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acb306588ae5495445eb82944eecf4fe9"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#acb306588ae5495445eb82944eecf4fe9">getTransitValue</a> (long from_index, long to_index, long vehicle)</td></tr>
-<tr class="memdesc:acb306588ae5495445eb82944eecf4fe9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the transition value for a given pair of nodes (as var index); this value is the one taken by the corresponding transit variable when the 'next' variable for 'from_index' is bound to 'to_index'.  <a href="#acb306588ae5495445eb82944eecf4fe9">More...</a><br /></td></tr>
 <tr class="separator:acb306588ae5495445eb82944eecf4fe9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a054c34844015faadfe99fb3c45146013"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a054c34844015faadfe99fb3c45146013">getTransitValueFromClass</a> (long from_index, long to_index, long vehicle_class)</td></tr>
-<tr class="memdesc:a054c34844015faadfe99fb3c45146013"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same as above but taking a vehicle class of the dimension instead of a vehicle (the class of a vehicle can be obtained with vehicle_to_class()).  <a href="#a054c34844015faadfe99fb3c45146013">More...</a><br /></td></tr>
 <tr class="separator:a054c34844015faadfe99fb3c45146013"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae1a3b96600b71aafa95c5606122f76ae"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#ae1a3b96600b71aafa95c5606122f76ae">cumulVar</a> (long index)</td></tr>
-<tr class="memdesc:ae1a3b96600b71aafa95c5606122f76ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the cumul, transit and slack variables for the given node (given as int64 var index).  <a href="#ae1a3b96600b71aafa95c5606122f76ae">More...</a><br /></td></tr>
 <tr class="separator:ae1a3b96600b71aafa95c5606122f76ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a38e55c9f4caf0eff7794142bb78aad4a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a38e55c9f4caf0eff7794142bb78aad4a">transitVar</a> (long index)</td></tr>
 <tr class="separator:a38e55c9f4caf0eff7794142bb78aad4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -78,7 +72,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a22aacc3ee3c70507a2a45a38d203532b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a22aacc3ee3c70507a2a45a38d203532b">slackVar</a> (long index)</td></tr>
 <tr class="separator:a22aacc3ee3c70507a2a45a38d203532b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a022491cc7b780f80c71c3d8298a8281d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a> []&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a022491cc7b780f80c71c3d8298a8281d">cumuls</a> ()</td></tr>
-<tr class="memdesc:a022491cc7b780f80c71c3d8298a8281d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Like CumulVar(), TransitVar(), SlackVar() but return the whole variable vectors instead (indexed by int64 var index).  <a href="#a022491cc7b780f80c71c3d8298a8281d">More...</a><br /></td></tr>
 <tr class="separator:a022491cc7b780f80c71c3d8298a8281d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a46eb73017ac82a073d1af05381453ec0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a> []&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a46eb73017ac82a073d1af05381453ec0">fixed_transits</a> ()</td></tr>
 <tr class="separator:a46eb73017ac82a073d1af05381453ec0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -87,75 +80,54 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:adf7e4429bec65f4600c64109c477e002"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a> []&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#adf7e4429bec65f4600c64109c477e002">slacks</a> ()</td></tr>
 <tr class="separator:adf7e4429bec65f4600c64109c477e002"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5217b9425b1fc117b11e412cf25ccd6e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a5217b9425b1fc117b11e412cf25ccd6e">setSpanUpperBoundForVehicle</a> (long upper_bound, int vehicle)</td></tr>
-<tr class="memdesc:a5217b9425b1fc117b11e412cf25ccd6e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets an upper bound on the dimension span on a given vehicle.  <a href="#a5217b9425b1fc117b11e412cf25ccd6e">More...</a><br /></td></tr>
 <tr class="separator:a5217b9425b1fc117b11e412cf25ccd6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3dd8246bc0fae9bda90ec924ee36301f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a3dd8246bc0fae9bda90ec924ee36301f">setSpanCostCoefficientForVehicle</a> (long coefficient, int vehicle)</td></tr>
-<tr class="memdesc:a3dd8246bc0fae9bda90ec924ee36301f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets a cost proportional to the dimension span on a given vehicle, or on all vehicles at once.  <a href="#a3dd8246bc0fae9bda90ec924ee36301f">More...</a><br /></td></tr>
 <tr class="separator:a3dd8246bc0fae9bda90ec924ee36301f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab8ad5d6fb62a9efe2ccaa378130a2dcb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#ab8ad5d6fb62a9efe2ccaa378130a2dcb">setSpanCostCoefficientForAllVehicles</a> (long coefficient)</td></tr>
 <tr class="separator:ab8ad5d6fb62a9efe2ccaa378130a2dcb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afccf3efc2db6634047e760ffd60851b6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#afccf3efc2db6634047e760ffd60851b6">setGlobalSpanCostCoefficient</a> (long coefficient)</td></tr>
-<tr class="memdesc:afccf3efc2db6634047e760ffd60851b6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets a cost proportional to the <em>global</em> dimension span, that is the difference between the largest value of route end cumul variables and the smallest value of route start cumul variables.  <a href="#afccf3efc2db6634047e760ffd60851b6">More...</a><br /></td></tr>
 <tr class="separator:afccf3efc2db6634047e760ffd60851b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a32c55ac0569a9bd36f6feb863a9dd214"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a32c55ac0569a9bd36f6feb863a9dd214">setCumulVarSoftUpperBound</a> (long index, long upper_bound, long coefficient)</td></tr>
-<tr class="memdesc:a32c55ac0569a9bd36f6feb863a9dd214"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets a soft upper bound to the cumul variable of a given variable index.  <a href="#a32c55ac0569a9bd36f6feb863a9dd214">More...</a><br /></td></tr>
 <tr class="separator:a32c55ac0569a9bd36f6feb863a9dd214"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a633dcb5393e9d6f7644ee4ec17169daa"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a633dcb5393e9d6f7644ee4ec17169daa">hasCumulVarSoftUpperBound</a> (long index)</td></tr>
-<tr class="memdesc:a633dcb5393e9d6f7644ee4ec17169daa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if a soft upper bound has been set for a given variable index.  <a href="#a633dcb5393e9d6f7644ee4ec17169daa">More...</a><br /></td></tr>
 <tr class="separator:a633dcb5393e9d6f7644ee4ec17169daa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a32d6022592f35243244a076a7dea68d9"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a32d6022592f35243244a076a7dea68d9">getCumulVarSoftUpperBound</a> (long index)</td></tr>
-<tr class="memdesc:a32d6022592f35243244a076a7dea68d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the soft upper bound of a cumul variable for a given variable index.  <a href="#a32d6022592f35243244a076a7dea68d9">More...</a><br /></td></tr>
 <tr class="separator:a32d6022592f35243244a076a7dea68d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4632a096ba3c4622e5dc0545d0fc9348"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a4632a096ba3c4622e5dc0545d0fc9348">getCumulVarSoftUpperBoundCoefficient</a> (long index)</td></tr>
-<tr class="memdesc:a4632a096ba3c4622e5dc0545d0fc9348"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the cost coefficient of the soft upper bound of a cumul variable for a given variable index.  <a href="#a4632a096ba3c4622e5dc0545d0fc9348">More...</a><br /></td></tr>
 <tr class="separator:a4632a096ba3c4622e5dc0545d0fc9348"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af70777d84809d5e6025f6d5238c75f11"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#af70777d84809d5e6025f6d5238c75f11">setCumulVarSoftLowerBound</a> (long index, long lower_bound, long coefficient)</td></tr>
-<tr class="memdesc:af70777d84809d5e6025f6d5238c75f11"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets a soft lower bound to the cumul variable of a given variable index.  <a href="#af70777d84809d5e6025f6d5238c75f11">More...</a><br /></td></tr>
 <tr class="separator:af70777d84809d5e6025f6d5238c75f11"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac58fac2197375294b40bd72e3fb81004"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#ac58fac2197375294b40bd72e3fb81004">hasCumulVarSoftLowerBound</a> (long index)</td></tr>
-<tr class="memdesc:ac58fac2197375294b40bd72e3fb81004"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if a soft lower bound has been set for a given variable index.  <a href="#ac58fac2197375294b40bd72e3fb81004">More...</a><br /></td></tr>
 <tr class="separator:ac58fac2197375294b40bd72e3fb81004"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afc397c35ec518229e9e922c0c8d802d1"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#afc397c35ec518229e9e922c0c8d802d1">getCumulVarSoftLowerBound</a> (long index)</td></tr>
-<tr class="memdesc:afc397c35ec518229e9e922c0c8d802d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the soft lower bound of a cumul variable for a given variable index.  <a href="#afc397c35ec518229e9e922c0c8d802d1">More...</a><br /></td></tr>
 <tr class="separator:afc397c35ec518229e9e922c0c8d802d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a52e333cfb2a6eebb6dbc467b42476353"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a52e333cfb2a6eebb6dbc467b42476353">getCumulVarSoftLowerBoundCoefficient</a> (long index)</td></tr>
-<tr class="memdesc:a52e333cfb2a6eebb6dbc467b42476353"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the cost coefficient of the soft lower bound of a cumul variable for a given variable index.  <a href="#a52e333cfb2a6eebb6dbc467b42476353">More...</a><br /></td></tr>
 <tr class="separator:a52e333cfb2a6eebb6dbc467b42476353"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c021a2218fa3155169e9d6fe8833b2a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a6c021a2218fa3155169e9d6fe8833b2a">setBreakIntervalsOfVehicle</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html">IntervalVar</a>[] breaks, int vehicle, int pre_travel_evaluator, int post_travel_evaluator)</td></tr>
-<tr class="memdesc:a6c021a2218fa3155169e9d6fe8833b2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the breaks for a given vehicle.  <a href="#a6c021a2218fa3155169e9d6fe8833b2a">More...</a><br /></td></tr>
 <tr class="separator:a6c021a2218fa3155169e9d6fe8833b2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a20a4c7b0cd73604b733efcf03ffef1da"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a20a4c7b0cd73604b733efcf03ffef1da">setBreakIntervalsOfVehicle</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html">IntervalVar</a>[] breaks, int vehicle, long[] node_visit_transits)</td></tr>
 <tr class="separator:a20a4c7b0cd73604b733efcf03ffef1da"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a36a858f9b5df623934a8be19f2b2d4c2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a36a858f9b5df623934a8be19f2b2d4c2">SetBreakDistanceDurationOfVehicle</a> (long distance, long duration, int vehicle)</td></tr>
-<tr class="memdesc:a36a858f9b5df623934a8be19f2b2d4c2"><td class="mdescLeft">&#160;</td><td class="mdescRight">With breaks supposed to be consecutive, this forces the distance between breaks of size at least minimum_break_duration to be at least distance.  <a href="#a36a858f9b5df623934a8be19f2b2d4c2">More...</a><br /></td></tr>
 <tr class="separator:a36a858f9b5df623934a8be19f2b2d4c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa01cb3b196ff7dbcd94eb4b953266aba"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#aa01cb3b196ff7dbcd94eb4b953266aba">InitializeBreaks</a> ()</td></tr>
-<tr class="memdesc:aa01cb3b196ff7dbcd94eb4b953266aba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets up vehicle_break_intervals_, vehicle_break_distance_duration_, pre_travel_evaluators and post_travel_evaluators.  <a href="#aa01cb3b196ff7dbcd94eb4b953266aba">More...</a><br /></td></tr>
 <tr class="separator:aa01cb3b196ff7dbcd94eb4b953266aba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2f19b604bd7b6590b5d1b6704fa7233a"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a2f19b604bd7b6590b5d1b6704fa7233a">HasBreakConstraints</a> ()</td></tr>
-<tr class="memdesc:a2f19b604bd7b6590b5d1b6704fa7233a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if any break interval or break distance was defined.  <a href="#a2f19b604bd7b6590b5d1b6704fa7233a">More...</a><br /></td></tr>
 <tr class="separator:a2f19b604bd7b6590b5d1b6704fa7233a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a89979600b0b58b561658fde821c09c8c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a89979600b0b58b561658fde821c09c8c">setBreakIntervalsOfVehicle</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html">IntervalVar</a>[] breaks, int vehicle, long[] node_visit_transits, LongBinaryOperator group_delays)</td></tr>
 <tr class="separator:a89979600b0b58b561658fde821c09c8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7895ca6177ed2194349c83d6929e73a4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html">IntervalVar</a> []&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a7895ca6177ed2194349c83d6929e73a4">getBreakIntervalsOfVehicle</a> (int vehicle)</td></tr>
-<tr class="memdesc:a7895ca6177ed2194349c83d6929e73a4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the break intervals set by SetBreakIntervalsOfVehicle().  <a href="#a7895ca6177ed2194349c83d6929e73a4">More...</a><br /></td></tr>
 <tr class="separator:a7895ca6177ed2194349c83d6929e73a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aedab4ff02b666ab9c42798aa34af801e"><td class="memItemLeft" align="right" valign="top">SWIGTYPE_p_std__vectorT_std__pairT_long_long_long_long_t_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#aedab4ff02b666ab9c42798aa34af801e">GetBreakDistanceDurationOfVehicle</a> (int vehicle)</td></tr>
-<tr class="memdesc:aedab4ff02b666ab9c42798aa34af801e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the pairs (distance, duration) specified by break distance constraints.  <a href="#aedab4ff02b666ab9c42798aa34af801e">More...</a><br /></td></tr>
 <tr class="separator:aedab4ff02b666ab9c42798aa34af801e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae79c791f4413bf7665819f00a14b0a28"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#ae79c791f4413bf7665819f00a14b0a28">GetPreTravelEvaluatorOfVehicle</a> (int vehicle)</td></tr>
-<tr class="memdesc:ae79c791f4413bf7665819f00a14b0a28"><td class="mdescLeft">&#160;</td><td class="mdescRight">clang-format on  <a href="#ae79c791f4413bf7665819f00a14b0a28">More...</a><br /></td></tr>
 <tr class="separator:ae79c791f4413bf7665819f00a14b0a28"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4287961809b4bbe82942903a7ee9f39d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a4287961809b4bbe82942903a7ee9f39d">GetPostTravelEvaluatorOfVehicle</a> (int vehicle)</td></tr>
 <tr class="separator:a4287961809b4bbe82942903a7ee9f39d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad67ad819ac5e83fe81c5f3dde0a3dc35"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html">RoutingDimension</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#ad67ad819ac5e83fe81c5f3dde0a3dc35">base_dimension</a> ()</td></tr>
-<tr class="memdesc:ad67ad819ac5e83fe81c5f3dde0a3dc35"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the parent in the dependency tree if any or nullptr otherwise.  <a href="#ad67ad819ac5e83fe81c5f3dde0a3dc35">More...</a><br /></td></tr>
 <tr class="separator:ad67ad819ac5e83fe81c5f3dde0a3dc35"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5b50971b84ec4080c4fd46261bca25e6"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#a5b50971b84ec4080c4fd46261bca25e6">shortestTransitionSlack</a> (long node)</td></tr>
-<tr class="memdesc:a5b50971b84ec4080c4fd46261bca25e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">It makes sense to use the function only for self-dependent dimension.  <a href="#a5b50971b84ec4080c4fd46261bca25e6">More...</a><br /></td></tr>
 <tr class="separator:a5b50971b84ec4080c4fd46261bca25e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa6090b07504db0049e3660392e1084ed"><td class="memItemLeft" align="right" valign="top">String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#aa6090b07504db0049e3660392e1084ed">name</a> ()</td></tr>
-<tr class="memdesc:aa6090b07504db0049e3660392e1084ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the name of the dimension.  <a href="#aa6090b07504db0049e3660392e1084ed">More...</a><br /></td></tr>
 <tr class="separator:aa6090b07504db0049e3660392e1084ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afc142f0a575a27470667a64e35681092"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html#afc142f0a575a27470667a64e35681092">setPickupToDeliveryLimitFunctionForPair</a> (<a class="el" href="interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1IntIntToLongFunction.html">IntIntToLongFunction</a> limit_function, int pair_index)</td></tr>
 <tr class="separator:afc142f0a575a27470667a64e35681092"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -214,7 +186,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00022">22</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00019">19</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -259,7 +231,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00288">288</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00201">201</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -286,9 +258,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Returns the parent in the dependency tree if any or nullptr otherwise. </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00261">261</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00180">180</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -315,9 +285,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Like CumulVar(), TransitVar(), SlackVar() but return the whole variable vectors instead (indexed by int64 var index). </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00094">94</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00076">76</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -345,9 +313,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Get the cumul, transit and slack variables for the given node (given as int64 var index). </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00071">71</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00056">56</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -374,7 +340,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00036">36</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00033">33</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -401,7 +367,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00098">98</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00080">80</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -429,7 +395,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00081">81</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00066">66</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -457,10 +423,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Returns the pairs (distance, duration) specified by break distance constraints. </p>
-<p>clang-format off </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00243">243</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00168">168</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -488,9 +451,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Returns the break intervals set by SetBreakIntervalsOfVehicle(). </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00236">236</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00164">164</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -518,10 +479,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Returns the soft lower bound of a cumul variable for a given variable index. </p>
-<p>The "hard" lower bound of the variable is returned if no soft lower bound has been set. </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00180">180</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00132">132</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -549,10 +507,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Returns the cost coefficient of the soft lower bound of a cumul variable for a given variable index. </p>
-<p>If no soft lower bound has been set, 0 is returned. </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00187">187</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00136">136</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -580,10 +535,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Returns the soft upper bound of a cumul variable for a given variable index. </p>
-<p>The "hard" upper bound of the variable is returned if no soft upper bound has been set. </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00152">152</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00116">116</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -611,10 +563,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Returns the cost coefficient of the soft upper bound of a cumul variable for a given variable index. </p>
-<p>If no soft upper bound has been set, 0 is returned. </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00159">159</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00120">120</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -641,7 +590,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00304">304</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00217">217</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -668,7 +617,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00300">300</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00213">213</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -696,7 +645,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00308">308</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00221">221</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -724,7 +673,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00254">254</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00176">176</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -752,9 +701,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>clang-format on </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00250">250</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00172">172</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -782,7 +729,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00296">296</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00209">209</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -810,7 +757,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00292">292</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00205">205</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -854,9 +801,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Returns the transition value for a given pair of nodes (as var index); this value is the one taken by the corresponding transit variable when the 'next' variable for 'from_index' is bound to 'to_index'. </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00057">57</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00048">48</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -900,9 +845,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Same as above but taking a vehicle class of the dimension instead of a vehicle (the class of a vehicle can be obtained with vehicle_to_class()). </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00064">64</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00052">52</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -929,9 +872,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Returns true if any break interval or break distance was defined. </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00222">222</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00156">156</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -959,9 +900,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Returns true if a soft lower bound has been set for a given variable index. </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00173">173</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00128">128</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -989,9 +928,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Returns true if a soft upper bound has been set for a given variable index. </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00145">145</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00112">112</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -1018,7 +955,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00284">284</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00197">197</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -1045,9 +982,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Sets up vehicle_break_intervals_, vehicle_break_distance_duration_, pre_travel_evaluators and post_travel_evaluators. </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00215">215</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00152">152</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -1074,9 +1009,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Returns the model on which the dimension was created. </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00049">49</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00043">43</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -1103,9 +1036,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Returns the name of the dimension. </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00276">276</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00189">189</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -1149,10 +1080,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>With breaks supposed to be consecutive, this forces the distance between breaks of size at least minimum_break_duration to be at least distance. </p>
-<p>This supposes that the time until route start and after route end are infinite breaks. </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00208">208</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00148">148</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -1202,10 +1130,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Sets the breaks for a given vehicle. </p>
-<p>Breaks are represented by IntervalVars. They may interrupt transits between nodes and increase the value of corresponding slack variables. A break may take place before the start of a vehicle, after the end of a vehicle, or during a travel i -&gt; j. In that case, the interval [break.Start(), break.End()) must be a subset of [CumulVar(i) + pre_travel(i, j), CumulVar(j) - post_travel(i, j)). In other words, a break may not overlap any node n's visit, given by [CumulVar(n) - post_travel(_, n), CumulVar(n) + pre_travel(n, _)). This formula considers post_travel(_, start) and pre_travel(end, _) to be 0; pre_travel will never be called on any (_, start) and post_travel will never we called on any (end, _). If pre_travel_evaluator or post_travel_evaluator is -1, it will be taken as a function that always returns 0. TODO: (user): Remove if !defined when routing.i is repaired. </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00194">194</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00140">140</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -1248,9 +1173,8 @@ Protected Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<dl class="deprecated"><dt><b><a class="el" href="deprecated.html#_deprecated000004">Deprecated:</a></b></dt><dd>sets pre_travel(i, j) = node_visit_transit[i].</dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00201">201</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00144">144</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -1299,9 +1223,8 @@ Protected Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<dl class="deprecated"><dt><b><a class="el" href="deprecated.html#_deprecated000005">Deprecated:</a></b></dt><dd>sets pre_travel(i, j) = node_visit_transit[i] and post_travel(i, j) = group_delays(i, j).</dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00229">229</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00160">160</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -1345,10 +1268,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Sets a soft lower bound to the cumul variable of a given variable index. </p>
-<p>If the value of the cumul variable is less than the bound, a cost proportional to the difference between this value and the bound is added to the cost function of the model: cumulVar &gt; lower_bound -&gt; cost = 0 cumulVar &lt;= lower_bound -&gt; cost = coefficient * (lower_bound - cumulVar). This is also handy to model earliness costs when the dimension represents time. Note: Using soft lower and upper bounds or span costs together is, as of 6/2014, not well supported in the sense that an optimal schedule is not guaranteed. </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00166">166</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00124">124</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -1392,10 +1312,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Sets a soft upper bound to the cumul variable of a given variable index. </p>
-<p>If the value of the cumul variable is greater than the bound, a cost proportional to the difference between this value and the bound is added to the cost function of the model: cumulVar &lt;= upper_bound -&gt; cost = 0 cumulVar &gt; upper_bound -&gt; cost = coefficient * (cumulVar - upper_bound) This is also handy to model tardiness costs when the dimension represents time. </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00138">138</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00108">108</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -1423,10 +1340,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Sets a cost proportional to the <em>global</em> dimension span, that is the difference between the largest value of route end cumul variables and the smallest value of route start cumul variables. </p>
-<p>In other words: global_span_cost = coefficient * (Max(dimension end value) - Min(dimension start value)). </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00131">131</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00104">104</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -1464,7 +1378,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00280">280</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00193">193</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -1492,7 +1406,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00124">124</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00100">100</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -1530,10 +1444,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Sets a cost proportional to the dimension span on a given vehicle, or on all vehicles at once. </p>
-<p>"coefficient" must be nonnegative. This is handy to model costs proportional to idle time when the dimension represents time. The cost for a vehicle is span_cost = coefficient * (dimension end value - dimension start value). </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00120">120</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00096">96</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -1571,10 +1482,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Sets an upper bound on the dimension span on a given vehicle. </p>
-<p>This is the preferred way to limit the "length" of the route of a vehicle according to a dimension. </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00113">113</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00092">92</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -1602,10 +1510,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>It makes sense to use the function only for self-dependent dimension. </p>
-<p>For such dimensions the value of the slack of a node determines the transition cost of the next transit. Provided that 1. cumul[node] is fixed, 2. next[node] and next[next[node]] (if exists) are fixed, the value of slack[node] for which cumul[next[node]] + transit[next[node]] is minimized can be found in O(1) using this function. </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00269">269</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00185">185</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -1632,7 +1537,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00106">106</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00088">88</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -1660,7 +1565,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00086">86</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00071">71</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -1687,7 +1592,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00102">102</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00084">84</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>
@@ -1715,7 +1620,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00076">76</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingDimension_8java_source.html#l00061">61</a> of file <a class="el" href="RoutingDimension_8java_source.html">RoutingDimension.java</a>.</p>
 
 </div>
 </div>

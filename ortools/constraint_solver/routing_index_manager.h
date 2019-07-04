@@ -23,28 +23,29 @@
 
 namespace operations_research {
 
-// Manager for any NodeIndex <-> variable index conversion. The routing solver
-// uses variable indices internally and through its API. These variable indices
-// are tricky to manage directly because one Node can correspond to a multitude
-// of variables, depending on the number of times they appear in the model, and
-// if they're used as start and/or end points. This class aims to simplify
-// variable index usage, allowing users to use NodeIndex instead.
-//
-// Usage:
-//   auto starts_ends = ...;  // These are NodeIndex.
-//   RoutingIndexManager manager(/*nodes*/10, /*vehicles*/4, starts_ends);
-//   RoutingModel model(manager);
-//
-// Then, use 'manager.NodeToIndex(node)' whenever 'model' requires a variable
-// index.
+/// Manager for any NodeIndex <-> variable index conversion. The routing solver
+/// uses variable indices internally and through its API. These variable indices
+/// are tricky to manage directly because one Node can correspond to a multitude
+/// of variables, depending on the number of times they appear in the model, and
+/// if they're used as start and/or end points. This class aims to simplify
+/// variable index usage, allowing users to use NodeIndex instead.
+///
+/// Usage:
+///   auto starts_ends = ...;  /// These are NodeIndex.
+///   RoutingIndexManager manager(10, 4, starts_ends);  // 10 nodes, 4 vehicles.
+///   RoutingModel model(manager);
+///
+/// Then, use 'manager.NodeToIndex(node)' whenever 'model' requires a variable
+/// index.
 class RoutingIndexManager {
  public:
   typedef RoutingNodeIndex NodeIndex;
   static const int64 kUnassigned;
 
-  // Creates a NodeIndex to variable index mapping for a problem containing
-  // 'num_nodes', 'num_vehicles' and the given starts and ends for each vehicle.
-  // If used, any start/end arrays have to have exactly 'num_vehicles' elements.
+  /// Creates a NodeIndex to variable index mapping for a problem containing
+  /// 'num_nodes', 'num_vehicles' and the given starts and ends for each
+  /// vehicle. If used, any start/end arrays have to have exactly 'num_vehicles'
+  /// elements.
   RoutingIndexManager(int num_nodes, int num_vehicles, NodeIndex depot);
   RoutingIndexManager(int num_nodes, int num_vehicles,
                       const std::vector<NodeIndex>& starts,
@@ -71,7 +72,7 @@ class RoutingIndexManager {
     return index_to_node_[index];
   }
   // TODO(user): Remove when removal of NodeIndex from RoutingModel is
-  // complete.
+  /// complete.
   int num_unique_depots() const { return num_unique_depots_; }
   std::vector<NodeIndex> GetIndexToNodeMap() const { return index_to_node_; }
   gtl::ITIVector<NodeIndex, int64> GetNodeToIndexMap() const {

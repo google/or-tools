@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -49,34 +48,25 @@
 </div><!--header-->
 <div class="contents">
 
-<p>Class used to compute optimal values for dimension cumuls of routes, minimizing cumul soft lower and upper bound costs, and vehicle span costs of a route.  
- <a href="classoperations__research_1_1LocalDimensionCumulOptimizer.html#details">More...</a></p>
-
 <p><code>#include &lt;<a class="el" href="routing__lp__scheduling_8h_source.html">routing_lp_scheduling.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ac4fce7a68e479fab75cf1d5e161d75df"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalDimensionCumulOptimizer.html#ac4fce7a68e479fab75cf1d5e161d75df">LocalDimensionCumulOptimizer</a> (const <a class="el" href="routing_8h.html#a50ba9dd11704e0be7edaa9e9f24142ff">RoutingDimension</a> *<a class="el" href="classoperations__research_1_1LocalDimensionCumulOptimizer.html#a9771b7daec71c086f027561e905a447e">dimension</a>)</td></tr>
+<tr class="memitem:ac4fce7a68e479fab75cf1d5e161d75df"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalDimensionCumulOptimizer.html#ac4fce7a68e479fab75cf1d5e161d75df">LocalDimensionCumulOptimizer</a> (const <a class="el" href="classoperations__research_1_1RoutingDimension.html">RoutingDimension</a> *<a class="el" href="classoperations__research_1_1LocalDimensionCumulOptimizer.html#a9771b7daec71c086f027561e905a447e">dimension</a>)</td></tr>
 <tr class="separator:ac4fce7a68e479fab75cf1d5e161d75df"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a61efb881f6d454c92969b636860c3ec0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalDimensionCumulOptimizer.html#a61efb881f6d454c92969b636860c3ec0">ComputeRouteCumulCost</a> (int vehicle, const std::function&lt; int64(int64)&gt; &amp;next_accessor, int64 *optimal_cost)</td></tr>
-<tr class="memdesc:a61efb881f6d454c92969b636860c3ec0"><td class="mdescLeft">&#160;</td><td class="mdescRight">If feasible, computes the optimal cost of the route performed by a vehicle, minimizing cumul soft lower and upper bound costs and vehicle span costs, and stores it in "optimal_cost" (if not null).  <a href="#a61efb881f6d454c92969b636860c3ec0">More...</a><br /></td></tr>
 <tr class="separator:a61efb881f6d454c92969b636860c3ec0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a17d5586b9cbc444067c85f3a664edc94"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalDimensionCumulOptimizer.html#a17d5586b9cbc444067c85f3a664edc94">ComputeRouteCumulCostWithoutFixedTransits</a> (int vehicle, const std::function&lt; int64(int64)&gt; &amp;next_accessor, int64 *optimal_cost_without_transits)</td></tr>
-<tr class="memdesc:a17d5586b9cbc444067c85f3a664edc94"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same as ComputeRouteCumulCost, but the cost computed does not contain the part of the vehicle span cost due to fixed transits.  <a href="#a17d5586b9cbc444067c85f3a664edc94">More...</a><br /></td></tr>
 <tr class="separator:a17d5586b9cbc444067c85f3a664edc94"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aac604b6944a3226c09b8227cfcd95e41"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalDimensionCumulOptimizer.html#aac604b6944a3226c09b8227cfcd95e41">ComputeRouteCumuls</a> (int vehicle, const std::function&lt; int64(int64)&gt; &amp;next_accessor, std::vector&lt; int64 &gt; *optimal_cumuls)</td></tr>
-<tr class="memdesc:aac604b6944a3226c09b8227cfcd95e41"><td class="mdescLeft">&#160;</td><td class="mdescRight">If feasible, computes the optimal cumul values of the route performed by a vehicle, minimizing cumul soft lower and upper bound costs and vehicle span costs, stores them in "optimal_cumuls" (if not null), and returns true.  <a href="#aac604b6944a3226c09b8227cfcd95e41">More...</a><br /></td></tr>
 <tr class="separator:aac604b6944a3226c09b8227cfcd95e41"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a80bde55511799f3e2b2e3d82c92b1514"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalDimensionCumulOptimizer.html#a80bde55511799f3e2b2e3d82c92b1514">ComputePackedRouteCumuls</a> (int vehicle, const std::function&lt; int64(int64)&gt; &amp;next_accessor, std::vector&lt; int64 &gt; *packed_cumuls)</td></tr>
-<tr class="memdesc:a80bde55511799f3e2b2e3d82c92b1514"><td class="mdescLeft">&#160;</td><td class="mdescRight">Similar to ComputeRouteCumuls, but also tries to pack the cumul values on the route, such that the cost remains the same, the cumul of route end is minimized, and then the cumul of the start of the route is maximized.  <a href="#a80bde55511799f3e2b2e3d82c92b1514">More...</a><br /></td></tr>
 <tr class="separator:a80bde55511799f3e2b2e3d82c92b1514"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9771b7daec71c086f027561e905a447e"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="routing_8h.html#a50ba9dd11704e0be7edaa9e9f24142ff">RoutingDimension</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalDimensionCumulOptimizer.html#a9771b7daec71c086f027561e905a447e">dimension</a> () const</td></tr>
+<tr class="memitem:a9771b7daec71c086f027561e905a447e"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classoperations__research_1_1RoutingDimension.html">RoutingDimension</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalDimensionCumulOptimizer.html#a9771b7daec71c086f027561e905a447e">dimension</a> () const</td></tr>
 <tr class="separator:a9771b7daec71c086f027561e905a447e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Class used to compute optimal values for dimension cumuls of routes, minimizing cumul soft lower and upper bound costs, and vehicle span costs of a route. </p>
-<p>In its methods, next_accessor is a callback returning the next node of a given node on a route. </p>
-
+<div class="textblock">
 <p class="definition">Definition at line <a class="el" href="routing__lp__scheduling_8h_source.html#l00116">116</a> of file <a class="el" href="routing__lp__scheduling_8h_source.html">routing_lp_scheduling.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ac4fce7a68e479fab75cf1d5e161d75df"></a>
@@ -91,7 +81,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">operations_research::LocalDimensionCumulOptimizer::LocalDimensionCumulOptimizer </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="routing_8h.html#a50ba9dd11704e0be7edaa9e9f24142ff">RoutingDimension</a> *&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1RoutingDimension.html">RoutingDimension</a> *&#160;</td>
           <td class="paramname"><em>dimension</em></td><td>)</td>
           <td></td>
         </tr>
@@ -138,8 +128,6 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Similar to ComputeRouteCumuls, but also tries to pack the cumul values on the route, such that the cost remains the same, the cumul of route end is minimized, and then the cumul of the start of the route is maximized. </p>
-
 </div>
 </div>
 <a id="a61efb881f6d454c92969b636860c3ec0"></a>
@@ -173,9 +161,6 @@ Public Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>If feasible, computes the optimal cost of the route performed by a vehicle, minimizing cumul soft lower and upper bound costs and vehicle span costs, and stores it in "optimal_cost" (if not null). </p>
-<p>Returns true iff the route respects all constraints. </p>
 
 </div>
 </div>
@@ -211,8 +196,6 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Same as ComputeRouteCumulCost, but the cost computed does not contain the part of the vehicle span cost due to fixed transits. </p>
-
 </div>
 </div>
 <a id="aac604b6944a3226c09b8227cfcd95e41"></a>
@@ -247,9 +230,6 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>If feasible, computes the optimal cumul values of the route performed by a vehicle, minimizing cumul soft lower and upper bound costs and vehicle span costs, stores them in "optimal_cumuls" (if not null), and returns true. </p>
-<p>Returns false if the route is not feasible. </p>
-
 </div>
 </div>
 <a id="a9771b7daec71c086f027561e905a447e"></a>
@@ -262,7 +242,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="routing_8h.html#a50ba9dd11704e0be7edaa9e9f24142ff">RoutingDimension</a>* operations_research::LocalDimensionCumulOptimizer::dimension </td>
+          <td class="memname">const <a class="el" href="classoperations__research_1_1RoutingDimension.html">RoutingDimension</a>* operations_research::LocalDimensionCumulOptimizer::dimension </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>

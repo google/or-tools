@@ -556,769 +556,148 @@
     <includes id="routing__index__manager_8h" name="routing_index_manager.h" local="yes" imported="no">ortools/constraint_solver/routing_index_manager.h</includes>
     <includes id="routing__parameters_8pb_8h" name="routing_parameters.pb.h" local="yes" imported="no">ortools/constraint_solver/routing_parameters.pb.h</includes>
     <includes id="routing__types_8h" name="routing_types.h" local="yes" imported="no">ortools/constraint_solver/routing_types.h</includes>
-    <class kind="struct">DisjunctivePropagator::Tasks</class>
-    <class kind="struct">TypeRegulationsChecker::NodeCount</class>
-    <class kind="struct">SimpleBoundCosts::BoundCost</class>
-    <class kind="struct">RoutingDimension::NodePrecedence</class>
-    <class kind="struct">CheapestInsertionFilteredDecisionBuilder::StartEndValue</class>
-    <class kind="struct">SavingsFilteredDecisionBuilder::SavingsParameters</class>
-    <class kind="class">SavingsFilteredDecisionBuilder::SavingsContainer</class>
-    <class kind="struct">SavingsFilteredDecisionBuilder::VehicleClassEntry</class>
-    <member kind="define">
-      <type>#define</type>
-      <name>OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_H_</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>af52b05a44d013985efe92bec167e0bd7</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="typedef">
-      <type>std::function&lt; std::vector&lt; operations_research::IntVar * &gt;(RoutingModel *)&gt;</type>
-      <name>GetTabuVarsCallback</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a0e106a97f0156868f1d1c741b283793e</anchor>
-      <arglist></arglist>
-    </member>
+    <class kind="class">operations_research::RoutingModel</class>
+    <class kind="struct">operations_research::RoutingModel::StateDependentTransit</class>
+    <class kind="struct">operations_research::RoutingModel::CostClass</class>
+    <class kind="struct">operations_research::RoutingModel::CostClass::DimensionCost</class>
+    <class kind="struct">operations_research::RoutingModel::VehicleClass</class>
+    <class kind="class">operations_research::RoutingModelVisitor</class>
+    <class kind="class">operations_research::DisjunctivePropagator</class>
+    <class kind="struct">operations_research::DisjunctivePropagator::Tasks</class>
+    <class kind="class">operations_research::GlobalVehicleBreaksConstraint</class>
+    <class kind="class">operations_research::TypeRegulationsChecker</class>
+    <class kind="struct">operations_research::TypeRegulationsChecker::NodeCount</class>
+    <class kind="class">operations_research::TypeIncompatibilityChecker</class>
+    <class kind="class">operations_research::TypeRequirementChecker</class>
+    <class kind="class">operations_research::TypeRegulationsConstraint</class>
+    <class kind="class">operations_research::SimpleBoundCosts</class>
+    <class kind="struct">operations_research::SimpleBoundCosts::BoundCost</class>
+    <class kind="class">operations_research::RoutingDimension</class>
+    <class kind="struct">operations_research::RoutingDimension::NodePrecedence</class>
+    <class kind="class">operations_research::SweepArranger</class>
+    <class kind="class">operations_research::IntVarFilteredDecisionBuilder</class>
+    <class kind="class">operations_research::RoutingFilteredDecisionBuilder</class>
+    <class kind="class">operations_research::CheapestInsertionFilteredDecisionBuilder</class>
+    <class kind="struct">operations_research::CheapestInsertionFilteredDecisionBuilder::StartEndValue</class>
+    <class kind="class">operations_research::GlobalCheapestInsertionFilteredDecisionBuilder</class>
+    <class kind="class">operations_research::LocalCheapestInsertionFilteredDecisionBuilder</class>
+    <class kind="class">operations_research::CheapestAdditionFilteredDecisionBuilder</class>
+    <class kind="class">operations_research::EvaluatorCheapestAdditionFilteredDecisionBuilder</class>
+    <class kind="class">operations_research::ComparatorCheapestAdditionFilteredDecisionBuilder</class>
+    <class kind="class">operations_research::SavingsFilteredDecisionBuilder</class>
+    <class kind="struct">operations_research::SavingsFilteredDecisionBuilder::SavingsParameters</class>
+    <class kind="class">operations_research::SavingsFilteredDecisionBuilder::SavingsContainer</class>
+    <class kind="struct">operations_research::SavingsFilteredDecisionBuilder::VehicleClassEntry</class>
+    <class kind="class">operations_research::SequentialSavingsFilteredDecisionBuilder</class>
+    <class kind="class">operations_research::ParallelSavingsFilteredDecisionBuilder</class>
+    <class kind="class">operations_research::ChristofidesFilteredDecisionBuilder</class>
+    <class kind="class">operations_research::BasePathFilter</class>
+    <class kind="class">operations_research::CPFeasibilityFilter</class>
+    <namespace>operations_research</namespace>
     <member kind="function">
-      <type>routing_no_lns(default:false) int</type>
-      <name>GetVisitType</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a874eb2862dd884ad47e30746e03627f5</anchor>
-      <arglist>(int64 index) const</arglist>
+      <type>void</type>
+      <name>AppendTasksFromPath</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a9c690acb94faaa03d89930ec84a76bba</anchor>
+      <arglist>(const std::vector&lt; int64 &gt; &amp;path, const std::vector&lt; int64 &gt; &amp;min_travels, const std::vector&lt; int64 &gt; &amp;max_travels, const std::vector&lt; int64 &gt; &amp;pre_travels, const std::vector&lt; int64 &gt; &amp;post_travels, const RoutingDimension &amp;dimension, DisjunctivePropagator::Tasks *tasks)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
-      <name>CloseVisitTypes</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a822458cc9a9a6fa02e86af3e3a1e5c89</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>GetNumberOfVisitTypes</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a24478803a7138d68852093b9c2743892</anchor>
-      <arglist>() const</arglist>
+      <name>AppendTasksFromIntervals</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>aec575fd72a48b07ceca957691d785d57</anchor>
+      <arglist>(const std::vector&lt; IntervalVar * &gt; &amp;intervals, DisjunctivePropagator::Tasks *tasks)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
-      <name>AddHardTypeIncompatibility</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a796b4eed03ed53bbbaed642f4ae94952</anchor>
-      <arglist>(int type1, int type2)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>AddTemporalTypeIncompatibility</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a7086a908f1890a7e1550c97b774e6384</anchor>
-      <arglist>(int type1, int type2)</arglist>
-    </member>
-    <member kind="function">
-      <type>const absl::flat_hash_set&lt; int &gt; &amp;</type>
-      <name>GetHardTypeIncompatibilitiesOfType</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a51fb0661acf38ed1442819e2cc452311</anchor>
-      <arglist>(int type) const</arglist>
-    </member>
-    <member kind="function">
-      <type>const absl::flat_hash_set&lt; int &gt; &amp;</type>
-      <name>GetTemporalTypeIncompatibilitiesOfType</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a9d8ead500db4128d0d27f8066d1f8208</anchor>
-      <arglist>(int type) const</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>HasHardTypeIncompatibilities</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a9c58894df747f5498c335a3a8c5c0c88</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>HasTemporalTypeIncompatibilities</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>ad19492313b68e5a963af3793aaec8d90</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>AddSameVehicleRequiredTypeAlternatives</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>ac22e9cfd1fbf1b4af4f8a9be46ec88a1</anchor>
-      <arglist>(int dependent_type, absl::flat_hash_set&lt; int &gt; required_type_alternatives)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>AddTemporalRequiredTypeAlternatives</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a92ee209f167d3974329301d784010b63</anchor>
-      <arglist>(int dependent_type, absl::flat_hash_set&lt; int &gt; required_type_alternatives)</arglist>
-    </member>
-    <member kind="function">
-      <type>const std::vector&lt; absl::flat_hash_set&lt; int &gt; &gt; &amp;</type>
-      <name>GetSameVehicleRequiredTypeAlternativesOfType</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>ae350d70cb713a6772283e3753f4f2f7a</anchor>
-      <arglist>(int type) const</arglist>
-    </member>
-    <member kind="function">
-      <type>const std::vector&lt; absl::flat_hash_set&lt; int &gt; &gt; &amp;</type>
-      <name>GetTemporalRequiredTypeAlternativesOfType</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>ab1652af55e9d83490d9c59d35d991ce9</anchor>
-      <arglist>(int type) const</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>HasSameVehicleTypeRequirements</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>abc101a64a3c876dcdf1b7176d59bd2c9</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>HasTemporalTypeRequirements</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a5e3f4c6871f7b2c67fd5b1ad6c94d891</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>HasTypeRegulations</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>ab313d84a56c5e9b1b8f28da70b8d4045</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>int64</type>
-      <name>UnperformedPenalty</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a3600327c657a0c83430d7bd9566e9ab6</anchor>
-      <arglist>(int64 var_index) const</arglist>
-    </member>
-    <member kind="function">
-      <type>int64</type>
-      <name>UnperformedPenaltyOrValue</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>ae8364b53d49a5b46e994d41124c4ffd6</anchor>
-      <arglist>(int64 default_value, int64 var_index) const</arglist>
-    </member>
-    <member kind="function">
-      <type>int64</type>
-      <name>GetDepot</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>acca75b5d3bfe2433c5805b049815f533</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetArcCostEvaluatorOfAllVehicles</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>ab8d61705aa4291d2cd437ba0a7dfccbf</anchor>
-      <arglist>(int evaluator_index)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetArcCostEvaluatorOfVehicle</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>ae75d9f49c157b7784fc8baa7d623ee35</anchor>
-      <arglist>(int evaluator_index, int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetFixedCostOfAllVehicles</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a07b796e9f91ee5b4c5e99c7f23e2f743</anchor>
-      <arglist>(int64 cost)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetFixedCostOfVehicle</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a4e8f5b5f090cf084347eda6eb803813a</anchor>
-      <arglist>(int64 cost, int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>int64</type>
-      <name>GetFixedCostOfVehicle</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a4bab641f5b9bf8de266adad29558b4c2</anchor>
-      <arglist>(int vehicle) const</arglist>
-    </member>
-    <member kind="function">
-      <type>quadratic_cost_factor_of_vehicle_ *[v] square of length of route v void</type>
-      <name>SetAmortizedCostFactorsOfAllVehicles</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>aa3d92ac74ce8d3e57551677e88e2c846</anchor>
-      <arglist>(int64 linear_cost_factor, int64 quadratic_cost_factor)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetAmortizedCostFactorsOfVehicle</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>ae1acdfe3dcf892d108d2a2ecab94e936</anchor>
-      <arglist>(int64 linear_cost_factor, int64 quadratic_cost_factor, int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>const std::vector&lt; int64 &gt; &amp;</type>
-      <name>GetAmortizedLinearCostFactorOfVehicles</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>aa01519be299cb5ddef36111ee6f8a5cc</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>const std::vector&lt; int64 &gt; &amp;</type>
-      <name>GetAmortizedQuadraticCostFactorOfVehicles</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>aaeaf95383c1c03da6f22c522d119775b</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>ConsiderEmptyRouteCostsForVehicle</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a7ccaa3133378da76d3fd5cdb560038ae</anchor>
-      <arglist>(bool consider_costs, int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>AreEmptyRouteCostsConsideredForVehicle</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>aed6760664a6e4f3427832ee3b7ba0602</anchor>
-      <arglist>(int vehicle) const</arglist>
-    </member>
-    <member kind="function">
-      <type>const Solver::IndexEvaluator2 &amp;</type>
-      <name>first_solution_evaluator</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a660cb5477a6d3fbf146657aa7af73968</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetFirstSolutionEvaluator</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>ab69145472d51d341f82d3ad29e9c6be2</anchor>
-      <arglist>(Solver::IndexEvaluator2 evaluator)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>AddLocalSearchOperator</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a1156fa8214dba09e2a2a94862244aa1f</anchor>
-      <arglist>(LocalSearchOperator *ls_operator)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>AddSearchMonitor</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a0e23be986e4c3b96a50c8798aa5f536d</anchor>
-      <arglist>(SearchMonitor *const monitor)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>AddAtSolutionCallback</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a086605d9650ce3c576d8a9c45ce0b9fc</anchor>
-      <arglist>(std::function&lt; void()&gt; callback)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>AddVariableMinimizedByFinalizer</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a4768ba91c34c542eddec212a68d79473</anchor>
-      <arglist>(IntVar *var)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>AddVariableMaximizedByFinalizer</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>aabdcf3bd412a5a61d811ef85e115e5ff</anchor>
-      <arglist>(IntVar *var)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>AddWeightedVariableMinimizedByFinalizer</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a939aa2ef2afec0337b0f9d4dcb1c2db8</anchor>
-      <arglist>(IntVar *var, int64 cost)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>AddVariableTargetToFinalizer</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a1739a41268c21cfc401d870f05b93536</anchor>
-      <arglist>(IntVar *var, int64 target)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CloseModel</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>add71470f4175a0859e6e3d69c2a53988</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>CloseModelWithParameters</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>aa79f8d482de4dd0ef86a1b54999686af</anchor>
-      <arglist>(const RoutingSearchParameters &amp;search_parameters)</arglist>
-    </member>
-    <member kind="function">
-      <type>const Assignment *</type>
-      <name>Solve</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a562e4c0a80f7f4eda9573a482af288d1</anchor>
-      <arglist>(const Assignment *assignment=nullptr)</arglist>
-    </member>
-    <member kind="function">
-      <type>const Assignment *</type>
-      <name>SolveWithParameters</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>af4e97be54c31d45d312d168ce1c8ba6f</anchor>
-      <arglist>(const RoutingSearchParameters &amp;search_parameters, std::vector&lt; const Assignment * &gt; *solutions=nullptr)</arglist>
-    </member>
-    <member kind="function">
-      <type>const Assignment *</type>
-      <name>SolveFromAssignmentWithParameters</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a56e06d63a6d3792ab5cd64e51724632b</anchor>
-      <arglist>(const Assignment *assignment, const RoutingSearchParameters &amp;search_parameters, std::vector&lt; const Assignment * &gt; *solutions=nullptr)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetAssignmentFromOtherModelAssignment</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>ac1a2ab630f6b13644ca6853c7893f413</anchor>
-      <arglist>(Assignment *target_assignment, const RoutingModel *source_model, const Assignment *source_assignment)</arglist>
-    </member>
-    <member kind="function">
-      <type>int64</type>
-      <name>ComputeLowerBound</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>ae9b2404a26ab1e6acf562b8261eeba38</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Status</type>
-      <name>status</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>adb1490a44086db009cdb51f854a02a65</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>IntVar *</type>
-      <name>ApplyLocks</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>aaf71584ad4bffea7a489dc53787fa6f8</anchor>
-      <arglist>(const std::vector&lt; int64 &gt; &amp;locks)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>ApplyLocksToAllVehicles</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a410f7da30cf944b7874eebe57eebe41a</anchor>
-      <arglist>(const std::vector&lt; std::vector&lt; int64 &gt;&gt; &amp;locks, bool close_routes)</arglist>
-    </member>
-    <member kind="function">
-      <type>const Assignment *const</type>
-      <name>PreAssignment</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>ae033bc458ffce1ecc4874f3e212896f7</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>Assignment *</type>
-      <name>MutablePreAssignment</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a3af1158b77552d60afc3f0473de3892d</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>WriteAssignment</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>acfcef421e8c8cd243157543f741d6a73</anchor>
-      <arglist>(const std::string &amp;file_name) const</arglist>
-    </member>
-    <member kind="function">
-      <type>Assignment *</type>
-      <name>ReadAssignment</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a74e3de2ce73322e1860be0713c07c33e</anchor>
-      <arglist>(const std::string &amp;file_name)</arglist>
-    </member>
-    <member kind="function">
-      <type>Assignment *</type>
-      <name>RestoreAssignment</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a566ddf59563c1b37e8c178b1805aa0f4</anchor>
-      <arglist>(const Assignment &amp;solution)</arglist>
-    </member>
-    <member kind="function">
-      <type>Assignment *</type>
-      <name>ReadAssignmentFromRoutes</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a97dca877bb5083a72c147628a8439770</anchor>
-      <arglist>(const std::vector&lt; std::vector&lt; int64 &gt;&gt; &amp;routes, bool ignore_inactive_indices)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>RoutesToAssignment</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a78f7f1cb8b08b7ec1d477a14447bd8d4</anchor>
-      <arglist>(const std::vector&lt; std::vector&lt; int64 &gt;&gt; &amp;routes, bool ignore_inactive_indices, bool close_routes, Assignment *const assignment) const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>AssignmentToRoutes</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a97d152b7049084186342b719eee6fa15</anchor>
-      <arglist>(const Assignment &amp;assignment, std::vector&lt; std::vector&lt; int64 &gt;&gt; *const routes) const</arglist>
-    </member>
-    <member kind="function">
-      <type>Assignment *</type>
-      <name>CompactAssignment</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a1b7f20d14ae5261cb2f250c6e99f4383</anchor>
-      <arglist>(const Assignment &amp;assignment) const</arglist>
-    </member>
-    <member kind="function">
-      <type>Assignment *</type>
-      <name>CompactAndCheckAssignment</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a3e87a7710617f6ac19dca14adad9c5a6</anchor>
-      <arglist>(const Assignment &amp;assignment) const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>AddToAssignment</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a437ae499bef0aa64f2753166a000f5bd</anchor>
-      <arglist>(IntVar *const var)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>AddIntervalToAssignment</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>ab878a81ace850e3ecd26e95966409f61</anchor>
-      <arglist>(IntervalVar *const interval)</arglist>
-    </member>
-    <member kind="function">
-      <type>const Assignment *</type>
-      <name>PackCumulsOfOptimizerDimensionsFromAssignment</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a5cc6e6b421a6dfc8650cc38e116fff03</anchor>
-      <arglist>(const Assignment *original_assignment, absl::Duration duration_limit)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetSweepArranger</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a700982f228080c6278eb5a2f7f06f31d</anchor>
-      <arglist>(SweepArranger *sweep_arranger)</arglist>
-    </member>
-    <member kind="function">
-      <type>SweepArranger *</type>
-      <name>sweep_arranger</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a71815ec83f6605bddb11578ebb835aae</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>AddLocalSearchFilter</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a566384949e6395952f6f6b48603fd87f</anchor>
-      <arglist>(LocalSearchFilter *filter)</arglist>
-    </member>
-    <member kind="function">
-      <type>int64</type>
-      <name>Start</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>acbdbdfc9491ef0586459d38cc5ef4cb8</anchor>
-      <arglist>(int vehicle) const</arglist>
-    </member>
-    <member kind="function">
-      <type>int64</type>
-      <name>End</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a1dc8d32892f78532c8ee7a7186158e07</anchor>
-      <arglist>(int vehicle) const</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>IsStart</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>ae1adbc353c105572655ae866124c61b6</anchor>
-      <arglist>(int64 index) const</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>IsEnd</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>ae2530e17cabaf267e12929ca0ee1bee0</anchor>
-      <arglist>(int64 index) const</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>VehicleIndex</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>abd33c037942b971eeefad43c6022c20e</anchor>
-      <arglist>(int index) const</arglist>
-    </member>
-    <member kind="function">
-      <type>int64</type>
-      <name>Next</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a46a69d9769aa92122c7e5e20f49e3da3</anchor>
-      <arglist>(const Assignment &amp;assignment, int64 index) const</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>IsVehicleUsed</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>aedb8dca94b15e5465fef1667d1a81db6</anchor>
-      <arglist>(const Assignment &amp;assignment, int vehicle) const</arglist>
-    </member>
-    <member kind="function">
-      <type>const std::vector&lt; IntVar * &gt; &amp;</type>
-      <name>Nexts</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>aad154b31953d2b467bbac3e4ac696cd6</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>const std::vector&lt; IntVar * &gt; &amp;</type>
-      <name>VehicleVars</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a80572a238b48c2cefe38409e7544f161</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>IntVar *</type>
-      <name>NextVar</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a66fb44c05f9875685e9c332fbdfb643b</anchor>
-      <arglist>(int64 index) const</arglist>
-    </member>
-    <member kind="function">
-      <type>IntVar *</type>
-      <name>ActiveVar</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>afadc1348f0318e9bc8cebb75b2fc4234</anchor>
-      <arglist>(int64 index) const</arglist>
-    </member>
-    <member kind="function">
-      <type>IntVar *</type>
-      <name>VehicleCostsConsideredVar</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a7c2d33eef73401442fd9f2e205056c73</anchor>
-      <arglist>(int vehicle) const</arglist>
-    </member>
-    <member kind="function">
-      <type>IntVar *</type>
-      <name>VehicleVar</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a8cded3d3d6746c179a8ec0eddad24342</anchor>
-      <arglist>(int64 index) const</arglist>
-    </member>
-    <member kind="function">
-      <type>IntVar *</type>
-      <name>CostVar</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>abcbe77312783c0a5aa4926ace764533b</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>int64</type>
-      <name>GetArcCostForVehicle</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a50dd6fccc1cca84aa10efc8f3ece396c</anchor>
-      <arglist>(int64 from_index, int64 to_index, int64 vehicle) const</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>CostsAreHomogeneousAcrossVehicles</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>ae0c21c6d4e99cb309b8b298d280e4853</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>int64</type>
-      <name>GetHomogeneousCost</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>aa241abc19460575d250a5788f03afbf6</anchor>
-      <arglist>(int64 from_index, int64 to_index) const</arglist>
-    </member>
-    <member kind="function">
-      <type>int64</type>
-      <name>GetArcCostForFirstSolution</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a6569b0ea25fa25c91c2b8b63bedeacc6</anchor>
-      <arglist>(int64 from_index, int64 to_index) const</arglist>
-    </member>
-    <member kind="function">
-      <type>int64</type>
-      <name>GetArcCostForClass</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a92d7882c311f7d9d0c55c4def34150dd</anchor>
-      <arglist>(int64 from_index, int64 to_index, int64 cost_class_index) const</arglist>
-    </member>
-    <member kind="function">
-      <type>CostClassIndex</type>
-      <name>GetCostClassIndexOfVehicle</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a32bba655accbd7dc8e23d30bf679b880</anchor>
-      <arglist>(int64 vehicle) const</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>HasVehicleWithCostClassIndex</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a67e8d10adbcc563f428069f9b2c04b63</anchor>
-      <arglist>(CostClassIndex cost_class_index) const</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>GetCostClassesCount</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>ad3b144985c2b4b24cf39b839dbd9c16d</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>GetNonZeroCostClassesCount</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>abaa74f74aefe075aedb6b16259a4404e</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>VehicleClassIndex</type>
-      <name>GetVehicleClassIndexOfVehicle</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a7a8e134df97e40d1fc498f7f985c33ec</anchor>
-      <arglist>(int64 vehicle) const</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>GetVehicleClassesCount</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a34ab0d5fa45360b5e6a42b9a78cfe5a8</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>const std::vector&lt; int &gt; &amp;</type>
-      <name>GetSameVehicleIndicesOfIndex</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a0f8c7a97b5465ae4ba4cb1a92c39b756</anchor>
-      <arglist>(int node) const</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>ArcIsMoreConstrainedThanArc</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a1048b3f7ef92f0d7747f93c8586ea1cc</anchor>
-      <arglist>(int64 from, int64 to1, int64 to2)</arglist>
-    </member>
-    <member kind="function">
-      <type>std::string</type>
-      <name>DebugOutputAssignment</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a25d079aaf52ffdf6d547384b523ff018</anchor>
-      <arglist>(const Assignment &amp;solution_assignment, const std::string &amp;dimension_to_print) const</arglist>
-    </member>
-    <member kind="function">
-      <type>Solver *</type>
-      <name>solver</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a5f32c22c620c811754ba7b6f977db864</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>CheckLimit</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a3f5d70fe48cb54cbc5d8f6bba55b007d</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>absl::Duration</type>
-      <name>RemainingTime</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>adb0524e488894fa8f88764c74abb31f5</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>nodes</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a0f38add802397fef1f57b7d90ccd5aef</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>vehicles</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>aa9e7ba89833775f29889744fe9480d29</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>int64</type>
-      <name>Size</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a354dd8c252cf59b748602b342db6019d</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>int64</type>
-      <name>GetNumberOfDecisionsInFirstSolution</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a04bd106a61d493872cabb0f41f7f118f</anchor>
-      <arglist>(const RoutingSearchParameters &amp;search_parameters) const</arglist>
-    </member>
-    <member kind="function">
-      <type>int64</type>
-      <name>GetNumberOfRejectsInFirstSolution</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>aefff345740a5db07caea065ec14ec52f</anchor>
-      <arglist>(const RoutingSearchParameters &amp;search_parameters) const</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>IsMatchingModel</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>ac8347e84488d1b5eb7b5e6972fb32be3</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SetTabuVarsCallback</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a7e2d405cde11bc4a08d752d0e669912c</anchor>
-      <arglist>(GetTabuVarsCallback tabu_var_callback)</arglist>
+      <name>FillPathEvaluation</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a4f6a1b9fc737ba25fee7bf42d6635182</anchor>
+      <arglist>(const std::vector&lt; int64 &gt; &amp;path, const RoutingModel::TransitCallback2 &amp;evaluator, std::vector&lt; int64 &gt; *values)</arglist>
     </member>
     <member kind="function">
       <type>DecisionBuilder *</type>
-      <name>MakeGuidedSlackFinalizer</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a20d0a3f5cec2e425c86f358e5f06b4a8</anchor>
-      <arglist>(const RoutingDimension *dimension, std::function&lt; int64(int64)&gt; initializer)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static std::unique_ptr&lt; LocalSearchOperator &gt;</type>
-      <name>MakeGreedyDescentLSOperator</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>aa1c45751ee316e0948ba32494262f006</anchor>
-      <arglist>(std::vector&lt; IntVar * &gt; variables)</arglist>
+      <name>MakeSetValuesFromTargets</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a4e907b3668a07c9fa3f62d938f6cb855</anchor>
+      <arglist>(Solver *solver, std::vector&lt; IntVar * &gt; variables, std::vector&lt; int64 &gt; targets)</arglist>
     </member>
     <member kind="function">
-      <type>DecisionBuilder *</type>
-      <name>MakeSelfDependentDimensionFinalizer</name>
-      <anchorfile>routing_8h.html</anchorfile>
-      <anchor>a56c3abe7b321f4caf06a0a5e72586cac</anchor>
-      <arglist>(const RoutingDimension *dimension)</arglist>
+      <type>bool</type>
+      <name>SolveModelWithSat</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>ab70fc1eb89b0210ef0e6d24256f7776a</anchor>
+      <arglist>(const RoutingModel &amp;model, const Assignment *initial_solution, Assignment *solution)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVarLocalSearchFilter *</type>
+      <name>MakeNodeDisjunctionFilter</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>ae096121f1559753c357ed8ee184353f8</anchor>
+      <arglist>(const RoutingModel &amp;routing_model, std::function&lt; void(int64)&gt; objective_callback)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVarLocalSearchFilter *</type>
+      <name>MakeVehicleAmortizedCostFilter</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a5f6417c3f4078b9fdaafdb8e19116b55</anchor>
+      <arglist>(const RoutingModel &amp;routing_model, Solver::ObjectiveWatcher objective_callback)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVarLocalSearchFilter *</type>
+      <name>MakeTypeRegulationsFilter</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a3de43a015d4ee3ce53eb030e1d7232de</anchor>
+      <arglist>(const RoutingModel &amp;routing_model)</arglist>
+    </member>
+    <member kind="function">
+      <type>std::vector&lt; IntVarLocalSearchFilter * &gt;</type>
+      <name>MakeCumulFilters</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>ab7e213b9838f546243a7040d58506cd9</anchor>
+      <arglist>(const RoutingDimension &amp;dimension, Solver::ObjectiveWatcher objective_callback, bool filter_objective_cost)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVarLocalSearchFilter *</type>
+      <name>MakePathCumulFilter</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>ab64b4ace42f0744e0814257a9a6ffa16</anchor>
+      <arglist>(const RoutingDimension &amp;dimension, Solver::ObjectiveWatcher objective_callback, bool propagate_own_objective_value, bool filter_objective_cost)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVarLocalSearchFilter *</type>
+      <name>MakeGlobalLPCumulFilter</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>afbaa470f2ff428bc316d5eac61567955</anchor>
+      <arglist>(const RoutingDimension &amp;dimension, Solver::ObjectiveWatcher objective_callback, bool filter_objective_cost)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVarLocalSearchFilter *</type>
+      <name>MakePickupDeliveryFilter</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>ae3ffb53eac6214b414e926238012a2a0</anchor>
+      <arglist>(const RoutingModel &amp;routing_model, const RoutingModel::IndexPairs &amp;pairs, const std::vector&lt; RoutingModel::PickupAndDeliveryPolicy &gt; &amp;vehicle_policies)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVarLocalSearchFilter *</type>
+      <name>MakeVehicleVarFilter</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a67f4b4b64a6c11717020eaa963b98c51</anchor>
+      <arglist>(const RoutingModel &amp;routing_model)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVarLocalSearchFilter *</type>
+      <name>MakeVehicleBreaksFilter</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>ae9a33af72abb5c2332a1f7ca71ab8215</anchor>
+      <arglist>(const RoutingModel &amp;routing_model, const RoutingDimension &amp;dimension)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVarLocalSearchFilter *</type>
+      <name>MakeCPFeasibilityFilter</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>aaa5f7d59af23f5e10fc43a3989fa0b68</anchor>
+      <arglist>(const RoutingModel *routing_model)</arglist>
     </member>
   </compound>
   <compound kind="file">
@@ -1990,35 +1369,8 @@
     <path>/usr/local/google/home/lperron/Work/or-tools/ortools/constraint_solver/</path>
     <filename>routing__index__manager_8h</filename>
     <includes id="routing__types_8h" name="routing_types.h" local="yes" imported="no">ortools/constraint_solver/routing_types.h</includes>
+    <class kind="class">operations_research::RoutingIndexManager</class>
     <namespace>operations_research</namespace>
-    <member kind="function">
-      <type>*RoutingModel</type>
-      <name>model</name>
-      <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a2f03e5ed2f65164d62fc5f039441596d</anchor>
-      <arglist>(manager)</arglist>
-    </member>
-    <member kind="function">
-      <type>use manager</type>
-      <name>NodeToIndex</name>
-      <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a891fd91407acbbeb1c47d22be7991b3f</anchor>
-      <arglist>(node)&apos; whenever &apos;model&apos; requires a variable *index. */class RoutingIndexManager</arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>starts_ends</name>
-      <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a144750b8ec3f03decd898cc08c6b2894</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>**</type>
-      <name>Then</name>
-      <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ad86181cc5dff70e9ce3bfa1f8393cb6a</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="file">
     <name>routing_lp_scheduling.h</name>
@@ -4509,6 +3861,207 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>operations_research::BasePathFilter</name>
+    <filename>classoperations__research_1_1BasePathFilter.html</filename>
+    <base>operations_research::IntVarLocalSearchFilter</base>
+    <member kind="function">
+      <type></type>
+      <name>BasePathFilter</name>
+      <anchorfile>classoperations__research_1_1BasePathFilter.html</anchorfile>
+      <anchor>a00c9770a8566169765e10133c77caa91</anchor>
+      <arglist>(const std::vector&lt; IntVar * &gt; &amp;nexts, int next_domain_size, std::function&lt; void(int64)&gt; objective_callback)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>~BasePathFilter</name>
+      <anchorfile>classoperations__research_1_1BasePathFilter.html</anchorfile>
+      <anchor>ac76dad88eb64963f1e42825c9e5cf6f6</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Accept</name>
+      <anchorfile>classoperations__research_1_1BasePathFilter.html</anchorfile>
+      <anchor>ac68c29afe880d40f944a790220071192</anchor>
+      <arglist>(Assignment *delta, Assignment *deltadelta) override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>OnSynchronize</name>
+      <anchorfile>classoperations__research_1_1BasePathFilter.html</anchorfile>
+      <anchor>ac49c84d4660f45c14cfb8aabbc1f526d</anchor>
+      <arglist>(const Assignment *delta) override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Synchronize</name>
+      <anchorfile>classoperations__research_1_1IntVarLocalSearchFilter.html</anchorfile>
+      <anchor>af551c2cc4bd9dc8eca5c1aba2ea0cf1a</anchor>
+      <arglist>(const Assignment *assignment, const Assignment *delta) override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>FindIndex</name>
+      <anchorfile>classoperations__research_1_1IntVarLocalSearchFilter.html</anchorfile>
+      <anchor>a4ff8f64bad58d06ddf1e1fa16b52fefc</anchor>
+      <arglist>(IntVar *const var, int64 *index) const</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>InjectObjectiveValue</name>
+      <anchorfile>classoperations__research_1_1IntVarLocalSearchFilter.html</anchorfile>
+      <anchor>abeca74f43d73826093a3e288a633d7a2</anchor>
+      <arglist>(int64 objective_value)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddVars</name>
+      <anchorfile>classoperations__research_1_1IntVarLocalSearchFilter.html</anchorfile>
+      <anchor>a78c80d2accf5a4506e3436081d365a34</anchor>
+      <arglist>(const std::vector&lt; IntVar * &gt; &amp;vars)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>Size</name>
+      <anchorfile>classoperations__research_1_1IntVarLocalSearchFilter.html</anchorfile>
+      <anchor>a29acf74cf99f603af9c73f5a994b48f2</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVar *</type>
+      <name>Var</name>
+      <anchorfile>classoperations__research_1_1IntVarLocalSearchFilter.html</anchorfile>
+      <anchor>a5c85a90b191d5aae9ab29cf1e28ff878</anchor>
+      <arglist>(int index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>Value</name>
+      <anchorfile>classoperations__research_1_1IntVarLocalSearchFilter.html</anchorfile>
+      <anchor>afd72fb787ed7167fc9d959deb1286931</anchor>
+      <arglist>(int index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>IsVarSynced</name>
+      <anchorfile>classoperations__research_1_1IntVarLocalSearchFilter.html</anchorfile>
+      <anchor>add26b0145e2f0ba25dcda0e1565164db</anchor>
+      <arglist>(int index) const</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>IsIncremental</name>
+      <anchorfile>classoperations__research_1_1LocalSearchFilter.html</anchorfile>
+      <anchor>a58392212e951aafc3a6ba400d8816790</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual int64</type>
+      <name>GetSynchronizedObjectiveValue</name>
+      <anchorfile>classoperations__research_1_1LocalSearchFilter.html</anchorfile>
+      <anchor>aa3934bba1ec84e9c9b401693b43c662a</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual int64</type>
+      <name>GetAcceptedObjectiveValue</name>
+      <anchorfile>classoperations__research_1_1LocalSearchFilter.html</anchorfile>
+      <anchor>a7a34da518a80fbaeccb2fde10f2fbd78</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual std::string</type>
+      <name>DebugString</name>
+      <anchorfile>classoperations__research_1_1BaseObject.html</anchorfile>
+      <anchor>afb3b013c5063d71566d5273793c1d828</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>GetNext</name>
+      <anchorfile>classoperations__research_1_1BasePathFilter.html</anchorfile>
+      <anchor>ab10424cfdf149205ba85d514ecaccfc5</anchor>
+      <arglist>(int64 node) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int</type>
+      <name>NumPaths</name>
+      <anchorfile>classoperations__research_1_1BasePathFilter.html</anchorfile>
+      <anchor>a1ce25ec7070e5274ea054a8393da8eba</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>Start</name>
+      <anchorfile>classoperations__research_1_1BasePathFilter.html</anchorfile>
+      <anchor>a5960554906403faa298cc1c4e09b2581</anchor>
+      <arglist>(int i) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int</type>
+      <name>GetPath</name>
+      <anchorfile>classoperations__research_1_1BasePathFilter.html</anchorfile>
+      <anchor>a7545032942a42869229c354f08e43a4d</anchor>
+      <arglist>(int64 node) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int</type>
+      <name>Rank</name>
+      <anchorfile>classoperations__research_1_1BasePathFilter.html</anchorfile>
+      <anchor>ad95f1fc3b850a5f3cf4e11390903b469</anchor>
+      <arglist>(int64 node) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>IsDisabled</name>
+      <anchorfile>classoperations__research_1_1BasePathFilter.html</anchorfile>
+      <anchor>aa999fba1a47d9fe6e3d56a98c19f8697</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>const std::vector&lt; int64 &gt; &amp;</type>
+      <name>GetNewSynchronizedUnperformedNodes</name>
+      <anchorfile>classoperations__research_1_1BasePathFilter.html</anchorfile>
+      <anchor>af2c7c17ffa39711a82bdfa8e2d4f2e45</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>SynchronizeOnAssignment</name>
+      <anchorfile>classoperations__research_1_1IntVarLocalSearchFilter.html</anchorfile>
+      <anchor>a6371c48182d86ebf963536f1600ed058</anchor>
+      <arglist>(const Assignment *assignment)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>CanPropagateObjectiveValue</name>
+      <anchorfile>classoperations__research_1_1IntVarLocalSearchFilter.html</anchorfile>
+      <anchor>ab18158620c5618ea05b55ebd92817e8b</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>PropagateObjectiveValue</name>
+      <anchorfile>classoperations__research_1_1IntVarLocalSearchFilter.html</anchorfile>
+      <anchor>a90700139ec246bb2afe40edd0afb5dd9</anchor>
+      <arglist>(int64 objective_value)</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>int64</type>
+      <name>injected_objective_value_</name>
+      <anchorfile>classoperations__research_1_1IntVarLocalSearchFilter.html</anchorfile>
+      <anchor>a7b9afa3c307211ca15b6ea364f01e2a1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" protection="protected" static="yes">
+      <type>static const int64</type>
+      <name>kUnassigned</name>
+      <anchorfile>classoperations__research_1_1BasePathFilter.html</anchorfile>
+      <anchor>ad3e987838106b8fe5a15cee46853c930</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>operations_research::BooleanVar</name>
     <filename>classoperations__research_1_1BooleanVar.html</filename>
     <base>operations_research::IntVar</base>
@@ -4941,20 +4494,20 @@
     </member>
   </compound>
   <compound kind="struct">
-    <name>SimpleBoundCosts::BoundCost</name>
-    <filename>structSimpleBoundCosts_1_1BoundCost.html</filename>
+    <name>operations_research::SimpleBoundCosts::BoundCost</name>
+    <filename>structoperations__research_1_1SimpleBoundCosts_1_1BoundCost.html</filename>
     <member kind="variable">
       <type>int64</type>
       <name>bound</name>
-      <anchorfile>structSimpleBoundCosts_1_1BoundCost.html</anchorfile>
-      <anchor>aafe091324086df78a56f418adf2dc202</anchor>
+      <anchorfile>structoperations__research_1_1SimpleBoundCosts_1_1BoundCost.html</anchorfile>
+      <anchor>a638e49e7ab6ca4a3f434bcd7526649a5</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int64</type>
       <name>cost</name>
-      <anchorfile>structSimpleBoundCosts_1_1BoundCost.html</anchorfile>
-      <anchor>a8e9bc21d85a15811daec7d1b03b50704</anchor>
+      <anchorfile>structoperations__research_1_1SimpleBoundCosts_1_1BoundCost.html</anchorfile>
+      <anchor>adbe3fa9c869587e7c930dde628daaa9d</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -5622,6 +5175,678 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>operations_research::CheapestAdditionFilteredDecisionBuilder</name>
+    <filename>classoperations__research_1_1CheapestAdditionFilteredDecisionBuilder.html</filename>
+    <base>operations_research::RoutingFilteredDecisionBuilder</base>
+    <member kind="function">
+      <type></type>
+      <name>CheapestAdditionFilteredDecisionBuilder</name>
+      <anchorfile>classoperations__research_1_1CheapestAdditionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>aa3cb4c8b575db00ec0b99c522dfa137f</anchor>
+      <arglist>(RoutingModel *model, const std::vector&lt; LocalSearchFilter * &gt; &amp;filters)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>~CheapestAdditionFilteredDecisionBuilder</name>
+      <anchorfile>classoperations__research_1_1CheapestAdditionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a31480f32bce0de8991c46240ff7775ce</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>BuildSolution</name>
+      <anchorfile>classoperations__research_1_1CheapestAdditionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a9c66b9184f757e7acd1bda8873b766d2</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>RoutingModel *</type>
+      <name>model</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a8125b34030c571be558a4260970d1936</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetStartChainEnd</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>afeea31fbc3740ae9fce56757410a9b62</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetEndChainStart</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ac5e9978230d2e759f1f5b94bf738feca</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeDisjunctionNodesUnperformed</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ace97a6953feba3ac51077dc0c1b4ecc5</anchor>
+      <arglist>(int64 node)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeUnassignedNodesUnperformed</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a90d5e25d398a8c37bc2168e475aec99e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Decision *</type>
+      <name>Next</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3728215165475d83bf1fc427bc171c3e</anchor>
+      <arglist>(Solver *solver) override</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>number_of_decisions</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a5589c8d87c0b93a1d3e6ffac03830190</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>number_of_rejects</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3ae7dae1c50d1ed98f3a81b874c6e943</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string</type>
+      <name>DebugString</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>aca201d99227a6116c62418d28761aa9b</anchor>
+      <arglist>() const override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>AppendMonitors</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>aacc1030d918e7c2b5ba6c5e8a0542746</anchor>
+      <arglist>(Solver *const solver, std::vector&lt; SearchMonitor * &gt; *const extras)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Accept</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>a62372947c9ce93ba28cb636a635433d7</anchor>
+      <arglist>(ModelVisitor *const visitor) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>StopSearch</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a5231593d95ea61f3f6d900f44e0fb87b</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>Commit</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>aaa2ee1b71985f528f9b59fa693936e0a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>SetValue</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a0b295e340454a27f643052138f26fb95</anchor>
+      <arglist>(int64 index, int64 value)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>Value</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a444807ed7728065f488c364fcd3daa47</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>Contains</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ab99b24dbd1dd5c0393adcbfd195768ea</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int</type>
+      <name>Size</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a6631652219280f558f2a6ae4fd0f0366</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>IntVar *</type>
+      <name>Var</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a8ec6b0457672ded0a1046d29aa1c66bf</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::CheapestInsertionFilteredDecisionBuilder</name>
+    <filename>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</filename>
+    <base>operations_research::RoutingFilteredDecisionBuilder</base>
+    <class kind="struct">operations_research::CheapestInsertionFilteredDecisionBuilder::StartEndValue</class>
+    <member kind="function">
+      <type></type>
+      <name>CheapestInsertionFilteredDecisionBuilder</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a352753a37a4fa1bdb5cbf920752933a1</anchor>
+      <arglist>(RoutingModel *model, std::function&lt; int64(int64, int64, int64)&gt; evaluator, std::function&lt; int64(int64)&gt; penalty_evaluator, const std::vector&lt; LocalSearchFilter * &gt; &amp;filters)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>~CheapestInsertionFilteredDecisionBuilder</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a5406092cbd615fcad4c926e14c45de13</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>RoutingModel *</type>
+      <name>model</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a8125b34030c571be558a4260970d1936</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetStartChainEnd</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>afeea31fbc3740ae9fce56757410a9b62</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetEndChainStart</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ac5e9978230d2e759f1f5b94bf738feca</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeDisjunctionNodesUnperformed</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ace97a6953feba3ac51077dc0c1b4ecc5</anchor>
+      <arglist>(int64 node)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeUnassignedNodesUnperformed</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a90d5e25d398a8c37bc2168e475aec99e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Decision *</type>
+      <name>Next</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3728215165475d83bf1fc427bc171c3e</anchor>
+      <arglist>(Solver *solver) override</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual bool</type>
+      <name>BuildSolution</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>af80ac7c7333a0515de2155c463c4344e</anchor>
+      <arglist>()=0</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>number_of_decisions</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a5589c8d87c0b93a1d3e6ffac03830190</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>number_of_rejects</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3ae7dae1c50d1ed98f3a81b874c6e943</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string</type>
+      <name>DebugString</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>aca201d99227a6116c62418d28761aa9b</anchor>
+      <arglist>() const override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>AppendMonitors</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>aacc1030d918e7c2b5ba6c5e8a0542746</anchor>
+      <arglist>(Solver *const solver, std::vector&lt; SearchMonitor * &gt; *const extras)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Accept</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>a62372947c9ce93ba28cb636a635433d7</anchor>
+      <arglist>(ModelVisitor *const visitor) const</arglist>
+    </member>
+    <member kind="typedef" protection="protected">
+      <type>std::pair&lt; int64, int64 &gt;</type>
+      <name>ValuedPosition</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a73c8cc48a3a48935344dcf67fe760d53</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef" protection="protected">
+      <type>std::pair&lt; StartEndValue, int &gt;</type>
+      <name>Seed</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>aa3d22767523969477c21a15afd777ee4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>std::vector&lt; std::vector&lt; StartEndValue &gt; &gt;</type>
+      <name>ComputeStartEndDistanceForVehicles</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>aefb129b85e384ae8dd93914fb86720e1</anchor>
+      <arglist>(const std::vector&lt; int &gt; &amp;vehicles)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>InitializePriorityQueue</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a376f8042e03bc87789d0b0c472f9babe</anchor>
+      <arglist>(std::vector&lt; std::vector&lt; StartEndValue &gt; &gt; *start_end_distances_per_node, Queue *priority_queue)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>InsertBetween</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3b0ce19f4831cb84532fef386f434b68</anchor>
+      <arglist>(int64 node, int64 predecessor, int64 successor)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>AppendEvaluatedPositionsAfter</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a98354fb58cafe2444a25feeb691191d5</anchor>
+      <arglist>(int64 node_to_insert, int64 start, int64 next_after_start, int64 vehicle, std::vector&lt; ValuedPosition &gt; *valued_positions)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>GetUnperformedValue</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>abb5c3583fb3e234773e83c3a008cac9a</anchor>
+      <arglist>(int64 node_to_insert) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>StopSearch</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a5231593d95ea61f3f6d900f44e0fb87b</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>Commit</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>aaa2ee1b71985f528f9b59fa693936e0a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>SetValue</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a0b295e340454a27f643052138f26fb95</anchor>
+      <arglist>(int64 index, int64 value)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>Value</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a444807ed7728065f488c364fcd3daa47</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>Contains</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ab99b24dbd1dd5c0393adcbfd195768ea</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int</type>
+      <name>Size</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a6631652219280f558f2a6ae4fd0f0366</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>IntVar *</type>
+      <name>Var</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a8ec6b0457672ded0a1046d29aa1c66bf</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>std::function&lt; int64(int64, int64, int64)&gt;</type>
+      <name>evaluator_</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ab35d04181a231cbc77193b2bd8101aba</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>std::function&lt; int64(int64)&gt;</type>
+      <name>penalty_evaluator_</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ad9d981960cfd68cb2181e0072039e8fb</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::ChristofidesFilteredDecisionBuilder</name>
+    <filename>classoperations__research_1_1ChristofidesFilteredDecisionBuilder.html</filename>
+    <base>operations_research::RoutingFilteredDecisionBuilder</base>
+    <member kind="function">
+      <type></type>
+      <name>ChristofidesFilteredDecisionBuilder</name>
+      <anchorfile>classoperations__research_1_1ChristofidesFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a76174da7246cc3b44d80d651959de4e7</anchor>
+      <arglist>(RoutingModel *model, const std::vector&lt; LocalSearchFilter * &gt; &amp;filters)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>~ChristofidesFilteredDecisionBuilder</name>
+      <anchorfile>classoperations__research_1_1ChristofidesFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a0d16f477daf81cddcb07d4eca0d6585a</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>BuildSolution</name>
+      <anchorfile>classoperations__research_1_1ChristofidesFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ad14669b4e8708bf12a3908df9a298b34</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string</type>
+      <name>DebugString</name>
+      <anchorfile>classoperations__research_1_1ChristofidesFilteredDecisionBuilder.html</anchorfile>
+      <anchor>adfc28bc18d4fbc481c51c92b44d12739</anchor>
+      <arglist>() const override</arglist>
+    </member>
+    <member kind="function">
+      <type>RoutingModel *</type>
+      <name>model</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a8125b34030c571be558a4260970d1936</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetStartChainEnd</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>afeea31fbc3740ae9fce56757410a9b62</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetEndChainStart</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ac5e9978230d2e759f1f5b94bf738feca</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeDisjunctionNodesUnperformed</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ace97a6953feba3ac51077dc0c1b4ecc5</anchor>
+      <arglist>(int64 node)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeUnassignedNodesUnperformed</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a90d5e25d398a8c37bc2168e475aec99e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Decision *</type>
+      <name>Next</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3728215165475d83bf1fc427bc171c3e</anchor>
+      <arglist>(Solver *solver) override</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>number_of_decisions</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a5589c8d87c0b93a1d3e6ffac03830190</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>number_of_rejects</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3ae7dae1c50d1ed98f3a81b874c6e943</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>AppendMonitors</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>aacc1030d918e7c2b5ba6c5e8a0542746</anchor>
+      <arglist>(Solver *const solver, std::vector&lt; SearchMonitor * &gt; *const extras)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Accept</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>a62372947c9ce93ba28cb636a635433d7</anchor>
+      <arglist>(ModelVisitor *const visitor) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>StopSearch</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a5231593d95ea61f3f6d900f44e0fb87b</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>Commit</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>aaa2ee1b71985f528f9b59fa693936e0a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>SetValue</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a0b295e340454a27f643052138f26fb95</anchor>
+      <arglist>(int64 index, int64 value)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>Value</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a444807ed7728065f488c364fcd3daa47</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>Contains</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ab99b24dbd1dd5c0393adcbfd195768ea</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int</type>
+      <name>Size</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a6631652219280f558f2a6ae4fd0f0366</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>IntVar *</type>
+      <name>Var</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a8ec6b0457672ded0a1046d29aa1c66bf</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::ComparatorCheapestAdditionFilteredDecisionBuilder</name>
+    <filename>classoperations__research_1_1ComparatorCheapestAdditionFilteredDecisionBuilder.html</filename>
+    <base>operations_research::CheapestAdditionFilteredDecisionBuilder</base>
+    <member kind="function">
+      <type></type>
+      <name>ComparatorCheapestAdditionFilteredDecisionBuilder</name>
+      <anchorfile>classoperations__research_1_1ComparatorCheapestAdditionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3eeba8160da408e3f5a11ff7fe4fe552</anchor>
+      <arglist>(RoutingModel *model, Solver::VariableValueComparator comparator, const std::vector&lt; LocalSearchFilter * &gt; &amp;filters)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>~ComparatorCheapestAdditionFilteredDecisionBuilder</name>
+      <anchorfile>classoperations__research_1_1ComparatorCheapestAdditionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ae066ede1ed054d390397bc59b3c836f0</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string</type>
+      <name>DebugString</name>
+      <anchorfile>classoperations__research_1_1ComparatorCheapestAdditionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a1ee5ca24459065ac257b5e4b7a48778e</anchor>
+      <arglist>() const override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>BuildSolution</name>
+      <anchorfile>classoperations__research_1_1CheapestAdditionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a9c66b9184f757e7acd1bda8873b766d2</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>RoutingModel *</type>
+      <name>model</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a8125b34030c571be558a4260970d1936</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetStartChainEnd</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>afeea31fbc3740ae9fce56757410a9b62</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetEndChainStart</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ac5e9978230d2e759f1f5b94bf738feca</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeDisjunctionNodesUnperformed</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ace97a6953feba3ac51077dc0c1b4ecc5</anchor>
+      <arglist>(int64 node)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeUnassignedNodesUnperformed</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a90d5e25d398a8c37bc2168e475aec99e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Decision *</type>
+      <name>Next</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3728215165475d83bf1fc427bc171c3e</anchor>
+      <arglist>(Solver *solver) override</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>number_of_decisions</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a5589c8d87c0b93a1d3e6ffac03830190</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>number_of_rejects</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3ae7dae1c50d1ed98f3a81b874c6e943</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>AppendMonitors</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>aacc1030d918e7c2b5ba6c5e8a0542746</anchor>
+      <arglist>(Solver *const solver, std::vector&lt; SearchMonitor * &gt; *const extras)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Accept</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>a62372947c9ce93ba28cb636a635433d7</anchor>
+      <arglist>(ModelVisitor *const visitor) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>StopSearch</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a5231593d95ea61f3f6d900f44e0fb87b</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>Commit</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>aaa2ee1b71985f528f9b59fa693936e0a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>SetValue</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a0b295e340454a27f643052138f26fb95</anchor>
+      <arglist>(int64 index, int64 value)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>Value</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a444807ed7728065f488c364fcd3daa47</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>Contains</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ab99b24dbd1dd5c0393adcbfd195768ea</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int</type>
+      <name>Size</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a6631652219280f558f2a6ae4fd0f0366</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>IntVar *</type>
+      <name>Var</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a8ec6b0457672ded0a1046d29aa1c66bf</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>operations_research::Constraint</name>
     <filename>classoperations__research_1_1Constraint.html</filename>
     <base>operations_research::PropagationBaseObject</base>
@@ -5785,6 +6010,184 @@
       <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
       <anchor>ab34671f68433c582260a443f3d15bfae</anchor>
       <arglist>() const</arglist>
+    </member>
+  </compound>
+  <compound kind="struct">
+    <name>operations_research::RoutingModel::CostClass</name>
+    <filename>structoperations__research_1_1RoutingModel_1_1CostClass.html</filename>
+    <class kind="struct">operations_research::RoutingModel::CostClass::DimensionCost</class>
+    <member kind="function">
+      <type></type>
+      <name>CostClass</name>
+      <anchorfile>structoperations__research_1_1RoutingModel_1_1CostClass.html</anchorfile>
+      <anchor>a2d550889d680f3f8121bcc6fc69db6e5</anchor>
+      <arglist>(int evaluator_index)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static bool</type>
+      <name>LessThan</name>
+      <anchorfile>structoperations__research_1_1RoutingModel_1_1CostClass.html</anchorfile>
+      <anchor>a82d131d0546fedbb19af49422d780cbf</anchor>
+      <arglist>(const CostClass &amp;a, const CostClass &amp;b)</arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>evaluator_index</name>
+      <anchorfile>structoperations__research_1_1RoutingModel_1_1CostClass.html</anchorfile>
+      <anchor>acc06fc1b561814edcb2bcde9893385c8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>std::vector&lt; DimensionCost &gt;</type>
+      <name>dimension_transit_evaluator_class_and_cost_coefficient</name>
+      <anchorfile>structoperations__research_1_1RoutingModel_1_1CostClass.html</anchorfile>
+      <anchor>a791b1c57c4eedb8d6460f7f42e725a71</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::CPFeasibilityFilter</name>
+    <filename>classoperations__research_1_1CPFeasibilityFilter.html</filename>
+    <base>operations_research::IntVarLocalSearchFilter</base>
+    <member kind="function">
+      <type></type>
+      <name>CPFeasibilityFilter</name>
+      <anchorfile>classoperations__research_1_1CPFeasibilityFilter.html</anchorfile>
+      <anchor>ae194b6d2696d2acd57178194db7d00c2</anchor>
+      <arglist>(const RoutingModel *routing_model)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>~CPFeasibilityFilter</name>
+      <anchorfile>classoperations__research_1_1CPFeasibilityFilter.html</anchorfile>
+      <anchor>a5fa418a63e5e748f31915dd025f8107d</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string</type>
+      <name>DebugString</name>
+      <anchorfile>classoperations__research_1_1CPFeasibilityFilter.html</anchorfile>
+      <anchor>a39c6c9bb0a7cdaa452daa56e740f10b4</anchor>
+      <arglist>() const override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Accept</name>
+      <anchorfile>classoperations__research_1_1CPFeasibilityFilter.html</anchorfile>
+      <anchor>aba28572b6a61d16bd08ce03635c17dc3</anchor>
+      <arglist>(Assignment *delta, Assignment *deltadelta) override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>OnSynchronize</name>
+      <anchorfile>classoperations__research_1_1CPFeasibilityFilter.html</anchorfile>
+      <anchor>a1940df9d02761f8ef3156de13a6172c3</anchor>
+      <arglist>(const Assignment *delta) override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Synchronize</name>
+      <anchorfile>classoperations__research_1_1IntVarLocalSearchFilter.html</anchorfile>
+      <anchor>af551c2cc4bd9dc8eca5c1aba2ea0cf1a</anchor>
+      <arglist>(const Assignment *assignment, const Assignment *delta) override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>FindIndex</name>
+      <anchorfile>classoperations__research_1_1IntVarLocalSearchFilter.html</anchorfile>
+      <anchor>a4ff8f64bad58d06ddf1e1fa16b52fefc</anchor>
+      <arglist>(IntVar *const var, int64 *index) const</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>InjectObjectiveValue</name>
+      <anchorfile>classoperations__research_1_1IntVarLocalSearchFilter.html</anchorfile>
+      <anchor>abeca74f43d73826093a3e288a633d7a2</anchor>
+      <arglist>(int64 objective_value)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddVars</name>
+      <anchorfile>classoperations__research_1_1IntVarLocalSearchFilter.html</anchorfile>
+      <anchor>a78c80d2accf5a4506e3436081d365a34</anchor>
+      <arglist>(const std::vector&lt; IntVar * &gt; &amp;vars)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>Size</name>
+      <anchorfile>classoperations__research_1_1IntVarLocalSearchFilter.html</anchorfile>
+      <anchor>a29acf74cf99f603af9c73f5a994b48f2</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVar *</type>
+      <name>Var</name>
+      <anchorfile>classoperations__research_1_1IntVarLocalSearchFilter.html</anchorfile>
+      <anchor>a5c85a90b191d5aae9ab29cf1e28ff878</anchor>
+      <arglist>(int index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>Value</name>
+      <anchorfile>classoperations__research_1_1IntVarLocalSearchFilter.html</anchorfile>
+      <anchor>afd72fb787ed7167fc9d959deb1286931</anchor>
+      <arglist>(int index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>IsVarSynced</name>
+      <anchorfile>classoperations__research_1_1IntVarLocalSearchFilter.html</anchorfile>
+      <anchor>add26b0145e2f0ba25dcda0e1565164db</anchor>
+      <arglist>(int index) const</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>IsIncremental</name>
+      <anchorfile>classoperations__research_1_1LocalSearchFilter.html</anchorfile>
+      <anchor>a58392212e951aafc3a6ba400d8816790</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual int64</type>
+      <name>GetSynchronizedObjectiveValue</name>
+      <anchorfile>classoperations__research_1_1LocalSearchFilter.html</anchorfile>
+      <anchor>aa3934bba1ec84e9c9b401693b43c662a</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual int64</type>
+      <name>GetAcceptedObjectiveValue</name>
+      <anchorfile>classoperations__research_1_1LocalSearchFilter.html</anchorfile>
+      <anchor>a7a34da518a80fbaeccb2fde10f2fbd78</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>SynchronizeOnAssignment</name>
+      <anchorfile>classoperations__research_1_1IntVarLocalSearchFilter.html</anchorfile>
+      <anchor>a6371c48182d86ebf963536f1600ed058</anchor>
+      <arglist>(const Assignment *assignment)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>CanPropagateObjectiveValue</name>
+      <anchorfile>classoperations__research_1_1IntVarLocalSearchFilter.html</anchorfile>
+      <anchor>ab18158620c5618ea05b55ebd92817e8b</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>PropagateObjectiveValue</name>
+      <anchorfile>classoperations__research_1_1IntVarLocalSearchFilter.html</anchorfile>
+      <anchor>a90700139ec246bb2afe40edd0afb5dd9</anchor>
+      <arglist>(int64 objective_value)</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>int64</type>
+      <name>injected_objective_value_</name>
+      <anchorfile>classoperations__research_1_1IntVarLocalSearchFilter.html</anchorfile>
+      <anchor>a7b9afa3c307211ca15b6ea364f01e2a1</anchor>
+      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -6390,6 +6793,38 @@
       <arglist></arglist>
     </member>
   </compound>
+  <compound kind="struct">
+    <name>operations_research::RoutingModel::CostClass::DimensionCost</name>
+    <filename>structoperations__research_1_1RoutingModel_1_1CostClass_1_1DimensionCost.html</filename>
+    <member kind="function">
+      <type>bool</type>
+      <name>operator&lt;</name>
+      <anchorfile>structoperations__research_1_1RoutingModel_1_1CostClass_1_1DimensionCost.html</anchorfile>
+      <anchor>a283543cc6886cb9f0b3b38057faf3ab1</anchor>
+      <arglist>(const DimensionCost &amp;cost) const</arglist>
+    </member>
+    <member kind="variable">
+      <type>int64</type>
+      <name>transit_evaluator_class</name>
+      <anchorfile>structoperations__research_1_1RoutingModel_1_1CostClass_1_1DimensionCost.html</anchorfile>
+      <anchor>afccea4a83124382a4bc744f8a3e9942c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int64</type>
+      <name>cost_coefficient</name>
+      <anchorfile>structoperations__research_1_1RoutingModel_1_1CostClass_1_1DimensionCost.html</anchorfile>
+      <anchor>a2b83eca1511688641fb6a8672b3a1433</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const RoutingDimension *</type>
+      <name>dimension</name>
+      <anchorfile>structoperations__research_1_1RoutingModel_1_1CostClass_1_1DimensionCost.html</anchorfile>
+      <anchor>a2ccdc6a8c990ac68add84c7decd471ad</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
   <compound kind="class">
     <name>operations_research::DimensionCumulOptimizerCore</name>
     <filename>classoperations__research_1_1DimensionCumulOptimizerCore.html</filename>
@@ -6663,6 +7098,212 @@
       <anchorfile>classoperations__research_1_1DisjunctiveConstraint.html</anchorfile>
       <anchor>a9b6d60ebdbacdb0e3910b3c9ccd4d1fa</anchor>
       <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::DisjunctivePropagator</name>
+    <filename>classoperations__research_1_1DisjunctivePropagator.html</filename>
+    <class kind="struct">operations_research::DisjunctivePropagator::Tasks</class>
+    <member kind="function">
+      <type>bool</type>
+      <name>Propagate</name>
+      <anchorfile>classoperations__research_1_1DisjunctivePropagator.html</anchorfile>
+      <anchor>a4bca695f28fc3739d74ac6ca2c93221b</anchor>
+      <arglist>(Tasks *tasks)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>Precedences</name>
+      <anchorfile>classoperations__research_1_1DisjunctivePropagator.html</anchorfile>
+      <anchor>a10aa87697d8041fa4a1083dc648750f7</anchor>
+      <arglist>(Tasks *tasks)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>MirrorTasks</name>
+      <anchorfile>classoperations__research_1_1DisjunctivePropagator.html</anchorfile>
+      <anchor>ac392b9ff00285a5ef98286c35dd7aab3</anchor>
+      <arglist>(Tasks *tasks)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>EdgeFinding</name>
+      <anchorfile>classoperations__research_1_1DisjunctivePropagator.html</anchorfile>
+      <anchor>aee4e422de7210b61627750d3937df615</anchor>
+      <arglist>(Tasks *tasks)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>DetectablePrecedencesWithChain</name>
+      <anchorfile>classoperations__research_1_1DisjunctivePropagator.html</anchorfile>
+      <anchor>a2ecf539942f15611e7cafe1fb3a757fe</anchor>
+      <arglist>(Tasks *tasks)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>ForbiddenIntervals</name>
+      <anchorfile>classoperations__research_1_1DisjunctivePropagator.html</anchorfile>
+      <anchor>a8229b22f70a1667de00db67f10f9b1e8</anchor>
+      <arglist>(Tasks *tasks)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>DistanceDuration</name>
+      <anchorfile>classoperations__research_1_1DisjunctivePropagator.html</anchorfile>
+      <anchor>a86de3b4833fec686a2d02a3b221fcd7b</anchor>
+      <arglist>(Tasks *tasks)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::EvaluatorCheapestAdditionFilteredDecisionBuilder</name>
+    <filename>classoperations__research_1_1EvaluatorCheapestAdditionFilteredDecisionBuilder.html</filename>
+    <base>operations_research::CheapestAdditionFilteredDecisionBuilder</base>
+    <member kind="function">
+      <type></type>
+      <name>EvaluatorCheapestAdditionFilteredDecisionBuilder</name>
+      <anchorfile>classoperations__research_1_1EvaluatorCheapestAdditionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ac648768e5deabe13beb7c84b96bf2f73</anchor>
+      <arglist>(RoutingModel *model, std::function&lt; int64(int64, int64)&gt; evaluator, const std::vector&lt; LocalSearchFilter * &gt; &amp;filters)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>~EvaluatorCheapestAdditionFilteredDecisionBuilder</name>
+      <anchorfile>classoperations__research_1_1EvaluatorCheapestAdditionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a9fd569bcfc61c02187de1afcd2494b2e</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string</type>
+      <name>DebugString</name>
+      <anchorfile>classoperations__research_1_1EvaluatorCheapestAdditionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>aff3956d65c1486c9bdab3fd850dbb5a6</anchor>
+      <arglist>() const override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>BuildSolution</name>
+      <anchorfile>classoperations__research_1_1CheapestAdditionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a9c66b9184f757e7acd1bda8873b766d2</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>RoutingModel *</type>
+      <name>model</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a8125b34030c571be558a4260970d1936</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetStartChainEnd</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>afeea31fbc3740ae9fce56757410a9b62</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetEndChainStart</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ac5e9978230d2e759f1f5b94bf738feca</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeDisjunctionNodesUnperformed</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ace97a6953feba3ac51077dc0c1b4ecc5</anchor>
+      <arglist>(int64 node)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeUnassignedNodesUnperformed</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a90d5e25d398a8c37bc2168e475aec99e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Decision *</type>
+      <name>Next</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3728215165475d83bf1fc427bc171c3e</anchor>
+      <arglist>(Solver *solver) override</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>number_of_decisions</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a5589c8d87c0b93a1d3e6ffac03830190</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>number_of_rejects</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3ae7dae1c50d1ed98f3a81b874c6e943</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>AppendMonitors</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>aacc1030d918e7c2b5ba6c5e8a0542746</anchor>
+      <arglist>(Solver *const solver, std::vector&lt; SearchMonitor * &gt; *const extras)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Accept</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>a62372947c9ce93ba28cb636a635433d7</anchor>
+      <arglist>(ModelVisitor *const visitor) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>StopSearch</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a5231593d95ea61f3f6d900f44e0fb87b</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>Commit</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>aaa2ee1b71985f528f9b59fa693936e0a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>SetValue</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a0b295e340454a27f643052138f26fb95</anchor>
+      <arglist>(int64 index, int64 value)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>Value</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a444807ed7728065f488c364fcd3daa47</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>Contains</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ab99b24dbd1dd5c0393adcbfd195768ea</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int</type>
+      <name>Size</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a6631652219280f558f2a6ae4fd0f0366</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>IntVar *</type>
+      <name>Var</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a8ec6b0457672ded0a1046d29aa1c66bf</anchor>
+      <arglist>(int64 index) const</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -7515,6 +8156,221 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>operations_research::GlobalCheapestInsertionFilteredDecisionBuilder</name>
+    <filename>classoperations__research_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html</filename>
+    <base>operations_research::CheapestInsertionFilteredDecisionBuilder</base>
+    <member kind="function">
+      <type></type>
+      <name>GlobalCheapestInsertionFilteredDecisionBuilder</name>
+      <anchorfile>classoperations__research_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a7e584844f1b0ffd02544567c8dd75b9b</anchor>
+      <arglist>(RoutingModel *model, std::function&lt; int64(int64, int64, int64)&gt; evaluator, std::function&lt; int64(int64)&gt; penalty_evaluator, const std::vector&lt; LocalSearchFilter * &gt; &amp;filters, bool is_sequential, double farthest_seeds_ratio, double neighbors_ratio)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>~GlobalCheapestInsertionFilteredDecisionBuilder</name>
+      <anchorfile>classoperations__research_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a710c18c0e9b05abca5bacf99e2129bb0</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>BuildSolution</name>
+      <anchorfile>classoperations__research_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3a5bd7cb817b77fcba764ec7ddd71cfb</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string</type>
+      <name>DebugString</name>
+      <anchorfile>classoperations__research_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a396d1d7fcc6b3b71cdb07105867b83cf</anchor>
+      <arglist>() const override</arglist>
+    </member>
+    <member kind="function">
+      <type>RoutingModel *</type>
+      <name>model</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a8125b34030c571be558a4260970d1936</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetStartChainEnd</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>afeea31fbc3740ae9fce56757410a9b62</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetEndChainStart</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ac5e9978230d2e759f1f5b94bf738feca</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeDisjunctionNodesUnperformed</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ace97a6953feba3ac51077dc0c1b4ecc5</anchor>
+      <arglist>(int64 node)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeUnassignedNodesUnperformed</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a90d5e25d398a8c37bc2168e475aec99e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Decision *</type>
+      <name>Next</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3728215165475d83bf1fc427bc171c3e</anchor>
+      <arglist>(Solver *solver) override</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>number_of_decisions</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a5589c8d87c0b93a1d3e6ffac03830190</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>number_of_rejects</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3ae7dae1c50d1ed98f3a81b874c6e943</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>AppendMonitors</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>aacc1030d918e7c2b5ba6c5e8a0542746</anchor>
+      <arglist>(Solver *const solver, std::vector&lt; SearchMonitor * &gt; *const extras)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Accept</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>a62372947c9ce93ba28cb636a635433d7</anchor>
+      <arglist>(ModelVisitor *const visitor) const</arglist>
+    </member>
+    <member kind="typedef" protection="protected">
+      <type>std::pair&lt; int64, int64 &gt;</type>
+      <name>ValuedPosition</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a73c8cc48a3a48935344dcf67fe760d53</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef" protection="protected">
+      <type>std::pair&lt; StartEndValue, int &gt;</type>
+      <name>Seed</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>aa3d22767523969477c21a15afd777ee4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>std::vector&lt; std::vector&lt; StartEndValue &gt; &gt;</type>
+      <name>ComputeStartEndDistanceForVehicles</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>aefb129b85e384ae8dd93914fb86720e1</anchor>
+      <arglist>(const std::vector&lt; int &gt; &amp;vehicles)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>InitializePriorityQueue</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a376f8042e03bc87789d0b0c472f9babe</anchor>
+      <arglist>(std::vector&lt; std::vector&lt; StartEndValue &gt; &gt; *start_end_distances_per_node, Queue *priority_queue)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>InsertBetween</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3b0ce19f4831cb84532fef386f434b68</anchor>
+      <arglist>(int64 node, int64 predecessor, int64 successor)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>AppendEvaluatedPositionsAfter</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a98354fb58cafe2444a25feeb691191d5</anchor>
+      <arglist>(int64 node_to_insert, int64 start, int64 next_after_start, int64 vehicle, std::vector&lt; ValuedPosition &gt; *valued_positions)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>GetUnperformedValue</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>abb5c3583fb3e234773e83c3a008cac9a</anchor>
+      <arglist>(int64 node_to_insert) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>StopSearch</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a5231593d95ea61f3f6d900f44e0fb87b</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>Commit</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>aaa2ee1b71985f528f9b59fa693936e0a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>SetValue</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a0b295e340454a27f643052138f26fb95</anchor>
+      <arglist>(int64 index, int64 value)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>Value</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a444807ed7728065f488c364fcd3daa47</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>Contains</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ab99b24dbd1dd5c0393adcbfd195768ea</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int</type>
+      <name>Size</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a6631652219280f558f2a6ae4fd0f0366</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>IntVar *</type>
+      <name>Var</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a8ec6b0457672ded0a1046d29aa1c66bf</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>std::function&lt; int64(int64, int64, int64)&gt;</type>
+      <name>evaluator_</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ab35d04181a231cbc77193b2bd8101aba</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>std::function&lt; int64(int64)&gt;</type>
+      <name>penalty_evaluator_</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ad9d981960cfd68cb2181e0072039e8fb</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>operations_research::GlobalDimensionCumulOptimizer</name>
     <filename>classoperations__research_1_1GlobalDimensionCumulOptimizer.html</filename>
     <member kind="function">
@@ -7557,6 +8413,165 @@
       <name>dimension</name>
       <anchorfile>classoperations__research_1_1GlobalDimensionCumulOptimizer.html</anchorfile>
       <anchor>a64246ca0403f93006288ead58dfb0d36</anchor>
+      <arglist>() const</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::GlobalVehicleBreaksConstraint</name>
+    <filename>classoperations__research_1_1GlobalVehicleBreaksConstraint.html</filename>
+    <base>operations_research::Constraint</base>
+    <member kind="function">
+      <type></type>
+      <name>GlobalVehicleBreaksConstraint</name>
+      <anchorfile>classoperations__research_1_1GlobalVehicleBreaksConstraint.html</anchorfile>
+      <anchor>a3957f596b49f98c7ea8e39d28b95f4f8</anchor>
+      <arglist>(const RoutingDimension *dimension)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Post</name>
+      <anchorfile>classoperations__research_1_1GlobalVehicleBreaksConstraint.html</anchorfile>
+      <anchor>a9228a638a979284394f90c004a1b37fa</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>InitialPropagate</name>
+      <anchorfile>classoperations__research_1_1GlobalVehicleBreaksConstraint.html</anchorfile>
+      <anchor>a8e1a06d00ced8b302406376235cd2c98</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string</type>
+      <name>DebugString</name>
+      <anchorfile>classoperations__research_1_1Constraint.html</anchorfile>
+      <anchor>a443bf6da3f8db15c240cb92d20e37466</anchor>
+      <arglist>() const override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>PostAndPropagate</name>
+      <anchorfile>classoperations__research_1_1Constraint.html</anchorfile>
+      <anchor>a92c3bfe86238b5c95448d4a0384a327f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Accept</name>
+      <anchorfile>classoperations__research_1_1Constraint.html</anchorfile>
+      <anchor>a6e3070956af148d6fa0491de1d3cf289</anchor>
+      <arglist>(ModelVisitor *const visitor) const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>IsCastConstraint</name>
+      <anchorfile>classoperations__research_1_1Constraint.html</anchorfile>
+      <anchor>a834edc2ae995b866a6aa63e44c242570</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IntVar *</type>
+      <name>Var</name>
+      <anchorfile>classoperations__research_1_1Constraint.html</anchorfile>
+      <anchor>a5606cc31756a1708615d492ab75ba886</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Solver *</type>
+      <name>solver</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>ab3aa61657c74294f198a16d1dbc52580</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>FreezeQueue</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>a78b16596f589dd63573a1586f61c2dbd</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>UnfreezeQueue</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>a97782b79fbcf8043201fefaa7729dcf1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>EnqueueDelayedDemon</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>a5dd87cd906d80738f8727fda04bc5ace</anchor>
+      <arglist>(Demon *const d)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>EnqueueVar</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>a3fe6115081d583d57b6cd8b0dd1783d7</anchor>
+      <arglist>(Demon *const d)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>ExecuteAll</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>a4a7285479f5e0fa7663c043cdfc7dd61</anchor>
+      <arglist>(const SimpleRevFIFO&lt; Demon * &gt; &amp;demons)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>EnqueueAll</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>a5975e144479d99ceae4f009472ca5e92</anchor>
+      <arglist>(const SimpleRevFIFO&lt; Demon * &gt; &amp;demons)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_action_on_fail</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>a5c6bf90bb0b099a2c8f81aaefdfdd46c</anchor>
+      <arglist>(Solver::Action a)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>reset_action_on_fail</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>ad07aa613bcc8d3896dff3f33520b061c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_variable_to_clean_on_fail</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>a4d2ccb8a806df14394b3271791c81e61</anchor>
+      <arglist>(IntVar *v)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual std::string</type>
+      <name>name</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>a8be8b75223b76744791e48747677cdb6</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_name</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>a5d4a4cf402b353ba2908836656cf0c62</anchor>
+      <arglist>(const std::string &amp;name)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>HasName</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>af6e627822f954d6072125c1d152c30f8</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual std::string</type>
+      <name>BaseName</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>ab34671f68433c582260a443f3d15bfae</anchor>
       <arglist>() const</arglist>
     </member>
   </compound>
@@ -9756,6 +10771,130 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>operations_research::IntVarFilteredDecisionBuilder</name>
+    <filename>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</filename>
+    <base>operations_research::DecisionBuilder</base>
+    <member kind="function">
+      <type></type>
+      <name>IntVarFilteredDecisionBuilder</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a29ad8fa5f3cdac39af912fc685bb4f23</anchor>
+      <arglist>(Solver *solver, const std::vector&lt; IntVar * &gt; &amp;vars, const std::vector&lt; LocalSearchFilter * &gt; &amp;filters)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>~IntVarFilteredDecisionBuilder</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ad9bb58c3bc903db60f42c88ae7870bee</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>Decision *</type>
+      <name>Next</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3728215165475d83bf1fc427bc171c3e</anchor>
+      <arglist>(Solver *solver) override</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual bool</type>
+      <name>BuildSolution</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>af80ac7c7333a0515de2155c463c4344e</anchor>
+      <arglist>()=0</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>number_of_decisions</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a5589c8d87c0b93a1d3e6ffac03830190</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>number_of_rejects</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3ae7dae1c50d1ed98f3a81b874c6e943</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string</type>
+      <name>DebugString</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>aca201d99227a6116c62418d28761aa9b</anchor>
+      <arglist>() const override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>AppendMonitors</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>aacc1030d918e7c2b5ba6c5e8a0542746</anchor>
+      <arglist>(Solver *const solver, std::vector&lt; SearchMonitor * &gt; *const extras)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Accept</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>a62372947c9ce93ba28cb636a635433d7</anchor>
+      <arglist>(ModelVisitor *const visitor) const</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>InitializeSolution</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>aafbdefa5e5f84e8ca15523becd6c4ffe</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>Commit</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>aaa2ee1b71985f528f9b59fa693936e0a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>StopSearch</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a6ae15b5268df7520ab2a6d756b72e9fb</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>SetValue</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a0b295e340454a27f643052138f26fb95</anchor>
+      <arglist>(int64 index, int64 value)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>Value</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a444807ed7728065f488c364fcd3daa47</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>Contains</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ab99b24dbd1dd5c0393adcbfd195768ea</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int</type>
+      <name>Size</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a6631652219280f558f2a6ae4fd0f0366</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>IntVar *</type>
+      <name>Var</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a8ec6b0457672ded0a1046d29aa1c66bf</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>operations_research::IntVarIterator</name>
     <filename>classoperations__research_1_1IntVarIterator.html</filename>
     <base>operations_research::BaseObject</base>
@@ -10793,6 +11932,221 @@
       <name>var_handler_</name>
       <anchorfile>classoperations__research_1_1VarLocalSearchOperator.html</anchorfile>
       <anchor>a79bf2242dc1962d10e6b04cf09be2c56</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::LocalCheapestInsertionFilteredDecisionBuilder</name>
+    <filename>classoperations__research_1_1LocalCheapestInsertionFilteredDecisionBuilder.html</filename>
+    <base>operations_research::CheapestInsertionFilteredDecisionBuilder</base>
+    <member kind="function">
+      <type></type>
+      <name>LocalCheapestInsertionFilteredDecisionBuilder</name>
+      <anchorfile>classoperations__research_1_1LocalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ad636e48c7b76ce858570e663dc1b07f0</anchor>
+      <arglist>(RoutingModel *model, std::function&lt; int64(int64, int64, int64)&gt; evaluator, const std::vector&lt; LocalSearchFilter * &gt; &amp;filters)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>~LocalCheapestInsertionFilteredDecisionBuilder</name>
+      <anchorfile>classoperations__research_1_1LocalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a98d4760c6532935fef0e45b46618ef1d</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>BuildSolution</name>
+      <anchorfile>classoperations__research_1_1LocalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a1637389906444da0951928021b6c9a51</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string</type>
+      <name>DebugString</name>
+      <anchorfile>classoperations__research_1_1LocalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>af623caea58c368f9b6bd5c3c7cca4e01</anchor>
+      <arglist>() const override</arglist>
+    </member>
+    <member kind="function">
+      <type>RoutingModel *</type>
+      <name>model</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a8125b34030c571be558a4260970d1936</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetStartChainEnd</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>afeea31fbc3740ae9fce56757410a9b62</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetEndChainStart</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ac5e9978230d2e759f1f5b94bf738feca</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeDisjunctionNodesUnperformed</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ace97a6953feba3ac51077dc0c1b4ecc5</anchor>
+      <arglist>(int64 node)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeUnassignedNodesUnperformed</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a90d5e25d398a8c37bc2168e475aec99e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Decision *</type>
+      <name>Next</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3728215165475d83bf1fc427bc171c3e</anchor>
+      <arglist>(Solver *solver) override</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>number_of_decisions</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a5589c8d87c0b93a1d3e6ffac03830190</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>number_of_rejects</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3ae7dae1c50d1ed98f3a81b874c6e943</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>AppendMonitors</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>aacc1030d918e7c2b5ba6c5e8a0542746</anchor>
+      <arglist>(Solver *const solver, std::vector&lt; SearchMonitor * &gt; *const extras)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Accept</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>a62372947c9ce93ba28cb636a635433d7</anchor>
+      <arglist>(ModelVisitor *const visitor) const</arglist>
+    </member>
+    <member kind="typedef" protection="protected">
+      <type>std::pair&lt; int64, int64 &gt;</type>
+      <name>ValuedPosition</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a73c8cc48a3a48935344dcf67fe760d53</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef" protection="protected">
+      <type>std::pair&lt; StartEndValue, int &gt;</type>
+      <name>Seed</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>aa3d22767523969477c21a15afd777ee4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>std::vector&lt; std::vector&lt; StartEndValue &gt; &gt;</type>
+      <name>ComputeStartEndDistanceForVehicles</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>aefb129b85e384ae8dd93914fb86720e1</anchor>
+      <arglist>(const std::vector&lt; int &gt; &amp;vehicles)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>InitializePriorityQueue</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a376f8042e03bc87789d0b0c472f9babe</anchor>
+      <arglist>(std::vector&lt; std::vector&lt; StartEndValue &gt; &gt; *start_end_distances_per_node, Queue *priority_queue)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>InsertBetween</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3b0ce19f4831cb84532fef386f434b68</anchor>
+      <arglist>(int64 node, int64 predecessor, int64 successor)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>AppendEvaluatedPositionsAfter</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a98354fb58cafe2444a25feeb691191d5</anchor>
+      <arglist>(int64 node_to_insert, int64 start, int64 next_after_start, int64 vehicle, std::vector&lt; ValuedPosition &gt; *valued_positions)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>GetUnperformedValue</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>abb5c3583fb3e234773e83c3a008cac9a</anchor>
+      <arglist>(int64 node_to_insert) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>StopSearch</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a5231593d95ea61f3f6d900f44e0fb87b</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>Commit</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>aaa2ee1b71985f528f9b59fa693936e0a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>SetValue</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a0b295e340454a27f643052138f26fb95</anchor>
+      <arglist>(int64 index, int64 value)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>Value</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a444807ed7728065f488c364fcd3daa47</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>Contains</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ab99b24dbd1dd5c0393adcbfd195768ea</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int</type>
+      <name>Size</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a6631652219280f558f2a6ae4fd0f0366</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>IntVar *</type>
+      <name>Var</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a8ec6b0457672ded0a1046d29aa1c66bf</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>std::function&lt; int64(int64, int64, int64)&gt;</type>
+      <name>evaluator_</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ab35d04181a231cbc77193b2bd8101aba</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>std::function&lt; int64(int64)&gt;</type>
+      <name>penalty_evaluator_</name>
+      <anchorfile>classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ad9d981960cfd68cb2181e0072039e8fb</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -16676,52 +18030,52 @@
     </member>
   </compound>
   <compound kind="struct">
-    <name>TypeRegulationsChecker::NodeCount</name>
-    <filename>structTypeRegulationsChecker_1_1NodeCount.html</filename>
+    <name>operations_research::TypeRegulationsChecker::NodeCount</name>
+    <filename>structoperations__research_1_1TypeRegulationsChecker_1_1NodeCount.html</filename>
     <member kind="variable">
       <type>int</type>
       <name>non_pickup_delivery</name>
-      <anchorfile>structTypeRegulationsChecker_1_1NodeCount.html</anchorfile>
-      <anchor>a6a64057b17b849d8754db25d7965f836</anchor>
+      <anchorfile>structoperations__research_1_1TypeRegulationsChecker_1_1NodeCount.html</anchorfile>
+      <anchor>a9cd892985a0b99066ccd3e3bb311c3ba</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>pickup</name>
-      <anchorfile>structTypeRegulationsChecker_1_1NodeCount.html</anchorfile>
-      <anchor>ad9174079c058a67a5df069784c5fd07a</anchor>
+      <anchorfile>structoperations__research_1_1TypeRegulationsChecker_1_1NodeCount.html</anchorfile>
+      <anchor>a38c5cc1dd4ef3f9a7d23d67c2aa21947</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>delivery</name>
-      <anchorfile>structTypeRegulationsChecker_1_1NodeCount.html</anchorfile>
-      <anchor>aa74c68fd1d813b7eb08667e1a0b0fc49</anchor>
+      <anchorfile>structoperations__research_1_1TypeRegulationsChecker_1_1NodeCount.html</anchorfile>
+      <anchor>ac62297cf026bc33e1f90ba7624be9079</anchor>
       <arglist></arglist>
     </member>
   </compound>
   <compound kind="struct">
-    <name>RoutingDimension::NodePrecedence</name>
-    <filename>structRoutingDimension_1_1NodePrecedence.html</filename>
+    <name>operations_research::RoutingDimension::NodePrecedence</name>
+    <filename>structoperations__research_1_1RoutingDimension_1_1NodePrecedence.html</filename>
     <member kind="variable">
       <type>int64</type>
       <name>first_node</name>
-      <anchorfile>structRoutingDimension_1_1NodePrecedence.html</anchorfile>
-      <anchor>a791690768d878b2fabe6adfdd35383e5</anchor>
+      <anchorfile>structoperations__research_1_1RoutingDimension_1_1NodePrecedence.html</anchorfile>
+      <anchor>a0c094638ebc4fdb96e9d4dcf00698c53</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int64</type>
       <name>second_node</name>
-      <anchorfile>structRoutingDimension_1_1NodePrecedence.html</anchorfile>
-      <anchor>a380315e16036075ab1d6fa7896f90a01</anchor>
+      <anchorfile>structoperations__research_1_1RoutingDimension_1_1NodePrecedence.html</anchorfile>
+      <anchor>adc95d1896d42e4ced2f163e9dc6756a6</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int64</type>
       <name>offset</name>
-      <anchorfile>structRoutingDimension_1_1NodePrecedence.html</anchorfile>
-      <anchor>a0fcec9ed1d122c19028064641f0445a6</anchor>
+      <anchorfile>structoperations__research_1_1RoutingDimension_1_1NodePrecedence.html</anchorfile>
+      <anchor>a280370f73ee5987cf8f4fe4fd0cf5c33</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -19325,6 +20679,228 @@
       <name>var_handler_</name>
       <anchorfile>classoperations__research_1_1VarLocalSearchOperator.html</anchorfile>
       <anchor>a79bf2242dc1962d10e6b04cf09be2c56</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::ParallelSavingsFilteredDecisionBuilder</name>
+    <filename>classoperations__research_1_1ParallelSavingsFilteredDecisionBuilder.html</filename>
+    <base>operations_research::SavingsFilteredDecisionBuilder</base>
+    <member kind="function">
+      <type></type>
+      <name>ParallelSavingsFilteredDecisionBuilder</name>
+      <anchorfile>classoperations__research_1_1ParallelSavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a867c54dad2ba58a6d40a0565e664abcf</anchor>
+      <arglist>(RoutingModel *model, RoutingIndexManager *manager, SavingsParameters parameters, const std::vector&lt; LocalSearchFilter * &gt; &amp;filters)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>~ParallelSavingsFilteredDecisionBuilder</name>
+      <anchorfile>classoperations__research_1_1ParallelSavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ad6dd9b77f3ab9b69aa8a43a36b6818ab</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string</type>
+      <name>DebugString</name>
+      <anchorfile>classoperations__research_1_1ParallelSavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ad81f687a2b8b7f06fbe387c2a9159163</anchor>
+      <arglist>() const override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>BuildSolution</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a9c4a14a25e1129acbd541c76c7822c05</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>RoutingModel *</type>
+      <name>model</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a8125b34030c571be558a4260970d1936</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetStartChainEnd</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>afeea31fbc3740ae9fce56757410a9b62</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetEndChainStart</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ac5e9978230d2e759f1f5b94bf738feca</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeDisjunctionNodesUnperformed</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ace97a6953feba3ac51077dc0c1b4ecc5</anchor>
+      <arglist>(int64 node)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeUnassignedNodesUnperformed</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a90d5e25d398a8c37bc2168e475aec99e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Decision *</type>
+      <name>Next</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3728215165475d83bf1fc427bc171c3e</anchor>
+      <arglist>(Solver *solver) override</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>number_of_decisions</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a5589c8d87c0b93a1d3e6ffac03830190</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>number_of_rejects</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3ae7dae1c50d1ed98f3a81b874c6e943</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>AppendMonitors</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>aacc1030d918e7c2b5ba6c5e8a0542746</anchor>
+      <arglist>(Solver *const solver, std::vector&lt; SearchMonitor * &gt; *const extras)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Accept</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>a62372947c9ce93ba28cb636a635433d7</anchor>
+      <arglist>(ModelVisitor *const visitor) const</arglist>
+    </member>
+    <member kind="typedef" protection="protected">
+      <type>std::pair&lt; int64, int64 &gt;</type>
+      <name>Saving</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a596ce0cfecc75e1a45cbe815e9c5de18</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>GetVehicleTypeFromSaving</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a4e87652a0defe5e88e5ee40f9747e8e4</anchor>
+      <arglist>(const Saving &amp;saving) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>GetBeforeNodeFromSaving</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>af8dfaa8561042682ba1e695a9cf8e485</anchor>
+      <arglist>(const Saving &amp;saving) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>GetAfterNodeFromSaving</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a9e4db1eb4f2bca5ca9eaec95324ae691</anchor>
+      <arglist>(const Saving &amp;saving) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>GetSavingValue</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a2d95b0c5e4e1261ae146ea37744e164e</anchor>
+      <arglist>(const Saving &amp;saving) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int</type>
+      <name>StartNewRouteWithBestVehicleOfType</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a79f476b7736fd94c99a5a3b19af51144</anchor>
+      <arglist>(int type, int64 before_node, int64 after_node)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>StopSearch</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a5231593d95ea61f3f6d900f44e0fb87b</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>Commit</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>aaa2ee1b71985f528f9b59fa693936e0a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>SetValue</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a0b295e340454a27f643052138f26fb95</anchor>
+      <arglist>(int64 index, int64 value)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>Value</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a444807ed7728065f488c364fcd3daa47</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>Contains</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ab99b24dbd1dd5c0393adcbfd195768ea</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int</type>
+      <name>Size</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a6631652219280f558f2a6ae4fd0f0366</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>IntVar *</type>
+      <name>Var</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a8ec6b0457672ded0a1046d29aa1c66bf</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>std::vector&lt; int &gt;</type>
+      <name>type_index_of_vehicle_</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a95726fed5ab591f1934d5f427d58f5bb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>std::vector&lt; std::set&lt; VehicleClassEntry &gt; &gt;</type>
+      <name>sorted_vehicle_classes_per_type_</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>aa8b26c3fe240f025e6af46a2772503cd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>std::vector&lt; std::deque&lt; int &gt; &gt;</type>
+      <name>vehicles_per_vehicle_class_</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a34732976d70ea1b9bd96bbed44970007</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>std::unique_ptr&lt; SavingsContainer&lt; Saving &gt; &gt;</type>
+      <name>savings_container_</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a37e4260ae243381402603fe3c3bca94d</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -22819,6 +24395,2104 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>operations_research::RoutingDimension</name>
+    <filename>classoperations__research_1_1RoutingDimension.html</filename>
+    <class kind="struct">operations_research::RoutingDimension::NodePrecedence</class>
+    <member kind="typedef">
+      <type>std::function&lt; int64(int, int)&gt;</type>
+      <name>PickupToDeliveryLimitFunction</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a03d51f530bab2758548a51e962f38a1a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>~RoutingDimension</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>abfcf989d8ccbc8d02d2b2704ec96f763</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>RoutingModel *</type>
+      <name>model</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a5bef0de22a2f6fc1478082358ef80f38</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>GetTransitValue</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a5d7e7a4f88775c10240bbe838d2e13ee</anchor>
+      <arglist>(int64 from_index, int64 to_index, int64 vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>GetTransitValueFromClass</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a7d37150530f088112906877bf54dc4d9</anchor>
+      <arglist>(int64 from_index, int64 to_index, int64 vehicle_class) const</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVar *</type>
+      <name>CumulVar</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a541eec636cf28916ff1d27749a5a075c</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVar *</type>
+      <name>TransitVar</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a1fc838c052835bfc676c98c39348f60d</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVar *</type>
+      <name>FixedTransitVar</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>ae0795ddfd30eaaec1b9b68c25d681ffa</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVar *</type>
+      <name>SlackVar</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>aca1511ec6086af772f1c0de24bc80036</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; IntVar * &gt; &amp;</type>
+      <name>cumuls</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a520037b2703dd61ff94f7f775c31316b</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; IntVar * &gt; &amp;</type>
+      <name>fixed_transits</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>acec74fa72a4a455543d6d850b13058b6</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; IntVar * &gt; &amp;</type>
+      <name>transits</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a2429f90135681f8a51fe5c598683150a</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; IntVar * &gt; &amp;</type>
+      <name>slacks</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a96a618c496ecee054c3708a5949ad5c4</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; SortedDisjointIntervalList &gt; &amp;</type>
+      <name>forbidden_intervals</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a83297ba42788582d369696579addde1e</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; int64 &gt; &amp;</type>
+      <name>vehicle_capacities</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>af749da37fdb4dd5ebfc941a372e18d2f</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const RoutingModel::TransitCallback2 &amp;</type>
+      <name>transit_evaluator</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a81824038e89413cb3a1970104829cf81</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>AreVehicleTransitsPositive</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a3c7253f12e84337a20296ce54f528c9e</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>vehicle_to_class</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a8bf186bfb9a793f0e92273a6b4998f90</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetSpanUpperBoundForVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>abd077a7b29a7cfc99880172440e14d09</anchor>
+      <arglist>(int64 upper_bound, int vehicle)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetSpanCostCoefficientForVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>afc5f8f71a501b59e65b5c5f970c27c69</anchor>
+      <arglist>(int64 coefficient, int vehicle)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetSpanCostCoefficientForAllVehicles</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a44bf0c1d2c603b8255765ddd081fa40f</anchor>
+      <arglist>(int64 coefficient)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetGlobalSpanCostCoefficient</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>ab29859c22398d47a8590b3524e3a442a</anchor>
+      <arglist>(int64 coefficient)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetCumulVarPiecewiseLinearCost</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a6052d6bba75371db7e8ea84675187c73</anchor>
+      <arglist>(int64 index, const PiecewiseLinearFunction &amp;cost)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>HasCumulVarPiecewiseLinearCost</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>aa6c7d741202e530624ba3165132f6fa2</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>const PiecewiseLinearFunction *</type>
+      <name>GetCumulVarPiecewiseLinearCost</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a4d1d9795fd5d3679da87017897fd4f9b</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetCumulVarSoftUpperBound</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a8a84f4cd89001eab25832a01bccf982a</anchor>
+      <arglist>(int64 index, int64 upper_bound, int64 coefficient)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>HasCumulVarSoftUpperBound</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a5800f4776910a275f768050d832d1948</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>GetCumulVarSoftUpperBound</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a487493a16430f10f26366689017701bd</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>GetCumulVarSoftUpperBoundCoefficient</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>adcbe383e7ba8630ae23256e98810b6b9</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetCumulVarSoftLowerBound</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a3234a1f4aab23c4c4828b6321a5ec906</anchor>
+      <arglist>(int64 index, int64 lower_bound, int64 coefficient)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>HasCumulVarSoftLowerBound</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>ae6dd1772ef933bfe97628d0034450266</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>GetCumulVarSoftLowerBound</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a569e5105983007797f224986a331dc70</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>GetCumulVarSoftLowerBoundCoefficient</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a2bbbf40328825ffe853e5969eee63f5a</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetBreakIntervalsOfVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a6e43db91425269dda98c59586731f660</anchor>
+      <arglist>(std::vector&lt; IntervalVar * &gt; breaks, int vehicle, int pre_travel_evaluator, int post_travel_evaluator)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetBreakIntervalsOfVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a91a8bad350970afc848ae3726fb1f465</anchor>
+      <arglist>(std::vector&lt; IntervalVar * &gt; breaks, int vehicle, std::vector&lt; int64 &gt; node_visit_transits)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetBreakDistanceDurationOfVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a5303e0e6657cb3efed3c7068eb193c86</anchor>
+      <arglist>(int64 distance, int64 duration, int vehicle)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>InitializeBreaks</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>aa224ac17be74c79927c18ef4a4b6705d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>HasBreakConstraints</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a11db411ac857ec2153cd61c3e3296f08</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetBreakIntervalsOfVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>aaf017f4f85b78139a428e8a38da4c2a0</anchor>
+      <arglist>(std::vector&lt; IntervalVar * &gt; breaks, int vehicle, std::vector&lt; int64 &gt; node_visit_transits, std::function&lt; int64(int64, int64)&gt; group_delays)</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; IntervalVar * &gt; &amp;</type>
+      <name>GetBreakIntervalsOfVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a07c6cdc82e267942b967f53e6010a82c</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; std::pair&lt; int64, int64 &gt; &gt; &amp;</type>
+      <name>GetBreakDistanceDurationOfVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>aa771a4b1f09590ad4132fbf90f524abe</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetPreTravelEvaluatorOfVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>af929083de8b7e19f2d06d6ee2112b5a5</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetPostTravelEvaluatorOfVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>aa9acd23f51d4ba7c0e050db0bf27d9f5</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>const RoutingDimension *</type>
+      <name>base_dimension</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>ade704c2189c4dfde1ace86100f9c363d</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>ShortestTransitionSlack</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a15f32489aad9f7d42d76514dff27ccca</anchor>
+      <arglist>(int64 node) const</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::string &amp;</type>
+      <name>name</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a818dcdf6c1102cb0876393a153ef4249</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const ReverseArcListGraph&lt; int, int &gt; &amp;</type>
+      <name>GetPathPrecedenceGraph</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>ad3420be5f4b38fd143302fecc1d118bb</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetPickupToDeliveryLimitFunctionForPair</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a87f365465eb17819cd0d2f332080b113</anchor>
+      <arglist>(PickupToDeliveryLimitFunction limit_function, int pair_index)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>HasPickupToDeliveryLimits</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a30f89b5e42a78e894ea37b3e3d34ec9c</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>GetPickupToDeliveryLimitForPair</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>abd6b9d007b59cb549ecdb5a1e6d42cc9</anchor>
+      <arglist>(int pair_index, int pickup, int delivery) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddNodePrecedence</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a55bd9a9e03538855c7cee2eec4378622</anchor>
+      <arglist>(NodePrecedence precedence)</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; NodePrecedence &gt; &amp;</type>
+      <name>GetNodePrecedences</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a23c18b8de8ac3a05ffd9e0a5a5af7798</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddNodePrecedence</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a00ffdae5c50c4edd8247e84a139b574e</anchor>
+      <arglist>(int64 first_node, int64 second_node, int64 offset)</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>GetSpanUpperBoundForVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a6712bb9e01fe65384bad646d06919132</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; int64 &gt; &amp;</type>
+      <name>vehicle_span_upper_bounds</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a0a4ec0cb288bbf7da0549a73c1addd1a</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>GetSpanCostCoefficientForVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>aa2496cac569779842d4427758da56f1c</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; int64 &gt; &amp;</type>
+      <name>vehicle_span_cost_coefficients</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a395471c25d63a4af009b498581b8ac28</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>global_span_cost_coefficient</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a474925b9a253658d4610eb6a3a35be0c</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>GetGlobalOptimizerOffset</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a7f3c0cb6e8972660736e0bf89ef7d306</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>GetLocalOptimizerOffsetForVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a17fc6c0b2c2e09eb94c5c812e3919cd0</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetSoftSpanUpperBoundForVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a619aa0df1d2c81eab70de0f764e11f24</anchor>
+      <arglist>(SimpleBoundCosts::BoundCost bound_cost, int vehicle)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>HasSoftSpanUpperBounds</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a8b71e53aa7d38fbcb7c07a0f98d1bd61</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>SimpleBoundCosts::BoundCost</type>
+      <name>GetSoftSpanUpperBoundForVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a7ee4f5c15d4e68cf4a01a86d4baa2952</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="friend" protection="private">
+      <type>friend class</type>
+      <name>RoutingModel</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>ab7aef297f0c654af26dc7108c9ee6c69</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="private">
+      <type>friend class</type>
+      <name>RoutingModelInspector</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a00141bd90e555aea59a9e98cfbcda6eb</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::RoutingFilteredDecisionBuilder</name>
+    <filename>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</filename>
+    <base>operations_research::IntVarFilteredDecisionBuilder</base>
+    <member kind="function">
+      <type></type>
+      <name>RoutingFilteredDecisionBuilder</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ae6327458dc6df1a7bf82901c6dee263d</anchor>
+      <arglist>(RoutingModel *model, const std::vector&lt; LocalSearchFilter * &gt; &amp;filters)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>~RoutingFilteredDecisionBuilder</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a13396ec79f3ac918808ec66786331cb8</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>RoutingModel *</type>
+      <name>model</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a8125b34030c571be558a4260970d1936</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetStartChainEnd</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>afeea31fbc3740ae9fce56757410a9b62</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetEndChainStart</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ac5e9978230d2e759f1f5b94bf738feca</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeDisjunctionNodesUnperformed</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ace97a6953feba3ac51077dc0c1b4ecc5</anchor>
+      <arglist>(int64 node)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeUnassignedNodesUnperformed</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a90d5e25d398a8c37bc2168e475aec99e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Decision *</type>
+      <name>Next</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3728215165475d83bf1fc427bc171c3e</anchor>
+      <arglist>(Solver *solver) override</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual bool</type>
+      <name>BuildSolution</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>af80ac7c7333a0515de2155c463c4344e</anchor>
+      <arglist>()=0</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>number_of_decisions</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a5589c8d87c0b93a1d3e6ffac03830190</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>number_of_rejects</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3ae7dae1c50d1ed98f3a81b874c6e943</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string</type>
+      <name>DebugString</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>aca201d99227a6116c62418d28761aa9b</anchor>
+      <arglist>() const override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>AppendMonitors</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>aacc1030d918e7c2b5ba6c5e8a0542746</anchor>
+      <arglist>(Solver *const solver, std::vector&lt; SearchMonitor * &gt; *const extras)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Accept</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>a62372947c9ce93ba28cb636a635433d7</anchor>
+      <arglist>(ModelVisitor *const visitor) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>StopSearch</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a5231593d95ea61f3f6d900f44e0fb87b</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>Commit</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>aaa2ee1b71985f528f9b59fa693936e0a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>SetValue</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a0b295e340454a27f643052138f26fb95</anchor>
+      <arglist>(int64 index, int64 value)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>Value</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a444807ed7728065f488c364fcd3daa47</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>Contains</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ab99b24dbd1dd5c0393adcbfd195768ea</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int</type>
+      <name>Size</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a6631652219280f558f2a6ae4fd0f0366</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>IntVar *</type>
+      <name>Var</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a8ec6b0457672ded0a1046d29aa1c66bf</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::RoutingIndexManager</name>
+    <filename>classoperations__research_1_1RoutingIndexManager.html</filename>
+    <member kind="typedef">
+      <type>RoutingNodeIndex</type>
+      <name>NodeIndex</name>
+      <anchorfile>classoperations__research_1_1RoutingIndexManager.html</anchorfile>
+      <anchor>a31feb605a82521fcdb67d19c4f962f5c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>RoutingIndexManager</name>
+      <anchorfile>classoperations__research_1_1RoutingIndexManager.html</anchorfile>
+      <anchor>a7e8c8961302fc7f090b47a9e033fbcc8</anchor>
+      <arglist>(int num_nodes, int num_vehicles, NodeIndex depot)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>RoutingIndexManager</name>
+      <anchorfile>classoperations__research_1_1RoutingIndexManager.html</anchorfile>
+      <anchor>ac6807748d881051e31a0e3eb159e040d</anchor>
+      <arglist>(int num_nodes, int num_vehicles, const std::vector&lt; NodeIndex &gt; &amp;starts, const std::vector&lt; NodeIndex &gt; &amp;ends)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>RoutingIndexManager</name>
+      <anchorfile>classoperations__research_1_1RoutingIndexManager.html</anchorfile>
+      <anchor>a82d6a798a50025f837067d76138c0c24</anchor>
+      <arglist>(int num_nodes, int num_vehicles, const std::vector&lt; std::pair&lt; NodeIndex, NodeIndex &gt; &gt; &amp;starts_ends)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>~RoutingIndexManager</name>
+      <anchorfile>classoperations__research_1_1RoutingIndexManager.html</anchorfile>
+      <anchor>ab562f3b60e709b0b24b3e46981888f22</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>num_nodes</name>
+      <anchorfile>classoperations__research_1_1RoutingIndexManager.html</anchorfile>
+      <anchor>aa39ba437f2fe2c07c43721cbfb2a6f0d</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>num_vehicles</name>
+      <anchorfile>classoperations__research_1_1RoutingIndexManager.html</anchorfile>
+      <anchor>aa99aa264a338e0273b3ad8c55813ff95</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>num_indices</name>
+      <anchorfile>classoperations__research_1_1RoutingIndexManager.html</anchorfile>
+      <anchor>a29739c908b5719c47582a640d7f250f8</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>GetStartIndex</name>
+      <anchorfile>classoperations__research_1_1RoutingIndexManager.html</anchorfile>
+      <anchor>a43b46864861a1796f1d3b254094a7402</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>GetEndIndex</name>
+      <anchorfile>classoperations__research_1_1RoutingIndexManager.html</anchorfile>
+      <anchor>a84c8bf3d701466adf783114b05c12aa6</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>NodeToIndex</name>
+      <anchorfile>classoperations__research_1_1RoutingIndexManager.html</anchorfile>
+      <anchor>a3a51bf2b84f28075c50aca511c910053</anchor>
+      <arglist>(NodeIndex node) const</arglist>
+    </member>
+    <member kind="function">
+      <type>std::vector&lt; int64 &gt;</type>
+      <name>NodesToIndices</name>
+      <anchorfile>classoperations__research_1_1RoutingIndexManager.html</anchorfile>
+      <anchor>a1f4bf04c9419fb97c29b98438f00ef2a</anchor>
+      <arglist>(const std::vector&lt; NodeIndex &gt; &amp;nodes) const</arglist>
+    </member>
+    <member kind="function">
+      <type>NodeIndex</type>
+      <name>IndexToNode</name>
+      <anchorfile>classoperations__research_1_1RoutingIndexManager.html</anchorfile>
+      <anchor>a28e0e70a85074c1e9d2286e2bcaa229e</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>num_unique_depots</name>
+      <anchorfile>classoperations__research_1_1RoutingIndexManager.html</anchorfile>
+      <anchor>a148a071cb5a92fe73501c7c299ed5eb1</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>std::vector&lt; NodeIndex &gt;</type>
+      <name>GetIndexToNodeMap</name>
+      <anchorfile>classoperations__research_1_1RoutingIndexManager.html</anchorfile>
+      <anchor>a7b0e55ac5b352520c29311973023ac82</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>gtl::ITIVector&lt; NodeIndex, int64 &gt;</type>
+      <name>GetNodeToIndexMap</name>
+      <anchorfile>classoperations__research_1_1RoutingIndexManager.html</anchorfile>
+      <anchor>a4e8ca31394b4a07aa8acbb73881bb460</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const int64</type>
+      <name>kUnassigned</name>
+      <anchorfile>classoperations__research_1_1RoutingIndexManager.html</anchorfile>
+      <anchor>a2d397cd2af41ff1e0dd035c3ea1e65e5</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::RoutingModel</name>
+    <filename>classoperations__research_1_1RoutingModel.html</filename>
+    <class kind="struct">operations_research::RoutingModel::CostClass</class>
+    <class kind="struct">operations_research::RoutingModel::StateDependentTransit</class>
+    <class kind="struct">operations_research::RoutingModel::VehicleClass</class>
+    <member kind="enumeration">
+      <type></type>
+      <name>Status</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a328a19213729eec49288128061bc2044</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>ROUTING_NOT_SOLVED</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a328a19213729eec49288128061bc2044a73b2e79d6934957ec86f60a69036e055</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>ROUTING_SUCCESS</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a328a19213729eec49288128061bc2044afb2bbe1690a8f9be1575ade98e4e61dd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>ROUTING_FAIL</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a328a19213729eec49288128061bc2044acaf3d0fb83c0c1be4881362c0e2e0592</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>ROUTING_FAIL_TIMEOUT</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a328a19213729eec49288128061bc2044aa8b79310730408de7bae61835301a93e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>ROUTING_INVALID</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a328a19213729eec49288128061bc2044ae8dec7482ea889627be2d6a72dead305</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>PickupAndDeliveryPolicy</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ab3feb42fa0a2f09b014d55818dae2285</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>PICKUP_AND_DELIVERY_NO_ORDER</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ab3feb42fa0a2f09b014d55818dae2285a7da05b352a875f222b611ace4d9875a0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>PICKUP_AND_DELIVERY_LIFO</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ab3feb42fa0a2f09b014d55818dae2285ad27c7b752389c8da858fb6edafe443f3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>PICKUP_AND_DELIVERY_FIFO</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ab3feb42fa0a2f09b014d55818dae2285abad32d53044f07d2c49e028c49ce8699</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>RoutingCostClassIndex</type>
+      <name>CostClassIndex</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>afe7d1738a6e31d3383b70f93e061ae19</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>RoutingDimensionIndex</type>
+      <name>DimensionIndex</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a6367809b1620d6adc85ef4e05354a69e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>RoutingDisjunctionIndex</type>
+      <name>DisjunctionIndex</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a29920bb103087553829238476a5e58f2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>RoutingVehicleClassIndex</type>
+      <name>VehicleClassIndex</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>aee6e2a165e35ef474327b460af80c444</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>RoutingTransitCallback1</type>
+      <name>TransitCallback1</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>adbd56cf1cca85c203b23e097f4962079</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>RoutingTransitCallback2</type>
+      <name>TransitCallback2</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a40eca6feb4e3e04786969e3be70e115e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>RoutingIndexPair</type>
+      <name>IndexPair</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a1d089ac73991f47ab890015844821fc8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>RoutingIndexPairs</type>
+      <name>IndexPairs</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a9bdd93b2f509dfa6b54c6b0deff06547</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>std::function&lt; StateDependentTransit(int64, int64)&gt;</type>
+      <name>VariableIndexEvaluator2</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a8bd1b7e02a872f5006fc6d1fb611ef45</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>std::function&lt; std::vector&lt; operations_research::IntVar * &gt;(RoutingModel *)&gt;</type>
+      <name>GetTabuVarsCallback</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a86838ac04a7edcfb44901dfa60c2fbf2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>ROUTING_NOT_SOLVED</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a328a19213729eec49288128061bc2044a73b2e79d6934957ec86f60a69036e055</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>ROUTING_SUCCESS</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a328a19213729eec49288128061bc2044afb2bbe1690a8f9be1575ade98e4e61dd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>ROUTING_FAIL</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a328a19213729eec49288128061bc2044acaf3d0fb83c0c1be4881362c0e2e0592</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>ROUTING_FAIL_TIMEOUT</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a328a19213729eec49288128061bc2044aa8b79310730408de7bae61835301a93e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>ROUTING_INVALID</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a328a19213729eec49288128061bc2044ae8dec7482ea889627be2d6a72dead305</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>PICKUP_AND_DELIVERY_NO_ORDER</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ab3feb42fa0a2f09b014d55818dae2285a7da05b352a875f222b611ace4d9875a0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>PICKUP_AND_DELIVERY_LIFO</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ab3feb42fa0a2f09b014d55818dae2285ad27c7b752389c8da858fb6edafe443f3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>PICKUP_AND_DELIVERY_FIFO</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ab3feb42fa0a2f09b014d55818dae2285abad32d53044f07d2c49e028c49ce8699</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>RoutingModel</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a133bcfc7ce89b429f6530dd686090b27</anchor>
+      <arglist>(const RoutingIndexManager &amp;index_manager)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>RoutingModel</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>acfbbd779055254461aa032b70c3748fd</anchor>
+      <arglist>(const RoutingIndexManager &amp;index_manager, const RoutingModelParameters &amp;parameters)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>~RoutingModel</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a6ee4a1c4dda01e2138f79ed5ec913754</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>RegisterUnaryTransitCallback</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a82ee9c63870a985cbad7ee8474375a26</anchor>
+      <arglist>(TransitCallback1 callback)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>RegisterTransitCallback</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a439d2323fda3bc9c0fed5ea6a26a9959</anchor>
+      <arglist>(TransitCallback2 callback)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>RegisterPositiveTransitCallback</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>aec8f72732aa9e71b4f73e3c7c9ca8db8</anchor>
+      <arglist>(TransitCallback2 callback)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>RegisterStateDependentTransitCallback</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ad947cbbf8cadf9e8a490af1a90003978</anchor>
+      <arglist>(VariableIndexEvaluator2 callback)</arglist>
+    </member>
+    <member kind="function">
+      <type>const TransitCallback2 &amp;</type>
+      <name>TransitCallback</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>abb7ab8a55087f57f586e3f31c9b7e056</anchor>
+      <arglist>(int callback_index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>const TransitCallback1 &amp;</type>
+      <name>UnaryTransitCallbackOrNull</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a9d65835b0c42e83ca3d458a1768ca5f2</anchor>
+      <arglist>(int callback_index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>const VariableIndexEvaluator2 &amp;</type>
+      <name>StateDependentTransitCallback</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a84e53d2c1eb7349f1b561511b1c09dc4</anchor>
+      <arglist>(int callback_index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>AddDimension</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a131d4c961e4b230a6c3c383794a2777c</anchor>
+      <arglist>(int evaluator_index, int64 slack_max, int64 capacity, bool fix_start_cumul_to_zero, const std::string &amp;name)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>AddDimensionWithVehicleTransits</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ad4b1ac7c7cb83dcb18b44cfec23dd05b</anchor>
+      <arglist>(const std::vector&lt; int &gt; &amp;evaluator_indices, int64 slack_max, int64 capacity, bool fix_start_cumul_to_zero, const std::string &amp;name)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>AddDimensionWithVehicleCapacity</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a68270d21b64082e48e97e53b6ca5392a</anchor>
+      <arglist>(int evaluator_index, int64 slack_max, std::vector&lt; int64 &gt; vehicle_capacities, bool fix_start_cumul_to_zero, const std::string &amp;name)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>AddDimensionWithVehicleTransitAndCapacity</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a68555e5e1e1b3fdf046fa53e837cd702</anchor>
+      <arglist>(const std::vector&lt; int &gt; &amp;evaluator_indices, int64 slack_max, std::vector&lt; int64 &gt; vehicle_capacities, bool fix_start_cumul_to_zero, const std::string &amp;name)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>AddConstantDimensionWithSlack</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a9326109b713b0cfd3dd343f781ba97e1</anchor>
+      <arglist>(int64 value, int64 capacity, int64 slack_max, bool fix_start_cumul_to_zero, const std::string &amp;name)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>AddConstantDimension</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a7d0c59eb20fb03d8f368112257897a54</anchor>
+      <arglist>(int64 value, int64 capacity, bool fix_start_cumul_to_zero, const std::string &amp;name)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>AddVectorDimension</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a2134e3ee786c7dd1aa4b63952aad2d6f</anchor>
+      <arglist>(std::vector&lt; int64 &gt; values, int64 capacity, bool fix_start_cumul_to_zero, const std::string &amp;name)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>AddMatrixDimension</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ab7b1e5a42560f26ed7f995b76ec15f6f</anchor>
+      <arglist>(std::vector&lt; std::vector&lt; int64 &gt;&gt; values, int64 capacity, bool fix_start_cumul_to_zero, const std::string &amp;name)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>AddDimensionDependentDimensionWithVehicleCapacity</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ad04036dfcdbabf07b6505094f1388514</anchor>
+      <arglist>(const std::vector&lt; int &gt; &amp;pure_transits, const std::vector&lt; int &gt; &amp;dependent_transits, const RoutingDimension *base_dimension, int64 slack_max, std::vector&lt; int64 &gt; vehicle_capacities, bool fix_start_cumul_to_zero, const std::string &amp;name)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>AddDimensionDependentDimensionWithVehicleCapacity</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a4b0b427cd9432bc419a461768059f47f</anchor>
+      <arglist>(const std::vector&lt; int &gt; &amp;transits, const RoutingDimension *base_dimension, int64 slack_max, std::vector&lt; int64 &gt; vehicle_capacities, bool fix_start_cumul_to_zero, const std::string &amp;name)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>AddDimensionDependentDimensionWithVehicleCapacity</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a1ac3acc6ac3424f4d02573bfd8abd6d1</anchor>
+      <arglist>(int transit, const RoutingDimension *base_dimension, int64 slack_max, int64 vehicle_capacity, bool fix_start_cumul_to_zero, const std::string &amp;name)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>AddDimensionDependentDimensionWithVehicleCapacity</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a915f943819ac6af181965b484d090f55</anchor>
+      <arglist>(int pure_transit, int dependent_transit, const RoutingDimension *base_dimension, int64 slack_max, int64 vehicle_capacity, bool fix_start_cumul_to_zero, const std::string &amp;name)</arglist>
+    </member>
+    <member kind="function">
+      <type>Constraint *</type>
+      <name>MakePathSpansAndTotalSlacks</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>afcff5f6b59be6367a1a12a272e3fcefc</anchor>
+      <arglist>(const RoutingDimension *dimension, std::vector&lt; IntVar * &gt; spans, std::vector&lt; IntVar * &gt; total_slacks)</arglist>
+    </member>
+    <member kind="function">
+      <type>std::vector&lt;::std::string &gt;</type>
+      <name>GetAllDimensionNames</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a71b067e7126e5f17d7e1b6342a9e206d</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; RoutingDimension * &gt; &amp;</type>
+      <name>GetDimensions</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>aeba5d5fb90261d1d5623867d83451f1c</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>std::vector&lt; RoutingDimension * &gt;</type>
+      <name>GetDimensionsWithSoftOrSpanCosts</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>aec4bdb48024c20b5752d933d9167367e</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; RoutingDimension * &gt; &amp;</type>
+      <name>GetDimensionsForGlobalCumulOptimizers</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a773fae0db72dfde5e53d3acdfd7bb43c</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; RoutingDimension * &gt; &amp;</type>
+      <name>GetDimensionsForLocalCumulOptimizers</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a6f5eed3e36f6aa1c7f8aac09da2a1ff2</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>HasDimension</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ab835ab18242ef46463ee90b2ac0f5532</anchor>
+      <arglist>(const std::string &amp;dimension_name) const</arglist>
+    </member>
+    <member kind="function">
+      <type>const RoutingDimension &amp;</type>
+      <name>GetDimensionOrDie</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ad5fe4a5d7eb87b42e7b03367190c8ffc</anchor>
+      <arglist>(const std::string &amp;dimension_name) const</arglist>
+    </member>
+    <member kind="function">
+      <type>RoutingDimension *</type>
+      <name>GetMutableDimension</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a6a6c8be51a3d05f5cb97fa3086e9c161</anchor>
+      <arglist>(const std::string &amp;dimension_name) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetPrimaryConstrainedDimension</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ad60b94c48c83cf50117e794a47ae52a3</anchor>
+      <arglist>(const std::string &amp;dimension_name)</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::string &amp;</type>
+      <name>GetPrimaryConstrainedDimension</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>af35ab759f7e5191bb4063a58907be20c</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>DisjunctionIndex</type>
+      <name>AddDisjunction</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a7481e54940f75acd2516f5a24ff1039e</anchor>
+      <arglist>(const std::vector&lt; int64 &gt; &amp;indices, int64 penalty=kNoPenalty, int64 max_cardinality=1)</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; DisjunctionIndex &gt; &amp;</type>
+      <name>GetDisjunctionIndices</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a8cf13f984b08926eec39011f2900e3e5</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>ForEachNodeInDisjunctionWithMaxCardinalityFromIndex</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a99c987ce821236f8a515abc5f3a5cdcb</anchor>
+      <arglist>(int64 index, int64 max_cardinality, F f) const</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; int64 &gt; &amp;</type>
+      <name>GetDisjunctionIndices</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a0ebd6a8e2d8df31945e7c48fcf863e19</anchor>
+      <arglist>(DisjunctionIndex index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>GetDisjunctionPenalty</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>acc8ac0271bb8bc39e13a3f78ff84ce41</anchor>
+      <arglist>(DisjunctionIndex index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>GetDisjunctionMaxCardinality</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ad797a6fa63d267c5f6e4ddf169f20037</anchor>
+      <arglist>(DisjunctionIndex index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetNumberOfDisjunctions</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a061296e63bb9b679a5f21d4dc47f5ef2</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>std::vector&lt; std::pair&lt; int64, int64 &gt; &gt;</type>
+      <name>GetPerfectBinaryDisjunctions</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>aaa5632d48aaacc026bc225e844d1168d</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>IgnoreDisjunctionsAlreadyForcedToZero</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a1bb1958cfb9d49fe7111e4e31a451d00</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddSoftSameVehicleConstraint</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a590ef751764239fd5791eee398f3633e</anchor>
+      <arglist>(const std::vector&lt; int64 &gt; &amp;indices, int64 cost)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetAllowedVehiclesForIndex</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ae98935a4e6cc9b3d6aeee4f9ff273d7d</anchor>
+      <arglist>(const std::vector&lt; int &gt; &amp;vehicles, int64 index)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>IsVehicleAllowedForIndex</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a803a75bbbec4ca2c54d9b1733badfa7c</anchor>
+      <arglist>(int vehicle, int64 index)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddPickupAndDelivery</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a8dda4344799edeaf641f0395a74ed89e</anchor>
+      <arglist>(int64 pickup, int64 delivery)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddPickupAndDeliverySets</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a0404ffbec749cce477e7b2a642dfe3fa</anchor>
+      <arglist>(DisjunctionIndex pickup_disjunction, DisjunctionIndex delivery_disjunction)</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; std::pair&lt; int, int &gt; &gt; &amp;</type>
+      <name>GetPickupIndexPairs</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a2918eb9215035fde11373440a52e7b3c</anchor>
+      <arglist>(int64 node_index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; std::pair&lt; int, int &gt; &gt; &amp;</type>
+      <name>GetDeliveryIndexPairs</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a83b0784e48b4aae48ac1dec580e45887</anchor>
+      <arglist>(int64 node_index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetPickupAndDeliveryPolicyOfAllVehicles</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a0f538f8401c264daa39df1f3640dd468</anchor>
+      <arglist>(PickupAndDeliveryPolicy policy)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetPickupAndDeliveryPolicyOfVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a23e3efd1501595077fdc99ca53d6979e</anchor>
+      <arglist>(PickupAndDeliveryPolicy policy, int vehicle)</arglist>
+    </member>
+    <member kind="function">
+      <type>PickupAndDeliveryPolicy</type>
+      <name>GetPickupAndDeliveryPolicyOfVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a079c7e7c178df9c8eb78d1059db288c9</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetNumOfSingletonNodes</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ab931655cab881f03c89b34d0e213e938</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const IndexPairs &amp;</type>
+      <name>GetPickupAndDeliveryPairs</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a22500d001958a1597c08c402dcd4a2f2</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; std::pair&lt; DisjunctionIndex, DisjunctionIndex &gt; &gt; &amp;</type>
+      <name>GetPickupAndDeliveryDisjunctions</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>aa8eaa33768d96224ca4dc89f5070133a</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetVisitType</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a7aca0f50d5357b2b4cf406406a15e6d6</anchor>
+      <arglist>(int64 index, int type)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetVisitType</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a16cf2a63e593f4b6cc70565db770e3a1</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CloseVisitTypes</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a7ab97192fbe5b6439fa0b560df7c0689</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetNumberOfVisitTypes</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ad6be50659666986288d06fbeee22ff22</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddHardTypeIncompatibility</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a0cebd494809958d447b3bf5993eef05d</anchor>
+      <arglist>(int type1, int type2)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddTemporalTypeIncompatibility</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>afc493b34ee2a2bc9742dd54492901a11</anchor>
+      <arglist>(int type1, int type2)</arglist>
+    </member>
+    <member kind="function">
+      <type>const absl::flat_hash_set&lt; int &gt; &amp;</type>
+      <name>GetHardTypeIncompatibilitiesOfType</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ab8ccb1a9bcfdf50ecb4aa82d74797e0e</anchor>
+      <arglist>(int type) const</arglist>
+    </member>
+    <member kind="function">
+      <type>const absl::flat_hash_set&lt; int &gt; &amp;</type>
+      <name>GetTemporalTypeIncompatibilitiesOfType</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a37fa78a9cd717c2665ff079047170d08</anchor>
+      <arglist>(int type) const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>HasHardTypeIncompatibilities</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a039399df9f7c140d7764348a299f2e2b</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>HasTemporalTypeIncompatibilities</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a25d7e7d5dbcc14b53deec276a7c4465e</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddSameVehicleRequiredTypeAlternatives</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a05a9af20750c8aa7d65d8bd33113934c</anchor>
+      <arglist>(int dependent_type, absl::flat_hash_set&lt; int &gt; required_type_alternatives)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddTemporalRequiredTypeAlternatives</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>afc52d1e36860c09fbcef8a47d24ac2ec</anchor>
+      <arglist>(int dependent_type, absl::flat_hash_set&lt; int &gt; required_type_alternatives)</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; absl::flat_hash_set&lt; int &gt; &gt; &amp;</type>
+      <name>GetSameVehicleRequiredTypeAlternativesOfType</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a091daf73790830202a7e07696baddbc0</anchor>
+      <arglist>(int type) const</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; absl::flat_hash_set&lt; int &gt; &gt; &amp;</type>
+      <name>GetTemporalRequiredTypeAlternativesOfType</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a1ad79105bab19769698e822bdbc01374</anchor>
+      <arglist>(int type) const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>HasSameVehicleTypeRequirements</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>adf4b63aab9c6783079e9ef62de4f4c83</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>HasTemporalTypeRequirements</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a11fd41c63803a869709e1640e99aa3f9</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>HasTypeRegulations</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a4f701a6c16a01de56b43c5e82df7bd2c</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>UnperformedPenalty</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a1bc6555892b6fa99e01f2d61188c9616</anchor>
+      <arglist>(int64 var_index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>UnperformedPenaltyOrValue</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ac7aced00988489c59aa4e2dacb23fff7</anchor>
+      <arglist>(int64 default_value, int64 var_index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>GetDepot</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a5cc55676794916626c6f2b765c3fe1a3</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetArcCostEvaluatorOfAllVehicles</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ac1c68af59fa5513cf66fa4fd11acea29</anchor>
+      <arglist>(int evaluator_index)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetArcCostEvaluatorOfVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a9132fa5b050c3f5447e62f3e8bd8ce77</anchor>
+      <arglist>(int evaluator_index, int vehicle)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetFixedCostOfAllVehicles</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a9b44345e2ffce5df2256937137377bd4</anchor>
+      <arglist>(int64 cost)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetFixedCostOfVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a1f1cc6902bb1371d03eaca05fdf23078</anchor>
+      <arglist>(int64 cost, int vehicle)</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>GetFixedCostOfVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a307bdd7ab9fd4d0937453187a12777fe</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetAmortizedCostFactorsOfAllVehicles</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>aae44a9844e3f39a409f65d5c920c6f4d</anchor>
+      <arglist>(int64 linear_cost_factor, int64 quadratic_cost_factor)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetAmortizedCostFactorsOfVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a120ee9e22b95e835052b9eace2ceccc0</anchor>
+      <arglist>(int64 linear_cost_factor, int64 quadratic_cost_factor, int vehicle)</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; int64 &gt; &amp;</type>
+      <name>GetAmortizedLinearCostFactorOfVehicles</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ae7ef1e5f2a4d25729723f8af92c87eef</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; int64 &gt; &amp;</type>
+      <name>GetAmortizedQuadraticCostFactorOfVehicles</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>af7e6b8420135274a38673f39b651038d</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>ConsiderEmptyRouteCostsForVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>af738937221d1f3307e4b3fcf53913335</anchor>
+      <arglist>(bool consider_costs, int vehicle)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>AreEmptyRouteCostsConsideredForVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>aa5be2501ed079defc43d5f85a3afa1f3</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>const Solver::IndexEvaluator2 &amp;</type>
+      <name>first_solution_evaluator</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a7ed4bf32507041543e643ea19afa5769</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetFirstSolutionEvaluator</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a1242887846452455f037883d1f3b0238</anchor>
+      <arglist>(Solver::IndexEvaluator2 evaluator)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddLocalSearchOperator</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a421504809966a6abc4cd725c48780060</anchor>
+      <arglist>(LocalSearchOperator *ls_operator)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddSearchMonitor</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a4928a8a9f21302a215a6f26dda90eef1</anchor>
+      <arglist>(SearchMonitor *const monitor)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddAtSolutionCallback</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>aba790701618919c85a0469d42a7c0baf</anchor>
+      <arglist>(std::function&lt; void()&gt; callback)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddVariableMinimizedByFinalizer</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a0a9781d4ed69c53f960925bcd9078340</anchor>
+      <arglist>(IntVar *var)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddVariableMaximizedByFinalizer</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>aadaebb0f2b74d02cedcec9fd25e15921</anchor>
+      <arglist>(IntVar *var)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddWeightedVariableMinimizedByFinalizer</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>af6341300dc5286169dc713de00c12658</anchor>
+      <arglist>(IntVar *var, int64 cost)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddVariableTargetToFinalizer</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a83353bc0169bd873c36c364344386c6e</anchor>
+      <arglist>(IntVar *var, int64 target)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CloseModel</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ae84602b98050ad382d725e35326aab3d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>CloseModelWithParameters</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a593aa2f5d78d3e9506248ef6b36769f0</anchor>
+      <arglist>(const RoutingSearchParameters &amp;search_parameters)</arglist>
+    </member>
+    <member kind="function">
+      <type>const Assignment *</type>
+      <name>Solve</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ac1ab76e616858766abd3715a4c721c9a</anchor>
+      <arglist>(const Assignment *assignment=nullptr)</arglist>
+    </member>
+    <member kind="function">
+      <type>const Assignment *</type>
+      <name>SolveWithParameters</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a7d12150ee107484d0f8fa303f468358d</anchor>
+      <arglist>(const RoutingSearchParameters &amp;search_parameters, std::vector&lt; const Assignment * &gt; *solutions=nullptr)</arglist>
+    </member>
+    <member kind="function">
+      <type>const Assignment *</type>
+      <name>SolveFromAssignmentWithParameters</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a6665b219d44195e3c2a83bbba25819eb</anchor>
+      <arglist>(const Assignment *assignment, const RoutingSearchParameters &amp;search_parameters, std::vector&lt; const Assignment * &gt; *solutions=nullptr)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetAssignmentFromOtherModelAssignment</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ab003e312046f4b6e8aecb188de21f2c8</anchor>
+      <arglist>(Assignment *target_assignment, const RoutingModel *source_model, const Assignment *source_assignment)</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>ComputeLowerBound</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ab94b51a3ffa939b647cc2fc0eeff8400</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Status</type>
+      <name>status</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ac5f26040018e9122bf9c0d28a9e1d412</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVar *</type>
+      <name>ApplyLocks</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a9ffc92ce7c3dc0668e774e46964346c2</anchor>
+      <arglist>(const std::vector&lt; int64 &gt; &amp;locks)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>ApplyLocksToAllVehicles</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>af75ccc20172b1e28668556099d687a48</anchor>
+      <arglist>(const std::vector&lt; std::vector&lt; int64 &gt;&gt; &amp;locks, bool close_routes)</arglist>
+    </member>
+    <member kind="function">
+      <type>const Assignment *const</type>
+      <name>PreAssignment</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a4cfd057283c52c001eb900fc86006ecf</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>Assignment *</type>
+      <name>MutablePreAssignment</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a07dcedb57dc4c0d0b148de6358476c09</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>WriteAssignment</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>aa1f829437dc19706c08a9daeed54f719</anchor>
+      <arglist>(const std::string &amp;file_name) const</arglist>
+    </member>
+    <member kind="function">
+      <type>Assignment *</type>
+      <name>ReadAssignment</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>adeda839db7e3e6143aed24c6acfa6a63</anchor>
+      <arglist>(const std::string &amp;file_name)</arglist>
+    </member>
+    <member kind="function">
+      <type>Assignment *</type>
+      <name>RestoreAssignment</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ae216fb62532ff4f5a638fae2203ba311</anchor>
+      <arglist>(const Assignment &amp;solution)</arglist>
+    </member>
+    <member kind="function">
+      <type>Assignment *</type>
+      <name>ReadAssignmentFromRoutes</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a3191910e726092b97da9a2f42bd21a10</anchor>
+      <arglist>(const std::vector&lt; std::vector&lt; int64 &gt;&gt; &amp;routes, bool ignore_inactive_indices)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>RoutesToAssignment</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a72acea2ba6937e467a3e0f1fcf9a9e07</anchor>
+      <arglist>(const std::vector&lt; std::vector&lt; int64 &gt;&gt; &amp;routes, bool ignore_inactive_indices, bool close_routes, Assignment *const assignment) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AssignmentToRoutes</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>abe74143af4dbf4e80df3920cdc7ee19b</anchor>
+      <arglist>(const Assignment &amp;assignment, std::vector&lt; std::vector&lt; int64 &gt;&gt; *const routes) const</arglist>
+    </member>
+    <member kind="function">
+      <type>Assignment *</type>
+      <name>CompactAssignment</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a1f9eb39bee00004576f6248bf108b2a0</anchor>
+      <arglist>(const Assignment &amp;assignment) const</arglist>
+    </member>
+    <member kind="function">
+      <type>Assignment *</type>
+      <name>CompactAndCheckAssignment</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a45b86199287b76de49ed2003a0e66a92</anchor>
+      <arglist>(const Assignment &amp;assignment) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddToAssignment</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a1a11f61fc549eed60a0ee9fe937fbac6</anchor>
+      <arglist>(IntVar *const var)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddIntervalToAssignment</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a872d806bfea0935a2c351652e10fc2b7</anchor>
+      <arglist>(IntervalVar *const interval)</arglist>
+    </member>
+    <member kind="function">
+      <type>const Assignment *</type>
+      <name>PackCumulsOfOptimizerDimensionsFromAssignment</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a045099195126752409704a77f0eab073</anchor>
+      <arglist>(const Assignment *original_assignment, absl::Duration duration_limit)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetSweepArranger</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ae48174b58c5258d6b2daeb4fca88a48c</anchor>
+      <arglist>(SweepArranger *sweep_arranger)</arglist>
+    </member>
+    <member kind="function">
+      <type>SweepArranger *</type>
+      <name>sweep_arranger</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a0591ecab04c4c36001712568b10096a5</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddLocalSearchFilter</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a1a4f38992e3f63d9c763c9f5b044ece6</anchor>
+      <arglist>(LocalSearchFilter *filter)</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>Start</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>afa4da02fe3e4da6443c2799bcfc15f20</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>End</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a31d54fd638363c65a2fcd56139327c02</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>IsStart</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a94eb02e45a52976b41f26989b052904f</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>IsEnd</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ae3de9e12abc48a51ad1622eea5fb4bf9</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>VehicleIndex</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a34af72cc2a878066c1dfc35885249c59</anchor>
+      <arglist>(int index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>Next</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>acd71894a70fca99a12ba2a1173666efc</anchor>
+      <arglist>(const Assignment &amp;assignment, int64 index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>IsVehicleUsed</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>aa305f3d5a5e471e9f6c8295d1216fecf</anchor>
+      <arglist>(const Assignment &amp;assignment, int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; IntVar * &gt; &amp;</type>
+      <name>Nexts</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>aae35870db721604857ab17079e410fbe</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; IntVar * &gt; &amp;</type>
+      <name>VehicleVars</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a6ae84e190aea5f82c4438611c276544b</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVar *</type>
+      <name>NextVar</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a06c0f6488d296613184081d6350431e4</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVar *</type>
+      <name>ActiveVar</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ae40b7faab3c2928890f6c167722f5139</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVar *</type>
+      <name>VehicleCostsConsideredVar</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a2504e372b510ddac6d7e1512c112bbab</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVar *</type>
+      <name>VehicleVar</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>abf27caa0ebb8551a9ddf534d366edc62</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVar *</type>
+      <name>CostVar</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>affd7737c4d7f315afc863b135c7a07cf</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>GetArcCostForVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ada533b400c991befad313f9e1269ef67</anchor>
+      <arglist>(int64 from_index, int64 to_index, int64 vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>CostsAreHomogeneousAcrossVehicles</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a37e0a9a2bd517334820c866e23245d81</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>GetHomogeneousCost</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a1fa509a8eb9225fa21a1416e99358eb1</anchor>
+      <arglist>(int64 from_index, int64 to_index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>GetArcCostForFirstSolution</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>adf9855f60a0004fa53b2e2ff9cab3fce</anchor>
+      <arglist>(int64 from_index, int64 to_index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>GetArcCostForClass</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>aafc36e116dccb18d7329298d616730fd</anchor>
+      <arglist>(int64 from_index, int64 to_index, int64 cost_class_index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>CostClassIndex</type>
+      <name>GetCostClassIndexOfVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a38f27ac044864dd33032491e9b2e1ce0</anchor>
+      <arglist>(int64 vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>HasVehicleWithCostClassIndex</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a1ab61f24fca741345f0269f1c6152396</anchor>
+      <arglist>(CostClassIndex cost_class_index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetCostClassesCount</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a4400a3099548b3c4bbd0fab5611a9ac8</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetNonZeroCostClassesCount</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>aba0fdad13b78526349c1279f7127fe78</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>VehicleClassIndex</type>
+      <name>GetVehicleClassIndexOfVehicle</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a50d290af9bc33121c1b41aa025c94893</anchor>
+      <arglist>(int64 vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetVehicleClassesCount</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a3f8592ab5c60bfd642baa295965e476b</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; int &gt; &amp;</type>
+      <name>GetSameVehicleIndicesOfIndex</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>aa2a20dbd0b88b1b117c92bc7d3cc9c77</anchor>
+      <arglist>(int node) const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>ArcIsMoreConstrainedThanArc</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a05ecbf2a7e39b8984ebd2ae5167912d8</anchor>
+      <arglist>(int64 from, int64 to1, int64 to2)</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string</type>
+      <name>DebugOutputAssignment</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ae8bd0c46cd06795dea6004ddf2090567</anchor>
+      <arglist>(const Assignment &amp;solution_assignment, const std::string &amp;dimension_to_print) const</arglist>
+    </member>
+    <member kind="function">
+      <type>Solver *</type>
+      <name>solver</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a5e052b69c4c4cf9b4c8c436371fd6dcf</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>CheckLimit</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>aabc49d06184afabc880b2229eba42729</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>absl::Duration</type>
+      <name>RemainingTime</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>aad12402a06e0218f32702da13668397a</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>nodes</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ade2d9581bd56ce19dbf32e87bf23fc02</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>vehicles</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a7d8863c2b094d74220f01bfea6c11dee</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>Size</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a94c6a775655099c6e0b81d586f21838f</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>GetNumberOfDecisionsInFirstSolution</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a199d66aa4a8c9ed2800e33e14e1bc55f</anchor>
+      <arglist>(const RoutingSearchParameters &amp;search_parameters) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>GetNumberOfRejectsInFirstSolution</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a128ac07ace4447a2ec5102c9e1294a6b</anchor>
+      <arglist>(const RoutingSearchParameters &amp;search_parameters) const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>IsMatchingModel</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a51028a4ae2d42271b7fa4a8a1a32cce6</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetTabuVarsCallback</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ac924ca5a03e432c1cd5c598174243269</anchor>
+      <arglist>(GetTabuVarsCallback tabu_var_callback)</arglist>
+    </member>
+    <member kind="function">
+      <type>DecisionBuilder *</type>
+      <name>MakeGuidedSlackFinalizer</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ae6bec3395bdf63ec2491af18437ce1d1</anchor>
+      <arglist>(const RoutingDimension *dimension, std::function&lt; int64(int64)&gt; initializer)</arglist>
+    </member>
+    <member kind="function">
+      <type>DecisionBuilder *</type>
+      <name>MakeSelfDependentDimensionFinalizer</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>abff38c9125218758df2a429ccb02e118</anchor>
+      <arglist>(const RoutingDimension *dimension)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static RoutingModel::StateDependentTransit</type>
+      <name>MakeStateDependentTransit</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>ae4cc1f7c4664633064b0ee42e1e5eec6</anchor>
+      <arglist>(const std::function&lt; int64(int64)&gt; &amp;f, int64 domain_start, int64 domain_end)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static std::unique_ptr&lt; LocalSearchOperator &gt;</type>
+      <name>MakeGreedyDescentLSOperator</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a9d9ca555f7ae2d4e6626cac68388b5c7</anchor>
+      <arglist>(std::vector&lt; IntVar * &gt; variables)</arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const int64</type>
+      <name>kNoPenalty</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a5294e423796b0028f665ccc35967c199</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const DisjunctionIndex</type>
+      <name>kNoDisjunction</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a629a50e24cbacd010a82452b3e477551</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const DimensionIndex</type>
+      <name>kNoDimension</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a64af81f9d1bfc4c7d89caa9966f402ff</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="private">
+      <type>friend class</type>
+      <name>RoutingDimension</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a50ba9dd11704e0be7edaa9e9f24142ff</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="private">
+      <type>friend class</type>
+      <name>RoutingModelInspector</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a00141bd90e555aea59a9e98cfbcda6eb</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>operations_research::RoutingModelParameters</name>
     <filename>classoperations__research_1_1RoutingModelParameters.html</filename>
     <member kind="function">
@@ -23142,6 +26816,39 @@
       <anchorfile>classoperations__research_1_1RoutingModelParameters.html</anchorfile>
       <anchor>a53621a310ee365c6b6c19203cc203349</anchor>
       <arglist>(RoutingModelParameters &amp;a, RoutingModelParameters &amp;b)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::RoutingModelVisitor</name>
+    <filename>classoperations__research_1_1RoutingModelVisitor.html</filename>
+    <base>operations_research::BaseObject</base>
+    <member kind="function" virtualness="virtual">
+      <type>virtual std::string</type>
+      <name>DebugString</name>
+      <anchorfile>classoperations__research_1_1BaseObject.html</anchorfile>
+      <anchor>afb3b013c5063d71566d5273793c1d828</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const char</type>
+      <name>kLightElement</name>
+      <anchorfile>classoperations__research_1_1RoutingModelVisitor.html</anchorfile>
+      <anchor>af36da3725766b38931ad9bdea1d02321</anchor>
+      <arglist>[]</arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const char</type>
+      <name>kLightElement2</name>
+      <anchorfile>classoperations__research_1_1RoutingModelVisitor.html</anchorfile>
+      <anchor>a298cdf70368e0a1ba9137532da8b331c</anchor>
+      <arglist>[]</arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const char</type>
+      <name>kRemoveValues</name>
+      <anchorfile>classoperations__research_1_1RoutingModelVisitor.html</anchorfile>
+      <anchor>aa9ca73520ead4a8a507a2a44e881f6bd</anchor>
+      <arglist>[]</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -25057,39 +28764,285 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>SavingsFilteredDecisionBuilder::SavingsContainer</name>
-    <filename>classSavingsFilteredDecisionBuilder_1_1SavingsContainer.html</filename>
+    <name>operations_research::SavingsFilteredDecisionBuilder::SavingsContainer</name>
+    <filename>classoperations__research_1_1SavingsFilteredDecisionBuilder_1_1SavingsContainer.html</filename>
     <templarg></templarg>
   </compound>
+  <compound kind="class">
+    <name>operations_research::SavingsFilteredDecisionBuilder</name>
+    <filename>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</filename>
+    <base>operations_research::RoutingFilteredDecisionBuilder</base>
+    <class kind="class">operations_research::SavingsFilteredDecisionBuilder::SavingsContainer</class>
+    <class kind="struct">operations_research::SavingsFilteredDecisionBuilder::SavingsParameters</class>
+    <class kind="struct">operations_research::SavingsFilteredDecisionBuilder::VehicleClassEntry</class>
+    <member kind="function">
+      <type></type>
+      <name>SavingsFilteredDecisionBuilder</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a028086ef5737e56b82277a95d62d9082</anchor>
+      <arglist>(RoutingModel *model, RoutingIndexManager *manager, SavingsParameters parameters, const std::vector&lt; LocalSearchFilter * &gt; &amp;filters)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>~SavingsFilteredDecisionBuilder</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a2281f5265083aa57e0310b2c51c05976</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>BuildSolution</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a9c4a14a25e1129acbd541c76c7822c05</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>RoutingModel *</type>
+      <name>model</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a8125b34030c571be558a4260970d1936</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetStartChainEnd</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>afeea31fbc3740ae9fce56757410a9b62</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetEndChainStart</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ac5e9978230d2e759f1f5b94bf738feca</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeDisjunctionNodesUnperformed</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ace97a6953feba3ac51077dc0c1b4ecc5</anchor>
+      <arglist>(int64 node)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeUnassignedNodesUnperformed</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a90d5e25d398a8c37bc2168e475aec99e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Decision *</type>
+      <name>Next</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3728215165475d83bf1fc427bc171c3e</anchor>
+      <arglist>(Solver *solver) override</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>number_of_decisions</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a5589c8d87c0b93a1d3e6ffac03830190</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>number_of_rejects</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3ae7dae1c50d1ed98f3a81b874c6e943</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string</type>
+      <name>DebugString</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>aca201d99227a6116c62418d28761aa9b</anchor>
+      <arglist>() const override</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>AppendMonitors</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>aacc1030d918e7c2b5ba6c5e8a0542746</anchor>
+      <arglist>(Solver *const solver, std::vector&lt; SearchMonitor * &gt; *const extras)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Accept</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>a62372947c9ce93ba28cb636a635433d7</anchor>
+      <arglist>(ModelVisitor *const visitor) const</arglist>
+    </member>
+    <member kind="typedef" protection="protected">
+      <type>std::pair&lt; int64, int64 &gt;</type>
+      <name>Saving</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a596ce0cfecc75e1a45cbe815e9c5de18</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="pure">
+      <type>virtual double</type>
+      <name>ExtraSavingsMemoryMultiplicativeFactor</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>afa8569a5b82da8d6bb57e35b7517f210</anchor>
+      <arglist>() const =0</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="pure">
+      <type>virtual void</type>
+      <name>BuildRoutesFromSavings</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a9b7bf0e47b172ff320c8937add2f82c9</anchor>
+      <arglist>()=0</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>GetVehicleTypeFromSaving</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a4e87652a0defe5e88e5ee40f9747e8e4</anchor>
+      <arglist>(const Saving &amp;saving) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>GetBeforeNodeFromSaving</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>af8dfaa8561042682ba1e695a9cf8e485</anchor>
+      <arglist>(const Saving &amp;saving) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>GetAfterNodeFromSaving</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a9e4db1eb4f2bca5ca9eaec95324ae691</anchor>
+      <arglist>(const Saving &amp;saving) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>GetSavingValue</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a2d95b0c5e4e1261ae146ea37744e164e</anchor>
+      <arglist>(const Saving &amp;saving) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int</type>
+      <name>StartNewRouteWithBestVehicleOfType</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a79f476b7736fd94c99a5a3b19af51144</anchor>
+      <arglist>(int type, int64 before_node, int64 after_node)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>StopSearch</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a5231593d95ea61f3f6d900f44e0fb87b</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>Commit</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>aaa2ee1b71985f528f9b59fa693936e0a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>SetValue</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a0b295e340454a27f643052138f26fb95</anchor>
+      <arglist>(int64 index, int64 value)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>Value</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a444807ed7728065f488c364fcd3daa47</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>Contains</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ab99b24dbd1dd5c0393adcbfd195768ea</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int</type>
+      <name>Size</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a6631652219280f558f2a6ae4fd0f0366</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>IntVar *</type>
+      <name>Var</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a8ec6b0457672ded0a1046d29aa1c66bf</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>std::vector&lt; int &gt;</type>
+      <name>type_index_of_vehicle_</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a95726fed5ab591f1934d5f427d58f5bb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>std::vector&lt; std::set&lt; VehicleClassEntry &gt; &gt;</type>
+      <name>sorted_vehicle_classes_per_type_</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>aa8b26c3fe240f025e6af46a2772503cd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>std::vector&lt; std::deque&lt; int &gt; &gt;</type>
+      <name>vehicles_per_vehicle_class_</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a34732976d70ea1b9bd96bbed44970007</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>std::unique_ptr&lt; SavingsContainer&lt; Saving &gt; &gt;</type>
+      <name>savings_container_</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a37e4260ae243381402603fe3c3bca94d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="private">
+      <type>friend class</type>
+      <name>SavingsFilteredDecisionBuilderTestPeer</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a416ab434cf84e1360200462a2e66bd84</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
   <compound kind="struct">
-    <name>SavingsFilteredDecisionBuilder::SavingsParameters</name>
-    <filename>structSavingsFilteredDecisionBuilder_1_1SavingsParameters.html</filename>
+    <name>operations_research::SavingsFilteredDecisionBuilder::SavingsParameters</name>
+    <filename>structoperations__research_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html</filename>
     <member kind="variable">
       <type>double</type>
       <name>neighbors_ratio</name>
-      <anchorfile>structSavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
-      <anchor>a9b87637bdf8bb745a23976e9b559a8fd</anchor>
+      <anchorfile>structoperations__research_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
+      <anchor>a9f5ec178dd09b148ac19bb0e8ae31430</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>double</type>
       <name>max_memory_usage_bytes</name>
-      <anchorfile>structSavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
-      <anchor>a7d90515435ec6e9b43839c9ab9cb0fa8</anchor>
+      <anchorfile>structoperations__research_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
+      <anchor>a1a0c163bea7d2946ebb3448b6a961015</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>bool</type>
       <name>add_reverse_arcs</name>
-      <anchorfile>structSavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
-      <anchor>ae5991151717961945329988d3f51303b</anchor>
+      <anchorfile>structoperations__research_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
+      <anchor>aabdb307989bb13b36c48f1915bb2940e</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>double</type>
       <name>arc_coefficient</name>
-      <anchorfile>structSavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
-      <anchor>a20c144ff0287a9742bcd1e5a0b3fed1a</anchor>
+      <anchorfile>structoperations__research_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
+      <anchor>a8ccb365bfb92ed5e4fd99cdf69d3f437</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -26564,6 +30517,275 @@
       <anchorfile>classoperations__research_1_1SequenceVarLocalSearchOperator.html</anchorfile>
       <anchor>ab80b964f556e6175e70741b63de9f94e</anchor>
       <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::SequentialSavingsFilteredDecisionBuilder</name>
+    <filename>classoperations__research_1_1SequentialSavingsFilteredDecisionBuilder.html</filename>
+    <base>operations_research::SavingsFilteredDecisionBuilder</base>
+    <member kind="function">
+      <type></type>
+      <name>SequentialSavingsFilteredDecisionBuilder</name>
+      <anchorfile>classoperations__research_1_1SequentialSavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3832e84bda5ff8e97a831592ef8ecf7b</anchor>
+      <arglist>(RoutingModel *model, RoutingIndexManager *manager, SavingsParameters parameters, const std::vector&lt; LocalSearchFilter * &gt; &amp;filters)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>~SequentialSavingsFilteredDecisionBuilder</name>
+      <anchorfile>classoperations__research_1_1SequentialSavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a66879eb2c7cd5b72167112b2d5bf99b2</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string</type>
+      <name>DebugString</name>
+      <anchorfile>classoperations__research_1_1SequentialSavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a03eb36c220aacf9dc6eaa439a242b76c</anchor>
+      <arglist>() const override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>BuildSolution</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a9c4a14a25e1129acbd541c76c7822c05</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>RoutingModel *</type>
+      <name>model</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a8125b34030c571be558a4260970d1936</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetStartChainEnd</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>afeea31fbc3740ae9fce56757410a9b62</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetEndChainStart</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ac5e9978230d2e759f1f5b94bf738feca</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeDisjunctionNodesUnperformed</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ace97a6953feba3ac51077dc0c1b4ecc5</anchor>
+      <arglist>(int64 node)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeUnassignedNodesUnperformed</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a90d5e25d398a8c37bc2168e475aec99e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Decision *</type>
+      <name>Next</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3728215165475d83bf1fc427bc171c3e</anchor>
+      <arglist>(Solver *solver) override</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>number_of_decisions</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a5589c8d87c0b93a1d3e6ffac03830190</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>number_of_rejects</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a3ae7dae1c50d1ed98f3a81b874c6e943</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>AppendMonitors</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>aacc1030d918e7c2b5ba6c5e8a0542746</anchor>
+      <arglist>(Solver *const solver, std::vector&lt; SearchMonitor * &gt; *const extras)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Accept</name>
+      <anchorfile>classoperations__research_1_1DecisionBuilder.html</anchorfile>
+      <anchor>a62372947c9ce93ba28cb636a635433d7</anchor>
+      <arglist>(ModelVisitor *const visitor) const</arglist>
+    </member>
+    <member kind="typedef" protection="protected">
+      <type>std::pair&lt; int64, int64 &gt;</type>
+      <name>Saving</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a596ce0cfecc75e1a45cbe815e9c5de18</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>GetVehicleTypeFromSaving</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a4e87652a0defe5e88e5ee40f9747e8e4</anchor>
+      <arglist>(const Saving &amp;saving) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>GetBeforeNodeFromSaving</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>af8dfaa8561042682ba1e695a9cf8e485</anchor>
+      <arglist>(const Saving &amp;saving) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>GetAfterNodeFromSaving</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a9e4db1eb4f2bca5ca9eaec95324ae691</anchor>
+      <arglist>(const Saving &amp;saving) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>GetSavingValue</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a2d95b0c5e4e1261ae146ea37744e164e</anchor>
+      <arglist>(const Saving &amp;saving) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int</type>
+      <name>StartNewRouteWithBestVehicleOfType</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a79f476b7736fd94c99a5a3b19af51144</anchor>
+      <arglist>(int type, int64 before_node, int64 after_node)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>StopSearch</name>
+      <anchorfile>classoperations__research_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a5231593d95ea61f3f6d900f44e0fb87b</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>Commit</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>aaa2ee1b71985f528f9b59fa693936e0a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>SetValue</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a0b295e340454a27f643052138f26fb95</anchor>
+      <arglist>(int64 index, int64 value)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int64</type>
+      <name>Value</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a444807ed7728065f488c364fcd3daa47</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>bool</type>
+      <name>Contains</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>ab99b24dbd1dd5c0393adcbfd195768ea</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int</type>
+      <name>Size</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a6631652219280f558f2a6ae4fd0f0366</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>IntVar *</type>
+      <name>Var</name>
+      <anchorfile>classoperations__research_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a8ec6b0457672ded0a1046d29aa1c66bf</anchor>
+      <arglist>(int64 index) const</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>std::vector&lt; int &gt;</type>
+      <name>type_index_of_vehicle_</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a95726fed5ab591f1934d5f427d58f5bb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>std::vector&lt; std::set&lt; VehicleClassEntry &gt; &gt;</type>
+      <name>sorted_vehicle_classes_per_type_</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>aa8b26c3fe240f025e6af46a2772503cd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>std::vector&lt; std::deque&lt; int &gt; &gt;</type>
+      <name>vehicles_per_vehicle_class_</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a34732976d70ea1b9bd96bbed44970007</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>std::unique_ptr&lt; SavingsContainer&lt; Saving &gt; &gt;</type>
+      <name>savings_container_</name>
+      <anchorfile>classoperations__research_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
+      <anchor>a37e4260ae243381402603fe3c3bca94d</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::SimpleBoundCosts</name>
+    <filename>classoperations__research_1_1SimpleBoundCosts.html</filename>
+    <class kind="struct">operations_research::SimpleBoundCosts::BoundCost</class>
+    <member kind="function">
+      <type></type>
+      <name>SimpleBoundCosts</name>
+      <anchorfile>classoperations__research_1_1SimpleBoundCosts.html</anchorfile>
+      <anchor>a6ec9098d43f8ccbd6f7b5b6dfb047e78</anchor>
+      <arglist>(int num_bounds, BoundCost default_bound_cost)</arglist>
+    </member>
+    <member kind="function">
+      <type>BoundCost &amp;</type>
+      <name>bound_cost</name>
+      <anchorfile>classoperations__research_1_1SimpleBoundCosts.html</anchorfile>
+      <anchor>a35969473ece3e5d19884346b0ffc3044</anchor>
+      <arglist>(int element)</arglist>
+    </member>
+    <member kind="function">
+      <type>BoundCost</type>
+      <name>bound_cost</name>
+      <anchorfile>classoperations__research_1_1SimpleBoundCosts.html</anchorfile>
+      <anchor>ad07f030289731fbe799ec1a315b40ca9</anchor>
+      <arglist>(int element) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>Size</name>
+      <anchorfile>classoperations__research_1_1SimpleBoundCosts.html</anchorfile>
+      <anchor>a7257d43ea91bd77ebb30817a6cb80928</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>SimpleBoundCosts</name>
+      <anchorfile>classoperations__research_1_1SimpleBoundCosts.html</anchorfile>
+      <anchor>a86f1488546e3c969059a0da1cf632a31</anchor>
+      <arglist>(const SimpleBoundCosts &amp;)=delete</arglist>
+    </member>
+    <member kind="function">
+      <type>SimpleBoundCosts</type>
+      <name>operator=</name>
+      <anchorfile>classoperations__research_1_1SimpleBoundCosts.html</anchorfile>
+      <anchor>a25cbaaa77d5d9c0ded3f786b3634f71b</anchor>
+      <arglist>(const SimpleBoundCosts &amp;)=delete</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -32025,27 +36247,45 @@
     </member>
   </compound>
   <compound kind="struct">
-    <name>CheapestInsertionFilteredDecisionBuilder::StartEndValue</name>
-    <filename>structCheapestInsertionFilteredDecisionBuilder_1_1StartEndValue.html</filename>
+    <name>operations_research::CheapestInsertionFilteredDecisionBuilder::StartEndValue</name>
+    <filename>structoperations__research_1_1CheapestInsertionFilteredDecisionBuilder_1_1StartEndValue.html</filename>
     <member kind="function">
       <type>bool</type>
       <name>operator&lt;</name>
-      <anchorfile>structCheapestInsertionFilteredDecisionBuilder_1_1StartEndValue.html</anchorfile>
-      <anchor>a0c85e075940ea179577a2e090395b446</anchor>
+      <anchorfile>structoperations__research_1_1CheapestInsertionFilteredDecisionBuilder_1_1StartEndValue.html</anchorfile>
+      <anchor>a9c231f84a7d2d4e045d179a0b5960696</anchor>
       <arglist>(const StartEndValue &amp;other) const</arglist>
     </member>
     <member kind="variable">
       <type>int64</type>
       <name>distance</name>
-      <anchorfile>structCheapestInsertionFilteredDecisionBuilder_1_1StartEndValue.html</anchorfile>
-      <anchor>ad144ade2ac271bf7f285bad778774b87</anchor>
+      <anchorfile>structoperations__research_1_1CheapestInsertionFilteredDecisionBuilder_1_1StartEndValue.html</anchorfile>
+      <anchor>a69b62dbfb6dd4e04a9c13c2b7ae96283</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>vehicle</name>
-      <anchorfile>structCheapestInsertionFilteredDecisionBuilder_1_1StartEndValue.html</anchorfile>
-      <anchor>a843944b58d95caa2634a4c6b2792da2a</anchor>
+      <anchorfile>structoperations__research_1_1CheapestInsertionFilteredDecisionBuilder_1_1StartEndValue.html</anchorfile>
+      <anchor>ac590c77936e140e9784deb32ac1600b0</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="struct">
+    <name>operations_research::RoutingModel::StateDependentTransit</name>
+    <filename>structoperations__research_1_1RoutingModel_1_1StateDependentTransit.html</filename>
+    <member kind="variable">
+      <type>RangeIntToIntFunction *</type>
+      <name>transit</name>
+      <anchorfile>structoperations__research_1_1RoutingModel_1_1StateDependentTransit.html</anchorfile>
+      <anchor>aa03ad7e9ddea7fb222523be91361629b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>RangeMinMaxIndexFunction *</type>
+      <name>transit_plus_identity</name>
+      <anchorfile>structoperations__research_1_1RoutingModel_1_1StateDependentTransit.html</anchorfile>
+      <anchor>a0723ef2570124a42891a5740acde6ac7</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -32307,6 +36547,38 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>operations_research::SweepArranger</name>
+    <filename>classoperations__research_1_1SweepArranger.html</filename>
+    <member kind="function">
+      <type></type>
+      <name>SweepArranger</name>
+      <anchorfile>classoperations__research_1_1SweepArranger.html</anchorfile>
+      <anchor>a91a681c3c3dc2c4fceafe4733bef5b13</anchor>
+      <arglist>(const std::vector&lt; std::pair&lt; int64, int64 &gt;&gt; &amp;points)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual</type>
+      <name>~SweepArranger</name>
+      <anchorfile>classoperations__research_1_1SweepArranger.html</anchorfile>
+      <anchor>ab305a51a9b45be4d95d65044e4b8dfe5</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>ArrangeIndices</name>
+      <anchorfile>classoperations__research_1_1SweepArranger.html</anchorfile>
+      <anchor>a98d7d121dd15a55d88cd4b8b44d87dbf</anchor>
+      <arglist>(std::vector&lt; int64 &gt; *indices)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetSectors</name>
+      <anchorfile>classoperations__research_1_1SweepArranger.html</anchorfile>
+      <anchor>ae0f3dd23a352473656bea721e48d34c7</anchor>
+      <arglist>(int sectors)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>operations_research::SymmetryBreaker</name>
     <filename>classoperations__research_1_1SymmetryBreaker.html</filename>
     <base>operations_research::DecisionVisitor</base>
@@ -32502,83 +36774,554 @@
     </member>
   </compound>
   <compound kind="struct">
-    <name>DisjunctivePropagator::Tasks</name>
-    <filename>structDisjunctivePropagator_1_1Tasks.html</filename>
+    <name>operations_research::DisjunctivePropagator::Tasks</name>
+    <filename>structoperations__research_1_1DisjunctivePropagator_1_1Tasks.html</filename>
     <member kind="function">
       <type>void</type>
       <name>Clear</name>
-      <anchorfile>structDisjunctivePropagator_1_1Tasks.html</anchorfile>
-      <anchor>a020532a499977a36e38da249afc71230</anchor>
+      <anchorfile>structoperations__research_1_1DisjunctivePropagator_1_1Tasks.html</anchorfile>
+      <anchor>a1b6429704f519567fa1cfa3d05c74e2a</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>num_chain_tasks</name>
-      <anchorfile>structDisjunctivePropagator_1_1Tasks.html</anchorfile>
-      <anchor>a7338766cc78015279cf631748bd27897</anchor>
+      <anchorfile>structoperations__research_1_1DisjunctivePropagator_1_1Tasks.html</anchorfile>
+      <anchor>adfad07d1a5630489cce6a184f93c7950</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>std::vector&lt; int64 &gt;</type>
       <name>start_min</name>
-      <anchorfile>structDisjunctivePropagator_1_1Tasks.html</anchorfile>
-      <anchor>ae81bd9ed38788f7ab29ffa6b06c8780a</anchor>
+      <anchorfile>structoperations__research_1_1DisjunctivePropagator_1_1Tasks.html</anchorfile>
+      <anchor>a32dfedca557a573ad9b57b2115007665</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>std::vector&lt; int64 &gt;</type>
       <name>start_max</name>
-      <anchorfile>structDisjunctivePropagator_1_1Tasks.html</anchorfile>
-      <anchor>ad83f5b65e161e0c33b47c44ebe7a5486</anchor>
+      <anchorfile>structoperations__research_1_1DisjunctivePropagator_1_1Tasks.html</anchorfile>
+      <anchor>a77b9d8ff0967560a84426fd738c7ace2</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>std::vector&lt; int64 &gt;</type>
       <name>duration_min</name>
-      <anchorfile>structDisjunctivePropagator_1_1Tasks.html</anchorfile>
-      <anchor>a2dcba5165de6aec6cf5ab9dd3e703712</anchor>
+      <anchorfile>structoperations__research_1_1DisjunctivePropagator_1_1Tasks.html</anchorfile>
+      <anchor>aadf688835846d21de86534523ef17db5</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>std::vector&lt; int64 &gt;</type>
       <name>duration_max</name>
-      <anchorfile>structDisjunctivePropagator_1_1Tasks.html</anchorfile>
-      <anchor>a646bf1d98f0bcb2b157072f8dca5661d</anchor>
+      <anchorfile>structoperations__research_1_1DisjunctivePropagator_1_1Tasks.html</anchorfile>
+      <anchor>a2a5477f2c7a91cf5da2efcbade36ad65</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>std::vector&lt; int64 &gt;</type>
       <name>end_min</name>
-      <anchorfile>structDisjunctivePropagator_1_1Tasks.html</anchorfile>
-      <anchor>a29e9e4b732a34a405f0f43b746ebc741</anchor>
+      <anchorfile>structoperations__research_1_1DisjunctivePropagator_1_1Tasks.html</anchorfile>
+      <anchor>a71bc3bc90b5b5e7e4d3afe4bcce235df</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>std::vector&lt; int64 &gt;</type>
       <name>end_max</name>
-      <anchorfile>structDisjunctivePropagator_1_1Tasks.html</anchorfile>
-      <anchor>aa686b73e8435b6c0052b4e545db897ed</anchor>
+      <anchorfile>structoperations__research_1_1DisjunctivePropagator_1_1Tasks.html</anchorfile>
+      <anchor>a0d86d53b48fe077e4a7d83806f41f611</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>std::vector&lt; bool &gt;</type>
       <name>is_preemptible</name>
-      <anchorfile>structDisjunctivePropagator_1_1Tasks.html</anchorfile>
-      <anchor>aaa20225fc54638db1493c9ae0b2947f7</anchor>
+      <anchorfile>structoperations__research_1_1DisjunctivePropagator_1_1Tasks.html</anchorfile>
+      <anchor>af73024abcc74544668ba0670e6cf686c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>std::vector&lt; const SortedDisjointIntervalList * &gt;</type>
       <name>forbidden_intervals</name>
-      <anchorfile>structDisjunctivePropagator_1_1Tasks.html</anchorfile>
-      <anchor>a480a1199c2254e1b14f5124b77a65fe9</anchor>
+      <anchorfile>structoperations__research_1_1DisjunctivePropagator_1_1Tasks.html</anchorfile>
+      <anchor>a843482b23d0a253b232b4bf15c9074d9</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>std::vector&lt; std::pair&lt; int64, int64 &gt; &gt;</type>
       <name>distance_duration</name>
-      <anchorfile>structDisjunctivePropagator_1_1Tasks.html</anchorfile>
-      <anchor>a78f61265441dff8a40873494e79e90bd</anchor>
+      <anchorfile>structoperations__research_1_1DisjunctivePropagator_1_1Tasks.html</anchorfile>
+      <anchor>a2c505a4d04cd15978ec60f925a1ce747</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::TypeIncompatibilityChecker</name>
+    <filename>classoperations__research_1_1TypeIncompatibilityChecker.html</filename>
+    <base>operations_research::TypeRegulationsChecker</base>
+    <member kind="function">
+      <type></type>
+      <name>TypeIncompatibilityChecker</name>
+      <anchorfile>classoperations__research_1_1TypeIncompatibilityChecker.html</anchorfile>
+      <anchor>a1d543e4703f6d24201ba6e1d66e970a0</anchor>
+      <arglist>(const RoutingModel &amp;model, bool check_hard_incompatibilities)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>~TypeIncompatibilityChecker</name>
+      <anchorfile>classoperations__research_1_1TypeIncompatibilityChecker.html</anchorfile>
+      <anchor>a03eb6d15aebb5ba2d71e20a5a9473d2b</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>CheckVehicle</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a0b4f0b1229831593a81796be8d1ba1ba</anchor>
+      <arglist>(int vehicle, const std::function&lt; int64(int64)&gt; &amp;next_accessor)</arglist>
+    </member>
+    <member kind="enumeration" protection="protected">
+      <type></type>
+      <name>PickupDeliveryStatus</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a2d70db5fae656cb4a04ee1c9e830d4a0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue" protection="protected">
+      <name>PICKUP</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a2d70db5fae656cb4a04ee1c9e830d4a0a0fa19a9622775519017039dc924ee9f4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue" protection="protected">
+      <name>DELIVERY</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a2d70db5fae656cb4a04ee1c9e830d4a0a2953d752d8155e98b97caa5d188c9168</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue" protection="protected">
+      <name>NONE</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a2d70db5fae656cb4a04ee1c9e830d4a0ac6b4a588174e741667c1348bab18ed22</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue" protection="protected">
+      <name>PICKUP</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a2d70db5fae656cb4a04ee1c9e830d4a0a0fa19a9622775519017039dc924ee9f4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue" protection="protected">
+      <name>DELIVERY</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a2d70db5fae656cb4a04ee1c9e830d4a0a2953d752d8155e98b97caa5d188c9168</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue" protection="protected">
+      <name>NONE</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a2d70db5fae656cb4a04ee1c9e830d4a0ac6b4a588174e741667c1348bab18ed22</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int</type>
+      <name>GetNonDeliveryCount</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a04a755f07976c11c248ac6a11f02f5b2</anchor>
+      <arglist>(int type) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int</type>
+      <name>GetNonDeliveredCount</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>aea3c74d7683c88af7fdc5e84299e3dbc</anchor>
+      <arglist>(int type) const</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>InitializeCheck</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a1d251c1c25fb1667a7cdc01d55560a7a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>FinalizeCheck</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>acfdb9e4a1750ee5c5d5d48876b037a54</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>const RoutingModel &amp;</type>
+      <name>model_</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a62263ad13e1e19dba9a3a2078bfc5f22</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::TypeRegulationsChecker</name>
+    <filename>classoperations__research_1_1TypeRegulationsChecker.html</filename>
+    <class kind="struct">operations_research::TypeRegulationsChecker::NodeCount</class>
+    <member kind="function">
+      <type></type>
+      <name>TypeRegulationsChecker</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a27875e686580a562a88e680c3945b9f2</anchor>
+      <arglist>(const RoutingModel &amp;model)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual</type>
+      <name>~TypeRegulationsChecker</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>ae53d1145526ed3c088dd9bbd062b8a25</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>CheckVehicle</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a0b4f0b1229831593a81796be8d1ba1ba</anchor>
+      <arglist>(int vehicle, const std::function&lt; int64(int64)&gt; &amp;next_accessor)</arglist>
+    </member>
+    <member kind="enumeration" protection="protected">
+      <type></type>
+      <name>PickupDeliveryStatus</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a2d70db5fae656cb4a04ee1c9e830d4a0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue" protection="protected">
+      <name>PICKUP</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a2d70db5fae656cb4a04ee1c9e830d4a0a0fa19a9622775519017039dc924ee9f4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue" protection="protected">
+      <name>DELIVERY</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a2d70db5fae656cb4a04ee1c9e830d4a0a2953d752d8155e98b97caa5d188c9168</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue" protection="protected">
+      <name>NONE</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a2d70db5fae656cb4a04ee1c9e830d4a0ac6b4a588174e741667c1348bab18ed22</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue" protection="protected">
+      <name>PICKUP</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a2d70db5fae656cb4a04ee1c9e830d4a0a0fa19a9622775519017039dc924ee9f4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue" protection="protected">
+      <name>DELIVERY</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a2d70db5fae656cb4a04ee1c9e830d4a0a2953d752d8155e98b97caa5d188c9168</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue" protection="protected">
+      <name>NONE</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a2d70db5fae656cb4a04ee1c9e830d4a0ac6b4a588174e741667c1348bab18ed22</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int</type>
+      <name>GetNonDeliveryCount</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a04a755f07976c11c248ac6a11f02f5b2</anchor>
+      <arglist>(int type) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int</type>
+      <name>GetNonDeliveredCount</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>aea3c74d7683c88af7fdc5e84299e3dbc</anchor>
+      <arglist>(int type) const</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="pure">
+      <type>virtual bool</type>
+      <name>HasRegulationsToCheck</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a438df887824060c5fb3c21b743f5aa59</anchor>
+      <arglist>() const =0</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>InitializeCheck</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a1d251c1c25fb1667a7cdc01d55560a7a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="pure">
+      <type>virtual bool</type>
+      <name>CheckTypeRegulations</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a2865ddc8f604e74c2d58bcfa4a769361</anchor>
+      <arglist>(int type)=0</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>FinalizeCheck</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>acfdb9e4a1750ee5c5d5d48876b037a54</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>const RoutingModel &amp;</type>
+      <name>model_</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a62263ad13e1e19dba9a3a2078bfc5f22</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::TypeRegulationsConstraint</name>
+    <filename>classoperations__research_1_1TypeRegulationsConstraint.html</filename>
+    <base>operations_research::Constraint</base>
+    <member kind="function">
+      <type></type>
+      <name>TypeRegulationsConstraint</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsConstraint.html</anchorfile>
+      <anchor>aeae90eab871a67eb39147218b4771225</anchor>
+      <arglist>(const RoutingModel &amp;model)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Post</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsConstraint.html</anchorfile>
+      <anchor>add0fa8d777cd68c77f87cfbd22ad5dd9</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>InitialPropagate</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsConstraint.html</anchorfile>
+      <anchor>a350eb7ba99ec672599956a2b61a2a8b1</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string</type>
+      <name>DebugString</name>
+      <anchorfile>classoperations__research_1_1Constraint.html</anchorfile>
+      <anchor>a443bf6da3f8db15c240cb92d20e37466</anchor>
+      <arglist>() const override</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>PostAndPropagate</name>
+      <anchorfile>classoperations__research_1_1Constraint.html</anchorfile>
+      <anchor>a92c3bfe86238b5c95448d4a0384a327f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Accept</name>
+      <anchorfile>classoperations__research_1_1Constraint.html</anchorfile>
+      <anchor>a6e3070956af148d6fa0491de1d3cf289</anchor>
+      <arglist>(ModelVisitor *const visitor) const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>IsCastConstraint</name>
+      <anchorfile>classoperations__research_1_1Constraint.html</anchorfile>
+      <anchor>a834edc2ae995b866a6aa63e44c242570</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual IntVar *</type>
+      <name>Var</name>
+      <anchorfile>classoperations__research_1_1Constraint.html</anchorfile>
+      <anchor>a5606cc31756a1708615d492ab75ba886</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Solver *</type>
+      <name>solver</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>ab3aa61657c74294f198a16d1dbc52580</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>FreezeQueue</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>a78b16596f589dd63573a1586f61c2dbd</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>UnfreezeQueue</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>a97782b79fbcf8043201fefaa7729dcf1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>EnqueueDelayedDemon</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>a5dd87cd906d80738f8727fda04bc5ace</anchor>
+      <arglist>(Demon *const d)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>EnqueueVar</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>a3fe6115081d583d57b6cd8b0dd1783d7</anchor>
+      <arglist>(Demon *const d)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>ExecuteAll</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>a4a7285479f5e0fa7663c043cdfc7dd61</anchor>
+      <arglist>(const SimpleRevFIFO&lt; Demon * &gt; &amp;demons)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>EnqueueAll</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>a5975e144479d99ceae4f009472ca5e92</anchor>
+      <arglist>(const SimpleRevFIFO&lt; Demon * &gt; &amp;demons)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_action_on_fail</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>a5c6bf90bb0b099a2c8f81aaefdfdd46c</anchor>
+      <arglist>(Solver::Action a)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>reset_action_on_fail</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>ad07aa613bcc8d3896dff3f33520b061c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_variable_to_clean_on_fail</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>a4d2ccb8a806df14394b3271791c81e61</anchor>
+      <arglist>(IntVar *v)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual std::string</type>
+      <name>name</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>a8be8b75223b76744791e48747677cdb6</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_name</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>a5d4a4cf402b353ba2908836656cf0c62</anchor>
+      <arglist>(const std::string &amp;name)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>HasName</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>af6e627822f954d6072125c1d152c30f8</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual std::string</type>
+      <name>BaseName</name>
+      <anchorfile>classoperations__research_1_1PropagationBaseObject.html</anchorfile>
+      <anchor>ab34671f68433c582260a443f3d15bfae</anchor>
+      <arglist>() const</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::TypeRequirementChecker</name>
+    <filename>classoperations__research_1_1TypeRequirementChecker.html</filename>
+    <base>operations_research::TypeRegulationsChecker</base>
+    <member kind="function">
+      <type></type>
+      <name>TypeRequirementChecker</name>
+      <anchorfile>classoperations__research_1_1TypeRequirementChecker.html</anchorfile>
+      <anchor>a5c564c69c96dd36222b5623c89228d39</anchor>
+      <arglist>(const RoutingModel &amp;model)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>~TypeRequirementChecker</name>
+      <anchorfile>classoperations__research_1_1TypeRequirementChecker.html</anchorfile>
+      <anchor>af5e86084de7226b91e04c8ec4829c864</anchor>
+      <arglist>() override</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>CheckVehicle</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a0b4f0b1229831593a81796be8d1ba1ba</anchor>
+      <arglist>(int vehicle, const std::function&lt; int64(int64)&gt; &amp;next_accessor)</arglist>
+    </member>
+    <member kind="enumeration" protection="protected">
+      <type></type>
+      <name>PickupDeliveryStatus</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a2d70db5fae656cb4a04ee1c9e830d4a0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue" protection="protected">
+      <name>PICKUP</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a2d70db5fae656cb4a04ee1c9e830d4a0a0fa19a9622775519017039dc924ee9f4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue" protection="protected">
+      <name>DELIVERY</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a2d70db5fae656cb4a04ee1c9e830d4a0a2953d752d8155e98b97caa5d188c9168</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue" protection="protected">
+      <name>NONE</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a2d70db5fae656cb4a04ee1c9e830d4a0ac6b4a588174e741667c1348bab18ed22</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue" protection="protected">
+      <name>PICKUP</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a2d70db5fae656cb4a04ee1c9e830d4a0a0fa19a9622775519017039dc924ee9f4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue" protection="protected">
+      <name>DELIVERY</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a2d70db5fae656cb4a04ee1c9e830d4a0a2953d752d8155e98b97caa5d188c9168</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue" protection="protected">
+      <name>NONE</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a2d70db5fae656cb4a04ee1c9e830d4a0ac6b4a588174e741667c1348bab18ed22</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int</type>
+      <name>GetNonDeliveryCount</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a04a755f07976c11c248ac6a11f02f5b2</anchor>
+      <arglist>(int type) const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>int</type>
+      <name>GetNonDeliveredCount</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>aea3c74d7683c88af7fdc5e84299e3dbc</anchor>
+      <arglist>(int type) const</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>const RoutingModel &amp;</type>
+      <name>model_</name>
+      <anchorfile>classoperations__research_1_1TypeRegulationsChecker.html</anchorfile>
+      <anchor>a62263ad13e1e19dba9a3a2078bfc5f22</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -33181,27 +37924,115 @@
     </member>
   </compound>
   <compound kind="struct">
-    <name>SavingsFilteredDecisionBuilder::VehicleClassEntry</name>
-    <filename>structSavingsFilteredDecisionBuilder_1_1VehicleClassEntry.html</filename>
-    <member kind="function">
-      <type>bool</type>
-      <name>operator&lt;</name>
-      <anchorfile>structSavingsFilteredDecisionBuilder_1_1VehicleClassEntry.html</anchorfile>
-      <anchor>a9c61973758bb413be11e59ffaad7216f</anchor>
-      <arglist>(const VehicleClassEntry &amp;other) const</arglist>
+    <name>operations_research::RoutingModel::VehicleClass</name>
+    <filename>structoperations__research_1_1RoutingModel_1_1VehicleClass.html</filename>
+    <member kind="function" static="yes">
+      <type>static bool</type>
+      <name>LessThan</name>
+      <anchorfile>structoperations__research_1_1RoutingModel_1_1VehicleClass.html</anchorfile>
+      <anchor>aec380433df515c1a5bb166ba52828fd2</anchor>
+      <arglist>(const VehicleClass &amp;a, const VehicleClass &amp;b)</arglist>
     </member>
     <member kind="variable">
-      <type>int</type>
-      <name>vehicle_class</name>
-      <anchorfile>structSavingsFilteredDecisionBuilder_1_1VehicleClassEntry.html</anchorfile>
-      <anchor>aa504ae94659c25c6146786485941e8bc</anchor>
+      <type>CostClassIndex</type>
+      <name>cost_class_index</name>
+      <anchorfile>structoperations__research_1_1RoutingModel_1_1VehicleClass.html</anchorfile>
+      <anchor>a45f52b1d62144c98d8a49065b17d4a9a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int64</type>
       <name>fixed_cost</name>
-      <anchorfile>structSavingsFilteredDecisionBuilder_1_1VehicleClassEntry.html</anchorfile>
-      <anchor>a27394b3588b9d4b2dfd663669772d698</anchor>
+      <anchorfile>structoperations__research_1_1RoutingModel_1_1VehicleClass.html</anchorfile>
+      <anchor>a5ca90b9a98f28012ccd29d9361d91265</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>start_equivalence_class</name>
+      <anchorfile>structoperations__research_1_1RoutingModel_1_1VehicleClass.html</anchorfile>
+      <anchor>a3e5773e5e974e392a69349be4e5cb0d0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>end_equivalence_class</name>
+      <anchorfile>structoperations__research_1_1RoutingModel_1_1VehicleClass.html</anchorfile>
+      <anchor>a2e484de39bcb2b510164e88112ed6ec5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>gtl::ITIVector&lt; DimensionIndex, int64 &gt;</type>
+      <name>dimension_start_cumuls_min</name>
+      <anchorfile>structoperations__research_1_1RoutingModel_1_1VehicleClass.html</anchorfile>
+      <anchor>a867852a03a08d1000bac9ade86552c46</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>gtl::ITIVector&lt; DimensionIndex, int64 &gt;</type>
+      <name>dimension_start_cumuls_max</name>
+      <anchorfile>structoperations__research_1_1RoutingModel_1_1VehicleClass.html</anchorfile>
+      <anchor>ab2017a1b4f4a02e523386cb883c9dabb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>gtl::ITIVector&lt; DimensionIndex, int64 &gt;</type>
+      <name>dimension_end_cumuls_min</name>
+      <anchorfile>structoperations__research_1_1RoutingModel_1_1VehicleClass.html</anchorfile>
+      <anchor>a734695f6f92ce0ca91919f49572e1521</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>gtl::ITIVector&lt; DimensionIndex, int64 &gt;</type>
+      <name>dimension_end_cumuls_max</name>
+      <anchorfile>structoperations__research_1_1RoutingModel_1_1VehicleClass.html</anchorfile>
+      <anchor>aaad1775862b1c4b859cad75a437e0fbf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>gtl::ITIVector&lt; DimensionIndex, int64 &gt;</type>
+      <name>dimension_capacities</name>
+      <anchorfile>structoperations__research_1_1RoutingModel_1_1VehicleClass.html</anchorfile>
+      <anchor>a9e5e9b7c21fd09b302309ed10c65e1a8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>gtl::ITIVector&lt; DimensionIndex, int64 &gt;</type>
+      <name>dimension_evaluator_classes</name>
+      <anchorfile>structoperations__research_1_1RoutingModel_1_1VehicleClass.html</anchorfile>
+      <anchor>aff3b14d0392881f341830b3495a6bd43</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint64</type>
+      <name>unvisitable_nodes_fprint</name>
+      <anchorfile>structoperations__research_1_1RoutingModel_1_1VehicleClass.html</anchorfile>
+      <anchor>ad1214f7853897966b1d4b9836c3f209f</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="struct">
+    <name>operations_research::SavingsFilteredDecisionBuilder::VehicleClassEntry</name>
+    <filename>structoperations__research_1_1SavingsFilteredDecisionBuilder_1_1VehicleClassEntry.html</filename>
+    <member kind="function">
+      <type>bool</type>
+      <name>operator&lt;</name>
+      <anchorfile>structoperations__research_1_1SavingsFilteredDecisionBuilder_1_1VehicleClassEntry.html</anchorfile>
+      <anchor>aad87ac7096cc80706908f448c9d4e20e</anchor>
+      <arglist>(const VehicleClassEntry &amp;other) const</arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>vehicle_class</name>
+      <anchorfile>structoperations__research_1_1SavingsFilteredDecisionBuilder_1_1VehicleClassEntry.html</anchorfile>
+      <anchor>abd293b056dc12a2011b7a4f072033847</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int64</type>
+      <name>fixed_cost</name>
+      <anchorfile>structoperations__research_1_1SavingsFilteredDecisionBuilder_1_1VehicleClassEntry.html</anchorfile>
+      <anchor>af119cbcf8e058d2415c205ab9060a607</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -33220,6 +38051,7 @@
     <class kind="class">operations_research::BaseIntExpr</class>
     <class kind="class">operations_research::BaseLns</class>
     <class kind="class">operations_research::BaseObject</class>
+    <class kind="class">operations_research::BasePathFilter</class>
     <class kind="class">operations_research::BooleanVar</class>
     <class kind="class">operations_research::CallMethod0</class>
     <class kind="class">operations_research::CallMethod1</class>
@@ -33227,7 +38059,12 @@
     <class kind="class">operations_research::CallMethod3</class>
     <class kind="class">operations_research::CastConstraint</class>
     <class kind="class">operations_research::ChangeValue</class>
+    <class kind="class">operations_research::CheapestAdditionFilteredDecisionBuilder</class>
+    <class kind="class">operations_research::CheapestInsertionFilteredDecisionBuilder</class>
+    <class kind="class">operations_research::ChristofidesFilteredDecisionBuilder</class>
+    <class kind="class">operations_research::ComparatorCheapestAdditionFilteredDecisionBuilder</class>
     <class kind="class">operations_research::Constraint</class>
+    <class kind="class">operations_research::CPFeasibilityFilter</class>
     <class kind="class">operations_research::Decision</class>
     <class kind="class">operations_research::DecisionBuilder</class>
     <class kind="class">operations_research::DecisionVisitor</class>
@@ -33238,9 +38075,13 @@
     <class kind="class">operations_research::Demon</class>
     <class kind="class">operations_research::DimensionCumulOptimizerCore</class>
     <class kind="class">operations_research::DisjunctiveConstraint</class>
+    <class kind="class">operations_research::DisjunctivePropagator</class>
+    <class kind="class">operations_research::EvaluatorCheapestAdditionFilteredDecisionBuilder</class>
     <class kind="class">operations_research::ExchangeSubtrip</class>
     <class kind="class">operations_research::FirstSolutionStrategy</class>
+    <class kind="class">operations_research::GlobalCheapestInsertionFilteredDecisionBuilder</class>
     <class kind="class">operations_research::GlobalDimensionCumulOptimizer</class>
+    <class kind="class">operations_research::GlobalVehicleBreaksConstraint</class>
     <class kind="class">operations_research::IndexPairSwapActiveOperator</class>
     <class kind="class">operations_research::InitAndGetValues</class>
     <class kind="class">operations_research::IntervalVar</class>
@@ -33248,11 +38089,13 @@
     <class kind="class">operations_research::IntExpr</class>
     <class kind="class">operations_research::IntVar</class>
     <class kind="class">operations_research::IntVarElement</class>
+    <class kind="class">operations_research::IntVarFilteredDecisionBuilder</class>
     <class kind="class">operations_research::IntVarIterator</class>
     <class kind="class">operations_research::IntVarLocalSearchFilter</class>
     <class kind="class">operations_research::IntVarLocalSearchHandler</class>
     <class kind="class">operations_research::IntVarLocalSearchOperator</class>
     <class kind="class">operations_research::LightPairRelocateOperator</class>
+    <class kind="class">operations_research::LocalCheapestInsertionFilteredDecisionBuilder</class>
     <class kind="class">operations_research::LocalDimensionCumulOptimizer</class>
     <class kind="class">operations_research::LocalSearchFilter</class>
     <class kind="class">operations_research::LocalSearchFilterManager</class>
@@ -33273,6 +38116,7 @@
     <class kind="class">operations_research::PairExchangeRelocateOperator</class>
     <class kind="class">operations_research::PairNodeSwapActiveOperator</class>
     <class kind="class">operations_research::PairRelocateOperator</class>
+    <class kind="class">operations_research::ParallelSavingsFilteredDecisionBuilder</class>
     <class kind="class">operations_research::PathOperator</class>
     <class kind="class">operations_research::PathWithPreviousNodesOperator</class>
     <class kind="class">operations_research::PropagationBaseObject</class>
@@ -33289,9 +38133,15 @@
     <class kind="class">operations_research::RevIntSet</class>
     <class kind="class">operations_research::RevPartialSequence</class>
     <class kind="class">operations_research::RevSwitch</class>
+    <class kind="class">operations_research::RoutingDimension</class>
+    <class kind="class">operations_research::RoutingFilteredDecisionBuilder</class>
+    <class kind="class">operations_research::RoutingIndexManager</class>
+    <class kind="class">operations_research::RoutingModel</class>
     <class kind="class">operations_research::RoutingModelParameters</class>
+    <class kind="class">operations_research::RoutingModelVisitor</class>
     <class kind="class">operations_research::RoutingSearchParameters</class>
     <class kind="class">operations_research::RoutingSearchParameters_LocalSearchNeighborhoodOperators</class>
+    <class kind="class">operations_research::SavingsFilteredDecisionBuilder</class>
     <class kind="class">operations_research::SearchLimit</class>
     <class kind="class">operations_research::SearchLog</class>
     <class kind="class">operations_research::SearchMonitor</class>
@@ -33299,13 +38149,20 @@
     <class kind="class">operations_research::SequenceVarElement</class>
     <class kind="class">operations_research::SequenceVarLocalSearchHandler</class>
     <class kind="class">operations_research::SequenceVarLocalSearchOperator</class>
+    <class kind="class">operations_research::SequentialSavingsFilteredDecisionBuilder</class>
+    <class kind="class">operations_research::SimpleBoundCosts</class>
     <class kind="class">operations_research::SimpleRevFIFO</class>
     <class kind="class">operations_research::SmallRevBitSet</class>
     <class kind="class">operations_research::SolutionCollector</class>
     <class kind="class">operations_research::SolutionPool</class>
     <class kind="class">operations_research::Solver</class>
     <class kind="class">operations_research::SwapIndexPairOperator</class>
+    <class kind="class">operations_research::SweepArranger</class>
     <class kind="class">operations_research::SymmetryBreaker</class>
+    <class kind="class">operations_research::TypeIncompatibilityChecker</class>
+    <class kind="class">operations_research::TypeRegulationsChecker</class>
+    <class kind="class">operations_research::TypeRegulationsConstraint</class>
+    <class kind="class">operations_research::TypeRequirementChecker</class>
     <class kind="class">operations_research::UnsortedNullableRevBitset</class>
     <class kind="class">operations_research::VarLocalSearchOperator</class>
     <member kind="typedef">
@@ -33840,6 +38697,111 @@
       <arglist>(const std::vector&lt; int &gt; &amp;input)</arglist>
     </member>
     <member kind="function">
+      <type>void</type>
+      <name>AppendTasksFromPath</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a9c690acb94faaa03d89930ec84a76bba</anchor>
+      <arglist>(const std::vector&lt; int64 &gt; &amp;path, const std::vector&lt; int64 &gt; &amp;min_travels, const std::vector&lt; int64 &gt; &amp;max_travels, const std::vector&lt; int64 &gt; &amp;pre_travels, const std::vector&lt; int64 &gt; &amp;post_travels, const RoutingDimension &amp;dimension, DisjunctivePropagator::Tasks *tasks)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AppendTasksFromIntervals</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>aec575fd72a48b07ceca957691d785d57</anchor>
+      <arglist>(const std::vector&lt; IntervalVar * &gt; &amp;intervals, DisjunctivePropagator::Tasks *tasks)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>FillPathEvaluation</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a4f6a1b9fc737ba25fee7bf42d6635182</anchor>
+      <arglist>(const std::vector&lt; int64 &gt; &amp;path, const RoutingModel::TransitCallback2 &amp;evaluator, std::vector&lt; int64 &gt; *values)</arglist>
+    </member>
+    <member kind="function">
+      <type>DecisionBuilder *</type>
+      <name>MakeSetValuesFromTargets</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a4e907b3668a07c9fa3f62d938f6cb855</anchor>
+      <arglist>(Solver *solver, std::vector&lt; IntVar * &gt; variables, std::vector&lt; int64 &gt; targets)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>SolveModelWithSat</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>ab70fc1eb89b0210ef0e6d24256f7776a</anchor>
+      <arglist>(const RoutingModel &amp;model, const Assignment *initial_solution, Assignment *solution)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVarLocalSearchFilter *</type>
+      <name>MakeNodeDisjunctionFilter</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>ae096121f1559753c357ed8ee184353f8</anchor>
+      <arglist>(const RoutingModel &amp;routing_model, std::function&lt; void(int64)&gt; objective_callback)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVarLocalSearchFilter *</type>
+      <name>MakeVehicleAmortizedCostFilter</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a5f6417c3f4078b9fdaafdb8e19116b55</anchor>
+      <arglist>(const RoutingModel &amp;routing_model, Solver::ObjectiveWatcher objective_callback)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVarLocalSearchFilter *</type>
+      <name>MakeTypeRegulationsFilter</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a3de43a015d4ee3ce53eb030e1d7232de</anchor>
+      <arglist>(const RoutingModel &amp;routing_model)</arglist>
+    </member>
+    <member kind="function">
+      <type>std::vector&lt; IntVarLocalSearchFilter * &gt;</type>
+      <name>MakeCumulFilters</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>ab7e213b9838f546243a7040d58506cd9</anchor>
+      <arglist>(const RoutingDimension &amp;dimension, Solver::ObjectiveWatcher objective_callback, bool filter_objective_cost)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVarLocalSearchFilter *</type>
+      <name>MakePathCumulFilter</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>ab64b4ace42f0744e0814257a9a6ffa16</anchor>
+      <arglist>(const RoutingDimension &amp;dimension, Solver::ObjectiveWatcher objective_callback, bool propagate_own_objective_value, bool filter_objective_cost)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVarLocalSearchFilter *</type>
+      <name>MakeGlobalLPCumulFilter</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>afbaa470f2ff428bc316d5eac61567955</anchor>
+      <arglist>(const RoutingDimension &amp;dimension, Solver::ObjectiveWatcher objective_callback, bool filter_objective_cost)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVarLocalSearchFilter *</type>
+      <name>MakePickupDeliveryFilter</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>ae3ffb53eac6214b414e926238012a2a0</anchor>
+      <arglist>(const RoutingModel &amp;routing_model, const RoutingModel::IndexPairs &amp;pairs, const std::vector&lt; RoutingModel::PickupAndDeliveryPolicy &gt; &amp;vehicle_policies)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVarLocalSearchFilter *</type>
+      <name>MakeVehicleVarFilter</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a67f4b4b64a6c11717020eaa963b98c51</anchor>
+      <arglist>(const RoutingModel &amp;routing_model)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVarLocalSearchFilter *</type>
+      <name>MakeVehicleBreaksFilter</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>ae9a33af72abb5c2332a1f7ca71ab8215</anchor>
+      <arglist>(const RoutingModel &amp;routing_model, const RoutingDimension &amp;dimension)</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVarLocalSearchFilter *</type>
+      <name>MakeCPFeasibilityFilter</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>aaa5f7d59af23f5e10fc43a3989fa0b68</anchor>
+      <arglist>(const RoutingModel *routing_model)</arglist>
+    </member>
+    <member kind="function">
       <type>RoutingModelParameters</type>
       <name>BuildModelParametersFromFlags</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
@@ -33852,20 +38814,6 @@
       <anchorfile>namespaceoperations__research.html</anchorfile>
       <anchor>a95da1d3a46432afd40024f79279a48b2</anchor>
       <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>*RoutingModel</type>
-      <name>model</name>
-      <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a2f03e5ed2f65164d62fc5f039441596d</anchor>
-      <arglist>(manager)</arglist>
-    </member>
-    <member kind="function">
-      <type>use manager</type>
-      <name>NodeToIndex</name>
-      <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a891fd91407acbbeb1c47d22be7991b3f</anchor>
-      <arglist>(node)&apos; whenever &apos;model&apos; requires a variable *index. */class RoutingIndexManager</arglist>
     </member>
     <member kind="function">
       <type>RoutingModelParameters</type>
@@ -34041,20 +38989,6 @@
       <anchorfile>namespaceoperations__research.html</anchorfile>
       <anchor>a29b8113bf656aa61493c9459508ed953</anchor>
       <arglist>(Solver *const s, T *const ct, void(T::*method)(P, Q), const std::string &amp;name, P param1, Q param2)</arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>starts_ends</name>
-      <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a144750b8ec3f03decd898cc08c6b2894</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>**</type>
-      <name>Then</name>
-      <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ad86181cc5dff70e9ce3bfa1f8393cb6a</anchor>
-      <arglist></arglist>
     </member>
     <member kind="variable">
       <type>FirstSolutionStrategyDefaultTypeInternal</type>

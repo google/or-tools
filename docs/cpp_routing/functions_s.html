@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -100,6 +99,9 @@
 <li>SaveValue()
 : <a class="el" href="classoperations__research_1_1Solver.html#add51e06535f44461347658d8ce59979a">operations_research::Solver</a>
 </li>
+<li>Saving
+: <a class="el" href="classoperations__research_1_1SavingsFilteredDecisionBuilder.html#a596ce0cfecc75e1a45cbe815e9c5de18">operations_research::SavingsFilteredDecisionBuilder</a>
+</li>
 <li>SAVINGS
 : <a class="el" href="classoperations__research_1_1FirstSolutionStrategy.html#afade5e1b09e5eefccae67c7e1ace4799">operations_research::FirstSolutionStrategy</a>
 </li>
@@ -109,6 +111,9 @@
 <li>savings_arc_coefficient()
 : <a class="el" href="classoperations__research_1_1RoutingSearchParameters.html#a383d6d60d4cea3c94cdbaa0e726a3b44">operations_research::RoutingSearchParameters</a>
 </li>
+<li>savings_container_
+: <a class="el" href="classoperations__research_1_1SavingsFilteredDecisionBuilder.html#a37e4260ae243381402603fe3c3bca94d">operations_research::SavingsFilteredDecisionBuilder</a>
+</li>
 <li>savings_max_memory_usage_bytes()
 : <a class="el" href="classoperations__research_1_1RoutingSearchParameters.html#a34e40d6430b082da40ba360377bbc8e5">operations_research::RoutingSearchParameters</a>
 </li>
@@ -117,6 +122,12 @@
 </li>
 <li>savings_parallel_routes()
 : <a class="el" href="classoperations__research_1_1RoutingSearchParameters.html#a3521245970cf4b5d5900817cbf1ad193">operations_research::RoutingSearchParameters</a>
+</li>
+<li>SavingsFilteredDecisionBuilder()
+: <a class="el" href="classoperations__research_1_1SavingsFilteredDecisionBuilder.html#a028086ef5737e56b82277a95d62d9082">operations_research::SavingsFilteredDecisionBuilder</a>
+</li>
+<li>SavingsFilteredDecisionBuilderTestPeer
+: <a class="el" href="classoperations__research_1_1SavingsFilteredDecisionBuilder.html#a416ab434cf84e1360200462a2e66bd84">operations_research::SavingsFilteredDecisionBuilder</a>
 </li>
 <li>scaling_factor
 : <a class="el" href="structoperations__research_1_1Solver_1_1SearchLogParameters.html#a61e516d58793110b2d8bca05ac810a3c">operations_research::Solver::SearchLogParameters</a>
@@ -142,7 +153,10 @@
 , <a class="el" href="classoperations__research_1_1Solver.html#aac32a6eabe1d316d7ff5f92fedd1ec5b">operations_research::Solver</a>
 </li>
 <li>second_node
-: <a class="el" href="structRoutingDimension_1_1NodePrecedence.html#a380315e16036075ab1d6fa7896f90a01">RoutingDimension::NodePrecedence</a>
+: <a class="el" href="structoperations__research_1_1RoutingDimension_1_1NodePrecedence.html#adc95d1896d42e4ced2f163e9dc6756a6">operations_research::RoutingDimension::NodePrecedence</a>
+</li>
+<li>Seed
+: <a class="el" href="classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html#aa3d22767523969477c21a15afd777ee4">operations_research::CheapestInsertionFilteredDecisionBuilder</a>
 </li>
 <li>SELECT_MAX_IMPACT
 : <a class="el" href="structoperations__research_1_1DefaultPhaseParameters.html#a6938c08fc955872a3b8da845c8ad4e16a9b07a23261ca51a42ecd8d28387495da">operations_research::DefaultPhaseParameters</a>
@@ -189,6 +203,9 @@
 </li>
 <li>SEQUENTIAL_CHEAPEST_INSERTION
 : <a class="el" href="classoperations__research_1_1FirstSolutionStrategy.html#a679ed57a30eb39c43e4befed054875aa">operations_research::FirstSolutionStrategy</a>
+</li>
+<li>SequentialSavingsFilteredDecisionBuilder()
+: <a class="el" href="classoperations__research_1_1SequentialSavingsFilteredDecisionBuilder.html#a3832e84bda5ff8e97a831592ef8ecf7b">operations_research::SequentialSavingsFilteredDecisionBuilder</a>
 </li>
 <li>serialization_table
 : <a class="el" href="structTableStruct__ortools__2fconstraint__5fsolver__2frouting__5fenums__2eproto.html#a3f042d4fad097fef80b5ca1ba6d48ed7">TableStruct_ortools_2fconstraint_5fsolver_2frouting_5fenums_2eproto</a>
@@ -375,8 +392,26 @@
 <li>set_variable_to_clean_on_fail()
 : <a class="el" href="classoperations__research_1_1PropagationBaseObject.html#a4d2ccb8a806df14394b3271791c81e61">operations_research::PropagationBaseObject</a>
 </li>
+<li>SetAllowedVehiclesForIndex()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#ae98935a4e6cc9b3d6aeee4f9ff273d7d">operations_research::RoutingModel</a>
+</li>
+<li>SetAmortizedCostFactorsOfAllVehicles()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#aae44a9844e3f39a409f65d5c920c6f4d">operations_research::RoutingModel</a>
+</li>
+<li>SetAmortizedCostFactorsOfVehicle()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#a120ee9e22b95e835052b9eace2ceccc0">operations_research::RoutingModel</a>
+</li>
+<li>SetArcCostEvaluatorOfAllVehicles()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#ac1c68af59fa5513cf66fa4fd11acea29">operations_research::RoutingModel</a>
+</li>
+<li>SetArcCostEvaluatorOfVehicle()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#a9132fa5b050c3f5447e62f3e8bd8ce77">operations_research::RoutingModel</a>
+</li>
 <li>SetAssigned()
 : <a class="el" href="classoperations__research_1_1Pack.html#a104bd60ce9672f53c0539dac7daec58f">operations_research::Pack</a>
+</li>
+<li>SetAssignmentFromOtherModelAssignment()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#ab003e312046f4b6e8aecb188de21f2c8">operations_research::RoutingModel</a>
 </li>
 <li>SetBackwardSequence()
 : <a class="el" href="classoperations__research_1_1Assignment.html#ad1746f20b39f1db633bb4781bedf05b7">operations_research::Assignment</a>
@@ -385,6 +420,21 @@
 </li>
 <li>SetBranchSelector()
 : <a class="el" href="classoperations__research_1_1Solver.html#a0333a30480e11666e6b67162d05b2144">operations_research::Solver</a>
+</li>
+<li>SetBreakDistanceDurationOfVehicle()
+: <a class="el" href="classoperations__research_1_1RoutingDimension.html#a5303e0e6657cb3efed3c7068eb193c86">operations_research::RoutingDimension</a>
+</li>
+<li>SetBreakIntervalsOfVehicle()
+: <a class="el" href="classoperations__research_1_1RoutingDimension.html#a6e43db91425269dda98c59586731f660">operations_research::RoutingDimension</a>
+</li>
+<li>SetCumulVarPiecewiseLinearCost()
+: <a class="el" href="classoperations__research_1_1RoutingDimension.html#a6052d6bba75371db7e8ea84675187c73">operations_research::RoutingDimension</a>
+</li>
+<li>SetCumulVarSoftLowerBound()
+: <a class="el" href="classoperations__research_1_1RoutingDimension.html#a3234a1f4aab23c4c4828b6321a5ec906">operations_research::RoutingDimension</a>
+</li>
+<li>SetCumulVarSoftUpperBound()
+: <a class="el" href="classoperations__research_1_1RoutingDimension.html#a8a84f4cd89001eab25832a01bccf982a">operations_research::RoutingDimension</a>
 </li>
 <li>SetDurationMax()
 : <a class="el" href="classoperations__research_1_1Assignment.html#aa52aacc34b2380d2b649983ac5c1c7fd">operations_research::Assignment</a>
@@ -430,10 +480,22 @@
 : <a class="el" href="classoperations__research_1_1Assignment.html#ae52a3d79c5e89b8661928c6439d9e107">operations_research::Assignment</a>
 , <a class="el" href="classoperations__research_1_1IntervalVarElement.html#a9faf5408c656a03df7409463db6e97a3">operations_research::IntervalVarElement</a>
 </li>
+<li>SetFirstSolutionEvaluator()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#a1242887846452455f037883d1f3b0238">operations_research::RoutingModel</a>
+</li>
+<li>SetFixedCostOfAllVehicles()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#a9b44345e2ffce5df2256937137377bd4">operations_research::RoutingModel</a>
+</li>
+<li>SetFixedCostOfVehicle()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#a1f1cc6902bb1371d03eaca05fdf23078">operations_research::RoutingModel</a>
+</li>
 <li>SetForwardSequence()
 : <a class="el" href="classoperations__research_1_1Assignment.html#ad613991e451593b83b35081635d1fca6">operations_research::Assignment</a>
 , <a class="el" href="classoperations__research_1_1SequenceVarElement.html#aa416720977aa00d0f25d352166f4f005">operations_research::SequenceVarElement</a>
 , <a class="el" href="classoperations__research_1_1SequenceVarLocalSearchOperator.html#a9000b96654d1467e831d8f020701429e">operations_research::SequenceVarLocalSearchOperator</a>
+</li>
+<li>SetGlobalSpanCostCoefficient()
+: <a class="el" href="classoperations__research_1_1RoutingDimension.html#ab29859c22398d47a8590b3524e3a442a">operations_research::RoutingDimension</a>
 </li>
 <li>SetImpossible()
 : <a class="el" href="classoperations__research_1_1Pack.html#ae7875687d4d252d247a0c4c7b78a0326">operations_research::Pack</a>
@@ -514,15 +576,30 @@
 : <a class="el" href="classoperations__research_1_1Assignment.html#addd13c37ed68173aab91b87925f76e61">operations_research::Assignment</a>
 , <a class="el" href="classoperations__research_1_1IntervalVarElement.html#af46311d9a91a9c985ed30bb560c5353b">operations_research::IntervalVarElement</a>
 </li>
+<li>SetPickupAndDeliveryPolicyOfAllVehicles()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#a0f538f8401c264daa39df1f3640dd468">operations_research::RoutingModel</a>
+</li>
+<li>SetPickupAndDeliveryPolicyOfVehicle()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#a23e3efd1501595077fdc99ca53d6979e">operations_research::RoutingModel</a>
+</li>
+<li>SetPickupToDeliveryLimitFunctionForPair()
+: <a class="el" href="classoperations__research_1_1RoutingDimension.html#a87f365465eb17819cd0d2f332080b113">operations_research::RoutingDimension</a>
+</li>
+<li>SetPrimaryConstrainedDimension()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#ad60b94c48c83cf50117e794a47ae52a3">operations_research::RoutingModel</a>
+</li>
 <li>SetRange()
 : <a class="el" href="classoperations__research_1_1Assignment.html#ac0c8bfa3cf5460476327b1360783e29d">operations_research::Assignment</a>
 , <a class="el" href="classoperations__research_1_1BooleanVar.html#ae662ff228ca3c6d00bf1b5a44cde80af">operations_research::BooleanVar</a>
 , <a class="el" href="classoperations__research_1_1IntExpr.html#a153843dc05670b540a8e83dba2043eb0">operations_research::IntExpr</a>
 , <a class="el" href="classoperations__research_1_1IntVarElement.html#a8d25f09aa43ef6ea5fe8dd622f6552b2">operations_research::IntVarElement</a>
-, <a class="el" href="classoperations__research_1_1PropagationMonitor.html#a7226a39a15681662920f91a423de6b61">operations_research::PropagationMonitor</a>
+, <a class="el" href="classoperations__research_1_1PropagationMonitor.html#ae230d5e381f782bd3b600c0d0e12fc83">operations_research::PropagationMonitor</a>
 </li>
 <li>SetSearchContext()
 : <a class="el" href="classoperations__research_1_1Solver.html#a91ddc514b7b8418b66575323f56ac418">operations_research::Solver</a>
+</li>
+<li>SetSectors()
+: <a class="el" href="classoperations__research_1_1SweepArranger.html#ae0f3dd23a352473656bea721e48d34c7">operations_research::SweepArranger</a>
 </li>
 <li>SetSequence()
 : <a class="el" href="classoperations__research_1_1Assignment.html#ab6d8cf1dcb0f18656622e325be57e9e8">operations_research::Assignment</a>
@@ -533,6 +610,18 @@
 </li>
 <li>SetSequenceArrayArgument()
 : <a class="el" href="classoperations__research_1_1ArgumentHolder.html#af0fbaf39e9ce3f12565d1674a874feeb">operations_research::ArgumentHolder</a>
+</li>
+<li>SetSoftSpanUpperBoundForVehicle()
+: <a class="el" href="classoperations__research_1_1RoutingDimension.html#a619aa0df1d2c81eab70de0f764e11f24">operations_research::RoutingDimension</a>
+</li>
+<li>SetSpanCostCoefficientForAllVehicles()
+: <a class="el" href="classoperations__research_1_1RoutingDimension.html#a44bf0c1d2c603b8255765ddd081fa40f">operations_research::RoutingDimension</a>
+</li>
+<li>SetSpanCostCoefficientForVehicle()
+: <a class="el" href="classoperations__research_1_1RoutingDimension.html#afc5f8f71a501b59e65b5c5f970c27c69">operations_research::RoutingDimension</a>
+</li>
+<li>SetSpanUpperBoundForVehicle()
+: <a class="el" href="classoperations__research_1_1RoutingDimension.html#abd077a7b29a7cfc99880172440e14d09">operations_research::RoutingDimension</a>
 </li>
 <li>SetStartMax()
 : <a class="el" href="classoperations__research_1_1Assignment.html#a8898f5457ee277d6365c9d01ef6e66ab">operations_research::Assignment</a>
@@ -555,6 +644,12 @@
 <li>SetStartValue()
 : <a class="el" href="classoperations__research_1_1Assignment.html#af77457fc093a5cca3be6a1b56e2bc028">operations_research::Assignment</a>
 , <a class="el" href="classoperations__research_1_1IntervalVarElement.html#afb060e70086680308813304d51bd2160">operations_research::IntervalVarElement</a>
+</li>
+<li>SetSweepArranger()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#ae48174b58c5258d6b2daeb4fca88a48c">operations_research::RoutingModel</a>
+</li>
+<li>SetTabuVarsCallback()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#ac924ca5a03e432c1cd5c598174243269">operations_research::RoutingModel</a>
 </li>
 <li>SetToOne()
 : <a class="el" href="classoperations__research_1_1RevBitMatrix.html#a0460e124e790229cb2d65f74491048b4">operations_research::RevBitMatrix</a>
@@ -587,6 +682,7 @@
 , <a class="el" href="classoperations__research_1_1Assignment.html#ad98cd25d71c9c8c2e98aab3866372a85">operations_research::Assignment</a>
 , <a class="el" href="classoperations__research_1_1IntExpr.html#a8889930ed76665b0f24f12df2ed4e05c">operations_research::IntExpr</a>
 , <a class="el" href="classoperations__research_1_1IntVarElement.html#ab5fde53ca39720061f5684e7d472cdd3">operations_research::IntVarElement</a>
+, <a class="el" href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html#a0b295e340454a27f643052138f26fb95">operations_research::IntVarFilteredDecisionBuilder</a>
 , <a class="el" href="classoperations__research_1_1PropagationMonitor.html#aea14a7436f45e5ed69bc1d2d3c67fe1b">operations_research::PropagationMonitor</a>
 , <a class="el" href="classoperations__research_1_1Rev.html#a614fdcd3e96dc71b0c580f29026380ec">operations_research::Rev&lt; T &gt;</a>
 , <a class="el" href="classoperations__research_1_1RevArray.html#a6516d4adeaf28338dbc7ba2584d76919">operations_research::RevArray&lt; T &gt;</a>
@@ -596,11 +692,20 @@
 : <a class="el" href="classoperations__research_1_1IntVar.html#a9b3717393d801dc1ca5ce32e55a73622">operations_research::IntVar</a>
 , <a class="el" href="classoperations__research_1_1PropagationMonitor.html#a243163480f0b3877d15a30cd01b9fd45">operations_research::PropagationMonitor</a>
 </li>
+<li>SetVisitType()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#a7aca0f50d5357b2b4cf406406a15e6d6">operations_research::RoutingModel</a>
+</li>
+<li>ShortestTransitionSlack()
+: <a class="el" href="classoperations__research_1_1RoutingDimension.html#a15f32489aad9f7d42d76514dff27ccca">operations_research::RoutingDimension</a>
+</li>
 <li>ShouldFail()
 : <a class="el" href="classoperations__research_1_1Solver.html#ada8d3fd4401506308d77417b72c66dfe">operations_research::Solver</a>
 </li>
 <li>SIMPLE_MARKER
 : <a class="el" href="classoperations__research_1_1Solver.html#ae6dee2b402434520635e66e9d58a6215aa5148450bdc2fa1d4b40c2dd70b6dd3c">operations_research::Solver</a>
+</li>
+<li>SimpleBoundCosts()
+: <a class="el" href="classoperations__research_1_1SimpleBoundCosts.html#a6ec9098d43f8ccbd6f7b5b6dfb047e78">operations_research::SimpleBoundCosts</a>
 </li>
 <li>SIMPLELNS
 : <a class="el" href="classoperations__research_1_1Solver.html#ac3c5b22fad8060ca1a66bd928182d8a4a3a1a321416e317c8ed906573a937ffc4">operations_research::Solver</a>
@@ -617,6 +722,7 @@
 , <a class="el" href="classoperations__research_1_1AssignmentContainer.html#a088429aaba219da2c92f9abbdaaa906d">operations_research::AssignmentContainer&lt; V, E &gt;</a>
 , <a class="el" href="classoperations__research_1_1BooleanVar.html#a68168a3801af19c22a488b7ee54a4f65">operations_research::BooleanVar</a>
 , <a class="el" href="classoperations__research_1_1IntVar.html#a26efd8a51314b318dc14641e90af5c3a">operations_research::IntVar</a>
+, <a class="el" href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html#a6631652219280f558f2a6ae4fd0f0366">operations_research::IntVarFilteredDecisionBuilder</a>
 , <a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a29acf74cf99f603af9c73f5a994b48f2">operations_research::IntVarLocalSearchFilter</a>
 </li>
 <li>size()
@@ -625,16 +731,24 @@
 <li>Size()
 : <a class="el" href="classoperations__research_1_1RevIntSet.html#a7e1746bc4ae813f8109cffed9c227664">operations_research::RevIntSet&lt; T &gt;</a>
 , <a class="el" href="classoperations__research_1_1RevPartialSequence.html#a6ba090d10665f6a66b3faff7ffc09134">operations_research::RevPartialSequence</a>
+, <a class="el" href="classoperations__research_1_1RoutingModel.html#a94c6a775655099c6e0b81d586f21838f">operations_research::RoutingModel</a>
 </li>
 <li>size()
 : <a class="el" href="classoperations__research_1_1SequenceVar.html#a80930826abef932c86f9f751daa04ab2">operations_research::SequenceVar</a>
 </li>
 <li>Size()
-: <a class="el" href="classoperations__research_1_1VarLocalSearchOperator.html#a24d7846b013b9940fbf367e3f9575eab">operations_research::VarLocalSearchOperator&lt; V, Val, Handler &gt;</a>
+: <a class="el" href="classoperations__research_1_1SimpleBoundCosts.html#a7257d43ea91bd77ebb30817a6cb80928">operations_research::SimpleBoundCosts</a>
+, <a class="el" href="classoperations__research_1_1VarLocalSearchOperator.html#a24d7846b013b9940fbf367e3f9575eab">operations_research::VarLocalSearchOperator&lt; V, Val, Handler &gt;</a>
 </li>
 <li>SkipUnchanged()
 : <a class="el" href="classoperations__research_1_1PathOperator.html#a13fc3f3cb8f8de7198d1b16338df06ad">operations_research::PathOperator</a>
 , <a class="el" href="classoperations__research_1_1VarLocalSearchOperator.html#a77ea7391b7d1cbde18ad821e8e681413">operations_research::VarLocalSearchOperator&lt; V, Val, Handler &gt;</a>
+</li>
+<li>slacks()
+: <a class="el" href="classoperations__research_1_1RoutingDimension.html#a96a618c496ecee054c3708a5949ad5c4">operations_research::RoutingDimension</a>
+</li>
+<li>SlackVar()
+: <a class="el" href="classoperations__research_1_1RoutingDimension.html#aca1511ec6086af772f1c0de24bc80036">operations_research::RoutingDimension</a>
 </li>
 <li>SmallRevBitSet()
 : <a class="el" href="classoperations__research_1_1SmallRevBitSet.html#a0984b7441a23c75de696103cadc044b5">operations_research::SmallRevBitSet</a>
@@ -663,17 +777,22 @@
 , <a class="el" href="classoperations__research_1_1Solver.html#a89a5139453ffd5edd1992c82bd95f675">operations_research::Solver</a>
 </li>
 <li>Solve()
-: <a class="el" href="classoperations__research_1_1Solver.html#aae3ef7a28da87aeb3fbd258210f805c7">operations_research::Solver</a>
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#ac1ab76e616858766abd3715a4c721c9a">operations_research::RoutingModel</a>
+, <a class="el" href="classoperations__research_1_1Solver.html#aae3ef7a28da87aeb3fbd258210f805c7">operations_research::Solver</a>
 </li>
 <li>SolveAndCommit()
-: <a class="el" href="classoperations__research_1_1Solver.html#a85fd9d56a17aa81fcb33410f8e6f5e49">operations_research::Solver</a>
+: <a class="el" href="classoperations__research_1_1Solver.html#a4610adb8edc9b5804370b55e84d9c99b">operations_research::Solver</a>
 </li>
 <li>SolveDepth()
 : <a class="el" href="classoperations__research_1_1Solver.html#abbf76a02f141b5d555d37f047be49155">operations_research::Solver</a>
 </li>
+<li>SolveFromAssignmentWithParameters()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#a6665b219d44195e3c2a83bbba25819eb">operations_research::RoutingModel</a>
+</li>
 <li>solver()
 : <a class="el" href="classoperations__research_1_1ModelCache.html#ad1bf7cb63fc1defa06c7095dbf9969e8">operations_research::ModelCache</a>
 , <a class="el" href="classoperations__research_1_1PropagationBaseObject.html#ab3aa61657c74294f198a16d1dbc52580">operations_research::PropagationBaseObject</a>
+, <a class="el" href="classoperations__research_1_1RoutingModel.html#a5e052b69c4c4cf9b4c8c436371fd6dcf">operations_research::RoutingModel</a>
 , <a class="el" href="classoperations__research_1_1SearchMonitor.html#a6c4b4a82d20104f3ca8729244dd9cc2e">operations_research::SearchMonitor</a>
 </li>
 <li>Solver()
@@ -685,6 +804,12 @@
 <li>SolverState
 : <a class="el" href="classoperations__research_1_1Solver.html#a5b5712802e63dcd3ee5abfd37e0f2a95">operations_research::Solver</a>
 </li>
+<li>SolveWithParameters()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#a7d12150ee107484d0f8fa303f468358d">operations_research::RoutingModel</a>
+</li>
+<li>sorted_vehicle_classes_per_type_
+: <a class="el" href="classoperations__research_1_1SavingsFilteredDecisionBuilder.html#aa8b26c3fe240f025e6af46a2772503cd">operations_research::SavingsFilteredDecisionBuilder</a>
+</li>
 <li>SPLIT_LOWER_HALF
 : <a class="el" href="classoperations__research_1_1Solver.html#ae63acd77b8c2ee40387795051298f659a5abe444845850bb7a0f2f5c87cef2763">operations_research::Solver</a>
 </li>
@@ -695,14 +820,19 @@
 : <a class="el" href="classoperations__research_1_1Solver.html#af9873f0b909de865b771b6168eafc78b">operations_research::Solver</a>
 </li>
 <li>Start()
-: <a class="el" href="classoperations__research_1_1LocalSearchOperator.html#a832fd07f7355d16895841a4735e544c1">operations_research::LocalSearchOperator</a>
+: <a class="el" href="classoperations__research_1_1BasePathFilter.html#a5960554906403faa298cc1c4e09b2581">operations_research::BasePathFilter</a>
+, <a class="el" href="classoperations__research_1_1LocalSearchOperator.html#a832fd07f7355d16895841a4735e544c1">operations_research::LocalSearchOperator</a>
+, <a class="el" href="classoperations__research_1_1RoutingModel.html#afa4da02fe3e4da6443c2799bcfc15f20">operations_research::RoutingModel</a>
 , <a class="el" href="classoperations__research_1_1VarLocalSearchOperator.html#aea532902ec6591bfdd80bfcf8bc101e5">operations_research::VarLocalSearchOperator&lt; V, Val, Handler &gt;</a>
 </li>
+<li>start_equivalence_class
+: <a class="el" href="structoperations__research_1_1RoutingModel_1_1VehicleClass.html#a3e5773e5e974e392a69349be4e5cb0d0">operations_research::RoutingModel::VehicleClass</a>
+</li>
 <li>start_max
-: <a class="el" href="structDisjunctivePropagator_1_1Tasks.html#ad83f5b65e161e0c33b47c44ebe7a5486">DisjunctivePropagator::Tasks</a>
+: <a class="el" href="structoperations__research_1_1DisjunctivePropagator_1_1Tasks.html#a77b9d8ff0967560a84426fd738c7ace2">operations_research::DisjunctivePropagator::Tasks</a>
 </li>
 <li>start_min
-: <a class="el" href="structDisjunctivePropagator_1_1Tasks.html#ae81bd9ed38788f7ab29ffa6b06c8780a">DisjunctivePropagator::Tasks</a>
+: <a class="el" href="structoperations__research_1_1DisjunctivePropagator_1_1Tasks.html#a32dfedca557a573ad9b57b2115007665">operations_research::DisjunctivePropagator::Tasks</a>
 </li>
 <li>start_to_path_
 : <a class="el" href="classoperations__research_1_1PathOperator.html#ae805be99530c66f840c6d99a2987c3b4">operations_research::PathOperator</a>
@@ -719,6 +849,9 @@
 : <a class="el" href="classoperations__research_1_1Assignment.html#a06215150a658d6f23e352df8e2edadc5">operations_research::Assignment</a>
 , <a class="el" href="classoperations__research_1_1IntervalVar.html#acf6f5c6a44c14d6197701c450457d5bf">operations_research::IntervalVar</a>
 , <a class="el" href="classoperations__research_1_1IntervalVarElement.html#acef5ab6c453ebd47d42f76e326c15290">operations_research::IntervalVarElement</a>
+</li>
+<li>StartNewRouteWithBestVehicleOfType()
+: <a class="el" href="classoperations__research_1_1SavingsFilteredDecisionBuilder.html#a79f476b7736fd94c99a5a3b19af51144">operations_research::SavingsFilteredDecisionBuilder</a>
 </li>
 <li>StartNode()
 : <a class="el" href="classoperations__research_1_1PathOperator.html#abbf3cfe992573dff00462e8e616cd1ea">operations_research::PathOperator</a>
@@ -755,11 +888,24 @@
 <li>state()
 : <a class="el" href="classoperations__research_1_1Solver.html#ad8d269e222a882295b43ebf8dc4ec83a">operations_research::Solver</a>
 </li>
+<li>StateDependentTransitCallback()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#a84e53d2c1eb7349f1b561511b1c09dc4">operations_research::RoutingModel</a>
+</li>
+<li>status()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#ac5f26040018e9122bf9c0d28a9e1d412">operations_research::RoutingModel</a>
+</li>
+<li>Status
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#a328a19213729eec49288128061bc2044">operations_research::RoutingModel</a>
+</li>
 <li>STAYS_IN_SYNC
 : <a class="el" href="classoperations__research_1_1Solver.html#ab6302978f1de57bdeafa0ffee05c92c9a4d3f223d92b1ac90127546c396f6cd26">operations_research::Solver</a>
 </li>
 <li>step_
 : <a class="el" href="classoperations__research_1_1OptimizeVar.html#a0f1b41f6ab20eaf58d9c44340620b04e">operations_research::OptimizeVar</a>
+</li>
+<li>StopSearch()
+: <a class="el" href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html#a6ae15b5268df7520ab2a6d756b72e9fb">operations_research::IntVarFilteredDecisionBuilder</a>
+, <a class="el" href="classoperations__research_1_1RoutingFilteredDecisionBuilder.html#a5231593d95ea61f3f6d900f44e0fb87b">operations_research::RoutingFilteredDecisionBuilder</a>
 </li>
 <li>Store()
 : <a class="el" href="classoperations__research_1_1Assignment.html#a7eb289b0a73f7cdb6296c26f485eb69e">operations_research::Assignment</a>
@@ -773,24 +919,26 @@
 </li>
 <li>swap
 : <a class="el" href="classoperations__research_1_1FirstSolutionStrategy.html#ab09287832344e79e83b447f9524c6136">operations_research::FirstSolutionStrategy</a>
+, <a class="el" href="classoperations__research_1_1LocalSearchMetaheuristic.html#a5ca2961ffd410bcf6d842a7aef3ea6a2">operations_research::LocalSearchMetaheuristic</a>
 </li>
 <li>Swap()
 : <a class="el" href="classoperations__research_1_1LocalSearchMetaheuristic.html#afc40375ec1c1e88c81deaf9e7be8af37">operations_research::LocalSearchMetaheuristic</a>
+, <a class="el" href="classoperations__research_1_1RoutingModelParameters.html#ae3393532483f41ce1eeed2e5a7d05ebe">operations_research::RoutingModelParameters</a>
 </li>
 <li>swap
-: <a class="el" href="classoperations__research_1_1LocalSearchMetaheuristic.html#a5ca2961ffd410bcf6d842a7aef3ea6a2">operations_research::LocalSearchMetaheuristic</a>
-, <a class="el" href="classoperations__research_1_1RoutingModelParameters.html#a53621a310ee365c6b6c19203cc203349">operations_research::RoutingModelParameters</a>
+: <a class="el" href="classoperations__research_1_1RoutingModelParameters.html#a53621a310ee365c6b6c19203cc203349">operations_research::RoutingModelParameters</a>
 </li>
 <li>Swap()
-: <a class="el" href="classoperations__research_1_1RoutingModelParameters.html#ae3393532483f41ce1eeed2e5a7d05ebe">operations_research::RoutingModelParameters</a>
-, <a class="el" href="classoperations__research_1_1RoutingSearchParameters.html#a1485493a8e00aa3da5c9e9574b720789">operations_research::RoutingSearchParameters</a>
+: <a class="el" href="classoperations__research_1_1RoutingSearchParameters.html#a1485493a8e00aa3da5c9e9574b720789">operations_research::RoutingSearchParameters</a>
 </li>
 <li>swap
 : <a class="el" href="classoperations__research_1_1RoutingSearchParameters.html#ae84554ba011e00f7f2b63e8d931d5748">operations_research::RoutingSearchParameters</a>
-, <a class="el" href="classoperations__research_1_1RoutingSearchParameters__LocalSearchNeighborhoodOperators.html#acf809ead2fb840544f259378908a3e75">operations_research::RoutingSearchParameters_LocalSearchNeighborhoodOperators</a>
 </li>
 <li>Swap()
 : <a class="el" href="classoperations__research_1_1RoutingSearchParameters__LocalSearchNeighborhoodOperators.html#a0fddc9ba2652e3db4367a2479f237177">operations_research::RoutingSearchParameters_LocalSearchNeighborhoodOperators</a>
+</li>
+<li>swap
+: <a class="el" href="classoperations__research_1_1RoutingSearchParameters__LocalSearchNeighborhoodOperators.html#acf809ead2fb840544f259378908a3e75">operations_research::RoutingSearchParameters_LocalSearchNeighborhoodOperators</a>
 </li>
 <li>SWAPACTIVE
 : <a class="el" href="classoperations__research_1_1Solver.html#ac3c5b22fad8060ca1a66bd928182d8a4aeac9baf3ea4fa072bb9e4eccf691205d">operations_research::Solver</a>
@@ -800,6 +948,12 @@
 </li>
 <li>SWEEP
 : <a class="el" href="classoperations__research_1_1FirstSolutionStrategy.html#ad4a38e7277e3fb0557479e078a560d1c">operations_research::FirstSolutionStrategy</a>
+</li>
+<li>sweep_arranger()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#a0591ecab04c4c36001712568b10096a5">operations_research::RoutingModel</a>
+</li>
+<li>SweepArranger()
+: <a class="el" href="classoperations__research_1_1SweepArranger.html#a91a681c3c3dc2c4fceafe4733bef5b13">operations_research::SweepArranger</a>
 </li>
 <li>Switch()
 : <a class="el" href="classoperations__research_1_1RevSwitch.html#af763ccb69c3a1d9f94227f246d9c685d">operations_research::RevSwitch</a>

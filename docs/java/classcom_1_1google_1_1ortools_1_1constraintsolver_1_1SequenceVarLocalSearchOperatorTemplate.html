@@ -50,17 +50,18 @@
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00011">11</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
+<div class="textblock"><p>Base operator class for operators manipulating variables. </p>
+
+<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00014">14</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
 </div><div class="dynheader">
 Inheritance diagram for com.google.ortools.constraintsolver.SequenceVarLocalSearchOperatorTemplate:</div>
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperatorTemplate__inherit__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8SequenceVarLocalSearchOperatorTemplate_inherit__map" alt="Inheritance graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8SequenceVarLocalSearchOperatorTemplate_inherit__map" id="com_8google_8ortools_8constraintsolver_8SequenceVarLocalSearchOperatorTemplate_inherit__map">
-<area shape="rect"  title=" " alt="" coords="5,184,281,225"/>
+<area shape="rect"  title="Base operator class for operators manipulating variables." alt="" coords="5,184,281,225"/>
 <area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperator.html" title=" " alt="" coords="27,273,259,315"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html" title=" " alt="" coords="27,95,259,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="27,5,259,47"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html" title="This class represent a reversible FIFO structure." alt="" coords="27,95,259,136"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="27,5,259,47"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <div class="dynheader">
@@ -68,9 +69,9 @@ Collaboration diagram for com.google.ortools.constraintsolver.SequenceVarLocalSe
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperatorTemplate__coll__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8SequenceVarLocalSearchOperatorTemplate_coll__map" alt="Collaboration graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8SequenceVarLocalSearchOperatorTemplate_coll__map" id="com_8google_8ortools_8constraintsolver_8SequenceVarLocalSearchOperatorTemplate_coll__map">
-<area shape="rect"  title=" " alt="" coords="5,184,281,225"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html" title=" " alt="" coords="27,95,259,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="27,5,259,47"/>
+<area shape="rect"  title="Base operator class for operators manipulating variables." alt="" coords="5,184,281,225"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html" title="This class represent a reversible FIFO structure." alt="" coords="27,95,259,136"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="27,5,259,47"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -85,8 +86,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:adcc5215f3ed5078d5bcbd335b9728ff6"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperatorTemplate.html#adcc5215f3ed5078d5bcbd335b9728ff6">size</a> ()</td></tr>
 <tr class="separator:adcc5215f3ed5078d5bcbd335b9728ff6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ace7b442141158894c3e76310e4abeade"><td class="memItemLeft" align="right" valign="top">int []&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperatorTemplate.html#ace7b442141158894c3e76310e4abeade">value</a> (long index)</td></tr>
+<tr class="memdesc:ace7b442141158894c3e76310e4abeade"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the value in the current assignment of the variable of given index.  <a href="#ace7b442141158894c3e76310e4abeade">More...</a><br /></td></tr>
 <tr class="separator:ace7b442141158894c3e76310e4abeade"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a45c22bf814955450594cdaae9f614af1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVar.html">SequenceVar</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperatorTemplate.html#a45c22bf814955450594cdaae9f614af1">var</a> (long index)</td></tr>
+<tr class="memdesc:a45c22bf814955450594cdaae9f614af1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the variable of given index.  <a href="#a45c22bf814955450594cdaae9f614af1">More...</a><br /></td></tr>
 <tr class="separator:a45c22bf814955450594cdaae9f614af1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa9fdcbc8b3767c22e99565816f945c77"><td class="memItemLeft" align="right" valign="top">int []&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperatorTemplate.html#aa9fdcbc8b3767c22e99565816f945c77">oldValue</a> (long index)</td></tr>
 <tr class="separator:aa9fdcbc8b3767c22e99565816f945c77"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -101,6 +104,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aa3f27b7830702a11403a6d2d6526990e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperatorTemplate.html#aa3f27b7830702a11403a6d2d6526990e">addVars</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVar.html">SequenceVar</a>[] vars)</td></tr>
 <tr class="separator:aa3f27b7830702a11403a6d2d6526990e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af186ef9f2a3051cf7486c080dc82525c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperatorTemplate.html#af186ef9f2a3051cf7486c080dc82525c">onStart</a> ()</td></tr>
+<tr class="memdesc:af186ef9f2a3051cf7486c080dc82525c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Called by Start() after synchronizing the operator with the current assignment.  <a href="#af186ef9f2a3051cf7486c080dc82525c">More...</a><br /></td></tr>
 <tr class="separator:af186ef9f2a3051cf7486c080dc82525c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a137067a55665797005d45dfcde2bddb5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html#a137067a55665797005d45dfcde2bddb5">swigReleaseOwnership</a> ()</td></tr>
 <tr class="separator:a137067a55665797005d45dfcde2bddb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -159,7 +163,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00014">14</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00017">17</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -188,7 +192,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00072">72</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00081">81</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -216,7 +220,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00068">68</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00077">77</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -244,7 +248,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00080">80</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00089">89</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -272,7 +276,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00076">76</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00085">85</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -299,7 +303,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00028">28</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00031">31</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -326,7 +330,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00071">71</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00074">74</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
 
 </div>
 </div>
@@ -353,7 +357,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00039">39</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00042">42</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -380,7 +384,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00043">43</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00046">46</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -418,7 +422,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00059">59</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00062">62</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
 
 </div>
 </div>
@@ -446,7 +450,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00060">60</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00069">69</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -473,7 +477,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00084">84</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
+<p>Called by Start() after synchronizing the operator with the current assignment. </p>
+<p>Should be overridden instead of Start() to avoid calling VarLocalSearchOperator::Start explicitly. </p>
+
+<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00096">96</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -500,7 +507,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00067">67</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00070">70</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
 
 </div>
 </div>
@@ -538,7 +545,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00064">64</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00073">73</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -565,7 +572,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00047">47</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00050">50</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -593,7 +600,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00063">63</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00066">66</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
 
 </div>
 </div>
@@ -620,7 +627,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00039">39</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00042">42</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
 
 </div>
 </div>
@@ -647,7 +654,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00044">44</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00047">47</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
 
 </div>
 </div>
@@ -674,7 +681,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00049">49</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00052">52</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
 
 </div>
 </div>
@@ -701,7 +708,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseObject_8java_source.html#l00043">43</a> of file <a class="el" href="BaseObject_8java_source.html">BaseObject.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseObject_8java_source.html#l00046">46</a> of file <a class="el" href="BaseObject_8java_source.html">BaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -729,7 +736,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00051">51</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
+<p>Returns the value in the current assignment of the variable of given index. </p>
+
+<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00057">57</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -757,7 +766,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00055">55</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
+<p>Returns the variable of given index. </p>
+
+<p class="definition">Definition at line <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html#l00064">64</a> of file <a class="el" href="SequenceVarLocalSearchOperatorTemplate_8java_source.html">SequenceVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>

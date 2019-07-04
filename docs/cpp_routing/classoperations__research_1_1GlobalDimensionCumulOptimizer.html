@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -53,21 +52,17 @@
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a7aef4229a23f8e4527a1abdd40792a60"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1GlobalDimensionCumulOptimizer.html#a7aef4229a23f8e4527a1abdd40792a60">GlobalDimensionCumulOptimizer</a> (const <a class="el" href="routing_8h.html#a50ba9dd11704e0be7edaa9e9f24142ff">RoutingDimension</a> *<a class="el" href="classoperations__research_1_1GlobalDimensionCumulOptimizer.html#a64246ca0403f93006288ead58dfb0d36">dimension</a>)</td></tr>
+<tr class="memitem:a7aef4229a23f8e4527a1abdd40792a60"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1GlobalDimensionCumulOptimizer.html#a7aef4229a23f8e4527a1abdd40792a60">GlobalDimensionCumulOptimizer</a> (const <a class="el" href="classoperations__research_1_1RoutingDimension.html">RoutingDimension</a> *<a class="el" href="classoperations__research_1_1GlobalDimensionCumulOptimizer.html#a64246ca0403f93006288ead58dfb0d36">dimension</a>)</td></tr>
 <tr class="separator:a7aef4229a23f8e4527a1abdd40792a60"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a58e57b4acd1b8657912b8cb08a52a6ba"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1GlobalDimensionCumulOptimizer.html#a58e57b4acd1b8657912b8cb08a52a6ba">ComputeCumulCostWithoutFixedTransits</a> (const std::function&lt; int64(int64)&gt; &amp;next_accessor, int64 *optimal_cost_without_transits)</td></tr>
-<tr class="memdesc:a58e57b4acd1b8657912b8cb08a52a6ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">If feasible, computes the optimal cost of the entire model with regards to the optimizer_core_'s dimension costs, minimizing cumul soft lower/upper bound costs and vehicle/global span costs, and stores it in "optimal_cost" (if not null).  <a href="#a58e57b4acd1b8657912b8cb08a52a6ba">More...</a><br /></td></tr>
 <tr class="separator:a58e57b4acd1b8657912b8cb08a52a6ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae661c23f8b98bdcf659aba760638a965"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1GlobalDimensionCumulOptimizer.html#ae661c23f8b98bdcf659aba760638a965">ComputeCumuls</a> (const std::function&lt; int64(int64)&gt; &amp;next_accessor, std::vector&lt; int64 &gt; *optimal_cumuls)</td></tr>
-<tr class="memdesc:ae661c23f8b98bdcf659aba760638a965"><td class="mdescLeft">&#160;</td><td class="mdescRight">If feasible, computes the optimal cumul values, minimizing cumul soft lower/upper bound costs and vehicle/global span costs, stores them in "optimal_cumuls" (if not null), and returns true.  <a href="#ae661c23f8b98bdcf659aba760638a965">More...</a><br /></td></tr>
 <tr class="separator:ae661c23f8b98bdcf659aba760638a965"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac584fa126a3b1b582bd918a516b489f9"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1GlobalDimensionCumulOptimizer.html#ac584fa126a3b1b582bd918a516b489f9">IsFeasible</a> (const std::function&lt; int64(int64)&gt; &amp;next_accessor)</td></tr>
-<tr class="memdesc:ac584fa126a3b1b582bd918a516b489f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true iff the routes resulting from the next_accessor are feasible wrt the constraints on the optimizer_core_.dimension()'s cumuls.  <a href="#ac584fa126a3b1b582bd918a516b489f9">More...</a><br /></td></tr>
 <tr class="separator:ac584fa126a3b1b582bd918a516b489f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4609e630ca9d2d7340a338a957d44e61"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1GlobalDimensionCumulOptimizer.html#a4609e630ca9d2d7340a338a957d44e61">ComputePackedCumuls</a> (const std::function&lt; int64(int64)&gt; &amp;next_accessor, std::vector&lt; int64 &gt; *packed_cumuls)</td></tr>
-<tr class="memdesc:a4609e630ca9d2d7340a338a957d44e61"><td class="mdescLeft">&#160;</td><td class="mdescRight">Similar to ComputeCumuls, but also tries to pack the cumul values on all routes, such that the cost remains the same, the cumuls of route ends are minimized, and then the cumuls of the starts of the routes are maximized.  <a href="#a4609e630ca9d2d7340a338a957d44e61">More...</a><br /></td></tr>
 <tr class="separator:a4609e630ca9d2d7340a338a957d44e61"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a64246ca0403f93006288ead58dfb0d36"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="routing_8h.html#a50ba9dd11704e0be7edaa9e9f24142ff">RoutingDimension</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1GlobalDimensionCumulOptimizer.html#a64246ca0403f93006288ead58dfb0d36">dimension</a> () const</td></tr>
+<tr class="memitem:a64246ca0403f93006288ead58dfb0d36"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classoperations__research_1_1RoutingDimension.html">RoutingDimension</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1GlobalDimensionCumulOptimizer.html#a64246ca0403f93006288ead58dfb0d36">dimension</a> () const</td></tr>
 <tr class="separator:a64246ca0403f93006288ead58dfb0d36"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
@@ -86,7 +81,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">operations_research::GlobalDimensionCumulOptimizer::GlobalDimensionCumulOptimizer </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="routing_8h.html#a50ba9dd11704e0be7edaa9e9f24142ff">RoutingDimension</a> *&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1RoutingDimension.html">RoutingDimension</a> *&#160;</td>
           <td class="paramname"><em>dimension</em></td><td>)</td>
           <td></td>
         </tr>
@@ -127,9 +122,6 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>If feasible, computes the optimal cost of the entire model with regards to the optimizer_core_'s dimension costs, minimizing cumul soft lower/upper bound costs and vehicle/global span costs, and stores it in "optimal_cost" (if not null). </p>
-<p>Returns true iff all the constraints can be respected. </p>
-
 </div>
 </div>
 <a id="ae661c23f8b98bdcf659aba760638a965"></a>
@@ -157,9 +149,6 @@ Public Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>If feasible, computes the optimal cumul values, minimizing cumul soft lower/upper bound costs and vehicle/global span costs, stores them in "optimal_cumuls" (if not null), and returns true. </p>
-<p>Returns false if the routes are not feasible. </p>
 
 </div>
 </div>
@@ -189,8 +178,6 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Similar to ComputeCumuls, but also tries to pack the cumul values on all routes, such that the cost remains the same, the cumuls of route ends are minimized, and then the cumuls of the starts of the routes are maximized. </p>
-
 </div>
 </div>
 <a id="a64246ca0403f93006288ead58dfb0d36"></a>
@@ -203,7 +190,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="routing_8h.html#a50ba9dd11704e0be7edaa9e9f24142ff">RoutingDimension</a>* operations_research::GlobalDimensionCumulOptimizer::dimension </td>
+          <td class="memname">const <a class="el" href="classoperations__research_1_1RoutingDimension.html">RoutingDimension</a>* operations_research::GlobalDimensionCumulOptimizer::dimension </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -235,8 +222,6 @@ Public Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>Returns true iff the routes resulting from the next_accessor are feasible wrt the constraints on the optimizer_core_.dimension()'s cumuls. </p>
 
 </div>
 </div>

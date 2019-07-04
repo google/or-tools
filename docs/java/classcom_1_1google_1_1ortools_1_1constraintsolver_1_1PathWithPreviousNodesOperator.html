@@ -50,19 +50,20 @@
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="PathWithPreviousNodesOperator_8java_source.html#l00011">11</a> of file <a class="el" href="PathWithPreviousNodesOperator_8java_source.html">PathWithPreviousNodesOperator.java</a>.</p>
+<div class="textblock"><p>Simple <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathOperator.html" title="Base class of the local search operators dedicated to path modifications (a path is a set of nodes li...">PathOperator</a> wrapper that also stores the current previous nodes, and is thus able to provide the "Prev" and "IsPathStart" functions. </p>
+
+<p class="definition">Definition at line <a class="el" href="PathWithPreviousNodesOperator_8java_source.html#l00014">14</a> of file <a class="el" href="PathWithPreviousNodesOperator_8java_source.html">PathWithPreviousNodesOperator.java</a>.</p>
 </div><div class="dynheader">
 Inheritance diagram for com.google.ortools.constraintsolver.PathWithPreviousNodesOperator:</div>
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathWithPreviousNodesOperator__inherit__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8PathWithPreviousNodesOperator_inherit__map" alt="Inheritance graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8PathWithPreviousNodesOperator_inherit__map" id="com_8google_8ortools_8constraintsolver_8PathWithPreviousNodesOperator_inherit__map">
-<area shape="rect"  title=" " alt="" coords="6,452,238,493"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathOperator.html" title=" " alt="" coords="6,363,238,404"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperator.html" title=" " alt="" coords="6,273,238,315"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html" title=" " alt="" coords="5,184,239,225"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html" title=" " alt="" coords="6,95,238,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="6,5,238,47"/>
+<area shape="rect"  title="Simple PathOperator wrapper that also stores the current previous nodes, and is thus able to provide ..." alt="" coords="6,452,238,493"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathOperator.html" title="Base class of the local search operators dedicated to path modifications (a path is a set of nodes li..." alt="" coords="6,363,238,404"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperator.html" title="clang&#45;format on" alt="" coords="6,273,238,315"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html" title="Base operator class for operators manipulating variables." alt="" coords="5,184,239,225"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html" title="This class represent a reversible FIFO structure." alt="" coords="6,95,238,136"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="6,5,238,47"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <div class="dynheader">
@@ -70,12 +71,12 @@ Collaboration diagram for com.google.ortools.constraintsolver.PathWithPreviousNo
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathWithPreviousNodesOperator__coll__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8PathWithPreviousNodesOperator_coll__map" alt="Collaboration graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8PathWithPreviousNodesOperator_coll__map" id="com_8google_8ortools_8constraintsolver_8PathWithPreviousNodesOperator_coll__map">
-<area shape="rect"  title=" " alt="" coords="6,452,238,493"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathOperator.html" title=" " alt="" coords="6,363,238,404"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperator.html" title=" " alt="" coords="6,273,238,315"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html" title=" " alt="" coords="5,184,239,225"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html" title=" " alt="" coords="6,95,238,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="6,5,238,47"/>
+<area shape="rect"  title="Simple PathOperator wrapper that also stores the current previous nodes, and is thus able to provide ..." alt="" coords="6,452,238,493"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathOperator.html" title="Base class of the local search operators dedicated to path modifications (a path is a set of nodes li..." alt="" coords="6,363,238,404"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperator.html" title="clang&#45;format on" alt="" coords="6,273,238,315"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html" title="Base operator class for operators manipulating variables." alt="" coords="5,184,239,225"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html" title="This class represent a reversible FIFO structure." alt="" coords="6,95,238,136"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="6,5,238,47"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -104,8 +105,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:abb98de4de8e8c7d8a96ef6e409bb3d0e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html#abb98de4de8e8c7d8a96ef6e409bb3d0e">size</a> ()</td></tr>
 <tr class="separator:abb98de4de8e8c7d8a96ef6e409bb3d0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5b37e7bb2f84c0fbb9bc6809c802831c"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html#a5b37e7bb2f84c0fbb9bc6809c802831c">value</a> (long index)</td></tr>
+<tr class="memdesc:a5b37e7bb2f84c0fbb9bc6809c802831c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the value in the current assignment of the variable of given index.  <a href="#a5b37e7bb2f84c0fbb9bc6809c802831c">More...</a><br /></td></tr>
 <tr class="separator:a5b37e7bb2f84c0fbb9bc6809c802831c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9d7d792d493e03badfffc651215cfa4a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html#a9d7d792d493e03badfffc651215cfa4a">var</a> (long index)</td></tr>
+<tr class="memdesc:a9d7d792d493e03badfffc651215cfa4a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the variable of given index.  <a href="#a9d7d792d493e03badfffc651215cfa4a">More...</a><br /></td></tr>
 <tr class="separator:a9d7d792d493e03badfffc651215cfa4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:accb998530e1bc5422706e0504311f915"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html#accb998530e1bc5422706e0504311f915">oldValue</a> (long index)</td></tr>
 <tr class="separator:accb998530e1bc5422706e0504311f915"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -120,6 +123,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a34d9d11bdb2148967f5d230e2f9254b8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html#a34d9d11bdb2148967f5d230e2f9254b8">addVars</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>[] vars)</td></tr>
 <tr class="separator:a34d9d11bdb2148967f5d230e2f9254b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8a25b7f06ebf5f3c12c4db4db73b0e3c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html#a8a25b7f06ebf5f3c12c4db4db73b0e3c">onStart</a> ()</td></tr>
+<tr class="memdesc:a8a25b7f06ebf5f3c12c4db4db73b0e3c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Called by Start() after synchronizing the operator with the current assignment.  <a href="#a8a25b7f06ebf5f3c12c4db4db73b0e3c">More...</a><br /></td></tr>
 <tr class="separator:a8a25b7f06ebf5f3c12c4db4db73b0e3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5c751f5cab0211844096083c617d0785"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html#a5c751f5cab0211844096083c617d0785">nextNeighbor</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html">Assignment</a> delta, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html">Assignment</a> deltadelta)</td></tr>
 <tr class="separator:a5c751f5cab0211844096083c617d0785"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -135,16 +139,22 @@ Protected Member Functions</h2></td></tr>
 <tr class="memitem:ae4606a3bec9be834d377173b9e4caf27"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathOperator.html#ae4606a3bec9be834d377173b9e4caf27">swigDirectorDisconnect</a> ()</td></tr>
 <tr class="separator:ae4606a3bec9be834d377173b9e4caf27"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0a86d80357b938a2fb03a49871b30079"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathOperator.html#a0a86d80357b938a2fb03a49871b30079">oneNeighbor</a> ()</td></tr>
+<tr class="memdesc:a0a86d80357b938a2fb03a49871b30079"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method should not be overridden.  <a href="#a0a86d80357b938a2fb03a49871b30079">More...</a><br /></td></tr>
 <tr class="separator:a0a86d80357b938a2fb03a49871b30079"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a98c597ef7157f99d7dcee24fcc5018fb"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathOperator.html#a98c597ef7157f99d7dcee24fcc5018fb">restartAtPathStartOnSynchronize</a> ()</td></tr>
+<tr class="memdesc:a98c597ef7157f99d7dcee24fcc5018fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">When the operator is being synchronized with a new solution (when Start() is called), returns true to restart the exploration of the neighborhood from the start of the last paths explored; returns false to restart the exploration at the last nodes visited.  <a href="#a98c597ef7157f99d7dcee24fcc5018fb">More...</a><br /></td></tr>
 <tr class="separator:a98c597ef7157f99d7dcee24fcc5018fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a17c6772e1eb2059f2c1beb9d281ff6c5"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathOperator.html#a17c6772e1eb2059f2c1beb9d281ff6c5">onSamePathAsPreviousBase</a> (long base_index)</td></tr>
+<tr class="memdesc:a17c6772e1eb2059f2c1beb9d281ff6c5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if a base node has to be on the same path as the "previous" base node (base node of index base_index - 1).  <a href="#a17c6772e1eb2059f2c1beb9d281ff6c5">More...</a><br /></td></tr>
 <tr class="separator:a17c6772e1eb2059f2c1beb9d281ff6c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6134934e53bea12c3f51950301e3596f"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathOperator.html#a6134934e53bea12c3f51950301e3596f">getBaseNodeRestartPosition</a> (int base_index)</td></tr>
+<tr class="memdesc:a6134934e53bea12c3f51950301e3596f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the index of the node to which the base node of index base_index must be set to when it reaches the end of a path.  <a href="#a6134934e53bea12c3f51950301e3596f">More...</a><br /></td></tr>
 <tr class="separator:a6134934e53bea12c3f51950301e3596f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac1ec7db0e7e33532c3a04073d39b623b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathOperator.html#ac1ec7db0e7e33532c3a04073d39b623b">setNextBaseToIncrement</a> (long base_index)</td></tr>
+<tr class="memdesc:ac1ec7db0e7e33532c3a04073d39b623b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the next base to increment on next iteration.  <a href="#ac1ec7db0e7e33532c3a04073d39b623b">More...</a><br /></td></tr>
 <tr class="separator:ac1ec7db0e7e33532c3a04073d39b623b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abad98b82496eb3659626299a2f902a52"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathOperator.html#abad98b82496eb3659626299a2f902a52">initPosition</a> ()</td></tr>
+<tr class="memdesc:abad98b82496eb3659626299a2f902a52"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if operator needs to restart its initial position at each call to Start()  <a href="#abad98b82496eb3659626299a2f902a52">More...</a><br /></td></tr>
 <tr class="separator:abad98b82496eb3659626299a2f902a52"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
@@ -182,7 +192,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PathWithPreviousNodesOperator_8java_source.html#l00014">14</a> of file <a class="el" href="PathWithPreviousNodesOperator_8java_source.html">PathWithPreviousNodesOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PathWithPreviousNodesOperator_8java_source.html#l00017">17</a> of file <a class="el" href="PathWithPreviousNodesOperator_8java_source.html">PathWithPreviousNodesOperator.java</a>.</p>
 
 </div>
 </div>
@@ -211,7 +221,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00072">72</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00081">81</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -239,7 +249,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00068">68</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00077">77</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -267,7 +277,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00080">80</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00089">89</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -295,7 +305,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00076">76</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00085">85</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -322,7 +332,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PathWithPreviousNodesOperator_8java_source.html#l00028">28</a> of file <a class="el" href="PathWithPreviousNodesOperator_8java_source.html">PathWithPreviousNodesOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PathWithPreviousNodesOperator_8java_source.html#l00031">31</a> of file <a class="el" href="PathWithPreviousNodesOperator_8java_source.html">PathWithPreviousNodesOperator.java</a>.</p>
 
 </div>
 </div>
@@ -350,7 +360,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PathOperator_8java_source.html#l00083">83</a> of file <a class="el" href="PathOperator_8java_source.html">PathOperator.java</a>.</p>
+<p>Returns the index of the node to which the base node of index base_index must be set to when it reaches the end of a path. </p>
+<p>By default, it is set to the start of the current path. When this method is called, one can only assume that base nodes with indices &lt; base_index have their final position. </p>
+
+<p class="definition">Definition at line <a class="el" href="PathOperator_8java_source.html#l00101">101</a> of file <a class="el" href="PathOperator_8java_source.html">PathOperator.java</a>.</p>
 
 </div>
 </div>
@@ -377,7 +390,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00071">71</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00074">74</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
 
 </div>
 </div>
@@ -404,7 +417,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00039">39</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00042">42</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -431,7 +444,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PathOperator_8java_source.html#l00091">91</a> of file <a class="el" href="PathOperator_8java_source.html">PathOperator.java</a>.</p>
+<p>Returns true if operator needs to restart its initial position at each call to Start() </p>
+
+<p class="definition">Definition at line <a class="el" href="PathOperator_8java_source.html#l00115">115</a> of file <a class="el" href="PathOperator_8java_source.html">PathOperator.java</a>.</p>
 
 </div>
 </div>
@@ -458,7 +473,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00043">43</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00046">46</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -486,7 +501,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PathWithPreviousNodesOperator_8java_source.html#l00039">39</a> of file <a class="el" href="PathWithPreviousNodesOperator_8java_source.html">PathWithPreviousNodesOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PathWithPreviousNodesOperator_8java_source.html#l00042">42</a> of file <a class="el" href="PathWithPreviousNodesOperator_8java_source.html">PathWithPreviousNodesOperator.java</a>.</p>
 
 </div>
 </div>
@@ -513,7 +528,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PathOperator_8java_source.html#l00063">63</a> of file <a class="el" href="PathOperator_8java_source.html">PathOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PathOperator_8java_source.html#l00069">69</a> of file <a class="el" href="PathOperator_8java_source.html">PathOperator.java</a>.</p>
 
 </div>
 </div>
@@ -551,7 +566,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00059">59</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00062">62</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
 
 </div>
 </div>
@@ -579,7 +594,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00060">60</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00069">69</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -606,7 +621,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PathOperator_8java_source.html#l00071">71</a> of file <a class="el" href="PathOperator_8java_source.html">PathOperator.java</a>.</p>
+<p>This method should not be overridden. </p>
+<p>Override MakeNeighbor() instead. </p>
+
+<p class="definition">Definition at line <a class="el" href="PathOperator_8java_source.html#l00080">80</a> of file <a class="el" href="PathOperator_8java_source.html">PathOperator.java</a>.</p>
 
 </div>
 </div>
@@ -634,7 +652,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PathOperator_8java_source.html#l00079">79</a> of file <a class="el" href="PathOperator_8java_source.html">PathOperator.java</a>.</p>
+<p>Returns true if a base node has to be on the same path as the "previous" base node (base node of index base_index - 1). </p>
+<p>Useful to limit neighborhood exploration to nodes on the same path. it's currently way more complicated to implement. </p>
+
+<p class="definition">Definition at line <a class="el" href="PathOperator_8java_source.html#l00094">94</a> of file <a class="el" href="PathOperator_8java_source.html">PathOperator.java</a>.</p>
 
 </div>
 </div>
@@ -661,7 +682,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00084">84</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
+<p>Called by Start() after synchronizing the operator with the current assignment. </p>
+<p>Should be overridden instead of Start() to avoid calling VarLocalSearchOperator::Start explicitly. </p>
+
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00096">96</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -689,7 +713,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PathWithPreviousNodesOperator_8java_source.html#l00043">43</a> of file <a class="el" href="PathWithPreviousNodesOperator_8java_source.html">PathWithPreviousNodesOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PathWithPreviousNodesOperator_8java_source.html#l00046">46</a> of file <a class="el" href="PathWithPreviousNodesOperator_8java_source.html">PathWithPreviousNodesOperator.java</a>.</p>
 
 </div>
 </div>
@@ -716,7 +740,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PathOperator_8java_source.html#l00067">67</a> of file <a class="el" href="PathOperator_8java_source.html">PathOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PathOperator_8java_source.html#l00073">73</a> of file <a class="el" href="PathOperator_8java_source.html">PathOperator.java</a>.</p>
 
 </div>
 </div>
@@ -743,7 +767,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PathOperator_8java_source.html#l00075">75</a> of file <a class="el" href="PathOperator_8java_source.html">PathOperator.java</a>.</p>
+<p>When the operator is being synchronized with a new solution (when Start() is called), returns true to restart the exploration of the neighborhood from the start of the last paths explored; returns false to restart the exploration at the last nodes visited. </p>
+<p>This is used to avoid restarting on base nodes which have changed paths, leading to potentially skipping neighbors. </p>
+
+<p class="definition">Definition at line <a class="el" href="PathOperator_8java_source.html#l00087">87</a> of file <a class="el" href="PathOperator_8java_source.html">PathOperator.java</a>.</p>
 
 </div>
 </div>
@@ -771,7 +798,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PathOperator_8java_source.html#l00087">87</a> of file <a class="el" href="PathOperator_8java_source.html">PathOperator.java</a>.</p>
+<p>Set the next base to increment on next iteration. </p>
+<p>All base &gt; base_index will be reset to their start value. </p>
+
+<p class="definition">Definition at line <a class="el" href="PathOperator_8java_source.html#l00108">108</a> of file <a class="el" href="PathOperator_8java_source.html">PathOperator.java</a>.</p>
 
 </div>
 </div>
@@ -809,7 +839,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00064">64</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00073">73</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -836,7 +866,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00047">47</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00050">50</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -864,7 +894,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00063">63</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00066">66</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
 
 </div>
 </div>
@@ -891,7 +921,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PathOperator_8java_source.html#l00043">43</a> of file <a class="el" href="PathOperator_8java_source.html">PathOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PathOperator_8java_source.html#l00046">46</a> of file <a class="el" href="PathOperator_8java_source.html">PathOperator.java</a>.</p>
 
 </div>
 </div>
@@ -918,7 +948,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PathOperator_8java_source.html#l00048">48</a> of file <a class="el" href="PathOperator_8java_source.html">PathOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PathOperator_8java_source.html#l00051">51</a> of file <a class="el" href="PathOperator_8java_source.html">PathOperator.java</a>.</p>
 
 </div>
 </div>
@@ -945,7 +975,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PathOperator_8java_source.html#l00053">53</a> of file <a class="el" href="PathOperator_8java_source.html">PathOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PathOperator_8java_source.html#l00056">56</a> of file <a class="el" href="PathOperator_8java_source.html">PathOperator.java</a>.</p>
 
 </div>
 </div>
@@ -972,7 +1002,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PathWithPreviousNodesOperator_8java_source.html#l00047">47</a> of file <a class="el" href="PathWithPreviousNodesOperator_8java_source.html">PathWithPreviousNodesOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PathWithPreviousNodesOperator_8java_source.html#l00050">50</a> of file <a class="el" href="PathWithPreviousNodesOperator_8java_source.html">PathWithPreviousNodesOperator.java</a>.</p>
 
 </div>
 </div>
@@ -1000,7 +1030,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00051">51</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
+<p>Returns the value in the current assignment of the variable of given index. </p>
+
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00057">57</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>
@@ -1028,7 +1060,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00055">55</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
+<p>Returns the variable of given index. </p>
+
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html#l00064">64</a> of file <a class="el" href="IntVarLocalSearchOperatorTemplate_8java_source.html">IntVarLocalSearchOperatorTemplate.java</a>.</p>
 
 </div>
 </div>

@@ -1,5 +1,5 @@
 <map id="com.google.ortools.constraintsolver.SymmetryBreaker" name="com.google.ortools.constraintsolver.SymmetryBreaker">
-<area shape="rect" id="node1" title=" " alt="" coords="5,184,237,225"/>
-<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionVisitor.html" title=" " alt="" coords="5,95,237,136"/>
-<area shape="rect" id="node3" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="5,5,237,47"/>
+<area shape="rect" id="node1" title="A symmetry breaker is an object that will visit a decision and create the &#39;symmetrical&#39; decision in r..." alt="" coords="5,184,237,225"/>
+<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionVisitor.html" title="A DecisionVisitor is used to inspect a decision." alt="" coords="5,95,237,136"/>
+<area shape="rect" id="node3" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,5,237,47"/>
 </map>

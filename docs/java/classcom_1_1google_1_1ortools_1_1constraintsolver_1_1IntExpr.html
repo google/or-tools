@@ -50,18 +50,20 @@
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00011">11</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
+<div class="textblock"><p>The class <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming.">IntExpr</a> is the base of all integer expressions in constraint programming. </p>
+<p>It contains the basic protocol for an expression: - setting and modifying its bound - querying if it is bound - listening to events modifying its bounds - casting it into a variable (instance of <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>) </p>
+
+<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00014">14</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
 </div><div class="dynheader">
 Inheritance diagram for com.google.ortools.constraintsolver.IntExpr:</div>
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr__inherit__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8IntExpr_inherit__map" alt="Inheritance graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8IntExpr_inherit__map" id="com_8google_8ortools_8constraintsolver_8IntExpr_inherit__map">
-<area shape="rect"  title=" " alt="" coords="565,39,797,80"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseIntExpr.html" title=" " alt="" coords="845,5,1077,47"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html" title=" " alt="" coords="845,71,1077,112"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html" title=" " alt="" coords="285,39,517,80"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="5,39,237,80"/>
+<area shape="rect"  title="The class IntExpr is the base of all integer expressions in constraint programming." alt="" coords="565,39,797,80"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseIntExpr.html" title="This is the base class for all expressions that are not variables." alt="" coords="845,5,1077,47"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html" title="The class IntVar is a subset of IntExpr." alt="" coords="845,71,1077,112"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html" title="NOLINT The PropagationBaseObject is a subclass of BaseObject that is also friend to the Solver class." alt="" coords="285,39,517,80"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,39,237,80"/>
 <area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BooleanVar.html" title=" " alt="" coords="1125,71,1357,112"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
@@ -70,9 +72,9 @@ Collaboration diagram for com.google.ortools.constraintsolver.IntExpr:</div>
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr__coll__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8IntExpr_coll__map" alt="Collaboration graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8IntExpr_coll__map" id="com_8google_8ortools_8constraintsolver_8IntExpr_coll__map">
-<area shape="rect"  title=" " alt="" coords="5,184,237,225"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html" title=" " alt="" coords="5,95,237,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="5,5,237,47"/>
+<area shape="rect"  title="The class IntExpr is the base of all integer expressions in constraint programming." alt="" coords="5,184,237,225"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html" title="NOLINT The PropagationBaseObject is a subclass of BaseObject that is also friend to the Solver class." alt="" coords="5,95,237,136"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,5,237,47"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -89,48 +91,66 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a7850c329d7bf9ebc485abce523d5a972"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html#a7850c329d7bf9ebc485abce523d5a972">setMax</a> (long m)</td></tr>
 <tr class="separator:a7850c329d7bf9ebc485abce523d5a972"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a562109a48525af863c239cdbccfd5ec7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html#a562109a48525af863c239cdbccfd5ec7">range</a> (long[] l, long[] u)</td></tr>
+<tr class="memdesc:a562109a48525af863c239cdbccfd5ec7"><td class="mdescLeft">&#160;</td><td class="mdescRight">By default calls Min() and Max(), but can be redefined when Min and Max code can be factorized.  <a href="#a562109a48525af863c239cdbccfd5ec7">More...</a><br /></td></tr>
 <tr class="separator:a562109a48525af863c239cdbccfd5ec7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a52c6cc64a6b4ac5d5c924b7d07129e4b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html#a52c6cc64a6b4ac5d5c924b7d07129e4b">setRange</a> (long l, long u)</td></tr>
+<tr class="memdesc:a52c6cc64a6b4ac5d5c924b7d07129e4b"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method sets both the min and the max of the expression.  <a href="#a52c6cc64a6b4ac5d5c924b7d07129e4b">More...</a><br /></td></tr>
 <tr class="separator:a52c6cc64a6b4ac5d5c924b7d07129e4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab58f36823539c7cc6c99744ca588a3da"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html#ab58f36823539c7cc6c99744ca588a3da">setValue</a> (long v)</td></tr>
+<tr class="memdesc:ab58f36823539c7cc6c99744ca588a3da"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method sets the value of the expression.  <a href="#ab58f36823539c7cc6c99744ca588a3da">More...</a><br /></td></tr>
 <tr class="separator:ab58f36823539c7cc6c99744ca588a3da"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4784121d5d88c6230df9b588ffcf76e3"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html#a4784121d5d88c6230df9b588ffcf76e3">bound</a> ()</td></tr>
+<tr class="memdesc:a4784121d5d88c6230df9b588ffcf76e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the min and the max of the expression are equal.  <a href="#a4784121d5d88c6230df9b588ffcf76e3">More...</a><br /></td></tr>
 <tr class="separator:a4784121d5d88c6230df9b588ffcf76e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a40338ab7aeb5cc9f73626ed9682a2df9"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html#a40338ab7aeb5cc9f73626ed9682a2df9">isVar</a> ()</td></tr>
+<tr class="memdesc:a40338ab7aeb5cc9f73626ed9682a2df9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the expression is indeed a variable.  <a href="#a40338ab7aeb5cc9f73626ed9682a2df9">More...</a><br /></td></tr>
 <tr class="separator:a40338ab7aeb5cc9f73626ed9682a2df9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a53297911e94c60b09400069219e3feac"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html#a53297911e94c60b09400069219e3feac">var</a> ()</td></tr>
+<tr class="memdesc:a53297911e94c60b09400069219e3feac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a variable from the expression.  <a href="#a53297911e94c60b09400069219e3feac">More...</a><br /></td></tr>
 <tr class="separator:a53297911e94c60b09400069219e3feac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a46e26ebcceb51c1c2d71978ce7ce7eb3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html#a46e26ebcceb51c1c2d71978ce7ce7eb3">varWithName</a> (String <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#a15601381b21b73d7e404d2786309bbdc">name</a>)</td></tr>
+<tr class="memdesc:a46e26ebcceb51c1c2d71978ce7ce7eb3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a variable from the expression and set the name of the resulting var.  <a href="#a46e26ebcceb51c1c2d71978ce7ce7eb3">More...</a><br /></td></tr>
 <tr class="separator:a46e26ebcceb51c1c2d71978ce7ce7eb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aed6cc4420b96694ff78b066056555952"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html#aed6cc4420b96694ff78b066056555952">whenRange</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Demon.html">Demon</a> d)</td></tr>
+<tr class="memdesc:aed6cc4420b96694ff78b066056555952"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attach a demon that will watch the min or the max of the expression.  <a href="#aed6cc4420b96694ff78b066056555952">More...</a><br /></td></tr>
 <tr class="separator:aed6cc4420b96694ff78b066056555952"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a011a9f13ff78eeb3ebe779fe4093e090"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html#a011a9f13ff78eeb3ebe779fe4093e090">whenRange</a> (Runnable closure)</td></tr>
+<tr class="memdesc:a011a9f13ff78eeb3ebe779fe4093e090"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attach a demon that will watch the min or the max of the expression.  <a href="#a011a9f13ff78eeb3ebe779fe4093e090">More...</a><br /></td></tr>
 <tr class="separator:a011a9f13ff78eeb3ebe779fe4093e090"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5286124431c70fb253a7731df7eac218"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html#a5286124431c70fb253a7731df7eac218">accept</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html">ModelVisitor</a> visitor)</td></tr>
+<tr class="memdesc:a5286124431c70fb253a7731df7eac218"><td class="mdescLeft">&#160;</td><td class="mdescRight">Accepts the given visitor.  <a href="#a5286124431c70fb253a7731df7eac218">More...</a><br /></td></tr>
 <tr class="separator:a5286124431c70fb253a7731df7eac218"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae29a3d9d5c398484fa78ace37585d09d"><td class="memItemLeft" align="right" valign="top">String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#ae29a3d9d5c398484fa78ace37585d09d">toString</a> ()</td></tr>
 <tr class="separator:ae29a3d9d5c398484fa78ace37585d09d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0609fded543e5ca1cf20d2caa6084597"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html">Solver</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#a0609fded543e5ca1cf20d2caa6084597">solver</a> ()</td></tr>
 <tr class="separator:a0609fded543e5ca1cf20d2caa6084597"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a062d421920b48bc4096c07d208d852e1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#a062d421920b48bc4096c07d208d852e1">freezeQueue</a> ()</td></tr>
+<tr class="memdesc:a062d421920b48bc4096c07d208d852e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method freezes the propagation queue.  <a href="#a062d421920b48bc4096c07d208d852e1">More...</a><br /></td></tr>
 <tr class="separator:a062d421920b48bc4096c07d208d852e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1fb862d7d176653fbc54834ac861023b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#a1fb862d7d176653fbc54834ac861023b">unfreezeQueue</a> ()</td></tr>
+<tr class="memdesc:a1fb862d7d176653fbc54834ac861023b"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method unfreezes the propagation queue.  <a href="#a1fb862d7d176653fbc54834ac861023b">More...</a><br /></td></tr>
 <tr class="separator:a1fb862d7d176653fbc54834ac861023b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa22d7f1e9e1e42aff8ef67963edfac86"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#aa22d7f1e9e1e42aff8ef67963edfac86">enqueueDelayedDemon</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Demon.html">Demon</a> d)</td></tr>
+<tr class="memdesc:aa22d7f1e9e1e42aff8ef67963edfac86"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method pushes the demon onto the propagation queue.  <a href="#aa22d7f1e9e1e42aff8ef67963edfac86">More...</a><br /></td></tr>
 <tr class="separator:aa22d7f1e9e1e42aff8ef67963edfac86"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa727ea1b528467249c82db8c30936756"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#aa727ea1b528467249c82db8c30936756">enqueueVar</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Demon.html">Demon</a> d)</td></tr>
 <tr class="separator:aa727ea1b528467249c82db8c30936756"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af369330efa5e563c867c3d007f8fe351"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#af369330efa5e563c867c3d007f8fe351">reset_action_on_fail</a> ()</td></tr>
+<tr class="memdesc:af369330efa5e563c867c3d007f8fe351"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method clears the failure callback.  <a href="#af369330efa5e563c867c3d007f8fe351">More...</a><br /></td></tr>
 <tr class="separator:af369330efa5e563c867c3d007f8fe351"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a96eb479b849b90f4ded2f1c7bb115e56"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#a96eb479b849b90f4ded2f1c7bb115e56">set_variable_to_clean_on_fail</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a> v)</td></tr>
+<tr class="memdesc:a96eb479b849b90f4ded2f1c7bb115e56"><td class="mdescLeft">&#160;</td><td class="mdescRight">Shortcut for variable cleaner.  <a href="#a96eb479b849b90f4ded2f1c7bb115e56">More...</a><br /></td></tr>
 <tr class="separator:a96eb479b849b90f4ded2f1c7bb115e56"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a15601381b21b73d7e404d2786309bbdc"><td class="memItemLeft" align="right" valign="top">String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#a15601381b21b73d7e404d2786309bbdc">name</a> ()</td></tr>
+<tr class="memdesc:a15601381b21b73d7e404d2786309bbdc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Object naming.  <a href="#a15601381b21b73d7e404d2786309bbdc">More...</a><br /></td></tr>
 <tr class="separator:a15601381b21b73d7e404d2786309bbdc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad269f64dd2ef6188be6d825c0305130a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#ad269f64dd2ef6188be6d825c0305130a">setName</a> (String <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#a15601381b21b73d7e404d2786309bbdc">name</a>)</td></tr>
 <tr class="separator:ad269f64dd2ef6188be6d825c0305130a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a47786fc20c718247bf1721406b96808f"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#a47786fc20c718247bf1721406b96808f">hasName</a> ()</td></tr>
+<tr class="memdesc:a47786fc20c718247bf1721406b96808f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns whether the object has been named or not.  <a href="#a47786fc20c718247bf1721406b96808f">More...</a><br /></td></tr>
 <tr class="separator:a47786fc20c718247bf1721406b96808f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a892dbc110edf8d2dc8c866958acdea9d"><td class="memItemLeft" align="right" valign="top">String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#a892dbc110edf8d2dc8c866958acdea9d">baseName</a> ()</td></tr>
+<tr class="memdesc:a892dbc110edf8d2dc8c866958acdea9d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a base name for automatic naming.  <a href="#a892dbc110edf8d2dc8c866958acdea9d">More...</a><br /></td></tr>
 <tr class="separator:a892dbc110edf8d2dc8c866958acdea9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
@@ -173,7 +193,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00014">14</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00017">17</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
 
 </div>
 </div>
@@ -202,7 +222,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00093">93</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
+<p>Accepts the given visitor. </p>
+
+<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00126">126</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
 
 </div>
 </div>
@@ -229,7 +251,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00088">88</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
+<p>Returns a base name for automatic naming. </p>
+
+<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00115">115</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -256,7 +280,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00067">67</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
+<p>Returns true if the min and the max of the expression are equal. </p>
+
+<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00082">82</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
 
 </div>
 </div>
@@ -283,7 +309,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00028">28</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00031">31</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
 
 </div>
 </div>
@@ -311,7 +337,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00060">60</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
+<p>This method pushes the demon onto the propagation queue. </p>
+<p>It will be processed directly if the queue is empty. It will be enqueued according to its priority otherwise. </p>
+
+<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00072">72</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -339,7 +368,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00064">64</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00076">76</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -366,7 +395,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00052">52</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
+<p>This method freezes the propagation queue. </p>
+<p>It is useful when you need to apply multiple modifications at once. </p>
+
+<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00058">58</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -393,7 +425,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00084">84</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
+<p>Returns whether the object has been named or not. </p>
+
+<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00108">108</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -420,7 +454,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00071">71</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
+<p>Returns true if the expression is indeed a variable. </p>
+
+<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00089">89</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
 
 </div>
 </div>
@@ -447,7 +483,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00047">47</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00050">50</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
 
 </div>
 </div>
@@ -474,7 +510,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00039">39</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00042">42</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
 
 </div>
 </div>
@@ -501,7 +537,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00076">76</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
+<p>Object naming. </p>
+
+<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00097">97</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -539,7 +577,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00055">55</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
+<p>By default calls Min() and Max(), but can be redefined when Min and Max code can be factorized. </p>
+
+<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00061">61</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
 
 </div>
 </div>
@@ -566,7 +606,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00068">68</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
+<p>This method clears the failure callback. </p>
+
+<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00083">83</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -594,7 +636,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00072">72</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
+<p>Shortcut for variable cleaner. </p>
+
+<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00090">90</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -622,7 +666,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00051">51</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00054">54</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
 
 </div>
 </div>
@@ -650,7 +694,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00043">43</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00046">46</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
 
 </div>
 </div>
@@ -678,7 +722,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00080">80</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00101">101</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -716,7 +760,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00059">59</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
+<p>This method sets both the min and the max of the expression. </p>
+
+<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00068">68</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
 
 </div>
 </div>
@@ -744,7 +790,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00063">63</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
+<p>This method sets the value of the expression. </p>
+
+<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00075">75</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
 
 </div>
 </div>
@@ -771,7 +819,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00047">47</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00050">50</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -798,7 +846,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00043">43</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00046">46</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -825,7 +873,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00056">56</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
+<p>This method unfreezes the propagation queue. </p>
+<p>All modifications that happened when the queue was frozen will be processed. </p>
+
+<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00065">65</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -852,7 +903,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00075">75</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
+<p>Creates a variable from the expression. </p>
+
+<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00096">96</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
 
 </div>
 </div>
@@ -880,7 +933,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00080">80</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
+<p>Creates a variable from the expression and set the name of the resulting var. </p>
+<p>If the expression is already a variable, then it will set the name of the expression, possibly overwriting it. This is just a shortcut to Var() followed by set_name(). </p>
+
+<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00104">104</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
 
 </div>
 </div>
@@ -908,7 +964,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00085">85</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
+<p>Attach a demon that will watch the min or the max of the expression. </p>
+
+<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00112">112</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
 
 </div>
 </div>
@@ -936,7 +994,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00089">89</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
+<p>Attach a demon that will watch the min or the max of the expression. </p>
+
+<p class="definition">Definition at line <a class="el" href="IntExpr_8java_source.html#l00119">119</a> of file <a class="el" href="IntExpr_8java_source.html">IntExpr.java</a>.</p>
 
 </div>
 </div>

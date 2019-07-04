@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -50,7 +49,7 @@
 </div><!--header-->
 <div class="contents">
 
-<p>-------&mdash; Search Limits -------&mdash;  
+<p>Base class of all search limits.  
  <a href="classoperations__research_1_1SearchLimit.html#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>&gt;</code></p>
@@ -61,8 +60,8 @@ Inheritance diagram for operations_research::SearchLimit:</div>
   <img src="classoperations__research_1_1SearchLimit.png" usemap="#operations_5Fresearch::SearchLimit_map" alt=""/>
   <map id="operations_5Fresearch::SearchLimit_map" name="operations_5Fresearch::SearchLimit_map">
 <area href="classoperations__research_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events." alt="operations_research::SearchMonitor" shape="rect" coords="0,56,219,80"/>
-<area href="classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="operations_research::BaseObject" shape="rect" coords="0,0,219,24"/>
-<area href="classoperations__research_1_1RegularLimit.html" title="--— Regular Limit --—" alt="operations_research::RegularLimit" shape="rect" coords="0,168,219,192"/>
+<area href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="operations_research::BaseObject" shape="rect" coords="0,0,219,24"/>
+<area href="classoperations__research_1_1RegularLimit.html" title="Usual limit based on wall_time, number of explored branches and number of failures in the search tree..." alt="operations_research::RegularLimit" shape="rect" coords="0,168,219,192"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -169,10 +168,9 @@ Static Public Attributes</h2></td></tr>
 <tr class="separator:aa95b9df4d6eb3b0fabd01d9fee33d25d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>-------&mdash; Search Limits -------&mdash; </p>
-<p>Base class of all search limits. </p>
+<div class="textblock"><p>Base class of all search limits. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04225">4225</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04176">4176</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ae853c8ceb480c9d8e8ba355108c9b816"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae853c8ceb480c9d8e8ba355108c9b816">&#9670;&nbsp;</a></span>SearchLimit()</h2>
@@ -198,7 +196,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04227">4227</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04178">4178</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -655,7 +653,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Returns true if the limit has been crossed. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04231">4231</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04182">4182</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -686,7 +684,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1RegularLimit.html#a7a6e185350eade19733138b3d054bba9">operations_research::RegularLimit</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04254">4254</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04205">4205</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -927,7 +925,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1RegularLimit.html#a370e4934f9963fa9a440d0f8086a66a8">operations_research::RegularLimit</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03687">3687</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03643">3643</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1073,7 +1071,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1RegularLimit.html#a71e06768288b2fd36acf28a435744d51">operations_research::RegularLimit</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03696">3696</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03652">3652</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1157,7 +1155,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03689">3689</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03645">3645</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1182,7 +1180,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03618">3618</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03574">3574</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>

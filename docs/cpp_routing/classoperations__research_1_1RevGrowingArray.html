@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -62,7 +61,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a3e0d45ffcf2c17ae2c7f6ec631fea636"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1dfca41dc5907bcf0fde8b5c37c4c8c2"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RevGrowingArray.html#a1dfca41dc5907bcf0fde8b5c37c4c8c2">At</a> (int64 index) const</td></tr>
 <tr class="separator:a1dfca41dc5907bcf0fde8b5c37c4c8c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa66c900368ad9fa24d3a256493792330"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RevGrowingArray.html#aa66c900368ad9fa24d3a256493792330">RevInsert</a> (<a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *const <a class="el" href="routing_8h.html#a5f32c22c620c811754ba7b6f977db864">solver</a>, int64 index, T value)</td></tr>
+<tr class="memitem:aa66c900368ad9fa24d3a256493792330"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RevGrowingArray.html#aa66c900368ad9fa24d3a256493792330">RevInsert</a> (<a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *const solver, int64 index, T value)</td></tr>
 <tr class="separator:aa66c900368ad9fa24d3a256493792330"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
@@ -72,7 +71,7 @@ class operations_research::RevGrowingArray&lt; T, C &gt;</h3>
 <p>This class is a reversible growing array. </p>
 <p>In can grow in both directions, and even accept negative indices. The objects stored have a type T. As it relies on the solver for reversibility, these objects can be up-casted to 'C' when using <a class="el" href="classoperations__research_1_1Solver.html#add51e06535f44461347658d8ce59979a" title="reversibility">Solver::SaveValue()</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02260">2260</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02227">2227</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a2140cdbff14a28d0fb0d30363255f075"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2140cdbff14a28d0fb0d30363255f075">&#9670;&nbsp;</a></span>RevGrowingArray()</h2>
@@ -100,7 +99,7 @@ template&lt;class T , class C &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02262">2262</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02229">2229</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -129,7 +128,7 @@ template&lt;class T , class C &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02267">2267</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02234">2234</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -160,7 +159,7 @@ template&lt;class T , class C &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02273">2273</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02240">2240</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -206,7 +205,7 @@ template&lt;class T , class C &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02283">2283</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02250">2250</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>

@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -59,7 +58,7 @@ Inheritance diagram for operations_research::IntVarIterator:</div>
  <div class="center">
   <img src="classoperations__research_1_1IntVarIterator.png" usemap="#operations_5Fresearch::IntVarIterator_map" alt=""/>
   <map id="operations_5Fresearch::IntVarIterator_map" name="operations_5Fresearch::IntVarIterator_map">
-<area href="classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="operations_research::BaseObject" shape="rect" coords="0,0,209,24"/>
+<area href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="operations_research::BaseObject" shape="rect" coords="0,0,209,24"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -85,9 +84,9 @@ Public Member Functions</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>The class Iterator has two direct subclasses. </p>
-<p>HoleIterators iterates over all holes, that is value removed between the current min and max of the variable since the last time the variable was processed in the queue. DomainIterators iterates over all elements of the variable domain. Both iterators are not robust to domain changes. Hole iterators can also report values outside the current min and max of the variable. HoleIterators should only be called from a demon attached to the variable that has created this iterator. IntVar* current_var; std::unique_ptr&lt;IntVarIterator&gt; it(current_var-&gt;MakeHoleIterator(false)); for (const int64 hole : InitAndGetValues(it)) { ///&lt; use the hole } </p>
+<p>HoleIterators iterates over all holes, that is value removed between the current min and max of the variable since the last time the variable was processed in the queue. DomainIterators iterates over all elements of the variable domain. Both iterators are not robust to domain changes. Hole iterators can also report values outside the current min and max of the variable. HoleIterators should only be called from a demon attached to the variable that has created this iterator. IntVar* current_var; std::unique_ptr&lt;IntVarIterator&gt; it(current_var-&gt;MakeHoleIterator(false)); for (const int64 hole : InitAndGetValues(it)) { /// use the hole } </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03895">3895</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03851">3851</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a85fb1088ff1184b4cb867259ee512fc5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a85fb1088ff1184b4cb867259ee512fc5">&#9670;&nbsp;</a></span>~IntVarIterator()</h2>
@@ -112,7 +111,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03897">3897</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03853">3853</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -144,7 +143,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1BaseObject.html#afb3b013c5063d71566d5273793c1d828">operations_research::BaseObject</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03912">3912</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03868">3868</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>

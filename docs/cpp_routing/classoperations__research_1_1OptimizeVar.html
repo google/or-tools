@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -51,7 +50,7 @@
 </div><!--header-->
 <div class="contents">
 
-<p>-------&mdash; Objective Management -------&mdash;  
+<p>This class encapsulates an objective.  
  <a href="classoperations__research_1_1OptimizeVar.html#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>&gt;</code></p>
@@ -62,7 +61,7 @@ Inheritance diagram for operations_research::OptimizeVar:</div>
   <img src="classoperations__research_1_1OptimizeVar.png" usemap="#operations_5Fresearch::OptimizeVar_map" alt=""/>
   <map id="operations_5Fresearch::OptimizeVar_map" name="operations_5Fresearch::OptimizeVar_map">
 <area href="classoperations__research_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events." alt="operations_research::SearchMonitor" shape="rect" coords="0,56,219,80"/>
-<area href="classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="operations_research::BaseObject" shape="rect" coords="0,0,219,24"/>
+<area href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="operations_research::BaseObject" shape="rect" coords="0,0,219,24"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -178,16 +177,10 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:abc92b023a2273899160c0997007c6ca8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>-------&mdash; Objective Management -------&mdash; </p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000001">Todo:</a></b></dt><dd>(user): Refactor this into an Objective class:<ul>
-<li>print methods for AtNode and AtSolution.</li>
-</ul>
-</dd></dl>
-<ul>
-<li>support for weighted objective and lexicographical objective.This class encapsulates an objective. It requires the direction (minimize or maximize), the variable to optimize, and the improvement step. </li>
-</ul>
+<div class="textblock"><p>This class encapsulates an objective. </p>
+<p>It requires the direction (minimize or maximize), the variable to optimize, and the improvement step. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04188">4188</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04141">4141</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a869a6765e20963972d8bc3dd11645f33"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a869a6765e20963972d8bc3dd11645f33">&#9670;&nbsp;</a></span>OptimizeVar()</h2>
@@ -640,7 +633,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the best value found during search. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04194">4194</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04147">4147</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -879,7 +872,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1RegularLimit.html#a370e4934f9963fa9a440d0f8086a66a8">operations_research::RegularLimit</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03687">3687</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03643">3643</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1021,7 +1014,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1RegularLimit.html#a71e06768288b2fd36acf28a435744d51">operations_research::RegularLimit</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03696">3696</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03652">3652</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1105,7 +1098,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03689">3689</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03645">3645</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1134,7 +1127,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the variable that is optimized. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04197">4197</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04150">4150</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1159,7 +1152,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04214">4214</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04167">4167</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1183,7 +1176,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04216">4216</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04169">4169</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1207,7 +1200,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03618">3618</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03574">3574</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1231,7 +1224,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04215">4215</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04168">4168</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1255,7 +1248,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04213">4213</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04166">4166</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1279,7 +1272,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04212">4212</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04165">4165</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>

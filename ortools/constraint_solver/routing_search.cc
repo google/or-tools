@@ -1100,13 +1100,18 @@ class PathCumulFilter : public BasePathFilter {
     // NOTE: If and when the optimizer is used to filter infeasibilities not
     // caught elsewhere in the filter, we should use it regardless of
     // filter_objective_cost_.
-    const bool has_span_cost =
-        dimension_.GetSpanCostCoefficientForVehicle(vehicle) > 0;
-    const bool has_soft_lower_bound = FilterCumulSoftLowerBounds();
-    const bool has_soft_upper_bound = FilterCumulSoftBounds();
-    return filter_objective_cost_ && !FilterCumulPiecewiseLinearCosts() &&
-           (has_span_cost ^ has_soft_lower_bound ? has_soft_upper_bound
-                                                 : has_span_cost);
+    if (!filter_objective_cost_ || FilterCumulPiecewiseLinearCosts()) {
+      return false;
+    }
+    int num_linear_constraints = 0;
+    if (dimension_.GetSpanCostCoefficientForVehicle(vehicle) > 0)
+      ++num_linear_constraints;
+    if (dimension_.HasSoftSpanUpperBounds() &&
+        dimension_.GetSoftSpanUpperBoundForVehicle(vehicle).cost > 0)
+      ++num_linear_constraints;
+    if (FilterCumulSoftLowerBounds()) ++num_linear_constraints;
+    if (FilterCumulSoftBounds()) ++num_linear_constraints;
+    return num_linear_constraints >= 2;
   }
 
   int64 GetCumulPiecewiseLinearCost(int64 node, int64 cumul_value) const;
@@ -1908,6 +1913,37 @@ IntVarLocalSearchFilter* MakePathCumulFilter(
       filter_objective_cost));
 }
 
+namespace {
+
+bool DimensionHasCumulConstraint(const RoutingDimension& dimension) {
+  if (dimension.global_span_cost_coefficient() != 0) return true;
+  if (dimension.HasSoftSpanUpperBounds()) return true;
+  for (const int64 upper_bound : dimension.vehicle_span_upper_bounds()) {
+    if (upper_bound != kint64max) return true;
+  }
+  for (const int64 coefficient : dimension.vehicle_span_cost_coefficients()) {
+    if (coefficient != 0) return true;
+  }
+  for (const IntVar* const slack : dimension.slacks()) {
+    if (slack->Min() > 0) return true;
+  }
+  const std::vector<IntVar*>& cumuls = dimension.cumuls();
+  for (int i = 0; i < cumuls.size(); ++i) {
+    if (dimension.HasCumulVarSoftUpperBound(i)) return true;
+    if (dimension.HasCumulVarSoftLowerBound(i)) return true;
+    if (dimension.HasCumulVarPiecewiseLinearCost(i)) return true;
+    IntVar* const cumul_var = cumuls[i];
+    if (cumul_var->Min() > 0 && cumul_var->Max() < kint64max &&
+        !dimension.model()->IsEnd(i)) {
+      return true;
+    }
+    if (dimension.forbidden_intervals()[i].NumIntervals() > 0) return true;
+  }
+  return false;
+}
+
+}  // namespace
+
 std::vector<IntVarLocalSearchFilter*> MakeCumulFilters(
     const RoutingDimension& dimension,
     Solver::ObjectiveWatcher objective_callback, bool filter_objective_cost) {
@@ -1926,76 +1962,16 @@ std::vector<IntVarLocalSearchFilter*> MakeCumulFilters(
   // propagate the computed cost if the LPCumulFilter is already doing it.
   const bool propagate_path_cumul_filter_objective_value = filters.empty();
 
-  for (const int64 upper_bound : dimension.vehicle_span_upper_bounds()) {
-    if (upper_bound != kint64max) {
-      filters.push_back(MakePathCumulFilter(
-          dimension, objective_callback,
-          propagate_path_cumul_filter_objective_value, filter_objective_cost));
-      return filters;
-    }
-  }
-  for (const int64 coefficient : dimension.vehicle_span_cost_coefficients()) {
-    if (coefficient != 0) {
-      filters.push_back(MakePathCumulFilter(
-          dimension, objective_callback,
-          propagate_path_cumul_filter_objective_value, filter_objective_cost));
-      return filters;
-    }
-  }
-  for (const IntVar* const slack : dimension.slacks()) {
-    if (slack->Min() > 0) {
-      filters.push_back(MakePathCumulFilter(
-          dimension, objective_callback,
-          propagate_path_cumul_filter_objective_value, filter_objective_cost));
-      return filters;
-    }
-  }
-  const std::vector<IntVar*>& cumuls = dimension.cumuls();
-  for (int i = 0; i < cumuls.size(); ++i) {
-    if (dimension.HasCumulVarSoftUpperBound(i)) {
-      filters.push_back(MakePathCumulFilter(
-          dimension, objective_callback,
-          propagate_path_cumul_filter_objective_value, filter_objective_cost));
-      return filters;
-    }
-    if (dimension.HasCumulVarSoftLowerBound(i)) {
-      filters.push_back(MakePathCumulFilter(
-          dimension, objective_callback,
-          propagate_path_cumul_filter_objective_value, filter_objective_cost));
-      return filters;
-    }
-    if (dimension.HasCumulVarPiecewiseLinearCost(i)) {
-      filters.push_back(MakePathCumulFilter(
-          dimension, objective_callback,
-          propagate_path_cumul_filter_objective_value, filter_objective_cost));
-      return filters;
-    }
-    IntVar* const cumul_var = cumuls[i];
-    if (cumul_var->Min() > 0 && cumul_var->Max() < kint64max) {
-      if (!dimension.model()->IsEnd(i)) {
-        filters.push_back(
-            MakePathCumulFilter(dimension, objective_callback,
-                                propagate_path_cumul_filter_objective_value,
-                                filter_objective_cost));
-        return filters;
-      }
-    }
-    if (dimension.forbidden_intervals()[i].NumIntervals() > 0) {
-      filters.push_back(MakePathCumulFilter(
-          dimension, objective_callback,
-          propagate_path_cumul_filter_objective_value, filter_objective_cost));
-      return filters;
-    }
-  }
-  if (dimension.global_span_cost_coefficient() == 0) {
-    return {dimension.model()->solver()->RevAlloc(new ChainCumulFilter(
-        *dimension.model(), dimension, objective_callback))};
-  } else {
+  if (DimensionHasCumulConstraint(dimension)) {
     filters.push_back(MakePathCumulFilter(
         dimension, objective_callback,
         propagate_path_cumul_filter_objective_value, filter_objective_cost));
-    return filters;
+  } else {
+    filters.push_back(
+        dimension.model()->solver()->RevAlloc(new ChainCumulFilter(
+            *dimension.model(), dimension, objective_callback)));
   }
+  return filters;
 }
 
 namespace {

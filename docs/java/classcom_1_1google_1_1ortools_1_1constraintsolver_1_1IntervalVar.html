@@ -51,16 +51,18 @@
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00011">11</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<div class="textblock"><p>Interval variables are often used in scheduling. </p>
+<p>The main characteristics of an <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html" title="Interval variables are often used in scheduling.">IntervalVar</a> are the start position, duration, and end date. All these characteristics can be queried and set, and demons can be posted on their modifications. An important aspect is optionality: an <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html" title="Interval variables are often used in scheduling.">IntervalVar</a> can be performed or not. If unperformed, then it simply does not exist, and its characteristics cannot be accessed any more. An interval var is automatically marked as unperformed when it is not consistent anymore (start greater than end, duration &lt; 0...) </p>
+
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00014">14</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 </div><div class="dynheader">
 Inheritance diagram for com.google.ortools.constraintsolver.IntervalVar:</div>
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar__inherit__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8IntervalVar_inherit__map" alt="Inheritance graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8IntervalVar_inherit__map" id="com_8google_8ortools_8constraintsolver_8IntervalVar_inherit__map">
-<area shape="rect"  title=" " alt="" coords="5,184,237,225"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html" title=" " alt="" coords="5,95,237,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="5,5,237,47"/>
+<area shape="rect"  title="Interval variables are often used in scheduling." alt="" coords="5,184,237,225"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html" title="NOLINT The PropagationBaseObject is a subclass of BaseObject that is also friend to the Solver class." alt="" coords="5,95,237,136"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,5,237,47"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <div class="dynheader">
@@ -68,9 +70,9 @@ Collaboration diagram for com.google.ortools.constraintsolver.IntervalVar:</div>
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar__coll__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8IntervalVar_coll__map" alt="Collaboration graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8IntervalVar_coll__map" id="com_8google_8ortools_8constraintsolver_8IntervalVar_coll__map">
-<area shape="rect"  title=" " alt="" coords="5,184,237,225"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html" title=" " alt="" coords="5,95,237,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="5,5,237,47"/>
+<area shape="rect"  title="Interval variables are often used in scheduling." alt="" coords="5,184,237,225"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html" title="NOLINT The PropagationBaseObject is a subclass of BaseObject that is also friend to the Solver class." alt="" coords="5,95,237,136"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,5,237,47"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -79,6 +81,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a83030743df9086063293e2f8d841be4e"><td class="memItemLeft" align="right" valign="top">synchronized void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html#a83030743df9086063293e2f8d841be4e">delete</a> ()</td></tr>
 <tr class="separator:a83030743df9086063293e2f8d841be4e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a905692b18efc3b1dca63649f1216638d"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html#a905692b18efc3b1dca63649f1216638d">startMin</a> ()</td></tr>
+<tr class="memdesc:a905692b18efc3b1dca63649f1216638d"><td class="mdescLeft">&#160;</td><td class="mdescRight">These methods query, set, and watch the start position of the interval var.  <a href="#a905692b18efc3b1dca63649f1216638d">More...</a><br /></td></tr>
 <tr class="separator:a905692b18efc3b1dca63649f1216638d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a77ecf9b499fdfa2764c40d377edf22d0"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html#a77ecf9b499fdfa2764c40d377edf22d0">startMax</a> ()</td></tr>
 <tr class="separator:a77ecf9b499fdfa2764c40d377edf22d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -101,6 +104,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a87c7512dbd84a0d4e9f4557965e492e0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html#a87c7512dbd84a0d4e9f4557965e492e0">whenStartBound</a> (Runnable closure)</td></tr>
 <tr class="separator:a87c7512dbd84a0d4e9f4557965e492e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa0fc4ec353c456aedc22eac44dafb7dc"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html#aa0fc4ec353c456aedc22eac44dafb7dc">durationMin</a> ()</td></tr>
+<tr class="memdesc:aa0fc4ec353c456aedc22eac44dafb7dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">These methods query, set, and watch the duration of the interval var.  <a href="#aa0fc4ec353c456aedc22eac44dafb7dc">More...</a><br /></td></tr>
 <tr class="separator:aa0fc4ec353c456aedc22eac44dafb7dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adb380b2dbf942d35d3eeddf26ec46ba1"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html#adb380b2dbf942d35d3eeddf26ec46ba1">durationMax</a> ()</td></tr>
 <tr class="separator:adb380b2dbf942d35d3eeddf26ec46ba1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -123,6 +127,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:af499678a1316191405ab77cfcb1edca1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html#af499678a1316191405ab77cfcb1edca1">whenDurationBound</a> (Runnable closure)</td></tr>
 <tr class="separator:af499678a1316191405ab77cfcb1edca1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeb237b2eb4e16535c5790ca380088519"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html#aeb237b2eb4e16535c5790ca380088519">endMin</a> ()</td></tr>
+<tr class="memdesc:aeb237b2eb4e16535c5790ca380088519"><td class="mdescLeft">&#160;</td><td class="mdescRight">These methods query, set, and watch the end position of the interval var.  <a href="#aeb237b2eb4e16535c5790ca380088519">More...</a><br /></td></tr>
 <tr class="separator:aeb237b2eb4e16535c5790ca380088519"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5a8771d588f727b75ce33ed4ead87902"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html#a5a8771d588f727b75ce33ed4ead87902">endMax</a> ()</td></tr>
 <tr class="separator:a5a8771d588f727b75ce33ed4ead87902"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -145,6 +150,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:af37b684f4af0950c223eda20bbcee88a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html#af37b684f4af0950c223eda20bbcee88a">whenEndBound</a> (Runnable closure)</td></tr>
 <tr class="separator:af37b684f4af0950c223eda20bbcee88a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1a4caf18657baeb70f422fd9d01a31cd"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html#a1a4caf18657baeb70f422fd9d01a31cd">mustBePerformed</a> ()</td></tr>
+<tr class="memdesc:a1a4caf18657baeb70f422fd9d01a31cd"><td class="mdescLeft">&#160;</td><td class="mdescRight">These methods query, set, and watch the performed status of the interval var.  <a href="#a1a4caf18657baeb70f422fd9d01a31cd">More...</a><br /></td></tr>
 <tr class="separator:a1a4caf18657baeb70f422fd9d01a31cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae9a2f0b0c20affee86c4fcd90f5a495a"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html#ae9a2f0b0c20affee86c4fcd90f5a495a">mayBePerformed</a> ()</td></tr>
 <tr class="separator:ae9a2f0b0c20affee86c4fcd90f5a495a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -161,10 +167,13 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a546be98f0aaeeff202e42c058592ea90"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html#a546be98f0aaeeff202e42c058592ea90">whenPerformedBound</a> (Runnable closure)</td></tr>
 <tr class="separator:a546be98f0aaeeff202e42c058592ea90"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeeb8ba511467d7ceae38ca2cf6c055d8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html#aeeb8ba511467d7ceae38ca2cf6c055d8">whenAnything</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Demon.html">Demon</a> d)</td></tr>
+<tr class="memdesc:aeeb8ba511467d7ceae38ca2cf6c055d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attaches a demon awakened when anything about this interval changes.  <a href="#aeeb8ba511467d7ceae38ca2cf6c055d8">More...</a><br /></td></tr>
 <tr class="separator:aeeb8ba511467d7ceae38ca2cf6c055d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a00c16405f834e6a7c1e4937d2ecb6863"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html#a00c16405f834e6a7c1e4937d2ecb6863">whenAnything</a> (Runnable closure)</td></tr>
+<tr class="memdesc:a00c16405f834e6a7c1e4937d2ecb6863"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attaches a closure awakened when anything about this interval changes.  <a href="#a00c16405f834e6a7c1e4937d2ecb6863">More...</a><br /></td></tr>
 <tr class="separator:a00c16405f834e6a7c1e4937d2ecb6863"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7e93ffe921a7b4feb77bc72963ccf3d8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html#a7e93ffe921a7b4feb77bc72963ccf3d8">startExpr</a> ()</td></tr>
+<tr class="memdesc:a7e93ffe921a7b4feb77bc72963ccf3d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">These methods create expressions encapsulating the start, end and duration of the interval var.  <a href="#a7e93ffe921a7b4feb77bc72963ccf3d8">More...</a><br /></td></tr>
 <tr class="separator:a7e93ffe921a7b4feb77bc72963ccf3d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa2821425f159e73b070ffb501023f138"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html#aa2821425f159e73b070ffb501023f138">durationExpr</a> ()</td></tr>
 <tr class="separator:aa2821425f159e73b070ffb501023f138"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -173,43 +182,55 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ae84130905298dc0e8531ce11bff8e173"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html#ae84130905298dc0e8531ce11bff8e173">performedExpr</a> ()</td></tr>
 <tr class="separator:ae84130905298dc0e8531ce11bff8e173"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af8ff74c37b105dfd2a1fc8f7e91b1f35"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html#af8ff74c37b105dfd2a1fc8f7e91b1f35">safeStartExpr</a> (long unperformed_value)</td></tr>
+<tr class="memdesc:af8ff74c37b105dfd2a1fc8f7e91b1f35"><td class="mdescLeft">&#160;</td><td class="mdescRight">These methods create expressions encapsulating the start, end and duration of the interval var.  <a href="#af8ff74c37b105dfd2a1fc8f7e91b1f35">More...</a><br /></td></tr>
 <tr class="separator:af8ff74c37b105dfd2a1fc8f7e91b1f35"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:add5c768da24bf7d88c22156e606ff08f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html#add5c768da24bf7d88c22156e606ff08f">safeDurationExpr</a> (long unperformed_value)</td></tr>
 <tr class="separator:add5c768da24bf7d88c22156e606ff08f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9aeefef5cc01095c94d18802cb9c8992"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html#a9aeefef5cc01095c94d18802cb9c8992">safeEndExpr</a> (long unperformed_value)</td></tr>
 <tr class="separator:a9aeefef5cc01095c94d18802cb9c8992"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d4c6bc41d2595839df2d7c4f182e657"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html#a4d4c6bc41d2595839df2d7c4f182e657">accept</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html">ModelVisitor</a> visitor)</td></tr>
+<tr class="memdesc:a4d4c6bc41d2595839df2d7c4f182e657"><td class="mdescLeft">&#160;</td><td class="mdescRight">Accepts the given visitor.  <a href="#a4d4c6bc41d2595839df2d7c4f182e657">More...</a><br /></td></tr>
 <tr class="separator:a4d4c6bc41d2595839df2d7c4f182e657"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae29a3d9d5c398484fa78ace37585d09d"><td class="memItemLeft" align="right" valign="top">String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#ae29a3d9d5c398484fa78ace37585d09d">toString</a> ()</td></tr>
 <tr class="separator:ae29a3d9d5c398484fa78ace37585d09d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0609fded543e5ca1cf20d2caa6084597"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html">Solver</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#a0609fded543e5ca1cf20d2caa6084597">solver</a> ()</td></tr>
 <tr class="separator:a0609fded543e5ca1cf20d2caa6084597"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a062d421920b48bc4096c07d208d852e1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#a062d421920b48bc4096c07d208d852e1">freezeQueue</a> ()</td></tr>
+<tr class="memdesc:a062d421920b48bc4096c07d208d852e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method freezes the propagation queue.  <a href="#a062d421920b48bc4096c07d208d852e1">More...</a><br /></td></tr>
 <tr class="separator:a062d421920b48bc4096c07d208d852e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1fb862d7d176653fbc54834ac861023b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#a1fb862d7d176653fbc54834ac861023b">unfreezeQueue</a> ()</td></tr>
+<tr class="memdesc:a1fb862d7d176653fbc54834ac861023b"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method unfreezes the propagation queue.  <a href="#a1fb862d7d176653fbc54834ac861023b">More...</a><br /></td></tr>
 <tr class="separator:a1fb862d7d176653fbc54834ac861023b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa22d7f1e9e1e42aff8ef67963edfac86"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#aa22d7f1e9e1e42aff8ef67963edfac86">enqueueDelayedDemon</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Demon.html">Demon</a> d)</td></tr>
+<tr class="memdesc:aa22d7f1e9e1e42aff8ef67963edfac86"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method pushes the demon onto the propagation queue.  <a href="#aa22d7f1e9e1e42aff8ef67963edfac86">More...</a><br /></td></tr>
 <tr class="separator:aa22d7f1e9e1e42aff8ef67963edfac86"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa727ea1b528467249c82db8c30936756"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#aa727ea1b528467249c82db8c30936756">enqueueVar</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Demon.html">Demon</a> d)</td></tr>
 <tr class="separator:aa727ea1b528467249c82db8c30936756"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af369330efa5e563c867c3d007f8fe351"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#af369330efa5e563c867c3d007f8fe351">reset_action_on_fail</a> ()</td></tr>
+<tr class="memdesc:af369330efa5e563c867c3d007f8fe351"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method clears the failure callback.  <a href="#af369330efa5e563c867c3d007f8fe351">More...</a><br /></td></tr>
 <tr class="separator:af369330efa5e563c867c3d007f8fe351"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a96eb479b849b90f4ded2f1c7bb115e56"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#a96eb479b849b90f4ded2f1c7bb115e56">set_variable_to_clean_on_fail</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a> v)</td></tr>
+<tr class="memdesc:a96eb479b849b90f4ded2f1c7bb115e56"><td class="mdescLeft">&#160;</td><td class="mdescRight">Shortcut for variable cleaner.  <a href="#a96eb479b849b90f4ded2f1c7bb115e56">More...</a><br /></td></tr>
 <tr class="separator:a96eb479b849b90f4ded2f1c7bb115e56"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a15601381b21b73d7e404d2786309bbdc"><td class="memItemLeft" align="right" valign="top">String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#a15601381b21b73d7e404d2786309bbdc">name</a> ()</td></tr>
+<tr class="memdesc:a15601381b21b73d7e404d2786309bbdc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Object naming.  <a href="#a15601381b21b73d7e404d2786309bbdc">More...</a><br /></td></tr>
 <tr class="separator:a15601381b21b73d7e404d2786309bbdc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad269f64dd2ef6188be6d825c0305130a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#ad269f64dd2ef6188be6d825c0305130a">setName</a> (String <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#a15601381b21b73d7e404d2786309bbdc">name</a>)</td></tr>
 <tr class="separator:ad269f64dd2ef6188be6d825c0305130a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a47786fc20c718247bf1721406b96808f"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#a47786fc20c718247bf1721406b96808f">hasName</a> ()</td></tr>
+<tr class="memdesc:a47786fc20c718247bf1721406b96808f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns whether the object has been named or not.  <a href="#a47786fc20c718247bf1721406b96808f">More...</a><br /></td></tr>
 <tr class="separator:a47786fc20c718247bf1721406b96808f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a892dbc110edf8d2dc8c866958acdea9d"><td class="memItemLeft" align="right" valign="top">String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#a892dbc110edf8d2dc8c866958acdea9d">baseName</a> ()</td></tr>
+<tr class="memdesc:a892dbc110edf8d2dc8c866958acdea9d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a base name for automatic naming.  <a href="#a892dbc110edf8d2dc8c866958acdea9d">More...</a><br /></td></tr>
 <tr class="separator:a892dbc110edf8d2dc8c866958acdea9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
 <tr class="memitem:af94db162faee7115be64d90766c25ca0"><td class="memItemLeft" align="right" valign="top">static long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html#af94db162faee7115be64d90766c25ca0">getKMinValidValue</a> ()</td></tr>
+<tr class="memdesc:af94db162faee7115be64d90766c25ca0"><td class="mdescLeft">&#160;</td><td class="mdescRight">The smallest acceptable value to be returned by StartMin()  <a href="#af94db162faee7115be64d90766c25ca0">More...</a><br /></td></tr>
 <tr class="separator:af94db162faee7115be64d90766c25ca0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a323bc9d1712854138d4151213f9befb3"><td class="memItemLeft" align="right" valign="top">static long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html#a323bc9d1712854138d4151213f9befb3">getKMaxValidValue</a> ()</td></tr>
+<tr class="memdesc:a323bc9d1712854138d4151213f9befb3"><td class="mdescLeft">&#160;</td><td class="mdescRight">The largest acceptable value to be returned by EndMax()  <a href="#a323bc9d1712854138d4151213f9befb3">More...</a><br /></td></tr>
 <tr class="separator:a323bc9d1712854138d4151213f9befb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
@@ -252,7 +273,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00014">14</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00017">17</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -281,7 +302,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00254">254</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p>Accepts the given visitor. </p>
+
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00290">290</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -308,7 +331,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00088">88</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
+<p>Returns a base name for automatic naming. </p>
+
+<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00115">115</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -335,7 +360,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00187">187</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00208">208</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -362,7 +387,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00028">28</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00031">31</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -389,7 +414,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00224">224</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00254">254</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -416,7 +441,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00095">95</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00110">110</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -443,7 +468,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00091">91</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p>These methods query, set, and watch the duration of the interval var. </p>
+
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00106">106</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -470,7 +497,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00229">229</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00259">259</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -497,7 +524,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00139">139</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00157">157</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -524,7 +551,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00135">135</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p>These methods query, set, and watch the end position of the interval var. </p>
+
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00153">153</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -552,7 +581,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00060">60</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
+<p>This method pushes the demon onto the propagation queue. </p>
+<p>It will be processed directly if the queue is empty. It will be enqueued according to its priority otherwise. </p>
+
+<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00072">72</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -580,7 +612,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00064">64</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00076">76</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -607,7 +639,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00052">52</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
+<p>This method freezes the propagation queue. </p>
+<p>It is useful when you need to apply multiple modifications at once. </p>
+
+<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00058">58</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -634,7 +669,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00043">43</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p>The largest acceptable value to be returned by EndMax() </p>
+
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00052">52</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -661,7 +698,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00039">39</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p>The smallest acceptable value to be returned by StartMin() </p>
+
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00045">45</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -688,7 +727,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00084">84</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
+<p>Returns whether the object has been named or not. </p>
+
+<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00108">108</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -715,7 +756,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00191">191</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00212">212</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -742,7 +783,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00183">183</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00204">204</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -769,7 +810,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00179">179</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p>These methods query, set, and watch the performed status of the interval var. </p>
+
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00200">200</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -796,7 +839,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00076">76</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
+<p>Object naming. </p>
+
+<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00097">97</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -823,7 +868,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00115">115</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00130">130</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -850,7 +895,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00111">111</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00126">126</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -877,7 +922,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00159">159</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00177">177</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -904,7 +949,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00155">155</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00173">173</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -931,7 +976,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00071">71</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00083">83</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -958,7 +1003,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00067">67</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00079">79</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -985,7 +1030,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00234">234</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00264">264</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1012,7 +1057,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00068">68</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
+<p>This method clears the failure callback. </p>
+
+<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00083">83</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -1040,7 +1087,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00244">244</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00277">277</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1068,7 +1115,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00249">249</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00282">282</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1096,7 +1143,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00239">239</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p>These methods create expressions encapsulating the start, end and duration of the interval var. </p>
+<p>If the interval var is unperformed, they will return the unperformed_value. </p>
+
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00272">272</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1124,7 +1174,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00072">72</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
+<p>Shortcut for variable cleaner. </p>
+
+<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00090">90</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -1152,7 +1204,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00103">103</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00118">118</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1180,7 +1232,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00099">99</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00114">114</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1218,7 +1270,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00107">107</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00122">122</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1246,7 +1298,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00147">147</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00165">165</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1274,7 +1326,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00143">143</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00161">161</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1312,7 +1364,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00151">151</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00169">169</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1340,7 +1392,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00080">80</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00101">101</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -1368,7 +1420,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00195">195</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00216">216</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1396,7 +1448,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00059">59</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00071">71</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1424,7 +1476,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00055">55</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00067">67</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1462,7 +1514,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00063">63</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00075">75</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1489,7 +1541,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00047">47</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00050">50</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -1516,7 +1568,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00219">219</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p>These methods create expressions encapsulating the start, end and duration of the interval var. </p>
+<p>Please note that these must not be used if the interval var is unperformed. </p>
+
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00249">249</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1543,7 +1598,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00051">51</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00063">63</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1570,7 +1625,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00047">47</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p>These methods query, set, and watch the start position of the interval var. </p>
+
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00059">59</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1597,7 +1654,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00043">43</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00046">46</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -1624,7 +1681,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00056">56</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
+<p>This method unfreezes the propagation queue. </p>
+<p>All modifications that happened when the queue was frozen will be processed. </p>
+
+<p class="definition">Definition at line <a class="el" href="PropagationBaseObject_8java_source.html#l00065">65</a> of file <a class="el" href="PropagationBaseObject_8java_source.html">PropagationBaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -1651,7 +1711,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00199">199</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00220">220</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1679,7 +1739,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00211">211</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p>Attaches a demon awakened when anything about this interval changes. </p>
+
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00235">235</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1707,7 +1769,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00215">215</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p>Attaches a closure awakened when anything about this interval changes. </p>
+
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00242">242</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1735,7 +1799,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00127">127</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00142">142</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1763,7 +1827,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00131">131</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00146">146</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1791,7 +1855,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00119">119</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00134">134</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1819,7 +1883,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00123">123</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00138">138</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1847,7 +1911,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00171">171</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00189">189</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1875,7 +1939,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00175">175</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00193">193</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1903,7 +1967,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00163">163</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00181">181</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1931,7 +1995,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00167">167</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00185">185</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1959,7 +2023,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00203">203</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00224">224</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -1987,7 +2051,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00207">207</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00228">228</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -2015,7 +2079,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00083">83</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00095">95</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -2043,7 +2107,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00087">87</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00099">99</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -2071,7 +2135,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00075">75</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00087">87</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>
@@ -2099,7 +2163,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00079">79</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html#l00091">91</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java_source.html">gen/com/google/ortools/constraintsolver/IntervalVar.java</a>.</p>
 
 </div>
 </div>

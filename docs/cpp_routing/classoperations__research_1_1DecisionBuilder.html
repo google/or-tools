@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -59,7 +58,19 @@ Inheritance diagram for operations_research::DecisionBuilder:</div>
  <div class="center">
   <img src="classoperations__research_1_1DecisionBuilder.png" usemap="#operations_5Fresearch::DecisionBuilder_map" alt=""/>
   <map id="operations_5Fresearch::DecisionBuilder_map" name="operations_5Fresearch::DecisionBuilder_map">
-<area href="classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="operations_research::BaseObject" shape="rect" coords="0,0,224,24"/>
+<area href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="operations_research::BaseObject" shape="rect" coords="1326,0,1758,24"/>
+<area href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html" alt="operations_research::IntVarFilteredDecisionBuilder" shape="rect" coords="1326,112,1758,136"/>
+<area href="classoperations__research_1_1RoutingFilteredDecisionBuilder.html" alt="operations_research::RoutingFilteredDecisionBuilder" shape="rect" coords="1326,168,1758,192"/>
+<area href="classoperations__research_1_1CheapestAdditionFilteredDecisionBuilder.html" alt="operations_research::CheapestAdditionFilteredDecisionBuilder" shape="rect" coords="221,224,653,248"/>
+<area href="classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html" alt="operations_research::CheapestInsertionFilteredDecisionBuilder" shape="rect" coords="1105,224,1537,248"/>
+<area href="classoperations__research_1_1ChristofidesFilteredDecisionBuilder.html" alt="operations_research::ChristofidesFilteredDecisionBuilder" shape="rect" coords="1547,224,1979,248"/>
+<area href="classoperations__research_1_1SavingsFilteredDecisionBuilder.html" alt="operations_research::SavingsFilteredDecisionBuilder" shape="rect" coords="1989,224,2421,248"/>
+<area href="classoperations__research_1_1ComparatorCheapestAdditionFilteredDecisionBuilder.html" alt="operations_research::ComparatorCheapestAdditionFilteredDecisionBuilder" shape="rect" coords="0,280,432,304"/>
+<area href="classoperations__research_1_1EvaluatorCheapestAdditionFilteredDecisionBuilder.html" alt="operations_research::EvaluatorCheapestAdditionFilteredDecisionBuilder" shape="rect" coords="442,280,874,304"/>
+<area href="classoperations__research_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html" alt="operations_research::GlobalCheapestInsertionFilteredDecisionBuilder" shape="rect" coords="884,280,1316,304"/>
+<area href="classoperations__research_1_1LocalCheapestInsertionFilteredDecisionBuilder.html" alt="operations_research::LocalCheapestInsertionFilteredDecisionBuilder" shape="rect" coords="1326,280,1758,304"/>
+<area href="classoperations__research_1_1ParallelSavingsFilteredDecisionBuilder.html" alt="operations_research::ParallelSavingsFilteredDecisionBuilder" shape="rect" coords="1768,280,2200,304"/>
+<area href="classoperations__research_1_1SequentialSavingsFilteredDecisionBuilder.html" alt="operations_research::SequentialSavingsFilteredDecisionBuilder" shape="rect" coords="2210,280,2642,304"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -74,7 +85,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a3bcaa4dd991e8ddb4d0e48cfbca58592"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aca201d99227a6116c62418d28761aa9b"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DecisionBuilder.html#aca201d99227a6116c62418d28761aa9b">DebugString</a> () const override</td></tr>
 <tr class="separator:aca201d99227a6116c62418d28761aa9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aacc1030d918e7c2b5ba6c5e8a0542746"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DecisionBuilder.html#aacc1030d918e7c2b5ba6c5e8a0542746">AppendMonitors</a> (<a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *const <a class="el" href="routing_8h.html#a5f32c22c620c811754ba7b6f977db864">solver</a>, std::vector&lt; <a class="el" href="classoperations__research_1_1SearchMonitor.html">SearchMonitor</a> * &gt; *const extras)</td></tr>
+<tr class="memitem:aacc1030d918e7c2b5ba6c5e8a0542746"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DecisionBuilder.html#aacc1030d918e7c2b5ba6c5e8a0542746">AppendMonitors</a> (<a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *const solver, std::vector&lt; <a class="el" href="classoperations__research_1_1SearchMonitor.html">SearchMonitor</a> * &gt; *const extras)</td></tr>
 <tr class="memdesc:aacc1030d918e7c2b5ba6c5e8a0542746"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method will be called at the start of the search.  <a href="#aacc1030d918e7c2b5ba6c5e8a0542746">More...</a><br /></td></tr>
 <tr class="separator:aacc1030d918e7c2b5ba6c5e8a0542746"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a62372947c9ce93ba28cb636a635433d7"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DecisionBuilder.html#a62372947c9ce93ba28cb636a635433d7">Accept</a> (<a class="el" href="classoperations__research_1_1ModelVisitor.html">ModelVisitor</a> *const visitor) const</td></tr>
@@ -84,7 +95,7 @@ Public Member Functions</h2></td></tr>
 <div class="textblock"><p>A <a class="el" href="classoperations__research_1_1DecisionBuilder.html" title="A DecisionBuilder is responsible for creating the search tree.">DecisionBuilder</a> is responsible for creating the search tree. </p>
 <p>The important method is <a class="el" href="classoperations__research_1_1DecisionBuilder.html#a3bcaa4dd991e8ddb4d0e48cfbca58592" title="This is the main method of the decision builder class.">Next()</a>, which returns the next decision to execute. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03249">3249</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03205">3205</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="adcbdca02b7495a6f2ffcff7f77e32b1c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adcbdca02b7495a6f2ffcff7f77e32b1c">&#9670;&nbsp;</a></span>DecisionBuilder()</h2>
@@ -109,7 +120,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03251">3251</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03207">3207</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -136,7 +147,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03252">3252</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03208">3208</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -231,6 +242,8 @@ Public Member Functions</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1BaseObject.html#afb3b013c5063d71566d5273793c1d828">operations_research::BaseObject</a>.</p>
 
+<p>Reimplemented in <a class="el" href="classoperations__research_1_1ChristofidesFilteredDecisionBuilder.html#adfc28bc18d4fbc481c51c92b44d12739">operations_research::ChristofidesFilteredDecisionBuilder</a>, <a class="el" href="classoperations__research_1_1ParallelSavingsFilteredDecisionBuilder.html#ad81f687a2b8b7f06fbe387c2a9159163">operations_research::ParallelSavingsFilteredDecisionBuilder</a>, <a class="el" href="classoperations__research_1_1SequentialSavingsFilteredDecisionBuilder.html#a03eb36c220aacf9dc6eaa439a242b76c">operations_research::SequentialSavingsFilteredDecisionBuilder</a>, <a class="el" href="classoperations__research_1_1ComparatorCheapestAdditionFilteredDecisionBuilder.html#a1ee5ca24459065ac257b5e4b7a48778e">operations_research::ComparatorCheapestAdditionFilteredDecisionBuilder</a>, <a class="el" href="classoperations__research_1_1EvaluatorCheapestAdditionFilteredDecisionBuilder.html#aff3956d65c1486c9bdab3fd850dbb5a6">operations_research::EvaluatorCheapestAdditionFilteredDecisionBuilder</a>, <a class="el" href="classoperations__research_1_1LocalCheapestInsertionFilteredDecisionBuilder.html#af623caea58c368f9b6bd5c3c7cca4e01">operations_research::LocalCheapestInsertionFilteredDecisionBuilder</a>, and <a class="el" href="classoperations__research_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html#a396d1d7fcc6b3b71cdb07105867b83cf">operations_research::GlobalCheapestInsertionFilteredDecisionBuilder</a>.</p>
+
 </div>
 </div>
 <a id="a3bcaa4dd991e8ddb4d0e48cfbca58592"></a>
@@ -259,6 +272,8 @@ Public Member Functions</h2></td></tr>
 
 <p>This is the main method of the decision builder class. </p>
 <p>It must return a decision (an instance of the class <a class="el" href="classoperations__research_1_1Decision.html" title="A Decision represents a choice point in the search tree.">Decision</a>). If it returns nullptr, this means that the decision builder has finished its work. </p>
+
+<p>Implemented in <a class="el" href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html#a3728215165475d83bf1fc427bc171c3e">operations_research::IntVarFilteredDecisionBuilder</a>.</p>
 
 </div>
 </div>

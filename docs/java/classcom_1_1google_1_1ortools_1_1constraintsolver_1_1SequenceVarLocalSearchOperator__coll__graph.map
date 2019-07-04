@@ -1,6 +1,6 @@
 <map id="com.google.ortools.constraintsolver.SequenceVarLocalSearchOperator" name="com.google.ortools.constraintsolver.SequenceVarLocalSearchOperator">
 <area shape="rect" id="node1" title=" " alt="" coords="27,273,259,315"/>
-<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperatorTemplate.html" title=" " alt="" coords="5,184,281,225"/>
-<area shape="rect" id="node3" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html" title=" " alt="" coords="27,95,259,136"/>
-<area shape="rect" id="node4" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="27,5,259,47"/>
+<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperatorTemplate.html" title="Base operator class for operators manipulating variables." alt="" coords="5,184,281,225"/>
+<area shape="rect" id="node3" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html" title="This class represent a reversible FIFO structure." alt="" coords="27,95,259,136"/>
+<area shape="rect" id="node4" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="27,5,259,47"/>
 </map>

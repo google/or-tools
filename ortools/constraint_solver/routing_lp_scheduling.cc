@@ -506,6 +506,25 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     linear_program->SetObjectiveCoefficient(lp_cumuls.back(), span_cost_coef);
     linear_program->SetObjectiveCoefficient(lp_cumuls.front(), -span_cost_coef);
   }
+  // Add soft span cost.
+  if (dimension_->HasSoftSpanUpperBounds()) {
+    SimpleBoundCosts::BoundCost bound_cost =
+        dimension_->GetSoftSpanUpperBoundForVehicle(vehicle);
+    if (bound_cost.bound < kint64max && bound_cost.cost > 0) {
+      glop::ColIndex span_violation = linear_program->CreateNewVariable();
+      linear_program->SetVariableBounds(span_violation, 0.0, glop::kInfinity);
+      // end - start <= bound + span_violation
+      glop::RowIndex violation = linear_program->CreateNewConstraint();
+      linear_program->SetConstraintBounds(violation, -glop::kInfinity,
+                                          bound_cost.bound);
+      linear_program->SetCoefficient(violation, lp_cumuls.back(), 1.0);
+      linear_program->SetCoefficient(violation, lp_cumuls.front(), -1.0);
+      linear_program->SetCoefficient(violation, span_violation, -1.0);
+      // Add span_violation * cost to objective.
+      linear_program->SetObjectiveCoefficient(span_violation, bound_cost.cost);
+    }
+  }
+  // Add global span constraint.
   if (optimize_costs && dimension_->global_span_cost_coefficient() > 0) {
     // min_start_cumul_ <= cumuls[start]
     glop::RowIndex ct = linear_program->CreateNewConstraint();
@@ -518,6 +537,7 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     linear_program->SetCoefficient(ct, max_end_cumul_, 1);
     linear_program->SetCoefficient(ct, lp_cumuls.back(), -1);
   }
+  // Fill transit cost if specified.
   if (route_transit_cost != nullptr) {
     if (optimize_costs && span_cost_coef > 0) {
       const int64 total_fixed_transit = std::accumulate(

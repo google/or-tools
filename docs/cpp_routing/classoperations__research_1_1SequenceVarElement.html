@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -49,7 +48,7 @@
 </div><!--header-->
 <div class="contents">
 
-<p>--&mdash; <a class="el" href="classoperations__research_1_1SequenceVarElement.html" title="--— SequenceVarElement --—">SequenceVarElement</a> --&mdash;  
+<p>The <a class="el" href="classoperations__research_1_1SequenceVarElement.html" title="The SequenceVarElement stores a partial representation of ranked interval variables in the underlying...">SequenceVarElement</a> stores a partial representation of ranked interval variables in the underlying sequence variable.  
  <a href="classoperations__research_1_1SequenceVarElement.html#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>&gt;</code></p>
@@ -59,7 +58,7 @@ Inheritance diagram for operations_research::SequenceVarElement:</div>
  <div class="center">
   <img src="classoperations__research_1_1SequenceVarElement.png" usemap="#operations_5Fresearch::SequenceVarElement_map" alt=""/>
   <map id="operations_5Fresearch::SequenceVarElement_map" name="operations_5Fresearch::SequenceVarElement_map">
-<area href="classoperations__research_1_1AssignmentElement.html" title="------— Assignments -------------------------—" alt="operations_research::AssignmentElement" shape="rect" coords="0,0,256,24"/>
+<area href="classoperations__research_1_1AssignmentElement.html" alt="operations_research::AssignmentElement" shape="rect" coords="0,0,256,24"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -115,14 +114,14 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aaa91977feff42f876d7cd00556ab94f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>--&mdash; <a class="el" href="classoperations__research_1_1SequenceVarElement.html" title="--— SequenceVarElement --—">SequenceVarElement</a> --&mdash; </p>
-<p>The <a class="el" href="classoperations__research_1_1SequenceVarElement.html" title="--— SequenceVarElement --—">SequenceVarElement</a> stores a partial representation of ranked interval variables in the underlying sequence variable. This representation consists of three vectors:</p><ul>
+<div class="textblock"><p>The <a class="el" href="classoperations__research_1_1SequenceVarElement.html" title="The SequenceVarElement stores a partial representation of ranked interval variables in the underlying...">SequenceVarElement</a> stores a partial representation of ranked interval variables in the underlying sequence variable. </p>
+<p>This representation consists of three vectors:</p><ul>
 <li>the forward sequence. That is the list of interval variables ranked first in the sequence. The first element of the backward sequence is the first interval in the sequence variable.</li>
 <li>the backward sequence. That is the list of interval variables ranked last in the sequence. The first element of the backward sequence is the last interval in the sequence variable.</li>
 <li>The list of unperformed interval variables. Furthermore, if all performed variables are ranked, then by convention, the forward_sequence will contain all such variables and the backward_sequence will be empty. </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04778">4778</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04711">4711</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a40179b14fb9451e5d8f6fc3666a6caa9"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a40179b14fb9451e5d8f6fc3666a6caa9">&#9670;&nbsp;</a></span>SequenceVarElement() <span class="overload">[1/2]</span></h2>
@@ -191,7 +190,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04600">4600</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04539">4539</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -218,7 +217,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04602">4602</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04541">4541</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -262,7 +261,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04801">4801</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04734">4734</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -324,7 +323,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04601">4601</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04540">4540</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -404,7 +403,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04808">4808</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04741">4741</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -606,7 +605,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04785">4785</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04718">4718</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>

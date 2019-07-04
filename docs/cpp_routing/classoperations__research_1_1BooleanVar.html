@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -51,9 +50,6 @@
 </div><!--header-->
 <div class="contents">
 
-<p>--&mdash; Boolean Variable --&mdash;  
- <a href="classoperations__research_1_1BooleanVar.html#details">More...</a></p>
-
 <p><code>#include &lt;<a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for operations_research::BooleanVar:</div>
@@ -63,8 +59,8 @@ Inheritance diagram for operations_research::BooleanVar:</div>
   <map id="operations_5Fresearch::BooleanVar_map" name="operations_5Fresearch::BooleanVar_map">
 <area href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr." alt="operations_research::IntVar" shape="rect" coords="0,168,268,192"/>
 <area href="classoperations__research_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming." alt="operations_research::IntExpr" shape="rect" coords="0,112,268,136"/>
-<area href="classoperations__research_1_1PropagationBaseObject.html" title="The PropagationBaseObject is a subclass of BaseObject that is also friend to the Solver class." alt="operations_research::PropagationBaseObject" shape="rect" coords="0,56,268,80"/>
-<area href="classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="operations_research::BaseObject" shape="rect" coords="0,0,268,24"/>
+<area href="classoperations__research_1_1PropagationBaseObject.html" title="NOLINT." alt="operations_research::PropagationBaseObject" shape="rect" coords="0,56,268,80"/>
+<area href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="operations_research::BaseObject" shape="rect" coords="0,0,268,24"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -207,7 +203,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a5975e144479d99ceae4f009472ca5e92"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1PropagationBaseObject.html#a5975e144479d99ceae4f009472ca5e92">EnqueueAll</a> (const <a class="el" href="classoperations__research_1_1SimpleRevFIFO.html">SimpleRevFIFO</a>&lt; <a class="el" href="classoperations__research_1_1Demon.html">Demon</a> * &gt; &amp;demons)</td></tr>
 <tr class="separator:a5975e144479d99ceae4f009472ca5e92"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5c6bf90bb0b099a2c8f81aaefdfdd46c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1PropagationBaseObject.html#a5c6bf90bb0b099a2c8f81aaefdfdd46c">set_action_on_fail</a> (<a class="el" href="classoperations__research_1_1Solver.html#a87ca0b6abf9c8724900387f5aa557c04">Solver::Action</a> a)</td></tr>
-<tr class="memdesc:a5c6bf90bb0b099a2c8f81aaefdfdd46c"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method sets a callback that will be called if a failure happens during the propagation of the queue.  <a href="#a5c6bf90bb0b099a2c8f81aaefdfdd46c">More...</a><br /></td></tr>
 <tr class="separator:a5c6bf90bb0b099a2c8f81aaefdfdd46c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad07aa613bcc8d3896dff3f33520b061c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1PropagationBaseObject.html#ad07aa613bcc8d3896dff3f33520b061c">reset_action_on_fail</a> ()</td></tr>
 <tr class="memdesc:ad07aa613bcc8d3896dff3f33520b061c"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method clears the failure callback.  <a href="#ad07aa613bcc8d3896dff3f33520b061c">More...</a><br /></td></tr>
@@ -239,9 +234,8 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:a758ecbaa706908f9ad017e4c4f3dd7de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>--&mdash; Boolean Variable --&mdash; </p>
-
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01732">1732</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<div class="textblock">
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01706">1706</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="aad74139cfb563933bf9ecdaf6e50d962"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aad74139cfb563933bf9ecdaf6e50d962">&#9670;&nbsp;</a></span>BooleanVar()</h2>
@@ -277,7 +271,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01736">1736</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01710">1710</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -304,7 +298,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01739">1739</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01713">1713</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -366,7 +360,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1PropagationBaseObject.html#ab34671f68433c582260a443f3d15bfae">operations_research::PropagationBaseObject</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01769">1769</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01743">1743</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -397,7 +391,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1IntExpr.html#a13e126985026936fe8da212d2e377236">operations_research::IntExpr</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01746">1746</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01720">1720</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -511,7 +505,7 @@ Protected Attributes</h2></td></tr>
 <p>This method pushes the demon onto the propagation queue. </p>
 <p>It will be processed directly if the queue is empty. It will be enqueued according to its priority otherwise. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03173">3173</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03129">3129</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -539,7 +533,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03174">3174</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03130">3130</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -595,7 +589,7 @@ Protected Attributes</h2></td></tr>
 <p>This method freezes the propagation queue. </p>
 <p>It is useful when you need to apply multiple modifications at once. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03164">3164</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03120">3120</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -651,7 +645,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the index of the variable. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04071">4071</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04028">4028</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -796,7 +790,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1IntExpr.html#a4bb288e8b397020398b1184047587f01">operations_research::IntExpr</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03984">3984</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03940">3940</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -887,7 +881,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1IntExpr.html#a1fb9e08cff06a9a5b5739de4acba587c">operations_research::IntExpr</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01743">1743</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01717">1717</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -916,7 +910,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1IntExpr.html#a58d589131cbea30d4826248a2fa06aba">operations_research::IntExpr</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01741">1741</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01715">1715</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1037,7 +1031,7 @@ Protected Attributes</h2></td></tr>
 
 <p>By default calls <a class="el" href="classoperations__research_1_1BooleanVar.html#adcdc43494bcafece6480f57f626544ce">Min()</a> and <a class="el" href="classoperations__research_1_1BooleanVar.html#a3a05915289d4c146e0a38bb316a7a47c">Max()</a>, but can be redefined when Min and Max code can be factorized. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03829">3829</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03785">3785</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1064,7 +1058,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01771">1771</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01745">1745</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1192,7 +1186,7 @@ Protected Attributes</h2></td></tr>
 
 <p>This method clears the failure callback. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03187">3187</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03143">3143</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1245,9 +1239,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>This method sets a callback that will be called if a failure happens during the propagation of the queue. </p>
-
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03181">3181</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03137">3137</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1303,7 +1295,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Shortcut for variable cleaner. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03190">3190</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03146">3146</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1429,7 +1421,7 @@ Protected Attributes</h2></td></tr>
 
 <p>This method sets the value of the expression. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03840">3840</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03796">3796</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1513,7 +1505,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03161">3161</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03116">3116</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1543,7 +1535,7 @@ Protected Attributes</h2></td></tr>
 <p>This method unfreezes the propagation queue. </p>
 <p>All modifications that happened when the queue was frozen will be processed. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03168">3168</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03124">3124</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1575,7 +1567,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1IntVar.html#ab84b786a2128f72fc720ae611e880499">operations_research::IntVar</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01747">1747</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01721">1721</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1606,7 +1598,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1IntExpr.html#a751d151bfe120bc6d378c4570505cbd4">operations_research::IntExpr</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03985">3985</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03941">3941</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1635,7 +1627,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1IntVar.html#a53bfcce0b60a6c491992811a8453aa86">operations_research::IntVar</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01761">1761</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01735">1735</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1724,7 +1716,7 @@ Protected Attributes</h2></td></tr>
 
 <p>This method attaches a closure that will be awakened when the variable is bound. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04009">4009</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03965">3965</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1754,7 +1746,7 @@ Protected Attributes</h2></td></tr>
 
 <p>This method attaches an action that will be awakened when the variable is bound. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04016">4016</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03972">3972</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1786,7 +1778,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1IntVar.html#a16770c4e77b7c3bae7f706661aae94fb">operations_research::IntVar</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01755">1755</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01729">1729</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1816,7 +1808,7 @@ Protected Attributes</h2></td></tr>
 
 <p>This method attaches a closure that will watch any domain modification of the domain of the variable. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04026">4026</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03982">3982</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1846,7 +1838,7 @@ Protected Attributes</h2></td></tr>
 
 <p>This method attaches an action that will watch any domain modification of the domain of the variable. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04032">4032</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03988">3988</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1878,7 +1870,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1IntExpr.html#a845a3c3c71323504f6b59f9c0ea46b08">operations_research::IntExpr</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01754">1754</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01728">1728</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1908,7 +1900,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Attach a demon that will watch the min or the max of the expression. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03860">3860</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03816">3816</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1938,7 +1930,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Attach a demon that will watch the min or the max of the expression. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03866">3866</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03822">3822</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1963,7 +1955,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01775">1775</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01749">1749</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1987,7 +1979,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01776">1776</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01750">1750</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2011,7 +2003,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01734">1734</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01708">1708</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2035,7 +2027,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01774">1774</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01748">1748</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>

@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -51,7 +50,7 @@
 </div><!--header-->
 <div class="contents">
 
-<p>--&mdash; Path-based Operators --&mdash;  
+<p>Base class of the local search operators dedicated to path modifications (a path is a set of nodes linked together by arcs).  
  <a href="classoperations__research_1_1PathOperator.html#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>&gt;</code></p>
@@ -63,12 +62,12 @@ Inheritance diagram for operations_research::PathOperator:</div>
   <map id="operations_5Fresearch::PathOperator_map" name="operations_5Fresearch::PathOperator_map">
 <area href="classoperations__research_1_1IntVarLocalSearchOperator.html" title="Specialization of LocalSearchOperator built from an array of IntVars which specifies the scope of the..." alt="operations_research::IntVarLocalSearchOperator" shape="rect" coords="814,168,1347,192"/>
 <area href="classoperations__research_1_1VarLocalSearchOperator.html" alt="operations_research::VarLocalSearchOperator&lt; IntVar, int64, IntVarLocalSearchHandler &gt;" shape="rect" coords="814,112,1347,136"/>
-<area href="classoperations__research_1_1LocalSearchOperator.html" title="-------— Local search operators -------—" alt="operations_research::LocalSearchOperator" shape="rect" coords="814,56,1347,80"/>
-<area href="classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="operations_research::BaseObject" shape="rect" coords="814,0,1347,24"/>
+<area href="classoperations__research_1_1LocalSearchOperator.html" title="The base class for all local search operators." alt="operations_research::LocalSearchOperator" shape="rect" coords="814,56,1347,80"/>
+<area href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="operations_research::BaseObject" shape="rect" coords="814,0,1347,24"/>
 <area href="classoperations__research_1_1MakePairActiveOperator.html" title="Pair-based neighborhood operators, designed to move nodes by pairs (pairs are static and given)." alt="operations_research::MakePairActiveOperator" shape="rect" coords="0,280,533,304"/>
 <area href="classoperations__research_1_1PairNodeSwapActiveOperator.html" title="Operator which inserts pairs of inactive nodes into a path and makes an active node inactive." alt="operations_research::PairNodeSwapActiveOperator&lt; swap_first &gt;" shape="rect" coords="543,280,1076,304"/>
 <area href="classoperations__research_1_1PathWithPreviousNodesOperator.html" title="Simple PathOperator wrapper that also stores the current previous nodes, and is thus able to provide ..." alt="operations_research::PathWithPreviousNodesOperator" shape="rect" coords="1086,280,1619,304"/>
-<area href="classoperations__research_1_1RelocateExpensiveChain.html" title="--— RelocateExpensiveChain --— Operator which relocates the most expensive subchains (given a cost ca..." alt="operations_research::RelocateExpensiveChain" shape="rect" coords="1629,280,2162,304"/>
+<area href="classoperations__research_1_1RelocateExpensiveChain.html" title="RelocateExpensiveChain." alt="operations_research::RelocateExpensiveChain" shape="rect" coords="1629,280,2162,304"/>
 <area href="classoperations__research_1_1ExchangeSubtrip.html" alt="operations_research::ExchangeSubtrip" shape="rect" coords="1629,336,2162,360"/>
 <area href="classoperations__research_1_1IndexPairSwapActiveOperator.html" title="Operator which inserts inactive nodes into a path and makes a pair of active nodes inactive." alt="operations_research::IndexPairSwapActiveOperator" shape="rect" coords="1629,392,2162,416"/>
 <area href="classoperations__research_1_1LightPairRelocateOperator.html" alt="operations_research::LightPairRelocateOperator" shape="rect" coords="1629,448,2162,472"/>
@@ -84,7 +83,7 @@ Inheritance diagram for operations_research::PathOperator:</div>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:aefe922e3f6a2233cf3c2a6bbc079181d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1PathOperator.html#aefe922e3f6a2233cf3c2a6bbc079181d">PathOperator</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;next_vars, const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;path_vars, int number_of_base_nodes, bool skip_locally_optimal_paths, std::function&lt; int(int64)&gt; start_empty_path_class)</td></tr>
-<tr class="memdesc:aefe922e3f6a2233cf3c2a6bbc079181d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Builds an instance of <a class="el" href="classoperations__research_1_1PathOperator.html" title="--— Path-based Operators --—">PathOperator</a> from next and path variables.  <a href="#aefe922e3f6a2233cf3c2a6bbc079181d">More...</a><br /></td></tr>
+<tr class="memdesc:aefe922e3f6a2233cf3c2a6bbc079181d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Builds an instance of <a class="el" href="classoperations__research_1_1PathOperator.html" title="Base class of the local search operators dedicated to path modifications (a path is a set of nodes li...">PathOperator</a> from next and path variables.  <a href="#aefe922e3f6a2233cf3c2a6bbc079181d">More...</a><br /></td></tr>
 <tr class="separator:aefe922e3f6a2233cf3c2a6bbc079181d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a192caff70f4f12fd43df88bf8053e50d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1PathOperator.html#a192caff70f4f12fd43df88bf8053e50d">~PathOperator</a> () override</td></tr>
 <tr class="separator:a192caff70f4f12fd43df88bf8053e50d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -242,14 +241,14 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:a79bf2242dc1962d10e6b04cf09be2c56"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>--&mdash; Path-based Operators --&mdash; </p>
-<p>Base class of the local search operators dedicated to path modifications (a path is a set of nodes linked together by arcs). This family of neighborhoods supposes they are handling next variables representing the arcs (var[i] represents the node immediately after i on a path). Several services are provided:</p><ul>
+<div class="textblock"><p>Base class of the local search operators dedicated to path modifications (a path is a set of nodes linked together by arcs). </p>
+<p>This family of neighborhoods supposes they are handling next variables representing the arcs (var[i] represents the node immediately after i on a path). Several services are provided:</p><ul>
 <li>arc manipulators (<a class="el" href="classoperations__research_1_1PathOperator.html#a2f05e5dce708fd86775e612d08ffc08e" title="Sets the to to be the node after from.">SetNext()</a>, <a class="el" href="classoperations__research_1_1PathOperator.html#ad819515eabc14b84e8e31b574a59d2fb" title="Reverses the chain starting after before_chain and ending before after_chain.">ReverseChain()</a>, <a class="el" href="classoperations__research_1_1PathOperator.html#aa6d431b31dc1fce0520698179e165817" title="Moves the chain starting after the node before_chain and ending at the node chain_end after the node ...">MoveChain()</a>)</li>
 <li>path inspectors (<a class="el" href="classoperations__research_1_1PathOperator.html#af916e434b85cddbe48e0378242a04aca" title="Returns the index of the node after the node of index node_index in the current assignment.">Next()</a>, <a class="el" href="classoperations__research_1_1PathOperator.html#a31f03e7418e4d1bd53d8d1212cdba731" title="Returns true if i is the last node on the path; defined by the fact that i outside the range of the v...">IsPathEnd()</a>)</li>
 <li>path iterators: operators need a given number of nodes to define a neighbor; this class provides the iteration on a given number of (base) nodes which can be used to define a neighbor (through the BaseNode method) Subclasses only need to override MakeNeighbor to create neighbors using the services above (no direct manipulation of assignments). </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01276">1276</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01261">1261</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="aefe922e3f6a2233cf3c2a6bbc079181d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aefe922e3f6a2233cf3c2a6bbc079181d">&#9670;&nbsp;</a></span>PathOperator()</h2>
@@ -295,7 +294,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Builds an instance of <a class="el" href="classoperations__research_1_1PathOperator.html" title="--— Path-based Operators --—">PathOperator</a> from next and path variables. </p>
+<p>Builds an instance of <a class="el" href="classoperations__research_1_1PathOperator.html" title="Base class of the local search operators dedicated to path modifications (a path is a set of nodes li...">PathOperator</a> from next and path variables. </p>
 <p>'number_of_base_nodes' is the number of nodes needed to define a neighbor. 'start_empty_path_class' is a callback returning an index such that if c1 = start_empty_path_class(StartNode(p1)), c2 = start_empty_path_class(StartNode(p2)), p1 and p2 are path indices, then if c1 == c2, p1 and p2 are equivalent if they are empty. This is used to remove neighborhood symmetries on equivalent empty paths; for instance if a node cannot be moved to an empty path, then all moves moving the same node to equivalent empty paths will be skipped. 'start_empty_path_class' can be nullptr in which case no symmetries will be removed. </p>
 
 </div>
@@ -323,7 +322,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01295">1295</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01280">1280</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -352,7 +351,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00871">871</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00863">863</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -380,7 +379,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00870">870</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00862">862</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -408,7 +407,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00916">916</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00908">908</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -446,7 +445,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00879">879</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00871">871</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -476,7 +475,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the index of the variable corresponding to the ith base node. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01323">1323</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01308">1308</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -504,7 +503,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00875">875</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00867">867</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -531,9 +530,9 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Reimplemented in <a class="el" href="classoperations__research_1_1Pack.html#a494cf6256ff568544390e507a6943112">operations_research::Pack</a>, <a class="el" href="classoperations__research_1_1Assignment.html#a709bad20694c9c117a3abfff24a60d03">operations_research::Assignment</a>, <a class="el" href="classoperations__research_1_1SequenceVar.html#af92814129c466409ff4c004002c2034d">operations_research::SequenceVar</a>, <a class="el" href="classoperations__research_1_1RegularLimit.html#a7a6e185350eade19733138b3d054bba9">operations_research::RegularLimit</a>, <a class="el" href="classoperations__research_1_1SearchLimit.html#a1e65e704ea5249bc9c346b46449ff1ba">operations_research::SearchLimit</a>, <a class="el" href="classoperations__research_1_1OptimizeVar.html#ae2a7ca2a1d7ffb879e2d7794aa3875dc">operations_research::OptimizeVar</a>, <a class="el" href="classoperations__research_1_1SolutionCollector.html#a13b2487c422d35cd36e9bfbc2810c652">operations_research::SolutionCollector</a>, <a class="el" href="classoperations__research_1_1IntVarIterator.html#afcbc1c1ac6f9230d7037807d3dbd46dc">operations_research::IntVarIterator</a>, <a class="el" href="classoperations__research_1_1Constraint.html#a443bf6da3f8db15c240cb92d20e37466">operations_research::Constraint</a>, <a class="el" href="classoperations__research_1_1Demon.html#a906a1bd16d33b9b841e68b2a06bbbfd2">operations_research::Demon</a>, <a class="el" href="classoperations__research_1_1DecisionBuilder.html#aca201d99227a6116c62418d28761aa9b">operations_research::DecisionBuilder</a>, <a class="el" href="classoperations__research_1_1Decision.html#a8c30db3cf86cc406442a05f5361fe4b9">operations_research::Decision</a>, <a class="el" href="classoperations__research_1_1PropagationBaseObject.html#ae5b6f8cb73c1b76da152ad612f91c4ce">operations_research::PropagationBaseObject</a>, <a class="el" href="classoperations__research_1_1ArrayWithOffset.html#ae3389cbd1f1f47c3c0ba0d8c9d98c8d2">operations_research::ArrayWithOffset&lt; T &gt;</a>, <a class="el" href="classoperations__research_1_1SearchLog.html#ae853a2dfed7755b376ccbee1c534682f">operations_research::SearchLog</a>, <a class="el" href="classoperations__research_1_1BooleanVar.html#acad14290f1f14a53adc0feb170d67f22">operations_research::BooleanVar</a>, <a class="el" href="classoperations__research_1_1LocalSearchMonitor.html#ab47cdaf51e8a28905ab0967a65138adc">operations_research::LocalSearchMonitor</a>, <a class="el" href="classoperations__research_1_1PropagationMonitor.html#a303fb6b35a71fdbcba21088d88a222ac">operations_research::PropagationMonitor</a>, <a class="el" href="classoperations__research_1_1LocalSearchFilterManager.html#a92e302e76f3c9a4033c390cbd2be9c48">operations_research::LocalSearchFilterManager</a>, <a class="el" href="classoperations__research_1_1PathWithPreviousNodesOperator.html#ac3dd1fd60d3ebe3777a8369787f78275">operations_research::PathWithPreviousNodesOperator</a>, <a class="el" href="classoperations__research_1_1DelayedCallMethod2.html#a58c60413c247ee5d5fb627dda5aa20f9">operations_research::DelayedCallMethod2&lt; T, P, Q &gt;</a>, <a class="el" href="classoperations__research_1_1DelayedCallMethod1.html#ac7acfb8e911fb85df5208f96f5e44adf">operations_research::DelayedCallMethod1&lt; T, P &gt;</a>, <a class="el" href="classoperations__research_1_1DelayedCallMethod0.html#ade95ef80273cff25d8e6ad96930484b6">operations_research::DelayedCallMethod0&lt; T &gt;</a>, <a class="el" href="classoperations__research_1_1CallMethod3.html#a8ffd455d49414f28011382cf83fff175">operations_research::CallMethod3&lt; T, P, Q, R &gt;</a>, <a class="el" href="classoperations__research_1_1CallMethod2.html#a441b1578ed3ec8baccd9938f637fb96d">operations_research::CallMethod2&lt; T, P, Q &gt;</a>, <a class="el" href="classoperations__research_1_1CallMethod1.html#ab65d89c9f459c682e727ec7352b13d0f">operations_research::CallMethod1&lt; T, P &gt;</a>, <a class="el" href="classoperations__research_1_1ExchangeSubtrip.html#a66dd3883a571b730fec9c047711e9635">operations_research::ExchangeSubtrip</a>, <a class="el" href="classoperations__research_1_1CallMethod0.html#a50933bd9255294eca78f60b3b5bd176c">operations_research::CallMethod0&lt; T &gt;</a>, <a class="el" href="classoperations__research_1_1RelocateSubtrip.html#aa9aa7e51c3ae2c7943a0c9700ebc3ea5">operations_research::RelocateSubtrip</a>, <a class="el" href="classoperations__research_1_1PairNodeSwapActiveOperator.html#ab62649ea792c88c3e39f90f40da4434a">operations_research::PairNodeSwapActiveOperator&lt; swap_first &gt;</a>, <a class="el" href="classoperations__research_1_1RelocateExpensiveChain.html#a99cdd3acd4fd444399b6a70ee546e77b">operations_research::RelocateExpensiveChain</a>, <a class="el" href="classoperations__research_1_1IndexPairSwapActiveOperator.html#ad9fef9a1ded161855e9c130bd1019b98">operations_research::IndexPairSwapActiveOperator</a>, <a class="el" href="classoperations__research_1_1SwapIndexPairOperator.html#a4b6e91cf387750a4d199f0ec3a225008">operations_research::SwapIndexPairOperator</a>, <a class="el" href="classoperations__research_1_1PairExchangeRelocateOperator.html#a4e68060927f617c04e2def41e9f1fd2a">operations_research::PairExchangeRelocateOperator</a>, <a class="el" href="classoperations__research_1_1PairExchangeOperator.html#a78bebf852bbc0d9666c0a2626ea10564">operations_research::PairExchangeOperator</a>, <a class="el" href="classoperations__research_1_1LightPairRelocateOperator.html#a748f7ffb28521cbf984314b0976ea88e">operations_research::LightPairRelocateOperator</a>, <a class="el" href="classoperations__research_1_1PairRelocateOperator.html#adf487da3f24592d0f7ab321358b47385">operations_research::PairRelocateOperator</a>, <a class="el" href="classoperations__research_1_1MakePairInactiveOperator.html#aad7e91452b315d47ff25a9873f438316">operations_research::MakePairInactiveOperator</a>, <a class="el" href="classoperations__research_1_1MakePairActiveOperator.html#a0b374cf2ad00b0ae1249ae3f40748c9d">operations_research::MakePairActiveOperator</a>, and <a class="el" href="classoperations__research_1_1MakeRelocateNeighborsOperator.html#a5e5d6f27a9a11ec5ff0d88fe0e83a003">operations_research::MakeRelocateNeighborsOperator</a>.</p>
+<p>Reimplemented in <a class="el" href="classoperations__research_1_1Pack.html#a494cf6256ff568544390e507a6943112">operations_research::Pack</a>, <a class="el" href="classoperations__research_1_1Assignment.html#a709bad20694c9c117a3abfff24a60d03">operations_research::Assignment</a>, <a class="el" href="classoperations__research_1_1SequenceVar.html#af92814129c466409ff4c004002c2034d">operations_research::SequenceVar</a>, <a class="el" href="classoperations__research_1_1RegularLimit.html#a7a6e185350eade19733138b3d054bba9">operations_research::RegularLimit</a>, <a class="el" href="classoperations__research_1_1SearchLimit.html#a1e65e704ea5249bc9c346b46449ff1ba">operations_research::SearchLimit</a>, <a class="el" href="classoperations__research_1_1OptimizeVar.html#ae2a7ca2a1d7ffb879e2d7794aa3875dc">operations_research::OptimizeVar</a>, <a class="el" href="classoperations__research_1_1SolutionCollector.html#a13b2487c422d35cd36e9bfbc2810c652">operations_research::SolutionCollector</a>, <a class="el" href="classoperations__research_1_1IntVarIterator.html#afcbc1c1ac6f9230d7037807d3dbd46dc">operations_research::IntVarIterator</a>, <a class="el" href="classoperations__research_1_1Constraint.html#a443bf6da3f8db15c240cb92d20e37466">operations_research::Constraint</a>, <a class="el" href="classoperations__research_1_1Demon.html#a906a1bd16d33b9b841e68b2a06bbbfd2">operations_research::Demon</a>, <a class="el" href="classoperations__research_1_1CPFeasibilityFilter.html#a39c6c9bb0a7cdaa452daa56e740f10b4">operations_research::CPFeasibilityFilter</a>, <a class="el" href="classoperations__research_1_1DecisionBuilder.html#aca201d99227a6116c62418d28761aa9b">operations_research::DecisionBuilder</a>, <a class="el" href="classoperations__research_1_1Decision.html#a8c30db3cf86cc406442a05f5361fe4b9">operations_research::Decision</a>, <a class="el" href="classoperations__research_1_1ChristofidesFilteredDecisionBuilder.html#adfc28bc18d4fbc481c51c92b44d12739">operations_research::ChristofidesFilteredDecisionBuilder</a>, <a class="el" href="classoperations__research_1_1PropagationBaseObject.html#ae5b6f8cb73c1b76da152ad612f91c4ce">operations_research::PropagationBaseObject</a>, <a class="el" href="classoperations__research_1_1ParallelSavingsFilteredDecisionBuilder.html#ad81f687a2b8b7f06fbe387c2a9159163">operations_research::ParallelSavingsFilteredDecisionBuilder</a>, <a class="el" href="classoperations__research_1_1SequentialSavingsFilteredDecisionBuilder.html#a03eb36c220aacf9dc6eaa439a242b76c">operations_research::SequentialSavingsFilteredDecisionBuilder</a>, <a class="el" href="classoperations__research_1_1ComparatorCheapestAdditionFilteredDecisionBuilder.html#a1ee5ca24459065ac257b5e4b7a48778e">operations_research::ComparatorCheapestAdditionFilteredDecisionBuilder</a>, <a class="el" href="classoperations__research_1_1EvaluatorCheapestAdditionFilteredDecisionBuilder.html#aff3956d65c1486c9bdab3fd850dbb5a6">operations_research::EvaluatorCheapestAdditionFilteredDecisionBuilder</a>, <a class="el" href="classoperations__research_1_1LocalCheapestInsertionFilteredDecisionBuilder.html#af623caea58c368f9b6bd5c3c7cca4e01">operations_research::LocalCheapestInsertionFilteredDecisionBuilder</a>, <a class="el" href="classoperations__research_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html#a396d1d7fcc6b3b71cdb07105867b83cf">operations_research::GlobalCheapestInsertionFilteredDecisionBuilder</a>, <a class="el" href="classoperations__research_1_1ArrayWithOffset.html#ae3389cbd1f1f47c3c0ba0d8c9d98c8d2">operations_research::ArrayWithOffset&lt; T &gt;</a>, <a class="el" href="classoperations__research_1_1SearchLog.html#ae853a2dfed7755b376ccbee1c534682f">operations_research::SearchLog</a>, <a class="el" href="classoperations__research_1_1BooleanVar.html#acad14290f1f14a53adc0feb170d67f22">operations_research::BooleanVar</a>, <a class="el" href="classoperations__research_1_1LocalSearchMonitor.html#ab47cdaf51e8a28905ab0967a65138adc">operations_research::LocalSearchMonitor</a>, <a class="el" href="classoperations__research_1_1PropagationMonitor.html#a303fb6b35a71fdbcba21088d88a222ac">operations_research::PropagationMonitor</a>, <a class="el" href="classoperations__research_1_1LocalSearchFilterManager.html#a92e302e76f3c9a4033c390cbd2be9c48">operations_research::LocalSearchFilterManager</a>, <a class="el" href="classoperations__research_1_1PathWithPreviousNodesOperator.html#ac3dd1fd60d3ebe3777a8369787f78275">operations_research::PathWithPreviousNodesOperator</a>, <a class="el" href="classoperations__research_1_1DelayedCallMethod2.html#a58c60413c247ee5d5fb627dda5aa20f9">operations_research::DelayedCallMethod2&lt; T, P, Q &gt;</a>, <a class="el" href="classoperations__research_1_1DelayedCallMethod1.html#ac7acfb8e911fb85df5208f96f5e44adf">operations_research::DelayedCallMethod1&lt; T, P &gt;</a>, <a class="el" href="classoperations__research_1_1DelayedCallMethod0.html#ade95ef80273cff25d8e6ad96930484b6">operations_research::DelayedCallMethod0&lt; T &gt;</a>, <a class="el" href="classoperations__research_1_1CallMethod3.html#a8ffd455d49414f28011382cf83fff175">operations_research::CallMethod3&lt; T, P, Q, R &gt;</a>, <a class="el" href="classoperations__research_1_1CallMethod2.html#a441b1578ed3ec8baccd9938f637fb96d">operations_research::CallMethod2&lt; T, P, Q &gt;</a>, <a class="el" href="classoperations__research_1_1CallMethod1.html#ab65d89c9f459c682e727ec7352b13d0f">operations_research::CallMethod1&lt; T, P &gt;</a>, <a class="el" href="classoperations__research_1_1ExchangeSubtrip.html#a66dd3883a571b730fec9c047711e9635">operations_research::ExchangeSubtrip</a>, <a class="el" href="classoperations__research_1_1RelocateSubtrip.html#aa9aa7e51c3ae2c7943a0c9700ebc3ea5">operations_research::RelocateSubtrip</a>, <a class="el" href="classoperations__research_1_1CallMethod0.html#a50933bd9255294eca78f60b3b5bd176c">operations_research::CallMethod0&lt; T &gt;</a>, <a class="el" href="classoperations__research_1_1PairNodeSwapActiveOperator.html#ab62649ea792c88c3e39f90f40da4434a">operations_research::PairNodeSwapActiveOperator&lt; swap_first &gt;</a>, <a class="el" href="classoperations__research_1_1RelocateExpensiveChain.html#a99cdd3acd4fd444399b6a70ee546e77b">operations_research::RelocateExpensiveChain</a>, <a class="el" href="classoperations__research_1_1IndexPairSwapActiveOperator.html#ad9fef9a1ded161855e9c130bd1019b98">operations_research::IndexPairSwapActiveOperator</a>, <a class="el" href="classoperations__research_1_1SwapIndexPairOperator.html#a4b6e91cf387750a4d199f0ec3a225008">operations_research::SwapIndexPairOperator</a>, <a class="el" href="classoperations__research_1_1PairExchangeRelocateOperator.html#a4e68060927f617c04e2def41e9f1fd2a">operations_research::PairExchangeRelocateOperator</a>, <a class="el" href="classoperations__research_1_1PairExchangeOperator.html#a78bebf852bbc0d9666c0a2626ea10564">operations_research::PairExchangeOperator</a>, <a class="el" href="classoperations__research_1_1LightPairRelocateOperator.html#a748f7ffb28521cbf984314b0976ea88e">operations_research::LightPairRelocateOperator</a>, <a class="el" href="classoperations__research_1_1PairRelocateOperator.html#adf487da3f24592d0f7ab321358b47385">operations_research::PairRelocateOperator</a>, <a class="el" href="classoperations__research_1_1MakePairInactiveOperator.html#aad7e91452b315d47ff25a9873f438316">operations_research::MakePairInactiveOperator</a>, <a class="el" href="classoperations__research_1_1MakePairActiveOperator.html#a0b374cf2ad00b0ae1249ae3f40748c9d">operations_research::MakePairActiveOperator</a>, and <a class="el" href="classoperations__research_1_1MakeRelocateNeighborsOperator.html#a5e5d6f27a9a11ec5ff0d88fe0e83a003">operations_research::MakeRelocateNeighborsOperator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03138">3138</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03093">3093</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -566,7 +565,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1PairNodeSwapActiveOperator.html#a8023edd3bb68723e1be72fbdef1e3313">operations_research::PairNodeSwapActiveOperator&lt; swap_first &gt;</a>, <a class="el" href="classoperations__research_1_1PairExchangeRelocateOperator.html#a03a0c86a9d849961094e427a573bb826">operations_research::PairExchangeRelocateOperator</a>, <a class="el" href="classoperations__research_1_1PairRelocateOperator.html#a07839e54aa42e5040ba1d04729a53ebc">operations_research::PairRelocateOperator</a>, and <a class="el" href="classoperations__research_1_1MakePairActiveOperator.html#a54d05bb6495074bd795eeece6f7466a6">operations_research::MakePairActiveOperator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01355">1355</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01340">1340</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -595,7 +594,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1BaseLns.html#a4d8adbee4dc4ff4795904ef4e817a5f2">operations_research::BaseLns</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00823">823</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00815">815</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -624,7 +623,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1LocalSearchOperator.html#a2288c9bfc7b3d9ad8e06c346c675b2b0">operations_research::LocalSearchOperator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00839">839</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00830">830</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -653,7 +652,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns true if operator needs to restart its initial position at each call to <a class="el" href="classoperations__research_1_1VarLocalSearchOperator.html#aea532902ec6591bfdd80bfcf8bc101e5" title="This method should not be overridden.">Start()</a> </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01403">1403</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01388">1388</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -683,7 +682,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns true if node is inactive. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01399">1399</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01384">1384</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -710,7 +709,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00855">855</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00846">846</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -740,7 +739,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns true if i is the last node on the path; defined by the fact that i outside the range of the variable array. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01396">1396</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01381">1381</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -944,7 +943,7 @@ Protected Attributes</h2></td></tr>
 <p>OnStart() should really be protected, but then SWIG doesn't see it. </p>
 <p>So we make it public, but only subclasses should access to it (to override it). </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00940">940</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00932">932</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1018,7 +1017,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the index of the node after the node of index node_index in the current assignment. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01304">1304</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01289">1289</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1047,7 +1046,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Number of next variables. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01316">1316</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01301">1301</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1075,7 +1074,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01364">1364</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01349">1349</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1103,7 +1102,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01369">1369</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01354">1354</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1131,7 +1130,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00865">865</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00857">857</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1160,11 +1159,11 @@ Protected Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Returns true if a base node has to be on the same path as the "previous" base node (base node of index base_index - 1). </p>
-<p>Useful to limit neighborhood exploration to nodes on the same path. </p><dl class="todo"><dt><b><a class="el" href="todo.html#_todo000027">Todo:</a></b></dt><dd>(user): ideally this should be OnSamePath(int64 node1, int64 node2); it's currently way more complicated to implement. </dd></dl>
+<p>Useful to limit neighborhood exploration to nodes on the same path. it's currently way more complicated to implement. </p>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1PairNodeSwapActiveOperator.html#a3930be7f9d8aa73d847eaaaca0ee1180">operations_research::PairNodeSwapActiveOperator&lt; swap_first &gt;</a>, <a class="el" href="classoperations__research_1_1PairExchangeRelocateOperator.html#a3beb65eed738c57a613b70cab4e89b9a">operations_research::PairExchangeRelocateOperator</a>, <a class="el" href="classoperations__research_1_1PairRelocateOperator.html#a498abb2b2994fe5fcf8abb6a731b4418">operations_research::PairRelocateOperator</a>, and <a class="el" href="classoperations__research_1_1MakePairActiveOperator.html#a723d92c5b664592897a42cb2d2478e0f">operations_research::MakePairActiveOperator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01349">1349</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01334">1334</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1194,7 +1193,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the index of the path to which the node of index node_index belongs in the current assignment. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01311">1311</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01296">1296</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1223,7 +1222,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the vector of path start nodes. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01328">1328</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01313">1313</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1253,7 +1252,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the class of the current path of the ith base node. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01330">1330</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01315">1315</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1309,7 +1308,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reset the position of the operator to its position when <a class="el" href="classoperations__research_1_1VarLocalSearchOperator.html#aea532902ec6591bfdd80bfcf8bc101e5" title="This method should not be overridden.">Start()</a> was last called; this can be used to let an operator iterate more than once over the paths. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01407">1407</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01392">1392</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1337,11 +1336,11 @@ Protected Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>When the operator is being synchronized with a new solution (when <a class="el" href="classoperations__research_1_1VarLocalSearchOperator.html#aea532902ec6591bfdd80bfcf8bc101e5" title="This method should not be overridden.">Start()</a> is called), returns true to restart the exploration of the neighborhood from the start of the last paths explored; returns false to restart the exploration at the last nodes visited. </p>
-<p>This is used to avoid restarting on base nodes which have changed paths, leading to potentially skipping neighbors. </p><dl class="todo"><dt><b><a class="el" href="todo.html#_todo000026">Todo:</a></b></dt><dd>(user): remove this when automatic detection of such cases in done. </dd></dl>
+<p>This is used to avoid restarting on base nodes which have changed paths, leading to potentially skipping neighbors. </p>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1PairNodeSwapActiveOperator.html#a0501b7d5bc01026d24c1e942432593ad">operations_research::PairNodeSwapActiveOperator&lt; swap_first &gt;</a>, and <a class="el" href="classoperations__research_1_1MakePairActiveOperator.html#a77e9aa9f4c619b386919b734d6cbda90">operations_research::MakePairActiveOperator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01343">1343</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01328">1328</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1413,7 +1412,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00903">903</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00895">895</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1440,7 +1439,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00821">821</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00813">813</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1486,7 +1485,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Sets the to to be the node after from. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01385">1385</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01370">1370</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1517,7 +1516,7 @@ Protected Attributes</h2></td></tr>
 <p>Set the next base to increment on next iteration. </p>
 <p>All base &gt; base_index will be reset to their start value. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01360">1360</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01345">1345</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1555,7 +1554,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00866">866</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00858">858</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1582,7 +1581,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00856">856</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00847">847</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1609,7 +1608,6 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000025">Todo:</a></b></dt><dd>(user): Make the following methods protected. </dd></dl>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1VarLocalSearchOperator.html#a77ea7391b7d1cbde18ad821e8e681413">operations_research::VarLocalSearchOperator&lt; IntVar, int64, IntVarLocalSearchHandler &gt;</a>.</p>
 
@@ -1644,7 +1642,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classoperations__research_1_1LocalSearchOperator.html#a832fd07f7355d16895841a4735e544c1">operations_research::LocalSearchOperator</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00842">842</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00833">833</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1674,7 +1672,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the index of the variable corresponding to the current path of the ith base node. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01326">1326</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01311">1311</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1704,7 +1702,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the value in the current assignment of the variable of given index. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00858">858</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00850">850</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1734,7 +1732,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the variable of given index. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00863">863</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00855">855</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1759,7 +1757,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00950">950</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00942">942</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1783,7 +1781,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00949">949</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00941">941</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1807,7 +1805,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00952">952</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00944">944</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1831,7 +1829,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00954">954</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00946">946</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1855,7 +1853,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00953">953</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00945">945</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1879,7 +1877,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01410">1410</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01395">1395</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1903,7 +1901,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01411">1411</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01396">1396</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1927,7 +1925,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01412">1412</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01397">1397</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1951,7 +1949,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01409">1409</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01394">1394</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1975,7 +1973,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00947">947</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00939">939</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1999,7 +1997,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00948">948</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00940">940</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2023,7 +2021,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01413">1413</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01398">1398</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2047,7 +2045,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00946">946</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00938">938</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2071,7 +2069,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00955">955</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00947">947</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2095,7 +2093,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00945">945</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00937">937</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -2119,7 +2117,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00951">951</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00943">943</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>

@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -49,17 +48,13 @@
 </div><!--header-->
 <div class="contents">
 
-<p>Classes to solve dimension cumul placement (aka scheduling) problems using linear programming.  
- <a href="classoperations__research_1_1DimensionCumulOptimizerCore.html#details">More...</a></p>
-
 <p><code>#include &lt;<a class="el" href="routing__lp__scheduling_8h_source.html">routing_lp_scheduling.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a36e89016a79a172ccf35fd2cd91496df"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DimensionCumulOptimizerCore.html#a36e89016a79a172ccf35fd2cd91496df">DimensionCumulOptimizerCore</a> (const <a class="el" href="routing_8h.html#a50ba9dd11704e0be7edaa9e9f24142ff">RoutingDimension</a> *<a class="el" href="classoperations__research_1_1DimensionCumulOptimizerCore.html#a0e80b6dfc017f25d413603e7aeda52ea">dimension</a>)</td></tr>
+<tr class="memitem:a36e89016a79a172ccf35fd2cd91496df"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DimensionCumulOptimizerCore.html#a36e89016a79a172ccf35fd2cd91496df">DimensionCumulOptimizerCore</a> (const <a class="el" href="classoperations__research_1_1RoutingDimension.html">RoutingDimension</a> *<a class="el" href="classoperations__research_1_1DimensionCumulOptimizerCore.html#a0e80b6dfc017f25d413603e7aeda52ea">dimension</a>)</td></tr>
 <tr class="separator:a36e89016a79a172ccf35fd2cd91496df"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4a7c9b3881b45490cb56078fa661f4a9"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DimensionCumulOptimizerCore.html#a4a7c9b3881b45490cb56078fa661f4a9">OptimizeSingleRoute</a> (int vehicle, const std::function&lt; int64(int64)&gt; &amp;next_accessor, glop::LinearProgram *linear_program, glop::LPSolver *lp_solver, std::vector&lt; int64 &gt; *cumul_values, int64 *cost, int64 *transit_cost, bool clear_lp=true)</td></tr>
-<tr class="memdesc:a4a7c9b3881b45490cb56078fa661f4a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">In the <a class="el" href="classoperations__research_1_1DimensionCumulOptimizerCore.html#a4a7c9b3881b45490cb56078fa661f4a9" title="In the OptimizeSingleRoute() and Optimize() methods, if both &quot;cumul_values&quot; and &quot;cost&quot; parameters are...">OptimizeSingleRoute()</a> and <a class="el" href="classoperations__research_1_1DimensionCumulOptimizerCore.html#a0e128419cfa4b416e1b13f780f2e2477">Optimize()</a> methods, if both "cumul_values" and "cost" parameters are null, we don't optimize the cost and stop at the first feasible solution in the LP (since in this case only feasibility is of interest).  <a href="#a4a7c9b3881b45490cb56078fa661f4a9">More...</a><br /></td></tr>
 <tr class="separator:a4a7c9b3881b45490cb56078fa661f4a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0e128419cfa4b416e1b13f780f2e2477"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DimensionCumulOptimizerCore.html#a0e128419cfa4b416e1b13f780f2e2477">Optimize</a> (const std::function&lt; int64(int64)&gt; &amp;next_accessor, glop::LinearProgram *linear_program, glop::LPSolver *lp_solver, std::vector&lt; int64 &gt; *cumul_values, int64 *cost, int64 *transit_cost, bool clear_lp=true)</td></tr>
 <tr class="separator:a0e128419cfa4b416e1b13f780f2e2477"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -67,13 +62,11 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a0817496a096c399614e3e95780d82087"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a83da37cfbbf38554e2e59089df384e7c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DimensionCumulOptimizerCore.html#a83da37cfbbf38554e2e59089df384e7c">OptimizeAndPackSingleRoute</a> (int vehicle, const std::function&lt; int64(int64)&gt; &amp;next_accessor, glop::LinearProgram *linear_program, glop::LPSolver *lp_solver, std::vector&lt; int64 &gt; *cumul_values)</td></tr>
 <tr class="separator:a83da37cfbbf38554e2e59089df384e7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0e80b6dfc017f25d413603e7aeda52ea"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="routing_8h.html#a50ba9dd11704e0be7edaa9e9f24142ff">RoutingDimension</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DimensionCumulOptimizerCore.html#a0e80b6dfc017f25d413603e7aeda52ea">dimension</a> () const</td></tr>
+<tr class="memitem:a0e80b6dfc017f25d413603e7aeda52ea"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classoperations__research_1_1RoutingDimension.html">RoutingDimension</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DimensionCumulOptimizerCore.html#a0e80b6dfc017f25d413603e7aeda52ea">dimension</a> () const</td></tr>
 <tr class="separator:a0e80b6dfc017f25d413603e7aeda52ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Classes to solve dimension cumul placement (aka scheduling) problems using linear programming. </p>
-<p>Utility class used in Local/GlobalDimensionCumulOptimizer to set the LP constraints and solve the problem. </p>
-
+<div class="textblock">
 <p class="definition">Definition at line <a class="el" href="routing__lp__scheduling_8h_source.html#l00027">27</a> of file <a class="el" href="routing__lp__scheduling_8h_source.html">routing_lp_scheduling.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a36e89016a79a172ccf35fd2cd91496df"></a>
@@ -88,7 +81,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">operations_research::DimensionCumulOptimizerCore::DimensionCumulOptimizerCore </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="routing_8h.html#a50ba9dd11704e0be7edaa9e9f24142ff">RoutingDimension</a> *&#160;</td>
+          <td class="paramtype">const <a class="el" href="classoperations__research_1_1RoutingDimension.html">RoutingDimension</a> *&#160;</td>
           <td class="paramname"><em>dimension</em></td><td>)</td>
           <td></td>
         </tr>
@@ -115,7 +108,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="routing_8h.html#a50ba9dd11704e0be7edaa9e9f24142ff">RoutingDimension</a>* operations_research::DimensionCumulOptimizerCore::dimension </td>
+          <td class="memname">const <a class="el" href="classoperations__research_1_1RoutingDimension.html">RoutingDimension</a>* operations_research::DimensionCumulOptimizerCore::dimension </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -337,8 +330,6 @@ Public Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>In the <a class="el" href="classoperations__research_1_1DimensionCumulOptimizerCore.html#a4a7c9b3881b45490cb56078fa661f4a9" title="In the OptimizeSingleRoute() and Optimize() methods, if both &quot;cumul_values&quot; and &quot;cost&quot; parameters are...">OptimizeSingleRoute()</a> and <a class="el" href="classoperations__research_1_1DimensionCumulOptimizerCore.html#a0e128419cfa4b416e1b13f780f2e2477">Optimize()</a> methods, if both "cumul_values" and "cost" parameters are null, we don't optimize the cost and stop at the first feasible solution in the LP (since in this case only feasibility is of interest). </p>
 
 </div>
 </div>

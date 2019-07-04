@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -50,9 +49,6 @@
 </div><!--header-->
 <div class="contents">
 
-<p>-------&mdash; <a class="el" href="classoperations__research_1_1PropagationMonitor.html" title="-------— PropagationMonitor -------—">PropagationMonitor</a> -------&mdash;  
- <a href="classoperations__research_1_1PropagationMonitor.html#details">More...</a></p>
-
 <p><code>#include &lt;<a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for operations_research::PropagationMonitor:</div>
@@ -61,7 +57,7 @@ Inheritance diagram for operations_research::PropagationMonitor:</div>
   <img src="classoperations__research_1_1PropagationMonitor.png" usemap="#operations_5Fresearch::PropagationMonitor_map" alt=""/>
   <map id="operations_5Fresearch::PropagationMonitor_map" name="operations_5Fresearch::PropagationMonitor_map">
 <area href="classoperations__research_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events." alt="operations_research::SearchMonitor" shape="rect" coords="0,56,246,80"/>
-<area href="classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="operations_research::BaseObject" shape="rect" coords="0,0,246,24"/>
+<area href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="operations_research::BaseObject" shape="rect" coords="0,0,246,24"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -121,7 +117,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a71ad95706fde5ba3c076f1125177cf3e"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1PropagationMonitor.html#a71ad95706fde5ba3c076f1125177cf3e">RemoveValues</a> (<a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *const var, const std::vector&lt; int64 &gt; &amp;values)=0</td></tr>
 <tr class="separator:a71ad95706fde5ba3c076f1125177cf3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a201f353378ceaff27cc9a8861a4734d5"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1PropagationMonitor.html#a201f353378ceaff27cc9a8861a4734d5">SetStartMin</a> (<a class="el" href="classoperations__research_1_1IntervalVar.html">IntervalVar</a> *const var, int64 new_min)=0</td></tr>
-<tr class="memdesc:a201f353378ceaff27cc9a8861a4734d5"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classoperations__research_1_1IntervalVar.html" title="-------— Interval Var -------—">IntervalVar</a> modifiers.  <a href="#a201f353378ceaff27cc9a8861a4734d5">More...</a><br /></td></tr>
+<tr class="memdesc:a201f353378ceaff27cc9a8861a4734d5"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classoperations__research_1_1IntervalVar.html" title="Interval variables are often used in scheduling.">IntervalVar</a> modifiers.  <a href="#a201f353378ceaff27cc9a8861a4734d5">More...</a><br /></td></tr>
 <tr class="separator:a201f353378ceaff27cc9a8861a4734d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac2c1c0b6d89eb9ee53c320509eeb9c9b"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1PropagationMonitor.html#ac2c1c0b6d89eb9ee53c320509eeb9c9b">SetStartMax</a> (<a class="el" href="classoperations__research_1_1IntervalVar.html">IntervalVar</a> *const var, int64 new_max)=0</td></tr>
 <tr class="separator:ac2c1c0b6d89eb9ee53c320509eeb9c9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -142,7 +138,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a472d5349fbf47bcfa74c24e92c738402"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1PropagationMonitor.html#a472d5349fbf47bcfa74c24e92c738402">SetPerformed</a> (<a class="el" href="classoperations__research_1_1IntervalVar.html">IntervalVar</a> *const var, bool value)=0</td></tr>
 <tr class="separator:a472d5349fbf47bcfa74c24e92c738402"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afb22c7f645f8813c32fa34dc200a5753"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1PropagationMonitor.html#afb22c7f645f8813c32fa34dc200a5753">RankFirst</a> (<a class="el" href="classoperations__research_1_1SequenceVar.html">SequenceVar</a> *const var, int index)=0</td></tr>
-<tr class="memdesc:afb22c7f645f8813c32fa34dc200a5753"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classoperations__research_1_1SequenceVar.html" title="--— SequenceVar --—">SequenceVar</a> modifiers.  <a href="#afb22c7f645f8813c32fa34dc200a5753">More...</a><br /></td></tr>
+<tr class="memdesc:afb22c7f645f8813c32fa34dc200a5753"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classoperations__research_1_1SequenceVar.html" title="A sequence variable is a variable whose domain is a set of possible orderings of the interval variabl...">SequenceVar</a> modifiers.  <a href="#afb22c7f645f8813c32fa34dc200a5753">More...</a><br /></td></tr>
 <tr class="separator:afb22c7f645f8813c32fa34dc200a5753"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9ed062f89410e8ce29e59d78e1437317"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1PropagationMonitor.html#a9ed062f89410e8ce29e59d78e1437317">RankNotFirst</a> (<a class="el" href="classoperations__research_1_1SequenceVar.html">SequenceVar</a> *const var, int index)=0</td></tr>
 <tr class="separator:a9ed062f89410e8ce29e59d78e1437317"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -232,9 +228,8 @@ Static Public Attributes</h2></td></tr>
 <tr class="separator:aa95b9df4d6eb3b0fabd01d9fee33d25d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>-------&mdash; <a class="el" href="classoperations__research_1_1PropagationMonitor.html" title="-------— PropagationMonitor -------—">PropagationMonitor</a> -------&mdash; </p>
-
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01637">1637</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<div class="textblock">
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01615">1615</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a6f1cf978d88b617fb5dc10faf30603c0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6f1cf978d88b617fb5dc10faf30603c0">&#9670;&nbsp;</a></span>PropagationMonitor()</h2>
@@ -744,7 +739,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1BaseObject.html#afb3b013c5063d71566d5273793c1d828">operations_research::BaseObject</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01641">1641</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01619">1619</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -1070,7 +1065,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1RegularLimit.html#a370e4934f9963fa9a440d0f8086a66a8">operations_research::RegularLimit</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03687">3687</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03643">3643</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1212,7 +1207,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1RegularLimit.html#a71e06768288b2fd36acf28a435744d51">operations_research::RegularLimit</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03696">3696</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03652">3652</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1276,7 +1271,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p><a class="el" href="classoperations__research_1_1SequenceVar.html" title="--— SequenceVar --—">SequenceVar</a> modifiers. </p>
+<p><a class="el" href="classoperations__research_1_1SequenceVar.html" title="A sequence variable is a variable whose domain is a set of possible orderings of the interval variabl...">SequenceVar</a> modifiers. </p>
 
 </div>
 </div>
@@ -2199,7 +2194,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p><a class="el" href="classoperations__research_1_1IntervalVar.html" title="-------— Interval Var -------—">IntervalVar</a> modifiers. </p>
+<p><a class="el" href="classoperations__research_1_1IntervalVar.html" title="Interval variables are often used in scheduling.">IntervalVar</a> modifiers. </p>
 
 </div>
 </div>
@@ -2340,7 +2335,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03689">3689</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03645">3645</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2391,7 +2386,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03618">3618</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03574">3574</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>

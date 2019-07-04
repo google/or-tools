@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -81,6 +80,7 @@
 , <a class="el" href="classoperations__research_1_1BooleanVar.html#af736502981e90d35f527e88e78c22ab5">operations_research::BooleanVar</a>
 , <a class="el" href="classoperations__research_1_1IntVar.html#ab84b786a2128f72fc720ae611e880499">operations_research::IntVar</a>
 , <a class="el" href="classoperations__research_1_1IntVarElement.html#a015a145792a6224c450259afe9d0b035">operations_research::IntVarElement</a>
+, <a class="el" href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html#a444807ed7728065f488c364fcd3daa47">operations_research::IntVarFilteredDecisionBuilder</a>
 , <a class="el" href="classoperations__research_1_1IntVarIterator.html#a8cd71554efc9460ca2319bbe79574ffa">operations_research::IntVarIterator</a>
 , <a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#afd72fb787ed7167fc9d959deb1286931">operations_research::IntVarLocalSearchFilter</a>
 , <a class="el" href="classoperations__research_1_1Rev.html#a612718f3f1f56d8ecce47fae4bc3592c">operations_research::Rev&lt; T &gt;</a>
@@ -115,13 +115,14 @@
 , <a class="el" href="classoperations__research_1_1IntExpr.html#a751d151bfe120bc6d378c4570505cbd4">operations_research::IntExpr</a>
 , <a class="el" href="classoperations__research_1_1IntVar.html#ac65d53711c52b0988b7e8fb81e79aeb9">operations_research::IntVar</a>
 , <a class="el" href="classoperations__research_1_1IntVarElement.html#a42e51fe336885a70673cbd4f473790b4">operations_research::IntVarElement</a>
+, <a class="el" href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html#a8ec6b0457672ded0a1046d29aa1c66bf">operations_research::IntVarFilteredDecisionBuilder</a>
 , <a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a5c85a90b191d5aae9ab29cf1e28ff878">operations_research::IntVarLocalSearchFilter</a>
 , <a class="el" href="classoperations__research_1_1OptimizeVar.html#ac567620867f5e875168966d1c5abde7d">operations_research::OptimizeVar</a>
 , <a class="el" href="classoperations__research_1_1SequenceVarElement.html#a88093f53d27e3a7a7a183a615223ab54">operations_research::SequenceVarElement</a>
 , <a class="el" href="classoperations__research_1_1VarLocalSearchOperator.html#a4844e2d1e002a6012c65e582583b351d">operations_research::VarLocalSearchOperator&lt; V, Val, Handler &gt;</a>
 </li>
 <li>VarLocalSearchOperator()
-: <a class="el" href="classoperations__research_1_1VarLocalSearchOperator.html#adef2d40376a89ff39c852ffd681779fd">operations_research::VarLocalSearchOperator&lt; V, Val, Handler &gt;</a>
+: <a class="el" href="classoperations__research_1_1VarLocalSearchOperator.html#a1e25813206d18e9df5ef7c940ff748dd">operations_research::VarLocalSearchOperator&lt; V, Val, Handler &gt;</a>
 </li>
 <li>VarType()
 : <a class="el" href="classoperations__research_1_1BooleanVar.html#aecaf73027230c4b1822c9570dfb57d8d">operations_research::BooleanVar</a>
@@ -129,6 +130,33 @@
 </li>
 <li>VarWithName()
 : <a class="el" href="classoperations__research_1_1IntExpr.html#a1de04a321f16e9cdc50bbec78e1adbf7">operations_research::IntExpr</a>
+</li>
+<li>vehicle_capacities()
+: <a class="el" href="classoperations__research_1_1RoutingDimension.html#af749da37fdb4dd5ebfc941a372e18d2f">operations_research::RoutingDimension</a>
+</li>
+<li>vehicle_span_cost_coefficients()
+: <a class="el" href="classoperations__research_1_1RoutingDimension.html#a395471c25d63a4af009b498581b8ac28">operations_research::RoutingDimension</a>
+</li>
+<li>vehicle_span_upper_bounds()
+: <a class="el" href="classoperations__research_1_1RoutingDimension.html#a0a4ec0cb288bbf7da0549a73c1addd1a">operations_research::RoutingDimension</a>
+</li>
+<li>vehicle_to_class()
+: <a class="el" href="classoperations__research_1_1RoutingDimension.html#a8bf186bfb9a793f0e92273a6b4998f90">operations_research::RoutingDimension</a>
+</li>
+<li>VehicleCostsConsideredVar()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#a2504e372b510ddac6d7e1512c112bbab">operations_research::RoutingModel</a>
+</li>
+<li>VehicleIndex()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#a34af72cc2a878066c1dfc35885249c59">operations_research::RoutingModel</a>
+</li>
+<li>vehicles()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#a7d8863c2b094d74220f01bfea6c11dee">operations_research::RoutingModel</a>
+</li>
+<li>VehicleVar()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#abf27caa0ebb8551a9ddf534d366edc62">operations_research::RoutingModel</a>
+</li>
+<li>VehicleVars()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#a6ae84e190aea5f82c4438611c276544b">operations_research::RoutingModel</a>
 </li>
 <li>VisitInt64ToBoolExtension()
 : <a class="el" href="classoperations__research_1_1ModelVisitor.html#a526f8541539c9560e826469dc13ddfaf">operations_research::ModelVisitor</a>
@@ -156,7 +184,7 @@
 , <a class="el" href="classoperations__research_1_1ModelVisitor.html#a10322a6adaa9c514e927c50ebbf15f4a">operations_research::ModelVisitor</a>
 </li>
 <li>VisitIntegerVariable()
-: <a class="el" href="classoperations__research_1_1ModelParser.html#a9b3cadca71680a3c196e19549836bc5e">operations_research::ModelParser</a>
+: <a class="el" href="classoperations__research_1_1ModelParser.html#a78fcd3e3c37175f7ef047d612c89fbd2">operations_research::ModelParser</a>
 , <a class="el" href="classoperations__research_1_1ModelVisitor.html#a92614f304abec2c34601bfff6534db70">operations_research::ModelVisitor</a>
 </li>
 <li>VisitIntegerVariableArrayArgument()

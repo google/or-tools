@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -61,8 +60,8 @@ Inheritance diagram for operations_research::CastConstraint:</div>
   <img src="classoperations__research_1_1CastConstraint.png" usemap="#operations_5Fresearch::CastConstraint_map" alt=""/>
   <map id="operations_5Fresearch::CastConstraint_map" name="operations_5Fresearch::CastConstraint_map">
 <area href="classoperations__research_1_1Constraint.html" title="A constraint is the main modeling object." alt="operations_research::Constraint" shape="rect" coords="0,112,268,136"/>
-<area href="classoperations__research_1_1PropagationBaseObject.html" title="The PropagationBaseObject is a subclass of BaseObject that is also friend to the Solver class." alt="operations_research::PropagationBaseObject" shape="rect" coords="0,56,268,80"/>
-<area href="classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="operations_research::BaseObject" shape="rect" coords="0,0,268,24"/>
+<area href="classoperations__research_1_1PropagationBaseObject.html" title="NOLINT." alt="operations_research::PropagationBaseObject" shape="rect" coords="0,56,268,80"/>
+<area href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="operations_research::BaseObject" shape="rect" coords="0,0,268,24"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -112,7 +111,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a5975e144479d99ceae4f009472ca5e92"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1PropagationBaseObject.html#a5975e144479d99ceae4f009472ca5e92">EnqueueAll</a> (const <a class="el" href="classoperations__research_1_1SimpleRevFIFO.html">SimpleRevFIFO</a>&lt; <a class="el" href="classoperations__research_1_1Demon.html">Demon</a> * &gt; &amp;demons)</td></tr>
 <tr class="separator:a5975e144479d99ceae4f009472ca5e92"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5c6bf90bb0b099a2c8f81aaefdfdd46c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1PropagationBaseObject.html#a5c6bf90bb0b099a2c8f81aaefdfdd46c">set_action_on_fail</a> (<a class="el" href="classoperations__research_1_1Solver.html#a87ca0b6abf9c8724900387f5aa557c04">Solver::Action</a> a)</td></tr>
-<tr class="memdesc:a5c6bf90bb0b099a2c8f81aaefdfdd46c"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method sets a callback that will be called if a failure happens during the propagation of the queue.  <a href="#a5c6bf90bb0b099a2c8f81aaefdfdd46c">More...</a><br /></td></tr>
 <tr class="separator:a5c6bf90bb0b099a2c8f81aaefdfdd46c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad07aa613bcc8d3896dff3f33520b061c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1PropagationBaseObject.html#ad07aa613bcc8d3896dff3f33520b061c">reset_action_on_fail</a> ()</td></tr>
 <tr class="memdesc:ad07aa613bcc8d3896dff3f33520b061c"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method clears the failure callback.  <a href="#ad07aa613bcc8d3896dff3f33520b061c">More...</a><br /></td></tr>
@@ -141,7 +139,7 @@ Protected Attributes</h2></td></tr>
 <div class="textblock"><p>Cast constraints are special channeling constraints designed to keep a variable in sync with an expression. </p>
 <p>They are created internally when <a class="el" href="classoperations__research_1_1Constraint.html#a5606cc31756a1708615d492ab75ba886" title="Creates a Boolean variable representing the status of the constraint (false = constraint is violated,...">Var()</a> is called on a subclass of <a class="el" href="classoperations__research_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming.">IntExpr</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03601">3601</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03557">3557</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a6d1daffc6d0067731f886641c64de177"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6d1daffc6d0067731f886641c64de177">&#9670;&nbsp;</a></span>CastConstraint()</h2>
@@ -177,7 +175,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03603">3603</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03559">3559</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -204,7 +202,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03607">3607</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03563">3563</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -350,7 +348,7 @@ Protected Attributes</h2></td></tr>
 <p>This method pushes the demon onto the propagation queue. </p>
 <p>It will be processed directly if the queue is empty. It will be enqueued according to its priority otherwise. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03173">3173</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03129">3129</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -378,7 +376,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03174">3174</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03130">3130</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -434,7 +432,7 @@ Protected Attributes</h2></td></tr>
 <p>This method freezes the propagation queue. </p>
 <p>It is useful when you need to apply multiple modifications at once. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03164">3164</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03120">3120</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -491,7 +489,7 @@ Protected Attributes</h2></td></tr>
 <p>This method performs the initial propagation of the constraint. </p>
 <p>It is called just after the post. </p>
 
-<p>Implemented in <a class="el" href="classoperations__research_1_1Pack.html#adac62b65b527aa23434dd7d1fdba3b14">operations_research::Pack</a>.</p>
+<p>Implemented in <a class="el" href="classoperations__research_1_1Pack.html#adac62b65b527aa23434dd7d1fdba3b14">operations_research::Pack</a>, <a class="el" href="classoperations__research_1_1TypeRegulationsConstraint.html#a350eb7ba99ec672599956a2b61a2a8b1">operations_research::TypeRegulationsConstraint</a>, and <a class="el" href="classoperations__research_1_1GlobalVehicleBreaksConstraint.html#a8e1a06d00ced8b302406376235cd2c98">operations_research::GlobalVehicleBreaksConstraint</a>.</p>
 
 </div>
 </div>
@@ -575,7 +573,7 @@ Protected Attributes</h2></td></tr>
 <p>This method is called when the constraint is processed by the solver. </p>
 <p>Its main usage is to attach demons to variables. </p>
 
-<p>Implemented in <a class="el" href="classoperations__research_1_1Pack.html#a22f97f40518e3d2f565d78f7ef6f3b56">operations_research::Pack</a>.</p>
+<p>Implemented in <a class="el" href="classoperations__research_1_1Pack.html#a22f97f40518e3d2f565d78f7ef6f3b56">operations_research::Pack</a>, <a class="el" href="classoperations__research_1_1TypeRegulationsConstraint.html#add0fa8d777cd68c77f87cfbd22ad5dd9">operations_research::TypeRegulationsConstraint</a>, and <a class="el" href="classoperations__research_1_1GlobalVehicleBreaksConstraint.html#a9228a638a979284394f90c004a1b37fa">operations_research::GlobalVehicleBreaksConstraint</a>.</p>
 
 </div>
 </div>
@@ -632,7 +630,7 @@ Protected Attributes</h2></td></tr>
 
 <p>This method clears the failure callback. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03187">3187</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03143">3143</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -660,9 +658,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>This method sets a callback that will be called if a failure happens during the propagation of the queue. </p>
-
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03181">3181</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03137">3137</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -718,7 +714,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Shortcut for variable cleaner. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03190">3190</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03146">3146</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -745,7 +741,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03161">3161</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03116">3116</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -772,7 +768,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03609">3609</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03565">3565</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -802,7 +798,7 @@ Protected Attributes</h2></td></tr>
 <p>This method unfreezes the propagation queue. </p>
 <p>All modifications that happened when the queue was frozen will be processed. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03168">3168</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03124">3124</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -855,7 +851,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03612">3612</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03568">3568</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>

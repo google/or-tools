@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -59,14 +58,14 @@ Inheritance diagram for operations_research::LocalSearchFilterManager:</div>
  <div class="center">
   <img src="classoperations__research_1_1LocalSearchFilterManager.png" usemap="#operations_5Fresearch::LocalSearchFilterManager_map" alt=""/>
   <map id="operations_5Fresearch::LocalSearchFilterManager_map" name="operations_5Fresearch::LocalSearchFilterManager_map">
-<area href="classoperations__research_1_1LocalSearchFilter.html" title="--— Local Search Filters ---—" alt="operations_research::LocalSearchFilter" shape="rect" coords="0,56,287,80"/>
-<area href="classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="operations_research::BaseObject" shape="rect" coords="0,0,287,24"/>
+<area href="classoperations__research_1_1LocalSearchFilter.html" title="Local Search Filters are used for fast neighbor pruning." alt="operations_research::LocalSearchFilter" shape="rect" coords="0,56,287,80"/>
+<area href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="operations_research::BaseObject" shape="rect" coords="0,0,287,24"/>
   </map>
 </div></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a24980b170291a5f2dff5d587ef7cd6de"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalSearchFilterManager.html#a24980b170291a5f2dff5d587ef7cd6de">LocalSearchFilterManager</a> (<a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *const <a class="el" href="routing_8h.html#a5f32c22c620c811754ba7b6f977db864">solver</a>, const std::vector&lt; <a class="el" href="classoperations__research_1_1LocalSearchFilter.html">LocalSearchFilter</a> * &gt; &amp;filters, <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *objective)</td></tr>
+<tr class="memitem:a24980b170291a5f2dff5d587ef7cd6de"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalSearchFilterManager.html#a24980b170291a5f2dff5d587ef7cd6de">LocalSearchFilterManager</a> (<a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *const solver, const std::vector&lt; <a class="el" href="classoperations__research_1_1LocalSearchFilter.html">LocalSearchFilter</a> * &gt; &amp;filters, <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *objective)</td></tr>
 <tr class="separator:a24980b170291a5f2dff5d587ef7cd6de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a92e302e76f3c9a4033c390cbd2be9c48"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalSearchFilterManager.html#a92e302e76f3c9a4033c390cbd2be9c48">DebugString</a> () const override</td></tr>
 <tr class="separator:a92e302e76f3c9a4033c390cbd2be9c48"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -89,7 +88,7 @@ Public Member Functions</h2></td></tr>
 <div class="textblock"><p>Filter manager: when a move is made, filters are executed to decide whether the solution is feasible and compute parts of the new cost. </p>
 <p>This class schedules filter execution and composes costs as a sum. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01540">1540</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01522">1522</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a24980b170291a5f2dff5d587ef7cd6de"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a24980b170291a5f2dff5d587ef7cd6de">&#9670;&nbsp;</a></span>LocalSearchFilterManager()</h2>
@@ -192,7 +191,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1BaseObject.html#afb3b013c5063d71566d5273793c1d828">operations_research::BaseObject</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01545">1545</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01527">1527</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -224,7 +223,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1LocalSearchFilter.html#a7a34da518a80fbaeccb2fde10f2fbd78">operations_research::LocalSearchFilter</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01564">1564</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01546">1546</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -255,7 +254,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1LocalSearchFilter.html#aa3934bba1ec84e9c9b401693b43c662a">operations_research::LocalSearchFilter</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01561">1561</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01543">1543</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -284,7 +283,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1LocalSearchFilter.html#a58392212e951aafc3a6ba400d8816790">operations_research::LocalSearchFilter</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01560">1560</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01542">1542</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>

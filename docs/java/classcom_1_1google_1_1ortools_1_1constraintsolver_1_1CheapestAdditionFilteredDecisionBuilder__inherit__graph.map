@@ -1,9 +1,9 @@
 <map id="com.google.ortools.constraintsolver.CheapestAdditionFilteredDecisionBuilder" name="com.google.ortools.constraintsolver.CheapestAdditionFilteredDecisionBuilder">
-<area shape="rect" id="node1" title="Filtered&#45;base decision builder based on the addition heuristic, extending a path from its start node ..." alt="" coords="1125,53,1384,94"/>
-<area shape="rect" id="node6" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ComparatorCheapestAdditionFilteredDecisionBuilder.html" title="A CheapestAdditionFilteredDecisionBuilder where the notion of &#39;cheapest arc&#39; comes from an arc compar..." alt="" coords="1432,5,1719,61"/>
-<area shape="rect" id="node7" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1EvaluatorCheapestAdditionFilteredDecisionBuilder.html" title="A CheapestAdditionFilteredDecisionBuilder where the notion of &#39;cheapest arc&#39; comes from an arc evalua..." alt="" coords="1438,85,1713,141"/>
-<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html" title="Filter&#45;based decision builder dedicated to routing." alt="" coords="845,53,1077,94"/>
-<area shape="rect" id="node3" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html" title="Routing Search Decision builders building a solution using local search filters to evaluate its feasi..." alt="" coords="565,53,797,94"/>
-<area shape="rect" id="node4" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html" title=" " alt="" coords="285,53,517,94"/>
-<area shape="rect" id="node5" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="5,53,237,94"/>
+<area shape="rect" id="node1" title=" " alt="" coords="1125,53,1384,94"/>
+<area shape="rect" id="node6" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ComparatorCheapestAdditionFilteredDecisionBuilder.html" title=" " alt="" coords="1432,5,1719,61"/>
+<area shape="rect" id="node7" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1EvaluatorCheapestAdditionFilteredDecisionBuilder.html" title=" " alt="" coords="1438,85,1713,141"/>
+<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html" title=" " alt="" coords="845,53,1077,94"/>
+<area shape="rect" id="node3" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html" title=" " alt="" coords="565,53,797,94"/>
+<area shape="rect" id="node4" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html" title="A DecisionBuilder is responsible for creating the search tree." alt="" coords="285,53,517,94"/>
+<area shape="rect" id="node5" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,53,237,94"/>
 </map>

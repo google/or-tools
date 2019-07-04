@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -49,9 +48,6 @@
 </div><!--header-->
 <div class="contents">
 
-<p>-------&mdash; <a class="el" href="classoperations__research_1_1Pack.html" title="-------— Pack Constraint -------—">Pack</a> <a class="el" href="classoperations__research_1_1Constraint.html" title="A constraint is the main modeling object.">Constraint</a> -------&mdash;  
- <a href="classoperations__research_1_1Pack.html#details">More...</a></p>
-
 <p><code>#include &lt;<a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for operations_research::Pack:</div>
@@ -60,8 +56,8 @@ Inheritance diagram for operations_research::Pack:</div>
   <img src="classoperations__research_1_1Pack.png" usemap="#operations_5Fresearch::Pack_map" alt=""/>
   <map id="operations_5Fresearch::Pack_map" name="operations_5Fresearch::Pack_map">
 <area href="classoperations__research_1_1Constraint.html" title="A constraint is the main modeling object." alt="operations_research::Constraint" shape="rect" coords="0,112,268,136"/>
-<area href="classoperations__research_1_1PropagationBaseObject.html" title="The PropagationBaseObject is a subclass of BaseObject that is also friend to the Solver class." alt="operations_research::PropagationBaseObject" shape="rect" coords="0,56,268,80"/>
-<area href="classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="operations_research::BaseObject" shape="rect" coords="0,0,268,24"/>
+<area href="classoperations__research_1_1PropagationBaseObject.html" title="NOLINT." alt="operations_research::PropagationBaseObject" shape="rect" coords="0,56,268,80"/>
+<area href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="operations_research::BaseObject" shape="rect" coords="0,0,268,24"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -72,7 +68,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ac41b9dfede7920f5baadea90cddc72ea"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Pack.html#ac41b9dfede7920f5baadea90cddc72ea">~Pack</a> () override</td></tr>
 <tr class="separator:ac41b9dfede7920f5baadea90cddc72ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af69fc8b35affb174b5e47fbee6de9772"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Pack.html#af69fc8b35affb174b5e47fbee6de9772">AddWeightedSumLessOrEqualConstantDimension</a> (const std::vector&lt; int64 &gt; &amp;weights, const std::vector&lt; int64 &gt; &amp;bounds)</td></tr>
-<tr class="memdesc:af69fc8b35affb174b5e47fbee6de9772"><td class="mdescLeft">&#160;</td><td class="mdescRight">--&mdash; Public API --&mdash;  <a href="#af69fc8b35affb174b5e47fbee6de9772">More...</a><br /></td></tr>
+<tr class="memdesc:af69fc8b35affb174b5e47fbee6de9772"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dimensions are additional constraints than can restrict what is possible with the pack constraint.  <a href="#af69fc8b35affb174b5e47fbee6de9772">More...</a><br /></td></tr>
 <tr class="separator:af69fc8b35affb174b5e47fbee6de9772"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aee734afb685c74deb94817b754b9e518"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Pack.html#aee734afb685c74deb94817b754b9e518">AddWeightedSumLessOrEqualConstantDimension</a> (<a class="el" href="classoperations__research_1_1Solver.html#a1040bdf484009e1a00e60ebb055ad1a1">Solver::IndexEvaluator1</a> weights, const std::vector&lt; int64 &gt; &amp;bounds)</td></tr>
 <tr class="memdesc:aee734afb685c74deb94817b754b9e518"><td class="mdescLeft">&#160;</td><td class="mdescRight">This dimension imposes that for all bins b, the weighted sum (weights-&gt;Run(i)) of all objects i assigned to 'b' is less or equal to 'bounds[b]'.  <a href="#aee734afb685c74deb94817b754b9e518">More...</a><br /></td></tr>
@@ -99,7 +95,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:aa8c9281df8ab547dbed84de1364267d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">This dimension links 'count_var' to the actual number of items assigned to a bin in the pack.  <a href="#aa8c9281df8ab547dbed84de1364267d4">More...</a><br /></td></tr>
 <tr class="separator:aa8c9281df8ab547dbed84de1364267d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a22f97f40518e3d2f565d78f7ef6f3b56"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Pack.html#a22f97f40518e3d2f565d78f7ef6f3b56">Post</a> () override</td></tr>
-<tr class="memdesc:a22f97f40518e3d2f565d78f7ef6f3b56"><td class="mdescLeft">&#160;</td><td class="mdescRight">--&mdash; Internal API --&mdash;  <a href="#a22f97f40518e3d2f565d78f7ef6f3b56">More...</a><br /></td></tr>
+<tr class="memdesc:a22f97f40518e3d2f565d78f7ef6f3b56"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method is called when the constraint is processed by the solver.  <a href="#a22f97f40518e3d2f565d78f7ef6f3b56">More...</a><br /></td></tr>
 <tr class="separator:a22f97f40518e3d2f565d78f7ef6f3b56"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af10aa93a14a72df0bd8b5c7143c6648e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Pack.html#af10aa93a14a72df0bd8b5c7143c6648e">ClearAll</a> ()</td></tr>
 <tr class="separator:af10aa93a14a72df0bd8b5c7143c6648e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -170,7 +166,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a5975e144479d99ceae4f009472ca5e92"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1PropagationBaseObject.html#a5975e144479d99ceae4f009472ca5e92">EnqueueAll</a> (const <a class="el" href="classoperations__research_1_1SimpleRevFIFO.html">SimpleRevFIFO</a>&lt; <a class="el" href="classoperations__research_1_1Demon.html">Demon</a> * &gt; &amp;demons)</td></tr>
 <tr class="separator:a5975e144479d99ceae4f009472ca5e92"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5c6bf90bb0b099a2c8f81aaefdfdd46c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1PropagationBaseObject.html#a5c6bf90bb0b099a2c8f81aaefdfdd46c">set_action_on_fail</a> (<a class="el" href="classoperations__research_1_1Solver.html#a87ca0b6abf9c8724900387f5aa557c04">Solver::Action</a> a)</td></tr>
-<tr class="memdesc:a5c6bf90bb0b099a2c8f81aaefdfdd46c"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method sets a callback that will be called if a failure happens during the propagation of the queue.  <a href="#a5c6bf90bb0b099a2c8f81aaefdfdd46c">More...</a><br /></td></tr>
 <tr class="separator:a5c6bf90bb0b099a2c8f81aaefdfdd46c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad07aa613bcc8d3896dff3f33520b061c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1PropagationBaseObject.html#ad07aa613bcc8d3896dff3f33520b061c">reset_action_on_fail</a> ()</td></tr>
 <tr class="memdesc:ad07aa613bcc8d3896dff3f33520b061c"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method clears the failure callback.  <a href="#ad07aa613bcc8d3896dff3f33520b061c">More...</a><br /></td></tr>
@@ -191,9 +186,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ab34671f68433c582260a443f3d15bfae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>-------&mdash; <a class="el" href="classoperations__research_1_1Pack.html" title="-------— Pack Constraint -------—">Pack</a> <a class="el" href="classoperations__research_1_1Constraint.html" title="A constraint is the main modeling object.">Constraint</a> -------&mdash; </p>
-
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l05203">5203</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<div class="textblock">
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l05130">5130</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a94969a5d7e604ccba7e5b515424a246e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a94969a5d7e604ccba7e5b515424a246e">&#9670;&nbsp;</a></span>Pack()</h2>
@@ -442,8 +436,8 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>--&mdash; Public API --&mdash; </p>
-<p>Dimensions are additional constraints than can restrict what is possible with the pack constraint. It can be used to set capacity limits, to count objects per bin, to compute unassigned penalties... This dimension imposes that for all bins b, the weighted sum (weights[i]) of all objects i assigned to 'b' is less or equal 'bounds[b]'. </p>
+<p>Dimensions are additional constraints than can restrict what is possible with the pack constraint. </p>
+<p>It can be used to set capacity limits, to count objects per bin, to compute unassigned penalties... This dimension imposes that for all bins b, the weighted sum (weights[i]) of all objects i assigned to 'b' is less or equal 'bounds[b]'. </p>
 
 </div>
 </div>
@@ -774,7 +768,7 @@ Public Member Functions</h2></td></tr>
 <p>This method pushes the demon onto the propagation queue. </p>
 <p>It will be processed directly if the queue is empty. It will be enqueued according to its priority otherwise. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03173">3173</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03129">3129</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -802,7 +796,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03174">3174</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03130">3130</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -858,7 +852,7 @@ Public Member Functions</h2></td></tr>
 <p>This method freezes the propagation queue. </p>
 <p>It is useful when you need to apply multiple modifications at once. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03164">3164</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03120">3120</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1088,7 +1082,8 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>--&mdash; Internal API --&mdash; </p>
+<p>This method is called when the constraint is processed by the solver. </p>
+<p>Its main usage is to attach demons to variables. </p>
 
 <p>Implements <a class="el" href="classoperations__research_1_1Constraint.html#aaa882d58b5fc0f2e3df6eff957ad4a0d">operations_research::Constraint</a>.</p>
 
@@ -1199,7 +1194,7 @@ Public Member Functions</h2></td></tr>
 
 <p>This method clears the failure callback. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03187">3187</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03143">3143</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1227,9 +1222,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>This method sets a callback that will be called if a failure happens during the propagation of the queue. </p>
-
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03181">3181</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03137">3137</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1285,7 +1278,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Shortcut for variable cleaner. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03190">3190</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03146">3146</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1376,7 +1369,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03161">3161</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03116">3116</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1423,7 +1416,7 @@ Public Member Functions</h2></td></tr>
 <p>This method unfreezes the propagation queue. </p>
 <p>All modifications that happened when the queue was frozen will be processed. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03168">3168</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03124">3124</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>

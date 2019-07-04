@@ -50,15 +50,17 @@
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="Decision_8java_source.html#l00011">11</a> of file <a class="el" href="Decision_8java_source.html">Decision.java</a>.</p>
+<div class="textblock"><p>A <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Decision.html" title="A Decision represents a choice point in the search tree.">Decision</a> represents a choice point in the search tree. </p>
+<p>The two main methods are Apply() to go left, or Refute() to go right. </p>
+
+<p class="definition">Definition at line <a class="el" href="Decision_8java_source.html#l00014">14</a> of file <a class="el" href="Decision_8java_source.html">Decision.java</a>.</p>
 </div><div class="dynheader">
 Inheritance diagram for com.google.ortools.constraintsolver.Decision:</div>
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Decision__inherit__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8Decision_inherit__map" alt="Inheritance graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8Decision_inherit__map" id="com_8google_8ortools_8constraintsolver_8Decision_inherit__map">
-<area shape="rect"  title=" " alt="" coords="5,95,237,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="5,5,237,47"/>
+<area shape="rect"  title="A Decision represents a choice point in the search tree." alt="" coords="5,95,237,136"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,5,237,47"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <div class="dynheader">
@@ -66,8 +68,8 @@ Collaboration diagram for com.google.ortools.constraintsolver.Decision:</div>
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Decision__coll__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8Decision_coll__map" alt="Collaboration graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8Decision_coll__map" id="com_8google_8ortools_8constraintsolver_8Decision_coll__map">
-<area shape="rect"  title=" " alt="" coords="5,95,237,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="5,5,237,47"/>
+<area shape="rect"  title="A Decision represents a choice point in the search tree." alt="" coords="5,95,237,136"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,5,237,47"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -82,12 +84,15 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a66d51d3f45c5b9f733f0a14dc5eb8382"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Decision.html#a66d51d3f45c5b9f733f0a14dc5eb8382">Decision</a> ()</td></tr>
 <tr class="separator:a66d51d3f45c5b9f733f0a14dc5eb8382"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad47a21052a45019b283c0ffdc457262c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Decision.html#ad47a21052a45019b283c0ffdc457262c">apply</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html">Solver</a> s)</td></tr>
+<tr class="memdesc:ad47a21052a45019b283c0ffdc457262c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Apply will be called first when the decision is executed.  <a href="#ad47a21052a45019b283c0ffdc457262c">More...</a><br /></td></tr>
 <tr class="separator:ad47a21052a45019b283c0ffdc457262c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a764f284a120ca52959c0c444cc872057"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Decision.html#a764f284a120ca52959c0c444cc872057">refute</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html">Solver</a> s)</td></tr>
+<tr class="memdesc:a764f284a120ca52959c0c444cc872057"><td class="mdescLeft">&#160;</td><td class="mdescRight">Refute will be called after a backtrack.  <a href="#a764f284a120ca52959c0c444cc872057">More...</a><br /></td></tr>
 <tr class="separator:a764f284a120ca52959c0c444cc872057"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa0b062926893b342d6b06c6192a2d3d6"><td class="memItemLeft" align="right" valign="top">String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Decision.html#aa0b062926893b342d6b06c6192a2d3d6">toString</a> ()</td></tr>
 <tr class="separator:aa0b062926893b342d6b06c6192a2d3d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa5ae3b5ce72a396898c84d0ecedc893b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Decision.html#aa5ae3b5ce72a396898c84d0ecedc893b">accept</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionVisitor.html">DecisionVisitor</a> visitor)</td></tr>
+<tr class="memdesc:aa5ae3b5ce72a396898c84d0ecedc893b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Accepts the given visitor.  <a href="#aa5ae3b5ce72a396898c84d0ecedc893b">More...</a><br /></td></tr>
 <tr class="separator:aa5ae3b5ce72a396898c84d0ecedc893b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
@@ -132,7 +137,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Decision_8java_source.html#l00014">14</a> of file <a class="el" href="Decision_8java_source.html">Decision.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Decision_8java_source.html#l00017">17</a> of file <a class="el" href="Decision_8java_source.html">Decision.java</a>.</p>
 
 </div>
 </div>
@@ -159,7 +164,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Decision_8java_source.html#l00054">54</a> of file <a class="el" href="Decision_8java_source.html">Decision.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Decision_8java_source.html#l00057">57</a> of file <a class="el" href="Decision_8java_source.html">Decision.java</a>.</p>
 
 </div>
 </div>
@@ -188,7 +193,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Decision_8java_source.html#l00071">71</a> of file <a class="el" href="Decision_8java_source.html">Decision.java</a>.</p>
+<p>Accepts the given visitor. </p>
+
+<p class="definition">Definition at line <a class="el" href="Decision_8java_source.html#l00083">83</a> of file <a class="el" href="Decision_8java_source.html">Decision.java</a>.</p>
 
 </div>
 </div>
@@ -216,7 +223,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Decision_8java_source.html#l00059">59</a> of file <a class="el" href="Decision_8java_source.html">Decision.java</a>.</p>
+<p>Apply will be called first when the decision is executed. </p>
+
+<p class="definition">Definition at line <a class="el" href="Decision_8java_source.html#l00065">65</a> of file <a class="el" href="Decision_8java_source.html">Decision.java</a>.</p>
 
 </div>
 </div>
@@ -243,7 +252,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Decision_8java_source.html#l00028">28</a> of file <a class="el" href="Decision_8java_source.html">Decision.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Decision_8java_source.html#l00031">31</a> of file <a class="el" href="Decision_8java_source.html">Decision.java</a>.</p>
 
 </div>
 </div>
@@ -271,7 +280,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Decision_8java_source.html#l00063">63</a> of file <a class="el" href="Decision_8java_source.html">Decision.java</a>.</p>
+<p>Refute will be called after a backtrack. </p>
+
+<p class="definition">Definition at line <a class="el" href="Decision_8java_source.html#l00072">72</a> of file <a class="el" href="Decision_8java_source.html">Decision.java</a>.</p>
 
 </div>
 </div>
@@ -298,7 +309,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Decision_8java_source.html#l00039">39</a> of file <a class="el" href="Decision_8java_source.html">Decision.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Decision_8java_source.html#l00042">42</a> of file <a class="el" href="Decision_8java_source.html">Decision.java</a>.</p>
 
 </div>
 </div>
@@ -325,7 +336,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Decision_8java_source.html#l00044">44</a> of file <a class="el" href="Decision_8java_source.html">Decision.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Decision_8java_source.html#l00047">47</a> of file <a class="el" href="Decision_8java_source.html">Decision.java</a>.</p>
 
 </div>
 </div>
@@ -352,7 +363,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Decision_8java_source.html#l00049">49</a> of file <a class="el" href="Decision_8java_source.html">Decision.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Decision_8java_source.html#l00052">52</a> of file <a class="el" href="Decision_8java_source.html">Decision.java</a>.</p>
 
 </div>
 </div>
@@ -379,7 +390,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Decision_8java_source.html#l00067">67</a> of file <a class="el" href="Decision_8java_source.html">Decision.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Decision_8java_source.html#l00076">76</a> of file <a class="el" href="Decision_8java_source.html">Decision.java</a>.</p>
 
 </div>
 </div>

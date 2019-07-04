@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -58,10 +57,10 @@
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a0984b7441a23c75de696103cadc044b5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SmallRevBitSet.html#a0984b7441a23c75de696103cadc044b5">SmallRevBitSet</a> (int64 size)</td></tr>
 <tr class="separator:a0984b7441a23c75de696103cadc044b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a427373fdc21062991efa27f991862ff6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SmallRevBitSet.html#a427373fdc21062991efa27f991862ff6">SetToOne</a> (<a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *const <a class="el" href="routing_8h.html#a5f32c22c620c811754ba7b6f977db864">solver</a>, int64 pos)</td></tr>
+<tr class="memitem:a427373fdc21062991efa27f991862ff6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SmallRevBitSet.html#a427373fdc21062991efa27f991862ff6">SetToOne</a> (<a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *const solver, int64 pos)</td></tr>
 <tr class="memdesc:a427373fdc21062991efa27f991862ff6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the 'pos' bit.  <a href="#a427373fdc21062991efa27f991862ff6">More...</a><br /></td></tr>
 <tr class="separator:a427373fdc21062991efa27f991862ff6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a22f35c8d356a6bc1dfb95bb36da6d37a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SmallRevBitSet.html#a22f35c8d356a6bc1dfb95bb36da6d37a">SetToZero</a> (<a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *const <a class="el" href="routing_8h.html#a5f32c22c620c811754ba7b6f977db864">solver</a>, int64 pos)</td></tr>
+<tr class="memitem:a22f35c8d356a6bc1dfb95bb36da6d37a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SmallRevBitSet.html#a22f35c8d356a6bc1dfb95bb36da6d37a">SetToZero</a> (<a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *const solver, int64 pos)</td></tr>
 <tr class="memdesc:a22f35c8d356a6bc1dfb95bb36da6d37a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Erases the 'pos' bit.  <a href="#a22f35c8d356a6bc1dfb95bb36da6d37a">More...</a><br /></td></tr>
 <tr class="separator:a22f35c8d356a6bc1dfb95bb36da6d37a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a689636d2882047089282038c7736a240"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SmallRevBitSet.html#a689636d2882047089282038c7736a240">Cardinality</a> () const</td></tr>
@@ -81,7 +80,7 @@ Public Member Functions</h2></td></tr>
 <div class="textblock"><p>This class represents a small reversible bitset (size &lt;= 64). </p>
 <p>This class is useful to maintain supports. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00416">416</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00410">410</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a0984b7441a23c75de696103cadc044b5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0984b7441a23c75de696103cadc044b5">&#9670;&nbsp;</a></span>SmallRevBitSet()</h2>
@@ -174,7 +173,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Does it contains only one bit set? </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00428">428</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00422">422</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -203,7 +202,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Is bitset null? </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00426">426</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00420">420</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>

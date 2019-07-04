@@ -1,4 +1,4 @@
 <map id="com.google.ortools.constraintsolver.SequenceVarElement" name="com.google.ortools.constraintsolver.SequenceVarElement">
-<area shape="rect" id="node1" title=" " alt="" coords="5,95,237,136"/>
+<area shape="rect" id="node1" title="The SequenceVarElement stores a partial representation of ranked interval variables in the underlying..." alt="" coords="5,95,237,136"/>
 <area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentElement.html" title=" " alt="" coords="5,5,237,47"/>
 </map>

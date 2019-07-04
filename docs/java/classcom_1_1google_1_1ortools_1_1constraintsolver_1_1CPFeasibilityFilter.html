@@ -50,19 +50,17 @@
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
-<div class="textblock"><p>This filter accepts deltas for which the assignment satisfies the constraints of the <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html">Solver</a>. </p>
-<p>This is verified by keeping an internal copy of the assignment with all Next vars and their updated values, and calling RestoreAssignment() on the assignment+delta. TODO: (user): Also call the solution finalizer on variables, with the exception of Next Vars (woud fail on large instances). Warning: In the case of mandatory nodes, when all vehicles are currently being used in the solution but uninserted nodes still remain, this filter will reject the solution, even if the node could be inserted on one of these routes, because all Next vars of vehicle starts are already instantiated. TODO: (user): Avoid such false negatives. </p>
-
-<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00014">14</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
+<div class="textblock">
+<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00011">11</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
 </div><div class="dynheader">
 Inheritance diagram for com.google.ortools.constraintsolver.CPFeasibilityFilter:</div>
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CPFeasibilityFilter__inherit__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8CPFeasibilityFilter_inherit__map" alt="Inheritance graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8CPFeasibilityFilter_inherit__map" id="com_8google_8ortools_8constraintsolver_8CPFeasibilityFilter_inherit__map">
-<area shape="rect"  title="This filter accepts deltas for which the assignment satisfies the constraints of the Solver." alt="" coords="5,273,237,315"/>
+<area shape="rect"  title=" " alt="" coords="5,273,237,315"/>
 <area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html" title=" " alt="" coords="5,184,237,225"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html" title=" " alt="" coords="5,95,237,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="5,5,237,47"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html" title="Local Search Filters are used for fast neighbor pruning." alt="" coords="5,95,237,136"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,5,237,47"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <div class="dynheader">
@@ -70,10 +68,10 @@ Collaboration diagram for com.google.ortools.constraintsolver.CPFeasibilityFilte
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CPFeasibilityFilter__coll__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8CPFeasibilityFilter_coll__map" alt="Collaboration graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8CPFeasibilityFilter_coll__map" id="com_8google_8ortools_8constraintsolver_8CPFeasibilityFilter_coll__map">
-<area shape="rect"  title="This filter accepts deltas for which the assignment satisfies the constraints of the Solver." alt="" coords="5,273,237,315"/>
+<area shape="rect"  title=" " alt="" coords="5,273,237,315"/>
 <area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html" title=" " alt="" coords="5,184,237,225"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html" title=" " alt="" coords="5,95,237,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="5,5,237,47"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html" title="Local Search Filters are used for fast neighbor pruning." alt="" coords="5,95,237,136"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,5,237,47"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -94,10 +92,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ad26496ba8732001f9224826ff966b3af"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html#ad26496ba8732001f9224826ff966b3af">swigTakeOwnership</a> ()</td></tr>
 <tr class="separator:ad26496ba8732001f9224826ff966b3af"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac8155070a17cf5209d3db93d977663b6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html#ac8155070a17cf5209d3db93d977663b6">synchronize</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html">Assignment</a> assignment, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html">Assignment</a> delta)</td></tr>
+<tr class="memdesc:ac8155070a17cf5209d3db93d977663b6"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method should not be overridden.  <a href="#ac8155070a17cf5209d3db93d977663b6">More...</a><br /></td></tr>
 <tr class="separator:ac8155070a17cf5209d3db93d977663b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa5ed61ae378f5022f5854a4e00a60c94"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html#aa5ed61ae378f5022f5854a4e00a60c94">injectObjectiveValue</a> (long objective_value)</td></tr>
 <tr class="separator:aa5ed61ae378f5022f5854a4e00a60c94"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa96b3bf42feabf861d8f9c5498719674"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html#aa96b3bf42feabf861d8f9c5498719674">addVars</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>[] vars)</td></tr>
+<tr class="memdesc:aa96b3bf42feabf861d8f9c5498719674"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add variables to "track" to the filter.  <a href="#aa96b3bf42feabf861d8f9c5498719674">More...</a><br /></td></tr>
 <tr class="separator:aa96b3bf42feabf861d8f9c5498719674"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a19c8cb0b4b3c65fd241e3c00e775ae0f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html#a19c8cb0b4b3c65fd241e3c00e775ae0f">size</a> ()</td></tr>
 <tr class="separator:a19c8cb0b4b3c65fd241e3c00e775ae0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -110,8 +110,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aac54eb6a34320b7529c9b963e5c3b40c"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html#aac54eb6a34320b7529c9b963e5c3b40c">isIncremental</a> ()</td></tr>
 <tr class="separator:aac54eb6a34320b7529c9b963e5c3b40c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a326a8cb24eb5148ef4a1a279f87c909e"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html#a326a8cb24eb5148ef4a1a279f87c909e">getSynchronizedObjectiveValue</a> ()</td></tr>
+<tr class="memdesc:a326a8cb24eb5148ef4a1a279f87c909e"><td class="mdescLeft">&#160;</td><td class="mdescRight">DO NOT USE.  <a href="#a326a8cb24eb5148ef4a1a279f87c909e">More...</a><br /></td></tr>
 <tr class="separator:a326a8cb24eb5148ef4a1a279f87c909e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa41b53013adffe0d1576ec3ac59bdad3"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html#aa41b53013adffe0d1576ec3ac59bdad3">getAcceptedObjectiveValue</a> ()</td></tr>
+<tr class="memdesc:aa41b53013adffe0d1576ec3ac59bdad3"><td class="mdescLeft">&#160;</td><td class="mdescRight">DO NOT USE.  <a href="#aa41b53013adffe0d1576ec3ac59bdad3">More...</a><br /></td></tr>
 <tr class="separator:aa41b53013adffe0d1576ec3ac59bdad3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
@@ -156,7 +158,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00017">17</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00014">14</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
 
 </div>
 </div>
@@ -184,7 +186,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00042">42</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00039">39</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
 
 </div>
 </div>
@@ -223,7 +225,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00050">50</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00047">47</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
 
 </div>
 </div>
@@ -251,7 +253,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchFilter_8java_source.html#l00076">76</a> of file <a class="el" href="IntVarLocalSearchFilter_8java_source.html">IntVarLocalSearchFilter.java</a>.</p>
+<p>Add variables to "track" to the filter. </p>
+
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchFilter_8java_source.html#l00082">82</a> of file <a class="el" href="IntVarLocalSearchFilter_8java_source.html">IntVarLocalSearchFilter.java</a>.</p>
 
 </div>
 </div>
@@ -278,7 +282,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00031">31</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00028">28</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
 
 </div>
 </div>
@@ -305,7 +309,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00070">70</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
+<p>DO NOT USE. </p>
+<p>Objective value from the last time Accept() was called and returned true. If the last Accept() call returned false, returns an undefined value. </p>
+
+<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00085">85</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
 
 </div>
 </div>
@@ -332,7 +339,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00066">66</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
+<p>DO NOT USE. </p>
+<p>Objective value from last time Synchronize() was called. </p>
+
+<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00078">78</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
 
 </div>
 </div>
@@ -360,7 +370,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchFilter_8java_source.html#l00097">97</a> of file <a class="el" href="IntVarLocalSearchFilter_8java_source.html">IntVarLocalSearchFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchFilter_8java_source.html#l00103">103</a> of file <a class="el" href="IntVarLocalSearchFilter_8java_source.html">IntVarLocalSearchFilter.java</a>.</p>
 
 </div>
 </div>
@@ -388,7 +398,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchFilter_8java_source.html#l00072">72</a> of file <a class="el" href="IntVarLocalSearchFilter_8java_source.html">IntVarLocalSearchFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchFilter_8java_source.html#l00075">75</a> of file <a class="el" href="IntVarLocalSearchFilter_8java_source.html">IntVarLocalSearchFilter.java</a>.</p>
 
 </div>
 </div>
@@ -415,7 +425,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00062">62</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchFilter_8java_source.html#l00071">71</a> of file <a class="el" href="LocalSearchFilter_8java_source.html">LocalSearchFilter.java</a>.</p>
 
 </div>
 </div>
@@ -443,7 +453,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00054">54</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00051">51</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
 
 </div>
 </div>
@@ -470,7 +480,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchFilter_8java_source.html#l00080">80</a> of file <a class="el" href="IntVarLocalSearchFilter_8java_source.html">IntVarLocalSearchFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchFilter_8java_source.html#l00086">86</a> of file <a class="el" href="IntVarLocalSearchFilter_8java_source.html">IntVarLocalSearchFilter.java</a>.</p>
 
 </div>
 </div>
@@ -589,7 +599,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchFilter_8java_source.html#l00068">68</a> of file <a class="el" href="IntVarLocalSearchFilter_8java_source.html">IntVarLocalSearchFilter.java</a>.</p>
+<p>This method should not be overridden. </p>
+<p>Override OnSynchronize() instead which is called before exiting this method. </p>
+
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchFilter_8java_source.html#l00071">71</a> of file <a class="el" href="IntVarLocalSearchFilter_8java_source.html">IntVarLocalSearchFilter.java</a>.</p>
 
 </div>
 </div>
@@ -616,7 +629,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00046">46</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00043">43</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
 
 </div>
 </div>
@@ -644,7 +657,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchFilter_8java_source.html#l00089">89</a> of file <a class="el" href="IntVarLocalSearchFilter_8java_source.html">IntVarLocalSearchFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchFilter_8java_source.html#l00095">95</a> of file <a class="el" href="IntVarLocalSearchFilter_8java_source.html">IntVarLocalSearchFilter.java</a>.</p>
 
 </div>
 </div>
@@ -672,7 +685,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchFilter_8java_source.html#l00084">84</a> of file <a class="el" href="IntVarLocalSearchFilter_8java_source.html">IntVarLocalSearchFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarLocalSearchFilter_8java_source.html#l00090">90</a> of file <a class="el" href="IntVarLocalSearchFilter_8java_source.html">IntVarLocalSearchFilter.java</a>.</p>
 
 </div>
 </div>

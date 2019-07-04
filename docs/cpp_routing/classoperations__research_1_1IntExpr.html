@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -59,11 +58,11 @@ Inheritance diagram for operations_research::IntExpr:</div>
  <div class="center">
   <img src="classoperations__research_1_1IntExpr.png" usemap="#operations_5Fresearch::IntExpr_map" alt=""/>
   <map id="operations_5Fresearch::IntExpr_map" name="operations_5Fresearch::IntExpr_map">
-<area href="classoperations__research_1_1PropagationBaseObject.html" title="The PropagationBaseObject is a subclass of BaseObject that is also friend to the Solver class." alt="operations_research::PropagationBaseObject" shape="rect" coords="139,56,407,80"/>
-<area href="classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="operations_research::BaseObject" shape="rect" coords="139,0,407,24"/>
+<area href="classoperations__research_1_1PropagationBaseObject.html" title="NOLINT." alt="operations_research::PropagationBaseObject" shape="rect" coords="139,56,407,80"/>
+<area href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="operations_research::BaseObject" shape="rect" coords="139,0,407,24"/>
 <area href="classoperations__research_1_1BaseIntExpr.html" title="This is the base class for all expressions that are not variables." alt="operations_research::BaseIntExpr" shape="rect" coords="0,168,268,192"/>
 <area href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr." alt="operations_research::IntVar" shape="rect" coords="278,168,546,192"/>
-<area href="classoperations__research_1_1BooleanVar.html" title="--— Boolean Variable --—" alt="operations_research::BooleanVar" shape="rect" coords="278,224,546,248"/>
+<area href="classoperations__research_1_1BooleanVar.html" alt="operations_research::BooleanVar" shape="rect" coords="278,224,546,248"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -134,7 +133,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a5975e144479d99ceae4f009472ca5e92"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1PropagationBaseObject.html#a5975e144479d99ceae4f009472ca5e92">EnqueueAll</a> (const <a class="el" href="classoperations__research_1_1SimpleRevFIFO.html">SimpleRevFIFO</a>&lt; <a class="el" href="classoperations__research_1_1Demon.html">Demon</a> * &gt; &amp;demons)</td></tr>
 <tr class="separator:a5975e144479d99ceae4f009472ca5e92"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5c6bf90bb0b099a2c8f81aaefdfdd46c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1PropagationBaseObject.html#a5c6bf90bb0b099a2c8f81aaefdfdd46c">set_action_on_fail</a> (<a class="el" href="classoperations__research_1_1Solver.html#a87ca0b6abf9c8724900387f5aa557c04">Solver::Action</a> a)</td></tr>
-<tr class="memdesc:a5c6bf90bb0b099a2c8f81aaefdfdd46c"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method sets a callback that will be called if a failure happens during the propagation of the queue.  <a href="#a5c6bf90bb0b099a2c8f81aaefdfdd46c">More...</a><br /></td></tr>
 <tr class="separator:a5c6bf90bb0b099a2c8f81aaefdfdd46c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad07aa613bcc8d3896dff3f33520b061c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1PropagationBaseObject.html#ad07aa613bcc8d3896dff3f33520b061c">reset_action_on_fail</a> ()</td></tr>
 <tr class="memdesc:ad07aa613bcc8d3896dff3f33520b061c"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method clears the failure callback.  <a href="#ad07aa613bcc8d3896dff3f33520b061c">More...</a><br /></td></tr>
@@ -163,7 +161,7 @@ Public Member Functions</h2></td></tr>
 <li>casting it into a variable (instance of <a class="el" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a>) </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03817">3817</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03773">3773</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ad8abff4968e302f6a8576a4bdce52a8b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad8abff4968e302f6a8576a4bdce52a8b">&#9670;&nbsp;</a></span>IntExpr()</h2>
@@ -189,7 +187,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03819">3819</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03775">3775</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -216,7 +214,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03820">3820</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03776">3776</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -307,7 +305,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1BooleanVar.html#ae3a6eede92fb16e764d9ed3d41457a90">operations_research::BooleanVar</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03843">3843</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03799">3799</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -338,7 +336,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1Pack.html#a494cf6256ff568544390e507a6943112">operations_research::Pack</a>, <a class="el" href="classoperations__research_1_1Assignment.html#a709bad20694c9c117a3abfff24a60d03">operations_research::Assignment</a>, <a class="el" href="classoperations__research_1_1SequenceVar.html#af92814129c466409ff4c004002c2034d">operations_research::SequenceVar</a>, <a class="el" href="classoperations__research_1_1Constraint.html#a443bf6da3f8db15c240cb92d20e37466">operations_research::Constraint</a>, and <a class="el" href="classoperations__research_1_1BooleanVar.html#acad14290f1f14a53adc0feb170d67f22">operations_research::BooleanVar</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03154">3154</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03109">3109</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -395,7 +393,7 @@ Public Member Functions</h2></td></tr>
 <p>This method pushes the demon onto the propagation queue. </p>
 <p>It will be processed directly if the queue is empty. It will be enqueued according to its priority otherwise. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03173">3173</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03129">3129</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -423,7 +421,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03174">3174</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03130">3130</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -479,7 +477,7 @@ Public Member Functions</h2></td></tr>
 <p>This method freezes the propagation queue. </p>
 <p>It is useful when you need to apply multiple modifications at once. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03164">3164</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03120">3120</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -537,7 +535,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1IntVar.html#a1e8732e1343228cbe86db9c986aa48d4">operations_research::IntVar</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03846">3846</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03802">3802</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -658,7 +656,7 @@ Public Member Functions</h2></td></tr>
 
 <p>By default calls <a class="el" href="classoperations__research_1_1IntExpr.html#a58d589131cbea30d4826248a2fa06aba">Min()</a> and <a class="el" href="classoperations__research_1_1IntExpr.html#a1fb9e08cff06a9a5b5739de4acba587c">Max()</a>, but can be redefined when Min and Max code can be factorized. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03829">3829</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03785">3785</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -687,7 +685,7 @@ Public Member Functions</h2></td></tr>
 
 <p>This method clears the failure callback. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03187">3187</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03143">3143</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -715,9 +713,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>This method sets a callback that will be called if a failure happens during the propagation of the queue. </p>
-
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03181">3181</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03137">3137</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -773,7 +769,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Shortcut for variable cleaner. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03190">3190</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03146">3146</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -871,7 +867,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1BooleanVar.html#ae662ff228ca3c6d00bf1b5a44cde80af">operations_research::BooleanVar</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03834">3834</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03790">3790</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -901,7 +897,7 @@ Public Member Functions</h2></td></tr>
 
 <p>This method sets the value of the expression. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03840">3840</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03796">3796</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -928,7 +924,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03161">3161</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03116">3116</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -958,7 +954,7 @@ Public Member Functions</h2></td></tr>
 <p>This method unfreezes the propagation queue. </p>
 <p>All modifications that happened when the queue was frozen will be processed. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03168">3168</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03124">3124</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1068,7 +1064,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Attach a demon that will watch the min or the max of the expression. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03860">3860</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03816">3816</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1098,7 +1094,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Attach a demon that will watch the min or the max of the expression. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03866">3866</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03822">3822</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>

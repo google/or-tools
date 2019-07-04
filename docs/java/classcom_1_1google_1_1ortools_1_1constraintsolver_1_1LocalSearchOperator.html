@@ -50,22 +50,24 @@
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00011">11</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
+<div class="textblock"><p>This class represent a reversible FIFO structure. </p>
+<p>The main difference w.r.t a standard FIFO structure is that a <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html" title="Solver Class A solver represents the main computation engine.">Solver</a> is given as parameter to the modifiers such that the solver can store the backtrack information Iterator's traversing order should not be changed, as some algorithm depend on it to be consistent. It's main use is to store a list of demons in the various classes of variables. The base class for all local search operators. A local search operator is an object that defines the neighborhood of a solution. In other words, a neighborhood is the set of solutions which can be reached from a given solution using an operator. The behavior of the <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html" title="This class represent a reversible FIFO structure.">LocalSearchOperator</a> class is similar to iterators. The operator is synchronized with an assignment (gives the current values of the variables); this is done in the Start() method. Then one can iterate over the neighbors using the MakeNextNeighbor method. This method returns an assignment which represents the incremental changes to the current solution. It also returns a second assignment representing the changes to the last solution defined by the neighborhood operator; this assignment is empty if the neighborhood operator cannot track this information. </p>
+
+<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00014">14</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
 </div><div class="dynheader">
 Inheritance diagram for com.google.ortools.constraintsolver.LocalSearchOperator:</div>
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator__inherit__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8LocalSearchOperator_inherit__map" alt="Inheritance graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8LocalSearchOperator_inherit__map" id="com_8google_8ortools_8constraintsolver_8LocalSearchOperator_inherit__map">
-<area shape="rect"  title=" " alt="" coords="285,104,517,145"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html" title=" " alt="" coords="587,71,820,112"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperatorTemplate.html" title=" " alt="" coords="565,136,841,177"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="5,104,237,145"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperator.html" title=" " alt="" coords="889,71,1121,112"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseLns.html" title=" " alt="" coords="1169,5,1401,47"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ChangeValue.html" title=" " alt="" coords="1169,71,1401,112"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathOperator.html" title=" " alt="" coords="1169,136,1401,177"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathWithPreviousNodesOperator.html" title=" " alt="" coords="1449,136,1681,177"/>
+<area shape="rect"  title="This class represent a reversible FIFO structure." alt="" coords="285,104,517,145"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html" title="Base operator class for operators manipulating variables." alt="" coords="587,71,820,112"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperatorTemplate.html" title="Base operator class for operators manipulating variables." alt="" coords="565,136,841,177"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,104,237,145"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperator.html" title="clang&#45;format on" alt="" coords="889,71,1121,112"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseLns.html" title="This is the base class for building an Lns operator." alt="" coords="1169,5,1401,47"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ChangeValue.html" title="Defines operators which change the value of variables; each neighbor corresponds to one modified vari..." alt="" coords="1169,71,1401,112"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathOperator.html" title="Base class of the local search operators dedicated to path modifications (a path is a set of nodes li..." alt="" coords="1169,136,1401,177"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathWithPreviousNodesOperator.html" title="Simple PathOperator wrapper that also stores the current previous nodes, and is thus able to provide ..." alt="" coords="1449,136,1681,177"/>
 <area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperator.html" title=" " alt="" coords="889,136,1121,177"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
@@ -74,8 +76,8 @@ Collaboration diagram for com.google.ortools.constraintsolver.LocalSearchOperato
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator__coll__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8LocalSearchOperator_coll__map" alt="Collaboration graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8LocalSearchOperator_coll__map" id="com_8google_8ortools_8constraintsolver_8LocalSearchOperator_coll__map">
-<area shape="rect"  title=" " alt="" coords="5,95,237,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="5,5,237,47"/>
+<area shape="rect"  title="This class represent a reversible FIFO structure." alt="" coords="5,95,237,136"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,5,237,47"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -144,7 +146,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00014">14</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00017">17</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
 
 </div>
 </div>
@@ -171,7 +173,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00054">54</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00057">57</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
 
 </div>
 </div>
@@ -199,7 +201,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00028">28</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00031">31</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
 
 </div>
 </div>
@@ -226,7 +228,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00071">71</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00074">74</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
 
 </div>
 </div>
@@ -253,7 +255,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00075">75</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00078">78</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
 
 </div>
 </div>
@@ -291,7 +293,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00059">59</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00062">62</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
 
 </div>
 </div>
@@ -318,7 +320,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00067">67</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00070">70</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
 
 </div>
 </div>
@@ -346,7 +348,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00063">63</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00066">66</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
 
 </div>
 </div>
@@ -373,7 +375,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00039">39</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00042">42</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
 
 </div>
 </div>
@@ -400,7 +402,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00044">44</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00047">47</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
 
 </div>
 </div>
@@ -427,7 +429,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00049">49</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalSearchOperator_8java_source.html#l00052">52</a> of file <a class="el" href="LocalSearchOperator_8java_source.html">LocalSearchOperator.java</a>.</p>
 
 </div>
 </div>
@@ -454,7 +456,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseObject_8java_source.html#l00043">43</a> of file <a class="el" href="BaseObject_8java_source.html">BaseObject.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseObject_8java_source.html#l00046">46</a> of file <a class="el" href="BaseObject_8java_source.html">BaseObject.java</a>.</p>
 
 </div>
 </div>

@@ -50,15 +50,17 @@
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="IntVarIterator_8java_source.html#l00011">11</a> of file <a class="el" href="IntVarIterator_8java_source.html">IntVarIterator.java</a>.</p>
+<div class="textblock"><p>The class Iterator has two direct subclasses. </p>
+<p>HoleIterators iterates over all holes, that is value removed between the current min and max of the variable since the last time the variable was processed in the queue. DomainIterators iterates over all elements of the variable domain. Both iterators are not robust to domain changes. Hole iterators can also report values outside the current min and max of the variable. HoleIterators should only be called from a demon attached to the variable that has created this iterator. IntVar* current_var; std::unique_ptr&lt;<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarIterator.html" title="The class Iterator has two direct subclasses.">IntVarIterator</a>&gt; it(current_var-&gt;MakeHoleIterator(false)); for (const int64 hole : InitAndGetValues(it)) { /// use the hole } </p>
+
+<p class="definition">Definition at line <a class="el" href="IntVarIterator_8java_source.html#l00014">14</a> of file <a class="el" href="IntVarIterator_8java_source.html">IntVarIterator.java</a>.</p>
 </div><div class="dynheader">
 Inheritance diagram for com.google.ortools.constraintsolver.IntVarIterator:</div>
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarIterator__inherit__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8IntVarIterator_inherit__map" alt="Inheritance graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8IntVarIterator_inherit__map" id="com_8google_8ortools_8constraintsolver_8IntVarIterator_inherit__map">
-<area shape="rect"  title=" " alt="" coords="5,95,237,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="5,5,237,47"/>
+<area shape="rect"  title="The class Iterator has two direct subclasses." alt="" coords="5,95,237,136"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,5,237,47"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <div class="dynheader">
@@ -66,8 +68,8 @@ Collaboration diagram for com.google.ortools.constraintsolver.IntVarIterator:</d
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarIterator__coll__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8IntVarIterator_coll__map" alt="Collaboration graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8IntVarIterator_coll__map" id="com_8google_8ortools_8constraintsolver_8IntVarIterator_coll__map">
-<area shape="rect"  title=" " alt="" coords="5,95,237,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="5,5,237,47"/>
+<area shape="rect"  title="The class Iterator has two direct subclasses." alt="" coords="5,95,237,136"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,5,237,47"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -76,14 +78,19 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a1f5bae671347dcf60530a5353103ab65"><td class="memItemLeft" align="right" valign="top">synchronized void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarIterator.html#a1f5bae671347dcf60530a5353103ab65">delete</a> ()</td></tr>
 <tr class="separator:a1f5bae671347dcf60530a5353103ab65"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a62c4215fdb57c1720ba902dbae24de7b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarIterator.html#a62c4215fdb57c1720ba902dbae24de7b">init</a> ()</td></tr>
+<tr class="memdesc:a62c4215fdb57c1720ba902dbae24de7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method must be called before each loop.  <a href="#a62c4215fdb57c1720ba902dbae24de7b">More...</a><br /></td></tr>
 <tr class="separator:a62c4215fdb57c1720ba902dbae24de7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af622c8dde6efe7195872449c001e523d"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarIterator.html#af622c8dde6efe7195872449c001e523d">ok</a> ()</td></tr>
+<tr class="memdesc:af622c8dde6efe7195872449c001e523d"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method indicates if we can call Value() or not.  <a href="#af622c8dde6efe7195872449c001e523d">More...</a><br /></td></tr>
 <tr class="separator:af622c8dde6efe7195872449c001e523d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8361b598cc043d8a07343c9579329ab4"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarIterator.html#a8361b598cc043d8a07343c9579329ab4">value</a> ()</td></tr>
+<tr class="memdesc:a8361b598cc043d8a07343c9579329ab4"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method returns the current value of the iterator.  <a href="#a8361b598cc043d8a07343c9579329ab4">More...</a><br /></td></tr>
 <tr class="separator:a8361b598cc043d8a07343c9579329ab4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6bfd5649b8a97a2c439fe6edb037824e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarIterator.html#a6bfd5649b8a97a2c439fe6edb037824e">next</a> ()</td></tr>
+<tr class="memdesc:a6bfd5649b8a97a2c439fe6edb037824e"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method moves the iterator to the next value.  <a href="#a6bfd5649b8a97a2c439fe6edb037824e">More...</a><br /></td></tr>
 <tr class="separator:a6bfd5649b8a97a2c439fe6edb037824e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a26081de517f09c06ba7ee09e4cc658d3"><td class="memItemLeft" align="right" valign="top">String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarIterator.html#a26081de517f09c06ba7ee09e4cc658d3">toString</a> ()</td></tr>
+<tr class="memdesc:a26081de517f09c06ba7ee09e4cc658d3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pretty Print.  <a href="#a26081de517f09c06ba7ee09e4cc658d3">More...</a><br /></td></tr>
 <tr class="separator:a26081de517f09c06ba7ee09e4cc658d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
@@ -126,7 +133,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarIterator_8java_source.html#l00014">14</a> of file <a class="el" href="IntVarIterator_8java_source.html">IntVarIterator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarIterator_8java_source.html#l00017">17</a> of file <a class="el" href="IntVarIterator_8java_source.html">IntVarIterator.java</a>.</p>
 
 </div>
 </div>
@@ -154,7 +161,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarIterator_8java_source.html#l00028">28</a> of file <a class="el" href="IntVarIterator_8java_source.html">IntVarIterator.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarIterator_8java_source.html#l00031">31</a> of file <a class="el" href="IntVarIterator_8java_source.html">IntVarIterator.java</a>.</p>
 
 </div>
 </div>
@@ -181,7 +188,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarIterator_8java_source.html#l00039">39</a> of file <a class="el" href="IntVarIterator_8java_source.html">IntVarIterator.java</a>.</p>
+<p>This method must be called before each loop. </p>
+
+<p class="definition">Definition at line <a class="el" href="IntVarIterator_8java_source.html#l00045">45</a> of file <a class="el" href="IntVarIterator_8java_source.html">IntVarIterator.java</a>.</p>
 
 </div>
 </div>
@@ -208,7 +217,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarIterator_8java_source.html#l00051">51</a> of file <a class="el" href="IntVarIterator_8java_source.html">IntVarIterator.java</a>.</p>
+<p>This method moves the iterator to the next value. </p>
+
+<p class="definition">Definition at line <a class="el" href="IntVarIterator_8java_source.html#l00066">66</a> of file <a class="el" href="IntVarIterator_8java_source.html">IntVarIterator.java</a>.</p>
 
 </div>
 </div>
@@ -235,7 +246,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarIterator_8java_source.html#l00043">43</a> of file <a class="el" href="IntVarIterator_8java_source.html">IntVarIterator.java</a>.</p>
+<p>This method indicates if we can call Value() or not. </p>
+
+<p class="definition">Definition at line <a class="el" href="IntVarIterator_8java_source.html#l00052">52</a> of file <a class="el" href="IntVarIterator_8java_source.html">IntVarIterator.java</a>.</p>
 
 </div>
 </div>
@@ -262,7 +275,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarIterator_8java_source.html#l00055">55</a> of file <a class="el" href="IntVarIterator_8java_source.html">IntVarIterator.java</a>.</p>
+<p>Pretty Print. </p>
+
+<p class="definition">Definition at line <a class="el" href="IntVarIterator_8java_source.html#l00073">73</a> of file <a class="el" href="IntVarIterator_8java_source.html">IntVarIterator.java</a>.</p>
 
 </div>
 </div>
@@ -289,7 +304,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarIterator_8java_source.html#l00047">47</a> of file <a class="el" href="IntVarIterator_8java_source.html">IntVarIterator.java</a>.</p>
+<p>This method returns the current value of the iterator. </p>
+
+<p class="definition">Definition at line <a class="el" href="IntVarIterator_8java_source.html#l00059">59</a> of file <a class="el" href="IntVarIterator_8java_source.html">IntVarIterator.java</a>.</p>
 
 </div>
 </div>

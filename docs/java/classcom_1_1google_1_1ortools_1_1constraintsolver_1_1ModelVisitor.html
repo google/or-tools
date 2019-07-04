@@ -51,15 +51,16 @@
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00011">11</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<div class="textblock"><p>Model visitor. </p>
+
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00014">14</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 </div><div class="dynheader">
 Inheritance diagram for com.google.ortools.constraintsolver.ModelVisitor:</div>
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor__inherit__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8ModelVisitor_inherit__map" alt="Inheritance graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8ModelVisitor_inherit__map" id="com_8google_8ortools_8constraintsolver_8ModelVisitor_inherit__map">
-<area shape="rect"  title=" " alt="" coords="5,95,237,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="5,5,237,47"/>
+<area shape="rect"  title="Model visitor." alt="" coords="5,95,237,136"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,5,237,47"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <div class="dynheader">
@@ -67,8 +68,8 @@ Collaboration diagram for com.google.ortools.constraintsolver.ModelVisitor:</div
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor__coll__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8ModelVisitor_coll__map" alt="Collaboration graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8ModelVisitor_coll__map" id="com_8google_8ortools_8constraintsolver_8ModelVisitor_coll__map">
-<area shape="rect"  title=" " alt="" coords="5,95,237,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="5,5,237,47"/>
+<area shape="rect"  title="Model visitor." alt="" coords="5,95,237,136"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,5,237,47"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -77,6 +78,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a745c42bf9c723c64e0ec04c14cb22ac3"><td class="memItemLeft" align="right" valign="top">synchronized void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#a745c42bf9c723c64e0ec04c14cb22ac3">delete</a> ()</td></tr>
 <tr class="separator:a745c42bf9c723c64e0ec04c14cb22ac3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3f38c717d3fe6212d7dd63a24132caee"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#a3f38c717d3fe6212d7dd63a24132caee">beginVisitModel</a> (String solver_name)</td></tr>
+<tr class="memdesc:a3f38c717d3fe6212d7dd63a24132caee"><td class="mdescLeft">&#160;</td><td class="mdescRight">--&mdash; Virtual methods for visitors --&mdash; Begin/End visit element.  <a href="#a3f38c717d3fe6212d7dd63a24132caee">More...</a><br /></td></tr>
 <tr class="separator:a3f38c717d3fe6212d7dd63a24132caee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a37177a31d4315845a05cc36c71b108e0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#a37177a31d4315845a05cc36c71b108e0">endVisitModel</a> (String solver_name)</td></tr>
 <tr class="separator:a37177a31d4315845a05cc36c71b108e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -101,20 +103,24 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a96ddc7f412c87eef6a6b3a0cd159072f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#a96ddc7f412c87eef6a6b3a0cd159072f">visitSequenceVariable</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVar.html">SequenceVar</a> variable)</td></tr>
 <tr class="separator:a96ddc7f412c87eef6a6b3a0cd159072f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8da6df82e6469d723570726b7306a7e7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#a8da6df82e6469d723570726b7306a7e7">visitIntegerArgument</a> (String arg_name, long value)</td></tr>
+<tr class="memdesc:a8da6df82e6469d723570726b7306a7e7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Visit integer arguments.  <a href="#a8da6df82e6469d723570726b7306a7e7">More...</a><br /></td></tr>
 <tr class="separator:a8da6df82e6469d723570726b7306a7e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a05576e22be7f2f721240cd3741a42b84"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#a05576e22be7f2f721240cd3741a42b84">visitIntegerArrayArgument</a> (String arg_name, long[] values)</td></tr>
 <tr class="separator:a05576e22be7f2f721240cd3741a42b84"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab83942c7d86e0449dfbb48a9314fce90"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#ab83942c7d86e0449dfbb48a9314fce90">visitIntegerMatrixArgument</a> (String arg_name, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntTupleSet.html">IntTupleSet</a> tuples)</td></tr>
 <tr class="separator:ab83942c7d86e0449dfbb48a9314fce90"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b57360ceb5539449a68486d33023830"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#a8b57360ceb5539449a68486d33023830">visitIntegerExpressionArgument</a> (String arg_name, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> argument)</td></tr>
+<tr class="memdesc:a8b57360ceb5539449a68486d33023830"><td class="mdescLeft">&#160;</td><td class="mdescRight">Visit integer expression argument.  <a href="#a8b57360ceb5539449a68486d33023830">More...</a><br /></td></tr>
 <tr class="separator:a8b57360ceb5539449a68486d33023830"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a66e5ee4260d6ab14b7ddb21d043666db"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#a66e5ee4260d6ab14b7ddb21d043666db">visitIntegerVariableArrayArgument</a> (String arg_name, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>[] arguments)</td></tr>
 <tr class="separator:a66e5ee4260d6ab14b7ddb21d043666db"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab709f95643dee1d2b235f9788b4d9e00"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#ab709f95643dee1d2b235f9788b4d9e00">visitIntervalArgument</a> (String arg_name, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html">IntervalVar</a> argument)</td></tr>
+<tr class="memdesc:ab709f95643dee1d2b235f9788b4d9e00"><td class="mdescLeft">&#160;</td><td class="mdescRight">Visit interval argument.  <a href="#ab709f95643dee1d2b235f9788b4d9e00">More...</a><br /></td></tr>
 <tr class="separator:ab709f95643dee1d2b235f9788b4d9e00"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adeef4a126b11a11e00e2164e3d3aa1d5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#adeef4a126b11a11e00e2164e3d3aa1d5">visitIntervalArrayArgument</a> (String arg_name, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html">IntervalVar</a>[] arguments)</td></tr>
 <tr class="separator:adeef4a126b11a11e00e2164e3d3aa1d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a49fbd523c4e85f74094119d9b4d9bbeb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#a49fbd523c4e85f74094119d9b4d9bbeb">visitSequenceArgument</a> (String arg_name, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVar.html">SequenceVar</a> argument)</td></tr>
+<tr class="memdesc:a49fbd523c4e85f74094119d9b4d9bbeb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Visit sequence argument.  <a href="#a49fbd523c4e85f74094119d9b4d9bbeb">More...</a><br /></td></tr>
 <tr class="separator:a49fbd523c4e85f74094119d9b4d9bbeb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5b70beb55ebd0b704ee5422565aab95f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#a5b70beb55ebd0b704ee5422565aab95f">visitSequenceArrayArgument</a> (String arg_name, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVar.html">SequenceVar</a>[] arguments)</td></tr>
 <tr class="separator:a5b70beb55ebd0b704ee5422565aab95f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -126,6 +132,7 @@ Public Member Functions</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a140002379390fa03d07fbde48281c134"><td class="memItemLeft" align="right" valign="top">static String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#a140002379390fa03d07fbde48281c134">getKAbs</a> ()</td></tr>
+<tr class="memdesc:a140002379390fa03d07fbde48281c134"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html" title="A constraint is the main modeling object.">Constraint</a> and Expression types.  <a href="#a140002379390fa03d07fbde48281c134">More...</a><br /></td></tr>
 <tr class="separator:a140002379390fa03d07fbde48281c134"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0007f59204c205fbe34d034671f08dd3"><td class="memItemLeft" align="right" valign="top">static String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#a0007f59204c205fbe34d034671f08dd3">getKAbsEqual</a> ()</td></tr>
 <tr class="separator:a0007f59204c205fbe34d034671f08dd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -290,6 +297,7 @@ Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a1e2392e9e9d2a5913bb1ea10cebf6392"><td class="memItemLeft" align="right" valign="top">static String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#a1e2392e9e9d2a5913bb1ea10cebf6392">getKVarValueWatcher</a> ()</td></tr>
 <tr class="separator:a1e2392e9e9d2a5913bb1ea10cebf6392"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a43a91de9d560757439c240985f382660"><td class="memItemLeft" align="right" valign="top">static String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#a43a91de9d560757439c240985f382660">getKCountAssignedItemsExtension</a> ()</td></tr>
+<tr class="memdesc:a43a91de9d560757439c240985f382660"><td class="mdescLeft">&#160;</td><td class="mdescRight">Extension names:  <a href="#a43a91de9d560757439c240985f382660">More...</a><br /></td></tr>
 <tr class="separator:a43a91de9d560757439c240985f382660"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a60eacbcf84b2647e3b47cc657530c7ed"><td class="memItemLeft" align="right" valign="top">static String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#a60eacbcf84b2647e3b47cc657530c7ed">getKCountUsedBinsExtension</a> ()</td></tr>
 <tr class="separator:a60eacbcf84b2647e3b47cc657530c7ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -312,6 +320,7 @@ Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a9c8b3b4d50a283841d21279e9b3dc979"><td class="memItemLeft" align="right" valign="top">static String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#a9c8b3b4d50a283841d21279e9b3dc979">getKWeightedSumOfAssignedEqualVariableExtension</a> ()</td></tr>
 <tr class="separator:a9c8b3b4d50a283841d21279e9b3dc979"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6411a97d2dc2b0a09c9b0db79b84db92"><td class="memItemLeft" align="right" valign="top">static String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#a6411a97d2dc2b0a09c9b0db79b84db92">getKActiveArgument</a> ()</td></tr>
+<tr class="memdesc:a6411a97d2dc2b0a09c9b0db79b84db92"><td class="mdescLeft">&#160;</td><td class="mdescRight">argument names:  <a href="#a6411a97d2dc2b0a09c9b0db79b84db92">More...</a><br /></td></tr>
 <tr class="separator:a6411a97d2dc2b0a09c9b0db79b84db92"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4edf557ededa0bce455886ad5859607e"><td class="memItemLeft" align="right" valign="top">static String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#a4edf557ededa0bce455886ad5859607e">getKAssumePathsArgument</a> ()</td></tr>
 <tr class="separator:a4edf557ededa0bce455886ad5859607e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -434,6 +443,7 @@ Static Public Member Functions</h2></td></tr>
 <tr class="memitem:adc8d4961921aecd6c4a56c3b9c341807"><td class="memItemLeft" align="right" valign="top">static String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#adc8d4961921aecd6c4a56c3b9c341807">getKEvaluatorArgument</a> ()</td></tr>
 <tr class="separator:adc8d4961921aecd6c4a56c3b9c341807"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeae81f518fb2343b2ebd0cb654ca6e64"><td class="memItemLeft" align="right" valign="top">static String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#aeae81f518fb2343b2ebd0cb654ca6e64">getKMirrorOperation</a> ()</td></tr>
+<tr class="memdesc:aeae81f518fb2343b2ebd0cb654ca6e64"><td class="mdescLeft">&#160;</td><td class="mdescRight">Operations.  <a href="#aeae81f518fb2343b2ebd0cb654ca6e64">More...</a><br /></td></tr>
 <tr class="separator:aeae81f518fb2343b2ebd0cb654ca6e64"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af3ac6c75c6875ea4fdf201795890a98e"><td class="memItemLeft" align="right" valign="top">static String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html#af3ac6c75c6875ea4fdf201795890a98e">getKRelaxedMaxOperation</a> ()</td></tr>
 <tr class="separator:af3ac6c75c6875ea4fdf201795890a98e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -492,7 +502,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00014">14</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00017">17</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -519,7 +529,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00775">775</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00805">805</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -558,7 +568,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00699">699</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00717">717</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -586,7 +596,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00707">707</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00725">725</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -624,7 +634,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00715">715</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00733">733</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -652,7 +662,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00691">691</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p>--&mdash; Virtual methods for visitors --&mdash; Begin/End visit element. </p>
+
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00709">709</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -679,7 +691,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00028">28</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00031">31</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -717,7 +729,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00703">703</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00721">721</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -745,7 +757,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00711">711</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00729">729</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -783,7 +795,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00719">719</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00737">737</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -811,7 +823,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00695">695</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00713">713</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -838,7 +850,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00039">39</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html" title="A constraint is the main modeling object.">Constraint</a> and Expression types. </p>
+
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00045">45</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -865,7 +879,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00043">43</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00049">49</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -892,7 +906,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00411">411</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p>argument names: </p>
+
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00423">423</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -919,7 +935,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00047">47</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00053">53</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -946,7 +962,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00051">51</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00057">57</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -973,7 +989,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00415">415</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00427">427</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1000,7 +1016,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00055">55</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00061">61</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1027,7 +1043,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00063">63</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00069">69</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1054,7 +1070,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00419">419</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00431">431</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1081,7 +1097,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00423">423</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00435">435</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1108,7 +1124,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00427">427</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00439">439</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1135,7 +1151,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00071">71</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00077">77</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1162,7 +1178,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00431">431</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00443">443</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1189,7 +1205,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00067">67</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00073">73</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1216,7 +1232,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00075">75</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00081">81</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1243,7 +1259,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00435">435</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00447">447</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1270,7 +1286,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00367">367</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p>Extension names: </p>
+
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00376">376</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1297,7 +1315,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00079">79</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00085">85</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1324,7 +1342,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00371">371</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00380">380</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1351,7 +1369,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00083">83</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00089">89</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1378,7 +1396,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00087">87</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00093">93</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1405,7 +1423,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00439">439</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00451">451</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1432,7 +1450,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00443">443</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00455">455</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1459,7 +1477,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00279">279</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00285">285</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1486,7 +1504,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00447">447</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00459">459</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1513,7 +1531,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00091">91</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00097">97</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1540,7 +1558,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00095">95</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00101">101</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1567,7 +1585,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00671">671</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00686">686</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1594,7 +1612,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00099">99</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00105">105</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1621,7 +1639,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00103">103</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00109">109</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1648,7 +1666,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00107">107</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00113">113</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1675,7 +1693,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00111">111</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00117">117</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1702,7 +1720,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00451">451</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00463">463</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1729,7 +1747,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00455">455</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00467">467</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1756,7 +1774,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00459">459</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00471">471</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1783,7 +1801,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00463">463</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00475">475</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1810,7 +1828,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00115">115</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00121">121</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1837,7 +1855,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00119">119</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00125">125</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1864,7 +1882,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00123">123</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00129">129</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1891,7 +1909,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00467">467</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00479">479</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1918,7 +1936,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00471">471</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00483">483</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1945,7 +1963,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00475">475</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00487">487</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1972,7 +1990,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00127">127</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00133">133</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -1999,7 +2017,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00651">651</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00663">663</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2026,7 +2044,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00479">479</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00491">491</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2053,7 +2071,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00483">483</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00495">495</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2080,7 +2098,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00131">131</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00137">137</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2107,7 +2125,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00487">487</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00499">499</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2134,7 +2152,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00491">491</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00503">503</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2161,7 +2179,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00135">135</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00141">141</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2188,7 +2206,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00139">139</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00145">145</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2215,7 +2233,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00143">143</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00149">149</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2242,7 +2260,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00495">495</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00507">507</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2269,7 +2287,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00499">499</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00511">511</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2296,7 +2314,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00059">59</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00065">65</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2323,7 +2341,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00503">503</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00515">515</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2350,7 +2368,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00375">375</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00384">384</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2377,7 +2395,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00379">379</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00388">388</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2404,7 +2422,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00147">147</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00153">153</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2431,7 +2449,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00507">507</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00519">519</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2458,7 +2476,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00151">151</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00157">157</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2485,7 +2503,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00155">155</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00161">161</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2512,7 +2530,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00511">511</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00523">523</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2539,7 +2557,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00159">159</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00165">165</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2566,7 +2584,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00163">163</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00169">169</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2593,7 +2611,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00167">167</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00173">173</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2620,7 +2638,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00171">171</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00177">177</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2647,7 +2665,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00175">175</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00181">181</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2674,7 +2692,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00179">179</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00185">185</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2701,7 +2719,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00183">183</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00189">189</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2728,7 +2746,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00187">187</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00193">193</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2755,7 +2773,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00191">191</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00197">197</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2782,7 +2800,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00195">195</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00201">201</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2809,7 +2827,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00199">199</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00205">205</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2836,7 +2854,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00515">515</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00527">527</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2863,7 +2881,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00519">519</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00531">531</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2890,7 +2908,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00523">523</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00535">535</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2917,7 +2935,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00203">203</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00209">209</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2944,7 +2962,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00207">207</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00213">213</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2971,7 +2989,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00211">211</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00217">217</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -2998,7 +3016,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00215">215</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00221">221</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3025,7 +3043,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00219">219</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00225">225</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3052,7 +3070,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00223">223</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00229">229</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3079,7 +3097,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00527">527</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00539">539</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3106,7 +3124,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00227">227</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00233">233</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3133,7 +3151,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00531">531</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00543">543</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3160,7 +3178,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00231">231</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00237">237</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3187,7 +3205,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00235">235</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00241">241</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3214,7 +3232,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00535">535</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00547">547</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3241,7 +3259,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00239">239</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00245">245</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3268,7 +3286,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00655">655</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p>Operations. </p>
+
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00670">670</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3295,7 +3315,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00243">243</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00249">249</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3322,7 +3342,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00539">539</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00551">551</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3349,7 +3369,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00543">543</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00555">555</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3376,7 +3396,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00247">247</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00253">253</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3403,7 +3423,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00251">251</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00257">257</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3430,7 +3450,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00255">255</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00261">261</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3457,7 +3477,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00259">259</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00265">265</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3484,7 +3504,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00263">263</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00269">269</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3511,7 +3531,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00383">383</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00392">392</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3538,7 +3558,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00267">267</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00273">273</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3565,7 +3585,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00547">547</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00559">559</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3592,7 +3612,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00271">271</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00277">277</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3619,7 +3639,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00551">551</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00563">563</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3646,7 +3666,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00275">275</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00281">281</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3673,7 +3693,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00283">283</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00289">289</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3700,7 +3720,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00555">555</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00567">567</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3727,7 +3747,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00559">559</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00571">571</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3754,7 +3774,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00287">287</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00293">293</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3781,7 +3801,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00291">291</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00297">297</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3808,7 +3828,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00675">675</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00690">690</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3835,7 +3855,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00563">563</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00575">575</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3862,7 +3882,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00567">567</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00579">579</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3889,7 +3909,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00659">659</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00674">674</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3916,7 +3936,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00663">663</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00678">678</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3943,7 +3963,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00571">571</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00583">583</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3970,7 +3990,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00295">295</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00301">301</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -3997,7 +4017,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00299">299</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00305">305</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4024,7 +4044,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00303">303</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00309">309</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4051,7 +4071,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00307">307</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00313">313</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4078,7 +4098,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00387">387</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00396">396</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4105,7 +4125,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00311">311</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00317">317</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4132,7 +4152,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00575">575</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00587">587</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4159,7 +4179,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00579">579</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00591">591</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4186,7 +4206,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00315">315</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00321">321</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4213,7 +4233,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00583">583</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00595">595</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4240,7 +4260,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00587">587</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00599">599</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4267,7 +4287,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00591">591</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00603">603</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4294,7 +4314,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00595">595</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00607">607</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4321,7 +4341,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00599">599</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00611">611</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4348,7 +4368,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00319">319</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00325">325</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4375,7 +4395,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00323">323</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00329">329</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4402,7 +4422,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00327">327</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00333">333</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4429,7 +4449,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00603">603</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00615">615</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4456,7 +4476,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00607">607</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00619">619</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4483,7 +4503,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00611">611</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00623">623</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4510,7 +4530,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00683">683</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00698">698</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4537,7 +4557,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00679">679</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00694">694</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4564,7 +4584,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00615">615</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00627">627</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4591,7 +4611,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00331">331</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00337">337</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4618,7 +4638,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00335">335</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00341">341</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4645,7 +4665,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00339">339</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00345">345</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4672,7 +4692,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00343">343</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00349">349</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4699,7 +4719,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00667">667</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00682">682</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4726,7 +4746,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00619">619</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00631">631</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4753,7 +4773,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00623">623</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00635">635</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4780,7 +4800,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00347">347</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00353">353</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4807,7 +4827,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00687">687</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00702">702</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4834,7 +4854,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00351">351</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00357">357</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4861,7 +4881,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00627">627</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00639">639</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4888,7 +4908,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00355">355</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00361">361</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4915,7 +4935,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00631">631</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00643">643</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4942,7 +4962,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00391">391</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00400">400</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4969,7 +4989,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00395">395</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00404">404</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -4996,7 +5016,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00635">635</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00647">647</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -5023,7 +5043,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00639">639</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00651">651</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -5050,7 +5070,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00359">359</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00365">365</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -5077,7 +5097,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00643">643</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00655">655</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -5104,7 +5124,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00399">399</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00408">408</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -5131,7 +5151,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00403">403</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00412">412</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -5158,7 +5178,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00647">647</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00659">659</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -5185,7 +5205,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00363">363</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00369">369</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -5212,7 +5232,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00407">407</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00416">416</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -5239,7 +5259,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BaseObject_8java_source.html#l00043">43</a> of file <a class="el" href="BaseObject_8java_source.html">BaseObject.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseObject_8java_source.html#l00046">46</a> of file <a class="el" href="BaseObject_8java_source.html">BaseObject.java</a>.</p>
 
 </div>
 </div>
@@ -5277,7 +5297,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00739">739</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p>Visit integer arguments. </p>
+
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00760">760</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -5315,7 +5337,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00743">743</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00764">764</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -5353,7 +5375,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00751">751</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p>Visit integer expression argument. </p>
+
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00775">775</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -5391,7 +5415,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00747">747</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00768">768</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -5429,7 +5453,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00723">723</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00741">741</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -5479,7 +5503,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00727">727</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00745">745</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -5517,7 +5541,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00755">755</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00779">779</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -5555,7 +5579,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00759">759</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p>Visit interval argument. </p>
+
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00786">786</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -5593,7 +5619,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00763">763</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00790">790</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -5643,7 +5669,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00731">731</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00749">749</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -5681,7 +5707,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00767">767</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p>Visit sequence argument. </p>
+
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00797">797</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -5719,7 +5747,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00771">771</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00801">801</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>
@@ -5747,7 +5775,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00735">735</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelVisitor_8java_source.html#l00753">753</a> of file <a class="el" href="ModelVisitor_8java_source.html">ModelVisitor.java</a>.</p>
 
 </div>
 </div>

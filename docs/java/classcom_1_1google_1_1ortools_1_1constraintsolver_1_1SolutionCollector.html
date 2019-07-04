@@ -51,16 +51,18 @@
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00011">11</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<div class="textblock"><p>This class is the root class of all solution collectors. </p>
+<p>It implements a basic query API to be used independently of the collector used. </p>
+
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00014">14</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 </div><div class="dynheader">
 Inheritance diagram for com.google.ortools.constraintsolver.SolutionCollector:</div>
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector__inherit__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8SolutionCollector_inherit__map" alt="Inheritance graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8SolutionCollector_inherit__map" id="com_8google_8ortools_8constraintsolver_8SolutionCollector_inherit__map">
-<area shape="rect"  title=" " alt="" coords="5,184,237,225"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html" title=" " alt="" coords="5,95,237,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="5,5,237,47"/>
+<area shape="rect"  title="This class is the root class of all solution collectors." alt="" coords="5,184,237,225"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events." alt="" coords="5,95,237,136"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,5,237,47"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <div class="dynheader">
@@ -68,9 +70,9 @@ Collaboration diagram for com.google.ortools.constraintsolver.SolutionCollector:
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector__coll__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8SolutionCollector_coll__map" alt="Collaboration graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8SolutionCollector_coll__map" id="com_8google_8ortools_8constraintsolver_8SolutionCollector_coll__map">
-<area shape="rect"  title=" " alt="" coords="5,184,237,225"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html" title=" " alt="" coords="5,95,237,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="5,5,237,47"/>
+<area shape="rect"  title="This class is the root class of all solution collectors." alt="" coords="5,184,237,225"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events." alt="" coords="5,95,237,136"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,5,237,47"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -85,6 +87,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aa6443d762c16a8a230e1a87476b861e5"><td class="memItemLeft" align="right" valign="top">String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html#aa6443d762c16a8a230e1a87476b861e5">toString</a> ()</td></tr>
 <tr class="separator:aa6443d762c16a8a230e1a87476b861e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af0ece5226559d701113e850e6dfe89c5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html#af0ece5226559d701113e850e6dfe89c5">add</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a> var)</td></tr>
+<tr class="memdesc:af0ece5226559d701113e850e6dfe89c5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add API.  <a href="#af0ece5226559d701113e850e6dfe89c5">More...</a><br /></td></tr>
 <tr class="separator:af0ece5226559d701113e850e6dfe89c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0dd58f296a66fa9038700a72c49c8ae3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html#a0dd58f296a66fa9038700a72c49c8ae3">add</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>[] vars)</td></tr>
 <tr class="separator:a0dd58f296a66fa9038700a72c49c8ae3"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -99,86 +102,123 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aa5ac64eb91dc2d2b50ce36309298dcf4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html#aa5ac64eb91dc2d2b50ce36309298dcf4">addObjective</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a> objective)</td></tr>
 <tr class="separator:aa5ac64eb91dc2d2b50ce36309298dcf4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afa47c2156335ccf7e0a0a108d9aef603"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html#afa47c2156335ccf7e0a0a108d9aef603">enterSearch</a> ()</td></tr>
+<tr class="memdesc:afa47c2156335ccf7e0a0a108d9aef603"><td class="mdescLeft">&#160;</td><td class="mdescRight">Beginning of the search.  <a href="#afa47c2156335ccf7e0a0a108d9aef603">More...</a><br /></td></tr>
 <tr class="separator:afa47c2156335ccf7e0a0a108d9aef603"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a857c9448c7fbe67b94370b78e21c8a12"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html#a857c9448c7fbe67b94370b78e21c8a12">solutionCount</a> ()</td></tr>
+<tr class="memdesc:a857c9448c7fbe67b94370b78e21c8a12"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns how many solutions were stored during the search.  <a href="#a857c9448c7fbe67b94370b78e21c8a12">More...</a><br /></td></tr>
 <tr class="separator:a857c9448c7fbe67b94370b78e21c8a12"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8ce2e06263561d9bf75b6051d0eeeb2d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html">Assignment</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html#a8ce2e06263561d9bf75b6051d0eeeb2d">solution</a> (int n)</td></tr>
+<tr class="memdesc:a8ce2e06263561d9bf75b6051d0eeeb2d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the nth solution.  <a href="#a8ce2e06263561d9bf75b6051d0eeeb2d">More...</a><br /></td></tr>
 <tr class="separator:a8ce2e06263561d9bf75b6051d0eeeb2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4e17b60c41ae411ea9851694f932841d"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html#a4e17b60c41ae411ea9851694f932841d">wallTime</a> (int n)</td></tr>
+<tr class="memdesc:a4e17b60c41ae411ea9851694f932841d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the wall time in ms for the nth solution.  <a href="#a4e17b60c41ae411ea9851694f932841d">More...</a><br /></td></tr>
 <tr class="separator:a4e17b60c41ae411ea9851694f932841d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7c4d49070eb5ed8169c066c8fcdf1595"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html#a7c4d49070eb5ed8169c066c8fcdf1595">branches</a> (int n)</td></tr>
+<tr class="memdesc:a7c4d49070eb5ed8169c066c8fcdf1595"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of branches when the nth solution was found.  <a href="#a7c4d49070eb5ed8169c066c8fcdf1595">More...</a><br /></td></tr>
 <tr class="separator:a7c4d49070eb5ed8169c066c8fcdf1595"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2f6013632417e12fe9bbfa3cccb93453"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html#a2f6013632417e12fe9bbfa3cccb93453">failures</a> (int n)</td></tr>
+<tr class="memdesc:a2f6013632417e12fe9bbfa3cccb93453"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of failures encountered at the time of the nth solution.  <a href="#a2f6013632417e12fe9bbfa3cccb93453">More...</a><br /></td></tr>
 <tr class="separator:a2f6013632417e12fe9bbfa3cccb93453"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d4e7493343146487c7e1980e5d7078c"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html#a4d4e7493343146487c7e1980e5d7078c">objectiveValue</a> (int n)</td></tr>
+<tr class="memdesc:a4d4e7493343146487c7e1980e5d7078c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the objective value of the nth solution.  <a href="#a4d4e7493343146487c7e1980e5d7078c">More...</a><br /></td></tr>
 <tr class="separator:a4d4e7493343146487c7e1980e5d7078c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9d62d71381c04c307bfe16952b0826f1"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html#a9d62d71381c04c307bfe16952b0826f1">value</a> (int n, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a> var)</td></tr>
+<tr class="memdesc:a9d62d71381c04c307bfe16952b0826f1"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a shortcut to get the Value of 'var' in the nth solution.  <a href="#a9d62d71381c04c307bfe16952b0826f1">More...</a><br /></td></tr>
 <tr class="separator:a9d62d71381c04c307bfe16952b0826f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad35e48c31c7fa15c333f0236348d2c1e"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html#ad35e48c31c7fa15c333f0236348d2c1e">startValue</a> (int n, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html">IntervalVar</a> var)</td></tr>
+<tr class="memdesc:ad35e48c31c7fa15c333f0236348d2c1e"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a shortcut to get the StartValue of 'var' in the nth solution.  <a href="#ad35e48c31c7fa15c333f0236348d2c1e">More...</a><br /></td></tr>
 <tr class="separator:ad35e48c31c7fa15c333f0236348d2c1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a694a54fdbe390788cfe9a062e2d30215"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html#a694a54fdbe390788cfe9a062e2d30215">endValue</a> (int n, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html">IntervalVar</a> var)</td></tr>
+<tr class="memdesc:a694a54fdbe390788cfe9a062e2d30215"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a shortcut to get the EndValue of 'var' in the nth solution.  <a href="#a694a54fdbe390788cfe9a062e2d30215">More...</a><br /></td></tr>
 <tr class="separator:a694a54fdbe390788cfe9a062e2d30215"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1be835ee05627046de3e904133354d0e"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html#a1be835ee05627046de3e904133354d0e">durationValue</a> (int n, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html">IntervalVar</a> var)</td></tr>
+<tr class="memdesc:a1be835ee05627046de3e904133354d0e"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a shortcut to get the DurationValue of 'var' in the nth solution.  <a href="#a1be835ee05627046de3e904133354d0e">More...</a><br /></td></tr>
 <tr class="separator:a1be835ee05627046de3e904133354d0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9f9e628b0da0b754a4ca5cf632b2b78f"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html#a9f9e628b0da0b754a4ca5cf632b2b78f">performedValue</a> (int n, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html">IntervalVar</a> var)</td></tr>
+<tr class="memdesc:a9f9e628b0da0b754a4ca5cf632b2b78f"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a shortcut to get the PerformedValue of 'var' in the nth solution.  <a href="#a9f9e628b0da0b754a4ca5cf632b2b78f">More...</a><br /></td></tr>
 <tr class="separator:a9f9e628b0da0b754a4ca5cf632b2b78f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7aa8db81fe86b2351410f72c9917d671"><td class="memItemLeft" align="right" valign="top">int []&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html#a7aa8db81fe86b2351410f72c9917d671">forwardSequence</a> (int n, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVar.html">SequenceVar</a> var)</td></tr>
+<tr class="memdesc:a7aa8db81fe86b2351410f72c9917d671"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a shortcut to get the ForwardSequence of 'var' in the nth solution.  <a href="#a7aa8db81fe86b2351410f72c9917d671">More...</a><br /></td></tr>
 <tr class="separator:a7aa8db81fe86b2351410f72c9917d671"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac5956c1e28a13932d9b695127becfb8a"><td class="memItemLeft" align="right" valign="top">int []&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html#ac5956c1e28a13932d9b695127becfb8a">backwardSequence</a> (int n, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVar.html">SequenceVar</a> var)</td></tr>
+<tr class="memdesc:ac5956c1e28a13932d9b695127becfb8a"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a shortcut to get the BackwardSequence of 'var' in the nth solution.  <a href="#ac5956c1e28a13932d9b695127becfb8a">More...</a><br /></td></tr>
 <tr class="separator:ac5956c1e28a13932d9b695127becfb8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9700f84dc120785c116d0602adb30f07"><td class="memItemLeft" align="right" valign="top">int []&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html#a9700f84dc120785c116d0602adb30f07">unperformed</a> (int n, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVar.html">SequenceVar</a> var)</td></tr>
+<tr class="memdesc:a9700f84dc120785c116d0602adb30f07"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a shortcut to get the list of unperformed of 'var' in the nth solution.  <a href="#a9700f84dc120785c116d0602adb30f07">More...</a><br /></td></tr>
 <tr class="separator:a9700f84dc120785c116d0602adb30f07"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7f0626acdf8f78769c84e7e2b1131ac1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#a7f0626acdf8f78769c84e7e2b1131ac1">swigReleaseOwnership</a> ()</td></tr>
 <tr class="separator:a7f0626acdf8f78769c84e7e2b1131ac1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2dc1063229c6d5dfdd4ef89b75caff45"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#a2dc1063229c6d5dfdd4ef89b75caff45">swigTakeOwnership</a> ()</td></tr>
 <tr class="separator:a2dc1063229c6d5dfdd4ef89b75caff45"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a24ee74ead439b6e238e6f5e407833da2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#a24ee74ead439b6e238e6f5e407833da2">restartSearch</a> ()</td></tr>
+<tr class="memdesc:a24ee74ead439b6e238e6f5e407833da2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Restart the search.  <a href="#a24ee74ead439b6e238e6f5e407833da2">More...</a><br /></td></tr>
 <tr class="separator:a24ee74ead439b6e238e6f5e407833da2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4296500c9246a4af8541fd010b042680"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#a4296500c9246a4af8541fd010b042680">exitSearch</a> ()</td></tr>
+<tr class="memdesc:a4296500c9246a4af8541fd010b042680"><td class="mdescLeft">&#160;</td><td class="mdescRight">End of the search.  <a href="#a4296500c9246a4af8541fd010b042680">More...</a><br /></td></tr>
 <tr class="separator:a4296500c9246a4af8541fd010b042680"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a083af88055a4493010c0dd1f95e0e8fa"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#a083af88055a4493010c0dd1f95e0e8fa">beginNextDecision</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html">DecisionBuilder</a> b)</td></tr>
+<tr class="memdesc:a083af88055a4493010c0dd1f95e0e8fa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Before calling DecisionBuilder::Next.  <a href="#a083af88055a4493010c0dd1f95e0e8fa">More...</a><br /></td></tr>
 <tr class="separator:a083af88055a4493010c0dd1f95e0e8fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9b05b53299808dc5ff9b7ce443b63e55"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#a9b05b53299808dc5ff9b7ce443b63e55">endNextDecision</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html">DecisionBuilder</a> b, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Decision.html">Decision</a> d)</td></tr>
+<tr class="memdesc:a9b05b53299808dc5ff9b7ce443b63e55"><td class="mdescLeft">&#160;</td><td class="mdescRight">After calling DecisionBuilder::Next, along with the returned decision.  <a href="#a9b05b53299808dc5ff9b7ce443b63e55">More...</a><br /></td></tr>
 <tr class="separator:a9b05b53299808dc5ff9b7ce443b63e55"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a29a5817f5e879563c0e38efc1182c743"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#a29a5817f5e879563c0e38efc1182c743">applyDecision</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Decision.html">Decision</a> d)</td></tr>
+<tr class="memdesc:a29a5817f5e879563c0e38efc1182c743"><td class="mdescLeft">&#160;</td><td class="mdescRight">Before applying the decision.  <a href="#a29a5817f5e879563c0e38efc1182c743">More...</a><br /></td></tr>
 <tr class="separator:a29a5817f5e879563c0e38efc1182c743"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afcc8f71e08642dea09a4ccf7669b43e7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#afcc8f71e08642dea09a4ccf7669b43e7">refuteDecision</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Decision.html">Decision</a> d)</td></tr>
+<tr class="memdesc:afcc8f71e08642dea09a4ccf7669b43e7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Before refuting the decision.  <a href="#afcc8f71e08642dea09a4ccf7669b43e7">More...</a><br /></td></tr>
 <tr class="separator:afcc8f71e08642dea09a4ccf7669b43e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acd038679ba60a434d0e377a956ffeab3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#acd038679ba60a434d0e377a956ffeab3">afterDecision</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Decision.html">Decision</a> d, boolean apply)</td></tr>
+<tr class="memdesc:acd038679ba60a434d0e377a956ffeab3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Just after refuting or applying the decision, apply is true after Apply.  <a href="#acd038679ba60a434d0e377a956ffeab3">More...</a><br /></td></tr>
 <tr class="separator:acd038679ba60a434d0e377a956ffeab3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abb4a5b95e8f4a109b109b14b037fb2ed"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#abb4a5b95e8f4a109b109b14b037fb2ed">beginFail</a> ()</td></tr>
+<tr class="memdesc:abb4a5b95e8f4a109b109b14b037fb2ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Just when the failure occurs.  <a href="#abb4a5b95e8f4a109b109b14b037fb2ed">More...</a><br /></td></tr>
 <tr class="separator:abb4a5b95e8f4a109b109b14b037fb2ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4512d4f854dbe675a9ceb42f1a5eabc6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#a4512d4f854dbe675a9ceb42f1a5eabc6">endFail</a> ()</td></tr>
+<tr class="memdesc:a4512d4f854dbe675a9ceb42f1a5eabc6"><td class="mdescLeft">&#160;</td><td class="mdescRight">After completing the backtrack.  <a href="#a4512d4f854dbe675a9ceb42f1a5eabc6">More...</a><br /></td></tr>
 <tr class="separator:a4512d4f854dbe675a9ceb42f1a5eabc6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2291cdbc1849bc4a8a3e4127a2aedcb9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#a2291cdbc1849bc4a8a3e4127a2aedcb9">beginInitialPropagation</a> ()</td></tr>
+<tr class="memdesc:a2291cdbc1849bc4a8a3e4127a2aedcb9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Before the initial propagation.  <a href="#a2291cdbc1849bc4a8a3e4127a2aedcb9">More...</a><br /></td></tr>
 <tr class="separator:a2291cdbc1849bc4a8a3e4127a2aedcb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acb195a9ae5961bc9ee367fb0f2aade41"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#acb195a9ae5961bc9ee367fb0f2aade41">endInitialPropagation</a> ()</td></tr>
+<tr class="memdesc:acb195a9ae5961bc9ee367fb0f2aade41"><td class="mdescLeft">&#160;</td><td class="mdescRight">After the initial propagation.  <a href="#acb195a9ae5961bc9ee367fb0f2aade41">More...</a><br /></td></tr>
 <tr class="separator:acb195a9ae5961bc9ee367fb0f2aade41"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa0dec4bcb2fa9d0382403f1ba6c78cfa"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#aa0dec4bcb2fa9d0382403f1ba6c78cfa">acceptSolution</a> ()</td></tr>
+<tr class="memdesc:aa0dec4bcb2fa9d0382403f1ba6c78cfa"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method is called when a solution is found.  <a href="#aa0dec4bcb2fa9d0382403f1ba6c78cfa">More...</a><br /></td></tr>
 <tr class="separator:aa0dec4bcb2fa9d0382403f1ba6c78cfa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c12678c2ce4008ac96a8281e7b44130"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#a6c12678c2ce4008ac96a8281e7b44130">atSolution</a> ()</td></tr>
+<tr class="memdesc:a6c12678c2ce4008ac96a8281e7b44130"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method is called when a valid solution is found.  <a href="#a6c12678c2ce4008ac96a8281e7b44130">More...</a><br /></td></tr>
 <tr class="separator:a6c12678c2ce4008ac96a8281e7b44130"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa1709fdb54e8c371dc237f6b86c3a5b6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#aa1709fdb54e8c371dc237f6b86c3a5b6">noMoreSolutions</a> ()</td></tr>
+<tr class="memdesc:aa1709fdb54e8c371dc237f6b86c3a5b6"><td class="mdescLeft">&#160;</td><td class="mdescRight">When the search tree is finished.  <a href="#aa1709fdb54e8c371dc237f6b86c3a5b6">More...</a><br /></td></tr>
 <tr class="separator:aa1709fdb54e8c371dc237f6b86c3a5b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aec624987e2da1e09bb6a3b87fd17cc98"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#aec624987e2da1e09bb6a3b87fd17cc98">localOptimum</a> ()</td></tr>
+<tr class="memdesc:aec624987e2da1e09bb6a3b87fd17cc98"><td class="mdescLeft">&#160;</td><td class="mdescRight">When a local optimum is reached.  <a href="#aec624987e2da1e09bb6a3b87fd17cc98">More...</a><br /></td></tr>
 <tr class="separator:aec624987e2da1e09bb6a3b87fd17cc98"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a47cda3f9797f297f8090b1b67b08911d"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#a47cda3f9797f297f8090b1b67b08911d">acceptDelta</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html">Assignment</a> delta, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html">Assignment</a> deltadelta)</td></tr>
 <tr class="separator:a47cda3f9797f297f8090b1b67b08911d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac4103a6685117af339b64cccac35e983"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#ac4103a6685117af339b64cccac35e983">acceptNeighbor</a> ()</td></tr>
+<tr class="memdesc:ac4103a6685117af339b64cccac35e983"><td class="mdescLeft">&#160;</td><td class="mdescRight">After accepting a neighbor during local search.  <a href="#ac4103a6685117af339b64cccac35e983">More...</a><br /></td></tr>
 <tr class="separator:ac4103a6685117af339b64cccac35e983"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a05f548babb9f34b84f1589aa2f58e9ed"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#a05f548babb9f34b84f1589aa2f58e9ed">AcceptUncheckedNeighbor</a> ()</td></tr>
+<tr class="memdesc:a05f548babb9f34b84f1589aa2f58e9ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">After accepting an unchecked neighbor during local search.  <a href="#a05f548babb9f34b84f1589aa2f58e9ed">More...</a><br /></td></tr>
 <tr class="separator:a05f548babb9f34b84f1589aa2f58e9ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7ef6d09c31ca00fa83e017cc37d55954"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#a7ef6d09c31ca00fa83e017cc37d55954">IsUncheckedSolutionLimitReached</a> ()</td></tr>
+<tr class="memdesc:a7ef6d09c31ca00fa83e017cc37d55954"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the limit of solutions has been reached including unchecked solutions.  <a href="#a7ef6d09c31ca00fa83e017cc37d55954">More...</a><br /></td></tr>
 <tr class="separator:a7ef6d09c31ca00fa83e017cc37d55954"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab9ea9a1042c6f76e04e50b62bd1f99d8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html">Solver</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#ab9ea9a1042c6f76e04e50b62bd1f99d8">solver</a> ()</td></tr>
 <tr class="separator:ab9ea9a1042c6f76e04e50b62bd1f99d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a33deede4fc79ee5947c09f36857e2ac6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#a33deede4fc79ee5947c09f36857e2ac6">periodicCheck</a> ()</td></tr>
+<tr class="memdesc:a33deede4fc79ee5947c09f36857e2ac6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Periodic call to check limits in long running methods.  <a href="#a33deede4fc79ee5947c09f36857e2ac6">More...</a><br /></td></tr>
 <tr class="separator:a33deede4fc79ee5947c09f36857e2ac6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a69c4f7668d43e03e74418ec2d7b73f38"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#a69c4f7668d43e03e74418ec2d7b73f38">progressPercent</a> ()</td></tr>
+<tr class="memdesc:a69c4f7668d43e03e74418ec2d7b73f38"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a percentage representing the propress of the search before reaching limits.  <a href="#a69c4f7668d43e03e74418ec2d7b73f38">More...</a><br /></td></tr>
 <tr class="separator:a69c4f7668d43e03e74418ec2d7b73f38"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4b9985260e80d0595dd70d8541bfe182"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#a4b9985260e80d0595dd70d8541bfe182">accept</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelVisitor.html">ModelVisitor</a> visitor)</td></tr>
+<tr class="memdesc:a4b9985260e80d0595dd70d8541bfe182"><td class="mdescLeft">&#160;</td><td class="mdescRight">Accepts the given model visitor.  <a href="#a4b9985260e80d0595dd70d8541bfe182">More...</a><br /></td></tr>
 <tr class="separator:a4b9985260e80d0595dd70d8541bfe182"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a58eefa2f18098d97ca97a64024e25605"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html#a58eefa2f18098d97ca97a64024e25605">install</a> ()</td></tr>
+<tr class="memdesc:a58eefa2f18098d97ca97a64024e25605"><td class="mdescLeft">&#160;</td><td class="mdescRight">Registers itself on the solver such that it gets notified of the search and propagation events.  <a href="#a58eefa2f18098d97ca97a64024e25605">More...</a><br /></td></tr>
 <tr class="separator:a58eefa2f18098d97ca97a64024e25605"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
@@ -228,7 +268,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00014">14</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00017">17</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -266,7 +306,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00039">39</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00042">42</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -294,7 +334,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00043">43</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00046">46</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -323,7 +363,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00152">152</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p>Accepts the given model visitor. </p>
+
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00221">221</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -361,7 +403,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00123">123</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00174">174</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -388,7 +430,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00127">127</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p>After accepting a neighbor during local search. </p>
+
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00181">181</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -415,7 +459,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00107">107</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p>This method is called when a solution is found. </p>
+<p>It asserts whether the solution is valid. A value of false indicates that the solution should be discarded. </p>
+
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00149">149</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -442,7 +489,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00131">131</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p>After accepting an unchecked neighbor during local search. </p>
+
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00188">188</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -470,7 +519,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00051">51</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p>Add API. </p>
+
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00057">57</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -498,7 +549,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00055">55</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00061">61</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -526,7 +577,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00059">59</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00065">65</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -554,7 +605,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00063">63</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00069">69</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -582,7 +633,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00067">67</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00073">73</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -610,7 +661,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00071">71</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00077">77</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -638,7 +689,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00075">75</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00081">81</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -676,7 +727,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00087">87</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p>Just after refuting or applying the decision, apply is true after Apply. </p>
+<p>This is called only if the Apply() or Refute() methods have not failed. </p>
+
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00114">114</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -704,7 +758,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00079">79</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p>Before applying the decision. </p>
+
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00100">100</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -731,7 +787,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00111">111</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p>This method is called when a valid solution is found. </p>
+<p>If the return value is true, then search will resume after. If the result is false, then search will stop there. </p>
+
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00156">156</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -769,7 +828,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00132">132</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p>This is a shortcut to get the BackwardSequence of 'var' in the nth solution. </p>
+<p>The backward sequence is the list of ranked interval variables starting from the end of the sequence. </p>
+
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00180">180</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -796,7 +858,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00091">91</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p>Just when the failure occurs. </p>
+
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00121">121</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -823,7 +887,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00099">99</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p>Before the initial propagation. </p>
+
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00135">135</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -851,7 +917,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00071">71</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p>Before calling DecisionBuilder::Next. </p>
+
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00086">86</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -879,7 +947,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00096">96</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p>Returns the number of branches when the nth solution was found. </p>
+
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00117">117</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -906,7 +976,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00028">28</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00031">31</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -944,7 +1014,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00120">120</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p>This is a shortcut to get the DurationValue of 'var' in the nth solution. </p>
+
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00159">159</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -971,7 +1043,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00095">95</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p>After completing the backtrack. </p>
+
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00128">128</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -998,7 +1072,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00103">103</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p>After the initial propagation. </p>
+
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00142">142</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -1036,7 +1112,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00075">75</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p>After calling DecisionBuilder::Next, along with the returned decision. </p>
+
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00093">93</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -1074,7 +1152,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00116">116</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p>This is a shortcut to get the EndValue of 'var' in the nth solution. </p>
+
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00152">152</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -1101,7 +1181,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00079">79</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p>Beginning of the search. </p>
+
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00088">88</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -1128,7 +1210,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00067">67</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p>End of the search. </p>
+
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00079">79</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -1156,7 +1240,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00100">100</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p>Returns the number of failures encountered at the time of the nth solution. </p>
+
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00124">124</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -1194,7 +1280,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00128">128</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p>This is a shortcut to get the ForwardSequence of 'var' in the nth solution. </p>
+<p>The forward sequence is the list of ranked interval variables starting from the start of the sequence. </p>
+
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00173">173</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -1221,7 +1310,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00156">156</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p>Registers itself on the solver such that it gets notified of the search and propagation events. </p>
+
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00228">228</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -1248,7 +1339,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00135">135</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p>Returns true if the limit of solutions has been reached including unchecked solutions. </p>
+
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00195">195</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -1275,7 +1368,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00119">119</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p>When a local optimum is reached. </p>
+<p>If 'true' is returned, the last solution is discarded and the search proceeds with the next one. </p>
+
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00170">170</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -1302,7 +1398,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00115">115</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p>When the search tree is finished. </p>
+
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00163">163</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -1330,7 +1428,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00104">104</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p>Returns the objective value of the nth solution. </p>
+
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00131">131</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -1368,7 +1468,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00124">124</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p>This is a shortcut to get the PerformedValue of 'var' in the nth solution. </p>
+
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00166">166</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -1395,7 +1497,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00144">144</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p>Periodic call to check limits in long running methods. </p>
+
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00207">207</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -1422,7 +1526,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00148">148</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p>Returns a percentage representing the propress of the search before reaching limits. </p>
+
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00214">214</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -1450,7 +1556,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00083">83</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p>Before refuting the decision. </p>
+
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00107">107</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -1477,7 +1585,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00063">63</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p>Restart the search. </p>
+
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00072">72</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -1505,7 +1615,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00087">87</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p>Returns the nth solution. </p>
+
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00102">102</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -1532,7 +1644,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00083">83</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p>Returns how many solutions were stored during the search. </p>
+
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00095">95</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -1559,7 +1673,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00139">139</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00199">199</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -1597,7 +1711,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00112">112</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p>This is a shortcut to get the StartValue of 'var' in the nth solution. </p>
+
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00145">145</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -1624,7 +1740,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00039">39</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00042">42</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -1651,7 +1767,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00044">44</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00047">47</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -1678,7 +1794,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00049">49</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00052">52</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>
@@ -1705,7 +1821,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00047">47</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00050">50</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -1743,7 +1859,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00136">136</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p>This is a shortcut to get the list of unperformed of 'var' in the nth solution. </p>
+
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00187">187</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -1781,7 +1899,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00108">108</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p>This is a shortcut to get the Value of 'var' in the nth solution. </p>
+
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00138">138</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -1809,7 +1929,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00092">92</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
+<p>Returns the wall time in ms for the nth solution. </p>
+
+<p class="definition">Definition at line <a class="el" href="SolutionCollector_8java_source.html#l00110">110</a> of file <a class="el" href="SolutionCollector_8java_source.html">SolutionCollector.java</a>.</p>
 
 </div>
 </div>
@@ -1834,7 +1956,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00160">160</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SearchMonitor_8java_source.html#l00232">232</a> of file <a class="el" href="SearchMonitor_8java_source.html">SearchMonitor.java</a>.</p>
 
 </div>
 </div>

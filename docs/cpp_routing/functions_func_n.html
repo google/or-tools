@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -78,6 +77,7 @@
 <h3><a id="index_n"></a>- n -</h3><ul>
 <li>name()
 : <a class="el" href="classoperations__research_1_1PropagationBaseObject.html#a8be8b75223b76744791e48747677cdb6">operations_research::PropagationBaseObject</a>
+, <a class="el" href="classoperations__research_1_1RoutingDimension.html#a818dcdf6c1102cb0876393a153ef4249">operations_research::RoutingDimension</a>
 </li>
 <li>NameAllVariables()
 : <a class="el" href="classoperations__research_1_1Solver.html#a3267baa7f21b8bda6b5ac4bced87fbae">operations_research::Solver</a>
@@ -87,18 +87,20 @@
 </li>
 <li>New()
 : <a class="el" href="classoperations__research_1_1FirstSolutionStrategy.html#a914db9e5b7cfe19f49e2fb32316a028d">operations_research::FirstSolutionStrategy</a>
-, <a class="el" href="classoperations__research_1_1LocalSearchMetaheuristic.html#aa037866b3ed4fbeffc885ee78d6d5d92">operations_research::LocalSearchMetaheuristic</a>
+, <a class="el" href="classoperations__research_1_1LocalSearchMetaheuristic.html#acbb0511179a981e4308d8488d6726c48">operations_research::LocalSearchMetaheuristic</a>
 , <a class="el" href="classoperations__research_1_1RoutingModelParameters.html#a54379035b1b78c1e85904d2ed2a63f29">operations_research::RoutingModelParameters</a>
 , <a class="el" href="classoperations__research_1_1RoutingSearchParameters.html#a4038e1ff3388e520e93644997b57c95e">operations_research::RoutingSearchParameters</a>
 , <a class="el" href="classoperations__research_1_1RoutingSearchParameters__LocalSearchNeighborhoodOperators.html#a4e9a471cf4a9a7cf26e3330f9ad84ff0">operations_research::RoutingSearchParameters_LocalSearchNeighborhoodOperators</a>
 </li>
 <li>NewSearch()
-: <a class="el" href="classoperations__research_1_1Solver.html#a0e93535e454db167f3b2bac3ffc18610">operations_research::Solver</a>
+: <a class="el" href="classoperations__research_1_1Solver.html#a92bf29bae6bb68ecae8d09e477183689">operations_research::Solver</a>
 </li>
 <li>Next()
 : <a class="el" href="classoperations__research_1_1DecisionBuilder.html#a3bcaa4dd991e8ddb4d0e48cfbca58592">operations_research::DecisionBuilder</a>
+, <a class="el" href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html#a3728215165475d83bf1fc427bc171c3e">operations_research::IntVarFilteredDecisionBuilder</a>
 , <a class="el" href="classoperations__research_1_1IntVarIterator.html#a7d3ca63d1636290367162ad3fb4f5157">operations_research::IntVarIterator</a>
 , <a class="el" href="classoperations__research_1_1PathOperator.html#af916e434b85cddbe48e0378242a04aca">operations_research::PathOperator</a>
+, <a class="el" href="classoperations__research_1_1RoutingModel.html#acd71894a70fca99a12ba2a1173666efc">operations_research::RoutingModel</a>
 , <a class="el" href="classoperations__research_1_1SequenceVar.html#ae6327825d9ed07ea7e97ac731e4d6ff8">operations_research::SequenceVar</a>
 </li>
 <li>NextFragment()
@@ -107,8 +109,23 @@
 <li>nexts()
 : <a class="el" href="classoperations__research_1_1DisjunctiveConstraint.html#aacb295c42edd50d5fc0dc3f009fb0a81">operations_research::DisjunctiveConstraint</a>
 </li>
+<li>Nexts()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#aae35870db721604857ab17079e410fbe">operations_research::RoutingModel</a>
+</li>
 <li>NextSolution()
 : <a class="el" href="classoperations__research_1_1Solver.html#a11ed2a5d7bb8fb1a8967fee572ab9c47">operations_research::Solver</a>
+</li>
+<li>NextVar()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#a06c0f6488d296613184081d6350431e4">operations_research::RoutingModel</a>
+</li>
+<li>nodes()
+: <a class="el" href="classoperations__research_1_1RoutingModel.html#ade2d9581bd56ce19dbf32e87bf23fc02">operations_research::RoutingModel</a>
+</li>
+<li>NodesToIndices()
+: <a class="el" href="classoperations__research_1_1RoutingIndexManager.html#a1f4bf04c9419fb97c29b98438f00ef2a">operations_research::RoutingIndexManager</a>
+</li>
+<li>NodeToIndex()
+: <a class="el" href="classoperations__research_1_1RoutingIndexManager.html#a3a51bf2b84f28075c50aca511c910053">operations_research::RoutingIndexManager</a>
 </li>
 <li>NoMoreSolutions()
 : <a class="el" href="classoperations__research_1_1SearchLog.html#a290b7238507e711ea719b38a65d1d002">operations_research::SearchLog</a>
@@ -117,11 +134,29 @@
 <li>Now()
 : <a class="el" href="classoperations__research_1_1Solver.html#a543e7aa911009e1c4a6c33e82e49e582">operations_research::Solver</a>
 </li>
+<li>num_indices()
+: <a class="el" href="classoperations__research_1_1RoutingIndexManager.html#a29739c908b5719c47582a640d7f250f8">operations_research::RoutingIndexManager</a>
+</li>
 <li>num_items()
 : <a class="el" href="classoperations__research_1_1RevImmutableMultiMap.html#ae509969cf05f560f829ce4e0ed3aab1c">operations_research::RevImmutableMultiMap&lt; K, V &gt;</a>
 </li>
+<li>num_nodes()
+: <a class="el" href="classoperations__research_1_1RoutingIndexManager.html#aa39ba437f2fe2c07c43721cbfb2a6f0d">operations_research::RoutingIndexManager</a>
+</li>
+<li>num_unique_depots()
+: <a class="el" href="classoperations__research_1_1RoutingIndexManager.html#a148a071cb5a92fe73501c7c299ed5eb1">operations_research::RoutingIndexManager</a>
+</li>
+<li>num_vehicles()
+: <a class="el" href="classoperations__research_1_1RoutingIndexManager.html#aa99aa264a338e0273b3ad8c55813ff95">operations_research::RoutingIndexManager</a>
+</li>
+<li>number_of_decisions()
+: <a class="el" href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html#a5589c8d87c0b93a1d3e6ffac03830190">operations_research::IntVarFilteredDecisionBuilder</a>
+</li>
 <li>number_of_nexts()
 : <a class="el" href="classoperations__research_1_1PathOperator.html#a1b11142fde9a99967d442953603afb19">operations_research::PathOperator</a>
+</li>
+<li>number_of_rejects()
+: <a class="el" href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html#a3ae7dae1c50d1ed98f3a81b874c6e943">operations_research::IntVarFilteredDecisionBuilder</a>
 </li>
 <li>number_of_solutions_to_collect()
 : <a class="el" href="classoperations__research_1_1RoutingSearchParameters.html#a2698bb92760d1ed4cf8bab4170c23f90">operations_research::RoutingSearchParameters</a>
@@ -143,6 +178,9 @@
 </li>
 <li>NumLastRanked()
 : <a class="el" href="classoperations__research_1_1RevPartialSequence.html#a3c29760912f23bd786c302a5691ddc28">operations_research::RevPartialSequence</a>
+</li>
+<li>NumPaths()
+: <a class="el" href="classoperations__research_1_1BasePathFilter.html#a1ce25ec7070e5274ea054a8393da8eba">operations_research::BasePathFilter</a>
 </li>
 <li>NumSequenceVars()
 : <a class="el" href="classoperations__research_1_1Assignment.html#abc1a433b3e54e2fa0aef6925f83d43b4">operations_research::Assignment</a>
