@@ -92,7 +92,7 @@ $(GEN_DIR)/ortools/constraint_solver/constraint_solver_java_wrap.cc: \
  $(CP_DEPS) \
  $(SRC_DIR)/ortools/constraint_solver/routing.h \
  | $(GEN_DIR)/ortools/constraint_solver $(GEN_DIR)/com/google/ortools/constraintsolver
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -java \
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -java $(SWIG_DOXYGEN) \
  -o $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_java_wrap.cc \
  -package com.google.ortools.constraintsolver \
  -module main \

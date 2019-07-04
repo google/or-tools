@@ -83,6 +83,9 @@
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentIntervalContainer.html#a60da4fb84c8703f4b7310230ef2a64f8">com.google.ortools.constraintsolver.AssignmentIntervalContainer</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentSequenceContainer.html#a3eb7c782680dfc205e3a21bed3257951">com.google.ortools.constraintsolver.AssignmentSequenceContainer</a>
 </li>
+<li>ENABLE_INTERNAL_SOLVER_OUTPUT_FIELD_NUMBER
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#a71c5890bd4922b6b9ce1a7ff60861ee1">com.google.ortools.linearsolver.MPModelRequest</a>
+</li>
 <li>enableOutput()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a6a8a894b9be78043a9376298ddf70eea">com.google.ortools.linearsolver.MPSolver</a>
 </li>
@@ -207,6 +210,17 @@
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModelParameters.html#adb5c55b0158b902b7fa67e5128183a19">com.google.ortools.constraintsolver.RoutingModelParameters</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters.html#a3da8ec1aa13aba13a35f91a4fbcc0b44">com.google.ortools.constraintsolver.RoutingSearchParameters</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1LocalSearchNeighborhoodOperators.html#a5aa6218e4a952b063d4953b80fdf4642">com.google.ortools.constraintsolver.RoutingSearchParameters.LocalSearchNeighborhoodOperators</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraintProto.html#a6f681e36ba6eb60a53e2590276c8090c">com.google.ortools.linearsolver.MPConstraintProto</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPGeneralConstraintProto.html#ac0fb44b022f9bc250c8bed81c34003fa">com.google.ortools.linearsolver.MPGeneralConstraintProto</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPIndicatorConstraint.html#aed9351910f16225daa264cbe7b21e855">com.google.ortools.linearsolver.MPIndicatorConstraint</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelProto.html#aacf72c00d6234e82a6cea325f25217ed">com.google.ortools.linearsolver.MPModelProto</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html#a542527748c2c5163715e0fd29b9bce29">com.google.ortools.linearsolver.MPModelRequest</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse.html#a7464f53a2b01c29d1c25a5c971172ae5">com.google.ortools.linearsolver.MPSolutionResponse</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverCommonParameters.html#a5e7639854584ce006a70ad792c3b79a7">com.google.ortools.linearsolver.MPSolverCommonParameters</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint.html#aecebaafd6016d9ecd66c7b37b684d0f4">com.google.ortools.linearsolver.MPSosConstraint</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariableProto.html#a8d754eb1414dbd5ad9f682f773c6705f">com.google.ortools.linearsolver.MPVariableProto</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1OptionalDouble.html#a759d95021ea43b43db6ecfddf88e12f4">com.google.ortools.linearsolver.OptionalDouble</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1PartialVariableAssignment.html#a783a4773296e0cc04e68d04d28dee107">com.google.ortools.linearsolver.PartialVariableAssignment</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#aeb1f61ee9a8f9909c392c4d8ee3cb6e4">com.google.ortools.sat.CpModelProto</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#aa9969970b62f9451ea1b3c2bc67ae410">com.google.ortools.sat.SatParameters</a>
 </li>
@@ -252,10 +266,13 @@
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#a4b20eac6a0b585f591f4893b0cdb1499">com.google.ortools.sat.SatParameters</a>
 </li>
 <li>exportModelAsLpFormat()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a744532f7dd9fea3c59b2e172773fb8a3">com.google.ortools.linearsolver.MPSolver</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a1ec3573250cc47fe0f754b3c53fc23cb">com.google.ortools.linearsolver.MPSolver</a>
 </li>
 <li>exportModelAsMpsFormat()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a63c6315351a54436ede85ec73a9559f2">com.google.ortools.linearsolver.MPSolver</a>
+</li>
+<li>exportModelToProto()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a858ee88954dd038239a77370d03a8ab0">com.google.ortools.linearsolver.MPSolver</a>
 </li>
 <li>exportProfilingOverview()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#a03d5a110489320022a7134a9235ebe13">com.google.ortools.constraintsolver.Solver</a>

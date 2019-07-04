@@ -110,6 +110,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a5a19fe58240fe13617b9c52ecd75e5ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a42ba00336af5e364add20fc9b2973b8b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html#a42ba00336af5e364add20fc9b2973b8b">NumVariables</a> ()</td></tr>
 <tr class="separator:a42ba00336af5e364add20fc9b2973b8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adb011eaf70ce2c434ba946a58efa0f8d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html">MPVariableVector</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html#adb011eaf70ce2c434ba946a58efa0f8d">variables</a> ()</td></tr>
+<tr class="separator:adb011eaf70ce2c434ba946a58efa0f8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afb6d565265aae88b0b829d81745b8ec3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html">Variable</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html#afb6d565265aae88b0b829d81745b8ec3">LookupVariableOrNull</a> (string var_name)</td></tr>
 <tr class="separator:afb6d565265aae88b0b829d81745b8ec3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0f0be98c4e83aaf421f3bcb55b4c592a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1Variable.html">Variable</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html#a0f0be98c4e83aaf421f3bcb55b4c592a">MakeVar</a> (double lb, double ub, bool integer, string name)</td></tr>
@@ -122,6 +124,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a83615527fb854b7886a1830f607bdf71"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a765ef5023c800dab309cce9d82b7f4e3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html#a765ef5023c800dab309cce9d82b7f4e3">NumConstraints</a> ()</td></tr>
 <tr class="separator:a765ef5023c800dab309cce9d82b7f4e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3dd5f48c4e3932f11cb486737266ca91"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1MPConstraintVector.html">MPConstraintVector</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html#a3dd5f48c4e3932f11cb486737266ca91">constraints</a> ()</td></tr>
+<tr class="separator:a3dd5f48c4e3932f11cb486737266ca91"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae371c34bba607af816026cdb089e4787"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html#ae371c34bba607af816026cdb089e4787">LookupConstraintOrNull</a> (string constraint_name)</td></tr>
 <tr class="separator:ae371c34bba607af816026cdb089e4787"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad56898a7c5476e8bcd41e92900f43c29"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html#ad56898a7c5476e8bcd41e92900f43c29">MakeConstraint</a> (double lb, double ub)</td></tr>
@@ -166,7 +170,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aaa019e25a6d58814e4a80ab3a7107c52"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa986184035f146b1f4fee7a3b5d2aaaf"><td class="memItemLeft" align="right" valign="top">string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html#aa986184035f146b1f4fee7a3b5d2aaaf">ExportModelAsMpsFormat</a> (bool fixed_format, bool obfuscated)</td></tr>
 <tr class="separator:aa986184035f146b1f4fee7a3b5d2aaaf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a45ab77b2f55f9081ce9c9a997879ed77"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html#a45ab77b2f55f9081ce9c9a997879ed77">SetHint</a> (<a class="el" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html">MPVariableVector</a> variables, double[] values)</td></tr>
+<tr class="memitem:a45ab77b2f55f9081ce9c9a997879ed77"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html#a45ab77b2f55f9081ce9c9a997879ed77">SetHint</a> (<a class="el" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html">MPVariableVector</a> <a class="el" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html#adb011eaf70ce2c434ba946a58efa0f8d">variables</a>, double[] values)</td></tr>
 <tr class="separator:a45ab77b2f55f9081ce9c9a997879ed77"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7e66c99ecd87374c256c860f2d20459f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1Solver.html#a7e66c99ecd87374c256c860f2d20459f">SetNumThreads</a> (int num_theads)</td></tr>
 <tr class="separator:a7e66c99ecd87374c256c860f2d20459f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -263,7 +267,7 @@ Protected Attributes</h2></td></tr>
 <tr><td class="fieldname"><a id="ada5a801b11b5ec9f691309b268d115d1ae4ac03f6c9f00665644e868dd1fb9f1e"></a>BASIC&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00255">255</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00265">265</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -293,7 +297,7 @@ Protected Attributes</h2></td></tr>
 <tr><td class="fieldname"><a id="a0a4a30e11e52fbdecf3ddc4eb4e50471a32f0882d12aebb0a2ee7f8965944f4c3"></a>BOP_INTEGER_PROGRAMMING&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00239">239</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00249">249</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -325,7 +329,7 @@ Protected Attributes</h2></td></tr>
 <tr><td class="fieldname"><a id="a892336a27efe44a99640ddf6001be23dab34aac8dc612fdffdf75bf272fcdb3c0"></a>NOT_SOLVED&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00246">246</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00256">256</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -447,7 +451,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00155">155</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00165">165</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -474,7 +478,34 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00205">205</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00215">215</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+
+</div>
+</div>
+<a id="a3dd5f48c4e3932f11cb486737266ca91"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3dd5f48c4e3932f11cb486737266ca91">&#9670;&nbsp;</a></span>constraints()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1MPConstraintVector.html">MPConstraintVector</a> Google.OrTools.LinearSolver.Solver.constraints </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00110">110</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -594,7 +625,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00187">187</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00197">197</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -622,7 +653,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00219">219</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00229">229</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -660,7 +691,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00224">224</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00234">234</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -715,7 +746,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00176">176</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00186">186</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -742,7 +773,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00195">195</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00205">205</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -770,7 +801,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00105">105</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00115">115</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -798,7 +829,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00065">65</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00070">70</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -826,7 +857,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00093">93</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00098">98</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -1012,7 +1043,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00112">112</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00122">122</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -1039,7 +1070,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00118">118</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00128">128</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -1083,7 +1114,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00124">124</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00134">134</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -1111,7 +1142,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00131">131</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00141">141</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -1155,7 +1186,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00086">86</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00091">91</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -1399,7 +1430,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00079">79</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00084">84</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -1649,7 +1680,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00072">72</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00077">77</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -2012,7 +2043,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00200">200</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00210">210</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -2039,7 +2070,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00100">100</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00105">105</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -2093,7 +2124,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00138">138</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00148">148</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -2120,7 +2151,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00172">172</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00182">182</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -2158,7 +2189,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00229">229</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00239">239</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -2186,7 +2217,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00234">234</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00244">244</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -2214,7 +2245,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00181">181</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00191">191</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -2242,7 +2273,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00210">210</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00220">220</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -2269,7 +2300,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00144">144</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00154">154</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -2297,7 +2328,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00149">149</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00159">159</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -2352,7 +2383,34 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00191">191</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00201">201</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+
+</div>
+</div>
+<a id="adb011eaf70ce2c434ba946a58efa0f8d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adb011eaf70ce2c434ba946a58efa0f8d">&#9670;&nbsp;</a></span>variables()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html">MPVariableVector</a> Google.OrTools.LinearSolver.Solver.variables </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00065">65</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -2390,7 +2448,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00167">167</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00177">177</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>
@@ -2417,7 +2475,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00214">214</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_2Solver_8cs_source.html#l00224">224</a> of file <a class="el" href="linear__solver_2Solver_8cs_source.html">linear_solver/Solver.cs</a>.</p>
 
 </div>
 </div>

@@ -350,6 +350,9 @@
 , <a class="el" href="classoperations__research_1_1sat_1_1ReservoirConstraintProto.html#aa9dcc7df20645baf72ca6cd9e8c19e6f">operations_research::sat::ReservoirConstraintProto</a>
 , <a class="el" href="classoperations__research_1_1sat_1_1RoutesConstraintProto.html#abee4ed6e50c3a32bbda6218c4f27bcfb">operations_research::sat::RoutesConstraintProto</a>
 </li>
+<li>clear_deterministic_parallel_search()
+: <a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#af6c8828f6fb61da89aabf7cfbd4d77e5">operations_research::sat::SatParameters</a>
+</li>
 <li>clear_deterministic_time()
 : <a class="el" href="classoperations__research_1_1sat_1_1CpSolverResponse.html#a65699715fa9e478e31a5bf12f6154913">operations_research::sat::CpSolverResponse</a>
 </li>
@@ -466,12 +469,6 @@
 </li>
 <li>clear_lns_focus_on_decision_variables()
 : <a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a2cd63c92bd839e841c0dd17b69c90cbc">operations_research::sat::SatParameters</a>
-</li>
-<li>clear_lns_is_deterministic()
-: <a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#abb03e7f5dfc29372ac42d4e6eafbf2de">operations_research::sat::SatParameters</a>
-</li>
-<li>clear_lns_num_threads()
-: <a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a4fc3ba31a568695116ec3d82a0cf131d">operations_research::sat::SatParameters</a>
 </li>
 <li>clear_log_search_progress()
 : <a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a2bda86fe30714cd506bce3de4f32a395">operations_research::sat::SatParameters</a>
@@ -775,8 +772,8 @@
 <li>clear_use_exact_lp_reason()
 : <a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#aa771eb136ae84dd984dc9b10892633d7">operations_research::sat::SatParameters</a>
 </li>
-<li>clear_use_lns()
-: <a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#abcc5309b38ea9669f96fae65205c820d">operations_research::sat::SatParameters</a>
+<li>clear_use_lns_only()
+: <a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a70b29a14aa120c08408d4813cbf85ead">operations_research::sat::SatParameters</a>
 </li>
 <li>clear_use_mir_rounding()
 : <a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#aab537a0adeb1c5d20511dbc7cdc49821">operations_research::sat::SatParameters</a>
@@ -845,14 +842,14 @@
 : <a class="el" href="classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html#a201476b5aa7e694f7402bd78ec0e0497">operations_research::sat::NoOverlap2DConstraintProto</a>
 </li>
 <li>ClosedInterval()
-: <a class="el" href="structoperations__research_1_1ClosedInterval.html#ac88ed3db6ef14b84e38b5d89d39aaa04">operations_research::ClosedInterval</a>
+: <a class="el" href="structoperations__research_1_1ClosedInterval.html#ae79c6820d4e756c8805ef8f3dac20655">operations_research::ClosedInterval</a>
 </li>
 <li>coefficients()
 : <a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html#a6f0e8040bcb0ee633efd0862c660cbf4">operations_research::sat::LinearExpr</a>
 </li>
 <li>coeffs()
-: <a class="el" href="classoperations__research_1_1sat_1_1CpObjectiveProto.html#afac741fb4e2327f905402fcef2143c73">operations_research::sat::CpObjectiveProto</a>
-, <a class="el" href="classoperations__research_1_1sat_1_1LinearConstraintProto.html#a5af044811d7b24753d7dc1457c5d55e1">operations_research::sat::LinearConstraintProto</a>
+: <a class="el" href="classoperations__research_1_1sat_1_1CpObjectiveProto.html#a92f697a0eb43c20a80c114d49548f647">operations_research::sat::CpObjectiveProto</a>
+, <a class="el" href="classoperations__research_1_1sat_1_1LinearConstraintProto.html#a08646e4e945c4ee40fe030b04f362106">operations_research::sat::LinearConstraintProto</a>
 </li>
 <li>coeffs_size()
 : <a class="el" href="classoperations__research_1_1sat_1_1CpObjectiveProto.html#aacf4c11bd3601c752879650eeb7a23fc">operations_research::sat::CpObjectiveProto</a>
@@ -908,7 +905,7 @@
 : <a class="el" href="classoperations__research_1_1sat_1_1ConstraintProto.html#aa628f3ef0e0d0c55a0dccf97ec232432">operations_research::sat::ConstraintProto</a>
 </li>
 <li>constraints()
-: <a class="el" href="classoperations__research_1_1sat_1_1CpModelProto.html#aef37b42d42f179a384a7cf514c58ba5f">operations_research::sat::CpModelProto</a>
+: <a class="el" href="classoperations__research_1_1sat_1_1CpModelProto.html#a40f360480270741c820afbee9084fc19">operations_research::sat::CpModelProto</a>
 </li>
 <li>constraints_size()
 : <a class="el" href="classoperations__research_1_1sat_1_1CpModelProto.html#a6c07b425cf6992974fd2fea324a09018">operations_research::sat::CpModelProto</a>
@@ -917,33 +914,33 @@
 : <a class="el" href="classoperations__research_1_1Domain.html#aca55d3d10ee99aeab77e457d216d8c02">operations_research::Domain</a>
 </li>
 <li>ContinuousMultiplicationBy()
-: <a class="el" href="classoperations__research_1_1Domain.html#a5fa203b31737f4c452a0b04779ce45a8">operations_research::Domain</a>
+: <a class="el" href="classoperations__research_1_1Domain.html#a4c1fd36870e1dbf2029c462d3fb3d517">operations_research::Domain</a>
 </li>
 <li>CopyFrom()
-: <a class="el" href="classoperations__research_1_1sat_1_1AllDifferentConstraintProto.html#afc0eff892d4d3c91e2a8896cdd3f1c6a">operations_research::sat::AllDifferentConstraintProto</a>
+: <a class="el" href="classoperations__research_1_1sat_1_1AllDifferentConstraintProto.html#a6e634b216b297afc7daab20e4d4df6aa">operations_research::sat::AllDifferentConstraintProto</a>
 , <a class="el" href="classoperations__research_1_1sat_1_1AutomatonConstraintProto.html#a15b619d6ee471826fa715465ae242ae4">operations_research::sat::AutomatonConstraintProto</a>
-, <a class="el" href="classoperations__research_1_1sat_1_1BoolArgumentProto.html#a8ffc74b28c02faca6b1fb511495eb74f">operations_research::sat::BoolArgumentProto</a>
+, <a class="el" href="classoperations__research_1_1sat_1_1BoolArgumentProto.html#ae8c1b738c76f2366fc317e7c092df9c1">operations_research::sat::BoolArgumentProto</a>
 , <a class="el" href="classoperations__research_1_1sat_1_1CircuitConstraintProto.html#abcd4e0a410ac9673f6f6712ea7054325">operations_research::sat::CircuitConstraintProto</a>
-, <a class="el" href="classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html#ae354770522793d2776dd29a968d8c850">operations_research::sat::CircuitCoveringConstraintProto</a>
+, <a class="el" href="classoperations__research_1_1sat_1_1CircuitCoveringConstraintProto.html#ae2ad0379b25a0e3cfefe079d5590775a">operations_research::sat::CircuitCoveringConstraintProto</a>
 , <a class="el" href="classoperations__research_1_1sat_1_1ConstraintProto.html#a04352802d1d8a3ad245ae9ad9e633c90">operations_research::sat::ConstraintProto</a>
 , <a class="el" href="classoperations__research_1_1sat_1_1CpModelProto.html#a0730b50923f4a8db369fd5b72e8f9158">operations_research::sat::CpModelProto</a>
 , <a class="el" href="classoperations__research_1_1sat_1_1CpObjectiveProto.html#ae73ae521d3f073999bad9b9e6881ac6b">operations_research::sat::CpObjectiveProto</a>
-, <a class="el" href="classoperations__research_1_1sat_1_1CpSolverResponse.html#ac958eb487e6a724b253b6a0b1bbcd04a">operations_research::sat::CpSolverResponse</a>
+, <a class="el" href="classoperations__research_1_1sat_1_1CpSolverResponse.html#a4696230468ba71b17ad03aecc1f1bf58">operations_research::sat::CpSolverResponse</a>
 , <a class="el" href="classoperations__research_1_1sat_1_1CumulativeConstraintProto.html#a3878a0590161c52b18314e838b3b89a5">operations_research::sat::CumulativeConstraintProto</a>
 , <a class="el" href="classoperations__research_1_1sat_1_1DecisionStrategyProto.html#abcc80090ea541a942f49c31f56c704f4">operations_research::sat::DecisionStrategyProto</a>
 , <a class="el" href="classoperations__research_1_1sat_1_1DecisionStrategyProto__AffineTransformation.html#a23b43cb20ba95d738932cb6f1e107a97">operations_research::sat::DecisionStrategyProto_AffineTransformation</a>
-, <a class="el" href="classoperations__research_1_1sat_1_1ElementConstraintProto.html#a813fe93764e7687cad537ffe00b90138">operations_research::sat::ElementConstraintProto</a>
+, <a class="el" href="classoperations__research_1_1sat_1_1ElementConstraintProto.html#a94dfb457277421a23b9818dcd427d961">operations_research::sat::ElementConstraintProto</a>
 , <a class="el" href="classoperations__research_1_1sat_1_1IntegerArgumentProto.html#a1c03778ccd431ac4442e2b6c9d819dfa">operations_research::sat::IntegerArgumentProto</a>
-, <a class="el" href="classoperations__research_1_1sat_1_1IntegerVariableProto.html#ae2fd71480599fac8358a31fb651ee5ee">operations_research::sat::IntegerVariableProto</a>
-, <a class="el" href="classoperations__research_1_1sat_1_1IntervalConstraintProto.html#a94dad3797ac5c9bc499523d1a4f8986e">operations_research::sat::IntervalConstraintProto</a>
-, <a class="el" href="classoperations__research_1_1sat_1_1InverseConstraintProto.html#a6f55549ebc9adcdc5e0dd763662aa4db">operations_research::sat::InverseConstraintProto</a>
+, <a class="el" href="classoperations__research_1_1sat_1_1IntegerVariableProto.html#a7291eeab3fc5282103ab806bf6b31b3f">operations_research::sat::IntegerVariableProto</a>
+, <a class="el" href="classoperations__research_1_1sat_1_1IntervalConstraintProto.html#ac3dd68811cc04399d5dcb4255abcb2ae">operations_research::sat::IntervalConstraintProto</a>
+, <a class="el" href="classoperations__research_1_1sat_1_1InverseConstraintProto.html#a88e0a46fbb9f1b6c2c68ee27274ffd26">operations_research::sat::InverseConstraintProto</a>
 , <a class="el" href="classoperations__research_1_1sat_1_1LinearConstraintProto.html#a9b6b120d04037212c10d65f1c165eac2">operations_research::sat::LinearConstraintProto</a>
-, <a class="el" href="classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html#ab82522bd0a37047d544e54b1a26e5994">operations_research::sat::NoOverlap2DConstraintProto</a>
+, <a class="el" href="classoperations__research_1_1sat_1_1NoOverlap2DConstraintProto.html#aabd798be7248cbd1d0016d407447be8f">operations_research::sat::NoOverlap2DConstraintProto</a>
 , <a class="el" href="classoperations__research_1_1sat_1_1NoOverlapConstraintProto.html#a78e6245d980965c64866247e4937b6e4">operations_research::sat::NoOverlapConstraintProto</a>
-, <a class="el" href="classoperations__research_1_1sat_1_1PartialVariableAssignment.html#afd9125bbfc9da8c7c42db5f6c271f84a">operations_research::sat::PartialVariableAssignment</a>
+, <a class="el" href="classoperations__research_1_1sat_1_1PartialVariableAssignment.html#ad24eeef9a2bbdd2c56aef7594244a167">operations_research::sat::PartialVariableAssignment</a>
 , <a class="el" href="classoperations__research_1_1sat_1_1ReservoirConstraintProto.html#a5712cacd5ce9441ed8d1ce9910439fd0">operations_research::sat::ReservoirConstraintProto</a>
-, <a class="el" href="classoperations__research_1_1sat_1_1RoutesConstraintProto.html#addeed518e6913a72e9f4a44b92ef4fa1">operations_research::sat::RoutesConstraintProto</a>
-, <a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a9ee0315962908cb92596cf2ff93af546">operations_research::sat::SatParameters</a>
+, <a class="el" href="classoperations__research_1_1sat_1_1RoutesConstraintProto.html#a162fba0ad4785c443c76de4793dd5840">operations_research::sat::RoutesConstraintProto</a>
+, <a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a5d0fc3a39a124846c7c8b40139cc80c0">operations_research::sat::SatParameters</a>
 , <a class="el" href="classoperations__research_1_1sat_1_1TableConstraintProto.html#a6b129a89827687b57c1f6cf8e7b56bd0">operations_research::sat::TableConstraintProto</a>
 </li>
 <li>count_assumption_levels_in_lbd()
@@ -974,7 +971,7 @@
 , <a class="el" href="classoperations__research_1_1sat_1_1TableConstraint.html#ae04c85577cf33a05fb50bb361877fb42">operations_research::sat::TableConstraint</a>
 </li>
 <li>CpModelProto()
-: <a class="el" href="classoperations__research_1_1sat_1_1CpModelProto.html#a8d94acf76d5ec3e2c7041eb2a6523247">operations_research::sat::CpModelProto</a>
+: <a class="el" href="classoperations__research_1_1sat_1_1CpModelProto.html#ab9c606f40d2570f8e807e41817f15a88">operations_research::sat::CpModelProto</a>
 </li>
 <li>CpObjectiveProto()
 : <a class="el" href="classoperations__research_1_1sat_1_1CpObjectiveProto.html#a7490b3401f636ce10a4360aa118c65e6">operations_research::sat::CpObjectiveProto</a>
@@ -994,7 +991,7 @@
 , <a class="el" href="classoperations__research_1_1sat_1_1IntVar.html#a9d31ad87d4edee55fc3cb5e239077720">operations_research::sat::IntVar</a>
 </li>
 <li>CumulativeConstraintProto()
-: <a class="el" href="classoperations__research_1_1sat_1_1CumulativeConstraintProto.html#aebf3fdb22167124baee3d7e4e5edde80">operations_research::sat::CumulativeConstraintProto</a>
+: <a class="el" href="classoperations__research_1_1sat_1_1CumulativeConstraintProto.html#ae1ffebcaaf80d97ec2bdbe569a9feb3a">operations_research::sat::CumulativeConstraintProto</a>
 </li>
 </ul>
 </div><!-- contents -->

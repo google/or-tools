@@ -2,14 +2,14 @@
 <tagfile>
   <compound kind="file">
     <name>dense_doubly_linked_list.h</name>
-    <path>/Users/lperron/Work/or-tools/ortools/algorithms/</path>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/algorithms/</path>
     <filename>dense__doubly__linked__list_8h</filename>
     <class kind="class">operations_research::DenseDoublyLinkedList</class>
     <namespace>operations_research</namespace>
   </compound>
   <compound kind="file">
     <name>dynamic_partition.h</name>
-    <path>/Users/lperron/Work/or-tools/ortools/algorithms/</path>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/algorithms/</path>
     <filename>dynamic__partition_8h</filename>
     <class kind="class">operations_research::DynamicPartition</class>
     <class kind="struct">operations_research::DynamicPartition::IterablePart</class>
@@ -18,14 +18,14 @@
   </compound>
   <compound kind="file">
     <name>dynamic_permutation.h</name>
-    <path>/Users/lperron/Work/or-tools/ortools/algorithms/</path>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/algorithms/</path>
     <filename>dynamic__permutation_8h</filename>
     <class kind="class">operations_research::DynamicPermutation</class>
     <namespace>operations_research</namespace>
   </compound>
   <compound kind="file">
     <name>find_graph_symmetries.h</name>
-    <path>/Users/lperron/Work/or-tools/ortools/algorithms/</path>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/algorithms/</path>
     <filename>find__graph__symmetries_8h</filename>
     <includes id="dynamic__partition_8h" name="dynamic_partition.h" local="yes" imported="no">ortools/algorithms/dynamic_partition.h</includes>
     <includes id="dynamic__permutation_8h" name="dynamic_permutation.h" local="yes" imported="no">ortools/algorithms/dynamic_permutation.h</includes>
@@ -34,7 +34,7 @@
   </compound>
   <compound kind="file">
     <name>hungarian.h</name>
-    <path>/Users/lperron/Work/or-tools/ortools/algorithms/</path>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/algorithms/</path>
     <filename>hungarian_8h</filename>
     <namespace>operations_research</namespace>
     <member kind="function">
@@ -54,7 +54,7 @@
   </compound>
   <compound kind="file">
     <name>knapsack_solver.h</name>
-    <path>/Users/lperron/Work/or-tools/ortools/algorithms/</path>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/algorithms/</path>
     <filename>knapsack__solver_8h</filename>
     <class kind="class">operations_research::KnapsackSolver</class>
     <class kind="struct">operations_research::KnapsackAssignment</class>
@@ -91,7 +91,7 @@
   </compound>
   <compound kind="file">
     <name>sparse_permutation.h</name>
-    <path>/Users/lperron/Work/or-tools/ortools/algorithms/</path>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/algorithms/</path>
     <filename>sparse__permutation_8h</filename>
     <class kind="class">operations_research::SparsePermutation</class>
     <class kind="struct">operations_research::SparsePermutation::Iterator</class>

@@ -177,6 +177,9 @@
 <li>BEST_INSERTION_VALUE
 : <a class="el" href="enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1FirstSolutionStrategy_1_1Value.html#a15e0c46c087c33896938c6da08d76aa2">com.google.ortools.constraintsolver.FirstSolutionStrategy.Value</a>
 </li>
+<li>BEST_OBJECTIVE_BOUND_FIELD_NUMBER
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse.html#a039d4d1b4b193c816553f378dc774f77">com.google.ortools.linearsolver.MPSolutionResponse</a>
+</li>
 <li>bestBound()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPObjective.html#a5cef7009a8683d7f73b1a57ad9899ca4">com.google.ortools.linearsolver.MPObjective</a>
 </li>
@@ -248,7 +251,11 @@
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BooleanVar.html#a5587825bf88231c2e55b3ac87e24d4b9">com.google.ortools.constraintsolver.BooleanVar</a>
 </li>
 <li>BOP_INTEGER_PROGRAMMING
-: <a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#a858054bb17280965ff437a9dad16938e">com.google.ortools.linearsolver.MPSolver.OptimizationProblemType</a>
+: <a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html#af0d4832f8661e66f53c026144221c9b2">com.google.ortools.linearsolver.MPModelRequest.SolverType</a>
+, <a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#a858054bb17280965ff437a9dad16938e">com.google.ortools.linearsolver.MPSolver.OptimizationProblemType</a>
+</li>
+<li>BOP_INTEGER_PROGRAMMING_VALUE
+: <a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html#a9e108ff91fecea62ba40a2120856e152">com.google.ortools.linearsolver.MPModelRequest.SolverType</a>
 </li>
 <li>bound()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html#a5a715b216bf372cf3efdcf1b49656224">com.google.ortools.constraintsolver.Assignment</a>
@@ -266,6 +273,9 @@
 <li>BRANCHES_FIELD_NUMBER
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters.html#a41e4e0e07249161248db432d67c049d2">com.google.ortools.constraintsolver.RegularLimitParameters</a>
 </li>
+<li>BRANCHING_PRIORITY_FIELD_NUMBER
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariableProto.html#ae0131d251eeb39221811217780599b8f">com.google.ortools.linearsolver.MPVariableProto</a>
+</li>
 <li>build()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ConstraintSolverParameters_1_1Builder.html#a5932c82119732e989f643de44465a98c">com.google.ortools.constraintsolver.ConstraintSolverParameters.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1FirstSolutionStrategy_1_1Builder.html#a26ca920915f630a991e407bb386d1f90">com.google.ortools.constraintsolver.FirstSolutionStrategy.Builder</a>
@@ -274,6 +284,17 @@
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModelParameters_1_1Builder.html#a42e2716685db7f86bb42ef608cfc4587">com.google.ortools.constraintsolver.RoutingModelParameters.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1Builder.html#a47e2da700a8d33b55478dc6e8ef124cd">com.google.ortools.constraintsolver.RoutingSearchParameters.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1LocalSearchNeighborhoodOperators_1_1Builder.html#a3529e5cc525efeabc3fca2ec56076fa0">com.google.ortools.constraintsolver.RoutingSearchParameters.LocalSearchNeighborhoodOperators.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraintProto_1_1Builder.html#ad978d746f03e57ed6dbda34c4c39fedd">com.google.ortools.linearsolver.MPConstraintProto.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPGeneralConstraintProto_1_1Builder.html#a51bb6619a7dec18279d1ce72cc457dd2">com.google.ortools.linearsolver.MPGeneralConstraintProto.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPIndicatorConstraint_1_1Builder.html#a3d3a8e4331a0922cb04e9516315bc787">com.google.ortools.linearsolver.MPIndicatorConstraint.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelProto_1_1Builder.html#a9c2c1de91cfbdcc4e8cd8a38e072e721">com.google.ortools.linearsolver.MPModelProto.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1Builder.html#a8147cb081048168ba7bd9b8b06c7da6e">com.google.ortools.linearsolver.MPModelRequest.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse_1_1Builder.html#abb5531b27249fd82b3a3f20675b24cb2">com.google.ortools.linearsolver.MPSolutionResponse.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverCommonParameters_1_1Builder.html#ae616bd202a763ec39e46a57aa897fb3f">com.google.ortools.linearsolver.MPSolverCommonParameters.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html#a346b37e598a021bb04faa95a539b0f39">com.google.ortools.linearsolver.MPSosConstraint.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariableProto_1_1Builder.html#a290287ffe08bbdea1640bb78031367a0">com.google.ortools.linearsolver.MPVariableProto.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1OptionalDouble_1_1Builder.html#a0e0dc57f344ce1a2800e072c31b7d37e">com.google.ortools.linearsolver.OptionalDouble.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1PartialVariableAssignment_1_1Builder.html#a9f6c7e99c75b15ee7bc0ee0f3dd2d09f">com.google.ortools.linearsolver.PartialVariableAssignment.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html#a40dfe1a327c6011b216bf6451d17902c">com.google.ortools.sat.CpModelProto.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#ae622fd126a48683515fa6970d5f68f4c">com.google.ortools.sat.SatParameters.Builder</a>
 </li>
@@ -288,6 +309,17 @@
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModelParameters_1_1Builder.html#a055db2d1637a7f88cfe034133b8130e6">com.google.ortools.constraintsolver.RoutingModelParameters.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1Builder.html#a720c582b946e4fa70c4e57673d298631">com.google.ortools.constraintsolver.RoutingSearchParameters.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1LocalSearchNeighborhoodOperators_1_1Builder.html#a60d591e3fc267f3a10843870e852843a">com.google.ortools.constraintsolver.RoutingSearchParameters.LocalSearchNeighborhoodOperators.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraintProto_1_1Builder.html#a043dec599ce34fddd62a57474d668b22">com.google.ortools.linearsolver.MPConstraintProto.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPGeneralConstraintProto_1_1Builder.html#af985d3e4b208e63c21dfbfa8ae3c0daf">com.google.ortools.linearsolver.MPGeneralConstraintProto.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPIndicatorConstraint_1_1Builder.html#a77ff1816ec7dcf4a86a3320cdcdca789">com.google.ortools.linearsolver.MPIndicatorConstraint.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelProto_1_1Builder.html#af19d025737378c5fbcd06e8c4900f7a9">com.google.ortools.linearsolver.MPModelProto.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1Builder.html#a884d2e228e43dc8516539a849db668b6">com.google.ortools.linearsolver.MPModelRequest.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse_1_1Builder.html#a7f612fa3da739c75b3b117c3e450bfd6">com.google.ortools.linearsolver.MPSolutionResponse.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverCommonParameters_1_1Builder.html#af04476df171c3ff158629757cdde7a6d">com.google.ortools.linearsolver.MPSolverCommonParameters.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html#a30d1014cbeebb29edc4ed13c44f5d081">com.google.ortools.linearsolver.MPSosConstraint.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariableProto_1_1Builder.html#a40da8744b7f6b53e8a7188d3284cd6b1">com.google.ortools.linearsolver.MPVariableProto.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1OptionalDouble_1_1Builder.html#abaad0bd1c0cb46c2bfcd454f41d817a4">com.google.ortools.linearsolver.OptionalDouble.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1PartialVariableAssignment_1_1Builder.html#aa3857e0ecf33bf7f5ab1ff0dfddca3dd">com.google.ortools.linearsolver.PartialVariableAssignment.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html#a6de502d286e5361cbc8b01ac41751777">com.google.ortools.sat.CpModelProto.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a735b8d5389ddb2a0f27c146360cce202">com.google.ortools.sat.SatParameters.Builder</a>
 </li>

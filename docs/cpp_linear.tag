@@ -2,13 +2,13 @@
 <tagfile>
   <compound kind="file">
     <name>linear_solver.h</name>
-    <path>/Users/lperron/Work/or-tools/ortools/linear_solver/</path>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/linear_solver/</path>
     <filename>linear__solver_8h</filename>
     <includes id="linear__solver_8pb_8h" name="linear_solver.pb.h" local="yes" imported="no">ortools/linear_solver/linear_solver.pb.h</includes>
   </compound>
   <compound kind="file">
     <name>linear_solver.pb.h</name>
-    <path>/Users/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/ortools/linear_solver/</path>
     <filename>linear__solver_8pb_8h</filename>
     <class kind="struct">TableStruct_ortools_2flinear_5fsolver_2flinear_5fsolver_2eproto</class>
     <class kind="class">operations_research::MPVariableProto</class>
@@ -637,7 +637,7 @@
   </compound>
   <compound kind="file">
     <name>model_exporter.h</name>
-    <path>/Users/lperron/Work/or-tools/ortools/linear_solver/</path>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/linear_solver/</path>
     <filename>model__exporter_8h</filename>
     <includes id="linear__solver_8pb_8h" name="linear_solver.pb.h" local="yes" imported="no">ortools/linear_solver/linear_solver.pb.h</includes>
     <class kind="struct">operations_research::MPModelExportOptions</class>
@@ -659,7 +659,7 @@
   </compound>
   <compound kind="file">
     <name>model_exporter_swig_helper.h</name>
-    <path>/Users/lperron/Work/or-tools/ortools/linear_solver/</path>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/linear_solver/</path>
     <filename>model__exporter__swig__helper_8h</filename>
     <includes id="linear__solver_8pb_8h" name="linear_solver.pb.h" local="yes" imported="no">ortools/linear_solver/linear_solver.pb.h</includes>
     <includes id="model__exporter_8h" name="model_exporter.h" local="yes" imported="no">ortools/linear_solver/model_exporter.h</includes>
@@ -681,7 +681,7 @@
   </compound>
   <compound kind="file">
     <name>model_validator.h</name>
-    <path>/Users/lperron/Work/or-tools/ortools/linear_solver/</path>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/linear_solver/</path>
     <filename>model__validator_8h</filename>
     <includes id="linear__solver_8pb_8h" name="linear_solver.pb.h" local="yes" imported="no">ortools/linear_solver/linear_solver.pb.h</includes>
     <namespace>operations_research</namespace>

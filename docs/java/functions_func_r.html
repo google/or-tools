@@ -132,6 +132,7 @@
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingParameters.html#a75a68d4c4e5d74ee5d5ace13407f5099">com.google.ortools.constraintsolver.RoutingParameters</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchLimitProtobuf.html#a3745ece244375937c9d6aa14c2bd7354">com.google.ortools.constraintsolver.SearchLimitProtobuf</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolverParameters.html#a203f2c58962545ce986c3be10c8a9c48">com.google.ortools.constraintsolver.SolverParameters</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1LinearSolver.html#acb30b9de6b0a16f70f2bce5a97c7c1d8">com.google.ortools.linearsolver.LinearSolver</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1OptionalBooleanOuterClass.html#a56f562316d809d069a2dcec0db365ff3">com.google.ortools.util.OptionalBooleanOuterClass</a>
 </li>
 <li>registerDemon()
@@ -168,8 +169,14 @@
 <li>removeAllPossibleFromBin()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Pack.html#a14cf431b6a1f61460f54f9aa49927e06">com.google.ortools.constraintsolver.Pack</a>
 </li>
+<li>removeConstraint()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelProto_1_1Builder.html#aa728e4da3d8a332dc813879cb30f00da">com.google.ortools.linearsolver.MPModelProto.Builder</a>
+</li>
 <li>removeConstraints()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html#a86d2aa80943bc9c0b6e698d0a05f856d">com.google.ortools.sat.CpModelProto.Builder</a>
+</li>
+<li>removeGeneralConstraint()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelProto_1_1Builder.html#ad29a3cc24f9e296c79c8298fa6515938">com.google.ortools.linearsolver.MPModelProto.Builder</a>
 </li>
 <li>removeInterval()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BooleanVar.html#a7894c48acb89c6e9b6e8b261c75c995f">com.google.ortools.constraintsolver.BooleanVar</a>
@@ -187,6 +194,9 @@
 <li>removeValues()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html#a9f0336d1c67be2a1548bc243e652793e">com.google.ortools.constraintsolver.IntVar</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationMonitor.html#a00c5af162789393d934ea57e9b67877e">com.google.ortools.constraintsolver.PropagationMonitor</a>
+</li>
+<li>removeVariable()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelProto_1_1Builder.html#a6d3ee1d48e18c486fae40335d780f637">com.google.ortools.linearsolver.MPModelProto.Builder</a>
 </li>
 <li>removeVariables()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html#ae20be9fd42ab0115447730118f6f499a">com.google.ortools.sat.CpModelProto.Builder</a>
@@ -248,10 +258,10 @@
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RevInteger.html#a2a249701777f8563acf3172bfda29b44">com.google.ortools.constraintsolver.RevInteger</a>
 </li>
 <li>RevLong()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RevLong.html#ac511e2cfa66361beface566b20cc6e40">com.google.ortools.constraintsolver.RevLong</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RevLong.html#a24320c2994257cfbfac0a79298a392c2">com.google.ortools.constraintsolver.RevLong</a>
 </li>
 <li>RevPartialSequence()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RevPartialSequence.html#a855d0df61c96aadb2be8c2bfc5ad482a">com.google.ortools.constraintsolver.RevPartialSequence</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RevPartialSequence.html#a8b8f825894bb01418a6bed0526fbd204">com.google.ortools.constraintsolver.RevPartialSequence</a>
 </li>
 <li>routesToAssignment()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a1179ae0e92f539615dea5119c8c74eb3">com.google.ortools.constraintsolver.RoutingModel</a>
@@ -263,13 +273,13 @@
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html#a170091916a4a0250e0a7aa9bb7cc4e2d">com.google.ortools.constraintsolver.RoutingFilteredDecisionBuilder</a>
 </li>
 <li>RoutingIndexManager()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingIndexManager.html#a8151e0fbee7bdd3d346834c88debb19b">com.google.ortools.constraintsolver.RoutingIndexManager</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingIndexManager.html#a958f2669ab9864d2b89cfafb75ee36c6">com.google.ortools.constraintsolver.RoutingIndexManager</a>
 </li>
 <li>RoutingModel()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#a42b4c9eb8f8e0d6c012db4b866c0384a">com.google.ortools.constraintsolver.RoutingModel</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html#aeaac8dfda96355136cd4bd3820d8d101">com.google.ortools.constraintsolver.RoutingModel</a>
 </li>
 <li>RoutingModelVisitor()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModelVisitor.html#a544bd9c2f7873ff6cd7dc196a77cb8f9">com.google.ortools.constraintsolver.RoutingModelVisitor</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModelVisitor.html#a8223911a16ece105b4f9b4828502421f">com.google.ortools.constraintsolver.RoutingModelVisitor</a>
 </li>
 <li>run()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Demon.html#a8250baf48856eb65b0a242b75a14a73e">com.google.ortools.constraintsolver.Demon</a>

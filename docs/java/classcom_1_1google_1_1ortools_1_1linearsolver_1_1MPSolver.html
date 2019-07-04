@@ -90,6 +90,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a383f49027e47246b5c412dd93e685734"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af9a95c8101cc414058de5b05030204c8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#af9a95c8101cc414058de5b05030204c8">numVariables</a> ()</td></tr>
 <tr class="separator:af9a95c8101cc414058de5b05030204c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a363486679622594bda617ef2bfff415f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html">MPVariable</a> []&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a363486679622594bda617ef2bfff415f">variables</a> ()</td></tr>
+<tr class="separator:a363486679622594bda617ef2bfff415f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad10bc63f593692a2a04fa655730444fb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html">MPVariable</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#ad10bc63f593692a2a04fa655730444fb">lookupVariableOrNull</a> (String var_name)</td></tr>
 <tr class="separator:ad10bc63f593692a2a04fa655730444fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae2552475092fb67b9a36dbe40260f414"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html">MPVariable</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#ae2552475092fb67b9a36dbe40260f414">makeVar</a> (double lb, double ub, boolean integer, String name)</td></tr>
@@ -102,6 +104,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a67e2b23c9d5524715e8823bc920435fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e410fd90605e06e42bcb1b096d79769"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a2e410fd90605e06e42bcb1b096d79769">numConstraints</a> ()</td></tr>
 <tr class="separator:a2e410fd90605e06e42bcb1b096d79769"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad1eda829e45719734aca8a269ed253b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html">MPConstraint</a> []&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#aad1eda829e45719734aca8a269ed253b">constraints</a> ()</td></tr>
+<tr class="separator:aad1eda829e45719734aca8a269ed253b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abe57559108cc98bffedac87926d8756b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html">MPConstraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#abe57559108cc98bffedac87926d8756b">lookupConstraintOrNull</a> (String constraint_name)</td></tr>
 <tr class="separator:abe57559108cc98bffedac87926d8756b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3ce0ce830904758c0a43ecf824980755"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html">MPConstraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a3ce0ce830904758c0a43ecf824980755">makeConstraint</a> (double lb, double ub)</td></tr>
@@ -126,6 +130,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a5f9b2aa2ecb330bba498b0a78919b4ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a336148f74465d5c49970c59b6fb9a49b"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a336148f74465d5c49970c59b6fb9a49b">interruptSolve</a> ()</td></tr>
 <tr class="separator:a336148f74465d5c49970c59b6fb9a49b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad77877af2c719e9df249afb216d0fc25"><td class="memItemLeft" align="right" valign="top">SWIGTYPE_p_util__Status&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#ad77877af2c719e9df249afb216d0fc25">loadSolutionFromProto</a> (SWIGTYPE_p_operations_research__MPSolutionResponse response, double tolerance)</td></tr>
+<tr class="separator:ad77877af2c719e9df249afb216d0fc25"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4da1391d92f031dbb802ac64edee189a"><td class="memItemLeft" align="right" valign="top">SWIGTYPE_p_util__Status&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a4da1391d92f031dbb802ac64edee189a">loadSolutionFromProto</a> (SWIGTYPE_p_operations_research__MPSolutionResponse response)</td></tr>
+<tr class="separator:a4da1391d92f031dbb802ac64edee189a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d568e4b648bf9f69be28a14024834b1"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a4d568e4b648bf9f69be28a14024834b1">setSolverSpecificParametersAsString</a> (String parameters)</td></tr>
 <tr class="separator:a4d568e4b648bf9f69be28a14024834b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6a8a894b9be78043a9376298ddf70eea"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a6a8a894b9be78043a9376298ddf70eea">enableOutput</a> ()</td></tr>
@@ -142,6 +150,14 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a59cc36067f863a9a57ea05b955bea0c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a421429bb3274ee3b0a9aa73de0ae0abe"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a421429bb3274ee3b0a9aa73de0ae0abe">wallTime</a> ()</td></tr>
 <tr class="separator:a421429bb3274ee3b0a9aa73de0ae0abe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa975ae4683a4028cac98987370f242c3"><td class="memItemLeft" align="right" valign="top">String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#aa975ae4683a4028cac98987370f242c3">loadModelFromProto</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelProto.html">com.google.ortools.linearsolver.MPModelProto</a> input_model)</td></tr>
+<tr class="separator:aa975ae4683a4028cac98987370f242c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a094050986be6f2f0350f7a7169de081b"><td class="memItemLeft" align="right" valign="top">String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a094050986be6f2f0350f7a7169de081b">loadModelFromProtoWithUniqueNamesOrDie</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelProto.html">com.google.ortools.linearsolver.MPModelProto</a> input_model)</td></tr>
+<tr class="separator:a094050986be6f2f0350f7a7169de081b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a858ee88954dd038239a77370d03a8ab0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelProto.html">com.google.ortools.linearsolver.MPModelProto</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a858ee88954dd038239a77370d03a8ab0">exportModelToProto</a> ()</td></tr>
+<tr class="separator:a858ee88954dd038239a77370d03a8ab0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0cfeb3d424b1823acedc91eaebb3fc60"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse.html">com.google.ortools.linearsolver.MPSolutionResponse</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a0cfeb3d424b1823acedc91eaebb3fc60">createSolutionResponseProto</a> ()</td></tr>
+<tr class="separator:a0cfeb3d424b1823acedc91eaebb3fc60"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a744532f7dd9fea3c59b2e172773fb8a3"><td class="memItemLeft" align="right" valign="top">String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a744532f7dd9fea3c59b2e172773fb8a3">exportModelAsLpFormat</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelExportOptions.html">MPModelExportOptions</a> options)</td></tr>
 <tr class="separator:a744532f7dd9fea3c59b2e172773fb8a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1ec3573250cc47fe0f754b3c53fc23cb"><td class="memItemLeft" align="right" valign="top">String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a1ec3573250cc47fe0f754b3c53fc23cb">exportModelAsLpFormat</a> ()</td></tr>
@@ -150,8 +166,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a63c6315351a54436ede85ec73a9559f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a67a134f1480f09569367c1e3ba73a1ee"><td class="memItemLeft" align="right" valign="top">String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a67a134f1480f09569367c1e3ba73a1ee">exportModelAsMpsFormat</a> ()</td></tr>
 <tr class="separator:a67a134f1480f09569367c1e3ba73a1ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a74ccd3085304566e85563d387588de42"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a74ccd3085304566e85563d387588de42">setHint</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html">MPVariable</a>[] variables, double[] values)</td></tr>
-<tr class="memdesc:a74ccd3085304566e85563d387588de42"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set a hint for solution.  <a href="#a74ccd3085304566e85563d387588de42">More...</a><br /></td></tr>
+<tr class="memitem:a74ccd3085304566e85563d387588de42"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a74ccd3085304566e85563d387588de42">setHint</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html">MPVariable</a>[] <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a363486679622594bda617ef2bfff415f">variables</a>, double[] values)</td></tr>
+<tr class="memdesc:a74ccd3085304566e85563d387588de42"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets a hint for solution.  <a href="#a74ccd3085304566e85563d387588de42">More...</a><br /></td></tr>
 <tr class="separator:a74ccd3085304566e85563d387588de42"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a188d3fd10bb48f1daf12a0dc9697b99a"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a188d3fd10bb48f1daf12a0dc9697b99a">setNumThreads</a> (int num_theads)</td></tr>
 <tr class="memdesc:a188d3fd10bb48f1daf12a0dc9697b99a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the number of threads to be used by the solver.  <a href="#a188d3fd10bb48f1daf12a0dc9697b99a">More...</a><br /></td></tr>
@@ -163,6 +179,8 @@ Static Public Member Functions</h2></td></tr>
 <tr class="separator:afc9ca90b777f2cc3d262b945b9694859"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7b7cfaa5fc10f98db57f554706355c66"><td class="memItemLeft" align="right" valign="top">static double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a7b7cfaa5fc10f98db57f554706355c66">infinity</a> ()</td></tr>
 <tr class="separator:a7b7cfaa5fc10f98db57f554706355c66"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af8af13423e19b7ab1e1c386dd5246631"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse.html">com.google.ortools.linearsolver.MPSolutionResponse</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#af8af13423e19b7ab1e1c386dd5246631">solveWithProto</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html">com.google.ortools.linearsolver.MPModelRequest</a> model_request)</td></tr>
+<tr class="separator:af8af13423e19b7ab1e1c386dd5246631"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
@@ -297,7 +315,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00165">165</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00173">173</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -324,7 +342,61 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00205">205</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00221">221</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+
+</div>
+</div>
+<a id="aad1eda829e45719734aca8a269ed253b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aad1eda829e45719734aca8a269ed253b">&#9670;&nbsp;</a></span>constraints()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html">MPConstraint</a> [] com.google.ortools.linearsolver.MPSolver.constraints </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00131">131</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+
+</div>
+</div>
+<a id="a0cfeb3d424b1823acedc91eaebb3fc60"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0cfeb3d424b1823acedc91eaebb3fc60">&#9670;&nbsp;</a></span>createSolutionResponseProto()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse.html">com.google.ortools.linearsolver.MPSolutionResponse</a> com.google.ortools.linearsolver.MPSolver.createSolutionResponseProto </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00254">254</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -378,7 +450,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00189">189</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00205">205</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -406,7 +478,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00217">217</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00280">280</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -433,7 +505,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00221">221</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00284">284</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -461,7 +533,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00225">225</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00288">288</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -488,7 +560,34 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00229">229</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00292">292</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+
+</div>
+</div>
+<a id="a858ee88954dd038239a77370d03a8ab0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a858ee88954dd038239a77370d03a8ab0">&#9670;&nbsp;</a></span>exportModelToProto()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelProto.html">com.google.ortools.linearsolver.MPModelProto</a> com.google.ortools.linearsolver.MPSolver.exportModelToProto </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00241">241</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -515,7 +614,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00185">185</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00201">201</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -542,7 +641,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00177">177</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00185">185</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -569,7 +668,129 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00197">197</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00213">213</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+
+</div>
+</div>
+<a id="aa975ae4683a4028cac98987370f242c3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa975ae4683a4028cac98987370f242c3">&#9670;&nbsp;</a></span>loadModelFromProto()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">String com.google.ortools.linearsolver.MPSolver.loadModelFromProto </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelProto.html">com.google.ortools.linearsolver.MPModelProto</a>&#160;</td>
+          <td class="paramname"><em>input_model</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00233">233</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+
+</div>
+</div>
+<a id="a094050986be6f2f0350f7a7169de081b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a094050986be6f2f0350f7a7169de081b">&#9670;&nbsp;</a></span>loadModelFromProtoWithUniqueNamesOrDie()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">String com.google.ortools.linearsolver.MPSolver.loadModelFromProtoWithUniqueNamesOrDie </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelProto.html">com.google.ortools.linearsolver.MPModelProto</a>&#160;</td>
+          <td class="paramname"><em>input_model</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00237">237</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+
+</div>
+</div>
+<a id="ad77877af2c719e9df249afb216d0fc25"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad77877af2c719e9df249afb216d0fc25">&#9670;&nbsp;</a></span>loadSolutionFromProto() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">SWIGTYPE_p_util__Status com.google.ortools.linearsolver.MPSolver.loadSolutionFromProto </td>
+          <td>(</td>
+          <td class="paramtype">SWIGTYPE_p_operations_research__MPSolutionResponse&#160;</td>
+          <td class="paramname"><em>response</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>tolerance</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00189">189</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+
+</div>
+</div>
+<a id="a4da1391d92f031dbb802ac64edee189a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4da1391d92f031dbb802ac64edee189a">&#9670;&nbsp;</a></span>loadSolutionFromProto() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">SWIGTYPE_p_util__Status com.google.ortools.linearsolver.MPSolver.loadSolutionFromProto </td>
+          <td>(</td>
+          <td class="paramtype">SWIGTYPE_p_operations_research__MPSolutionResponse&#160;</td>
+          <td class="paramname"><em>response</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00193">193</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -597,7 +818,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00127">127</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00135">135</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -625,7 +846,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00098">98</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00102">102</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -653,7 +874,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00118">118</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00122">122</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -757,7 +978,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00132">132</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00140">140</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -784,7 +1005,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00137">137</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00145">145</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -828,7 +1049,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00142">142</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00150">150</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -856,7 +1077,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00147">147</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00155">155</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -900,7 +1121,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00113">113</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00117">117</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1038,7 +1259,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00108">108</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00112">112</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1182,7 +1403,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00103">103</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00107">107</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1315,7 +1536,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00201">201</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00217">217</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1342,7 +1563,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00123">123</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00127">127</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1396,7 +1617,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00152">152</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00160">160</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1423,7 +1644,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00173">173</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00181">181</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1461,10 +1682,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Set a hint for solution. </p>
+<p>Sets a hint for solution. </p>
 <p>If a feasible or almost-feasible solution to the problem is already known, it may be helpful to pass it to the solver so that it can be used. A solver that supports this feature will try to use this information to create its initial feasible solution. Note that it may not always be faster to give a hint like this to the solver. There is also no guarantee that the solver will use this hint or try to return a solution "close" to this assignment in case of multiple optimal solutions. </p>
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00236">236</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00299">299</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1494,7 +1715,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Sets the number of threads to be used by the solver. </p>
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00243">243</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00306">306</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1522,7 +1743,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00181">181</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00197">197</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1550,7 +1771,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00209">209</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00225">225</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1577,7 +1798,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00157">157</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00165">165</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1605,7 +1826,35 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00161">161</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00169">169</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+
+</div>
+</div>
+<a id="af8af13423e19b7ab1e1c386dd5246631"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af8af13423e19b7ab1e1c386dd5246631">&#9670;&nbsp;</a></span>solveWithProto()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse.html">com.google.ortools.linearsolver.MPSolutionResponse</a> com.google.ortools.linearsolver.MPSolver.solveWithProto </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html">com.google.ortools.linearsolver.MPModelRequest</a>&#160;</td>
+          <td class="paramname"><em>model_request</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00267">267</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1660,7 +1909,34 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00193">193</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00209">209</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+
+</div>
+</div>
+<a id="a363486679622594bda617ef2bfff415f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a363486679622594bda617ef2bfff415f">&#9670;&nbsp;</a></span>variables()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html">MPVariable</a> [] com.google.ortools.linearsolver.MPSolver.variables </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00098">98</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1698,7 +1974,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00169">169</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00177">177</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1725,7 +2001,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00213">213</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00229">229</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>

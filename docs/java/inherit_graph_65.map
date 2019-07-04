@@ -1,5 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html" title="A linear expression interface that can be parsed." alt="" coords="5,5,225,32"/>
-<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html" title="An integer variable." alt="" coords="273,31,467,57"/>
-<area shape="rect" id="node3" href="$interfacecom_1_1google_1_1ortools_1_1sat_1_1Literal.html" title="Interface to describe a boolean variable or its negation." alt="" coords="19,56,212,83"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,13,125,39"/>
+<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverSolutionCallback.html" title="Parent class to create a callback called at each solution." alt="" coords="173,5,348,47"/>
 </map>

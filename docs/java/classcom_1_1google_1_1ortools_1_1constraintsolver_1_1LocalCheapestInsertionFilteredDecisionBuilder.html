@@ -50,17 +50,19 @@
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="LocalCheapestInsertionFilteredDecisionBuilder_8java_source.html#l00011">11</a> of file <a class="el" href="LocalCheapestInsertionFilteredDecisionBuilder_8java_source.html">LocalCheapestInsertionFilteredDecisionBuilder.java</a>.</p>
+<div class="textblock"><p>Filter-base decision builder which builds a solution by inserting nodes at their cheapest position. </p>
+<p>The cost of a position is computed an arc-based cost callback. Node selected for insertion are considered in decreasing order of distance to the start/ends of the routes, i.e. farthest nodes are inserted first. </p>
+
+<p class="definition">Definition at line <a class="el" href="LocalCheapestInsertionFilteredDecisionBuilder_8java_source.html#l00014">14</a> of file <a class="el" href="LocalCheapestInsertionFilteredDecisionBuilder_8java_source.html">LocalCheapestInsertionFilteredDecisionBuilder.java</a>.</p>
 </div><div class="dynheader">
 Inheritance diagram for com.google.ortools.constraintsolver.LocalCheapestInsertionFilteredDecisionBuilder:</div>
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalCheapestInsertionFilteredDecisionBuilder__inherit__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8LocalCheapestInsertionFilteredDecisionBuilder_inherit__map" alt="Inheritance graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8LocalCheapestInsertionFilteredDecisionBuilder_inherit__map" id="com_8google_8ortools_8constraintsolver_8LocalCheapestInsertionFilteredDecisionBuilder_inherit__map">
-<area shape="rect"  title=" " alt="" coords="10,452,263,508"/>
+<area shape="rect"  title="Filter&#45;base decision builder which builds a solution by inserting nodes at their cheapest position." alt="" coords="10,452,263,508"/>
 <area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CheapestInsertionFilteredDecisionBuilder.html" title=" " alt="" coords="5,363,268,404"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html" title=" " alt="" coords="21,273,253,315"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html" title=" " alt="" coords="21,184,253,225"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html" title="Filter&#45;based decision builder dedicated to routing." alt="" coords="21,273,253,315"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html" title="Routing Search Decision builders building a solution using local search filters to evaluate its feasi..." alt="" coords="21,184,253,225"/>
 <area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html" title=" " alt="" coords="21,95,253,136"/>
 <area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="21,5,253,47"/>
 </map>
@@ -70,10 +72,10 @@ Collaboration diagram for com.google.ortools.constraintsolver.LocalCheapestInser
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalCheapestInsertionFilteredDecisionBuilder__coll__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8LocalCheapestInsertionFilteredDecisionBuilder_coll__map" alt="Collaboration graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8LocalCheapestInsertionFilteredDecisionBuilder_coll__map" id="com_8google_8ortools_8constraintsolver_8LocalCheapestInsertionFilteredDecisionBuilder_coll__map">
-<area shape="rect"  title=" " alt="" coords="10,452,263,508"/>
+<area shape="rect"  title="Filter&#45;base decision builder which builds a solution by inserting nodes at their cheapest position." alt="" coords="10,452,263,508"/>
 <area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CheapestInsertionFilteredDecisionBuilder.html" title=" " alt="" coords="5,363,268,404"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html" title=" " alt="" coords="21,273,253,315"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html" title=" " alt="" coords="21,184,253,225"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html" title="Filter&#45;based decision builder dedicated to routing." alt="" coords="21,273,253,315"/>
+<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html" title="Routing Search Decision builders building a solution using local search filters to evaluate its feasi..." alt="" coords="21,184,253,225"/>
 <area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html" title=" " alt="" coords="21,95,253,136"/>
 <area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="21,5,253,47"/>
 </map>
@@ -90,16 +92,21 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a376d3c2ea5d3dd30de446142fe92fa17"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html">RoutingModel</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html#a376d3c2ea5d3dd30de446142fe92fa17">model</a> ()</td></tr>
 <tr class="separator:a376d3c2ea5d3dd30de446142fe92fa17"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af11aef952cdca517f5ce55b204ef0c22"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html#af11aef952cdca517f5ce55b204ef0c22">getStartChainEnd</a> (int vehicle)</td></tr>
+<tr class="memdesc:af11aef952cdca517f5ce55b204ef0c22"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the end of the start chain of vehicle,.  <a href="#af11aef952cdca517f5ce55b204ef0c22">More...</a><br /></td></tr>
 <tr class="separator:af11aef952cdca517f5ce55b204ef0c22"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a34b9eb7f7fe82f3b6117dde1ccdba065"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html#a34b9eb7f7fe82f3b6117dde1ccdba065">getEndChainStart</a> (int vehicle)</td></tr>
+<tr class="memdesc:a34b9eb7f7fe82f3b6117dde1ccdba065"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the start of the end chain of vehicle,.  <a href="#a34b9eb7f7fe82f3b6117dde1ccdba065">More...</a><br /></td></tr>
 <tr class="separator:a34b9eb7f7fe82f3b6117dde1ccdba065"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa5525c5f7b56a68497f0abfece6c9aed"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html#aa5525c5f7b56a68497f0abfece6c9aed">makeDisjunctionNodesUnperformed</a> (long node)</td></tr>
+<tr class="memdesc:aa5525c5f7b56a68497f0abfece6c9aed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Make nodes in the same disjunction as 'node' unperformed.  <a href="#aa5525c5f7b56a68497f0abfece6c9aed">More...</a><br /></td></tr>
 <tr class="separator:aa5525c5f7b56a68497f0abfece6c9aed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac749b3a4b1b9c57c25cd80da959612df"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html#ac749b3a4b1b9c57c25cd80da959612df">makeUnassignedNodesUnperformed</a> ()</td></tr>
+<tr class="memdesc:ac749b3a4b1b9c57c25cd80da959612df"><td class="mdescLeft">&#160;</td><td class="mdescRight">Make all unassigned nodes unperformed.  <a href="#ac749b3a4b1b9c57c25cd80da959612df">More...</a><br /></td></tr>
 <tr class="separator:ac749b3a4b1b9c57c25cd80da959612df"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a14d88cb8ce7a09d78438d00374d3cef0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Decision.html">Decision</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html#a14d88cb8ce7a09d78438d00374d3cef0">nextWrap</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html">Solver</a> solver)</td></tr>
 <tr class="separator:a14d88cb8ce7a09d78438d00374d3cef0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1964919bf929c3711c8639898a7baac8"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html#a1964919bf929c3711c8639898a7baac8">number_of_decisions</a> ()</td></tr>
+<tr class="memdesc:a1964919bf929c3711c8639898a7baac8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns statistics on search, number of decisions sent to filters, number of decisions rejected by filters.  <a href="#a1964919bf929c3711c8639898a7baac8">More...</a><br /></td></tr>
 <tr class="separator:a1964919bf929c3711c8639898a7baac8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a590ea24e3d18b9344f3495bd87420b51"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html#a590ea24e3d18b9344f3495bd87420b51">number_of_rejects</a> ()</td></tr>
 <tr class="separator:a590ea24e3d18b9344f3495bd87420b51"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -150,7 +157,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalCheapestInsertionFilteredDecisionBuilder_8java_source.html#l00014">14</a> of file <a class="el" href="LocalCheapestInsertionFilteredDecisionBuilder_8java_source.html">LocalCheapestInsertionFilteredDecisionBuilder.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalCheapestInsertionFilteredDecisionBuilder_8java_source.html#l00017">17</a> of file <a class="el" href="LocalCheapestInsertionFilteredDecisionBuilder_8java_source.html">LocalCheapestInsertionFilteredDecisionBuilder.java</a>.</p>
 
 </div>
 </div>
@@ -178,7 +185,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalCheapestInsertionFilteredDecisionBuilder_8java_source.html#l00039">39</a> of file <a class="el" href="LocalCheapestInsertionFilteredDecisionBuilder_8java_source.html">LocalCheapestInsertionFilteredDecisionBuilder.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalCheapestInsertionFilteredDecisionBuilder_8java_source.html#l00042">42</a> of file <a class="el" href="LocalCheapestInsertionFilteredDecisionBuilder_8java_source.html">LocalCheapestInsertionFilteredDecisionBuilder.java</a>.</p>
 
 </div>
 </div>
@@ -205,7 +212,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalCheapestInsertionFilteredDecisionBuilder_8java_source.html#l00028">28</a> of file <a class="el" href="LocalCheapestInsertionFilteredDecisionBuilder_8java_source.html">LocalCheapestInsertionFilteredDecisionBuilder.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalCheapestInsertionFilteredDecisionBuilder_8java_source.html#l00031">31</a> of file <a class="el" href="LocalCheapestInsertionFilteredDecisionBuilder_8java_source.html">LocalCheapestInsertionFilteredDecisionBuilder.java</a>.</p>
 
 </div>
 </div>
@@ -233,7 +240,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingFilteredDecisionBuilder_8java_source.html#l00048">48</a> of file <a class="el" href="RoutingFilteredDecisionBuilder_8java_source.html">RoutingFilteredDecisionBuilder.java</a>.</p>
+<p>Returns the start of the end chain of vehicle,. </p>
+
+<p class="definition">Definition at line <a class="el" href="RoutingFilteredDecisionBuilder_8java_source.html#l00057">57</a> of file <a class="el" href="RoutingFilteredDecisionBuilder_8java_source.html">RoutingFilteredDecisionBuilder.java</a>.</p>
 
 </div>
 </div>
@@ -261,7 +270,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingFilteredDecisionBuilder_8java_source.html#l00044">44</a> of file <a class="el" href="RoutingFilteredDecisionBuilder_8java_source.html">RoutingFilteredDecisionBuilder.java</a>.</p>
+<p>Returns the end of the start chain of vehicle,. </p>
+
+<p class="definition">Definition at line <a class="el" href="RoutingFilteredDecisionBuilder_8java_source.html#l00050">50</a> of file <a class="el" href="RoutingFilteredDecisionBuilder_8java_source.html">RoutingFilteredDecisionBuilder.java</a>.</p>
 
 </div>
 </div>
@@ -289,7 +300,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingFilteredDecisionBuilder_8java_source.html#l00052">52</a> of file <a class="el" href="RoutingFilteredDecisionBuilder_8java_source.html">RoutingFilteredDecisionBuilder.java</a>.</p>
+<p>Make nodes in the same disjunction as 'node' unperformed. </p>
+<p>'node' is a variable index corresponding to a node. </p>
+
+<p class="definition">Definition at line <a class="el" href="RoutingFilteredDecisionBuilder_8java_source.html#l00064">64</a> of file <a class="el" href="RoutingFilteredDecisionBuilder_8java_source.html">RoutingFilteredDecisionBuilder.java</a>.</p>
 
 </div>
 </div>
@@ -316,7 +330,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingFilteredDecisionBuilder_8java_source.html#l00056">56</a> of file <a class="el" href="RoutingFilteredDecisionBuilder_8java_source.html">RoutingFilteredDecisionBuilder.java</a>.</p>
+<p>Make all unassigned nodes unperformed. </p>
+
+<p class="definition">Definition at line <a class="el" href="RoutingFilteredDecisionBuilder_8java_source.html#l00071">71</a> of file <a class="el" href="RoutingFilteredDecisionBuilder_8java_source.html">RoutingFilteredDecisionBuilder.java</a>.</p>
 
 </div>
 </div>
@@ -343,7 +359,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingFilteredDecisionBuilder_8java_source.html#l00039">39</a> of file <a class="el" href="RoutingFilteredDecisionBuilder_8java_source.html">RoutingFilteredDecisionBuilder.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingFilteredDecisionBuilder_8java_source.html#l00042">42</a> of file <a class="el" href="RoutingFilteredDecisionBuilder_8java_source.html">RoutingFilteredDecisionBuilder.java</a>.</p>
 
 </div>
 </div>
@@ -371,7 +387,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarFilteredDecisionBuilder_8java_source.html#l00039">39</a> of file <a class="el" href="IntVarFilteredDecisionBuilder_8java_source.html">IntVarFilteredDecisionBuilder.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarFilteredDecisionBuilder_8java_source.html#l00042">42</a> of file <a class="el" href="IntVarFilteredDecisionBuilder_8java_source.html">IntVarFilteredDecisionBuilder.java</a>.</p>
 
 </div>
 </div>
@@ -398,7 +414,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarFilteredDecisionBuilder_8java_source.html#l00048">48</a> of file <a class="el" href="IntVarFilteredDecisionBuilder_8java_source.html">IntVarFilteredDecisionBuilder.java</a>.</p>
+<p>Returns statistics on search, number of decisions sent to filters, number of decisions rejected by filters. </p>
+
+<p class="definition">Definition at line <a class="el" href="IntVarFilteredDecisionBuilder_8java_source.html#l00057">57</a> of file <a class="el" href="IntVarFilteredDecisionBuilder_8java_source.html">IntVarFilteredDecisionBuilder.java</a>.</p>
 
 </div>
 </div>
@@ -425,7 +443,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IntVarFilteredDecisionBuilder_8java_source.html#l00052">52</a> of file <a class="el" href="IntVarFilteredDecisionBuilder_8java_source.html">IntVarFilteredDecisionBuilder.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IntVarFilteredDecisionBuilder_8java_source.html#l00061">61</a> of file <a class="el" href="IntVarFilteredDecisionBuilder_8java_source.html">IntVarFilteredDecisionBuilder.java</a>.</p>
 
 </div>
 </div>
@@ -533,7 +551,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LocalCheapestInsertionFilteredDecisionBuilder_8java_source.html#l00043">43</a> of file <a class="el" href="LocalCheapestInsertionFilteredDecisionBuilder_8java_source.html">LocalCheapestInsertionFilteredDecisionBuilder.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LocalCheapestInsertionFilteredDecisionBuilder_8java_source.html#l00046">46</a> of file <a class="el" href="LocalCheapestInsertionFilteredDecisionBuilder_8java_source.html">LocalCheapestInsertionFilteredDecisionBuilder.java</a>.</p>
 
 </div>
 </div>

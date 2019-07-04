@@ -50,14 +50,16 @@
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00011">11</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
+<div class="textblock"><p>This filter accepts deltas for which the assignment satisfies the constraints of the <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html">Solver</a>. </p>
+<p>This is verified by keeping an internal copy of the assignment with all Next vars and their updated values, and calling RestoreAssignment() on the assignment+delta. TODO: (user): Also call the solution finalizer on variables, with the exception of Next Vars (woud fail on large instances). Warning: In the case of mandatory nodes, when all vehicles are currently being used in the solution but uninserted nodes still remain, this filter will reject the solution, even if the node could be inserted on one of these routes, because all Next vars of vehicle starts are already instantiated. TODO: (user): Avoid such false negatives. </p>
+
+<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00014">14</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
 </div><div class="dynheader">
 Inheritance diagram for com.google.ortools.constraintsolver.CPFeasibilityFilter:</div>
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CPFeasibilityFilter__inherit__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8CPFeasibilityFilter_inherit__map" alt="Inheritance graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8CPFeasibilityFilter_inherit__map" id="com_8google_8ortools_8constraintsolver_8CPFeasibilityFilter_inherit__map">
-<area shape="rect"  title=" " alt="" coords="5,273,237,315"/>
+<area shape="rect"  title="This filter accepts deltas for which the assignment satisfies the constraints of the Solver." alt="" coords="5,273,237,315"/>
 <area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html" title=" " alt="" coords="5,184,237,225"/>
 <area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html" title=" " alt="" coords="5,95,237,136"/>
 <area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="5,5,237,47"/>
@@ -68,7 +70,7 @@ Collaboration diagram for com.google.ortools.constraintsolver.CPFeasibilityFilte
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CPFeasibilityFilter__coll__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8CPFeasibilityFilter_coll__map" alt="Collaboration graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8CPFeasibilityFilter_coll__map" id="com_8google_8ortools_8constraintsolver_8CPFeasibilityFilter_coll__map">
-<area shape="rect"  title=" " alt="" coords="5,273,237,315"/>
+<area shape="rect"  title="This filter accepts deltas for which the assignment satisfies the constraints of the Solver." alt="" coords="5,273,237,315"/>
 <area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html" title=" " alt="" coords="5,184,237,225"/>
 <area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html" title=" " alt="" coords="5,95,237,136"/>
 <area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title=" " alt="" coords="5,5,237,47"/>
@@ -154,7 +156,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00014">14</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00017">17</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
 
 </div>
 </div>
@@ -182,7 +184,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00039">39</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00042">42</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
 
 </div>
 </div>
@@ -221,7 +223,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00047">47</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00050">50</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
 
 </div>
 </div>
@@ -276,7 +278,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00028">28</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00031">31</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
 
 </div>
 </div>
@@ -441,7 +443,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00051">51</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00054">54</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
 
 </div>
 </div>
@@ -614,7 +616,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00043">43</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00046">46</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
 
 </div>
 </div>
