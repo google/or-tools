@@ -32,7 +32,7 @@ LiteralIndex BranchDown(IntegerVariable var, IntegerValue value, Model* model) {
   auto* trail = model->GetOrCreate<Trail>();
   const Literal le = encoder->GetOrCreateAssociatedLiteral(
       IntegerLiteral::LowerOrEqual(var, value));
-  CHECK(!trail->Assignment().VariableIsAssigned(le.Variable()));
+  DCHECK(!trail->Assignment().VariableIsAssigned(le.Variable()));
   return le.Index();
 }
 
@@ -41,7 +41,7 @@ LiteralIndex BranchUp(IntegerVariable var, IntegerValue value, Model* model) {
   auto* trail = model->GetOrCreate<Trail>();
   const Literal ge = encoder->GetOrCreateAssociatedLiteral(
       IntegerLiteral::GreaterOrEqual(var, value));
-  CHECK(!trail->Assignment().VariableIsAssigned(ge.Variable()));
+  DCHECK(!trail->Assignment().VariableIsAssigned(ge.Variable()));
   return ge.Index();
 }
 
@@ -636,7 +636,7 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
   // Note that it is important to do the level-zero propagation if it wasn't
   // already done because EnqueueDecisionAndBackjumpOnConflict() assumes that
   // the solver is in a "propagated" state.
-  SatSolver* const solver = model->GetOrCreate<SatSolver>();
+  SatSolver* const sat_solver = model->GetOrCreate<SatSolver>();
 
   // TODO(user): We have the issue that at level zero. calling the propagation
   // loop more than once can propagate more! This is because we call the LP
@@ -644,7 +644,7 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
   // CHECKs() to fail in multithread (rarely) because when we associate new
   // literals to integer ones, Propagate() is indirectly called. Not sure yet
   // how to fix.
-  if (!solver->FinishPropagation()) return solver->UnsatStatus();
+  if (!sat_solver->FinishPropagation()) return sat_solver->UnsatStatus();
 
   // Create and initialize pseudo costs.
   // TODO(user): If this ever shows up in a cpu profile, find a way to not
@@ -654,21 +654,21 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
   IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
 
   // Main search loop.
-  const int64 old_num_conflicts = solver->num_failures();
+  const int64 old_num_conflicts = sat_solver->num_failures();
   const int64 conflict_limit =
       model->GetOrCreate<SatParameters>()->max_number_of_conflicts();
   int64 num_decisions_without_rins = 0;
   while (!time_limit->LimitReached() &&
-         (solver->num_failures() - old_num_conflicts < conflict_limit)) {
+         (sat_solver->num_failures() - old_num_conflicts < conflict_limit)) {
     // If needed, restart and switch decision_policy.
     if (heuristics.restart_policies[heuristics.policy_index]()) {
-      if (!solver->RestoreSolverToAssumptionLevel()) {
-        return solver->UnsatStatus();
+      if (!sat_solver->RestoreSolverToAssumptionLevel()) {
+        return sat_solver->UnsatStatus();
       }
       heuristics.policy_index = (heuristics.policy_index + 1) % num_policies;
     }
 
-    if (solver->CurrentDecisionLevel() == 0) {
+    if (sat_solver->CurrentDecisionLevel() == 0) {
       auto* level_zero_callbacks =
           model->GetOrCreate<LevelZeroCallbackHelper>();
       for (const auto& cb : level_zero_callbacks->callbacks) {
@@ -679,8 +679,21 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
     }
 
     // Get next decision, try to enqueue.
-    const LiteralIndex decision =
-        heuristics.decision_policies[heuristics.policy_index]();
+    LiteralIndex decision = kNoLiteralIndex;
+    while (true) {
+      decision = heuristics.decision_policies[heuristics.policy_index]();
+      if (decision != kNoLiteralIndex &&
+          sat_solver->Assignment().LiteralIsAssigned(Literal(decision))) {
+        // TODO(user): It would be nicer if this can never happen. For now, it
+        // does because of the Propagate() not reaching the fixed point as
+        // mentionned in a TODO above. As a work-around, we display a message
+        // but do not crash and recall the decision heuristic.
+        VLOG(1) << "Trying to take a decision that is already assigned!"
+                << " Fix this. Continuing for now...";
+        continue;
+      }
+      break;
+    }
 
     // Record the changelist and objective bounds for updating pseudo costs.
     const std::vector<PseudoCosts::VariableBoundChange> bound_changes =
@@ -691,7 +704,7 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
       current_obj_lb = integer_trail->LowerBound(objective_var);
       current_obj_ub = integer_trail->UpperBound(objective_var);
     }
-    const int old_level = solver->CurrentDecisionLevel();
+    const int old_level = sat_solver->CurrentDecisionLevel();
 
     // No decision means that we reached a leave of the search tree and that
     // we have a feasible solution.
@@ -721,10 +734,10 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
 
     // TODO(user): on some problems, this function can be quite long. Expand
     // so that we can check the time limit at each step?
-    solver->EnqueueDecisionAndBackjumpOnConflict(Literal(decision));
+    sat_solver->EnqueueDecisionAndBackjumpOnConflict(Literal(decision));
 
     // Update the pseudo costs.
-    if (solver->CurrentDecisionLevel() > old_level &&
+    if (sat_solver->CurrentDecisionLevel() > old_level &&
         objective_var != kNoIntegerVariable) {
       const IntegerValue new_obj_lb = integer_trail->LowerBound(objective_var);
       const IntegerValue new_obj_ub = integer_trail->UpperBound(objective_var);
@@ -733,8 +746,10 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
       pseudo_costs->UpdateCost(bound_changes, objective_bound_change);
     }
 
-    solver->AdvanceDeterministicTime(time_limit);
-    if (!solver->ReapplyAssumptionsIfNeeded()) return solver->UnsatStatus();
+    sat_solver->AdvanceDeterministicTime(time_limit);
+    if (!sat_solver->ReapplyAssumptionsIfNeeded()) {
+      return sat_solver->UnsatStatus();
+    }
     if (model->Get<SharedRINSNeighborhoodManager>() != nullptr) {
       // If RINS is activated, we need to make sure the SolutionDetails is
       // created.

@@ -1313,6 +1313,28 @@ void LoadCpModel(const CpModelProto& model_proto,
     values.push_back(IntegerValue(model_proto.solution_hint().values(i)));
   }
   search_heuristics->hint_search = FollowHint(vars, values, model);
+
+  // Create the CoreBasedOptimizer class if needed.
+  if (parameters.optimize_with_core()) {
+    // TODO(user): Remove code duplication with the solution_observer in
+    // SolveLoadedCpModel().
+    const std::string solution_info =
+        model->GetOrCreate<WorkerInfo>()->worker_name;
+    const auto solution_observer = [&model_proto, model, solution_info,
+                                    shared_response_manager]() {
+      CpSolverResponse response;
+      FillSolutionInResponse(model_proto, *model, &response);
+      response.set_solution_info(solution_info);
+      shared_response_manager->NewSolution(response, model);
+    };
+
+    const auto& objective = *model->GetOrCreate<ObjectiveDefinition>();
+    CoreBasedOptimizer* core =
+        new CoreBasedOptimizer(objective_var, objective.vars, objective.coeffs,
+                               solution_observer, model);
+    model->Register<CoreBasedOptimizer>(core);
+    model->TakeOwnership(core);
+  }
 }
 
 // Solves an already loaded cp_model_proto.
@@ -1367,9 +1389,7 @@ void SolveLoadedCpModel(const CpModelProto& model_proto,
             objective_var, objective.vars, objective.coeffs, solution_observer,
             model);
       } else {
-        CoreBasedOptimizer core(objective_var, objective.vars, objective.coeffs,
-                                solution_observer, model);
-        status = core.Optimize();
+        status = model->Mutable<CoreBasedOptimizer>()->Optimize();
       }
     } else {
       // TODO(user): This parameter break the splitting in chunk of a Solve().
@@ -1703,10 +1723,11 @@ struct SharedClasses {
 class FullProblemSolver : public SubSolver {
  public:
   FullProblemSolver(int id, const std::string& name,
-                    const SatParameters& local_parameters,
+                    const SatParameters& local_parameters, bool split_in_chunks,
                     SharedClasses* shared)
       : SubSolver(id, name),
         shared_(shared),
+        split_in_chunks_(split_in_chunks),
         local_model_(absl::make_unique<Model>()) {
     // Setup the local model parameters and time limit.
     local_model_->Add(NewSatParameters(local_parameters));
@@ -1733,23 +1754,64 @@ class FullProblemSolver : public SubSolver {
     }
   }
 
-  // TODO(user): Add support for splitting generated tasks in chunk. For now
-  // each task is actually a "full" solve and we only ever generate a single
-  // task.
-  bool TaskIsAvailable() override { return !task_is_generated_; }
+  bool SearchIsDone() const {
+    return shared_->response->ProblemIsSolved() ||
+           shared_->time_limit->LimitReached();
+  }
+
+  bool TaskIsAvailable() override {
+    if (SearchIsDone()) return false;
+
+    absl::MutexLock mutex_lock(&mutex_);
+    return previous_task_is_completed_;
+  }
 
   std::function<void()> GenerateTask(int64 task_id) override {
-    task_is_generated_ = true;
+    {
+      absl::MutexLock mutex_lock(&mutex_);
+      previous_task_is_completed_ = false;
+    }
     return [this]() {
-      LoadCpModel(*shared_->model_proto, shared_->response, local_model_.get());
-      QuickSolveWithHint(*shared_->model_proto, shared_->response,
-                         local_model_.get());
+      if (solving_first_chunk_) {
+        LoadCpModel(*shared_->model_proto, shared_->response,
+                    local_model_.get());
+        QuickSolveWithHint(*shared_->model_proto, shared_->response,
+                           local_model_.get());
+
+        // No need for mutex since we only run one task at the time.
+        solving_first_chunk_ = false;
+
+        if (split_in_chunks_) {
+          // Abort first chunk and allow to schedule the next.
+          absl::MutexLock mutex_lock(&mutex_);
+          previous_task_is_completed_ = true;
+          return;
+        }
+      }
+
+      if (split_in_chunks_) {
+        // Configure time limit for chunk solving. Note that we do not want
+        // to do that for the hint search for now.
+        auto* params = local_model_->GetOrCreate<SatParameters>();
+        auto* time_limit = local_model_->GetOrCreate<TimeLimit>();
+        params->set_max_deterministic_time(1);
+        time_limit->ResetLimitFromParameters(*params);
+        shared_->time_limit->UpdateLocalLimit(time_limit);
+      }
       SolveLoadedCpModel(*shared_->model_proto, shared_->response,
                          local_model_.get());
 
       // Abort if the problem is solved.
-      if (shared_->response->ProblemIsSolved()) {
+      if (SearchIsDone()) {
         shared_->time_limit->Stop();
+        return;
+      }
+
+      // In this mode, we allow to generate more task.
+      if (split_in_chunks_) {
+        absl::MutexLock mutex_lock(&mutex_);
+        previous_task_is_completed_ = true;
+        return;
       }
 
       // Once a solver is done clear its memory and do not wait for the
@@ -1766,9 +1828,15 @@ class FullProblemSolver : public SubSolver {
 
  private:
   SharedClasses* shared_;
-
-  bool task_is_generated_ = false;
+  const bool split_in_chunks_;
   std::unique_ptr<Model> local_model_;
+
+  // The first chunk is special. It is the one in which we load the model and
+  // try to follow the hint.
+  bool solving_first_chunk_ = true;
+
+  absl::Mutex mutex_;
+  bool previous_task_is_completed_ GUARDED_BY(mutex_) = true;
 };
 
 // A Subsolver that generate LNS solve from a given neighborhood.
@@ -1957,14 +2025,19 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   CHECK(!parameters.enumerate_all_solutions())
       << "Enumerating all solutions in parallel is not supported.";
 
+  // If "interleave_search" is true, then the number of strategies is
+  // independent of the number of threads.
+  const int num_strategies =
+      parameters.interleave_search() ? 8 : num_search_workers;
+
   std::unique_ptr<SharedBoundsManager> shared_bounds_manager;
   if (global_model->GetOrCreate<SatParameters>()->share_level_zero_bounds()) {
     // TODO(user): The current code is a bit brittle because we may have
-    // more SubSolver ids than num_search_workers, and each SubSolver might
+    // more SubSolver ids than num_strategies, and each SubSolver might
     // need to synchronize bounds. Fix, it should be easy to make this number
     // adapt dynamically in the SharedBoundsManager.
-    shared_bounds_manager = absl::make_unique<SharedBoundsManager>(
-        num_search_workers + 1, model_proto);
+    shared_bounds_manager =
+        absl::make_unique<SharedBoundsManager>(num_strategies + 1, model_proto);
   }
   std::unique_ptr<SharedRINSNeighborhoodManager> shared_rins_manager;
   if (global_model->GetOrCreate<SatParameters>()->use_rins_lns()) {
@@ -1988,24 +2061,26 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     SatParameters local_params = parameters;
     local_params.set_stop_after_first_solution(true);
     subsolvers.push_back(absl::make_unique<FullProblemSolver>(
-        /*id=*/subsolvers.size(), "first_solution", local_params, &shared));
+        /*id=*/subsolvers.size(), "first_solution", local_params,
+        /*split_in_chunks=*/false, &shared));
   } else {
     // Add a solver for each non-LNS workers.
-    std::vector<std::string> worker_names;
-    for (int worker_id = 0; worker_id < num_search_workers; ++worker_id) {
+    for (int i = 0; i < num_strategies; ++i) {
       std::string worker_name;
-      const SatParameters local_params = DiversifySearchParameters(
-          parameters, model_proto, worker_id, &worker_name);
-      if (!local_params.use_lns_only()) {
-        subsolvers.push_back(absl::make_unique<FullProblemSolver>(
-            /*id=*/subsolvers.size(), worker_name, local_params, &shared));
-      }
-      worker_names.push_back(worker_name);
+      const SatParameters local_params =
+          DiversifySearchParameters(parameters, model_proto, i, &worker_name);
+
+      // TODO(user): Refactor DiversifySearchParameters() to not generate LNS
+      // config since we now deal with these separately.
+      if (local_params.use_lns_only()) continue;
+
+      // TODO(user): This is currently not supported here.
+      if (parameters.optimize_with_max_hs()) continue;
+
+      subsolvers.push_back(absl::make_unique<FullProblemSolver>(
+          /*id=*/subsolvers.size(), worker_name, local_params,
+          /*split_in_chunks=*/parameters.interleave_search(), &shared));
     }
-    LOG_IF(INFO, log_search) << absl::StrFormat(
-        "*** starting parallel search at %.2fs with %i workers: [ %s ]",
-        wall_timer->Get(), num_search_workers,
-        absl::StrJoin(worker_names, ", "));
   }
 
   // Only register LNS SubSolver if there is an objective.
@@ -2056,8 +2131,21 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     }
   }
 
+  // Log the name of all our SubSolvers.
+  if (log_search) {
+    std::vector<std::string> names;
+    for (const auto& subsolver : subsolvers) {
+      names.push_back(subsolver->name());
+    }
+    LOG(INFO) << absl::StrFormat(
+        "*** starting Search at %.2fs with %i workers and strategies: [ %s ]",
+        wall_timer->Get(), num_search_workers, absl::StrJoin(names, ", "));
+  }
+
   // Launch the main search loop.
   if (parameters.deterministic_parallel_search()) {
+    // TODO(user): Make the batch_size independent of the number of threads so
+    // that we have the same behavior independently of the number of workers!
     const int batch_size = 4 * num_search_workers;
     DeterministicLoop(subsolvers, num_search_workers, batch_size);
   } else {
@@ -2257,7 +2345,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   if (/* DISABLES CODE */ (false)) {
     // We ignore the multithreading parameter in this case.
 #else   // __PORTABLE_PLATFORM__
-  if (params.num_search_workers() > 1) {
+  if (params.num_search_workers() > 1 || params.interleave_search()) {
     SolveCpModelParallel(new_cp_model_proto, &shared_response_manager,
                          &shared_time_limit, &wall_timer, model);
 #endif  // __PORTABLE_PLATFORM__

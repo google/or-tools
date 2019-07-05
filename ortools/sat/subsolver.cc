@@ -41,6 +41,7 @@ int NextSubsolverToSchedule(
       }
     }
   }
+  if (best != -1) VLOG(1) << "Scheduling " << subsolvers[best]->name();
   return best;
 }
 
@@ -169,11 +170,13 @@ void NonDeterministicLoop(
       num_scheduled_and_not_done++;
     }
     std::function<void()> task = subsolvers[best]->GenerateTask(task_id++);
-    pool.Schedule([task, num_threads, &mutex, &num_scheduled_and_not_done,
+    const std::string name = subsolvers[best]->name();
+    pool.Schedule([task, num_threads, name, &mutex, &num_scheduled_and_not_done,
                    &thread_available_condition]() {
       task();
 
       absl::MutexLock mutex_lock(&mutex);
+      VLOG(1) << name << " done.";
       num_scheduled_and_not_done--;
       if (num_scheduled_and_not_done == num_threads - 1) {
         thread_available_condition.SignalAll();

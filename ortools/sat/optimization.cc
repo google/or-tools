@@ -1523,15 +1523,21 @@ bool CoreBasedOptimizer::CoverOptimization() {
 SatSolver::Status CoreBasedOptimizer::Optimize() {
   // TODO(user): The core is returned in the same order as the assumptions,
   // so we don't really need this map, we could just do a linear scan to
-  // recover which node are part of the core.
+  // recover which node are part of the core. This however needs to be properly
+  // unit tested before usage.
   std::map<LiteralIndex, int> literal_to_term_index;
 
   // Start the algorithm.
   stop_ = false;
   while (true) {
+    // TODO(user): This always resets the solver to level zero.
+    // Because of that we don't resume a solve in "chunk" perfectly. Fix.
     if (!PropagateObjectiveBounds()) return SatSolver::INFEASIBLE;
 
     // Bulk cover optimization.
+    //
+    // TODO(user): If the search is aborted during this phase and we solve in
+    // "chunk", we don't resume perfectly from where it was. Fix.
     if (parameters_->cover_optimization()) {
       if (!CoverOptimization()) return SatSolver::INFEASIBLE;
       if (stop_) return SatSolver::LIMIT_REACHED;
@@ -1580,17 +1586,19 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
     // If there is only one or two assumptions left, we switch the algorithm.
     if (term_indices.size() <= 2 && !some_assumptions_were_skipped) {
       VLOG(1) << "Switching to linear scan...";
-
-      std::vector<IntegerVariable> constraint_vars;
-      std::vector<int64> constraint_coeffs;
-      for (const int index : term_indices) {
-        constraint_vars.push_back(terms_[index].var);
-        constraint_coeffs.push_back(terms_[index].weight.value());
+      if (!already_switched_to_linear_scan_) {
+        already_switched_to_linear_scan_ = true;
+        std::vector<IntegerVariable> constraint_vars;
+        std::vector<int64> constraint_coeffs;
+        for (const int index : term_indices) {
+          constraint_vars.push_back(terms_[index].var);
+          constraint_coeffs.push_back(terms_[index].weight.value());
+        }
+        constraint_vars.push_back(objective_var_);
+        constraint_coeffs.push_back(-1);
+        model_->Add(WeightedSumLowerOrEqual(constraint_vars, constraint_coeffs,
+                                            -objective_offset.value()));
       }
-      constraint_vars.push_back(objective_var_);
-      constraint_coeffs.push_back(-1);
-      model_->Add(WeightedSumLowerOrEqual(constraint_vars, constraint_coeffs,
-                                          -objective_offset.value()));
 
       return MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
           objective_var_, feasible_solution_observer_, model_);
@@ -1634,10 +1642,15 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
     }
 
     // Solve under the assumptions.
+    //
+    // TODO(user): If the "search" is interupted while computing cores, we
+    // currently do not resume it flawlessly. We however add any cores we found
+    // before aborting.
     std::vector<std::vector<Literal>> cores;
     const SatSolver::Status result =
         FindCores(assumptions, assumption_weights, stratification_threshold_,
                   model_, &cores);
+    if (result == SatSolver::INFEASIBLE) return SatSolver::INFEASIBLE;
     if (result == SatSolver::FEASIBLE) {
       if (!ProcessSolution()) return SatSolver::INFEASIBLE;
       if (stop_) return SatSolver::LIMIT_REACHED;
@@ -1646,8 +1659,6 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
         if (stratification_threshold_ == 0) return SatSolver::INFEASIBLE;
         continue;
       }
-    } else if (result != SatSolver::ASSUMPTIONS_UNSAT) {
-      return result;
     }
 
     // Process the cores by creating new variables and transferring the minimum
@@ -1715,6 +1726,10 @@ SatSolver::Status CoreBasedOptimizer::Optimize() {
             WeightedSumLowerOrEqual(constraint_vars, constraint_coeffs, 0));
       }
     }
+
+    // Abort if we reached the time limit. Note that we still add any cores we
+    // found in case the solve is splitted in "chunk".
+    if (result == SatSolver::LIMIT_REACHED) return result;
   }
 }
 

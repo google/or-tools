@@ -162,7 +162,8 @@ class CoreBasedOptimizer {
                      Model* model);
 
   // TODO(user): Change the algo slighlty to allow resuming from the last
-  // aborted position.
+  // aborted position. Currently, the search is "resumable", but it will restart
+  // some of the work already done, so it might just never find anything.
   SatSolver::Status Optimize();
 
  private:
@@ -208,6 +209,10 @@ class CoreBasedOptimizer {
   std::vector<ObjectiveTerm> terms_;
   IntegerValue stratification_threshold_;
   std::function<void()> feasible_solution_observer_;
+
+  // This is used to not add the objective equation more than once if we
+  // solve in "chunk".
+  bool already_switched_to_linear_scan_ = false;
 
   // Set to true when we need to abort early.
   //

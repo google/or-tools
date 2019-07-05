@@ -174,7 +174,10 @@ Literal IntegerEncoder::GetOrCreateAssociatedLiteral(IntegerLiteral i_lit) {
   ++num_created_variables_;
   const Literal literal(sat_solver_->NewBooleanVariable(), true);
   AssociateToIntegerLiteral(literal, new_lit);
-  CHECK(!sat_solver_->Assignment().LiteralIsAssigned(literal));
+
+  // TODO(user): on some problem the check below fail. We should probably
+  // make sure that we don't create extra fixed Boolean variable for no reason.
+  DCHECK(!sat_solver_->Assignment().LiteralIsAssigned(literal));
   return literal;
 }
 
@@ -206,7 +209,7 @@ Literal IntegerEncoder::GetOrCreateLiteralAssociatedToEquality(
 
   // TODO(user): on some problem the check below fail. We should probably
   // make sure that we don't create extra fixed Boolean variable for no reason.
-  // CHECK(!sat_solver_->Assignment().LiteralIsAssigned(literal));
+  DCHECK(!sat_solver_->Assignment().LiteralIsAssigned(literal));
   return literal;
 }
 
@@ -926,7 +929,7 @@ bool IntegerTrail::ReasonIsValid(
         num_literal_assigned_after_root_node++;
       }
     }
-    DLOG_IF(WARNING, num_literal_assigned_after_root_node == 0)
+    DLOG_IF(INFO, num_literal_assigned_after_root_node == 0)
         << "Propagating a literal with no reason at a positive level!\n"
         << "level:" << integer_search_levels_.size() << " "
         << ReasonDebugString(literal_reason, integer_reason) << "\n"

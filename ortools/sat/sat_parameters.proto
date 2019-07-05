@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 136
+// NEXT TAG: 137
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -682,7 +682,13 @@ message SatParameters {
 
   // Specify the number of parallel workers to use during search.
   // A number <= 1 means no parallelism.
-  optional int32 num_search_workers = 100 [default = 0];
+  optional int32 num_search_workers = 100 [default = 1];
+
+  // Experimental. If this is true, then we interleave all our major search
+  // strategy and distribute the work amongst num_search_workers. This also
+  // work with just one worker, in which case the solver is deterministic even
+  // if deterministic_parallel_search is false.
+  optional bool interleave_search = 136 [default = false];
 
   // Make the parallelization deterministic. Currently, this only work with
   // use_lns_only().
