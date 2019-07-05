@@ -160,3 +160,50 @@ PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
 PY_LIST_LIST_INPUT_TYPEMAP(int, PyInt_Check);
 PY_LIST_LIST_INPUT_TYPEMAP(int64, SwigPyIntOrLong_Check);
 PY_LIST_LIST_INPUT_TYPEMAP(double, PyFloat_Check);
+
+// Helpers to convert vectors of operations_research::Class*
+// Note: this does not yet support sub-namespaces, as in
+//       operations_research::linear_solver:Class.
+// We *do* need to use SWIGTYPE_... type names directly, because the
+// (recommended replacement) $descriptor macro fails, as of 2019-07, with
+// types such as operations_research::Solver.
+// The absence of whitespace before 'swiglint' is mandatory.
+//swiglint: disable swigtype-name
+
+// Conversion utilities, to be able to expose APIs that return a C++ object
+// pointer. The PyObjAs template must be able to deal with all such types.
+%define PY_CONVERT_HELPER_PTR(CType)
+%{
+template<>
+bool PyObjAs(PyObject *py_obj, operations_research::CType** b) {
+  return SWIG_ConvertPtr(py_obj, reinterpret_cast<void**>(b),
+                         SWIGTYPE_p_operations_research__ ## CType,
+                         SWIG_POINTER_EXCEPTION) >= 0;
+}
+%}
+%enddef
+
+%define PY_CONVERT(Class)
+%{
+PyObject* FromObject ## Class(operations_research::Class* obj) {
+  return SWIG_NewPointerObj(SWIG_as_voidptr(obj),
+                            SWIGTYPE_p_operations_research__ ## Class,
+                            0 | 0);
+}
+
+bool CanConvertTo ## Class(PyObject *py_obj) {
+  operations_research::Class* tmp;
+  return PyObjAs(py_obj, &tmp);
+}
+%}
+
+%typemap(in) operations_research::Class* const {
+  if (!PyObjAs($input, &$1)) SWIG_fail;
+}
+%typecheck(SWIG_TYPECHECK_POINTER) operations_research::Class* const {
+  $1 = CanConvertTo ## Class($input);
+  if ($1 == 0) PyErr_Clear();
+}
+PY_LIST_OUTPUT_TYPEMAP(operations_research::Class*, CanConvertTo ## Class,
+                       FromObject ## Class);
+%enddef

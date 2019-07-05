@@ -177,7 +177,7 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
   }  // %pythoncode
 
 // Catch runtime exceptions in class methods
-%exception MPSolver {
+%exception operations_research::MPSolver {
     try {
       $action
     } catch ( std::runtime_error& e ) {
@@ -223,41 +223,11 @@ PY_PROTO_TYPEMAP(ortools.linear_solver.linear_solver_pb2,
                  operations_research::MPSolutionResponse);
 
 // Actual conversions. This also includes the conversion to std::vector<Class>.
-%define PY_CONVERT(Class)
-%{
-// Forcing SWIGTYPE_p_.... $descriptor( ) does not work outside of typemaps.
-template<>
-bool PyObjAs(PyObject *py_obj, operations_research::Class** b) {
-  return SWIG_ConvertPtr(py_obj, reinterpret_cast<void**>(b),
-                         SWIGTYPE_p_operations_research__ ## Class,
-                         SWIG_POINTER_EXCEPTION) >= 0;
-}
-
-PyObject* FromObject ## Class(operations_research::Class* obj) {
-  return SWIG_NewPointerObj(obj,
-                            SWIGTYPE_p_operations_research__ ## Class,
-                            SWIG_POINTER_NOSHADOW);
-}
-
-bool CanConvertTo ## Class(PyObject *py_obj) {
-  operations_research::Class* tmp;
-  return PyObjAs(py_obj, &tmp);
-}
-%}
-%typemap(in) operations_research::Class* const {
-  if (!PyObjAs($input, &$1)) SWIG_fail;
-}
-%typecheck(SWIG_TYPECHECK_POINTER) operations_research::Class* const {
-  $1 = CanConvertTo ## Class($input);
-  if ($1 == 0) PyErr_Clear();
-}
-PY_LIST_OUTPUT_TYPEMAP(operations_research::Class*, CanConvertTo ## Class,
-                       FromObject ## Class);
-%enddef
-
+PY_CONVERT_HELPER_PTR(MPConstraint);
 PY_CONVERT(MPConstraint);
+
+PY_CONVERT_HELPER_PTR(MPVariable);
 PY_CONVERT(MPVariable);
-#undef PY_CONVERT
 
 %ignoreall
 
