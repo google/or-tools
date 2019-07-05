@@ -125,7 +125,7 @@ class LuFactorization {
   const SparseColumn& GetColumnOfU(ColIndex col) const;
 
   // Returns the norm of B^{-1}.a
-  Fractional RightSolveSquaredNorm(const SparseColumn& a) const;
+  Fractional RightSolveSquaredNorm(const ColumnView& a) const;
 
   // Returns the norm of (B^T)^{-1}.e_row where e is an unit vector.
   Fractional DualEdgeSquaredNorm(RowIndex row) const;

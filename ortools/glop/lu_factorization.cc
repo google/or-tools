@@ -105,7 +105,7 @@ Fractional ComputeSquaredNormAndResetToZero(
 }
 }  // namespace
 
-Fractional LuFactorization::RightSolveSquaredNorm(const SparseColumn& a) const {
+Fractional LuFactorization::RightSolveSquaredNorm(const ColumnView& a) const {
   SCOPED_TIME_STAT(&stats_);
   if (is_identity_factorization_) return SquaredNorm(a);
 

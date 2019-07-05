@@ -466,7 +466,7 @@ void BasisFactorization::RightSolveForProblemColumn(ColIndex col,
 }
 
 Fractional BasisFactorization::RightSolveSquaredNorm(
-    const SparseColumn& a) const {
+    const ColumnView& a) const {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(IsRefactorized());
   BumpDeterministicTimeForSolve(a.num_entries().value());

@@ -21,14 +21,15 @@
 namespace operations_research {
 namespace glop {
 
-InitialBasis::InitialBasis(const MatrixView& matrix, const DenseRow& objective,
+InitialBasis::InitialBasis(const CompactSparseMatrix& compact_matrix,
+                           const DenseRow& objective,
                            const DenseRow& lower_bound,
                            const DenseRow& upper_bound,
                            const VariableTypeRow& variable_type)
     : max_scaled_abs_cost_(0.0),
       bixby_column_comparator_(*this),
       triangular_column_comparator_(*this),
-      matrix_(matrix),
+      compact_matrix_(compact_matrix),
       objective_(objective),
       lower_bound_(lower_bound),
       upper_bound_(upper_bound),
@@ -38,7 +39,7 @@ void InitialBasis::CompleteBixbyBasis(ColIndex num_cols,
                                       RowToColMapping* basis) {
   // Initialize can_be_replaced ('I' in Bixby's paper) and has_zero_coefficient
   // ('r' in Bixby's paper).
-  const RowIndex num_rows = matrix_.num_rows();
+  const RowIndex num_rows = compact_matrix_.num_rows();
   DenseBooleanColumn can_be_replaced(num_rows, false);
   DenseBooleanColumn has_zero_coefficient(num_rows, false);
   DCHECK_EQ(num_rows, basis->size());
@@ -51,7 +52,7 @@ void InitialBasis::CompleteBixbyBasis(ColIndex num_cols,
   }
 
   // This is 'v' in Bixby's paper.
-  DenseColumn scaled_diagonal_abs(matrix_.num_rows(), kInfinity);
+  DenseColumn scaled_diagonal_abs(compact_matrix_.num_rows(), kInfinity);
 
   // Compute a list of candidate indices and sort them using the heuristic
   // described in Bixby's paper.
@@ -63,7 +64,7 @@ void InitialBasis::CompleteBixbyBasis(ColIndex num_cols,
   for (int i = 0; i < candidates.size(); ++i) {
     bool enter_basis = false;
     const ColIndex candidate_col_index = candidates[i];
-    const SparseColumn& candidate_col = matrix_.column(candidate_col_index);
+    const auto& candidate_col = compact_matrix_.column(candidate_col_index);
 
     // Bixby's heuristic only works with scaled columns. This should be the
     // case by default since we only use this when the matrix is scaled, but
@@ -120,7 +121,7 @@ template <bool only_allow_zero_cost_column>
 void InitialBasis::CompleteTriangularBasis(ColIndex num_cols,
                                            RowToColMapping* basis) {
   // Initialize can_be_replaced.
-  const RowIndex num_rows = matrix_.num_rows();
+  const RowIndex num_rows = compact_matrix_.num_rows();
   DenseBooleanColumn can_be_replaced(num_rows, false);
   DCHECK_EQ(num_rows, basis->size());
   basis->resize(num_rows, kInvalidCol);
@@ -135,7 +136,7 @@ void InitialBasis::CompleteTriangularBasis(ColIndex num_cols,
   residual_pattern.Reset(num_rows, num_cols);
   for (ColIndex col(0); col < num_cols; ++col) {
     if (only_allow_zero_cost_column && objective_[col] != 0.0) continue;
-    for (const SparseColumn::Entry e : matrix_.column(col)) {
+    for (const SparseColumn::Entry e : compact_matrix_.column(col)) {
       if (can_be_replaced[e.row()]) {
         residual_pattern.AddEntry(e.row(), col);
       }
@@ -173,7 +174,7 @@ void InitialBasis::CompleteTriangularBasis(ColIndex num_cols,
     RowIndex row(kInvalidRow);
     Fractional coeff = 0.0;
     Fractional max_magnitude = 0.0;
-    for (const SparseColumn::Entry e : matrix_.column(candidate)) {
+    for (const SparseColumn::Entry e : compact_matrix_.column(candidate)) {
       max_magnitude = std::max(max_magnitude, std::abs(e.coefficient()));
       if (can_be_replaced[e.row()]) {
         row = e.row();
@@ -218,8 +219,8 @@ int InitialBasis::GetMarosPriority(ColIndex col) const {
 int InitialBasis::GetMarosPriority(RowIndex row) const {
   // Priority values for rows are equal to
   // 3 - row priority values as defined in Maros's book
-  ColIndex slack_index(RowToColIndex(row) + matrix_.num_cols() -
-                       RowToColIndex(matrix_.num_rows()));
+  ColIndex slack_index(RowToColIndex(row) + compact_matrix_.num_cols() -
+                       RowToColIndex(compact_matrix_.num_rows()));
 
   return GetMarosPriority(slack_index);
 }
@@ -229,7 +230,7 @@ void InitialBasis::GetMarosBasis(ColIndex num_cols, RowToColMapping* basis) {
   VLOG(1) << "Starting Maros crash procedure.";
 
   // Initialize basis to the all-slack basis.
-  const RowIndex num_rows = matrix_.num_rows();
+  const RowIndex num_rows = compact_matrix_.num_rows();
   const ColIndex first_slack = num_cols - RowToColIndex(num_rows);
   DCHECK_EQ(num_rows, basis->size());
   basis->resize(num_rows);
@@ -255,7 +256,7 @@ void InitialBasis::GetMarosBasis(ColIndex num_cols, RowToColMapping* basis) {
   MatrixNonZeroPattern residual_pattern;
   residual_pattern.Reset(num_rows, num_cols);
   for (ColIndex col(0); col < first_slack; ++col) {
-    for (const SparseColumn::Entry e : matrix_.column(col)) {
+    for (const SparseColumn::Entry e : compact_matrix_.column(col)) {
       if (available[RowToColIndex(e.row())] && available[col]) {
         residual_pattern.AddEntry(e.row(), col);
       }
@@ -300,7 +301,7 @@ void InitialBasis::GetMarosBasis(ColIndex num_cols, RowToColMapping* basis) {
         // Make sure that the pivotal entry is not too small in magnitude.
         Fractional max_magnitude = 0;
         pivot_absolute_value = 0.0;
-        const SparseColumn& column_values = matrix_.column(col);
+        const auto& column_values = compact_matrix_.column(col);
         for (const SparseColumn::Entry e : column_values) {
           const Fractional absolute_value = std::fabs(e.coefficient());
           if (e.row() == max_rpf_row) pivot_absolute_value = absolute_value;
@@ -355,7 +356,7 @@ void InitialBasis::ComputeCandidates(ColIndex num_cols,
   max_scaled_abs_cost_ = 0.0;
   for (ColIndex col(0); col < num_cols; ++col) {
     if (variable_type_[col] != VariableType::FIXED_VARIABLE &&
-        matrix_.column(col).num_entries() > 0) {
+        compact_matrix_.column(col).num_entries() > 0) {
       candidates->push_back(col);
       max_scaled_abs_cost_ =
           std::max(max_scaled_abs_cost_, std::abs(objective_[col]));
@@ -427,10 +428,10 @@ bool InitialBasis::TriangularColumnComparator::operator()(
   //
   // TODO(user): Experiments more with this comparator or the
   // BixbyColumnComparator.
-  if (initial_basis_.matrix_.column(col_a).num_entries() !=
-      initial_basis_.matrix_.column(col_b).num_entries()) {
-    return initial_basis_.matrix_.column(col_a).num_entries() >
-           initial_basis_.matrix_.column(col_b).num_entries();
+  if (initial_basis_.compact_matrix_.column(col_a).num_entries() !=
+      initial_basis_.compact_matrix_.column(col_b).num_entries()) {
+    return initial_basis_.compact_matrix_.column(col_a).num_entries() >
+           initial_basis_.compact_matrix_.column(col_b).num_entries();
   }
   return initial_basis_.GetColumnPenalty(col_a) >
          initial_basis_.GetColumnPenalty(col_b);

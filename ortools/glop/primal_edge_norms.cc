@@ -19,12 +19,10 @@
 namespace operations_research {
 namespace glop {
 
-PrimalEdgeNorms::PrimalEdgeNorms(const MatrixView& matrix,
-                                 const CompactSparseMatrix& compact_matrix,
+PrimalEdgeNorms::PrimalEdgeNorms(const CompactSparseMatrix& compact_matrix,
                                  const VariablesInfo& variables_info,
                                  const BasisFactorization& basis_factorization)
-    : matrix_(matrix),
-      compact_matrix_(compact_matrix),
+    : compact_matrix_(compact_matrix),
       variables_info_(variables_info),
       basis_factorization_(basis_factorization),
       stats_(),
@@ -115,10 +113,10 @@ void PrimalEdgeNorms::UpdateBeforeBasisPivot(ColIndex entering_col,
 
 void PrimalEdgeNorms::ComputeMatrixColumnNorms() {
   SCOPED_TIME_STAT(&stats_);
-  matrix_column_norms_.resize(matrix_.num_cols(), 0.0);
-  for (ColIndex col(0); col < matrix_.num_cols(); ++col) {
-    matrix_column_norms_[col] = sqrt(SquaredNorm(matrix_.column(col)));
-    num_operations_ += matrix_.column(col).num_entries().value();
+  matrix_column_norms_.resize(compact_matrix_.num_cols(), 0.0);
+  for (ColIndex col(0); col < compact_matrix_.num_cols(); ++col) {
+    matrix_column_norms_[col] = sqrt(SquaredNorm(compact_matrix_.column(col)));
+    num_operations_ += compact_matrix_.column(col).num_entries().value();
   }
 }
 
@@ -128,12 +126,12 @@ void PrimalEdgeNorms::ComputeEdgeSquaredNorms() {
   // Since we will do a lot of inversions, it is better to be as efficient and
   // precise as possible by refactorizing the basis.
   DCHECK(basis_factorization_.IsRefactorized());
-  edge_squared_norms_.resize(matrix_.num_cols(), 0.0);
+  edge_squared_norms_.resize(compact_matrix_.num_cols(), 0.0);
   for (const ColIndex col : variables_info_.GetIsRelevantBitRow()) {
     // Note the +1.0 in the squared norm for the component of the edge on the
     // 'entering_col'.
-    edge_squared_norms_[col] =
-        1.0 + basis_factorization_.RightSolveSquaredNorm(matrix_.column(col));
+    edge_squared_norms_[col] = 1.0 + basis_factorization_.RightSolveSquaredNorm(
+                                         compact_matrix_.column(col));
   }
   recompute_edge_squared_norms_ = false;
 }
@@ -256,7 +254,7 @@ void PrimalEdgeNorms::ResetDevexWeights() {
   if (parameters_.initialize_devex_with_column_norms()) {
     devex_weights_ = GetMatrixColumnNorms();
   } else {
-    devex_weights_.assign(matrix_.num_cols(), 1.0);
+    devex_weights_.assign(compact_matrix_.num_cols(), 1.0);
   }
   num_devex_updates_since_reset_ = 0;
   reset_devex_weights_ = false;

@@ -90,7 +90,7 @@ RevisedSimplex::RevisedSimplex()
       variable_values_(parameters_, compact_matrix_, basis_, variables_info_,
                        basis_factorization_),
       dual_edge_norms_(basis_factorization_),
-      primal_edge_norms_(matrix_with_slack_, compact_matrix_, variables_info_,
+      primal_edge_norms_(compact_matrix_, variables_info_,
                          basis_factorization_),
       update_row_(compact_matrix_, transposed_matrix_, variables_info_, basis_,
                   basis_factorization_),
@@ -177,9 +177,9 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
 
   const bool use_dual = parameters_.use_dual_simplex();
   VLOG(1) << "------ " << (use_dual ? "Dual simplex." : "Primal simplex.");
-  VLOG(1) << "The matrix has " << matrix_with_slack_.num_rows() << " rows, "
-          << matrix_with_slack_.num_cols() << " columns, "
-          << matrix_with_slack_.num_entries() << " entries.";
+  VLOG(1) << "The matrix has " << compact_matrix_.num_rows() << " rows, "
+          << compact_matrix_.num_cols() << " columns, "
+          << compact_matrix_.num_entries() << " entries.";
 
   // TODO(user): Avoid doing the first phase checks when we know from the
   // incremental solve that the solution is already dual or primal feasible.
@@ -589,10 +589,9 @@ void RevisedSimplex::UseSingletonColumnInInitialBasis(RowToColMapping* basis) {
   std::vector<ColIndex> singleton_column;
   DenseRow cost_variation(num_cols_, 0.0);
   for (ColIndex col(0); col < num_cols_; ++col) {
-    if (matrix_with_slack_.column(col).num_entries() != 1) continue;
+    if (compact_matrix_.column(col).num_entries() != 1) continue;
     if (lower_bound_[col] == upper_bound_[col]) continue;
-    const Fractional slope =
-        matrix_with_slack_.column(col).GetFirstCoefficient();
+    const Fractional slope = compact_matrix_.column(col).GetFirstCoefficient();
     if (variable_values_.Get(col) == lower_bound_[col]) {
       cost_variation[col] = objective_[col] / std::abs(slope);
     } else {
@@ -693,12 +692,6 @@ bool RevisedSimplex::InitializeMatrixAndTestIfUnchanged(
   // because they were checked by lp.IsInEquationForm() when Solve() was called.
   if (old_part_of_matrix_is_unchanged && lp.num_constraints() == num_rows_ &&
       lp.num_variables() == num_cols_) {
-    // IMPORTANT: we need to recreate matrix_with_slack_ because this matrix
-    // view was refering to a previous lp.GetSparseMatrix(). The matrices are
-    // the same, but we do need to update the pointers.
-    //
-    // TODO(user): use compact_matrix_ everywhere instead.
-    matrix_with_slack_.PopulateFromMatrix(lp.GetSparseMatrix());
     return true;
   }
 
@@ -716,8 +709,7 @@ bool RevisedSimplex::InitializeMatrixAndTestIfUnchanged(
   *num_new_cols =
       *only_change_is_new_cols ? lp.num_variables() - num_cols_ : ColIndex(0);
 
-  // Initialize matrix_with_slack_.
-  matrix_with_slack_.PopulateFromMatrix(lp.GetSparseMatrix());
+  // Initialize first_slack_.
   first_slack_col_ = lp.GetFirstSlackVariable();
 
   // Initialize the new dimensions.
@@ -727,7 +719,8 @@ bool RevisedSimplex::InitializeMatrixAndTestIfUnchanged(
   // Populate compact_matrix_ and transposed_matrix_ if needed. Note that we
   // already added all the slack variables at this point, so matrix_ will not
   // change anymore.
-  compact_matrix_.PopulateFromMatrixView(matrix_with_slack_);
+  // TODO(user): This can be sped up by removing the MatrixView.
+  compact_matrix_.PopulateFromMatrixView(MatrixView(lp.GetSparseMatrix()));
   if (parameters_.use_transposed_matrix()) {
     transposed_matrix_.PopulateFromTranspose(compact_matrix_);
   }
@@ -951,7 +944,7 @@ Status RevisedSimplex::CreateInitialBasis() {
     // the value of the boxed singleton column with a non-zero cost to the best
     // of their two bounds.
     for (ColIndex col(0); col < num_cols_; ++col) {
-      if (matrix_with_slack_.column(col).num_entries() != 1) continue;
+      if (compact_matrix_.column(col).num_entries() != 1) continue;
       const VariableStatus status = variables_info_.GetStatusRow()[col];
       const Fractional objective = objective_[col];
       if (objective > 0 && IsFinite(lower_bound_[col]) &&
@@ -991,7 +984,7 @@ Status RevisedSimplex::CreateInitialBasis() {
     return InitializeFirstBasis(basis);
   }
   if (parameters_.initial_basis() == GlopParameters::MAROS) {
-    InitialBasis initial_basis(matrix_with_slack_, objective_, lower_bound_,
+    InitialBasis initial_basis(compact_matrix_, objective_, lower_bound_,
                                upper_bound_, variables_info_.GetTypeRow());
     if (parameters_.use_dual_simplex()) {
       // This dual version only uses zero-cost columns to complete the
@@ -1027,7 +1020,7 @@ Status RevisedSimplex::CreateInitialBasis() {
       // Then complete the basis with an advanced initial basis algorithm.
       VLOG(1) << "Trying to remove " << num_fixed_variables
               << " fixed variables from the initial basis.";
-      InitialBasis initial_basis(matrix_with_slack_, objective_, lower_bound_,
+      InitialBasis initial_basis(compact_matrix_, objective_, lower_bound_,
                                  upper_bound_, variables_info_.GetTypeRow());
 
       if (parameters_.initial_basis() == GlopParameters::BIXBY) {
@@ -1333,7 +1326,7 @@ void RevisedSimplex::SaveState() {
 RowIndex RevisedSimplex::ComputeNumberOfEmptyRows() {
   DenseBooleanColumn contains_data(num_rows_, false);
   for (ColIndex col(0); col < num_cols_; ++col) {
-    for (const SparseColumn::Entry e : matrix_with_slack_.column(col)) {
+    for (const SparseColumn::Entry e : compact_matrix_.column(col)) {
       contains_data[e.row()] = true;
     }
   }
@@ -1350,7 +1343,7 @@ RowIndex RevisedSimplex::ComputeNumberOfEmptyRows() {
 ColIndex RevisedSimplex::ComputeNumberOfEmptyColumns() {
   ColIndex num_empty_cols(0);
   for (ColIndex col(0); col < num_cols_; ++col) {
-    if (matrix_with_slack_.column(col).IsEmpty()) {
+    if (compact_matrix_.column(col).IsEmpty()) {
       ++num_empty_cols;
       VLOG(1) << "Column " << col << " is empty.";
     }
@@ -3094,10 +3087,10 @@ void RevisedSimplex::DisplayProblem() const {
     for (RowIndex row(0); row < num_rows_; ++row) {
       output = "";
       for (ColIndex col(0); col < num_cols_; ++col) {
-        absl::StrAppend(
-            &output, StringifyMonomialWithFlags(
-                         matrix_with_slack_.column(col).LookUpCoefficient(row),
-                         variable_name_[col]));
+        absl::StrAppend(&output,
+                        StringifyMonomialWithFlags(
+                            compact_matrix_.column(col).LookUpCoefficient(row),
+                            variable_name_[col]));
       }
       VLOG(3) << output << " = 0;";
     }

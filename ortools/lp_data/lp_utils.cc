@@ -13,15 +13,26 @@
 
 #include "ortools/lp_data/lp_utils.h"
 
+#include "ortools/lp_data/sparse_column.h"
+
 namespace operations_research {
 namespace glop {
 
-Fractional SquaredNorm(const SparseColumn& v) {
+template <typename SparseColumnLike>
+Fractional SquaredNormTemplate(const SparseColumnLike& column) {
   Fractional sum(0.0);
-  for (const SparseColumn::Entry e : v) {
+  for (const SparseColumn::Entry e : column) {
     sum += Square(e.coefficient());
   }
   return sum;
+}
+
+Fractional SquaredNorm(const SparseColumn& v) {
+  return SquaredNormTemplate<SparseColumn>(v);
+}
+
+Fractional SquaredNorm(const ColumnView& v) {
+  return SquaredNormTemplate<ColumnView>(v);
 }
 
 Fractional PreciseSquaredNorm(const SparseColumn& v) {
@@ -75,12 +86,21 @@ Fractional InfinityNorm(const DenseColumn& v) {
   return infinity_norm;
 }
 
-Fractional InfinityNorm(const SparseColumn& v) {
+template <typename SparseColumnLike>
+Fractional InfinityNormTemplate(const SparseColumnLike& column) {
   Fractional infinity_norm = 0.0;
-  for (const SparseColumn::Entry e : v) {
+  for (const SparseColumn::Entry e : column) {
     infinity_norm = std::max(infinity_norm, fabs(e.coefficient()));
   }
   return infinity_norm;
+}
+
+Fractional InfinityNorm(const SparseColumn& v) {
+  return InfinityNormTemplate<SparseColumn>(v);
+}
+
+Fractional InfinityNorm(const ColumnView& v) {
+  return InfinityNormTemplate<ColumnView>(v);
 }
 
 double Density(const DenseRow& row) {
@@ -110,7 +130,7 @@ void RemoveNearZeroEntries(Fractional threshold, DenseColumn* column) {
   }
 }
 
-Fractional RestrictedInfinityNorm(const SparseColumn& column,
+Fractional RestrictedInfinityNorm(const ColumnView& column,
                                   const DenseBooleanColumn& rows_to_consider,
                                   RowIndex* row_index) {
   Fractional infinity_norm = 0.0;
@@ -123,7 +143,7 @@ Fractional RestrictedInfinityNorm(const SparseColumn& column,
   return infinity_norm;
 }
 
-void SetSupportToFalse(const SparseColumn& column, DenseBooleanColumn* b) {
+void SetSupportToFalse(const ColumnView& column, DenseBooleanColumn* b) {
   for (const SparseColumn::Entry e : column) {
     if (e.coefficient() != 0.0) {
       (*b)[e.row()] = false;
@@ -131,7 +151,7 @@ void SetSupportToFalse(const SparseColumn& column, DenseBooleanColumn* b) {
   }
 }
 
-bool IsDominated(const SparseColumn& column, const DenseColumn& radius) {
+bool IsDominated(const ColumnView& column, const DenseColumn& radius) {
   for (const SparseColumn::Entry e : column) {
     DCHECK_GE(radius[e.row()], 0.0);
     if (fabs(e.coefficient()) > radius[e.row()]) return false;

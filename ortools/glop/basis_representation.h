@@ -235,7 +235,7 @@ class BasisFactorization {
   // Returns the norm of B^{-1}.a, this is a specific function because
   // it is a bit faster and it avoids polluting the stats of RightSolve().
   // It can be called only when IsRefactorized() is true.
-  Fractional RightSolveSquaredNorm(const SparseColumn& a) const;
+  Fractional RightSolveSquaredNorm(const ColumnView& a) const;
 
   // Returns the norm of (B^T)^{-1}.e_row where e is an unit vector.
   // This is a bit faster and avoids polluting the stats of LeftSolve().

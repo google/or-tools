@@ -97,6 +97,22 @@ class ColumnView {
     return Iterator(this->rows_, this->coefficients_, num_entries_);
   }
 
+  Fractional LookUpCoefficient(RowIndex index) const {
+    Fractional value(0.0);
+    for (const auto e : *this) {
+      if (e.row() == index) {
+        // Keep in mind the vector may contains several entries with the same
+        // index. In such a case the last one is returned.
+        // TODO(user): investigate whether an optimized version of
+        // LookUpCoefficient for "clean" columns yields speed-ups.
+        value = e.coefficient();
+      }
+    }
+    return value;
+  }
+
+  bool IsEmpty() const { return num_entries_ == EntryIndex(0); }
+
  private:
   const EntryIndex num_entries_;
   const RowIndex* const rows_;
