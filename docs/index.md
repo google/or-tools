@@ -3,21 +3,28 @@
 ## C++ Documentation
 
 - [Algorithms](cpp_algorithms/index.html)
-- [Graph](cpp_graph/index.html)
-- [Routing](cpp_routing/index.html)
-- [Linear Solver](cpp_linear/index.html)
 - [CP-SAT](cpp_sat/index.html)
+- [Graph](cpp_graph/index.html)
+- [Linear Solver](cpp_linear/index.html)
+- [Routing](cpp_routing/index.html)
 
 ## DotNET Documentation
 
-- [Main entry](dotnet/index.html)
-- [CP-SAT namespace](dotnet/namespaceGoogle_1_1OrTools_1_1Sat.html)
-
+- [CP-SAT package](dotnet/namespaceGoogle_1_1OrTools_1_1Sat.html)
+- [Graph package](dotnet/namespaceGoogle_1_1OrTools_1_1Graph.html)
+- [Knapsack Solver package](dotnet/namespaceGoogle_1_1OrTools_1_1Algorithms.html)
+- [Linear Solver package](dotnet/namespaceGoogle_1_1OrTools_1_1LinearSolver.html)
+- [Routing package](dotnet/namespaceGoogle_1_1OrTools_1_1ConstraintSolver.html)
+- [Util package](dotnet/namespaceGoogle_1_1OrTools_1_1Util.html)
 
 ## Java Documentation
 
-- [Main entry](java/index.html)
-- [CP-SAT namespace](java/namespacecom_1_1google_1_1ortools_1_1sat.html)
+- [CP-SAT package](java/namespacecom_1_1google_1_1ortools_1_1sat.html)
+- [Graph package](java/namespacecom_1_1google_1_1ortools_1_1graph.html)
+- [Knapsack Solver package](java/namespacecom_1_1google_1_1ortools_1_1algorithms.html)
+- [Linear Solver package](java/namespacecom_1_1google_1_1ortools_1_1linearsolver.html)
+- [Routing package](java/namespacecom_1_1google_1_1ortools_1_1constraintsolver.html)
+- [Util package](java/namespacecom_1_1google_1_1ortools_1_1util.html)
 
 ## Python documentation
 
