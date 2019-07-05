@@ -1022,12 +1022,12 @@ class IntVarLocalSearchHandler {
                                  IntVarLocalSearchHandler>::OnStart;
 #endif  // SWIGPYTHON
 
-/// clang-format off
+// clang-format off
 %rename(IntVarLocalSearchOperatorTemplate)
         VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>;
 %template(IntVarLocalSearchOperatorTemplate)
         VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>;
-/// clang-format on
+// clang-format on
 #endif  // SWIG
 
 class IntVarLocalSearchOperator
@@ -1084,12 +1084,12 @@ class SequenceVarLocalSearchHandler {
 /// derived C++ class.
 // TODO(user): find a way to move this code back to the .i file, where it
 /// belongs.
-/// clang-format off
+// clang-format off
 %rename(SequenceVarLocalSearchOperatorTemplate) VarLocalSearchOperator<
     SequenceVar, std::vector<int>, SequenceVarLocalSearchHandler>;
 %template(SequenceVarLocalSearchOperatorTemplate) VarLocalSearchOperator<
       SequenceVar, std::vector<int>, SequenceVarLocalSearchHandler>;
-/// clang-format on
+// clang-format on
 #endif
 
 typedef VarLocalSearchOperator<SequenceVar, std::vector<int>,

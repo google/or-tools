@@ -31,11 +31,13 @@ namespace operations_research {
 /// variable index usage, allowing users to use NodeIndex instead.
 ///
 /// Usage:
+///   \code{.cpp}
 ///   auto starts_ends = ...;  /// These are NodeIndex.
 ///   RoutingIndexManager manager(10, 4, starts_ends);  // 10 nodes, 4 vehicles.
 ///   RoutingModel model(manager);
+///   \endcode
 ///
-/// Then, use 'manager.NodeToIndex(node)' whenever 'model' requires a variable
+/// Then, use 'manager.NodeToIndex(node)' whenever model requires a variable
 /// index.
 class RoutingIndexManager {
  public:

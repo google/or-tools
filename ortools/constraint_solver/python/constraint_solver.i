@@ -42,7 +42,7 @@
 // std::function utilities.
 %include "ortools/util/python/functions.i"
 
-%import "ortools/util/python/vector.i"
+%include "ortools/util/python/vector.i"
 
 // We *do* need to use SWIGTYPE_... type names directly, because the
 // (recommended replacement) $descriptor macro fails, as of 2014-06, with
@@ -74,9 +74,6 @@ struct FailureProtect {
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
 %}
-
-typedef int64_t int64;
-typedef uint64_t uint64;
 
 // We need to fully support C++ inheritance, because it is heavily used by the
 // exposed C++ classes. Eg:
@@ -122,23 +119,6 @@ PY_CONVERT_HELPER_INTEXPR_OR_INTVAR(IntExpr);
 
 
 // Actual conversions. This also includes the conversion to std::vector<Class>.
-%define PY_CONVERT(Class)
-%{
-bool CanConvertTo ## Class(PyObject *py_obj) {
-  operations_research::Class* tmp;
-  return PyObjAs(py_obj, &tmp);
-}
-%}
-%typemap(in) operations_research::Class* const {
-  if (!PyObjAs($input, &$1)) SWIG_fail;
-}
-%typecheck(SWIG_TYPECHECK_POINTER) operations_research::Class* const {
-  $1 = CanConvertTo ## Class($input);
-  if ($1 == 0) PyErr_Clear();
-}
-PY_LIST_OUTPUT_TYPEMAP(operations_research::Class*, CanConvertTo ## Class,
-                       PyObjAs<operations_research::Class*>);
-%enddef
 PY_CONVERT(IntVar);
 PY_CONVERT(IntExpr);
 PY_CONVERT(Decision);
@@ -148,7 +128,6 @@ PY_CONVERT(IntervalVar);
 PY_CONVERT(SequenceVar);
 PY_CONVERT(LocalSearchOperator);
 PY_CONVERT(LocalSearchFilter);
-#undef PY_CONVERT
 
 // Support passing std::function<void(Solver*)> as argument.
 // See ../utils/python/functions.i, from which this was copied and adapted.

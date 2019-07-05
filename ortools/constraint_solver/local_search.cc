@@ -72,6 +72,9 @@ void AcceptUncheckedNeighbor(Search* const search);
 bool IntVarLocalSearchOperator::MakeNextNeighbor(Assignment* delta,
                                                  Assignment* deltadelta) {
   CHECK(delta != nullptr);
+  VLOG(2) << DebugString() << "::MakeNextNeighbor(delta=("
+          << delta->DebugString() << "), deltadelta=("
+          << (deltadelta ? deltadelta->DebugString() : std::string("nullptr"));
   while (true) {
     RevertChanges(true);
 
@@ -177,6 +180,7 @@ class RandomLns : public BaseLns {
 };
 
 bool RandomLns::NextFragment() {
+  DCHECK_GT(Size(), 0);
   for (int i = 0; i < number_of_variables_; ++i) {
     AppendToFragment(rand_.Uniform(Size()));
   }
@@ -1482,6 +1486,7 @@ bool TSPLns::MakeNeighbor() {
   absl::flat_hash_set<int64> breaks_set;
   // Always add base node to break nodes (diversification)
   breaks_set.insert(base_node);
+  CHECK(!nodes.empty());  // Should have been caught earlier.
   while (breaks_set.size() < tsp_size_) {
     const int64 one_break = nodes[rand_.Uniform(nodes.size())];
     if (!gtl::ContainsKey(breaks_set, one_break)) {

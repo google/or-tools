@@ -28,19 +28,6 @@ template<>
 PyObject* PyObjFrom<int64>(const int64& c) { return PyLong_FromLongLong(c); }
 %}
 
-// Conversion utilities, to be able to expose APIs that return a C++ object
-// pointer. The PyObjAs template must be able to deal with all such types.
-%define PY_CONVERT_HELPER_PTR(CType)
-%{
-template<>
-bool PyObjAs(PyObject *py_obj, operations_research::CType** b) {
-  return SWIG_ConvertPtr(py_obj, reinterpret_cast<void**>(b),
-                         SWIGTYPE_p_operations_research__ ## CType,
-                         SWIG_POINTER_EXCEPTION) >= 0;
-}
-%}
-%enddef
-
 // Conversion of IntExpr* and IntVar* are a bit special because of the two
 // possible casts from IntExpr and Constraint.
 %define PY_CONVERT_HELPER_INTEXPR_OR_INTVAR(Class)
