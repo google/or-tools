@@ -501,6 +501,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a9e3bfaf568b94a4b700a896ade6f0740"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ade5734253221484ecaa7e64f32add777"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html#ade5734253221484ecaa7e64f32add777">getNumSearchWorkers</a> ()</td></tr>
 <tr class="separator:ade5734253221484ecaa7e64f32add777"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6543234f6d0d6ab5bdfe87f132d59b00"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html#a6543234f6d0d6ab5bdfe87f132d59b00">hasInterleaveSearch</a> ()</td></tr>
+<tr class="separator:a6543234f6d0d6ab5bdfe87f132d59b00"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa293074272ad0f45548e40e9411fb47d"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html#aa293074272ad0f45548e40e9411fb47d">getInterleaveSearch</a> ()</td></tr>
+<tr class="separator:aa293074272ad0f45548e40e9411fb47d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac44225fd0d38992144681917a30ba751"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html#ac44225fd0d38992144681917a30ba751">hasDeterministicParallelSearch</a> ()</td></tr>
 <tr class="separator:ac44225fd0d38992144681917a30ba751"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af7d1c10879681b993b8c426156159b28"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html#af7d1c10879681b993b8c426156159b28">getDeterministicParallelSearch</a> ()</td></tr>
@@ -1500,6 +1504,31 @@ already defined search strategy.
 
 </div>
 </div>
+<a id="aa293074272ad0f45548e40e9411fb47d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa293074272ad0f45548e40e9411fb47d">&#9670;&nbsp;</a></span>getInterleaveSearch()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">boolean com.google.ortools.sat.SatParametersOrBuilder.getInterleaveSearch </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+Experimental. If this is true, then we interleave all our major search
+strategy and distribute the work amongst num_search_workers. This also
+work with just one worker, in which case the solver is deterministic even
+if deterministic_parallel_search is false.
+</pre><p><code>optional bool interleave_search = 136 [default = false];</code> </p>
+
+<p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a666a790053d08bd2b0d9659529fdb5b6">com.google.ortools.sat.SatParameters.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#aa18ecddf476fab85b449d25b8632840e">com.google.ortools.sat.SatParameters</a>.</p>
+
+</div>
+</div>
 <a id="a16b14d2b774cc0f57a4e09b15243dece"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a16b14d2b774cc0f57a4e09b15243dece">&#9670;&nbsp;</a></span>getLinearizationLevel()</h2>
 
@@ -2168,7 +2197,7 @@ can be use to change the search strategy used by the following restarts.
 <pre>
 Specify the number of parallel workers to use during search.
 A number &lt;= 1 means no parallelism.
-</pre><p><code>optional int32 num_search_workers = 100 [default = 0];</code> </p>
+</pre><p><code>optional int32 num_search_workers = 100 [default = 1];</code> </p>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a0cc00438622f6b4ba454a1b13741c387">com.google.ortools.sat.SatParameters.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#a9e1e5d8a93b3758101406e1dcbdd156e">com.google.ortools.sat.SatParameters</a>.</p>
 
@@ -4252,6 +4281,31 @@ already defined search strategy.
 
 </div>
 </div>
+<a id="a6543234f6d0d6ab5bdfe87f132d59b00"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6543234f6d0d6ab5bdfe87f132d59b00">&#9670;&nbsp;</a></span>hasInterleaveSearch()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">boolean com.google.ortools.sat.SatParametersOrBuilder.hasInterleaveSearch </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+Experimental. If this is true, then we interleave all our major search
+strategy and distribute the work amongst num_search_workers. This also
+work with just one worker, in which case the solver is deterministic even
+if deterministic_parallel_search is false.
+</pre><p><code>optional bool interleave_search = 136 [default = false];</code> </p>
+
+<p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a0ddc1501078cf20d188685d076d7bc2d">com.google.ortools.sat.SatParameters.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#a998ffc30c5ab2285e6cfd8f9e887449e">com.google.ortools.sat.SatParameters</a>.</p>
+
+</div>
+</div>
 <a id="ab5b51bd68cc3aadd303cb6f12e1069f6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab5b51bd68cc3aadd303cb6f12e1069f6">&#9670;&nbsp;</a></span>hasLinearizationLevel()</h2>
 
@@ -4920,7 +4974,7 @@ can be use to change the search strategy used by the following restarts.
 <pre>
 Specify the number of parallel workers to use during search.
 A number &lt;= 1 means no parallelism.
-</pre><p><code>optional int32 num_search_workers = 100 [default = 0];</code> </p>
+</pre><p><code>optional int32 num_search_workers = 100 [default = 1];</code> </p>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a3018b7da96f2da521c980e02bc78a1ac">com.google.ortools.sat.SatParameters.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#a8d6db5f6eb1a76052ba52844968e2b4c">com.google.ortools.sat.SatParameters</a>.</p>
 

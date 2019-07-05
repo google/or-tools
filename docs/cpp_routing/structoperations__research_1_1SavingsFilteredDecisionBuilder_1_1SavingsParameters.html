@@ -53,17 +53,21 @@
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:a9f5ec178dd09b148ac19bb0e8ae31430"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html#a9f5ec178dd09b148ac19bb0e8ae31430">neighbors_ratio</a> = 1.0</td></tr>
+<tr class="memdesc:a9f5ec178dd09b148ac19bb0e8ae31430"><td class="mdescLeft">&#160;</td><td class="mdescRight">If neighbors_ratio &lt; 1 then for each node only this ratio of its neighbors leading to the smallest arc costs are considered.  <a href="#a9f5ec178dd09b148ac19bb0e8ae31430">More...</a><br /></td></tr>
 <tr class="separator:a9f5ec178dd09b148ac19bb0e8ae31430"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1a0c163bea7d2946ebb3448b6a961015"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html#a1a0c163bea7d2946ebb3448b6a961015">max_memory_usage_bytes</a> = 6e9</td></tr>
+<tr class="memdesc:a1a0c163bea7d2946ebb3448b6a961015"><td class="mdescLeft">&#160;</td><td class="mdescRight">The number of neighbors considered for each node is also adapted so that the stored Savings don't use up more than max_memory_usage_bytes bytes.  <a href="#a1a0c163bea7d2946ebb3448b6a961015">More...</a><br /></td></tr>
 <tr class="separator:a1a0c163bea7d2946ebb3448b6a961015"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aabdb307989bb13b36c48f1915bb2940e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html#aabdb307989bb13b36c48f1915bb2940e">add_reverse_arcs</a> = false</td></tr>
+<tr class="memdesc:aabdb307989bb13b36c48f1915bb2940e"><td class="mdescLeft">&#160;</td><td class="mdescRight">If add_reverse_arcs is true, the neighborhood relationships are considered symmetrically.  <a href="#aabdb307989bb13b36c48f1915bb2940e">More...</a><br /></td></tr>
 <tr class="separator:aabdb307989bb13b36c48f1915bb2940e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8ccb365bfb92ed5e4fd99cdf69d3f437"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html#a8ccb365bfb92ed5e4fd99cdf69d3f437">arc_coefficient</a> = 1.0</td></tr>
+<tr class="memdesc:a8ccb365bfb92ed5e4fd99cdf69d3f437"><td class="mdescLeft">&#160;</td><td class="mdescRight">arc_coefficient is a strictly positive parameter indicating the coefficient of the arc being considered in the Saving formula.  <a href="#a8ccb365bfb92ed5e4fd99cdf69d3f437">More...</a><br /></td></tr>
 <tr class="separator:a8ccb365bfb92ed5e4fd99cdf69d3f437"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02948">2948</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02966">2966</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><h2 class="groupheader">Member Data Documentation</h2>
 <a id="aabdb307989bb13b36c48f1915bb2940e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aabdb307989bb13b36c48f1915bb2940e">&#9670;&nbsp;</a></span>add_reverse_arcs</h2>
@@ -77,7 +81,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02957">2957</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>If add_reverse_arcs is true, the neighborhood relationships are considered symmetrically. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02975">2975</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -93,7 +99,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02960">2960</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>arc_coefficient is a strictly positive parameter indicating the coefficient of the arc being considered in the Saving formula. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02978">2978</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -109,7 +117,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02954">2954</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>The number of neighbors considered for each node is also adapted so that the stored Savings don't use up more than max_memory_usage_bytes bytes. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02972">2972</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -125,7 +135,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02951">2951</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>If neighbors_ratio &lt; 1 then for each node only this ratio of its neighbors leading to the smallest arc costs are considered. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02969">2969</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>

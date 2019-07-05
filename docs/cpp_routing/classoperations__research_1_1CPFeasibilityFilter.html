@@ -50,6 +50,9 @@
 </div><!--header-->
 <div class="contents">
 
+<p>This filter accepts deltas for which the assignment satisfies the constraints of the <a class="el" href="classoperations__research_1_1Solver.html" title="Solver Class.">Solver</a>.  
+ <a href="classoperations__research_1_1CPFeasibilityFilter.html#details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="routing_8h_source.html">routing.h</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for operations_research::CPFeasibilityFilter:</div>
@@ -118,8 +121,10 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:a7b9afa3c307211ca15b6ea364f01e2a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03229">3229</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<div class="textblock"><p>This filter accepts deltas for which the assignment satisfies the constraints of the <a class="el" href="classoperations__research_1_1Solver.html" title="Solver Class.">Solver</a>. </p>
+<p>This is verified by keeping an internal copy of the assignment with all Next vars and their updated values, and calling RestoreAssignment() on the assignment+delta. exception of Next Vars (woud fail on large instances). WARNING: In the case of mandatory nodes, when all vehicles are currently being used in the solution but uninserted nodes still remain, this filter will reject the solution, even if the node could be inserted on one of these routes, because all Next vars of vehicle starts are already instantiated. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03246">3246</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ae194b6d2696d2acd57178194db7d00c2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae194b6d2696d2acd57178194db7d00c2">&#9670;&nbsp;</a></span>CPFeasibilityFilter()</h2>
@@ -170,7 +175,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03232">3232</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03249">3249</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -296,7 +301,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1BaseObject.html#afb3b013c5063d71566d5273793c1d828">operations_research::BaseObject</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03233">3233</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03250">3250</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>

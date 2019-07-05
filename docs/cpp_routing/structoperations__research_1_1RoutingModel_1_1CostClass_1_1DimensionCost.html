@@ -49,6 +49,9 @@
 </div><!--header-->
 <div class="contents">
 
+<p>SUBTLE: The vehicle's fixed cost is skipped on purpose here, because we can afford to do so:  
+ <a href="structoperations__research_1_1RoutingModel_1_1CostClass_1_1DimensionCost.html#details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="routing_8h_source.html">routing.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
@@ -66,8 +69,13 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a2ccdc6a8c990ac68add84c7decd471ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00287">287</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<div class="textblock"><p>SUBTLE: The vehicle's fixed cost is skipped on purpose here, because we can afford to do so: </p>
+<ul>
+<li>We don't really care about creating "strict" equivalence classes; all we care about is to: 1) compress the space of cost callbacks so that we can cache them more efficiently. 2) have a smaller <a class="el" href="classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr.">IntVar</a> domain thanks to using a "cost class var" instead of the vehicle var, so that we reduce the search space. Both of these are an incentive for <em>fewer</em> cost classes. Ignoring the fixed costs can only be good in that regard.</li>
+<li>The fixed costs are only needed when evaluating the cost of the first arc of the route, in which case we know the vehicle, since we have the route's start node. Only dimensions that have non-zero cost evaluator and a non-zero cost coefficient (in this cost class) are listed here. Since we only need their transit evaluator (the raw version that takes var index, not Node Index) and their span cost coefficient, we just store those. This is sorted by the natural operator &lt; (and <em>not</em> by DimensionIndex). </li>
+</ul>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00288">288</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="a283543cc6886cb9f0b3b38057faf3ab1"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a283543cc6886cb9f0b3b38057faf3ab1">&#9670;&nbsp;</a></span>operator&lt;()</h2>
@@ -93,7 +101,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00291">291</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00292">292</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -110,7 +118,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00289">289</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00290">290</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -126,7 +134,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00290">290</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00291">291</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -142,7 +150,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00288">288</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00289">289</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>

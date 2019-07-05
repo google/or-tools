@@ -1,7 +1,7 @@
 <map id="com.google.ortools.constraintsolver.PathWithPreviousNodesOperator" name="com.google.ortools.constraintsolver.PathWithPreviousNodesOperator">
 <area shape="rect" id="node1" title="Simple PathOperator wrapper that also stores the current previous nodes, and is thus able to provide ..." alt="" coords="6,452,238,493"/>
 <area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathOperator.html" title="Base class of the local search operators dedicated to path modifications (a path is a set of nodes li..." alt="" coords="6,363,238,404"/>
-<area shape="rect" id="node3" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperator.html" title="clang&#45;format on" alt="" coords="6,273,238,315"/>
+<area shape="rect" id="node3" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperator.html" title=" " alt="" coords="6,273,238,315"/>
 <area shape="rect" id="node4" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html" title="Base operator class for operators manipulating variables." alt="" coords="5,184,239,225"/>
 <area shape="rect" id="node5" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html" title="This class represent a reversible FIFO structure." alt="" coords="6,95,238,136"/>
 <area shape="rect" id="node6" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="6,5,238,47"/>

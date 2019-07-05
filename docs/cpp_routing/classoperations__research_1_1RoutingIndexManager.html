@@ -103,10 +103,9 @@ Static Public Attributes</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Manager for any NodeIndex &lt;-&gt; variable index conversion. </p>
 <p>The routing solver uses variable indices internally and through its API. These variable indices are tricky to manage directly because one Node can correspond to a multitude of variables, depending on the number of times they appear in the model, and if they're used as start and/or end points. This class aims to simplify variable index usage, allowing users to use NodeIndex instead.</p>
-<p>Usage: auto starts_ends = ...; /// These are NodeIndex. <a class="el" href="classoperations__research_1_1RoutingIndexManager.html" title="Manager for any NodeIndex &lt;-&gt; variable index conversion.">RoutingIndexManager</a> manager(10, 4, starts_ends); // 10 nodes, 4 vehicles. <a class="el" href="classoperations__research_1_1RoutingModel.html">RoutingModel</a> model(manager);</p>
-<p>Then, use 'manager.NodeToIndex(node)' whenever 'model' requires a variable index. </p>
+<p>Usage: </p><div class="fragment"><div class="line"><span class="keyword">auto</span> starts_ends = ...;  </div><div class="line"><a class="code" href="classoperations__research_1_1RoutingIndexManager.html#a7e8c8961302fc7f090b47a9e033fbcc8">RoutingIndexManager</a> manager(10, 4, starts_ends);  <span class="comment">// 10 nodes, 4 vehicles.</span></div><div class="line">RoutingModel model(manager);</div></div><!-- fragment --><p>Then, use 'manager.NodeToIndex(node)' whenever model requires a variable index. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00040">40</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00042">42</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a31feb605a82521fcdb67d19c4f962f5c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a31feb605a82521fcdb67d19c4f962f5c">&#9670;&nbsp;</a></span>NodeIndex</h2>
@@ -120,7 +119,7 @@ Static Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00042">42</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00044">44</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
 
 </div>
 </div>
@@ -259,7 +258,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00056">56</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00058">58</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
 
 </div>
 </div>
@@ -288,7 +287,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00062">62</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00064">64</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
 
 </div>
 </div>
@@ -315,7 +314,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00077">77</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00079">79</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
 
 </div>
 </div>
@@ -342,7 +341,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00078">78</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00080">80</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
 
 </div>
 </div>
@@ -370,7 +369,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00061">61</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00063">63</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
 
 </div>
 </div>
@@ -398,7 +397,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00069">69</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00071">71</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
 
 </div>
 </div>
@@ -444,7 +443,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00063">63</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00065">65</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
 
 </div>
 </div>
@@ -471,7 +470,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00060">60</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00062">62</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
 
 </div>
 </div>
@@ -498,7 +497,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00058">58</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00060">60</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
 
 </div>
 </div>
@@ -527,7 +526,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>complete. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00076">76</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00078">78</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
 
 </div>
 </div>
@@ -554,7 +553,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00059">59</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00061">61</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
 
 </div>
 </div>
@@ -579,7 +578,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00043">43</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00045">45</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
 
 </div>
 </div>

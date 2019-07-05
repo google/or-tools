@@ -56,6 +56,7 @@
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1RoutingModel_1_1CostClass_1_1DimensionCost.html">DimensionCost</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">SUBTLE: The vehicle's fixed cost is skipped on purpose here, because we can afford to do so:  <a href="structoperations__research_1_1RoutingModel_1_1CostClass_1_1DimensionCost.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
@@ -66,18 +67,20 @@ Public Member Functions</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a82d131d0546fedbb19af49422d780cbf"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1RoutingModel_1_1CostClass.html#a82d131d0546fedbb19af49422d780cbf">LessThan</a> (const <a class="el" href="structoperations__research_1_1RoutingModel_1_1CostClass.html">CostClass</a> &amp;a, const <a class="el" href="structoperations__research_1_1RoutingModel_1_1CostClass.html">CostClass</a> &amp;b)</td></tr>
+<tr class="memdesc:a82d131d0546fedbb19af49422d780cbf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Comparator for STL containers and algorithms.  <a href="#a82d131d0546fedbb19af49422d780cbf">More...</a><br /></td></tr>
 <tr class="separator:a82d131d0546fedbb19af49422d780cbf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:acc06fc1b561814edcb2bcde9893385c8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1RoutingModel_1_1CostClass.html#acc06fc1b561814edcb2bcde9893385c8">evaluator_index</a> = 0</td></tr>
+<tr class="memdesc:acc06fc1b561814edcb2bcde9893385c8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Index of the arc cost evaluator, registered in the <a class="el" href="classoperations__research_1_1RoutingModel.html">RoutingModel</a> class.  <a href="#acc06fc1b561814edcb2bcde9893385c8">More...</a><br /></td></tr>
 <tr class="separator:acc06fc1b561814edcb2bcde9893385c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a791b1c57c4eedb8d6460f7f42e725a71"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structoperations__research_1_1RoutingModel_1_1CostClass_1_1DimensionCost.html">DimensionCost</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1RoutingModel_1_1CostClass.html#a791b1c57c4eedb8d6460f7f42e725a71">dimension_transit_evaluator_class_and_cost_coefficient</a></td></tr>
 <tr class="separator:a791b1c57c4eedb8d6460f7f42e725a71"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00263">263</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00264">264</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a2d550889d680f3f8121bcc6fc69db6e5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2d550889d680f3f8121bcc6fc69db6e5">&#9670;&nbsp;</a></span>CostClass()</h2>
@@ -103,7 +106,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00301">301</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00302">302</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -142,7 +145,9 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00305">305</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>Comparator for STL containers and algorithms. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00306">306</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -159,7 +164,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00299">299</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00300">300</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -175,7 +180,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00265">265</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>Index of the arc cost evaluator, registered in the <a class="el" href="classoperations__research_1_1RoutingModel.html">RoutingModel</a> class. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00266">266</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>

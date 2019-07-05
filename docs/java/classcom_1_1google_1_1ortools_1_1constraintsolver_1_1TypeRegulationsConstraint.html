@@ -50,14 +50,16 @@
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="TypeRegulationsConstraint_8java_source.html#l00011">11</a> of file <a class="el" href="TypeRegulationsConstraint_8java_source.html">TypeRegulationsConstraint.java</a>.</p>
+<div class="textblock"><p>The following constraint ensures that incompatibilities and requirements between types are respected. </p>
+<p>It verifies both "hard" and "temporal" incompatibilities. Two nodes with hard incompatible types cannot be served by the same vehicle at all, while with a temporal incompatibility they can't be on the same route at the same time. For example, for three temporally incompatible types T1 T2 and T3, two pickup/delivery pairs p1/d1 and p2/d2 of type T1 and T2 respectively, and a non-pickup/delivery node n of type T3, the configuration p1 &ndash;&gt; d1 &ndash;&gt; n &ndash;&gt; p2 &ndash;&gt; d2 is acceptable, whereas any configurations with p1 &ndash;&gt; p2 &ndash;&gt; d1 &ndash;&gt; ..., or p1 &ndash;&gt; n &ndash;&gt; d1 &ndash;&gt; ... is not feasible. It also verifies same-vehicle and temporal type requirements. In the above example, if T1 is a requirement for T2: - For a same-vehicle requirement, p1/d1 must be on the same vehicle as p2/d2. - For a temporal requirement, p2 must be visited between p1 and d1. </p>
+
+<p class="definition">Definition at line <a class="el" href="TypeRegulationsConstraint_8java_source.html#l00014">14</a> of file <a class="el" href="TypeRegulationsConstraint_8java_source.html">TypeRegulationsConstraint.java</a>.</p>
 </div><div class="dynheader">
 Inheritance diagram for com.google.ortools.constraintsolver.TypeRegulationsConstraint:</div>
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1TypeRegulationsConstraint__inherit__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8TypeRegulationsConstraint_inherit__map" alt="Inheritance graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8TypeRegulationsConstraint_inherit__map" id="com_8google_8ortools_8constraintsolver_8TypeRegulationsConstraint_inherit__map">
-<area shape="rect"  title=" " alt="" coords="5,273,237,315"/>
+<area shape="rect"  title="The following constraint ensures that incompatibilities and requirements between types are respected." alt="" coords="5,273,237,315"/>
 <area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html" title="A constraint is the main modeling object." alt="" coords="5,184,237,225"/>
 <area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html" title="NOLINT The PropagationBaseObject is a subclass of BaseObject that is also friend to the Solver class." alt="" coords="5,95,237,136"/>
 <area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,5,237,47"/>
@@ -68,7 +70,7 @@ Collaboration diagram for com.google.ortools.constraintsolver.TypeRegulationsCon
 <div class="dyncontent">
 <div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1TypeRegulationsConstraint__coll__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8TypeRegulationsConstraint_coll__map" alt="Collaboration graph"/></div>
 <map name="com_8google_8ortools_8constraintsolver_8TypeRegulationsConstraint_coll__map" id="com_8google_8ortools_8constraintsolver_8TypeRegulationsConstraint_coll__map">
-<area shape="rect"  title=" " alt="" coords="5,273,237,315"/>
+<area shape="rect"  title="The following constraint ensures that incompatibilities and requirements between types are respected." alt="" coords="5,273,237,315"/>
 <area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html" title="A constraint is the main modeling object." alt="" coords="5,184,237,225"/>
 <area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html" title="NOLINT The PropagationBaseObject is a subclass of BaseObject that is also friend to the Solver class." alt="" coords="5,95,237,136"/>
 <area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,5,237,47"/>
@@ -170,7 +172,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TypeRegulationsConstraint_8java_source.html#l00014">14</a> of file <a class="el" href="TypeRegulationsConstraint_8java_source.html">TypeRegulationsConstraint.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TypeRegulationsConstraint_8java_source.html#l00017">17</a> of file <a class="el" href="TypeRegulationsConstraint_8java_source.html">TypeRegulationsConstraint.java</a>.</p>
 
 </div>
 </div>
@@ -198,7 +200,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TypeRegulationsConstraint_8java_source.html#l00039">39</a> of file <a class="el" href="TypeRegulationsConstraint_8java_source.html">TypeRegulationsConstraint.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TypeRegulationsConstraint_8java_source.html#l00042">42</a> of file <a class="el" href="TypeRegulationsConstraint_8java_source.html">TypeRegulationsConstraint.java</a>.</p>
 
 </div>
 </div>
@@ -285,7 +287,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TypeRegulationsConstraint_8java_source.html#l00028">28</a> of file <a class="el" href="TypeRegulationsConstraint_8java_source.html">TypeRegulationsConstraint.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TypeRegulationsConstraint_8java_source.html#l00031">31</a> of file <a class="el" href="TypeRegulationsConstraint_8java_source.html">TypeRegulationsConstraint.java</a>.</p>
 
 </div>
 </div>
@@ -430,7 +432,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TypeRegulationsConstraint_8java_source.html#l00047">47</a> of file <a class="el" href="TypeRegulationsConstraint_8java_source.html">TypeRegulationsConstraint.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TypeRegulationsConstraint_8java_source.html#l00050">50</a> of file <a class="el" href="TypeRegulationsConstraint_8java_source.html">TypeRegulationsConstraint.java</a>.</p>
 
 </div>
 </div>
@@ -515,7 +517,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TypeRegulationsConstraint_8java_source.html#l00043">43</a> of file <a class="el" href="TypeRegulationsConstraint_8java_source.html">TypeRegulationsConstraint.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TypeRegulationsConstraint_8java_source.html#l00046">46</a> of file <a class="el" href="TypeRegulationsConstraint_8java_source.html">TypeRegulationsConstraint.java</a>.</p>
 
 </div>
 </div>

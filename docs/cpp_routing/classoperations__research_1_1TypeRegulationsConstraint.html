@@ -48,6 +48,9 @@
 </div><!--header-->
 <div class="contents">
 
+<p>The following constraint ensures that incompatibilities and requirements between types are respected.  
+ <a href="classoperations__research_1_1TypeRegulationsConstraint.html#details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="routing_8h_source.html">routing.h</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for operations_research::TypeRegulationsConstraint:</div>
@@ -123,8 +126,15 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ab34671f68433c582260a443f3d15bfae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01941">1941</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<div class="textblock"><p>The following constraint ensures that incompatibilities and requirements between types are respected. </p>
+<p>It verifies both "hard" and "temporal" incompatibilities. Two nodes with hard incompatible types cannot be served by the same vehicle at all, while with a temporal incompatibility they can't be on the same route at the same time.</p>
+<p>For example, for three temporally incompatible types T1 T2 and T3, two pickup/delivery pairs p1/d1 and p2/d2 of type T1 and T2 respectively, and a non-pickup/delivery node n of type T3, the configuration p1 --&gt; d1 --&gt; n --&gt; p2 --&gt; d2 is acceptable, whereas any configurations with p1 --&gt; p2 --&gt; d1 --&gt; ..., or p1 --&gt; n --&gt; d1 --&gt; ... is not feasible.</p>
+<p>It also verifies same-vehicle and temporal type requirements. In the above example, if T1 is a requirement for T2:</p><ul>
+<li>For a same-vehicle requirement, p1/d1 must be on the same vehicle as p2/d2.</li>
+<li>For a temporal requirement, p2 must be visited between p1 and d1. </li>
+</ul>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01954">1954</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="aeae90eab871a67eb39147218b4771225"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aeae90eab871a67eb39147218b4771225">&#9670;&nbsp;</a></span>TypeRegulationsConstraint()</h2>

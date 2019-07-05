@@ -48,6 +48,9 @@
 </div><!--header-->
 <div class="contents">
 
+<p>What follows is relevant for models with time/state dependent transits.  
+ <a href="structoperations__research_1_1RoutingModel_1_1StateDependentTransit.html#details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="routing_8h_source.html">routing.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
@@ -55,11 +58,14 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:aa03ad7e9ddea7fb222523be91361629b"><td class="memItemLeft" align="right" valign="top">RangeIntToIntFunction *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1RoutingModel_1_1StateDependentTransit.html#aa03ad7e9ddea7fb222523be91361629b">transit</a></td></tr>
 <tr class="separator:aa03ad7e9ddea7fb222523be91361629b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0723ef2570124a42891a5740acde6ac7"><td class="memItemLeft" align="right" valign="top">RangeMinMaxIndexFunction *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1RoutingModel_1_1StateDependentTransit.html#a0723ef2570124a42891a5740acde6ac7">transit_plus_identity</a></td></tr>
+<tr class="memdesc:a0723ef2570124a42891a5740acde6ac7"><td class="mdescLeft">&#160;</td><td class="mdescRight">f(x)  <a href="#a0723ef2570124a42891a5740acde6ac7">More...</a><br /></td></tr>
 <tr class="separator:a0723ef2570124a42891a5740acde6ac7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00254">254</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<div class="textblock"><p>What follows is relevant for models with time/state dependent transits. </p>
+<p>Such transits, say from node A to node B, are functions f: int64-&gt;int64 of the cumuls of a dimension. The user is free to implement the abstract RangeIntToIntFunction interface, but it is expected that the implementation of each method is quite fast. For performance-related reasons, <a class="el" href="structoperations__research_1_1RoutingModel_1_1StateDependentTransit.html" title="What follows is relevant for models with time/state dependent transits.">StateDependentTransit</a> keeps an additional pointer to a RangeMinMaxIndexFunction, with similar functionality to RangeIntToIntFunction, for g(x) = f(x)+x, where f is the transit from A to B. In most situations the best solutions are problem-specific, but in case of doubt the user may use the MakeStateDependentTransit function from the routing library, which works out-of-the-box, with very good running time, but memory inefficient in some situations. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00255">255</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><h2 class="groupheader">Member Data Documentation</h2>
 <a id="aa03ad7e9ddea7fb222523be91361629b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa03ad7e9ddea7fb222523be91361629b">&#9670;&nbsp;</a></span>transit</h2>
@@ -73,7 +79,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00255">255</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00256">256</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -89,7 +95,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00256">256</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>f(x) </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00257">257</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>

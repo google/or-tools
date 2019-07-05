@@ -51,6 +51,9 @@
 </div><!--header-->
 <div class="contents">
 
+<p>Dimensions represent quantities accumulated at nodes along the routes.  
+ <a href="classoperations__research_1_1RoutingDimension.html#details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="routing_8h_source.html">routing.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
@@ -61,6 +64,7 @@ Classes</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
 <tr class="memitem:a03d51f530bab2758548a51e962f38a1a"><td class="memItemLeft" align="right" valign="top">typedef std::function&lt; int64(int, int)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a03d51f530bab2758548a51e962f38a1a">PickupToDeliveryLimitFunction</a></td></tr>
+<tr class="memdesc:a03d51f530bab2758548a51e962f38a1a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Limits, in terms of maximum difference between the cumul variables, between the pickup and delivery alternatives belonging to a single pickup/delivery pair in the <a class="el" href="classoperations__research_1_1RoutingModel.html">RoutingModel</a>.  <a href="#a03d51f530bab2758548a51e962f38a1a">More...</a><br /></td></tr>
 <tr class="separator:a03d51f530bab2758548a51e962f38a1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
@@ -68,12 +72,16 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:abfcf989d8ccbc8d02d2b2704ec96f763"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#abfcf989d8ccbc8d02d2b2704ec96f763">~RoutingDimension</a> ()</td></tr>
 <tr class="separator:abfcf989d8ccbc8d02d2b2704ec96f763"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5bef0de22a2f6fc1478082358ef80f38"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1RoutingModel.html">RoutingModel</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a5bef0de22a2f6fc1478082358ef80f38">model</a> () const</td></tr>
+<tr class="memdesc:a5bef0de22a2f6fc1478082358ef80f38"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the model on which the dimension was created.  <a href="#a5bef0de22a2f6fc1478082358ef80f38">More...</a><br /></td></tr>
 <tr class="separator:a5bef0de22a2f6fc1478082358ef80f38"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5d7e7a4f88775c10240bbe838d2e13ee"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a5d7e7a4f88775c10240bbe838d2e13ee">GetTransitValue</a> (int64 from_index, int64 to_index, int64 vehicle) const</td></tr>
+<tr class="memdesc:a5d7e7a4f88775c10240bbe838d2e13ee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the transition value for a given pair of nodes (as var index); this value is the one taken by the corresponding transit variable when the 'next' variable for 'from_index' is bound to 'to_index'.  <a href="#a5d7e7a4f88775c10240bbe838d2e13ee">More...</a><br /></td></tr>
 <tr class="separator:a5d7e7a4f88775c10240bbe838d2e13ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7d37150530f088112906877bf54dc4d9"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a7d37150530f088112906877bf54dc4d9">GetTransitValueFromClass</a> (int64 from_index, int64 to_index, int64 vehicle_class) const</td></tr>
+<tr class="memdesc:a7d37150530f088112906877bf54dc4d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same as above but taking a vehicle class of the dimension instead of a vehicle (the class of a vehicle can be obtained with <a class="el" href="classoperations__research_1_1RoutingDimension.html#a8bf186bfb9a793f0e92273a6b4998f90">vehicle_to_class()</a>).  <a href="#a7d37150530f088112906877bf54dc4d9">More...</a><br /></td></tr>
 <tr class="separator:a7d37150530f088112906877bf54dc4d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a541eec636cf28916ff1d27749a5a075c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a541eec636cf28916ff1d27749a5a075c">CumulVar</a> (int64 index) const</td></tr>
+<tr class="memdesc:a541eec636cf28916ff1d27749a5a075c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the cumul, transit and slack variables for the given node (given as int64 var index).  <a href="#a541eec636cf28916ff1d27749a5a075c">More...</a><br /></td></tr>
 <tr class="separator:a541eec636cf28916ff1d27749a5a075c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1fc838c052835bfc676c98c39348f60d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a1fc838c052835bfc676c98c39348f60d">TransitVar</a> (int64 index) const</td></tr>
 <tr class="separator:a1fc838c052835bfc676c98c39348f60d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -82,6 +90,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aca1511ec6086af772f1c0de24bc80036"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#aca1511ec6086af772f1c0de24bc80036">SlackVar</a> (int64 index) const</td></tr>
 <tr class="separator:aca1511ec6086af772f1c0de24bc80036"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a520037b2703dd61ff94f7f775c31316b"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a520037b2703dd61ff94f7f775c31316b">cumuls</a> () const</td></tr>
+<tr class="memdesc:a520037b2703dd61ff94f7f775c31316b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Like <a class="el" href="classoperations__research_1_1RoutingDimension.html#a541eec636cf28916ff1d27749a5a075c" title="Get the cumul, transit and slack variables for the given node (given as int64 var index).">CumulVar()</a>, <a class="el" href="classoperations__research_1_1RoutingDimension.html#a1fc838c052835bfc676c98c39348f60d">TransitVar()</a>, <a class="el" href="classoperations__research_1_1RoutingDimension.html#aca1511ec6086af772f1c0de24bc80036">SlackVar()</a> but return the whole variable vectors instead (indexed by int64 var index).  <a href="#a520037b2703dd61ff94f7f775c31316b">More...</a><br /></td></tr>
 <tr class="separator:a520037b2703dd61ff94f7f775c31316b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acec74fa72a4a455543d6d850b13058b6"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#acec74fa72a4a455543d6d850b13058b6">fixed_transits</a> () const</td></tr>
 <tr class="separator:acec74fa72a4a455543d6d850b13058b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -90,72 +99,103 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a96a618c496ecee054c3708a5949ad5c4"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a96a618c496ecee054c3708a5949ad5c4">slacks</a> () const</td></tr>
 <tr class="separator:a96a618c496ecee054c3708a5949ad5c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a83297ba42788582d369696579addde1e"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; SortedDisjointIntervalList &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a83297ba42788582d369696579addde1e">forbidden_intervals</a> () const</td></tr>
+<tr class="memdesc:a83297ba42788582d369696579addde1e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns forbidden intervals for each node.  <a href="#a83297ba42788582d369696579addde1e">More...</a><br /></td></tr>
 <tr class="separator:a83297ba42788582d369696579addde1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af749da37fdb4dd5ebfc941a372e18d2f"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; int64 &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#af749da37fdb4dd5ebfc941a372e18d2f">vehicle_capacities</a> () const</td></tr>
+<tr class="memdesc:af749da37fdb4dd5ebfc941a372e18d2f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the capacities for all vehicles.  <a href="#af749da37fdb4dd5ebfc941a372e18d2f">More...</a><br /></td></tr>
 <tr class="separator:af749da37fdb4dd5ebfc941a372e18d2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a81824038e89413cb3a1970104829cf81"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classoperations__research_1_1RoutingModel.html#a40eca6feb4e3e04786969e3be70e115e">RoutingModel::TransitCallback2</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a81824038e89413cb3a1970104829cf81">transit_evaluator</a> (int vehicle) const</td></tr>
+<tr class="memdesc:a81824038e89413cb3a1970104829cf81"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the callback evaluating the transit value between two node indices for a given vehicle.  <a href="#a81824038e89413cb3a1970104829cf81">More...</a><br /></td></tr>
 <tr class="separator:a81824038e89413cb3a1970104829cf81"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3c7253f12e84337a20296ce54f528c9e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a3c7253f12e84337a20296ce54f528c9e">AreVehicleTransitsPositive</a> (int vehicle) const</td></tr>
+<tr class="memdesc:a3c7253f12e84337a20296ce54f528c9e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true iff the transit evaluator of 'vehicle' is positive for all arcs.  <a href="#a3c7253f12e84337a20296ce54f528c9e">More...</a><br /></td></tr>
 <tr class="separator:a3c7253f12e84337a20296ce54f528c9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8bf186bfb9a793f0e92273a6b4998f90"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a8bf186bfb9a793f0e92273a6b4998f90">vehicle_to_class</a> (int vehicle) const</td></tr>
 <tr class="separator:a8bf186bfb9a793f0e92273a6b4998f90"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abd077a7b29a7cfc99880172440e14d09"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#abd077a7b29a7cfc99880172440e14d09">SetSpanUpperBoundForVehicle</a> (int64 upper_bound, int vehicle)</td></tr>
+<tr class="memdesc:abd077a7b29a7cfc99880172440e14d09"><td class="mdescLeft">&#160;</td><td class="mdescRight">!defined(SWIGCSHARP) &amp;&amp; !defined(SWIGJAVA) !defined(SWIGPYTHON)  <a href="#abd077a7b29a7cfc99880172440e14d09">More...</a><br /></td></tr>
 <tr class="separator:abd077a7b29a7cfc99880172440e14d09"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afc5f8f71a501b59e65b5c5f970c27c69"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#afc5f8f71a501b59e65b5c5f970c27c69">SetSpanCostCoefficientForVehicle</a> (int64 coefficient, int vehicle)</td></tr>
+<tr class="memdesc:afc5f8f71a501b59e65b5c5f970c27c69"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets a cost proportional to the dimension span on a given vehicle, or on all vehicles at once.  <a href="#afc5f8f71a501b59e65b5c5f970c27c69">More...</a><br /></td></tr>
 <tr class="separator:afc5f8f71a501b59e65b5c5f970c27c69"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a44bf0c1d2c603b8255765ddd081fa40f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a44bf0c1d2c603b8255765ddd081fa40f">SetSpanCostCoefficientForAllVehicles</a> (int64 coefficient)</td></tr>
 <tr class="separator:a44bf0c1d2c603b8255765ddd081fa40f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab29859c22398d47a8590b3524e3a442a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#ab29859c22398d47a8590b3524e3a442a">SetGlobalSpanCostCoefficient</a> (int64 coefficient)</td></tr>
+<tr class="memdesc:ab29859c22398d47a8590b3524e3a442a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets a cost proportional to the <em>global</em> dimension span, that is the difference between the largest value of route end cumul variables and the smallest value of route start cumul variables.  <a href="#ab29859c22398d47a8590b3524e3a442a">More...</a><br /></td></tr>
 <tr class="separator:ab29859c22398d47a8590b3524e3a442a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6052d6bba75371db7e8ea84675187c73"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a6052d6bba75371db7e8ea84675187c73">SetCumulVarPiecewiseLinearCost</a> (int64 index, const PiecewiseLinearFunction &amp;cost)</td></tr>
+<tr class="memdesc:a6052d6bba75371db7e8ea84675187c73"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets a piecewise linear cost on the cumul variable of a given variable index.  <a href="#a6052d6bba75371db7e8ea84675187c73">More...</a><br /></td></tr>
 <tr class="separator:a6052d6bba75371db7e8ea84675187c73"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa6c7d741202e530624ba3165132f6fa2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#aa6c7d741202e530624ba3165132f6fa2">HasCumulVarPiecewiseLinearCost</a> (int64 index) const</td></tr>
+<tr class="memdesc:aa6c7d741202e530624ba3165132f6fa2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if a piecewise linear cost has been set for a given variable index.  <a href="#aa6c7d741202e530624ba3165132f6fa2">More...</a><br /></td></tr>
 <tr class="separator:aa6c7d741202e530624ba3165132f6fa2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d1d9795fd5d3679da87017897fd4f9b"><td class="memItemLeft" align="right" valign="top">const PiecewiseLinearFunction *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a4d1d9795fd5d3679da87017897fd4f9b">GetCumulVarPiecewiseLinearCost</a> (int64 index) const</td></tr>
+<tr class="memdesc:a4d1d9795fd5d3679da87017897fd4f9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the piecewise linear cost of a cumul variable for a given variable index.  <a href="#a4d1d9795fd5d3679da87017897fd4f9b">More...</a><br /></td></tr>
 <tr class="separator:a4d1d9795fd5d3679da87017897fd4f9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8a84f4cd89001eab25832a01bccf982a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a8a84f4cd89001eab25832a01bccf982a">SetCumulVarSoftUpperBound</a> (int64 index, int64 upper_bound, int64 coefficient)</td></tr>
+<tr class="memdesc:a8a84f4cd89001eab25832a01bccf982a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets a soft upper bound to the cumul variable of a given variable index.  <a href="#a8a84f4cd89001eab25832a01bccf982a">More...</a><br /></td></tr>
 <tr class="separator:a8a84f4cd89001eab25832a01bccf982a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5800f4776910a275f768050d832d1948"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a5800f4776910a275f768050d832d1948">HasCumulVarSoftUpperBound</a> (int64 index) const</td></tr>
+<tr class="memdesc:a5800f4776910a275f768050d832d1948"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if a soft upper bound has been set for a given variable index.  <a href="#a5800f4776910a275f768050d832d1948">More...</a><br /></td></tr>
 <tr class="separator:a5800f4776910a275f768050d832d1948"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a487493a16430f10f26366689017701bd"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a487493a16430f10f26366689017701bd">GetCumulVarSoftUpperBound</a> (int64 index) const</td></tr>
+<tr class="memdesc:a487493a16430f10f26366689017701bd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the soft upper bound of a cumul variable for a given variable index.  <a href="#a487493a16430f10f26366689017701bd">More...</a><br /></td></tr>
 <tr class="separator:a487493a16430f10f26366689017701bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adcbe383e7ba8630ae23256e98810b6b9"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#adcbe383e7ba8630ae23256e98810b6b9">GetCumulVarSoftUpperBoundCoefficient</a> (int64 index) const</td></tr>
+<tr class="memdesc:adcbe383e7ba8630ae23256e98810b6b9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the cost coefficient of the soft upper bound of a cumul variable for a given variable index.  <a href="#adcbe383e7ba8630ae23256e98810b6b9">More...</a><br /></td></tr>
 <tr class="separator:adcbe383e7ba8630ae23256e98810b6b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3234a1f4aab23c4c4828b6321a5ec906"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a3234a1f4aab23c4c4828b6321a5ec906">SetCumulVarSoftLowerBound</a> (int64 index, int64 lower_bound, int64 coefficient)</td></tr>
+<tr class="memdesc:a3234a1f4aab23c4c4828b6321a5ec906"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets a soft lower bound to the cumul variable of a given variable index.  <a href="#a3234a1f4aab23c4c4828b6321a5ec906">More...</a><br /></td></tr>
 <tr class="separator:a3234a1f4aab23c4c4828b6321a5ec906"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae6dd1772ef933bfe97628d0034450266"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#ae6dd1772ef933bfe97628d0034450266">HasCumulVarSoftLowerBound</a> (int64 index) const</td></tr>
+<tr class="memdesc:ae6dd1772ef933bfe97628d0034450266"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if a soft lower bound has been set for a given variable index.  <a href="#ae6dd1772ef933bfe97628d0034450266">More...</a><br /></td></tr>
 <tr class="separator:ae6dd1772ef933bfe97628d0034450266"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a569e5105983007797f224986a331dc70"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a569e5105983007797f224986a331dc70">GetCumulVarSoftLowerBound</a> (int64 index) const</td></tr>
+<tr class="memdesc:a569e5105983007797f224986a331dc70"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the soft lower bound of a cumul variable for a given variable index.  <a href="#a569e5105983007797f224986a331dc70">More...</a><br /></td></tr>
 <tr class="separator:a569e5105983007797f224986a331dc70"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2bbbf40328825ffe853e5969eee63f5a"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a2bbbf40328825ffe853e5969eee63f5a">GetCumulVarSoftLowerBoundCoefficient</a> (int64 index) const</td></tr>
+<tr class="memdesc:a2bbbf40328825ffe853e5969eee63f5a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the cost coefficient of the soft lower bound of a cumul variable for a given variable index.  <a href="#a2bbbf40328825ffe853e5969eee63f5a">More...</a><br /></td></tr>
 <tr class="separator:a2bbbf40328825ffe853e5969eee63f5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6e43db91425269dda98c59586731f660"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a6e43db91425269dda98c59586731f660">SetBreakIntervalsOfVehicle</a> (std::vector&lt; <a class="el" href="classoperations__research_1_1IntervalVar.html">IntervalVar</a> * &gt; breaks, int vehicle, int pre_travel_evaluator, int post_travel_evaluator)</td></tr>
+<tr class="memdesc:a6e43db91425269dda98c59586731f660"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the breaks for a given vehicle.  <a href="#a6e43db91425269dda98c59586731f660">More...</a><br /></td></tr>
 <tr class="separator:a6e43db91425269dda98c59586731f660"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a91a8bad350970afc848ae3726fb1f465"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a91a8bad350970afc848ae3726fb1f465">SetBreakIntervalsOfVehicle</a> (std::vector&lt; <a class="el" href="classoperations__research_1_1IntervalVar.html">IntervalVar</a> * &gt; breaks, int vehicle, std::vector&lt; int64 &gt; node_visit_transits)</td></tr>
+<tr class="memdesc:a91a8bad350970afc848ae3726fb1f465"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deprecated, sets pre_travel(i, j) = node_visit_transit[i].  <a href="#a91a8bad350970afc848ae3726fb1f465">More...</a><br /></td></tr>
 <tr class="separator:a91a8bad350970afc848ae3726fb1f465"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5303e0e6657cb3efed3c7068eb193c86"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a5303e0e6657cb3efed3c7068eb193c86">SetBreakDistanceDurationOfVehicle</a> (int64 distance, int64 duration, int vehicle)</td></tr>
+<tr class="memdesc:a5303e0e6657cb3efed3c7068eb193c86"><td class="mdescLeft">&#160;</td><td class="mdescRight">With breaks supposed to be consecutive, this forces the distance between breaks of size at least minimum_break_duration to be at least distance.  <a href="#a5303e0e6657cb3efed3c7068eb193c86">More...</a><br /></td></tr>
 <tr class="separator:a5303e0e6657cb3efed3c7068eb193c86"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa224ac17be74c79927c18ef4a4b6705d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#aa224ac17be74c79927c18ef4a4b6705d">InitializeBreaks</a> ()</td></tr>
+<tr class="memdesc:aa224ac17be74c79927c18ef4a4b6705d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets up vehicle_break_intervals_, vehicle_break_distance_duration_, pre_travel_evaluators and post_travel_evaluators.  <a href="#aa224ac17be74c79927c18ef4a4b6705d">More...</a><br /></td></tr>
 <tr class="separator:aa224ac17be74c79927c18ef4a4b6705d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a11db411ac857ec2153cd61c3e3296f08"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a11db411ac857ec2153cd61c3e3296f08">HasBreakConstraints</a> () const</td></tr>
+<tr class="memdesc:a11db411ac857ec2153cd61c3e3296f08"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if any break interval or break distance was defined.  <a href="#a11db411ac857ec2153cd61c3e3296f08">More...</a><br /></td></tr>
 <tr class="separator:a11db411ac857ec2153cd61c3e3296f08"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaf017f4f85b78139a428e8a38da4c2a0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#aaf017f4f85b78139a428e8a38da4c2a0">SetBreakIntervalsOfVehicle</a> (std::vector&lt; <a class="el" href="classoperations__research_1_1IntervalVar.html">IntervalVar</a> * &gt; breaks, int vehicle, std::vector&lt; int64 &gt; node_visit_transits, std::function&lt; int64(int64, int64)&gt; group_delays)</td></tr>
+<tr class="memdesc:aaf017f4f85b78139a428e8a38da4c2a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deprecated, sets pre_travel(i, j) = node_visit_transit[i] and post_travel(i, j) = group_delays(i, j).  <a href="#aaf017f4f85b78139a428e8a38da4c2a0">More...</a><br /></td></tr>
 <tr class="separator:aaf017f4f85b78139a428e8a38da4c2a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a07c6cdc82e267942b967f53e6010a82c"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; <a class="el" href="classoperations__research_1_1IntervalVar.html">IntervalVar</a> * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a07c6cdc82e267942b967f53e6010a82c">GetBreakIntervalsOfVehicle</a> (int vehicle) const</td></tr>
+<tr class="memdesc:a07c6cdc82e267942b967f53e6010a82c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the break intervals set by <a class="el" href="classoperations__research_1_1RoutingDimension.html#a6e43db91425269dda98c59586731f660" title="Sets the breaks for a given vehicle.">SetBreakIntervalsOfVehicle()</a>.  <a href="#a07c6cdc82e267942b967f53e6010a82c">More...</a><br /></td></tr>
 <tr class="separator:a07c6cdc82e267942b967f53e6010a82c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa771a4b1f09590ad4132fbf90f524abe"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; std::pair&lt; int64, int64 &gt; &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#aa771a4b1f09590ad4132fbf90f524abe">GetBreakDistanceDurationOfVehicle</a> (int vehicle) const</td></tr>
+<tr class="memdesc:aa771a4b1f09590ad4132fbf90f524abe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the pairs (distance, duration) specified by break distance constraints.  <a href="#aa771a4b1f09590ad4132fbf90f524abe">More...</a><br /></td></tr>
 <tr class="separator:aa771a4b1f09590ad4132fbf90f524abe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af929083de8b7e19f2d06d6ee2112b5a5"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#af929083de8b7e19f2d06d6ee2112b5a5">GetPreTravelEvaluatorOfVehicle</a> (int vehicle) const</td></tr>
+<tr class="memdesc:af929083de8b7e19f2d06d6ee2112b5a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">!defined(SWIGPYTHON)  <a href="#af929083de8b7e19f2d06d6ee2112b5a5">More...</a><br /></td></tr>
 <tr class="separator:af929083de8b7e19f2d06d6ee2112b5a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa9acd23f51d4ba7c0e050db0bf27d9f5"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#aa9acd23f51d4ba7c0e050db0bf27d9f5">GetPostTravelEvaluatorOfVehicle</a> (int vehicle) const</td></tr>
 <tr class="separator:aa9acd23f51d4ba7c0e050db0bf27d9f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ade704c2189c4dfde1ace86100f9c363d"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classoperations__research_1_1RoutingDimension.html">RoutingDimension</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#ade704c2189c4dfde1ace86100f9c363d">base_dimension</a> () const</td></tr>
+<tr class="memdesc:ade704c2189c4dfde1ace86100f9c363d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the parent in the dependency tree if any or nullptr otherwise.  <a href="#ade704c2189c4dfde1ace86100f9c363d">More...</a><br /></td></tr>
 <tr class="separator:ade704c2189c4dfde1ace86100f9c363d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a15f32489aad9f7d42d76514dff27ccca"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a15f32489aad9f7d42d76514dff27ccca">ShortestTransitionSlack</a> (int64 node) const</td></tr>
+<tr class="memdesc:a15f32489aad9f7d42d76514dff27ccca"><td class="mdescLeft">&#160;</td><td class="mdescRight">It makes sense to use the function only for self-dependent dimension.  <a href="#a15f32489aad9f7d42d76514dff27ccca">More...</a><br /></td></tr>
 <tr class="separator:a15f32489aad9f7d42d76514dff27ccca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a818dcdf6c1102cb0876393a153ef4249"><td class="memItemLeft" align="right" valign="top">const std::string &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a818dcdf6c1102cb0876393a153ef4249">name</a> () const</td></tr>
+<tr class="memdesc:a818dcdf6c1102cb0876393a153ef4249"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the name of the dimension.  <a href="#a818dcdf6c1102cb0876393a153ef4249">More...</a><br /></td></tr>
 <tr class="separator:a818dcdf6c1102cb0876393a153ef4249"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad3420be5f4b38fd143302fecc1d118bb"><td class="memItemLeft" align="right" valign="top">const ReverseArcListGraph&lt; int, int &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#ad3420be5f4b38fd143302fecc1d118bb">GetPathPrecedenceGraph</a> () const</td></tr>
+<tr class="memdesc:ad3420be5f4b38fd143302fecc1d118bb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Accessors.  <a href="#ad3420be5f4b38fd143302fecc1d118bb">More...</a><br /></td></tr>
 <tr class="separator:ad3420be5f4b38fd143302fecc1d118bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a87f365465eb17819cd0d2f332080b113"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a87f365465eb17819cd0d2f332080b113">SetPickupToDeliveryLimitFunctionForPair</a> (<a class="el" href="classoperations__research_1_1RoutingDimension.html#a03d51f530bab2758548a51e962f38a1a">PickupToDeliveryLimitFunction</a> limit_function, int pair_index)</td></tr>
 <tr class="separator:a87f365465eb17819cd0d2f332080b113"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -184,6 +224,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a17fc6c0b2c2e09eb94c5c812e3919cd0"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a17fc6c0b2c2e09eb94c5c812e3919cd0">GetLocalOptimizerOffsetForVehicle</a> (int vehicle) const</td></tr>
 <tr class="separator:a17fc6c0b2c2e09eb94c5c812e3919cd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a619aa0df1d2c81eab70de0f764e11f24"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a619aa0df1d2c81eab70de0f764e11f24">SetSoftSpanUpperBoundForVehicle</a> (<a class="el" href="structoperations__research_1_1SimpleBoundCosts_1_1BoundCost.html">SimpleBoundCosts::BoundCost</a> bound_cost, int vehicle)</td></tr>
+<tr class="memdesc:a619aa0df1d2c81eab70de0f764e11f24"><td class="mdescLeft">&#160;</td><td class="mdescRight">If the span of vehicle on this dimension is larger than bound, the cost will be increased by cost * (span - bound).  <a href="#a619aa0df1d2c81eab70de0f764e11f24">More...</a><br /></td></tr>
 <tr class="separator:a619aa0df1d2c81eab70de0f764e11f24"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b71e53aa7d38fbcb7c07a0f98d1bd61"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingDimension.html#a8b71e53aa7d38fbcb7c07a0f98d1bd61">HasSoftSpanUpperBounds</a> () const</td></tr>
 <tr class="separator:a8b71e53aa7d38fbcb7c07a0f98d1bd61"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -198,8 +239,13 @@ Friends</h2></td></tr>
 <tr class="separator:a00141bd90e555aea59a9e98cfbcda6eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02008">2008</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<div class="textblock"><p>Dimensions represent quantities accumulated at nodes along the routes. </p>
+<p>They represent quantities such as weights or volumes carried along the route, or distance or times.</p>
+<p>Quantities at a node are represented by "cumul" variables and the increase or decrease of quantities between nodes are represented by "transit" variables. These variables are linked as follows:</p>
+<p>if j == next(i), cumuls(j) = cumuls(i) + transits(i) + slacks(i) + state_dependent_transits(i)</p>
+<p>where slack is a positive slack variable (can represent waiting times for a time dimension), and state_dependent_transits is a non-purely functional version of transits_. Favour transits over state_dependent_transits when possible, because purely functional callbacks allow more optimisations and make the model faster and easier to solve. for a given vehicle, it is passed as an external vector, it would be better to have this information here. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02022">2022</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a03d51f530bab2758548a51e962f38a1a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a03d51f530bab2758548a51e962f38a1a">&#9670;&nbsp;</a></span>PickupToDeliveryLimitFunction</h2>
@@ -213,7 +259,10 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02229">2229</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>Limits, in terms of maximum difference between the cumul variables, between the pickup and delivery alternatives belonging to a single pickup/delivery pair in the <a class="el" href="classoperations__research_1_1RoutingModel.html">RoutingModel</a>. </p>
+<p>The indices passed to the function respectively correspond to the position of the pickup in the vector of pickup alternatives, and delivery position in the delivery alternatives for this pickup/delivery pair. These limits should only be set when each node index appears in at most one pickup/delivery pair, i.e. each pickup (delivery) index is in a single pickup/delivery pair.first (pair.second). </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02247">2247</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -260,7 +309,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02245">2245</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02263">2263</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -304,7 +353,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02253">2253</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02271">2271</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -332,7 +381,9 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02055">2055</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>Returns true iff the transit evaluator of 'vehicle' is positive for all arcs. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02069">2069</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -359,7 +410,9 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02200">2200</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>Returns the parent in the dependency tree if any or nullptr otherwise. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02218">2218</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -386,7 +439,9 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02034">2034</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>Like <a class="el" href="classoperations__research_1_1RoutingDimension.html#a541eec636cf28916ff1d27749a5a075c" title="Get the cumul, transit and slack variables for the given node (given as int64 var index).">CumulVar()</a>, <a class="el" href="classoperations__research_1_1RoutingDimension.html#a1fc838c052835bfc676c98c39348f60d">TransitVar()</a>, <a class="el" href="classoperations__research_1_1RoutingDimension.html#aca1511ec6086af772f1c0de24bc80036">SlackVar()</a> but return the whole variable vectors instead (indexed by int64 var index). </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02048">2048</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -414,7 +469,9 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02026">2026</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>Get the cumul, transit and slack variables for the given node (given as int64 var index). </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02040">2040</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -441,7 +498,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02035">2035</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02049">2049</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -469,7 +526,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02028">2028</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02042">2042</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -496,7 +553,9 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02040">2040</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>Returns forbidden intervals for each node. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02054">2054</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -516,6 +575,8 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>Returns the pairs (distance, duration) specified by break distance constraints. </p>
+
 </div>
 </div>
 <a id="a07c6cdc82e267942b967f53e6010a82c"></a>
@@ -533,6 +594,8 @@ Friends</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Returns the break intervals set by <a class="el" href="classoperations__research_1_1RoutingDimension.html#a6e43db91425269dda98c59586731f660" title="Sets the breaks for a given vehicle.">SetBreakIntervalsOfVehicle()</a>. </p>
 
 </div>
 </div>
@@ -552,6 +615,9 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>Returns the piecewise linear cost of a cumul variable for a given variable index. </p>
+<p>The returned pointer has the same validity as this class. </p>
+
 </div>
 </div>
 <a id="a569e5105983007797f224986a331dc70"></a>
@@ -569,6 +635,9 @@ Friends</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Returns the soft lower bound of a cumul variable for a given variable index. </p>
+<p>The "hard" lower bound of the variable is returned if no soft lower bound has been set. </p>
 
 </div>
 </div>
@@ -588,6 +657,9 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>Returns the cost coefficient of the soft lower bound of a cumul variable for a given variable index. </p>
+<p>If no soft lower bound has been set, 0 is returned. </p>
+
 </div>
 </div>
 <a id="a487493a16430f10f26366689017701bd"></a>
@@ -606,6 +678,9 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>Returns the soft upper bound of a cumul variable for a given variable index. </p>
+<p>The "hard" upper bound of the variable is returned if no soft upper bound has been set. </p>
+
 </div>
 </div>
 <a id="adcbe383e7ba8630ae23256e98810b6b9"></a>
@@ -623,6 +698,9 @@ Friends</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Returns the cost coefficient of the soft upper bound of a cumul variable for a given variable index. </p>
+<p>If no soft upper bound has been set, 0 is returned. </p>
 
 </div>
 </div>
@@ -649,7 +727,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02277">2277</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02295">2295</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -677,7 +755,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02281">2281</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02299">2299</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -704,7 +782,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02248">2248</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02266">2266</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -731,7 +809,9 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02215">2215</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>Accessors. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02233">2233</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -803,6 +883,8 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>!defined(SWIGPYTHON) </p>
+
 </div>
 </div>
 <a id="a7ee4f5c15d4e68cf4a01a86d4baa2952"></a>
@@ -829,7 +911,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02302">2302</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02320">2320</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -857,7 +939,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02265">2265</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02283">2283</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -885,7 +967,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02257">2257</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02275">2275</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -920,6 +1002,8 @@ Friends</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Returns the transition value for a given pair of nodes (as var index); this value is the one taken by the corresponding transit variable when the 'next' variable for 'from_index' is bound to 'to_index'. </p>
 
 </div>
 </div>
@@ -963,7 +1047,9 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02019">2019</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>Same as above but taking a vehicle class of the dimension instead of a vehicle (the class of a vehicle can be obtained with <a class="el" href="classoperations__research_1_1RoutingDimension.html#a8bf186bfb9a793f0e92273a6b4998f90">vehicle_to_class()</a>). </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02033">2033</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -990,7 +1076,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02273">2273</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02291">2291</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1008,6 +1094,8 @@ Friends</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Returns true if any break interval or break distance was defined. </p>
 
 </div>
 </div>
@@ -1027,6 +1115,8 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>Returns true if a piecewise linear cost has been set for a given variable index. </p>
+
 </div>
 </div>
 <a id="ae6dd1772ef933bfe97628d0034450266"></a>
@@ -1045,6 +1135,8 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>Returns true if a soft lower bound has been set for a given variable index. </p>
+
 </div>
 </div>
 <a id="a5800f4776910a275f768050d832d1948"></a>
@@ -1062,6 +1154,8 @@ Friends</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Returns true if a soft upper bound has been set for a given variable index. </p>
 
 </div>
 </div>
@@ -1105,7 +1199,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02299">2299</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02317">2317</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1123,6 +1217,8 @@ Friends</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Sets up vehicle_break_intervals_, vehicle_break_distance_duration_, pre_travel_evaluators and post_travel_evaluators. </p>
 
 </div>
 </div>
@@ -1149,7 +1245,9 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02012">2012</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>Returns the model on which the dimension was created. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02026">2026</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1176,7 +1274,9 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02211">2211</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>Returns the name of the dimension. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02229">2229</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1211,6 +1311,9 @@ Friends</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>With breaks supposed to be consecutive, this forces the distance between breaks of size at least minimum_break_duration to be at least distance. </p>
+<p>This supposes that the time until route start and after route end are infinite breaks. </p>
 
 </div>
 </div>
@@ -1252,6 +1355,10 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>Sets the breaks for a given vehicle. </p>
+<p>Breaks are represented by IntervalVars. They may interrupt transits between nodes and increase the value of corresponding slack variables. A break may take place before the start of a vehicle, after the end of a vehicle, or during a travel i -&gt; j.</p>
+<p>In that case, the interval [break.Start(), break.End()) must be a subset of [CumulVar(i) + pre_travel(i, j), CumulVar(j) - post_travel(i, j)). In other words, a break may not overlap any node n's visit, given by [CumulVar(n) - post_travel(_, n), CumulVar(n) + pre_travel(n, _)). This formula considers post_travel(_, start) and pre_travel(end, _) to be 0; pre_travel will never be called on any (_, start) and post_travel will never we called on any (end, _). If pre_travel_evaluator or post_travel_evaluator is -1, it will be taken as a function that always returns 0. </p>
+
 </div>
 </div>
 <a id="a91a8bad350970afc848ae3726fb1f465"></a>
@@ -1285,6 +1392,8 @@ Friends</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Deprecated, sets pre_travel(i, j) = node_visit_transit[i]. </p>
 
 </div>
 </div>
@@ -1326,6 +1435,8 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>Deprecated, sets pre_travel(i, j) = node_visit_transit[i] and post_travel(i, j) = group_delays(i, j). </p>
+
 </div>
 </div>
 <a id="a6052d6bba75371db7e8ea84675187c73"></a>
@@ -1353,6 +1464,9 @@ Friends</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Sets a piecewise linear cost on the cumul variable of a given variable index. </p>
+<p>If f is a piecewise linear function, the resulting cost at 'index' will be f(CumulVar(index)). As of 3/2017, only non-decreasing positive cost functions are supported. </p>
 
 </div>
 </div>
@@ -1388,6 +1502,9 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>Sets a soft lower bound to the cumul variable of a given variable index. </p>
+<p>If the value of the cumul variable is less than the bound, a cost proportional to the difference between this value and the bound is added to the cost function of the model: cumulVar &gt; lower_bound -&gt; cost = 0 cumulVar &lt;= lower_bound -&gt; cost = coefficient * (lower_bound - cumulVar). This is also handy to model earliness costs when the dimension represents time. Note: Using soft lower and upper bounds or span costs together is, as of 6/2014, not well supported in the sense that an optimal schedule is not guaranteed. </p>
+
 </div>
 </div>
 <a id="a8a84f4cd89001eab25832a01bccf982a"></a>
@@ -1422,6 +1539,9 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>Sets a soft upper bound to the cumul variable of a given variable index. </p>
+<p>If the value of the cumul variable is greater than the bound, a cost proportional to the difference between this value and the bound is added to the cost function of the model: cumulVar &lt;= upper_bound -&gt; cost = 0 cumulVar &gt; upper_bound -&gt; cost = coefficient * (cumulVar - upper_bound) This is also handy to model tardiness costs when the dimension represents time. </p>
+
 </div>
 </div>
 <a id="ab29859c22398d47a8590b3524e3a442a"></a>
@@ -1439,6 +1559,9 @@ Friends</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Sets a cost proportional to the <em>global</em> dimension span, that is the difference between the largest value of route end cumul variables and the smallest value of route start cumul variables. </p>
+<p>In other words: global_span_cost = coefficient * (Max(dimension end value) - Min(dimension start value)). </p>
 
 </div>
 </div>
@@ -1504,7 +1627,9 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02291">2291</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>If the span of vehicle on this dimension is larger than bound, the cost will be increased by cost * (span - bound). </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02309">2309</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1552,6 +1677,9 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>Sets a cost proportional to the dimension span on a given vehicle, or on all vehicles at once. </p>
+<p>"coefficient" must be nonnegative. This is handy to model costs proportional to idle time when the dimension represents time. The cost for a vehicle is span_cost = coefficient * (dimension end value - dimension start value). </p>
+
 </div>
 </div>
 <a id="abd077a7b29a7cfc99880172440e14d09"></a>
@@ -1580,6 +1708,9 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>!defined(SWIGCSHARP) &amp;&amp; !defined(SWIGJAVA) !defined(SWIGPYTHON) </p>
+<p>Sets an upper bound on the dimension span on a given vehicle. This is the preferred way to limit the "length" of the route of a vehicle according to a dimension. </p>
+
 </div>
 </div>
 <a id="a15f32489aad9f7d42d76514dff27ccca"></a>
@@ -1597,6 +1728,12 @@ Friends</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>It makes sense to use the function only for self-dependent dimension. </p>
+<p>For such dimensions the value of the slack of a node determines the transition cost of the next transit. Provided that</p><ol type="1">
+<li>cumul[node] is fixed,</li>
+<li>next[node] and next[next[node]] (if exists) are fixed, the value of slack[node] for which cumul[next[node]] + transit[next[node]] is minimized can be found in O(1) using this function. </li>
+</ol>
 
 </div>
 </div>
@@ -1623,7 +1760,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02037">2037</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02051">2051</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1651,7 +1788,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02029">2029</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02043">2043</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1679,7 +1816,9 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02049">2049</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>Returns the callback evaluating the transit value between two node indices for a given vehicle. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02063">2063</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1706,7 +1845,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02036">2036</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02050">2050</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1734,7 +1873,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02027">2027</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02041">2041</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1761,7 +1900,9 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02044">2044</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>Returns the capacities for all vehicles. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02058">2058</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1788,7 +1929,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02269">2269</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02287">2287</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1815,7 +1956,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02261">2261</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02279">2279</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1843,7 +1984,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02059">2059</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02073">2073</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1868,7 +2009,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02424">2424</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02444">2444</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1892,7 +2033,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02425">2425</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02445">2445</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>

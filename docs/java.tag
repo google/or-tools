@@ -14063,6 +14063,34 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasInterleaveSearch</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a0ddc1501078cf20d188685d076d7bc2d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getInterleaveSearch</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a666a790053d08bd2b0d9659529fdb5b6</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setInterleaveSearch</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>ab2da45af2444458c3d948b77a2808c06</anchor>
+      <arglist>(boolean value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearInterleaveSearch</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a73e3a75f7f9ca460cd9b4131e0a2e3c1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasDeterministicParallelSearch</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
       <anchor>ac10299d277bc2fd4488948a13ca7b962</anchor>
@@ -40905,6 +40933,20 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasInterleaveSearch</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a998ffc30c5ab2285e6cfd8f9e887449e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getInterleaveSearch</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>aa18ecddf476fab85b449d25b8632840e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasDeterministicParallelSearch</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a75a4b941a7d2bfeb9c55f43a2ed9248f</anchor>
@@ -41993,6 +42035,13 @@
       <name>NUM_SEARCH_WORKERS_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>aea307f8c171bd8219a774dff96dad90c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>INTERLEAVE_SEARCH_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>ab670224cba11205627acc1bbb67e0a68</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -43502,6 +43551,20 @@
       <name>getNumSearchWorkers</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
       <anchor>ade5734253221484ecaa7e64f32add777</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasInterleaveSearch</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a6543234f6d0d6ab5bdfe87f132d59b00</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getInterleaveSearch</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>aa293074272ad0f45548e40e9411fb47d</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">

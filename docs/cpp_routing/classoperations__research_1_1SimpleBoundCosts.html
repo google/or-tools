@@ -49,6 +49,9 @@
 </div><!--header-->
 <div class="contents">
 
+<p>A structure meant to store soft bounds and associated violation constants.  
+ <a href="classoperations__research_1_1SimpleBoundCosts.html#details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="routing_8h_source.html">routing.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
@@ -72,8 +75,15 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a25cbaaa77d5d9c0ded3f786b3634f71b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01970">1970</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<div class="textblock"><p>A structure meant to store soft bounds and associated violation constants. </p>
+<p>It is 'Simple' because it has one <a class="el" href="structoperations__research_1_1SimpleBoundCosts_1_1BoundCost.html">BoundCost</a> per element, in contrast to 'Multiple'. Design notes:</p><ul>
+<li>it is meant to store model information to be shared through pointers, so it disallows copy and assign to avoid accidental duplication.</li>
+<li>it keeps soft bounds as an array of structs to help cache, because code that uses such bounds typically use both bound and cost.</li>
+<li>soft bounds are named pairs, prevents some mistakes.</li>
+<li>using operator[] to access elements is not interesting, because the structure will be accessed through pointers, moreover having to type bound_cost reminds the user of the order if they do a copy assignment of the element. </li>
+</ul>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01983">1983</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a6ec9098d43f8ccbd6f7b5b6dfb047e78"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6ec9098d43f8ccbd6f7b5b6dfb047e78">&#9670;&nbsp;</a></span>SimpleBoundCosts() <span class="overload">[1/2]</span></h2>
@@ -109,7 +119,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01976">1976</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01989">1989</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -164,7 +174,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01978">1978</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01991">1991</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -192,7 +202,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01979">1979</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01992">1992</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -245,7 +255,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01980">1980</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01993">1993</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>

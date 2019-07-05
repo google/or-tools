@@ -2,6 +2,6 @@
 <area shape="rect" id="node1" title="Local Search Filters are used for fast neighbor pruning." alt="" coords="285,39,517,80"/>
 <area shape="rect" id="node3" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html" title=" " alt="" coords="565,39,797,80"/>
 <area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,39,237,80"/>
-<area shape="rect" id="node4" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BasePathFilter.html" title=" " alt="" coords="845,5,1077,47"/>
-<area shape="rect" id="node5" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CPFeasibilityFilter.html" title=" " alt="" coords="845,71,1077,112"/>
+<area shape="rect" id="node4" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BasePathFilter.html" title="Generic path&#45;based filter class." alt="" coords="845,5,1077,47"/>
+<area shape="rect" id="node5" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CPFeasibilityFilter.html" title="This filter accepts deltas for which the assignment satisfies the constraints of the Solver." alt="" coords="845,71,1077,112"/>
 </map>

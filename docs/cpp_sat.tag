@@ -15152,114 +15152,58 @@
     </member>
     <member kind="function">
       <type>bool</type>
-      <name>has_num_search_workers</name>
+      <name>has_min_orthogonality_for_lp_constraints</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a1084ac9a4eddadaea6a7b3fca0ea6ce0</anchor>
+      <anchor>ad7af5d2e5696028919b11bdfe008346b</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
-      <name>clear_num_search_workers</name>
+      <name>clear_min_orthogonality_for_lp_constraints</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a57ed4de8cbb62926aa513f2555a7ff1a</anchor>
+      <anchor>a5f643d045e63b5873f1fa94bbecf0849</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
-      <name>num_search_workers</name>
+      <type>double</type>
+      <name>min_orthogonality_for_lp_constraints</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ac85bba5787bf4ff93bab8fcc212eeabb</anchor>
+      <anchor>a043ad75614acafc414ffd4947fafaa34</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
-      <name>set_num_search_workers</name>
+      <name>set_min_orthogonality_for_lp_constraints</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ad8006b08158a9f7a415b6525b1b9601e</anchor>
-      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
+      <anchor>a6d2f4faa402690f8463b8f25657bf5c0</anchor>
+      <arglist>(double value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
-      <name>has_fill_tightened_domains_in_response</name>
+      <name>has_use_combined_no_overlap</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a358af413cfd511dee33a72a78e05c2d3</anchor>
+      <anchor>a0fac786be2bdbb5d93781523b3f4ce64</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
-      <name>clear_fill_tightened_domains_in_response</name>
+      <name>clear_use_combined_no_overlap</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ae68a4393badfcb1511441d4fd5f11846</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>fill_tightened_domains_in_response</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a1acc23d23a7829cbee39c33156714b37</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>set_fill_tightened_domains_in_response</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ac56636f4118df9ae7b49a89ff73c6073</anchor>
-      <arglist>(bool value)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>has_stop_after_first_solution</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>add539afedb092c2b2d4bfbb323d572fe</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>clear_stop_after_first_solution</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ae58a24e4bfca8efd6c1b75a21d6d1b5e</anchor>
+      <anchor>ade4963c7a1a6d8c0b7ecc20ce142a94e</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
-      <name>stop_after_first_solution</name>
+      <name>use_combined_no_overlap</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a78c6b78e31d41a45a9506692473f85b6</anchor>
+      <anchor>a3fc6d6586318ccabe142e90b27d97507</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
-      <name>set_stop_after_first_solution</name>
+      <name>set_use_combined_no_overlap</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a4a0f153cf20dfb8ec439f6c10193130f</anchor>
-      <arglist>(bool value)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>has_deterministic_parallel_search</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a82a0be33fb5fe07767d28a164f505712</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>clear_deterministic_parallel_search</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>af6c8828f6fb61da89aabf7cfbd4d77e5</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>deterministic_parallel_search</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>aeab34cf2834d41f4a725426af690d2df</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>set_deterministic_parallel_search</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a25e6bf68229c471e23bbb9337d01a8f7</anchor>
+      <anchor>ac3327bb59d47a20656eed1666e84d4c1</anchor>
       <arglist>(bool value)</arglist>
     </member>
     <member kind="function">
@@ -15376,59 +15320,143 @@
     </member>
     <member kind="function">
       <type>bool</type>
-      <name>has_use_combined_no_overlap</name>
+      <name>has_fill_tightened_domains_in_response</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a0fac786be2bdbb5d93781523b3f4ce64</anchor>
+      <anchor>a358af413cfd511dee33a72a78e05c2d3</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
-      <name>clear_use_combined_no_overlap</name>
+      <name>clear_fill_tightened_domains_in_response</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ade4963c7a1a6d8c0b7ecc20ce142a94e</anchor>
+      <anchor>ae68a4393badfcb1511441d4fd5f11846</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
-      <name>use_combined_no_overlap</name>
+      <name>fill_tightened_domains_in_response</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a3fc6d6586318ccabe142e90b27d97507</anchor>
+      <anchor>a1acc23d23a7829cbee39c33156714b37</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
-      <name>set_use_combined_no_overlap</name>
+      <name>set_fill_tightened_domains_in_response</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ac3327bb59d47a20656eed1666e84d4c1</anchor>
+      <anchor>ac56636f4118df9ae7b49a89ff73c6073</anchor>
       <arglist>(bool value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
-      <name>has_min_orthogonality_for_lp_constraints</name>
+      <name>has_stop_after_first_solution</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ad7af5d2e5696028919b11bdfe008346b</anchor>
+      <anchor>add539afedb092c2b2d4bfbb323d572fe</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
-      <name>clear_min_orthogonality_for_lp_constraints</name>
+      <name>clear_stop_after_first_solution</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a5f643d045e63b5873f1fa94bbecf0849</anchor>
+      <anchor>ae58a24e4bfca8efd6c1b75a21d6d1b5e</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>double</type>
-      <name>min_orthogonality_for_lp_constraints</name>
+      <type>bool</type>
+      <name>stop_after_first_solution</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a043ad75614acafc414ffd4947fafaa34</anchor>
+      <anchor>a78c6b78e31d41a45a9506692473f85b6</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
       <type>void</type>
-      <name>set_min_orthogonality_for_lp_constraints</name>
+      <name>set_stop_after_first_solution</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a6d2f4faa402690f8463b8f25657bf5c0</anchor>
-      <arglist>(double value)</arglist>
+      <anchor>a4a0f153cf20dfb8ec439f6c10193130f</anchor>
+      <arglist>(bool value)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>has_interleave_search</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a9d5e04b07ceaec12a8c48a80f89f417c</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>clear_interleave_search</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>aaf9970f10bfe2567d0e628bcde626f6b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>interleave_search</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>afa21f026097edab6dd0baeaa0781c22c</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_interleave_search</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a9b5f04092a7b22fefcc89069bff64d41</anchor>
+      <arglist>(bool value)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>has_deterministic_parallel_search</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a82a0be33fb5fe07767d28a164f505712</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>clear_deterministic_parallel_search</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>af6c8828f6fb61da89aabf7cfbd4d77e5</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>deterministic_parallel_search</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>aeab34cf2834d41f4a725426af690d2df</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_deterministic_parallel_search</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a25e6bf68229c471e23bbb9337d01a8f7</anchor>
+      <arglist>(bool value)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>has_mip_max_activity_exponent</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a68115cbd3b1924199858e2c261439276</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>clear_mip_max_activity_exponent</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a86e972bdac7cf4b3129c5b8ca1bf9751</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
+      <name>mip_max_activity_exponent</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>abe147ab35c9e2963f93f8d9747300efd</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_mip_max_activity_exponent</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a71030a0f1c74fd0854e2974619204ff4</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -16776,6 +16804,34 @@
     </member>
     <member kind="function">
       <type>bool</type>
+      <name>has_num_search_workers</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a1084ac9a4eddadaea6a7b3fca0ea6ce0</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>clear_num_search_workers</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a57ed4de8cbb62926aa513f2555a7ff1a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
+      <name>num_search_workers</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>ac85bba5787bf4ff93bab8fcc212eeabb</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_num_search_workers</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>ad8006b08158a9f7a415b6525b1b9601e</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
       <name>has_exploit_all_lp_solution</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a01149d364c5dafc503cf3e065c684818</anchor>
@@ -17252,6 +17308,34 @@
     </member>
     <member kind="function">
       <type>bool</type>
+      <name>has_max_integer_rounding_scaling</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a7afb62ad9e9d6be5a26d00b383affd49</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>clear_max_integer_rounding_scaling</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a2d19d28ab90f0193d49b6d9dadf3b2da</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
+      <name>max_integer_rounding_scaling</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a3aee2d5ca527b9b127fea3bcdc4d7fc7</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_max_integer_rounding_scaling</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a62c7db88ac0975d6ccb2adf297cdc175</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
       <name>has_max_inactive_count</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a7e28ac8ff60b0c553bc068f9c97a5833</anchor>
@@ -17333,62 +17417,6 @@
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>ab35469e7f8aceb9cd0910536f174fdff</anchor>
       <arglist>(::PROTOBUF_NAMESPACE_ID::int64 value)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>has_max_integer_rounding_scaling</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a7afb62ad9e9d6be5a26d00b383affd49</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>clear_max_integer_rounding_scaling</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a2d19d28ab90f0193d49b6d9dadf3b2da</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
-      <name>max_integer_rounding_scaling</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a3aee2d5ca527b9b127fea3bcdc4d7fc7</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>set_max_integer_rounding_scaling</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a62c7db88ac0975d6ccb2adf297cdc175</anchor>
-      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>has_mip_max_activity_exponent</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a68115cbd3b1924199858e2c261439276</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>clear_mip_max_activity_exponent</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a86e972bdac7cf4b3129c5b8ca1bf9751</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
-      <name>mip_max_activity_exponent</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>abe147ab35c9e2963f93f8d9747300efd</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>set_mip_max_activity_exponent</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a71030a0f1c74fd0854e2974619204ff4</anchor>
-      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -18533,30 +18561,16 @@
     </member>
     <member kind="variable" static="yes">
       <type>static const int</type>
-      <name>kNumSearchWorkersFieldNumber</name>
+      <name>kMinOrthogonalityForLpConstraintsFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a43fcfbbe1a76b248772e258ce94c3dc2</anchor>
+      <anchor>a82c16fd139d1d22bc3e3e128a0b6367e</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static const int</type>
-      <name>kFillTightenedDomainsInResponseFieldNumber</name>
+      <name>kUseCombinedNoOverlapFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>abfd68ddad1aeee5fb1a9a7998d673067</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>static const int</type>
-      <name>kStopAfterFirstSolutionFieldNumber</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a8cfe5215106bf66580e10df762d8df14</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>static const int</type>
-      <name>kDeterministicParallelSearchFieldNumber</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ae4e49c261144c7c9bfb9e9fad91371a4</anchor>
+      <anchor>a0fce1691547c5fac1bad1e5247a0ec08</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -18589,16 +18603,37 @@
     </member>
     <member kind="variable" static="yes">
       <type>static const int</type>
-      <name>kUseCombinedNoOverlapFieldNumber</name>
+      <name>kFillTightenedDomainsInResponseFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a0fce1691547c5fac1bad1e5247a0ec08</anchor>
+      <anchor>abfd68ddad1aeee5fb1a9a7998d673067</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static const int</type>
-      <name>kMinOrthogonalityForLpConstraintsFieldNumber</name>
+      <name>kStopAfterFirstSolutionFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a82c16fd139d1d22bc3e3e128a0b6367e</anchor>
+      <anchor>a8cfe5215106bf66580e10df762d8df14</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const int</type>
+      <name>kInterleaveSearchFieldNumber</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>adf6332c9a16f2c02534a1d684f879d58</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const int</type>
+      <name>kDeterministicParallelSearchFieldNumber</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>ae4e49c261144c7c9bfb9e9fad91371a4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const int</type>
+      <name>kMipMaxActivityExponentFieldNumber</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>abcf76f881b9962d96f0baf096eae78be</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -18939,6 +18974,13 @@
     </member>
     <member kind="variable" static="yes">
       <type>static const int</type>
+      <name>kNumSearchWorkersFieldNumber</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a43fcfbbe1a76b248772e258ce94c3dc2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const int</type>
       <name>kExploitAllLpSolutionFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>aa6520cf3a4a925d78e5e58e9024356e5</anchor>
@@ -19058,6 +19100,13 @@
     </member>
     <member kind="variable" static="yes">
       <type>static const int</type>
+      <name>kMaxIntegerRoundingScalingFieldNumber</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a2bf7fbe9acaffe79c4300ec8f3ae2162</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const int</type>
       <name>kMaxInactiveCountFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a32bffbc55e2a874adc8c1280963dff20</anchor>
@@ -19075,20 +19124,6 @@
       <name>kPseudoCostReliabilityThresholdFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a1e22c32f0841fa785744eca0e5177c0d</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>static const int</type>
-      <name>kMaxIntegerRoundingScalingFieldNumber</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a2bf7fbe9acaffe79c4300ec8f3ae2162</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>static const int</type>
-      <name>kMipMaxActivityExponentFieldNumber</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>abcf76f881b9962d96f0baf096eae78be</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">

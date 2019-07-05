@@ -1,5 +1,5 @@
 <map id="com.google.ortools.constraintsolver.IntVarLocalSearchOperator" name="com.google.ortools.constraintsolver.IntVarLocalSearchOperator">
-<area shape="rect" id="node1" title="clang&#45;format on" alt="" coords="847,71,1079,112"/>
+<area shape="rect" id="node1" title=" " alt="" coords="847,71,1079,112"/>
 <area shape="rect" id="node5" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseLns.html" title="This is the base class for building an Lns operator." alt="" coords="1127,5,1359,47"/>
 <area shape="rect" id="node6" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ChangeValue.html" title="Defines operators which change the value of variables; each neighbor corresponds to one modified vari..." alt="" coords="1127,71,1359,112"/>
 <area shape="rect" id="node7" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathOperator.html" title="Base class of the local search operators dedicated to path modifications (a path is a set of nodes li..." alt="" coords="1127,136,1359,177"/>

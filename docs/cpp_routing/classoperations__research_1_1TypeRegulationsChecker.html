@@ -59,8 +59,8 @@ Inheritance diagram for operations_research::TypeRegulationsChecker:</div>
  <div class="center">
   <img src="classoperations__research_1_1TypeRegulationsChecker.png" usemap="#operations_5Fresearch::TypeRegulationsChecker_map" alt=""/>
   <map id="operations_5Fresearch::TypeRegulationsChecker_map" name="operations_5Fresearch::TypeRegulationsChecker_map">
-<area href="classoperations__research_1_1TypeIncompatibilityChecker.html" alt="operations_research::TypeIncompatibilityChecker" shape="rect" coords="0,56,290,80"/>
-<area href="classoperations__research_1_1TypeRequirementChecker.html" alt="operations_research::TypeRequirementChecker" shape="rect" coords="300,56,590,80"/>
+<area href="classoperations__research_1_1TypeIncompatibilityChecker.html" title="Checker for type incompatibilities." alt="operations_research::TypeIncompatibilityChecker" shape="rect" coords="0,56,290,80"/>
+<area href="classoperations__research_1_1TypeRequirementChecker.html" title="Checker for type requirements." alt="operations_research::TypeRequirementChecker" shape="rect" coords="300,56,590,80"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -89,8 +89,10 @@ Protected Types</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
 <tr class="memitem:a04a755f07976c11c248ac6a11f02f5b2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1TypeRegulationsChecker.html#a04a755f07976c11c248ac6a11f02f5b2">GetNonDeliveryCount</a> (int type) const</td></tr>
+<tr class="memdesc:a04a755f07976c11c248ac6a11f02f5b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of pickups and fixed nodes from counts_of_type_["type"].  <a href="#a04a755f07976c11c248ac6a11f02f5b2">More...</a><br /></td></tr>
 <tr class="separator:a04a755f07976c11c248ac6a11f02f5b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aea3c74d7683c88af7fdc5e84299e3dbc"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1TypeRegulationsChecker.html#aea3c74d7683c88af7fdc5e84299e3dbc">GetNonDeliveredCount</a> (int type) const</td></tr>
+<tr class="memdesc:aea3c74d7683c88af7fdc5e84299e3dbc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same as above, but substracting the number of deliveries of "type".  <a href="#aea3c74d7683c88af7fdc5e84299e3dbc">More...</a><br /></td></tr>
 <tr class="separator:aea3c74d7683c88af7fdc5e84299e3dbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a438df887824060c5fb3c21b743f5aa59"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1TypeRegulationsChecker.html#a438df887824060c5fb3c21b743f5aa59">HasRegulationsToCheck</a> () const =0</td></tr>
 <tr class="separator:a438df887824060c5fb3c21b743f5aa59"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -108,7 +110,7 @@ Protected Attributes</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01857">1857</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01867">1867</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><h2 class="groupheader">Member Enumeration Documentation</h2>
 <a id="a2d70db5fae656cb4a04ee1c9e830d4a0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2d70db5fae656cb4a04ee1c9e830d4a0">&#9670;&nbsp;</a></span>PickupDeliveryStatus</h2>
@@ -135,7 +137,7 @@ Protected Attributes</h2></td></tr>
 <tr><td class="fieldname"><a id="a2d70db5fae656cb4a04ee1c9e830d4a0ac6b4a588174e741667c1348bab18ed22"></a>NONE&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01866">1866</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01876">1876</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -189,7 +191,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01860">1860</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01870">1870</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -271,7 +273,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01881">1881</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01892">1892</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -299,6 +301,8 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Same as above, but substracting the number of deliveries of "type". </p>
+
 </div>
 </div>
 <a id="a04a755f07976c11c248ac6a11f02f5b2"></a>
@@ -324,6 +328,8 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Returns the number of pickups and fixed nodes from counts_of_type_["type"]. </p>
 
 </div>
 </div>
@@ -375,7 +381,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01879">1879</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01890">1890</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -400,7 +406,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01883">1883</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01894">1894</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>

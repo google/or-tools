@@ -49,6 +49,9 @@
 </div><!--header-->
 <div class="contents">
 
+<p>Filter-based decision builder dedicated to routing.  
+ <a href="classoperations__research_1_1RoutingFilteredDecisionBuilder.html#details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="routing_8h_source.html">routing.h</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for operations_research::RoutingFilteredDecisionBuilder:</div>
@@ -56,17 +59,17 @@ Inheritance diagram for operations_research::RoutingFilteredDecisionBuilder:</di
  <div class="center">
   <img src="classoperations__research_1_1RoutingFilteredDecisionBuilder.png" usemap="#operations_5Fresearch::RoutingFilteredDecisionBuilder_map" alt=""/>
   <map id="operations_5Fresearch::RoutingFilteredDecisionBuilder_map" name="operations_5Fresearch::RoutingFilteredDecisionBuilder_map">
-<area href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html" alt="operations_research::IntVarFilteredDecisionBuilder" shape="rect" coords="1326,112,1758,136"/>
+<area href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html" title="Decision builders building a solution using local search filters to evaluate its feasibility." alt="operations_research::IntVarFilteredDecisionBuilder" shape="rect" coords="1326,112,1758,136"/>
 <area href="classoperations__research_1_1DecisionBuilder.html" title="A DecisionBuilder is responsible for creating the search tree." alt="operations_research::DecisionBuilder" shape="rect" coords="1326,56,1758,80"/>
 <area href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="operations_research::BaseObject" shape="rect" coords="1326,0,1758,24"/>
-<area href="classoperations__research_1_1CheapestAdditionFilteredDecisionBuilder.html" alt="operations_research::CheapestAdditionFilteredDecisionBuilder" shape="rect" coords="221,224,653,248"/>
+<area href="classoperations__research_1_1CheapestAdditionFilteredDecisionBuilder.html" title="Filtered-base decision builder based on the addition heuristic, extending a path from its start node ..." alt="operations_research::CheapestAdditionFilteredDecisionBuilder" shape="rect" coords="221,224,653,248"/>
 <area href="classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html" alt="operations_research::CheapestInsertionFilteredDecisionBuilder" shape="rect" coords="1105,224,1537,248"/>
-<area href="classoperations__research_1_1ChristofidesFilteredDecisionBuilder.html" alt="operations_research::ChristofidesFilteredDecisionBuilder" shape="rect" coords="1547,224,1979,248"/>
-<area href="classoperations__research_1_1SavingsFilteredDecisionBuilder.html" alt="operations_research::SavingsFilteredDecisionBuilder" shape="rect" coords="1989,224,2421,248"/>
-<area href="classoperations__research_1_1ComparatorCheapestAdditionFilteredDecisionBuilder.html" alt="operations_research::ComparatorCheapestAdditionFilteredDecisionBuilder" shape="rect" coords="0,280,432,304"/>
-<area href="classoperations__research_1_1EvaluatorCheapestAdditionFilteredDecisionBuilder.html" alt="operations_research::EvaluatorCheapestAdditionFilteredDecisionBuilder" shape="rect" coords="442,280,874,304"/>
-<area href="classoperations__research_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html" alt="operations_research::GlobalCheapestInsertionFilteredDecisionBuilder" shape="rect" coords="884,280,1316,304"/>
-<area href="classoperations__research_1_1LocalCheapestInsertionFilteredDecisionBuilder.html" alt="operations_research::LocalCheapestInsertionFilteredDecisionBuilder" shape="rect" coords="1326,280,1758,304"/>
+<area href="classoperations__research_1_1ChristofidesFilteredDecisionBuilder.html" title="Christofides addition heuristic." alt="operations_research::ChristofidesFilteredDecisionBuilder" shape="rect" coords="1547,224,1979,248"/>
+<area href="classoperations__research_1_1SavingsFilteredDecisionBuilder.html" title="Filter-based decision builder which builds a solution by using Clarke &amp; Wright&#39;s Savings heuristic." alt="operations_research::SavingsFilteredDecisionBuilder" shape="rect" coords="1989,224,2421,248"/>
+<area href="classoperations__research_1_1ComparatorCheapestAdditionFilteredDecisionBuilder.html" title="A CheapestAdditionFilteredDecisionBuilder where the notion of &#39;cheapest arc&#39; comes from an arc compar..." alt="operations_research::ComparatorCheapestAdditionFilteredDecisionBuilder" shape="rect" coords="0,280,432,304"/>
+<area href="classoperations__research_1_1EvaluatorCheapestAdditionFilteredDecisionBuilder.html" title="A CheapestAdditionFilteredDecisionBuilder where the notion of &#39;cheapest arc&#39; comes from an arc evalua..." alt="operations_research::EvaluatorCheapestAdditionFilteredDecisionBuilder" shape="rect" coords="442,280,874,304"/>
+<area href="classoperations__research_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html" title="Filter-based decision builder which builds a solution by inserting nodes at their cheapest position o..." alt="operations_research::GlobalCheapestInsertionFilteredDecisionBuilder" shape="rect" coords="884,280,1316,304"/>
+<area href="classoperations__research_1_1LocalCheapestInsertionFilteredDecisionBuilder.html" title="Filter-base decision builder which builds a solution by inserting nodes at their cheapest position." alt="operations_research::LocalCheapestInsertionFilteredDecisionBuilder" shape="rect" coords="1326,280,1758,304"/>
 <area href="classoperations__research_1_1ParallelSavingsFilteredDecisionBuilder.html" alt="operations_research::ParallelSavingsFilteredDecisionBuilder" shape="rect" coords="1768,280,2200,304"/>
 <area href="classoperations__research_1_1SequentialSavingsFilteredDecisionBuilder.html" alt="operations_research::SequentialSavingsFilteredDecisionBuilder" shape="rect" coords="2210,280,2642,304"/>
   </map>
@@ -81,19 +84,25 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a8125b34030c571be558a4260970d1936"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1RoutingModel.html">RoutingModel</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingFilteredDecisionBuilder.html#a8125b34030c571be558a4260970d1936">model</a> () const</td></tr>
 <tr class="separator:a8125b34030c571be558a4260970d1936"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afeea31fbc3740ae9fce56757410a9b62"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingFilteredDecisionBuilder.html#afeea31fbc3740ae9fce56757410a9b62">GetStartChainEnd</a> (int vehicle) const</td></tr>
+<tr class="memdesc:afeea31fbc3740ae9fce56757410a9b62"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the end of the start chain of vehicle,.  <a href="#afeea31fbc3740ae9fce56757410a9b62">More...</a><br /></td></tr>
 <tr class="separator:afeea31fbc3740ae9fce56757410a9b62"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac5e9978230d2e759f1f5b94bf738feca"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingFilteredDecisionBuilder.html#ac5e9978230d2e759f1f5b94bf738feca">GetEndChainStart</a> (int vehicle) const</td></tr>
+<tr class="memdesc:ac5e9978230d2e759f1f5b94bf738feca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the start of the end chain of vehicle,.  <a href="#ac5e9978230d2e759f1f5b94bf738feca">More...</a><br /></td></tr>
 <tr class="separator:ac5e9978230d2e759f1f5b94bf738feca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ace97a6953feba3ac51077dc0c1b4ecc5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingFilteredDecisionBuilder.html#ace97a6953feba3ac51077dc0c1b4ecc5">MakeDisjunctionNodesUnperformed</a> (int64 node)</td></tr>
+<tr class="memdesc:ace97a6953feba3ac51077dc0c1b4ecc5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Make nodes in the same disjunction as 'node' unperformed.  <a href="#ace97a6953feba3ac51077dc0c1b4ecc5">More...</a><br /></td></tr>
 <tr class="separator:ace97a6953feba3ac51077dc0c1b4ecc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a90d5e25d398a8c37bc2168e475aec99e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingFilteredDecisionBuilder.html#a90d5e25d398a8c37bc2168e475aec99e">MakeUnassignedNodesUnperformed</a> ()</td></tr>
+<tr class="memdesc:a90d5e25d398a8c37bc2168e475aec99e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Make all unassigned nodes unperformed.  <a href="#a90d5e25d398a8c37bc2168e475aec99e">More...</a><br /></td></tr>
 <tr class="separator:a90d5e25d398a8c37bc2168e475aec99e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3728215165475d83bf1fc427bc171c3e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1Decision.html">Decision</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html#a3728215165475d83bf1fc427bc171c3e">Next</a> (<a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *solver) override</td></tr>
 <tr class="memdesc:a3728215165475d83bf1fc427bc171c3e"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is the main method of the decision builder class.  <a href="#a3728215165475d83bf1fc427bc171c3e">More...</a><br /></td></tr>
 <tr class="separator:a3728215165475d83bf1fc427bc171c3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af80ac7c7333a0515de2155c463c4344e"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html#af80ac7c7333a0515de2155c463c4344e">BuildSolution</a> ()=0</td></tr>
+<tr class="memdesc:af80ac7c7333a0515de2155c463c4344e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Virtual method to redefine to build a solution.  <a href="#af80ac7c7333a0515de2155c463c4344e">More...</a><br /></td></tr>
 <tr class="separator:af80ac7c7333a0515de2155c463c4344e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5589c8d87c0b93a1d3e6ffac03830190"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html#a5589c8d87c0b93a1d3e6ffac03830190">number_of_decisions</a> () const</td></tr>
+<tr class="memdesc:a5589c8d87c0b93a1d3e6ffac03830190"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns statistics on search, number of decisions sent to filters, number of decisions rejected by filters.  <a href="#a5589c8d87c0b93a1d3e6ffac03830190">More...</a><br /></td></tr>
 <tr class="separator:a5589c8d87c0b93a1d3e6ffac03830190"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3ae7dae1c50d1ed98f3a81b874c6e943"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html#a3ae7dae1c50d1ed98f3a81b874c6e943">number_of_rejects</a> () const</td></tr>
 <tr class="separator:a3ae7dae1c50d1ed98f3a81b874c6e943"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -108,23 +117,31 @@ Public Member Functions</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
 <tr class="memitem:a5231593d95ea61f3f6d900f44e0fb87b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingFilteredDecisionBuilder.html#a5231593d95ea61f3f6d900f44e0fb87b">StopSearch</a> () override</td></tr>
+<tr class="memdesc:a5231593d95ea61f3f6d900f44e0fb87b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the search must be stopped.  <a href="#a5231593d95ea61f3f6d900f44e0fb87b">More...</a><br /></td></tr>
 <tr class="separator:a5231593d95ea61f3f6d900f44e0fb87b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaa2ee1b71985f528f9b59fa693936e0a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html#aaa2ee1b71985f528f9b59fa693936e0a">Commit</a> ()</td></tr>
+<tr class="memdesc:aaa2ee1b71985f528f9b59fa693936e0a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Commits the modifications to the current solution if these modifications are "filter-feasible", returns false otherwise; in any case discards all modifications.  <a href="#aaa2ee1b71985f528f9b59fa693936e0a">More...</a><br /></td></tr>
 <tr class="separator:aaa2ee1b71985f528f9b59fa693936e0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b295e340454a27f643052138f26fb95"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html#a0b295e340454a27f643052138f26fb95">SetValue</a> (int64 index, int64 value)</td></tr>
+<tr class="memdesc:a0b295e340454a27f643052138f26fb95"><td class="mdescLeft">&#160;</td><td class="mdescRight">Modifies the current solution by setting the variable of index 'index' to value 'value'.  <a href="#a0b295e340454a27f643052138f26fb95">More...</a><br /></td></tr>
 <tr class="separator:a0b295e340454a27f643052138f26fb95"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a444807ed7728065f488c364fcd3daa47"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html#a444807ed7728065f488c364fcd3daa47">Value</a> (int64 index) const</td></tr>
+<tr class="memdesc:a444807ed7728065f488c364fcd3daa47"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the value of the variable of index 'index' in the last committed solution.  <a href="#a444807ed7728065f488c364fcd3daa47">More...</a><br /></td></tr>
 <tr class="separator:a444807ed7728065f488c364fcd3daa47"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab99b24dbd1dd5c0393adcbfd195768ea"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html#ab99b24dbd1dd5c0393adcbfd195768ea">Contains</a> (int64 index) const</td></tr>
+<tr class="memdesc:ab99b24dbd1dd5c0393adcbfd195768ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the variable of index 'index' is in the current solution.  <a href="#ab99b24dbd1dd5c0393adcbfd195768ea">More...</a><br /></td></tr>
 <tr class="separator:ab99b24dbd1dd5c0393adcbfd195768ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6631652219280f558f2a6ae4fd0f0366"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html#a6631652219280f558f2a6ae4fd0f0366">Size</a> () const</td></tr>
+<tr class="memdesc:a6631652219280f558f2a6ae4fd0f0366"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of variables the decision builder is trying to instantiate.  <a href="#a6631652219280f558f2a6ae4fd0f0366">More...</a><br /></td></tr>
 <tr class="separator:a6631652219280f558f2a6ae4fd0f0366"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8ec6b0457672ded0a1046d29aa1c66bf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html#a8ec6b0457672ded0a1046d29aa1c66bf">Var</a> (int64 index) const</td></tr>
+<tr class="memdesc:a8ec6b0457672ded0a1046d29aa1c66bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the variable of index 'index'.  <a href="#a8ec6b0457672ded0a1046d29aa1c66bf">More...</a><br /></td></tr>
 <tr class="separator:a8ec6b0457672ded0a1046d29aa1c66bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02540">2540</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<div class="textblock"><p>Filter-based decision builder dedicated to routing. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02558">2558</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ae6327458dc6df1a7bf82901c6dee263d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae6327458dc6df1a7bf82901c6dee263d">&#9670;&nbsp;</a></span>RoutingFilteredDecisionBuilder()</h2>
@@ -177,7 +194,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02544">2544</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02562">2562</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -270,6 +287,8 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Virtual method to redefine to build a solution. </p>
+
 <p>Implemented in <a class="el" href="classoperations__research_1_1ChristofidesFilteredDecisionBuilder.html#ad14669b4e8708bf12a3908df9a298b34">operations_research::ChristofidesFilteredDecisionBuilder</a>, <a class="el" href="classoperations__research_1_1SavingsFilteredDecisionBuilder.html#a9c4a14a25e1129acbd541c76c7822c05">operations_research::SavingsFilteredDecisionBuilder</a>, <a class="el" href="classoperations__research_1_1CheapestAdditionFilteredDecisionBuilder.html#a9c66b9184f757e7acd1bda8873b766d2">operations_research::CheapestAdditionFilteredDecisionBuilder</a>, <a class="el" href="classoperations__research_1_1LocalCheapestInsertionFilteredDecisionBuilder.html#a1637389906444da0951928021b6c9a51">operations_research::LocalCheapestInsertionFilteredDecisionBuilder</a>, and <a class="el" href="classoperations__research_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html#a3a5bd7cb817b77fcba764ec7ddd71cfb">operations_research::GlobalCheapestInsertionFilteredDecisionBuilder</a>.</p>
 
 </div>
@@ -297,6 +316,8 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Commits the modifications to the current solution if these modifications are "filter-feasible", returns false otherwise; in any case discards all modifications. </p>
+
 </div>
 </div>
 <a id="ab99b24dbd1dd5c0393adcbfd195768ea"></a>
@@ -323,7 +344,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02511">2511</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>Returns true if the variable of index 'index' is in the current solution. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02529">2529</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -380,7 +403,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02549">2549</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>Returns the start of the end chain of vehicle,. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02567">2567</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -408,7 +433,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02547">2547</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>Returns the end of the start chain of vehicle,. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02565">2565</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -428,6 +455,9 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>Make nodes in the same disjunction as 'node' unperformed. </p>
+<p>'node' is a variable index corresponding to a node. </p>
+
 </div>
 </div>
 <a id="a90d5e25d398a8c37bc2168e475aec99e"></a>
@@ -444,6 +474,8 @@ Protected Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Make all unassigned nodes unperformed. </p>
 
 </div>
 </div>
@@ -470,7 +502,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02545">2545</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02563">2563</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -528,7 +560,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02482">2482</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>Returns statistics on search, number of decisions sent to filters, number of decisions rejected by filters. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02500">2500</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -555,7 +589,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02483">2483</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02501">2501</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -593,7 +627,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02496">2496</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>Modifies the current solution by setting the variable of index 'index' to value 'value'. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02514">2514</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -620,7 +656,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02516">2516</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>Returns the number of variables the decision builder is trying to instantiate. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02534">2534</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -647,9 +685,11 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Returns true if the search must be stopped. </p>
+
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html#a6ae15b5268df7520ab2a6d756b72e9fb">operations_research::IntVarFilteredDecisionBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02557">2557</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02575">2575</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -677,7 +717,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02507">2507</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>Returns the value of the variable of index 'index' in the last committed solution. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02525">2525</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -705,7 +747,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02518">2518</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p>Returns the variable of index 'index'. </p>
+
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02536">2536</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>

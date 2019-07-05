@@ -3,7 +3,7 @@
 <area shape="rect" id="node3" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperatorTemplate.html" title="Base operator class for operators manipulating variables." alt="" coords="587,71,820,112"/>
 <area shape="rect" id="node9" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperatorTemplate.html" title="Base operator class for operators manipulating variables." alt="" coords="565,136,841,177"/>
 <area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,104,237,145"/>
-<area shape="rect" id="node4" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperator.html" title="clang&#45;format on" alt="" coords="889,71,1121,112"/>
+<area shape="rect" id="node4" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchOperator.html" title=" " alt="" coords="889,71,1121,112"/>
 <area shape="rect" id="node5" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseLns.html" title="This is the base class for building an Lns operator." alt="" coords="1169,5,1401,47"/>
 <area shape="rect" id="node6" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ChangeValue.html" title="Defines operators which change the value of variables; each neighbor corresponds to one modified vari..." alt="" coords="1169,71,1401,112"/>
 <area shape="rect" id="node7" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathOperator.html" title="Base class of the local search operators dedicated to path modifications (a path is a set of nodes li..." alt="" coords="1169,136,1401,177"/>
