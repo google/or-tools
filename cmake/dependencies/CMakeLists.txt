@@ -28,6 +28,13 @@ if(WIN32 AND (BUILD_PYTHON OR BUILD_JAVA OR BUILD_DOTNET))
     CACHE INTERNAL "swig.exe location" FORCE)
 endif()
 
+if(MSVC)
+	set(CMAKE_CXX_FLAGS_RELEASE /MT /MP)
+	set(MSVC_specific_args "-DCMAKE_CXX_FLAGS_RELEASE=${CMAKE_CXX_FLAGS_RELEASE}")
+else()
+	string(REPLACE " " ";" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+endif()
+
 ############
 ##  ZLIB  ##
 ############
@@ -55,6 +62,8 @@ if(BUILD_absl)
       "https://github.com/abseil/abseil-cpp.git"
     TAG
       "master"
+	CMAKE_ARGS
+	  ${MSVC_specific_args}
  )
 endif()
 
@@ -73,6 +82,7 @@ if(BUILD_gflags)
       -DINSTALL_SHARED_LIBS:BOOL=OFF
       -DBUILD_STATIC_LIBS:BOOL=ON
       -DINSTALL_STATIC_LIBS:BOOL=ON
+	  ${MSVC_specific_args}
   )
 endif()
 
@@ -89,6 +99,7 @@ if(BUILD_glog)
       "v0.4.0"
     CMAKE_ARGS
       -DWITH_GFLAGS:BOOL=OFF
+	  ${MSVC_specific_args}
   )
 endif()
 
@@ -104,6 +115,7 @@ if(BUILD_Protobuf)
     TAG
       "v3.7.1"
     CMAKE_ARGS
+	  ${MSVC_specific_args}
       "SOURCE_SUBDIR cmake"
   )
 endif()
@@ -119,6 +131,8 @@ if(BUILD_CoinUtils)
       "https://github.com/Mizux/CoinUtils.git"
     TAG
       "stable/2.11"
+	CMAKE_ARGS
+	  ${MSVC_specific_args}
   )
 endif()
 
@@ -133,6 +147,8 @@ if(BUILD_Osi)
       "https://github.com/Mizux/Osi.git"
     TAG
       "stable/0.108"
+	CMAKE_ARGS
+	  ${MSVC_specific_args}
   )
 endif()
 
@@ -147,6 +163,8 @@ if(BUILD_Clp)
       "https://github.com/Mizux/Clp.git"
     TAG
       "stable/1.17"
+	CMAKE_ARGS
+	  ${MSVC_specific_args}
   )
 endif()
 
@@ -161,6 +179,8 @@ if(BUILD_Cgl)
       "https://github.com/Mizux/Cgl.git"
     TAG
       "stable/0.60"
+	CMAKE_ARGS
+	  ${MSVC_specific_args}
   )
 endif()
 
@@ -175,5 +195,7 @@ if(BUILD_Cbc)
       "https://github.com/Mizux/Cbc.git"
     TAG
       "stable/2.10"
+	CMAKE_ARGS
+	  ${MSVC_specific_args}
   )
 endif()

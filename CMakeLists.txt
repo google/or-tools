@@ -32,10 +32,12 @@ option(BUILD_CXX "Build C++ library" ON)
 option(BUILD_PYTHON "Build Python Library" OFF)
 option(BUILD_JAVA "Build Java Library" OFF)
 option(BUILD_DOTNET "Build .NET Library" OFF)
+option(USE_XPRESS "Build and use XPRESS" OFF)
 message(STATUS "Build C++ library: ${BUILD_CXX}")
 message(STATUS "Build Python: ${BUILD_PYTHON}")
 message(STATUS "Build Java: ${BUILD_JAVA}")
 message(STATUS "Build .Net: ${BUILD_DOTNET}")
+message(STATUS "USE_XPRESS: ${USE_XPRESS}")
 
 #option(BUILD_DOC "Build doxygen" OFF)
 #message(STATUS "Build doxygen: ${BUILD_DOC}")
@@ -83,6 +85,21 @@ message(STATUS "Build Cbc: ${BUILD_Cbc}")
 add_subdirectory(cmake/dependencies dependencies)
 list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/dependencies/install)
 
+if (USE_XPRESS)
+	message(STATUS "XPRESS: configuring makefiles")
+	if (NOT XPRESSDIR)
+		set(XPRESSDIR $ENV{XPRESSDIR})
+	endif(NOT XPRESSDIR)
+	
+	message(STATUS "XPRESSDIR: ${XPRESSDIR}")
+	
+	if (NOT XPRESSDIR)
+		message(FATAL_ERROR "XPRESSDIR: not found")
+	endif()
+	
+	add_compile_definitions(USE_XPRESS)
+endif(USE_XPRESS)
+
 include(CTest)
 
 include(cpp)
@@ -90,3 +107,12 @@ include(cpp)
 include(python)
 include(java)
 include(dotnet)
+
+if (USE_XPRESS)
+	if(UNIX)
+		target_link_libraries(ortools PUBLIC ${XPRESSDIR}/lib/libxprs.so)
+	elseif(MSVC)
+		target_link_libraries(ortools PUBLIC ${XPRESSDIR}/lib/xprs.lib)
+	endif()
+endif(USE_XPRESS)
+

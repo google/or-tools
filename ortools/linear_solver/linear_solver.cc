@@ -343,6 +343,9 @@ extern MPSolverInterface* BuildCplexInterface(bool mip, MPSolver* const solver);
 
 extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
 #endif
+#if defined(USE_XPRESS)
+extern MPSolverInterface* BuildXpressInterface(bool mip, MPSolver* const solver);
+#endif
 
 namespace {
 MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
@@ -385,6 +388,12 @@ MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
       return BuildCplexInterface(false, solver);
     case MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING:
       return BuildCplexInterface(true, solver);
+#endif
+#if defined(USE_XPRESS)
+	case MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING:
+		return BuildXpressInterface(true, solver);
+	case MPSolver::XPRESS_LINEAR_PROGRAMMING:
+		return BuildXpressInterface(false, solver);
 #endif
     default:
       // TODO(user): Revert to the best *available* interface.
@@ -449,6 +458,14 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
 #endif
 #ifdef USE_CBC
   if (problem_type == CBC_MIXED_INTEGER_PROGRAMMING) return true;
+#endif
+#ifdef USE_XPRESS
+  if (problem_type == XPRESS_MIXED_INTEGER_PROGRAMMING) return true;
+  if (problem_type == XPRESS_LINEAR_PROGRAMMING) return true;
+#endif
+#ifdef USE_CPLEX
+  if (problem_type == CPLEX_LINEAR_PROGRAMMING) return true;
+  if (problem_type == CPLEX_MIXED_INTEGER_PROGRAMMING) return true;
 #endif
   return false;
 }

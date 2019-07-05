@@ -1,0 +1,82 @@
+From 96837a54d41985eccda5220bdc88a42a41abc231 Mon Sep 17 00:00:00 2001
+From: Eric D <eric.dumont@eurodecision.com>
+Date: Fri, 26 Apr 2019 11:23:22 +0200
+Subject: [PATCH] Fix build for visual studio (too much template)
+
+---
+ ortools/glop/initial_basis.cc | 16 ++++++++--------
+ ortools/glop/initial_basis.h  |  8 ++++----
+ 2 files changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/ortools/glop/initial_basis.cc b/ortools/glop/initial_basis.cc
+index ce7e7c396..6acb287a8 100644
+--- a/ortools/glop/initial_basis.cc
++++ b/ortools/glop/initial_basis.cc
+@@ -98,27 +98,27 @@ void InitialBasis::CompleteBixbyBasis(ColIndex num_cols,
+ 
+ void InitialBasis::GetPrimalMarosBasis(ColIndex num_cols,
+                                        RowToColMapping* basis) {
+-  return GetMarosBasis<false>(num_cols, basis);
++  return GetMarosBasis(num_cols, basis, false);
+ }
+ 
+ void InitialBasis::GetDualMarosBasis(ColIndex num_cols,
+                                      RowToColMapping* basis) {
+-  return GetMarosBasis<true>(num_cols, basis);
++  return GetMarosBasis(num_cols, basis, true);
+ }
+ 
+ void InitialBasis::CompleteTriangularPrimalBasis(ColIndex num_cols,
+                                                  RowToColMapping* basis) {
+-  return CompleteTriangularBasis<false>(num_cols, basis);
++  return CompleteTriangularBasis(num_cols, basis, false);
+ }
+ 
+ void InitialBasis::CompleteTriangularDualBasis(ColIndex num_cols,
+                                                RowToColMapping* basis) {
+-  return CompleteTriangularBasis<true>(num_cols, basis);
++  return CompleteTriangularBasis(num_cols, basis, true);
+ }
+ 
+-template <bool only_allow_zero_cost_column>
++//template <bool only_allow_zero_cost_column>
+ void InitialBasis::CompleteTriangularBasis(ColIndex num_cols,
+-                                           RowToColMapping* basis) {
++                                           RowToColMapping* basis, bool only_allow_zero_cost_column) {
+   // Initialize can_be_replaced.
+   const RowIndex num_rows = matrix_.num_rows();
+   DenseBooleanColumn can_be_replaced(num_rows, false);
+@@ -224,8 +224,8 @@ int InitialBasis::GetMarosPriority(RowIndex row) const {
+   return GetMarosPriority(slack_index);
+ }
+ 
+-template <bool only_allow_zero_cost_column>
+-void InitialBasis::GetMarosBasis(ColIndex num_cols, RowToColMapping* basis) {
++//template <bool only_allow_zero_cost_column>
++void InitialBasis::GetMarosBasis(ColIndex num_cols, RowToColMapping* basis, bool only_allow_zero_cost_column) {
+   VLOG(1) << "Starting Maros crash procedure.";
+ 
+   // Initialize basis to the all-slack basis.
+diff --git a/ortools/glop/initial_basis.h b/ortools/glop/initial_basis.h
+index 710bfc207..9eeef6605 100644
+--- a/ortools/glop/initial_basis.h
++++ b/ortools/glop/initial_basis.h
+@@ -78,11 +78,11 @@ class InitialBasis {
+ 
+  private:
+   // Internal implementation of the Primal/Dual CompleteTriangularBasis().
+-  template <bool only_allow_zero_cost_column>
+-  void CompleteTriangularBasis(ColIndex num_cols, RowToColMapping* basis);
++  //template <bool only_allow_zero_cost_column>
++  void CompleteTriangularBasis(ColIndex num_cols, RowToColMapping* basis, bool only_allow_zero_cost_column);
+ 
+-  template <bool only_allow_zero_cost_column>
+-  void GetMarosBasis(ColIndex num_cols, RowToColMapping* basis);
++  //template <bool only_allow_zero_cost_column>
++  void GetMarosBasis(ColIndex num_cols, RowToColMapping* basis, bool only_allow_zero_cost_column);
+ 
+   // Returns an integer representing the order (the lower the better)
+   // between column categories (known as C2, C3 or C4 in the paper).
+-- 
+2.19.0.windows.1
+

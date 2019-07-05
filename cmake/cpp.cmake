@@ -31,16 +31,17 @@ endif()
 
 # config options
 if(MSVC)
+  set(BUILD_SHARED_LIBS OFF)
   # Allow big object
   add_definitions(/bigobj)
   add_definitions(/DNOMINMAX /DWIN32_LEAN_AND_MEAN=1 /D_CRT_SECURE_NO_WARNINGS /D_CRT_SECURE_NO_DEPRECATE)
   # Build with multiple processes
   add_definitions(/MP)
-  # Prefer /MD over /MT and add NDEBUG in Release
+  # Prefer /MT over /MD and add NDEBUG in Release
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_definitions(/MDd)
+    add_definitions(/MTd)
   else()
-    add_definitions(/MD /DNDEBUG)
+    add_definitions(/MT /DNDEBUG)
   endif()
   # MSVC warning suppressions
   add_definitions(
