@@ -95,7 +95,7 @@ ifdef UNIX_GLPK_DIR
 endif
 # This is needed to find scip include files.
 ifdef UNIX_SCIP_DIR
-  SCIP_INC = -I$(UNIX_SCIP_DIR)/include -DUSE_SCIP
+  SCIP_INC = -I$(UNIX_SCIP_DIR)/include -DUSE_SCIP -DNO_CONFIG_HEADER
   SCIP_SWIG = $(SCIP_INC)
 endif
 ifdef UNIX_GUROBI_DIR
@@ -196,8 +196,8 @@ ifeq ($(PLATFORM),MACOSX)
   endif
   ifdef UNIX_SCIP_DIR
     SCIP_LNK = -force_load \
- $(UNIX_SCIP_DIR)/lib/libscip.a \
- $(UNIX_SCIP_DIR)/lib/libsoplex-pic.a
+ $(UNIX_SCIP_DIR)/lib/libscipopt.a \
+ $(UNIX_SCIP_DIR)/lib/libsoplex.a
   endif
   ifdef UNIX_GUROBI_DIR
     GUROBI_LNK = \
@@ -246,7 +246,7 @@ DEPENDENCIES_INC = -I$(INC_DIR) -I$(GEN_DIR) \
  -Wno-deprecated -DUSE_GLOP -DUSE_BOP \
  $(GLPK_INC) $(SCIP_INC) $(GUROBI_INC) $(CPLEX_INC)
 
-CFLAGS = $(DEBUG) $(DEPENDENCIES_INC)
+CFLAGS = $(DEBUG) $(DEPENDENCIES_INC) -DOR_TOOLS_MAJOR=$(OR_TOOLS_MAJOR) -DOR_TOOLS_MINOR=$(OR_TOOLS_MINOR)
 JNIFLAGS = $(JNIDEBUG) $(DEPENDENCIES_INC)
 LDFLAGS += $(ZLIB_LNK) $(SYS_LNK) $(LINK_FLAGS)
 DEPENDENCIES_LNK = $(GLPK_LNK) $(SCIP_LNK) $(GUROBI_LNK) $(CPLEX_LNK)

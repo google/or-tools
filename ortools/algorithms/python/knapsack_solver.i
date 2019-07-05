@@ -14,7 +14,7 @@
 // Python wrapping of ../knapsack_solver.h. See that file.
 //
 // USAGE EXAMPLES:
-// - examples/python/knapsack.py
+// - ortools/algorithms/samples/knapsack.py
 // - ./pywrapknapsack_solver_test.py
 
 %include "stdint.i"

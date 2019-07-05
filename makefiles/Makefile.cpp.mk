@@ -345,6 +345,7 @@ rcc_%: $(BIN_DIR)/%$E FORCE
 
 .PHONY: test_cc_algorithms_samples # Build and Run all C++ Algorithms Samples (located in ortools/algorithms/samples)
 test_cc_algorithms_samples: \
+ rcc_knapsack \
  rcc_simple_knapsack_program
 
 .PHONY: test_cc_graph_samples # Build and Run all C++ Graph Samples (located in ortools/graph/samples)
@@ -622,17 +623,17 @@ install_libortools: $(OR_TOOLS_LIBS) install_ortools_dirs
 install_third_party: install_dirs
 ifeq ($(UNIX_GFLAGS_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 	$(COPYREC) dependencies$Sinstall$Sinclude$Sgflags "$(DESTDIR)$(prefix)$Sinclude"
-	$(COPYREC) dependencies$Sinstall$Slib$Slibgflags* "$(DESTDIR)$(prefix)$Slib"
+	$(COPYREC) dependencies$Sinstall$Slib*$Slibgflags* "$(DESTDIR)$(prefix)$Slib"
 	$(COPYREC) dependencies$Sinstall$Sbin$Sgflags_completions.sh "$(DESTDIR)$(prefix)$Sbin"
 endif
 ifeq ($(UNIX_GLOG_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 	$(COPYREC) dependencies$Sinstall$Sinclude$Sglog "$(DESTDIR)$(prefix)$Sinclude"
-	$(COPYREC) dependencies$Sinstall$Slib$Slibglog* "$(DESTDIR)$(prefix)$Slib"
+	$(COPYREC) dependencies$Sinstall$Slib*$Slibglog* "$(DESTDIR)$(prefix)$Slib"
 endif
 ifeq ($(UNIX_PROTOBUF_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 	$(COPYREC) dependencies$Sinstall$Sinclude$Sgoogle "$(DESTDIR)$(prefix)$Sinclude"
 	$(COPYREC) $(subst /,$S,$(_PROTOBUF_LIB_DIR))$Slibproto* "$(DESTDIR)$(prefix)$Slib"
-	$(COPYREC) dependencies$Sinstall$Sbin$Sprotoc "$(DESTDIR)$(prefix)$Sbin"
+	$(COPY) dependencies$Sinstall$Sbin$Sprotoc* "$(DESTDIR)$(prefix)$Sbin"
 endif
 ifeq ($(UNIX_ABSL_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 	$(COPYREC) dependencies$Sinstall$Sinclude$Sabsl "$(DESTDIR)$(prefix)$Sinclude"
@@ -641,11 +642,11 @@ ifeq ($(UNIX_ABSL_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 endif
 ifeq ($(UNIX_CBC_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 	$(COPYREC) dependencies$Sinstall$Sinclude$Scoin "$(DESTDIR)$(prefix)$Sinclude"
-	$(COPYREC) dependencies$Sinstall$Slib$SlibCbc* "$(DESTDIR)$(prefix)$Slib"
-	$(COPYREC) dependencies$Sinstall$Slib$SlibCgl* "$(DESTDIR)$(prefix)$Slib"
-	$(COPYREC) dependencies$Sinstall$Slib$SlibClp* "$(DESTDIR)$(prefix)$Slib"
-	$(COPYREC) dependencies$Sinstall$Slib$SlibOsi* "$(DESTDIR)$(prefix)$Slib"
-	$(COPYREC) dependencies$Sinstall$Slib$SlibCoinUtils* "$(DESTDIR)$(prefix)$Slib"
+	$(COPYREC) dependencies$Sinstall$Slib*$SlibCbc* "$(DESTDIR)$(prefix)$Slib"
+	$(COPYREC) dependencies$Sinstall$Slib*$SlibCgl* "$(DESTDIR)$(prefix)$Slib"
+	$(COPYREC) dependencies$Sinstall$Slib*$SlibClp* "$(DESTDIR)$(prefix)$Slib"
+	$(COPYREC) dependencies$Sinstall$Slib*$SlibOsi* "$(DESTDIR)$(prefix)$Slib"
+	$(COPYREC) dependencies$Sinstall$Slib*$SlibCoinUtils* "$(DESTDIR)$(prefix)$Slib"
 	$(COPYREC) dependencies$Sinstall$Sbin$Scbc "$(DESTDIR)$(prefix)$Sbin"
 	$(COPYREC) dependencies$Sinstall$Sbin$Sclp "$(DESTDIR)$(prefix)$Sbin"
 endif

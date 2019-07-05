@@ -84,6 +84,7 @@ class GurobiInterface : public MPSolverInterface {
   // Clears the objective from all its terms.
   void ClearObjective() override;
   bool CheckBestObjectiveBoundExists() const override;
+  void BranchingPriorityChangedForVariable(int var_index) override;
 
   // ------ Query statistics on the solution and the solve ------
   // Number of simplex or interior-point iterations
@@ -175,7 +176,7 @@ class GurobiInterface : public MPSolverInterface {
   GRBenv* env_;
   bool mip_;
   int current_solution_index_;
-  MPCallback* callback_ = nullptr;
+  bool update_branching_priorities_ = false;
 };
 
 namespace {
@@ -320,6 +321,10 @@ void GurobiInterface::SetObjectiveOffset(double value) {
 }
 
 void GurobiInterface::ClearObjective() { sync_status_ = MUST_RELOAD; }
+
+void GurobiInterface::BranchingPriorityChangedForVariable(int var_index) {
+  update_branching_priorities_ = true;
+}
 
 // ------ Query statistics on the solution and the solve ------
 
@@ -704,6 +709,16 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
        solver_->solution_hint_) {
     CheckedGurobiCall(
         GRBsetdblattrelement(model_, "Start", p.first->index(), p.second));
+  }
+
+  // Pass branching priority annotations if at least one has been updated.
+  if (update_branching_priorities_) {
+    for (const MPVariable* var : solver_->variables_) {
+      CheckedGurobiCall(
+          GRBsetintattrelement(model_, GRB_INT_ATTR_BRANCHPRIORITY,
+                               var->index(), var->branching_priority()));
+    }
+    update_branching_priorities_ = false;
   }
 
   // Time limit.

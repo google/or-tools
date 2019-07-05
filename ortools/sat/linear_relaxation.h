@@ -75,6 +75,24 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
                               int linearization_level,
                               LinearRelaxation* relaxation);
 
+// Adds linearization of no overlap constraints. For each pair of intervals, we
+// add linear constraints enforcing precedence of one over other. We check the
+// bounds and only linearize the pairs which are intersecting. We ignore the
+// intervals with enforcement literal. Note that we might create new variables
+// for each pair of intervals and this might cause addition of quadratic number
+// of new variables.
+void AppendNoOverlapRelaxation(const CpModelProto& model_proto,
+                               const ConstraintProto& ct,
+                               int linearization_level, Model* model,
+                               LinearRelaxation* relaxation);
+
+// Adds linearization of int max constraints. This can also be used to linearize
+// int min with negated variables.
+void AppendMaxRelaxation(IntegerVariable target,
+                         const std::vector<IntegerVariable>& vars,
+                         int linearization_level, Model* model,
+                         LinearRelaxation* relaxation);
+
 // Appends linear constraints to the relaxation. This also handles the
 // relaxation of linear constraints with enforcement literals.
 // A linear constraint lb <= ax <= ub with enforcement literals {ei} is relaxed

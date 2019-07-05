@@ -143,11 +143,13 @@ class EtaFactorization {
 //
 // To speed-up and improve stability the factorization is refactorized at least
 // every 'refactorization_period' updates.
+//
+// This class does not take ownership of the underlying matrix and basis, and
+// thus they must outlive this class (and keep the same address in memory).
 class BasisFactorization {
  public:
-  BasisFactorization(const MatrixView& matrix,
-                     const CompactSparseMatrix& compact_matrix,
-                     const RowToColMapping& basis);
+  BasisFactorization(const CompactSparseMatrix* compact_matrix,
+                     const RowToColMapping* basis);
   virtual ~BasisFactorization();
 
   // Sets the parameters for this component.
@@ -233,7 +235,7 @@ class BasisFactorization {
   // Returns the norm of B^{-1}.a, this is a specific function because
   // it is a bit faster and it avoids polluting the stats of RightSolve().
   // It can be called only when IsRefactorized() is true.
-  Fractional RightSolveSquaredNorm(const SparseColumn& a) const;
+  Fractional RightSolveSquaredNorm(const ColumnView& a) const;
 
   // Returns the norm of (B^T)^{-1}.e_row where e is an unit vector.
   // This is a bit faster and avoids polluting the stats of LeftSolve().
@@ -306,7 +308,6 @@ class BasisFactorization {
   GlopParameters parameters_;
 
   // References to the basis subpart of the linear program matrix.
-  const MatrixView& matrix_;
   const CompactSparseMatrix& compact_matrix_;
   const RowToColMapping& basis_;
 

@@ -2,6 +2,11 @@
 set -x
 set -e
 
+if [ ! -f "$DOTNET_SNK" ]; then
+  echo "DOTNET_SNK: not found !" | tee build.log
+  exit 1
+fi
+
 # Clean everything
 make clean
 make clean_third_party

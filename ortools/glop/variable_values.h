@@ -38,7 +38,8 @@ namespace glop {
 //   their bounds to have a lower primal residual error.
 class VariableValues {
  public:
-  VariableValues(const CompactSparseMatrix& matrix,
+  VariableValues(const GlopParameters& parameters,
+                 const CompactSparseMatrix& matrix,
                  const RowToColMapping& basis,
                  const VariablesInfo& variables_info,
                  const BasisFactorization& basis_factorization);
@@ -67,7 +68,7 @@ class VariableValues {
 
   // Computes the maximum bound error for all the variables, defined as the
   // distance of the current value of the variable to its interval
-  // [lower bound, upper bound]. The residual is thus equal to 0.0 if the
+  // [lower bound, upper bound]. The infeasibility is thus equal to 0.0 if the
   // current value falls within the bounds, to the distance to lower_bound
   // (resp. upper_bound), if the current value is below (resp. above)
   // lower_bound (resp. upper_bound).
@@ -89,16 +90,25 @@ class VariableValues {
                                     bool update_basic_variables);
 
   // Functions dealing with the primal-infeasible basic variables. A basic
-  // variable is primal-infeasible if its value is outside its bounds
-  // (modulo the absolute tolerance set by SetBoundTolerance()). This
-  // information is only available after a call to
+  // variable is primal-infeasible if its infeasibility is stricly greater than
+  // the primal feasibility tolerance.
+  //
+  // This information is only available after a call to
   // ResetPrimalInfeasibilityInformation() and has to be kept in sync by calling
   // UpdatePrimalInfeasibilityInformation() for the rows that changed values.
-  void SetBoundTolerance(Fractional tolerance) { tolerance_ = tolerance; }
   const DenseBitColumn& GetPrimalInfeasiblePositions() const;
   const DenseColumn& GetPrimalSquaredInfeasibilities() const;
   void ResetPrimalInfeasibilityInformation();
   void UpdatePrimalInfeasibilityInformation(const std::vector<RowIndex>& rows);
+
+  // The primal phase I objective is related to the primal infeasible
+  // information above. The cost of a basic column will be 1 if the variable is
+  // above its upper bound by strictly more than the primal tolerance, and -1 if
+  // it is lower than its lower bound by strictly less than the same tolerance.
+  //
+  // Returns true iff some cost changed.
+  template <typename Rows>
+  bool UpdatePrimalPhaseICosts(const Rows& rows, DenseRow* objective);
 
   // Sets the variable value of a given column.
   void Set(ColIndex col, Fractional value) { variable_values_[col] = value; }
@@ -107,7 +117,20 @@ class VariableValues {
   std::string StatString() const { return stats_.StatString(); }
 
  private:
+  // It is important that the infeasibility is always computed in the same
+  // way. So the code should always use these functions that returns a positive
+  // value when the variable is out of bounds.
+  Fractional GetUpperBoundInfeasibility(ColIndex col) const {
+    return variable_values_[col] -
+           variables_info_.GetVariableUpperBounds()[col];
+  }
+  Fractional GetLowerBoundInfeasibility(ColIndex col) const {
+    return variables_info_.GetVariableLowerBounds()[col] -
+           variable_values_[col];
+  }
+
   // Input problem data.
+  const GlopParameters& parameters_;
   const CompactSparseMatrix& matrix_;
   const RowToColMapping& basis_;
   const VariablesInfo& variables_info_;
@@ -117,7 +140,6 @@ class VariableValues {
   DenseRow variable_values_;
 
   // Members used for the basic primal-infeasible variables.
-  Fractional tolerance_;
   DenseColumn primal_squared_infeasibilities_;
   DenseBitColumn primal_infeasible_positions_;
 
@@ -129,6 +151,28 @@ class VariableValues {
 
   DISALLOW_COPY_AND_ASSIGN(VariableValues);
 };
+
+template <typename Rows>
+bool VariableValues::UpdatePrimalPhaseICosts(const Rows& rows,
+                                             DenseRow* objective) {
+  SCOPED_TIME_STAT(&stats_);
+  bool changed = false;
+  const Fractional tolerance = parameters_.primal_feasibility_tolerance();
+  for (const RowIndex row : rows) {
+    const ColIndex col = basis_[row];
+    Fractional new_cost = 0.0;
+    if (GetUpperBoundInfeasibility(col) > tolerance) {
+      new_cost = 1.0;
+    } else if (GetLowerBoundInfeasibility(col) > tolerance) {
+      new_cost = -1.0;
+    }
+    if (new_cost != (*objective)[col]) {
+      changed = true;
+      (*objective)[col] = new_cost;
+    }
+  }
+  return changed;
+}
 
 }  // namespace glop
 }  // namespace operations_research

@@ -151,7 +151,7 @@ public class ShiftSchedulingSat
                     temp[s] = work[e, s, d];
                 }
 
-                model.Add(temp.Sum() == 1);
+                model.Add(LinearExpr.Sum(temp) == 1);
             }
         }
 
@@ -197,7 +197,7 @@ public class ShiftSchedulingSat
             {
                 foreach (int w in Range(numWeeks))
                 {
-                    var works = new IntVar[numDays];
+                    var works = new IntVar[7];
 
                     foreach (int d in Range(7))
                     {
@@ -261,7 +261,7 @@ public class ShiftSchedulingSat
                     // Ignore off shift
                     var minDemand = weeklyCoverDemands[d][s - 1];
                     var worked = model.NewIntVar(minDemand, numEmployees, "");
-                    model.Add(works.Sum() == worked);
+                    model.Add(LinearExpr.Sum(works) == worked);
 
                     var overPenalty = excessCoverPenalties[s - 1];
                     if (overPenalty > 0)
@@ -277,17 +277,17 @@ public class ShiftSchedulingSat
         }
 
         // Objective
-        var objBoolSum = objBoolVars.ToArray().ScalProd(objBoolCoeffs.ToArray());
-        var objIntSum = objIntVars.ToArray().ScalProd(objIntCoeffs.ToArray());
+        var objBoolSum = LinearExpr.ScalProd(objBoolVars, objBoolCoeffs);
+        var objIntSum = LinearExpr.ScalProd(objIntVars, objIntCoeffs);
 
         model.Minimize(objBoolSum + objIntSum);
 
         // Solve model
         var solver = new CpSolver();
-	solver.StringParameters = "num_search_workers:8";
+	    solver.StringParameters = 
+            "num_search_workers:8, log_search_progress: true, max_time_in_seconds:30";
 
-        var solutionPrinter = new ObjectiveSolutionPrinter();
-        var status = solver.SolveWithSolutionCallback(model, solutionPrinter);
+        var status = solver.Solve(model);
 
         // Print solution
         if (status == CpSolverStatus.Optimal || status == CpSolverStatus.Feasible)
@@ -407,7 +407,7 @@ public class ShiftSchedulingSat
         // Forbid sequences that are too short.
         foreach (var length in Range(1, hardMin))
         {
-            foreach (var start in Range(works.Length - length - 1))
+            foreach (var start in Range(works.Length - length + 1))
             {
                 model.AddBoolOr(NegatedBoundedSpan(works, start, length));
             }
@@ -419,7 +419,7 @@ public class ShiftSchedulingSat
         {
             foreach (var length in Range(hardMin, softMin))
             {
-                foreach (var start in Range(works.Length - length - 1))
+                foreach (var start in Range(works.Length - length + 1))
                 {
                     var span = NegatedBoundedSpan(works, start, length).ToList();
                     var name = $": under_span(start={start}, length={length})";
@@ -439,7 +439,7 @@ public class ShiftSchedulingSat
         {
             foreach (var length in Range(softMax + 1, hardMax + 1))
             {
-                foreach (var start in Range(works.Length - length - 1))
+                foreach (var start in Range(works.Length - length + 1))
                 {
                     var span = NegatedBoundedSpan(works, start, length).ToList();
                     var name = $": over_span(start={start}, length={length})";
@@ -454,7 +454,7 @@ public class ShiftSchedulingSat
         }
 
         // Just forbid any sequence of true variables with length hardMax + 1
-        foreach (var start in Range(works.Length - hardMax - 1))
+        foreach (var start in Range(works.Length - hardMax))
         {
             var temp = new List<ILiteral>();
 
@@ -494,9 +494,9 @@ public class ShiftSchedulingSat
         var costCoefficients = new List<int>();
         var sumVar = model.NewIntVar(hardMin, hardMax, "");
         // This adds the hard constraints on the sum.
-        model.Add(sumVar == works.Sum());
+        model.Add(sumVar == LinearExpr.Sum(works));
 
-        var zero = model.NewIntVar(0, 0, "");
+        var zero = model.NewConstant(0);
 
         // Penalize sums below the soft_min target.
 

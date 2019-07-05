@@ -1,0 +1,9 @@
+<map id="operations_research::MakePairActiveOperator" name="operations_research::MakePairActiveOperator">
+<area shape="rect" id="node1" title="Pair&#45;based neighborhood operators, designed to move nodes by pairs (pairs are static and given)." alt="" coords="1211,52,1385,91"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1PathOperator.html" title="&#45;&#45;— Path&#45;based Operators &#45;&#45;—" alt="" coords="1019,52,1162,91"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1IntVarLocalSearchOperator.html" title="Specialization of LocalSearchOperator built from an array of IntVars which specifies the scope of the..." alt="" coords="780,52,970,91"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1VarLocalSearchOperator.html" title=" " alt="" coords="511,39,730,104"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1LocalSearchOperator.html" title="&#45;&#45;&#45;&#45;&#45;&#45;&#45;— Local search operators &#45;&#45;&#45;&#45;&#45;&#45;&#45;—" alt="" coords="212,5,367,44"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="" coords="5,5,148,44"/>
+<area shape="rect" id="node7" href="$classoperations__research_1_1IntVarLocalSearchHandler.html" title="&#45;&#45;— Base operator class for operators manipulating IntVars &#45;&#45;—" alt="" coords="198,68,382,107"/>
+</map>

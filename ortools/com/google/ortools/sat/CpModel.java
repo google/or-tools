@@ -30,13 +30,14 @@ import com.google.ortools.sat.NoOverlap2DConstraintProto;
 import com.google.ortools.sat.NoOverlapConstraintProto;
 import com.google.ortools.sat.ReservoirConstraintProto;
 import com.google.ortools.sat.TableConstraintProto;
+import com.google.ortools.util.Domain;
 
 /**
  * Main modeling class.
  *
  * <p>Proposes a factory to create all modeling objects understood by the SAT solver.
  */
-public class CpModel {
+public final class CpModel {
   static class CpModelException extends Exception {
     public CpModelException(String methodName, String msg) {
       // Call constructor of parent Exception
@@ -66,43 +67,28 @@ public class CpModel {
 
   /** Creates an integer variable with domain [lb, ub]. */
   public IntVar newIntVar(long lb, long ub, String name) {
-    return new IntVar(modelBuilder, lb, ub, name);
+    return new IntVar(modelBuilder, new Domain(lb, ub), name);
   }
 
   /**
-   * Creates an integer variable with an enumerated domain.
+   * Creates an integer variable with given domain.
    *
-   * @param bounds a flattened list of disjoint intervals
+   * @param domain an instance of the Domain class.
    * @param name the name of the variable
-   * @return a variable whose domain is the union of [bounds[2 * i] .. bounds[2 * i + 1]]
-   *     <p>To create a variable with enumerated domain [1, 2, 3, 5, 7, 8], pass in the array [1, 3,
-   *     5, 5, 7, 8].
+   * @return a variable with the given domain.
    */
-  public IntVar newEnumeratedIntVar(long[] bounds, String name) {
-    return new IntVar(modelBuilder, bounds, name);
-  }
-
-  /**
-   * Creates an integer variable with an enumerated domain.
-   *
-   * @param bounds a flattened list of disjoint intervals
-   * @param name the name of the variable
-   * @return a variable whose domain is the union of [bounds[2 * i] .. bounds[2 * i + 1]]
-   *     <p>To create a variable with enumerated domain [1, 2, 3, 5, 7, 8], pass in the array [1, 3,
-   *     5, 5, 7, 8].
-   */
-  public IntVar newEnumeratedIntVar(int[] bounds, String name) {
-    return new IntVar(modelBuilder, toLongArray(bounds), name);
+  public IntVar newIntVarFromDomain(Domain domain, String name) {
+    return new IntVar(modelBuilder, domain, name);
   }
 
   /** Creates a Boolean variable with the given name. */
   public IntVar newBoolVar(String name) {
-    return new IntVar(modelBuilder, 0, 1, name);
+    return new IntVar(modelBuilder, new Domain(0, 1), name);
   }
 
   /** Creates a constant variable. */
   public IntVar newConstant(long value) {
-    return newIntVar(value, value, ""); // bounds and name.
+    return new IntVar(modelBuilder, new Domain(value), ""); // bounds and name.
   }
 
   // Boolean Constraints.
@@ -144,239 +130,110 @@ public class CpModel {
 
   // Linear constraints.
 
-  /** Adds {@code lb <= sum(vars) <= ub}. */
-  public Constraint addLinearSum(IntVar[] vars, long lb, long ub) {
+  /** Adds {@code expr in domain}. */
+  public Constraint addLinearExpressionInDomain(LinearExpr expr, Domain domain) {
     Constraint ct = new Constraint(modelBuilder);
     LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
-    for (IntVar var : vars) {
-      lin.addVars(var.getIndex());
-      lin.addCoeffs(1);
+    for (int i = 0; i < expr.numElements(); ++i) {
+      lin.addVars(expr.getVariable(i).getIndex());
+      lin.addCoeffs(expr.getCoefficient(i));
     }
-    lin.addDomain(lb);
-    lin.addDomain(ub);
-    return ct;
-  }
-
-  /**
-   * Adds {@code sum(vars) in bounds}, where bounds is a flattened domain similar to the one for
-   * enumerated integer variables.
-   */
-  public Constraint addLinearSumWithBounds(IntVar[] vars, long[] bounds) {
-    Constraint ct = new Constraint(modelBuilder);
-    LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
-    for (IntVar var : vars) {
-      lin.addVars(var.getIndex());
-      lin.addCoeffs(1);
-    }
-    for (long b : bounds) {
+    for (long b : domain.flattenedIntervals()) {
       lin.addDomain(b);
     }
     return ct;
   }
 
-  /**
-   * Adds {@code sum(vars) in bounds}, where bounds is a flattened domain similar to the one for
-   * enumerated integer variables.
-   */
-  public Constraint addLinearSumWithBounds(IntVar[] vars, int[] bounds) {
-    return addLinearSumWithBounds(vars, toLongArray(bounds));
+  /** Adds {@code lb <= expr <= ub}. */
+  public Constraint addLinearConstraint(LinearExpr expr, long lb, long ub) {
+    return addLinearExpressionInDomain(expr, new Domain(lb, ub));
   }
 
-  /** Adds {@code sum(vars) == value}. */
-  public Constraint addLinearSumEqual(IntVar[] vars, long value) {
-    return addLinearSum(vars, value, value);
+  /** Adds {@code expr == value}. */
+  public Constraint addEquality(LinearExpr expr, long value) {
+    return addLinearExpressionInDomain(expr, new Domain(value));
   }
 
-  /** Adds {@code sum(vars) == target}. */
-  public Constraint addLinearSumEqual(IntVar[] vars, IntVar target) {
-    int size = vars.length;
-    IntVar[] newVars = new IntVar[size + 1];
-    long[] coeffs = new long[size + 1];
-    for (int i = 0; i < size; ++i) {
-      newVars[i] = vars[i];
-      coeffs[i] = 1;
-    }
-    newVars[size] = target;
-    coeffs[size] = -1;
-    return addScalProd(newVars, coeffs, 0, 0);
+  /** Adds {@code left == right}. */
+  public Constraint addEquality(LinearExpr left, LinearExpr right) {
+    return addLinearExpressionInDomain(new Difference(left, right), new Domain(0));
   }
 
-  /** Adds {@code lb <= sum(vars[i] * coeffs[i]) <= ub}. */
-  public Constraint addScalProd(IntVar[] vars, long[] coeffs, long lb, long ub) {
-    Constraint ct = new Constraint(modelBuilder);
-    LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
-    for (IntVar var : vars) {
-      lin.addVars(var.getIndex());
-    }
-    for (long c : coeffs) {
-      lin.addCoeffs(c);
-    }
-    lin.addDomain(lb);
-    lin.addDomain(ub);
-    return ct;
+  /** Adds {@code left + offset == right}. */
+  public Constraint addEqualityWithOffset(LinearExpr left, LinearExpr right, long offset) {
+    return addLinearExpressionInDomain(new Difference(left, right), new Domain(-offset));
   }
 
-  /** Adds {@code lb <= sum(vars[i] * coeffs[i]) <= ub}. */
-  public Constraint addScalProd(IntVar[] vars, int[] coeffs, long lb, long ub) {
-    return addScalProd(vars, toLongArray(coeffs), lb, ub);
+  /** Adds {@code expr <= value}. */
+  public Constraint addLessOrEqual(LinearExpr expr, long value) {
+    return addLinearExpressionInDomain(expr, new Domain(Long.MIN_VALUE, value));
   }
 
-  /**
-   * Adds {@code sum(vars[i] * coeffs[i]) in bounds}, where bounds is a flattened domain similar to
-   * the one for enumerated integer variables.
-   */
-  public Constraint addScalProdWithBounds(IntVar[] vars, long[] coeffs, long[] bounds) {
-    Constraint ct = new Constraint(modelBuilder);
-    LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
-    for (IntVar var : vars) {
-      lin.addVars(var.getIndex());
-    }
-    for (long c : coeffs) {
-      lin.addCoeffs(c);
-    }
-    for (long b : bounds) {
-      lin.addDomain(b);
-    }
-    return ct;
+  /** Adds {@code left <= right}. */
+  public Constraint addLessOrEqual(LinearExpr left, LinearExpr right) {
+    return addLinearExpressionInDomain(new Difference(left, right), new Domain(Long.MIN_VALUE, 0));
   }
 
-  /** Adds {@code sum(vars[i] * coeffs[i]) == value}. */
-  public Constraint addScalProdEqual(IntVar[] vars, long[] coeffs, long value) {
-    return addScalProd(vars, coeffs, value, value);
+  /** Adds {@code expr < value}. */
+  public Constraint addLessThan(LinearExpr expr, long value) {
+    return addLinearExpressionInDomain(expr, new Domain(Long.MIN_VALUE, value - 1));
   }
 
-  /** Adds {@code sum(vars[i] * coeffs[i]) == value}. */
-  public Constraint addScalProdEqual(IntVar[] vars, int[] coeffs, long value) {
-    return addScalProdEqual(vars, toLongArray(coeffs), value);
+  /** Adds {@code left < right}. */
+  public Constraint addLessThan(LinearExpr left, LinearExpr right) {
+    return addLinearExpressionInDomain(new Difference(left, right), new Domain(Long.MIN_VALUE, -1));
   }
 
-  /** Adds {@code sum(vars[i] * coeffs[i]) == target}. */
-  public Constraint addScalProdEqual(IntVar[] vars, long[] coeffs, IntVar target) {
-    int size = vars.length;
-    IntVar[] newVars = new IntVar[size + 1];
-    long[] newCoeffs = new long[size + 1];
-    for (int i = 0; i < size; ++i) {
-      newVars[i] = vars[i];
-      newCoeffs[i] = coeffs[i];
-    }
-    newVars[size] = target;
-    newCoeffs[size] = -1;
-    return addScalProd(newVars, newCoeffs, 0, 0);
+  /** Adds {@code left + offset <= right}. */
+  public Constraint addLessOrEqualWithOffset(LinearExpr left, LinearExpr right, long offset) {
+    return addLinearExpressionInDomain(
+        new Difference(left, right), new Domain(Long.MIN_VALUE, -offset));
   }
 
-  /** Adds {@code sum(vars[i] * coeffs[i]) == target}. */
-  public Constraint addScalProdEqual(IntVar[] vars, int[] coeffs, IntVar target) {
-    return addScalProdEqual(vars, toLongArray(coeffs), target);
+  /** Adds {@code expr >= value}. */
+  public Constraint addGreaterOrEqual(LinearExpr expr, long value) {
+    return addLinearExpressionInDomain(expr, new Domain(value, Long.MAX_VALUE));
   }
 
-  /** Adds {@code var <= value}. */
-  public Constraint addLessOrEqual(IntVar var, long value) {
-    Constraint ct = new Constraint(modelBuilder);
-    LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
-    lin.addVars(var.getIndex());
-    lin.addCoeffs(1);
-    lin.addDomain(java.lang.Long.MIN_VALUE);
-    lin.addDomain(value);
-    return ct;
+  /** Adds {@code left >= right}. */
+  public Constraint addGreaterOrEqual(LinearExpr left, LinearExpr right) {
+    return addLinearExpressionInDomain(new Difference(left, right), new Domain(0, Long.MAX_VALUE));
   }
 
-  /** Adds {@code before <= after}. */
-  public Constraint addLessOrEqual(IntVar before, IntVar after) {
-    return addLessOrEqualWithOffset(before, after, 0);
+  /** Adds {@code expr > value}. */
+  public Constraint addGreaterThan(LinearExpr expr, long value) {
+    return addLinearExpressionInDomain(expr, new Domain(value + 1, Long.MAX_VALUE));
   }
 
-  /** Adds {@code var >= value}. */
-  public Constraint addGreaterOrEqual(IntVar var, long value) {
-    Constraint ct = new Constraint(modelBuilder);
-    LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
-    lin.addVars(var.getIndex());
-    lin.addCoeffs(1);
-    lin.addDomain(value);
-    lin.addDomain(java.lang.Long.MAX_VALUE);
-    return ct;
+  /** Adds {@code left > right}. */
+  public Constraint addGreaterThan(LinearExpr left, LinearExpr right) {
+    return addLinearExpressionInDomain(new Difference(left, right), new Domain(1, Long.MAX_VALUE));
   }
 
-  /** Adds {@code var == value}. */
-  public Constraint addEquality(IntVar var, long value) {
-    Constraint ct = new Constraint(modelBuilder);
-    LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
-    lin.addVars(var.getIndex());
-    lin.addCoeffs(1);
-    lin.addDomain(value);
-    lin.addDomain(value);
-    return ct;
+  /** Adds {@code left + offset >= right}. */
+  public Constraint addGreaterOrEqualWithOffset(LinearExpr left, LinearExpr right, long offset) {
+    return addLinearExpressionInDomain(
+        new Difference(left, right), new Domain(-offset, Long.MAX_VALUE));
   }
 
-  /** Adds {@code a == b}. */
-  public Constraint addEquality(IntVar a, IntVar b) {
-    return addEqualityWithOffset(a, b, 0);
+  /** Adds {@code expr != value}. */
+  public Constraint addDifferent(LinearExpr expr, long value) {
+    return addLinearExpressionInDomain(expr,
+        Domain.fromFlatIntervals(
+            new long[] {Long.MIN_VALUE, value - 1, value + 1, Long.MAX_VALUE}));
   }
 
-  /** Adds {@code a + offset == b}. */
-  public Constraint addEqualityWithOffset(IntVar a, IntVar b, long offset) {
-    Constraint ct = new Constraint(modelBuilder);
-    LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
-    lin.addVars(a.getIndex());
-    lin.addCoeffs(-1);
-    lin.addVars(b.getIndex());
-    lin.addCoeffs(1);
-    lin.addDomain(offset);
-    lin.addDomain(offset);
-    return ct;
+  /** Adds {@code left != right}. */
+  public Constraint addDifferent(IntVar left, IntVar right) {
+    return addLinearExpressionInDomain(new Difference(left, right),
+        Domain.fromFlatIntervals(new long[] {Long.MIN_VALUE, -1, 1, Long.MAX_VALUE}));
   }
 
-  /** Adds {@code var != value}. */
-  public Constraint addDifferent(IntVar var, long value) {
-    Constraint ct = new Constraint(modelBuilder);
-    LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
-    lin.addVars(var.getIndex());
-    lin.addCoeffs(1);
-    if (value > java.lang.Long.MIN_VALUE) {
-      lin.addDomain(java.lang.Long.MIN_VALUE);
-      lin.addDomain(value - 1);
-    }
-    if (value < java.lang.Long.MAX_VALUE) {
-      lin.addDomain(value + 1);
-      lin.addDomain(java.lang.Long.MAX_VALUE);
-    }
-    return ct;
-  }
-
-  /** Adds {@code a != b}. */
-  public Constraint addDifferent(IntVar a, IntVar b) {
-    return addDifferentWithOffset(a, b, 0);
-  }
-
-  /** Adds {@code a + offset != b} */
-  public Constraint addDifferentWithOffset(IntVar a, IntVar b, long offset) {
-    Constraint ct = new Constraint(modelBuilder);
-    LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
-    lin.addVars(a.getIndex());
-    lin.addCoeffs(-1);
-    lin.addVars(b.getIndex());
-    lin.addCoeffs(1);
-    if (offset > java.lang.Long.MIN_VALUE) {
-      lin.addDomain(java.lang.Long.MIN_VALUE);
-      lin.addDomain(offset - 1);
-    }
-    if (offset < java.lang.Long.MAX_VALUE) {
-      lin.addDomain(offset + 1);
-      lin.addDomain(java.lang.Long.MAX_VALUE);
-    }
-    return ct;
-  }
-
-  /** Adds {@code before + offset <= after}. */
-  public Constraint addLessOrEqualWithOffset(IntVar before, IntVar after, long offset) {
-    Constraint ct = new Constraint(modelBuilder);
-    LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
-    lin.addVars(before.getIndex());
-    lin.addCoeffs(-1);
-    lin.addVars(after.getIndex());
-    lin.addCoeffs(1);
-    lin.addDomain(offset);
-    lin.addDomain(java.lang.Long.MAX_VALUE);
-    return ct;
+  /** Adds {@code left + offset != right}. */
+  public Constraint addDifferentWithOffset(IntVar left, IntVar right, long offset) {
+    return addLinearExpressionInDomain(new Difference(left, right),
+        Domain.fromFlatIntervals(
+            new long[] {Long.MIN_VALUE, -offset - 1, -offset + 1, Long.MAX_VALUE}));
   }
 
   // Integer constraints.
@@ -1097,71 +954,23 @@ public class CpModel {
 
   // Objective.
 
-  /** Adds a minimization objective of a single variable. */
-  public void minimize(IntVar var) {
+  /** Adds a minimization objective of a linear expression. */
+  public void minimize(LinearExpr expr) {
     CpObjectiveProto.Builder obj = modelBuilder.getObjectiveBuilder();
-    obj.addVars(var.getIndex());
-    obj.addCoeffs(1);
-  }
-
-  /** Adds a minimization objective of a sum of variables. */
-  public void minimizeSum(IntVar[] vars) {
-    CpObjectiveProto.Builder obj = modelBuilder.getObjectiveBuilder();
-    for (IntVar var : vars) {
-      obj.addVars(var.getIndex());
-      obj.addCoeffs(1);
+    for (int i = 0; i < expr.numElements(); ++i) {
+      obj.addVars(expr.getVariable(i).getIndex());
+      obj.addCoeffs(expr.getCoefficient(i));
     }
   }
 
-  /** Adds a minimization objective of a scalar product of variables. */
-  public void minimizeScalProd(IntVar[] vars, long[] coeffs) {
+  /** Adds a maximization objective of a linear expression. */
+  public void maximize(LinearExpr expr) {
     CpObjectiveProto.Builder obj = modelBuilder.getObjectiveBuilder();
-    for (IntVar var : vars) {
-      obj.addVars(var.getIndex());
-    }
-    for (long c : coeffs) {
-      obj.addCoeffs(c);
-    }
-  }
-
-  /** Adds a minimization objective of a scalar product of variables. */
-  public void minimizeScalProd(IntVar[] vars, int[] coeffs) {
-    minimizeScalProd(vars, toLongArray(coeffs));
-  }
-
-  /** Adds a maximization objective of a single variable. */
-  public void maximize(IntVar var) {
-    CpObjectiveProto.Builder obj = modelBuilder.getObjectiveBuilder();
-    obj.addVars(negated(var.getIndex()));
-    obj.addCoeffs(1);
-    obj.setScalingFactor(-1.0);
-  }
-
-  /** Adds a maximization objective of a sum of variables. */
-  public void maximizeSum(IntVar[] vars) {
-    CpObjectiveProto.Builder obj = modelBuilder.getObjectiveBuilder();
-    for (IntVar var : vars) {
-      obj.addVars(negated(var.getIndex()));
-      obj.addCoeffs(1);
+    for (int i = 0; i < expr.numElements(); ++i) {
+      obj.addVars(expr.getVariable(i).getIndex());
+      obj.addCoeffs(-expr.getCoefficient(i));
     }
     obj.setScalingFactor(-1.0);
-  }
-
-  /** Adds a maximization objective of a scalar product of variables. */
-  public void maximizeScalProd(IntVar[] vars, long[] coeffs) {
-    CpObjectiveProto.Builder obj = modelBuilder.getObjectiveBuilder();
-    for (IntVar var : vars) {
-      obj.addVars(negated(var.getIndex()));
-    }
-    for (long c : coeffs) {
-      obj.addCoeffs(c);
-    }
-    obj.setScalingFactor(-1.0);
-  }
-
-  /** Adds a maximization objective of a scalar product of variables. */
-  public void maximizeScalProd(IntVar[] vars, int[] coeffs) {
-    maximizeScalProd(vars, toLongArray(coeffs));
   }
 
   // DecisionStrategy

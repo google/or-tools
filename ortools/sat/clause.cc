@@ -869,7 +869,8 @@ struct VectorHash {
 }  // namespace
 
 void BinaryImplicationGraph::TransformIntoMaxCliques(
-    std::vector<std::vector<Literal>>* at_most_ones) {
+    std::vector<std::vector<Literal>>* at_most_ones,
+    int64 max_num_explored_nodes) {
   // The code below assumes a DAG.
   if (!is_dag_) DetectEquivalences();
   work_done_in_mark_descendants_ = 0;
@@ -916,7 +917,7 @@ void BinaryImplicationGraph::TransformIntoMaxCliques(
     }
 
     // We only expand the clique as long as we didn't spend too much time.
-    if (work_done_in_mark_descendants_ < 1e8) {
+    if (work_done_in_mark_descendants_ < max_num_explored_nodes) {
       clique = ExpandAtMostOne(clique);
     }
     std::sort(clique.begin(), clique.end());
@@ -937,7 +938,9 @@ void BinaryImplicationGraph::TransformIntoMaxCliques(
   if (num_extended > 0 || num_removed > 0 || num_added > 0) {
     VLOG(1) << "Clique Extended: " << num_extended
             << " Removed: " << num_removed << " Added: " << num_added
-            << (work_done_in_mark_descendants_ > 1e8 ? " (Aborted)" : "");
+            << (work_done_in_mark_descendants_ > max_num_explored_nodes
+                    ? " (Aborted)"
+                    : "");
   }
 }
 

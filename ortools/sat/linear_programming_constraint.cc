@@ -28,6 +28,7 @@
 #include "ortools/glop/preprocessor.h"
 #include "ortools/glop/status.h"
 #include "ortools/graph/strongly_connected_components.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
@@ -332,12 +333,14 @@ bool LinearProgrammingConstraint::SolveLp() {
 
   const auto status = simplex_.Solve(lp_data_, time_limit_);
   if (!status.ok()) {
-    if (VLOG_IS_ON(1)) {
-      LOG(WARNING) << "The LP solver encountered an error: "
-                   << status.error_message();
-    }
+    VLOG(1) << "The LP solver encountered an error: " << status.error_message();
     simplex_.ClearStateForNextSolve();
     return false;
+  }
+  average_degeneracy_.AddData(CalculateDegeneracy());
+  if (average_degeneracy_.CurrentAverage() >= 1000.0) {
+    VLOG(1) << "High average degeneracy: "
+            << average_degeneracy_.CurrentAverage();
   }
 
   if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
@@ -424,7 +427,7 @@ void LinearProgrammingConstraint::AddCutFromConstraints(
   if (std::abs(ComputeActivity(cut, expanded_lp_solution_) - ToDouble(cut.ub)) /
           std::max(1.0, std::abs(ToDouble(cut.ub))) >
       1e-2) {
-    VLOG(1) << "Not tight " << ComputeActivity(cut, expanded_lp_solution_)
+    VLOG(1) << "Cut not tight " << ComputeActivity(cut, expanded_lp_solution_)
             << " " << ToDouble(cut.ub);
     return;
   }
@@ -629,6 +632,39 @@ void LinearProgrammingConstraint::AddMirCuts() {
   }
 }
 
+void LinearProgrammingConstraint::UpdateSimplexIterationLimit(
+    const int64 min_iter, const int64 max_iter) {
+  if (sat_parameters_.linearization_level() < 2) return;
+  const int64 num_degenerate_columns = CalculateDegeneracy();
+  const int64 num_cols = simplex_.GetProblemNumCols().value();
+  if (num_cols <= 0) {
+    return;
+  }
+  CHECK_GT(num_cols, 0);
+  const bool is_degenerate = num_degenerate_columns >= 0.3 * num_cols;
+  const int64 decrease_factor = (10 * num_degenerate_columns) / num_cols;
+  if (simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_FEASIBLE) {
+    // We reached here probably because we predicted wrong. We use this as a
+    // signal to increase the iterations or punish less for degeneracy compare
+    // to the other part.
+    if (is_degenerate) {
+      next_simplex_iter_ /= std::max(int64{1}, decrease_factor);
+    } else {
+      next_simplex_iter_ *= 2;
+    }
+  } else if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
+    if (is_degenerate) {
+      next_simplex_iter_ /= std::max(int64{1}, 2 * decrease_factor);
+    } else {
+      // This is the most common case. We use the size of the problem to
+      // determine the limit and ignore the previous limit.
+      next_simplex_iter_ = num_cols / 40;
+    }
+  }
+  next_simplex_iter_ =
+      std::max(min_iter, std::min(max_iter, next_simplex_iter_));
+}
+
 bool LinearProgrammingConstraint::Propagate() {
   UpdateBoundsOfLpVariables();
 
@@ -651,9 +687,13 @@ bool LinearProgrammingConstraint::Propagate() {
   // Put an iteration limit on the work we do in the simplex for this call. Note
   // that because we are "incremental", even if we don't solve it this time we
   // will make progress towards a solve in the lower node of the tree search.
-  //
-  // TODO(user): Put more at the root, and less afterwards?
-  parameters.set_max_number_of_iterations(500);
+  if (trail_->CurrentDecisionLevel() == 0) {
+    // TODO(user): Dynamically change the iteration limit for root node as
+    // well.
+    parameters.set_max_number_of_iterations(2000);
+  } else {
+    parameters.set_max_number_of_iterations(next_simplex_iter_);
+  }
   if (sat_parameters_.use_exact_lp_reason()) {
     parameters.set_change_status_to_imprecise(false);
     parameters.set_primal_feasibility_tolerance(1e-7);
@@ -724,6 +764,9 @@ bool LinearProgrammingConstraint::Propagate() {
     }
     return integer_trail_->ReportConflict(integer_reason_);
   }
+
+  // TODO(user): Update limits for DUAL_UNBOUNDED status as well.
+  UpdateSimplexIterationLimit(/*min_iter=*/10, /*max_iter=*/1000);
 
   // Optimality deductions if problem has an objective.
   if (objective_is_defined_ &&
@@ -1322,6 +1365,20 @@ void LinearProgrammingConstraint::FillReducedCostsReason() {
   }
 
   integer_trail_->RemoveLevelZeroBounds(&integer_reason_);
+}
+
+int64 LinearProgrammingConstraint::CalculateDegeneracy() const {
+  const glop::ColIndex num_vars = simplex_.GetProblemNumCols();
+  int num_non_basic_with_zero_rc = 0;
+  for (glop::ColIndex i(0); i < num_vars; ++i) {
+    const double rc = simplex_.GetReducedCost(i);
+    if (rc != 0.0) continue;
+    if (simplex_.GetVariableStatus(i) == glop::VariableStatus::BASIC) {
+      continue;
+    }
+    num_non_basic_with_zero_rc++;
+  }
+  return num_non_basic_with_zero_rc;
 }
 
 void LinearProgrammingConstraint::FillDualRayReason() {

@@ -43,7 +43,7 @@ RUN yum -y update \
 # Install dotnet
 RUN rpm -Uvh "https://packages.microsoft.com/config/rhel/7/packages-microsoft-prod.rpm" \
 && yum -y update \
-&& yum -y install dotnet-sdk-2.1 \
+&& yum -y install dotnet-sdk-2.2 \
 && yum clean all \
 && rm -rf /var/cache/yum
 

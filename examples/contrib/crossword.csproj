@@ -17,6 +17,6 @@
 
   <ItemGroup>
     <Compile Include="crossword.cs" />
-    <PackageReference Include="Google.OrTools" Version="7.0*" />
+    <PackageReference Include="Google.OrTools" Version="7.2.*" />
   </ItemGroup>
 </Project>

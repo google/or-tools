@@ -21,14 +21,14 @@ PROTOC_BINARY := $(shell $(WHICH) ${UNIX_PROTOC_BINARY})
 # Tags of dependencies to checkout.
 GFLAGS_TAG = 2.2.2
 GLOG_TAG = 0.4.0
-PROTOBUF_TAG = 3.7.1
+PROTOBUF_TAG = 3.8.0
 ABSL_TAG = bf29470
-CBC_TAG = 2.10.1
-CGL_TAG = 0.60.1
-CLP_TAG = 1.17.1
-OSI_TAG = 0.108.1
-COINUTILS_TAG = 2.11.1
-PATCHELF_TAG = 0.9
+CBC_TAG = 2.10.3
+CGL_TAG = 0.60.2
+CLP_TAG = 1.17.3
+OSI_TAG = 0.108.4
+COINUTILS_TAG = 2.11.2
+PATCHELF_TAG = 0.10
 
 # Main target.
 .PHONY: third_party # Build OR-Tools Prerequisite
@@ -761,6 +761,19 @@ OR_TOOLS_LNK += $(COIN_LNK)
 # Swig is only needed when building .Net, Java or Python wrapper
 SWIG_BINARY = $(shell $(WHICH) $(UNIX_SWIG_BINARY))
 #$(error "Can't find $(UNIX_SWIG_BINARY). Please verify UNIX_SWIG_BINARY")
+SWIG_VERSION = $(shell $(SWIG_BINARY) -version | grep Version | cut -d " " -f 3)
+ifeq ("$(SWIG_VERSION)","4.0.0")
+SWIG_DOXYGEN = -doxygen
+endif
+
+test_doxy:
+ifneq ("$(PYTHON_EXECUTABLE)","")
+	echo "Pass 1"
+ifeq ($(shell "$(PYTHON_EXECUTABLE)" -c "from sys import version_info as v; print (str(v[0]))"),3)
+	echo "SWIG_PY_DOXYGEN = -doxygen"
+endif
+endif
+	echo \'$(shell "$(PYTHON_EXECUTABLE)" -c "from sys import version_info as v; print (str(v[0]))")\'
 
 .PHONY: clean_third_party # Clean everything. Remember to also delete archived dependencies, i.e. in the event of download failure, etc.
 clean_third_party:
@@ -838,4 +851,5 @@ ifdef UNIX_GUROBI_DIR
 	@echo GUROBI_INC = $(GUROBI_INC)
 	@echo GUROBI_LNK = $(GUROBI_LNK)
 endif
+	@echo SWIG_VERSION = $(SWIG_VERSION)
 	@echo

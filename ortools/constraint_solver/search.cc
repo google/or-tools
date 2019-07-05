@@ -1536,7 +1536,8 @@ AssignOneVariableValue::AssignOneVariableValue(IntVar* const v, int64 val)
     : var_(v), value_(val) {}
 
 std::string AssignOneVariableValue::DebugString() const {
-  return absl::StrFormat("[%s == %d]", var_->DebugString(), value_);
+  return absl::StrFormat("[%s == %d] or [%s != %d]", var_->DebugString(),
+                         value_, var_->DebugString(), value_);
 }
 
 void AssignOneVariableValue::Apply(Solver* const s) { var_->SetValue(value_); }
@@ -1574,7 +1575,7 @@ AssignOneVariableValueOrFail::AssignOneVariableValueOrFail(IntVar* const v,
     : var_(v), value_(value) {}
 
 std::string AssignOneVariableValueOrFail::DebugString() const {
-  return absl::StrFormat("[%s == %d]", var_->DebugString(), value_);
+  return absl::StrFormat("[%s == %d] or fail", var_->DebugString(), value_);
 }
 
 void AssignOneVariableValueOrFail::Apply(Solver* const s) {
@@ -1587,6 +1588,35 @@ void AssignOneVariableValueOrFail::Refute(Solver* const s) { s->Fail(); }
 Decision* Solver::MakeAssignVariableValueOrFail(IntVar* const var,
                                                 int64 value) {
   return RevAlloc(new AssignOneVariableValueOrFail(var, value));
+}
+
+// ----- AssignOneVariableValueOrDoNothing decision -----
+
+namespace {
+class AssignOneVariableValueDoNothing : public Decision {
+ public:
+  AssignOneVariableValueDoNothing(IntVar* const v, int64 value)
+      : var_(v), value_(value) {}
+  ~AssignOneVariableValueDoNothing() override {}
+  void Apply(Solver* const s) override { var_->SetValue(value_); }
+  void Refute(Solver* const s) override {}
+  std::string DebugString() const override {
+    return absl::StrFormat("[%s == %d] or []", var_->DebugString(), value_);
+  }
+  void Accept(DecisionVisitor* const visitor) const override {
+    visitor->VisitSetVariableValue(var_, value_);
+  }
+
+ private:
+  IntVar* const var_;
+  const int64 value_;
+};
+
+}  // namespace
+
+Decision* Solver::MakeAssignVariableValueOrDoNothing(IntVar* const var,
+                                                     int64 value) {
+  return RevAlloc(new AssignOneVariableValueDoNothing(var, value));
 }
 
 // ----- AssignOneVariableValue decision -----

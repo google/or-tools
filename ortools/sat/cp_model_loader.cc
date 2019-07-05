@@ -201,6 +201,9 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
 // The logic assumes that the linear constraints have been presolved, so that
 // equality with a domain bound have been converted to <= or >= and so that we
 // never have any trivial inequalities.
+//
+// TODO(user): Regroup/presolve two encoding like b => x > 2 and the same
+// Boolean b => x > 5. These shouldn't happen if we merge linear constraints.
 void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
                                      Model* m) {
   IntegerEncoder* encoder = m->GetOrCreate<IntegerEncoder>();
@@ -428,6 +431,15 @@ void CpModelMapping::DetectOptionalVariables(const CpModelProto& model_proto,
   if (!parameters.use_optional_variables()) return;
   if (parameters.enumerate_all_solutions()) return;
 
+  // The variables from the objective cannot be marked as optional!
+  const int num_proto_variables = model_proto.variables_size();
+  std::vector<bool> already_seen(num_proto_variables, false);
+  if (model_proto.has_objective()) {
+    for (const int ref : model_proto.objective().vars()) {
+      already_seen[PositiveRef(ref)] = true;
+    }
+  }
+
   // Compute for each variables the intersection of the enforcement literals
   // of the constraints in which they appear.
   //
@@ -436,8 +448,6 @@ void CpModelMapping::DetectOptionalVariables(const CpModelProto& model_proto,
   // appear to false. This can be done with a LCA computation in the tree of
   // Boolean implication (once the presolve remove cycles). Not sure if we can
   // properly exploit that afterwards though. Do some research!
-  const int num_proto_variables = model_proto.variables_size();
-  std::vector<bool> already_seen(num_proto_variables, false);
   std::vector<std::vector<int>> enforcement_intersection(num_proto_variables);
   std::set<int> literals_set;
   for (int c = 0; c < model_proto.constraints_size(); ++c) {
@@ -488,6 +498,269 @@ void CpModelMapping::DetectOptionalVariables(const CpModelProto& model_proto,
   }
   VLOG(2) << "Auto-detected " << num_optionals << " optional variables.";
 }
+
+// ============================================================================
+// A class that detects when variables should be fully encoded by computing a
+// fixed point. It also fully encodes such variables.
+// ============================================================================
+
+class FullEncodingFixedPointComputer {
+ public:
+  FullEncodingFixedPointComputer(const CpModelProto& model_proto, Model* model)
+      : model_proto_(model_proto),
+        parameters_(*(model->GetOrCreate<SatParameters>())),
+        model_(model),
+        mapping_(model->GetOrCreate<CpModelMapping>()),
+        integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
+        integer_trail_(model->GetOrCreate<IntegerTrail>()) {}
+
+  void ComputeFixedPoint();
+
+ private:
+  DEFINE_INT_TYPE(ConstraintIndex, int32);
+
+  // Constraint ct is interested by (full-encoding) state of variable.
+  void Register(ConstraintIndex ct_index, int variable) {
+    variable = PositiveRef(variable);
+    constraint_is_registered_[ct_index] = true;
+    if (variable_watchers_.size() <= variable) {
+      variable_watchers_.resize(variable + 1);
+      variable_was_added_in_to_propagate_.resize(variable + 1);
+    }
+    variable_watchers_[variable].push_back(ct_index);
+  }
+
+  void AddVariableToPropagationQueue(int variable) {
+    variable = PositiveRef(variable);
+    if (variable_was_added_in_to_propagate_.size() <= variable) {
+      variable_watchers_.resize(variable + 1);
+      variable_was_added_in_to_propagate_.resize(variable + 1);
+    }
+    if (!variable_was_added_in_to_propagate_[variable]) {
+      variable_was_added_in_to_propagate_[variable] = true;
+      variables_to_propagate_.push_back(variable);
+    }
+  }
+
+  // Note that we always consider a fixed variable to be fully encoded here.
+  const bool IsFullyEncoded(int v) {
+    const IntegerVariable variable = mapping_->Integer(v);
+    if (v == kNoIntegerVariable) return false;
+    return model_->Get(IsFixed(variable)) ||
+           integer_encoder_->VariableIsFullyEncoded(variable);
+  }
+
+  void FullyEncode(int v) {
+    v = PositiveRef(v);
+    const IntegerVariable variable = mapping_->Integer(v);
+    if (v == kNoIntegerVariable) return;
+    if (!model_->Get(IsFixed(variable))) {
+      model_->Add(FullyEncodeVariable(variable));
+    }
+    AddVariableToPropagationQueue(v);
+  }
+
+  bool ProcessConstraint(ConstraintIndex ct_index);
+  bool ProcessElement(ConstraintIndex ct_index);
+  bool ProcessTable(ConstraintIndex ct_index);
+  bool ProcessAutomaton(ConstraintIndex ct_index);
+  bool ProcessInverse(ConstraintIndex ct_index);
+  bool ProcessLinear(ConstraintIndex ct_index);
+
+  const CpModelProto& model_proto_;
+  const SatParameters& parameters_;
+
+  Model* model_;
+  CpModelMapping* mapping_;
+  IntegerEncoder* integer_encoder_;
+  IntegerTrail* integer_trail_;
+
+  std::vector<bool> variable_was_added_in_to_propagate_;
+  std::vector<int> variables_to_propagate_;
+  std::vector<std::vector<ConstraintIndex>> variable_watchers_;
+
+  gtl::ITIVector<ConstraintIndex, bool> constraint_is_finished_;
+  gtl::ITIVector<ConstraintIndex, bool> constraint_is_registered_;
+};
+
+// We only add to the propagation queue variable that are fully encoded.
+// Note that if a variable was already added once, we never add it again.
+void FullEncodingFixedPointComputer::ComputeFixedPoint() {
+  const int num_constraints = model_proto_.constraints_size();
+  constraint_is_registered_.assign(num_constraints, false);
+  constraint_is_finished_.assign(num_constraints, false);
+
+  // Process all constraint once.
+  for (ConstraintIndex ct_index(0); ct_index < num_constraints; ++ct_index) {
+    ProcessConstraint(ct_index);
+  }
+
+  // Make sure all fully encoded variables of interest are in the queue.
+  for (int v = 0; v < variable_watchers_.size(); v++) {
+    if (!variable_watchers_[v].empty() && IsFullyEncoded(v)) {
+      AddVariableToPropagationQueue(v);
+    }
+  }
+
+  // Loop until no additional variable can be fully encoded.
+  while (!variables_to_propagate_.empty()) {
+    const int variable = variables_to_propagate_.back();
+    variables_to_propagate_.pop_back();
+    for (const ConstraintIndex ct_index : variable_watchers_[variable]) {
+      if (constraint_is_finished_[ct_index]) continue;
+      constraint_is_finished_[ct_index] = ProcessConstraint(ct_index);
+    }
+  }
+}
+
+// Returns true if the constraint has finished encoding what it wants.
+bool FullEncodingFixedPointComputer::ProcessConstraint(
+    ConstraintIndex ct_index) {
+  const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
+  switch (ct.constraint_case()) {
+    case ConstraintProto::ConstraintProto::kElement:
+      return ProcessElement(ct_index);
+    case ConstraintProto::ConstraintProto::kTable:
+      return ProcessTable(ct_index);
+    case ConstraintProto::ConstraintProto::kAutomaton:
+      return ProcessAutomaton(ct_index);
+    case ConstraintProto::ConstraintProto::kInverse:
+      return ProcessInverse(ct_index);
+    case ConstraintProto::ConstraintProto::kLinear:
+      return ProcessLinear(ct_index);
+    default:
+      return true;
+  }
+}
+
+bool FullEncodingFixedPointComputer::ProcessElement(ConstraintIndex ct_index) {
+  const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
+
+  // Index must always be full encoded.
+  FullyEncode(ct.element().index());
+
+  // If target is a constant or fully encoded, variables must be fully encoded.
+  const int target = ct.element().target();
+  if (IsFullyEncoded(target)) {
+    for (const int v : ct.element().vars()) FullyEncode(v);
+  }
+
+  // If all non-target variables are fully encoded, target must be too.
+  bool all_variables_are_fully_encoded = true;
+  for (const int v : ct.element().vars()) {
+    if (v == target) continue;
+    if (!IsFullyEncoded(v)) {
+      all_variables_are_fully_encoded = false;
+      break;
+    }
+  }
+  if (all_variables_are_fully_encoded) {
+    if (!IsFullyEncoded(target)) FullyEncode(target);
+    return true;
+  }
+
+  // If some variables are not fully encoded, register on those.
+  if (constraint_is_registered_[ct_index]) {
+    for (const int v : ct.element().vars()) Register(ct_index, v);
+    Register(ct_index, target);
+  }
+  return false;
+}
+
+bool FullEncodingFixedPointComputer::ProcessTable(ConstraintIndex ct_index) {
+  const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
+
+  // TODO(user): This constraint also fully encode variable sometimes. Find a
+  // way to be in sync.
+  if (ct.table().negated()) return true;
+
+  for (const int variable : ct.table().vars()) {
+    FullyEncode(variable);
+  }
+  return true;
+}
+
+bool FullEncodingFixedPointComputer::ProcessAutomaton(
+    ConstraintIndex ct_index) {
+  const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
+  for (const int variable : ct.automaton().vars()) {
+    FullyEncode(variable);
+  }
+  return true;
+}
+
+bool FullEncodingFixedPointComputer::ProcessInverse(ConstraintIndex ct_index) {
+  const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
+  for (const int variable : ct.inverse().f_direct()) {
+    FullyEncode(variable);
+  }
+  for (const int variable : ct.inverse().f_inverse()) {
+    FullyEncode(variable);
+  }
+  return true;
+}
+
+bool FullEncodingFixedPointComputer::ProcessLinear(ConstraintIndex ct_index) {
+  const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
+  if (parameters_.boolean_encoding_level() == 0) return true;
+
+  // Only act when the constraint is an equality.
+  if (ct.linear().domain(0) != ct.linear().domain(1)) return true;
+
+  // If some domain is too large, abort;
+  if (!constraint_is_registered_[ct_index]) {
+    for (const int v : ct.linear().vars()) {
+      const IntegerVariable var = mapping_->Integer(v);
+      const IntegerValue lb = integer_trail_->LowerBound(var);
+      const IntegerValue ub = integer_trail_->UpperBound(var);
+      if (ub - lb > 1024) return true;  // Arbitrary limit value.
+    }
+  }
+
+  const int num_vars = ct.linear().vars_size();
+  if (HasEnforcementLiteral(ct)) {
+    // Fully encode x in half-reified equality b => x == constant.
+    if (num_vars == 1) FullyEncode(ct.linear().vars(0));
+
+    // Skip any other form of half-reified linear constraint for now.
+    return true;
+  }
+
+  // If all variables but one are fully encoded,
+  // force the last one to be fully encoded.
+  int variable_not_fully_encoded;
+  int num_fully_encoded = 0;
+  for (const int var : ct.linear().vars()) {
+    if (IsFullyEncoded(var)) {
+      num_fully_encoded++;
+    } else {
+      variable_not_fully_encoded = var;
+    }
+  }
+  if (num_fully_encoded == num_vars - 1) {
+    FullyEncode(variable_not_fully_encoded);
+    return true;
+  }
+  if (num_fully_encoded == num_vars) return true;
+
+  // Register on remaining variables if not already done.
+  if (!constraint_is_registered_[ct_index]) {
+    for (const int var : ct.linear().vars()) {
+      if (!IsFullyEncoded(var)) Register(ct_index, var);
+    }
+  }
+
+  return false;
+}
+
+void MaybeFullyEncodeMoreVariables(const CpModelProto& model_proto, Model* m) {
+  FullEncodingFixedPointComputer fixpoint(model_proto, m);
+  fixpoint.ComputeFixedPoint();
+}
+
+// ============================================================================
+// Constraint loading functions.
+// ============================================================================
 
 void LoadBoolOrConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
@@ -736,15 +1009,6 @@ void LoadIntMinConstraint(const ConstraintProto& ct, Model* m) {
 void LoadIntMaxConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   const IntegerVariable max = mapping->Integer(ct.int_max().target());
-
-  if (ct.int_max().vars_size() == 2 &&
-      NegatedRef(ct.int_max().vars(0)) == ct.int_max().vars(1)) {
-    const IntegerVariable var =
-        mapping->Integer(PositiveRef(ct.int_max().vars(0)));
-    m->Add(IsEqualToAbsOf(max, var));
-    return;
-  }
-
   const std::vector<IntegerVariable> vars =
       mapping->Integers(ct.int_max().vars());
   m->Add(IsEqualToMaxOf(max, vars));

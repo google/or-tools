@@ -27,15 +27,67 @@ namespace operations_research {
 namespace sat {
 
 NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
-    CpModelProto const* model_proto, bool focus_on_decision_variables)
-    : model_proto_(*model_proto) {
-  UpdateHelperData(focus_on_decision_variables);
+    int id, const CpModelProto& model_proto, SatParameters const* parameters,
+    class SharedTimeLimit* shared_time_limit,
+    SharedBoundsManager* shared_bounds, SharedResponseManager* shared_response)
+    : SubSolver(id, "helper"),
+      model_proto_(model_proto),
+      parameters_(*parameters),
+      shared_time_limit_(shared_time_limit),
+      shared_bounds_(shared_bounds),
+      shared_response_(shared_response) {
+  RecomputeHelperData();
+  Synchronize();
 }
 
-void NeighborhoodGeneratorHelper::UpdateHelperData(
-    bool focus_on_decision_variables) {
-  var_to_constraint_.resize(model_proto_.variables_size());
-  constraint_to_var_.resize(model_proto_.constraints_size());
+void NeighborhoodGeneratorHelper::Synchronize() {
+  absl::MutexLock mutex_lock(&mutex_);
+  if (shared_bounds_ != nullptr) {
+    std::vector<int> model_variables;
+    std::vector<int64> new_lower_bounds;
+    std::vector<int64> new_upper_bounds;
+    shared_bounds_->GetChangedBounds(id_, &model_variables, &new_lower_bounds,
+                                     &new_upper_bounds);
+
+    for (int i = 0; i < model_variables.size(); ++i) {
+      const int var = model_variables[i];
+      const int64 new_lb = new_lower_bounds[i];
+      const int64 new_ub = new_upper_bounds[i];
+      if (VLOG_IS_ON(3)) {
+        const auto& domain = model_proto_.variables(var).domain();
+        const int64 old_lb = domain.Get(0);
+        const int64 old_ub = domain.Get(domain.size() - 1);
+        VLOG(3) << "Variable: " << var << " old domain: [" << old_lb << ", "
+                << old_ub << "] new domain: [" << new_lb << ", " << new_ub
+                << "]";
+      }
+      const Domain old_domain =
+          ReadDomainFromProto(model_proto_.variables(var));
+      const Domain new_domain =
+          old_domain.IntersectionWith(Domain(new_lb, new_ub));
+      if (new_domain.IsEmpty()) {
+        shared_response_->NotifyThatImprovingProblemIsInfeasible(
+            "LNS base problem");
+        if (shared_time_limit_ != nullptr) shared_time_limit_->Stop();
+        return;
+      }
+      FillDomainInProto(new_domain, model_proto_.mutable_variables(var));
+    }
+
+    // Only trigger the computation if needed.
+    if (!model_variables.empty()) {
+      RecomputeHelperData();
+    }
+  }
+  if (shared_response_ != nullptr) {
+    shared_response_->MutableSolutionsRepository()->Synchronize();
+  }
+}
+
+void NeighborhoodGeneratorHelper::RecomputeHelperData() {
+  // Recompute all the data in case new variables have been fixed.
+  var_to_constraint_.assign(model_proto_.variables_size(), {});
+  constraint_to_var_.assign(model_proto_.constraints_size(), {});
   for (int ct_index = 0; ct_index < model_proto_.constraints_size();
        ++ct_index) {
     for (const int var : UsedVariables(model_proto_.constraints(ct_index))) {
@@ -46,9 +98,20 @@ void NeighborhoodGeneratorHelper::UpdateHelperData(
       CHECK_LT(var, model_proto_.variables_size());
     }
   }
-  active_variables_set_.resize(model_proto_.variables_size(), false);
 
-  if (focus_on_decision_variables) {
+  type_to_constraints_.clear();
+  const int num_constraints = model_proto_.constraints_size();
+  for (int c = 0; c < num_constraints; ++c) {
+    const int type = model_proto_.constraints(c).constraint_case();
+    if (type >= type_to_constraints_.size()) {
+      type_to_constraints_.resize(type + 1);
+    }
+    type_to_constraints_[type].push_back(c);
+  }
+
+  bool add_all_variables = true;
+  active_variables_set_.assign(model_proto_.variables_size(), false);
+  if (parameters_.lns_focus_on_decision_variables()) {
     for (const auto& search_strategy : model_proto_.search_strategy()) {
       for (const int var : search_strategy.variables()) {
         const int pos_var = PositiveRef(var);
@@ -58,30 +121,17 @@ void NeighborhoodGeneratorHelper::UpdateHelperData(
         }
       }
     }
-    if (!active_variables_.empty()) {
-      // No decision variables, then no focus.
-      focus_on_decision_variables = false;
-    }
+
+    // Revert to no focus if active_variables_ is empty().
+    if (!active_variables_.empty()) add_all_variables = false;
   }
-  if (!focus_on_decision_variables) {  // Could have be set to false above.
+  if (add_all_variables) {
     for (int i = 0; i < model_proto_.variables_size(); ++i) {
       if (!IsConstant(i)) {
         active_variables_.push_back(i);
         active_variables_set_[i] = true;
       }
     }
-  }
-
-  type_to_constraints_.clear();
-  const int num_constraints = model_proto_.constraints_size();
-  for (int c = 0; c < num_constraints; ++c) {
-    const int type = model_proto_.constraints(c).constraint_case();
-    CHECK_GE(type, 0) << "Negative constraint case ??";
-    CHECK_LT(type, 10000) << "Large constraint case ??";
-    if (type >= type_to_constraints_.size()) {
-      type_to_constraints_.resize(type + 1);
-    }
-    type_to_constraints_[type].push_back(c);
   }
 }
 
@@ -95,12 +145,22 @@ bool NeighborhoodGeneratorHelper::IsConstant(int var) const {
              model_proto_.variables(var).domain(1);
 }
 
+Neighborhood NeighborhoodGeneratorHelper::FullNeighborhood() const {
+  Neighborhood neighborhood;
+  neighborhood.is_reduced = false;
+  neighborhood.is_generated = true;
+  neighborhood.cp_model = model_proto_;
+  return neighborhood;
+}
+
 Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
     const CpSolverResponse& initial_solution,
     const std::vector<int>& variables_to_fix) const {
-  Neighborhood neighborhood;
+  // TODO(user): Do not include constraint with all fixed variables to save
+  // memory and speed-up LNS presolving.
+  Neighborhood neighborhood = FullNeighborhood();
+
   neighborhood.is_reduced = !variables_to_fix.empty();
-  neighborhood.cp_model = model_proto_;
   if (!neighborhood.is_reduced) return neighborhood;
   CHECK_EQ(initial_solution.solution_size(),
            neighborhood.cp_model.variables_size());
@@ -151,23 +211,72 @@ Neighborhood NeighborhoodGeneratorHelper::FixAllVariables(
 }
 
 double NeighborhoodGenerator::GetUCBScore(int64 total_num_calls) const {
+  absl::MutexLock mutex_lock(&mutex_);
   DCHECK_GE(total_num_calls, num_calls_);
   if (num_calls_ <= 10) return std::numeric_limits<double>::infinity();
   return current_average_ + sqrt((2 * log(total_num_calls)) / num_calls_);
 }
 
-void NeighborhoodGenerator::AddSolveData(double objective_diff,
-                                         double deterministic_time) {
-  double gain_per_time_unit = objective_diff / (1.0 + deterministic_time);
-  // TODO(user): Add more data.
-  // TODO(user): Weight more recent data.
-  num_calls_++;
-  // degrade the current average to forget old learnings.
-  if (num_calls_ <= 100) {
-    current_average_ += (gain_per_time_unit - current_average_) / num_calls_;
-  } else {
-    current_average_ = 0.9 * current_average_ + 0.1 * gain_per_time_unit;
+void NeighborhoodGenerator::Synchronize() {
+  absl::MutexLock mutex_lock(&mutex_);
+
+  // To make the whole update process deterministic, we currently sort the
+  // SolveData.
+  std::sort(solve_data_.begin(), solve_data_.end());
+
+  // This will be used to update the difficulty of this neighborhood.
+  int num_fully_solved_in_batch = 0;
+  int num_not_fully_solved_in_batch = 0;
+
+  for (const SolveData& data : solve_data_) {
+    if (data.status == CpSolverStatus::INFEASIBLE ||
+        data.status == CpSolverStatus::OPTIMAL) {
+      ++num_fully_solved_calls_;
+      ++num_fully_solved_in_batch;
+    } else {
+      ++num_not_fully_solved_in_batch;
+    }
+
+    num_calls_++;
+    if (data.objective_improvement > 0) {
+      // Note(user): For this to work properly, the objective diff should be
+      // computed with respect to the best solution at the time of the
+      // neighborhood generation.
+      num_consecutive_non_improving_calls_ = 0;
+    } else {
+      num_consecutive_non_improving_calls_++;
+    }
+
+    // TODO(user): Weight more recent data.
+    // degrade the current average to forget old learnings.
+    const double gain_per_time_unit =
+        std::max(0.0, static_cast<double>(data.objective_improvement.value())) /
+        (1.0 + data.deterministic_time);
+    if (num_calls_ <= 100) {
+      current_average_ += (gain_per_time_unit - current_average_) / num_calls_;
+    } else {
+      current_average_ = 0.9 * current_average_ + 0.1 * gain_per_time_unit;
+    }
+
+    deterministic_time_ += data.deterministic_time;
   }
+
+  // Update the difficulty.
+  difficulty_.Update(/*num_decreases=*/num_not_fully_solved_in_batch,
+                     /*num_increases=*/num_fully_solved_in_batch);
+
+  // Bump the time limit if we saw no better solution in the last few calls.
+  // This means that as the search progress, we likely spend more and more time
+  // trying to solve individual neighborhood.
+  //
+  // TODO(user): experiment with resetting the time limit if a solution is
+  // found.
+  if (num_consecutive_non_improving_calls_ > 20) {
+    num_consecutive_non_improving_calls_ = 0;
+    deterministic_limit_ *= 1.1;
+  }
+
+  solve_data_.clear();
 }
 
 namespace {
@@ -179,7 +288,7 @@ void GetRandomSubset(int seed, double relative_size, std::vector<int>* base) {
   // TODO(user): we could generate this more efficiently than using random
   // shuffle.
   std::shuffle(base->begin(), base->end(), random);
-  const int target_size = std::ceil(relative_size * base->size());
+  const int target_size = std::round(relative_size * base->size());
   base->resize(target_size);
 }
 
@@ -200,10 +309,7 @@ Neighborhood VariableGraphNeighborhoodGenerator::Generate(
   const int num_model_vars = helper_.ModelProto().variables_size();
   const int target_size = std::ceil(difficulty * num_active_vars);
   if (target_size == num_active_vars) {
-    Neighborhood neighborhood;
-    neighborhood.is_reduced = false;
-    neighborhood.cp_model = helper_.ModelProto();
-    return neighborhood;
+    return helper_.FullNeighborhood();
   }
   CHECK_GT(target_size, 0);
 
@@ -258,10 +364,7 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
   const int target_size = std::ceil(difficulty * num_active_vars);
   const int num_constraints = helper_.ConstraintToVar().size();
   if (num_constraints == 0 || target_size == num_active_vars) {
-    Neighborhood neighborhood;
-    neighborhood.is_reduced = false;
-    neighborhood.cp_model = helper_.ModelProto();
-    return neighborhood;
+    return helper_.FullNeighborhood();
   }
   CHECK_GT(target_size, 0);
 
@@ -320,11 +423,11 @@ Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
     const absl::Span<const int> intervals_to_relax,
     const CpSolverResponse& initial_solution,
     const NeighborhoodGeneratorHelper& helper) {
-  Neighborhood neighborhood;
+  Neighborhood neighborhood = helper.FullNeighborhood();
   neighborhood.is_reduced =
       (intervals_to_relax.size() <
        helper.TypeToConstraints(ConstraintProto::kInterval).size());
-  neighborhood.cp_model = helper.ModelProto();
+
   // We will extend the set with some interval that we cannot fix.
   std::set<int> ignored_intervals(intervals_to_relax.begin(),
                                   intervals_to_relax.end());
@@ -404,6 +507,7 @@ Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
     neighborhood.cp_model.mutable_solution_hint()->add_values(
         initial_solution.solution(var));
   }
+  neighborhood.is_generated = true;
 
   return neighborhood;
 }
@@ -451,26 +555,19 @@ Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
 Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
     const CpSolverResponse& initial_solution, int64 seed,
     double difficulty) const {
-  Neighborhood neighborhood;
-  neighborhood.cp_model = helper_.ModelProto();
+  Neighborhood neighborhood = helper_.FullNeighborhood();
+  neighborhood.is_generated = false;
 
-  const int num_model_vars = helper_.ModelProto().variables_size();
   SharedRINSNeighborhoodManager* rins_manager =
       model_->Mutable<SharedRINSNeighborhoodManager>();
-  std::vector<int> all_vars;
-  for (int i = 0; i < num_model_vars; ++i) {
-    all_vars.push_back(i);
-  }
   if (rins_manager == nullptr) {
-    // TODO(user): Support skipping this neighborhood instead of going
-    // through solving process for the trivial model.
-    return helper_.FixAllVariables(initial_solution);
+    return neighborhood;
   }
   absl::optional<RINSNeighborhood> rins_neighborhood_opt =
       rins_manager->GetUnexploredNeighborhood();
 
   if (!rins_neighborhood_opt.has_value()) {
-    return helper_.FixAllVariables(initial_solution);
+    return neighborhood;
   }
 
   // Fix the variables in the local model.
@@ -478,12 +575,27 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
        rins_neighborhood_opt.value().fixed_vars) {
     int var = fixed_var.first.model_var;
     int64 value = fixed_var.second;
+    if (var >= neighborhood.cp_model.variables_size()) continue;
     if (!helper_.IsActive(var)) continue;
     neighborhood.cp_model.mutable_variables(var)->clear_domain();
     neighborhood.cp_model.mutable_variables(var)->add_domain(value);
     neighborhood.cp_model.mutable_variables(var)->add_domain(value);
     neighborhood.is_reduced = true;
   }
+
+  for (const std::pair<RINSVariable, /*domain*/ std::pair<int64, int64>>
+           reduced_var : rins_neighborhood_opt.value().reduced_domain_vars) {
+    int var = reduced_var.first.model_var;
+    int64 lb = reduced_var.second.first;
+    int64 ub = reduced_var.second.second;
+    if (var >= neighborhood.cp_model.variables_size()) continue;
+    if (!helper_.IsActive(var)) continue;
+    Domain domain = ReadDomainFromProto(neighborhood.cp_model.variables(var));
+    domain = domain.IntersectionWith(Domain(lb, ub));
+    FillDomainInProto(domain, neighborhood.cp_model.mutable_variables(var));
+    neighborhood.is_reduced = true;
+  }
+  neighborhood.is_generated = true;
   return neighborhood;
 }
 

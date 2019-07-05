@@ -15,6 +15,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
+import com.google.ortools.sat.LinearExpr;
 
 /**
  * In a field of rabbits and pheasants, there are 20 heads and 56 legs. How many rabbits and
@@ -32,9 +33,9 @@ public class RabbitsAndPheasantsSat {
     IntVar r = model.newIntVar(0, 100, "r");
     IntVar p = model.newIntVar(0, 100, "p");
     // 20 heads.
-    model.addLinearSumEqual(new IntVar[] {r, p}, 20);
+    model.addEquality(LinearExpr.sum(new IntVar[] {r, p}), 20);
     // 56 legs.
-    model.addScalProdEqual(new IntVar[] {r, p}, new long[] {4, 2}, 56);
+    model.addEquality(LinearExpr.scalProd(new IntVar[] {r, p}, new long[] {4, 2}), 56);
 
     // Creates a solver and solves the model.
     CpSolver solver = new CpSolver();

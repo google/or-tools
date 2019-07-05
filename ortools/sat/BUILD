@@ -86,11 +86,9 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
-        ":cp_model_loader",
         ":cp_model_search",
         ":cp_model_utils",
         ":integer",
-        ":integer_search",
         ":model",
         ":sat_base",
         "//ortools/base",
@@ -172,7 +170,7 @@ cc_library(
         ":integer_search",
         ":linear_programming_constraint",
         ":linear_relaxation",
-        ":lns",
+        ":subsolver",
         ":model",
         ":optimization",
         ":precedences",
@@ -189,9 +187,11 @@ cc_library(
         "//ortools/base:int_type_indexed_vector",
         "//ortools/base:map_util",
         "//ortools/base:status",
+        "//ortools/base:stl_util",
         "//ortools/base:threadpool",
         "//ortools/graph:connectivity",
         "//ortools/port:proto_utils",
+        "//ortools/util:sigint",
         "//ortools/util:sorted_interval_list",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/base:core_headers",
@@ -633,6 +633,7 @@ cc_library(
         ":sat_base",
         ":sat_parameters_cc_proto",
         ":sat_solver",
+        ":timetable",
         ":theta_tree",
         "//ortools/base",
         "//ortools/base:int_type",
@@ -1011,9 +1012,13 @@ cc_library(
         ":linear_programming_constraint",
         ":model",
         ":rins",
+        ":subsolver",
+        ":synchronization",
         "//ortools/base",
+        "//ortools/base:threadpool",
         "//ortools/util:random_engine",
         "//ortools/util:time_limit",
+        "@com_google_absl//absl/synchronization",        
     ],
 )
 
@@ -1034,12 +1039,16 @@ cc_library(
 )
 
 cc_library(
-    name = "lns",
-    hdrs = ["lns.h"],
+    name = "subsolver",
+    srcs = ["subsolver.cc"],
+    hdrs = ["subsolver.h"],
     visibility = ["//visibility:public"],
     deps = [
         "//ortools/base",
+        "//ortools/base:threadpool",
         "//ortools/util:time_limit",
+        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/time",
     ],
 )
 
@@ -1131,7 +1140,5 @@ cc_library(
         ":model",
         ":sat_parameters_cc_proto",
         "//ortools/base",
-        "//ortools/util:sigint",
-        "//ortools/util:time_limit",
     ],
 )

@@ -92,54 +92,37 @@ ifeq ($(SYSTEM),unix)
 endif # ($(SYSTEM),unix)
 
 # Windows specific part.
-ifeq ($(SYSTEM),win)
-  # Detect 32/64bit
-  ifeq ("$(Platform)","X64")  # Visual Studio 2015/2017 64 bit
-    PLATFORM = WIN64
-    PTRLENGTH = 64
-    CMAKE_SUFFIX = Win64
-    CBC_PLATFORM_PREFIX = x64
-    GLPK_PLATFORM = w64
-    NETPLATFORM = x64
-  else
-     ifeq ("$(Platform)","x64")  # Visual studio 2013 64 bit
-      PLATFORM = WIN64
-      PTRLENGTH = 64
-      CMAKE_SUFFIX = Win64
-      CBC_PLATFORM_PREFIX = x64
-      GLPK_PLATFORM = w64
-      NETPLATFORM = x64
-    else  # Visual Studio 32 bit (soon obsolete)
-      PLATFORM = Win32
-      PTRLENGTH = 32
-      CMAKE_SUFFIX =
-      CBC_PLATFORM_PREFIX = Win32
-      GLPK_PLATFORM = w32
-      NETPLATFORM = x86
-    endif
+ifeq ("$(SYSTEM)","win")
+  PLATFORM = WIN64
+  PTRLENGTH = 64
+  CBC_PLATFORM_PREFIX = x64
+  GLPK_PLATFORM = w64
+  NETPLATFORM = x64
+
+  # Check 64 bit.
+  ifneq ("$(Platform)","x64")  # Visual Studio 2017/2019 64 bit
+    $(warning "Only 64 bit compilation is supported")
   endif
 
   # Detect visual studio version
-  ifeq ("$(VisualStudioVersion)","12.0")
-    VISUAL_STUDIO_YEAR = 2013
-    VISUAL_STUDIO_MAJOR = 12
-    VS_RELEASE = v120
-  else
-    ifeq ("$(VisualStudioVersion)","14.0")
-      VISUAL_STUDIO_YEAR = 2015
-      VISUAL_STUDIO_MAJOR = 14
-      VS_RELEASE = v140
-    else
-      ifeq ("$(VisualStudioVersion)","15.0")
-        VISUAL_STUDIO_YEAR = 2017
-        VISUAL_STUDIO_MAJOR = 15
-        VS_RELEASE = v141
-      else
-        $(warning "Unrecognized visual studio version")
-      endif
-    endif
+  ifeq ("$(VisualStudioVersion)","15.0")
+    VISUAL_STUDIO_YEAR = 2017
+    VISUAL_STUDIO_MAJOR = 15
+    VS_RELEASE = v141
+    CMAKE_PLATFORM = "Visual Studio 15 2017 Win64"
   endif
-  # OS Specific
+  ifeq ("$(VisualStudioVersion)","16.0")
+    VISUAL_STUDIO_YEAR = 2019
+    VISUAL_STUDIO_MAJOR = 16
+    VS_RELEASE = v142
+    CMAKE_PLATFORM = "Visual Studio 16 2019" -A x64
+  endif
+
+  ifeq ("$(VISUAL_STUDIO_YEAR)","")
+    $(warning "Unrecognized visual studio version")
+  endif
+
+# OS Specific
   OS = Windows
   OR_TOOLS_TOP_AUX = $(shell cd)
   OR_TOOLS_TOP = $(shell echo $(OR_TOOLS_TOP_AUX) | tools\\win\\sed.exe -e "s/\\/\\\\/g" | tools\\win\\sed.exe -e "s/ //g")
@@ -148,12 +131,6 @@ ifeq ($(SYSTEM),win)
   # Compiler specific
   PORT = VisualStudio$(VISUAL_STUDIO_YEAR)-$(PTRLENGTH)bit
   VS_COMTOOLS = $(VISUAL_STUDIO_MAJOR)0
-
-  ifeq ("$(CMAKE_SUFFIX)","")
-    CMAKE_PLATFORM = "Visual Studio $(VISUAL_STUDIO_MAJOR) $(VISUAL_STUDIO_YEAR)"
-  else
-    CMAKE_PLATFORM = "Visual Studio $(VISUAL_STUDIO_MAJOR) $(VISUAL_STUDIO_YEAR) $(CMAKE_SUFFIX)"
-  endif
 
   # Third party specific
   CBC_PLATFORM = $(CBC_PLATFORM_PREFIX)-$(VS_RELEASE)-Release

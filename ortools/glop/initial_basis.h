@@ -44,8 +44,9 @@ namespace glop {
 class InitialBasis {
  public:
   // Takes references to the linear program data we need.
-  InitialBasis(const MatrixView& matrix, const DenseRow& objective,
-               const DenseRow& lower_bound, const DenseRow& upper_bound,
+  InitialBasis(const CompactSparseMatrix& compact_matrix,
+               const DenseRow& objective, const DenseRow& lower_bound,
+               const DenseRow& upper_bound,
                const VariableTypeRow& variable_type);
 
   // Completes the entries of the given basis that are equal to kInvalidCol with
@@ -119,7 +120,7 @@ class InitialBasis {
     const InitialBasis& initial_basis_;
   } triangular_column_comparator_;
 
-  const MatrixView& matrix_;
+  const CompactSparseMatrix& compact_matrix_;
   const DenseRow& objective_;
   const DenseRow& lower_bound_;
   const DenseRow& upper_bound_;

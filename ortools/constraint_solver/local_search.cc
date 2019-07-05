@@ -72,6 +72,9 @@ void AcceptUncheckedNeighbor(Search* const search);
 bool IntVarLocalSearchOperator::MakeNextNeighbor(Assignment* delta,
                                                  Assignment* deltadelta) {
   CHECK(delta != nullptr);
+  VLOG(2) << DebugString() << "::MakeNextNeighbor(delta=("
+          << delta->DebugString() << "), deltadelta=("
+          << (deltadelta ? deltadelta->DebugString() : std::string("nullptr"));
   while (true) {
     RevertChanges(true);
 
@@ -177,6 +180,7 @@ class RandomLns : public BaseLns {
 };
 
 bool RandomLns::NextFragment() {
+  DCHECK_GT(Size(), 0);
   for (int i = 0; i < number_of_variables_; ++i) {
     AppendToFragment(rand_.Uniform(Size()));
   }
@@ -1482,6 +1486,7 @@ bool TSPLns::MakeNeighbor() {
   absl::flat_hash_set<int64> breaks_set;
   // Always add base node to break nodes (diversification)
   breaks_set.insert(base_node);
+  CHECK(!nodes.empty());  // Should have been caught earlier.
   while (breaks_set.size() < tsp_size_) {
     const int64 one_break = nodes[rand_.Uniform(nodes.size())];
     if (!gtl::ContainsKey(breaks_set, one_break)) {
@@ -1605,23 +1610,20 @@ void NearestNeighbors::ComputeNearest(int row) {
   const IntVar* var = path_operator_.Var(row);
   const int64 var_min = var->Min();
   const int var_size = var->Max() - var_min + 1;
-  using ValuedIndex = std::pair<int /*index*/, int64 /*value*/>;
+  using ValuedIndex = std::pair<int64 /*value*/, int /*index*/>;
   std::vector<ValuedIndex> neighbors(var_size);
   for (int i = 0; i < var_size; ++i) {
     const int index = i + var_min;
-    neighbors[i] = std::make_pair(index, evaluator_(row, index, path));
+    neighbors[i] = std::make_pair(evaluator_(row, index, path), index);
   }
   if (var_size > size_) {
     std::nth_element(neighbors.begin(), neighbors.begin() + size_ - 1,
-                     neighbors.end(),
-                     [](const ValuedIndex& a, const ValuedIndex& b) {
-                       return a.second < b.second;
-                     });
+                     neighbors.end());
   }
 
   // Setup global neighbor matrix for row row_index
   for (int i = 0; i < std::min(size_, var_size); ++i) {
-    neighbors_[row].push_back(neighbors[i].first);
+    neighbors_[row].push_back(neighbors[i].second);
   }
   std::sort(neighbors_[row].begin(), neighbors_[row].end());
 }
@@ -1857,6 +1859,8 @@ class NeighborhoodLimit : public LocalSearchOperator {
     return operator_->MakeNextNeighbor(delta, deltadelta);
   }
 
+  bool HoldsDelta() const override { return operator_->HoldsDelta(); }
+
   std::string DebugString() const override { return "NeighborhoodLimit"; }
 
  private:
@@ -1882,6 +1886,7 @@ class CompoundOperator : public LocalSearchOperator {
   void Start(const Assignment* assignment) override;
   bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
   bool HasFragments() const override { return has_fragments_; }
+  bool HoldsDelta() const override { return true; }
 
   std::string DebugString() const override {
     return operators_[operator_indices_[index_]]->DebugString();
@@ -1967,10 +1972,14 @@ bool CompoundOperator::MakeNextNeighbor(Assignment* delta,
         operators_[operator_index]->Start(start_assignment_);
         started_.Set(operator_index);
       }
+      if (!operators_[operator_index]->HoldsDelta()) {
+        delta->Clear();
+      }
       if (operators_[operator_index]->MakeNextNeighbor(delta, deltadelta)) {
         return true;
       }
       ++index_;
+      delta->Clear();
       if (index_ == operators_.size()) {
         index_ = 0;
       }
@@ -2027,6 +2036,7 @@ class RandomCompoundOperator : public LocalSearchOperator {
   void Reset() override;
   void Start(const Assignment* assignment) override;
   bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
+  bool HoldsDelta() const override { return true; }
 
   std::string DebugString() const override { return "RandomCompoundOperator"; }
   // TODO(user): define Self method.
@@ -2072,9 +2082,13 @@ bool RandomCompoundOperator::MakeNextNeighbor(Assignment* delta,
   std::iota(indices.begin(), indices.end(), 0);
   std::shuffle(indices.begin(), indices.end(), rand_);
   for (int index : indices) {
+    if (!operators_[index]->HoldsDelta()) {
+      delta->Clear();
+    }
     if (operators_[index]->MakeNextNeighbor(delta, deltadelta)) {
       return true;
     }
+    delta->Clear();
   }
   return false;
 }
@@ -3023,7 +3037,10 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
     Assignment* delta = solver->MakeAssignment();
     Assignment* deltadelta = solver->MakeAssignment();
     while (true) {
-      delta->Clear();
+      if (!ls_operator_->HoldsDelta()) {
+        delta->Clear();
+      }
+      delta->ClearObjective();
       deltadelta->Clear();
       solver->TopPeriodicCheck();
       if (++counter >= FLAGS_cp_local_search_sync_frequency &&

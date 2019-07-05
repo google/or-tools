@@ -1,0 +1,11 @@
+<map id="com.google.ortools.constraintsolver.SearchMonitor" name="com.google.ortools.constraintsolver.SearchMonitor">
+<area shape="rect" id="node1" title="A search monitor is a simple set of callbacks to monitor all search events." alt="" coords="285,169,517,211"/>
+<area shape="rect" id="node3" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMonitor.html" title=" " alt="" coords="565,5,797,47"/>
+<area shape="rect" id="node4" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1OptimizeVar.html" title="This class encapsulates an objective." alt="" coords="565,71,797,112"/>
+<area shape="rect" id="node5" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationMonitor.html" title=" " alt="" coords="565,136,797,177"/>
+<area shape="rect" id="node6" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchLimit.html" title="Base class of all search limits." alt="" coords="565,201,797,243"/>
+<area shape="rect" id="node8" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchLog.html" title="The base class of all search logs that periodically outputs information when the search is running." alt="" coords="565,267,797,308"/>
+<area shape="rect" id="node9" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html" title="This class is the root class of all solution collectors." alt="" coords="565,332,797,373"/>
+<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,169,237,211"/>
+<area shape="rect" id="node7" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimit.html" title="Usual limit based on wall_time, number of explored branches and number of failures in the search tree..." alt="" coords="845,201,1077,243"/>
+</map>

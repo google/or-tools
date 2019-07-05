@@ -14,7 +14,7 @@
 
 from __future__ import print_function
 
-from collections import defaultdict
+import collections
 from ortools.sat.python import cp_model
 
 
@@ -35,12 +35,10 @@ class SolutionPrinter(cp_model.CpSolverSolutionCallback):
 def flexible_jobshop():
     """Solve a small flexible jobshop problem."""
     # Data part.
-    jobs = [[[(3, 0), (1, 1), (5, 2)], [(2, 0), (4, 1), (6, 2)],
-             [(2, 0), (3, 1), (1, 2)]],
-            [[(2, 0), (3, 1), (4, 2)], [(1, 0), (5, 1), (4, 2)],
-             [(2, 0), (1, 1), (4, 2)]], [[(2, 0), (1, 1),
-                                          (4, 2)], [(2, 0), (3, 1), (4, 2)],
-                                         [(3, 0), (1, 1), (5, 2)]]]
+    jobs = [[[(3, 0), (1, 1), (5, 2)], [(2, 0), (4, 1), (6, 2)], [(2, 0), (3, 1), (1, 2)]],
+            [[(2, 0), (3, 1), (4, 2)], [(1, 0), (5, 1), (4, 2)], [(2, 0), (1, 1), (4, 2)]],
+            [[(2, 0), (1, 1), (4, 2)], [(2, 0), (3, 1), (4, 2)], [(3, 0), (1, 1), (5, 2)]]
+    ] # yapf:disable
 
     num_jobs = len(jobs)
     all_jobs = range(num_jobs)
@@ -62,7 +60,7 @@ def flexible_jobshop():
     print('Horizon = %i' % horizon)
 
     # Global storage of variables.
-    intervals_per_resources = defaultdict(list)
+    intervals_per_resources = collections.defaultdict(list)
     starts = {}  # indexed by (job_id, task_id).
     presences = {}  # indexed by (job_id, task_id, alt_id).
     job_ends = []

@@ -1,0 +1,9 @@
+<map id="operations_research::Solver::SearchLogParameters" name="operations_research::Solver::SearchLogParameters">
+<area shape="rect" id="node1" title="Creates a search monitor from logging parameters." alt="" coords="34,507,242,545"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1OptimizeVar.html" title="&#45;&#45;&#45;&#45;&#45;&#45;&#45;— Objective Management &#45;&#45;&#45;&#45;&#45;&#45;&#45;—" alt="" coords="7,407,150,445"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events." alt="" coords="5,156,148,195"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="" coords="21,5,164,44"/>
+<area shape="rect" id="node7" href="$classoperations__research_1_1PropagationBaseObject.html" title="The PropagationBaseObject is a subclass of BaseObject that is also friend to the Solver class." alt="" coords="115,93,284,132"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr." alt="" coords="127,307,270,345"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming." alt="" coords="127,219,270,257"/>
+</map>

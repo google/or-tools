@@ -487,7 +487,8 @@ class BinaryImplicationGraph : public SatPropagator {
   // This function will transform each of the given constraint into a maximal
   // one in the underlying implication graph. Constraints that are redundant
   // after other have been expanded (i.e. included into) will be cleared.
-  void TransformIntoMaxCliques(std::vector<std::vector<Literal>>* at_most_ones);
+  void TransformIntoMaxCliques(std::vector<std::vector<Literal>>* at_most_ones,
+                               int64 max_num_explored_nodes = 1e8);
 
   // Number of literal propagated by this class (including conflicts).
   int64 num_propagations() const { return num_propagations_; }

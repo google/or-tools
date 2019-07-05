@@ -121,12 +121,12 @@ class SpeakerScheduling
           }
         }
       }
-      model.Add(all_vars.ToArray().Sum() == 1);
+      model.Add(LinearExpr.Sum(all_vars) == 1);
     }
     // Force the schedule to be consistent.
     for (int slot = first_slot; slot <= last_slot; ++slot)
     {
-      model.Add(contributions_per_slot[slot].ToArray().Sum() <= 1);
+      model.Add(LinearExpr.Sum(contributions_per_slot[slot]) <= 1);
     }
 
     // Creates last_slot.

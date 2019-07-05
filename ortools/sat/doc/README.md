@@ -1,7 +1,23 @@
-| [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Reference manual](reference.md) |
-| ----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | -------------------------------- |
+| [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Reference manual](reference.md) |
+| ----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | -------------------------------- |
 
 # Using the CP-SAT solver
+
+
+
+<!--ts-->
+   * [Using the CP-SAT solver](#using-the-cp-sat-solver)
+      * [Documentation structure](#documentation-structure)
+      * [Searching for one (optimal) solution of a CP-SAT model](#searching-for-one-optimal-solution-of-a-cp-sat-model)
+         * [Python code samples](#python-code-samples)
+         * [C   code samples](#c-code-samples)
+         * [Java code samples](#java-code-samples)
+         * [C# code samples](#c-code-samples-1)
+
+<!-- Added by: lperron, at: Fri Jun  7 09:58:09 CEST 2019 -->
+
+<!--te-->
+
 
 ## Documentation structure
 

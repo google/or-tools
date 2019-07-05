@@ -1,0 +1,5 @@
+<map id="com.google.ortools.sat.IntVar" name="com.google.ortools.sat.IntVar">
+<area shape="rect" id="node1" title="An integer variable." alt="" coords="120,80,313,107"/>
+<area shape="rect" id="node2" href="$interfacecom_1_1google_1_1ortools_1_1sat_1_1Literal.html" title="Interface to describe a boolean variable or its negation." alt="" coords="5,5,199,32"/>
+<area shape="rect" id="node3" href="$interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html" title="A linear expression interface that can be parsed." alt="" coords="223,5,443,32"/>
+</map>

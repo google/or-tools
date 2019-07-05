@@ -18,8 +18,6 @@ which.exe cmake | tee.exe -a build.log
 REM Python
 which.exe C:\python27-64\python.exe || exit 1
 echo C:\python27-64\python.exe: FOUND | tee.exe -a build.log
-which.exe C:\python35-64\python.exe || exit 1
-echo C:\python35-64\python.exe: FOUND | tee.exe -a build.log
 which.exe C:\python36-64\python.exe || exit 1
 echo C:\python36-64\python.exe: FOUND | tee.exe -a build.log
 which.exe C:\python37-64\python.exe || exit 1
@@ -96,27 +94,6 @@ make.exe test_python_package WINDOWS_PATH_TO_PYTHON=c:\python27-64 || exit 1
 echo Test Python2.7 pypi archive...DONE | tee.exe -a build.log
 
 set TEMP_DIR=temp_python27
-FOR %%i IN (%TEMP_DIR%\ortools\dist\*.whl) DO copy %%i .
-
-REM ##################
-REM ##  PYTHON 3.5  ##
-REM ##################
-echo Cleaning Python... | tee.exe -a build.log
-make.exe clean_python WINDOWS_PATH_TO_PYTHON=c:\python35-64
-echo Cleaning Python...DONE | tee.exe -a build.log
-
-REM make.exe python WINDOWS_PATH_TO_PYTHON=c:\python35-64 || exit 1
-REM echo make python3.5: DONE | tee.exe -a build.log
-REM make.exe test_python WINDOWS_PATH_TO_PYTHON=c:\python35-64 || exit 1
-REM echo make test_python3.5: DONE | tee.exe -a build.log
-echo Rebuild Python3.5 pypi archive... | tee.exe -a build.log
-make.exe python_package WINDOWS_PATH_TO_PYTHON=c:\python35-64 || exit 1
-echo Rebuild Python3.5 pypi archive...DONE | tee.exe -a build.log
-echo Test Python3.5 pypi archive... | tee.exe -a build.log
-make.exe test_python_package WINDOWS_PATH_TO_PYTHON=c:\python35-64 || exit 1
-echo Test Python3.5 pypi archive...DONE | tee.exe -a build.log
-
-set TEMP_DIR=temp_python35
 FOR %%i IN (%TEMP_DIR%\ortools\dist\*.whl) DO copy %%i .
 
 REM ##################

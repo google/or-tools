@@ -13,10 +13,6 @@
 
 #include "ortools/glop/update_row.h"
 
-#ifdef OMP
-#include <omp.h>
-#endif
-
 #include "ortools/lp_data/lp_utils.h"
 
 namespace operations_research {
@@ -273,45 +269,19 @@ void UpdateRow::ComputeUpdatesColumnWise() {
   const Fractional drop_tolerance = parameters_.drop_tolerance();
   coefficient_.resize(num_cols, 0.0);
   non_zero_position_list_.clear();
-#ifdef OMP
-  const int num_omp_threads = parameters_.num_omp_threads();
-  if (num_omp_threads == 1) {
-#endif
-    for (const ColIndex col : variables_info_.GetIsRelevantBitRow()) {
-      // Coefficient of the column right inverse on the 'leaving_row'.
-      const Fractional coeff =
-          matrix_.ColumnScalarProduct(col, unit_row_left_inverse_.values);
-      // Nothing to do if 'coeff' is (almost) zero which does happen due to
-      // sparsity. Note that it shouldn't be too bad to use a non-zero drop
-      // tolerance here because even if we introduce some precision issues, the
-      // quantities updated by this update row will eventually be recomputed.
-      if (std::abs(coeff) > drop_tolerance) {
-        non_zero_position_list_.push_back(col);
-        coefficient_[col] = coeff;
-      }
-    }
-#ifdef OMP
-  } else {
-    // In the multi-threaded case, perform the same computation as in the
-    // single-threaded case above.
-    const DenseBitRow& is_relevant = variables_info_.GetIsRelevantBitRow();
-    const int parallel_loop_size = is_relevant.size().value();
-#pragma omp parallel for num_threads(num_omp_threads)
-    for (int i = 0; i < parallel_loop_size; i++) {
-      const ColIndex col(i);
-      if (is_relevant.IsSet(col)) {
-        coefficient_[col] =
-            matrix_.ColumnScalarProduct(col, unit_row_left_inverse_.values);
-      }
-    }
-    // End of omp parallel for.
-    for (const ColIndex col : variables_info_.GetIsRelevantBitRow()) {
-      if (std::abs(coefficient_[col]) > drop_tolerance) {
-        non_zero_position_list_.push_back(col);
-      }
+  for (const ColIndex col : variables_info_.GetIsRelevantBitRow()) {
+    // Coefficient of the column right inverse on the 'leaving_row'.
+    const Fractional coeff =
+        matrix_.ColumnScalarProduct(col, unit_row_left_inverse_.values);
+    // Nothing to do if 'coeff' is (almost) zero which does happen due to
+    // sparsity. Note that it shouldn't be too bad to use a non-zero drop
+    // tolerance here because even if we introduce some precision issues, the
+    // quantities updated by this update row will eventually be recomputed.
+    if (std::abs(coeff) > drop_tolerance) {
+      non_zero_position_list_.push_back(col);
+      coefficient_[col] = coeff;
     }
   }
-#endif  // OMP
 }
 
 }  // namespace glop

@@ -12,6 +12,8 @@
 # limitations under the License.
 """Integer programming examples that show how to use the APIs."""
 
+from __future__ import print_function
+
 from ortools.linear_solver import pywraplp
 
 
@@ -54,8 +56,8 @@ def RunIntegerExampleCppStyleAPI(optimization_problem_type):
 
 def SolveAndPrint(solver, variable_list):
     """Solve the problem and print the solution."""
-    print(('Number of variables = %d' % solver.NumVariables()))
-    print(('Number of constraints = %d' % solver.NumConstraints()))
+    print('Number of variables = %d' % solver.NumVariables())
+    print('Number of constraints = %d' % solver.NumConstraints())
 
     result_status = solver.Solve()
 
@@ -66,22 +68,22 @@ def SolveAndPrint(solver, variable_list):
     # GLOP_LINEAR_PROGRAMMING, verifying the solution is highly recommended!).
     assert solver.VerifySolution(1e-7, True)
 
-    print(('Problem solved in %f milliseconds' % solver.wall_time()))
+    print('Problem solved in %f milliseconds' % solver.wall_time())
 
     # The objective value of the solution.
-    print(('Optimal objective value = %f' % solver.Objective().Value()))
+    print('Optimal objective value = %f' % solver.Objective().Value())
 
     # The value of each variable in the solution.
     for variable in variable_list:
-        print(('%s = %f' % (variable.name(), variable.solution_value())))
+        print('%s = %f' % (variable.name(), variable.solution_value()))
 
     print('Advanced usage:')
-    print(('Problem solved in %d branch-and-bound nodes' % solver.nodes()))
+    print('Problem solved in %d branch-and-bound nodes' % solver.nodes())
 
 
 def Announce(solver, api_type):
-    print(('---- Integer programming example with ' + solver + ' (' + api_type +
-           ') -----'))
+    print('---- Integer programming example with ' + solver + ' (' + api_type +
+          ') -----')
 
 
 def RunAllIntegerExampleNaturalLanguageAPI():

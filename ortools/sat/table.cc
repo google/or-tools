@@ -57,8 +57,7 @@ void ProcessOneColumn(
     const absl::flat_hash_map<IntegerValue, Literal>& encoding,
     const std::vector<Literal>& tuples_with_any, Model* model) {
   CHECK_EQ(line_literals.size(), values.size());
-  absl::flat_hash_map<IntegerValue, std::vector<Literal>>
-      value_to_list_of_line_literals;
+  std::vector<std::pair<IntegerValue, Literal>> pairs;
 
   // If a value is false (i.e not possible), then the tuple with this value
   // is false too (i.e not possible). Conversely, if the tuple is selected,
@@ -68,27 +67,38 @@ void ProcessOneColumn(
     if (!encoding.contains(v)) {
       model->Add(ClauseConstraint({line_literals[i].Negated()}));
     } else {
-      value_to_list_of_line_literals[v].push_back(line_literals[i]);
+      pairs.emplace_back(v, line_literals[i]);
       model->Add(Implication(line_literals[i], gtl::FindOrDie(encoding, v)));
     }
   }
 
-  // If all the tuples containing a value are false, then this value must be
-  // false too.
-  for (const auto& entry : value_to_list_of_line_literals) {
-    std::vector<Literal> clause = entry.second;
-    clause.insert(clause.end(), tuples_with_any.begin(), tuples_with_any.end());
-    clause.push_back(gtl::FindOrDie(encoding, entry.first).Negated());
+  // Regroup literal with the same value and add for each the clause: If all the
+  // tuples containing a value are false, then this value must be false too.
+  std::sort(pairs.begin(), pairs.end());
+  std::vector<Literal> clause = tuples_with_any;
+  for (int i = 0; i < pairs.size();) {
+    // We always keep the tuples_with_any at the beginning of the clause.
+    clause.resize(tuples_with_any.size());
+
+    const IntegerValue value = pairs[i].first;
+    for (; i < pairs.size() && pairs[i].first == value; ++i) {
+      clause.push_back(pairs[i].second);
+    }
+
+    // And the "value" literal and load the clause.
+    clause.push_back(gtl::FindOrDie(encoding, value).Negated());
     model->Add(ClauseConstraint(clause));
   }
 }
 
+// Simpler encoding for table constraints with 2 variables.
 void AddSizeTwoTable(
     absl::Span<const IntegerVariable> vars,
     const std::vector<std::vector<int64>>& tuples,
     const std::vector<absl::flat_hash_set<int64>>& values_per_var,
     Model* model) {
   const int n = vars.size();
+  CHECK_EQ(n, 2);
   IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
 
   std::vector<absl::flat_hash_map<IntegerValue, Literal>> encodings(n);
@@ -106,10 +116,8 @@ void AddSizeTwoTable(
   // One variable is fixed. Propagation is complete.
   if (values_per_var[0].size() == 1 || values_per_var[1].size() == 1) return;
 
-  absl::flat_hash_map<LiteralIndex, absl::flat_hash_set<LiteralIndex>>
-      left_to_right;
-  absl::flat_hash_map<LiteralIndex, absl::flat_hash_set<LiteralIndex>>
-      right_to_left;
+  std::map<LiteralIndex, std::vector<Literal>> left_to_right;
+  std::map<LiteralIndex, std::vector<Literal>> right_to_left;
 
   for (const auto& tuple : tuples) {
     const IntegerValue left_value(tuple[0]);
@@ -119,105 +127,113 @@ void AddSizeTwoTable(
       continue;
     }
 
-    Literal left = gtl::FindOrDie(encodings[0], left_value);
-    Literal right = gtl::FindOrDie(encodings[1], right_value);
-    left_to_right[left.Index()].insert(right.Index());
-    right_to_left[right.Index()].insert(left.Index());
+    const Literal left = gtl::FindOrDie(encodings[0], left_value);
+    const Literal right = gtl::FindOrDie(encodings[1], right_value);
+    left_to_right[left.Index()].push_back(right);
+    right_to_left[right.Index()].push_back(left);
   }
 
-  int implications = 0;
-  int clause_added = 0;
-  int large_clause_added = 0;
-  std::vector<Literal> clauses;
-  auto add_support =
-      [model, &clause_added, &large_clause_added, &implications, &clauses](
-          LiteralIndex lit, const absl::flat_hash_set<LiteralIndex>& supports,
-          int max_support_size) {
+  int num_implications = 0;
+  int num_clause_added = 0;
+  int num_large_clause_added = 0;
+  std::vector<Literal> clause;
+  auto add_support_constraint =
+      [model, &num_clause_added, &num_large_clause_added, &num_implications,
+       &clause](LiteralIndex lit, const std::vector<Literal>& supports,
+                int max_support_size) {
         if (supports.size() == max_support_size) return;
         if (supports.size() == 1) {
-          model->Add(Implication(Literal(lit), Literal(*supports.begin())));
-          implications++;
+          model->Add(Implication(Literal(lit), supports.front()));
+          num_implications++;
         } else {
-          clauses.clear();
-          for (const LiteralIndex index : supports) {
-            clauses.push_back(Literal(index));
-          }
-          clauses.push_back(Literal(lit).Negated());
-          model->Add(ClauseConstraint(clauses));
-          clause_added++;
+          clause.assign(supports.begin(), supports.end());
+          clause.push_back(Literal(lit).Negated());
+          model->Add(ClauseConstraint(clause));
+          num_clause_added++;
           if (supports.size() > max_support_size / 2) {
-            large_clause_added++;
+            num_large_clause_added++;
           }
         }
       };
 
   for (const auto& it : left_to_right) {
-    add_support(it.first, it.second, values_per_var[1].size());
+    add_support_constraint(it.first, it.second, values_per_var[1].size());
   }
   for (const auto& it : right_to_left) {
-    add_support(it.first, it.second, values_per_var[0].size());
+    add_support_constraint(it.first, it.second, values_per_var[0].size());
   }
   VLOG(2) << "Table: 2 variables, " << tuples.size() << " tuples encoded using "
-          << clause_added << " clauses, " << large_clause_added
-          << " large clauses, " << implications << " implications";
+          << num_clause_added << " clauses, " << num_large_clause_added
+          << " large clauses, " << num_implications << " implications";
 }
 
-void ExplorePrefixes(const std::vector<std::vector<int64>>& tuples,
-                     const std::vector<std::vector<int64>>& var_domains,
-                     absl::Span<const IntegerVariable> vars, Model* model) {
-  auto explore_prefix_span = [&](int start, int end) {
-    // Compute the maximum number of such prefix tuples.
-    int64 max_num_prefix_tuples = 1;
-    for (int i = start; i <= end; ++i) {
-      max_num_prefix_tuples =
-          CapProd(max_num_prefix_tuples, var_domains[i].size());
-    }
+// This method heuristically explores subsets of variables and decide if the
+// projection of all tuples nearly fills all the possible combination of
+// projected variables domains.
+//
+// In that case, it creates the complement of the projected tuples and add that
+// as a forbidden assignment constraint.
+void ExploreSubsetOfVariablesAndAddNegatedTables(
+    const std::vector<std::vector<int64>>& tuples,
+    const std::vector<std::vector<int64>>& var_domains,
+    absl::Span<const IntegerVariable> vars, Model* model) {
+  const int num_vars = var_domains.size();
+  for (int start = 0; start < num_vars; ++start) {
+    const int limit = start == 0 ? num_vars : std::min(num_vars, start + 3);
+    for (int end = start + 1; end < limit; ++end) {
+      // TODO(user,user): If we add negated table for more than one value of
+      // end, because the set of variables will be included in each other, we
+      // could reduce the number of clauses added. I.e if we excluded
+      // (x=2, y=3) there is no need to exclude any of the tuples
+      // (x=2, y=3, z=*).
 
-    // Abort early.
-    if (max_num_prefix_tuples > 2 * tuples.size()) return;
+      // Compute the maximum number of such prefix tuples.
+      int64 max_num_prefix_tuples = 1;
+      for (int i = start; i <= end; ++i) {
+        max_num_prefix_tuples =
+            CapProd(max_num_prefix_tuples, var_domains[i].size());
+      }
 
-    absl::flat_hash_set<absl::Span<const int64>> prefixes;
-    for (const std::vector<int64>& tuple : tuples) {
-      prefixes.insert(absl::MakeSpan(&tuple[start], end - start + 1));
-      if (prefixes.size() == max_num_prefix_tuples) return;
-    }
-    const int num_prefix_tuples = prefixes.size();
+      // Abort early.
+      if (max_num_prefix_tuples > 2 * tuples.size()) break;
 
-    std::vector<std::vector<int64>> negated_tuples;
-
-    int created = 0;
-    if (num_prefix_tuples < max_num_prefix_tuples &&
-        max_num_prefix_tuples < num_prefix_tuples * 2) {
-      std::vector<int64> tmp_tuple;
-      for (int i = 0; i < max_num_prefix_tuples; ++i) {
-        tmp_tuple.clear();
-        int index = i;
-        for (int j = start; j <= end; ++j) {
-          tmp_tuple.push_back(var_domains[j][index % var_domains[j].size()]);
-          index /= var_domains[j].size();
-        }
-        if (!prefixes.contains(tmp_tuple)) {
-          negated_tuples.push_back(tmp_tuple);
-          created++;
+      absl::flat_hash_set<absl::Span<const int64>> prefixes;
+      bool skip = false;
+      for (const std::vector<int64>& tuple : tuples) {
+        prefixes.insert(absl::MakeSpan(&tuple[start], end - start + 1));
+        if (prefixes.size() == max_num_prefix_tuples) {
+          // Nothing to add with this range [start..end].
+          skip = true;
+          break;
         }
       }
-      AddNegatedTableConstraint(vars.subspan(start, end - start + 1),
-                                negated_tuples, model);
-      VLOG(2) << "  created = " << created << " for " << start << " .. " << end;
-    }
-  };
+      if (skip) continue;
+      const int num_prefix_tuples = prefixes.size();
 
-  for (int end = 1; end < var_domains.size(); ++end) {
-    explore_prefix_span(0, end);
-  }
-  for (int start = 1; start + 1 < var_domains.size(); ++start) {
-    explore_prefix_span(start, start + 1);
-  }
-  for (int start = 1; start + 2 < var_domains.size(); ++start) {
-    explore_prefix_span(start, start + 2);
-  }
-  for (int start = 1; start + 3 < var_domains.size(); ++start) {
-    explore_prefix_span(start, start + 3);
+      std::vector<std::vector<int64>> negated_tuples;
+
+      int created = 0;
+      if (num_prefix_tuples < max_num_prefix_tuples &&
+          max_num_prefix_tuples < num_prefix_tuples * 2) {
+        std::vector<int64> tmp_tuple;
+        for (int i = 0; i < max_num_prefix_tuples; ++i) {
+          tmp_tuple.clear();
+          int index = i;
+          for (int j = start; j <= end; ++j) {
+            tmp_tuple.push_back(var_domains[j][index % var_domains[j].size()]);
+            index /= var_domains[j].size();
+          }
+          if (!prefixes.contains(tmp_tuple)) {
+            negated_tuples.push_back(tmp_tuple);
+            created++;
+          }
+        }
+        AddNegatedTableConstraint(vars.subspan(start, end - start + 1),
+                                  negated_tuples, model);
+        VLOG(2) << "  add negated tables with " << created
+                << " tuples on the range [" << start << "," << end << "]";
+      }
+    }
   }
 }
 
@@ -233,20 +249,19 @@ void CompressTuples(absl::Span<const int64> domain_sizes, int64 any_value,
   const int num_vars = (*tuples)[0].size();
 
   std::vector<int> to_remove;
+  std::vector<int64> tuple_minus_var_i(num_vars - 1);
   for (int i = 0; i < num_vars; ++i) {
     const int domain_size = domain_sizes[i];
     if (domain_size == 1) continue;
     absl::flat_hash_map<const std::vector<int64>, std::vector<int>>
         masked_tuples_to_indices;
     for (int t = 0; t < tuples->size(); ++t) {
-      CHECK_NE((*tuples)[t][i], any_value);
-      std::vector<int64> masked_copy;
-      masked_copy.reserve(num_vars - 1);
+      int out = 0;
       for (int j = 0; j < num_vars; ++j) {
         if (i == j) continue;
-        masked_copy.push_back((*tuples)[t][j]);
+        tuple_minus_var_i[out++] = (*tuples)[t][j];
       }
-      masked_tuples_to_indices[masked_copy].push_back(t);
+      masked_tuples_to_indices[tuple_minus_var_i].push_back(t);
     }
     to_remove.clear();
     for (const auto& it : masked_tuples_to_indices) {
@@ -303,22 +318,20 @@ void AddTableConstraint(absl::Span<const IntegerVariable> vars,
     return;
   }
 
-  // Detect the case when the first n-1 columns are all different.
-  // This encodes the implication table (tuple of size n - 1) implies value.
-  absl::flat_hash_set<absl::Span<const int64>> prefixes;
-  for (const std::vector<int64>& tuple : tuples) {
-    prefixes.insert(absl::MakeSpan(tuple.data(), n - 1));
-  }
-  const int num_prefix_tuples = prefixes.size();
-  // Compute the maximum number of such prefix tuples.
-  int64 max_num_prefix_tuples = 1;
-  for (int i = 0; i + 1 < n; ++i) {
-    max_num_prefix_tuples =
-        CapProd(max_num_prefix_tuples, values_per_var[i].size());
-  }
   if (n == 2) {
     AddSizeTwoTable(vars, tuples, values_per_var, model);
     return;
+  }
+
+  // It is easier to compute this before compression, as compression will merge
+  // tuples.
+  int num_prefix_tuples = 0;
+  {
+    absl::flat_hash_set<absl::Span<const int64>> prefixes;
+    for (const std::vector<int64>& tuple : tuples) {
+      prefixes.insert(absl::MakeSpan(tuple.data(), n - 1));
+    }
+    num_prefix_tuples = prefixes.size();
   }
 
   std::vector<std::vector<int64>> var_domains(n);
@@ -326,12 +339,8 @@ void AddTableConstraint(absl::Span<const IntegerVariable> vars,
     var_domains[j].assign(values_per_var[j].begin(), values_per_var[j].end());
     std::sort(var_domains[j].begin(), var_domains[j].end());
   }
-  if (vars.size() > 2) {
-    ExplorePrefixes(tuples, var_domains, vars, model);
-  }
-
-  // Detect if prefix tuples are all different.
-  const bool prefixes_are_all_different = num_prefix_tuples == num_valid_tuples;
+  CHECK_GT(vars.size(), 2);
+  ExploreSubsetOfVariablesAndAddNegatedTables(tuples, var_domains, vars, model);
 
   // The variable domains have been computed. Fully encode variables.
   // Note that in some corner cases (like duplicate vars), as we call
@@ -359,7 +368,16 @@ void AddTableConstraint(absl::Span<const IntegerVariable> vars,
   CompressTuples(domain_sizes, any_value, &tuples);
   const int num_compressed_tuples = tuples.size();
 
+  // Detect if prefix tuples are all different.
+  const bool prefixes_are_all_different = num_prefix_tuples == num_valid_tuples;
   if (VLOG_IS_ON(2)) {
+    // Compute the maximum number of prefix tuples.
+    int64 max_num_prefix_tuples = 1;
+    for (int i = 0; i + 1 < n; ++i) {
+      max_num_prefix_tuples =
+          CapProd(max_num_prefix_tuples, values_per_var[i].size());
+    }
+
     std::string message = absl::StrCat(
         "Table: ", n, " variables, original tuples = ", num_original_tuples);
     if (num_valid_tuples != num_original_tuples) {
@@ -373,7 +391,7 @@ void AddTableConstraint(absl::Span<const IntegerVariable> vars,
         absl::StrAppend(&message, ", full prefix = true");
       }
     } else {
-      absl::StrAppend(&message, ", num prefix tuples = ", prefixes.size());
+      absl::StrAppend(&message, ", num prefix tuples = ", num_prefix_tuples);
     }
     if (num_compressed_tuples != num_valid_tuples) {
       absl::StrAppend(&message,
@@ -437,8 +455,9 @@ void AddTableConstraint(absl::Span<const IntegerVariable> vars,
   }
 
   if (prefixes_are_all_different) {
-    // This is optional propagation wise, but it should lead
-    // to better explanation.
+    // The first n-1 columns are all different, this encodes the implication
+    // table (tuple of size n - 1) implies value. We can add an optional
+    // propagation that should lead to better explanation.
     // For each tuple, we add a clause prefix => last value.
     std::vector<Literal> clause;
     for (int j = 0; j < tuples.size(); ++j) {

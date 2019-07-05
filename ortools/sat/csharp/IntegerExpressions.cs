@@ -13,644 +13,742 @@
 
 namespace Google.OrTools.Sat
 {
-using System;
-using System.Collections.Generic;
+  using System;
+  using System.Collections.Generic;
+  using Google.OrTools.Util;
 
-// Helpers.
+  // Helpers.
 
-// IntVar[] helper class.
-public static class IntVarArrayHelper
-{
-  public static SumArray Sum(this IntVar[] vars)
+  // IntVar[] helper class.
+  public static class IntVarArrayHelper
   {
-    return new SumArray(vars);
-  }
-  public static SumArray ScalProd(this IntVar[] vars, int[] coeffs)
-  {
-    IntegerExpression[] exprs = new IntegerExpression[vars.Length];
-    for (int i = 0; i < vars.Length; ++i) {
-      exprs[i] = vars[i] * coeffs[i];
+    [Obsolete("This Sum method is deprecated, please use LinearExpr.Sum() instead.")]
+    public static LinearExpr Sum(this IntVar[] vars)
+    {
+      return LinearExpr.Sum(vars);
     }
-    return new SumArray(exprs);
-  }
-  public static SumArray ScalProd(this IntVar[] vars, long[] coeffs)
-  {
-    IntegerExpression[] exprs = new IntegerExpression[vars.Length];
-    for (int i = 0; i < vars.Length; ++i) {
-      exprs[i] = vars[i] * coeffs[i];
+    [Obsolete("This ScalProd method is deprecated, please use LinearExpr.ScalProd() instead.")]
+    public static LinearExpr ScalProd(this IntVar[] vars, int[] coeffs)
+    {
+      return LinearExpr.ScalProd(vars, coeffs);
     }
-    return new SumArray(exprs);
+    [Obsolete("This ScalProd method is deprecated, please use LinearExpr.ScalProd() instead.")]
+    public static LinearExpr ScalProd(this IntVar[] vars, long[] coeffs)
+    {
+      return LinearExpr.ScalProd(vars, coeffs);
+    }
   }
-}
 
-public interface ILiteral
-{
-  ILiteral Not();
-  int GetIndex();
-}
-
-// Holds an integer expression.
-public class IntegerExpression
-{
-
-  public int Index
+  public interface ILiteral
   {
-    get { return GetIndex(); }
+    ILiteral Not();
+    int GetIndex();
   }
 
-  public virtual int GetIndex()
+  // Holds an linear expression.
+  public class LinearExpr
   {
-    throw new NotImplementedException();
-  }
 
-  public virtual string ShortString()
-  {
-    return ToString();
-  }
+    public static LinearExpr Sum(IEnumerable<IntVar> vars)
+    {
+      return new SumArray(vars);
+    }
 
-  public static IntegerExpression operator+(IntegerExpression a,
-                                            IntegerExpression b) {
-    return new SumArray(a, b);
-  }
+    public static LinearExpr Sum(IEnumerable<LinearExpr> exprs)
+    {
+      return new SumArray(exprs);
+    }
 
-  public static IntegerExpression operator+(IntegerExpression a, long v) {
-    return new SumArray(a, v);
-  }
+    public static LinearExpr ScalProd(IEnumerable<IntVar> vars, IEnumerable<int> coeffs)
+    {
+      return new SumArray(vars, coeffs);
+    }
+    public static LinearExpr ScalProd(IEnumerable<IntVar> vars, IEnumerable<long> coeffs)
+    {
+      return new SumArray(vars, coeffs);
+    }
 
-  public static IntegerExpression operator+(long v, IntegerExpression a) {
-    return new SumArray(a, v);
-  }
+    public int Index
+    {
+      get { return GetIndex(); }
+    }
 
-  public static IntegerExpression operator-(IntegerExpression a,
-                                            IntegerExpression b) {
-    return new SumArray(a, Prod(b, -1));
-  }
+    public virtual int GetIndex()
+    {
+      throw new NotImplementedException();
+    }
 
-  public static IntegerExpression operator-(IntegerExpression a, long v) {
-    return new SumArray(a, -v);
-  }
+    public virtual string ShortString()
+    {
+      return ToString();
+    }
 
-  public static IntegerExpression operator-(long v, IntegerExpression a) {
-    return new SumArray(Prod(a, -1), v);
-  }
+    public static LinearExpr operator +(LinearExpr a, LinearExpr b)
+    {
+      return new SumArray(a, b);
+    }
 
-  public static IntegerExpression operator*(IntegerExpression a, long v) {
-    return Prod(a, v);
-  }
+    public static LinearExpr operator +(LinearExpr a, long v)
+    {
+      return new SumArray(a, v);
+    }
 
-  public static IntegerExpression operator*(long v, IntegerExpression a) {
-    return Prod(a, v);
-  }
+    public static LinearExpr operator +(long v, LinearExpr a)
+    {
+      return new SumArray(a, v);
+    }
 
-  public static IntegerExpression operator-(IntegerExpression a) {
-    return Prod(a, -1);
-  }
+    public static LinearExpr operator -(LinearExpr a, LinearExpr b)
+    {
+      return new SumArray(a, Prod(b, -1));
+    }
 
-  public static BoundIntegerExpression operator ==(IntegerExpression a,
-                                                   IntegerExpression b) {
-    return new BoundIntegerExpression(a, b, true);
-  }
+    public static LinearExpr operator -(LinearExpr a, long v)
+    {
+      return new SumArray(a, -v);
+    }
 
-  public static BoundIntegerExpression operator !=(IntegerExpression a,
-                                                   IntegerExpression b) {
-    return new BoundIntegerExpression(a, b, false);
-  }
+    public static LinearExpr operator -(long v, LinearExpr a)
+    {
+      return new SumArray(Prod(a, -1), v);
+    }
 
-  public static BoundIntegerExpression operator ==(IntegerExpression a,
-                                                   long v) {
-    return new BoundIntegerExpression(a, v, true);
-  }
+    public static LinearExpr operator *(LinearExpr a, long v)
+    {
+      return Prod(a, v);
+    }
 
-  public static BoundIntegerExpression operator !=(IntegerExpression a,
-                                                   long v) {
-    return new BoundIntegerExpression(a, v, false);
-  }
+    public static LinearExpr operator *(long v, LinearExpr a)
+    {
+      return Prod(a, v);
+    }
 
-  public static BoundIntegerExpression operator >=(IntegerExpression a,
-                                                   long v) {
-    return new BoundIntegerExpression(v, a, Int64.MaxValue);
-  }
+    public static LinearExpr operator -(LinearExpr a)
+    {
+      return Prod(a, -1);
+    }
 
-  public static BoundIntegerExpression operator >=(long v,
-                                                   IntegerExpression a) {
-    return a <= v;
-  }
+    public static BoundedLinearExpression operator ==(LinearExpr a, LinearExpr b)
+    {
+      return new BoundedLinearExpression(a, b, true);
+    }
 
-  public static BoundIntegerExpression operator >(IntegerExpression a,
-                                                  long v) {
-    return new BoundIntegerExpression(v + 1, a, Int64.MaxValue);
-  }
+    public static BoundedLinearExpression operator !=(LinearExpr a, LinearExpr b)
+    {
+      return new BoundedLinearExpression(a, b, false);
+    }
 
-  public static BoundIntegerExpression operator >(long v, IntegerExpression a) {
-    return a < v;
-  }
+    public static BoundedLinearExpression operator ==(LinearExpr a, long v)
+    {
+      return new BoundedLinearExpression(a, v, true);
+    }
 
-  public static BoundIntegerExpression operator <=(IntegerExpression a,
-                                                   long v) {
-    return new BoundIntegerExpression(Int64.MinValue, a, v);
-  }
+    public static BoundedLinearExpression operator !=(LinearExpr a, long v)
+    {
+      return new BoundedLinearExpression(a, v, false);
+    }
 
-    public static BoundIntegerExpression operator <=(long v,
-                                                     IntegerExpression a) {
+    public static BoundedLinearExpression operator >=(LinearExpr a, long v)
+    {
+      return new BoundedLinearExpression(v, a, Int64.MaxValue);
+    }
+
+    public static BoundedLinearExpression operator >=(long v, LinearExpr a)
+    {
+      return a <= v;
+    }
+
+    public static BoundedLinearExpression operator >(LinearExpr a, long v)
+    {
+      return new BoundedLinearExpression(v + 1, a, Int64.MaxValue);
+    }
+
+    public static BoundedLinearExpression operator >(long v, LinearExpr a)
+    {
+      return a < v;
+    }
+
+    public static BoundedLinearExpression operator <=(LinearExpr a, long v)
+    {
+      return new BoundedLinearExpression(Int64.MinValue, a, v);
+    }
+
+    public static BoundedLinearExpression operator <=(long v, LinearExpr a)
+    {
       return a >= v;
-  }
-
-  public static BoundIntegerExpression operator <(IntegerExpression a,
-                                                  long v) {
-    return new BoundIntegerExpression(Int64.MinValue, a, v - 1);
-  }
-
-  public static BoundIntegerExpression operator <(long v, IntegerExpression a) {
-    return a > v;
-  }
-
-  public static BoundIntegerExpression operator >=(IntegerExpression a,
-                                                   IntegerExpression b) {
-    return new BoundIntegerExpression(0, a - b, Int64.MaxValue);
-  }
-
-  public static BoundIntegerExpression operator >(IntegerExpression a,
-                                                  IntegerExpression b) {
-    return new BoundIntegerExpression(1, a - b, Int64.MaxValue);
-  }
-
-  public static BoundIntegerExpression operator <=(IntegerExpression a,
-                                                   IntegerExpression b) {
-    return new BoundIntegerExpression(Int64.MinValue, a - b, 0);
-  }
-
-  public static BoundIntegerExpression operator <(IntegerExpression a,
-                                                  IntegerExpression b) {
-    return new BoundIntegerExpression(Int64.MinValue, a - b, -1);
-  }
-
-  public static IntegerExpression Prod(IntegerExpression e, long v)
-  {
-    if (v == 1)
-    {
-      return e;
     }
-    else if (e is ProductCst)
+
+    public static BoundedLinearExpression operator <(LinearExpr a, long v)
     {
-      ProductCst p = (ProductCst)e;
-      return new ProductCst(p.Expr, p.Coeff * v);
+      return new BoundedLinearExpression(Int64.MinValue, a, v - 1);
     }
-    else
+
+    public static BoundedLinearExpression operator <(long v, LinearExpr a)
     {
-      return new ProductCst(e, v);
+      return a > v;
     }
-  }
 
-  public static long GetVarValueMap(IntegerExpression e,
-                                    long initial_coeff,
-                                    Dictionary<IntVar, long> dict)
-  {
-    List<IntegerExpression> exprs = new List<IntegerExpression>();
-    List<long> coeffs = new List<long>();
-    exprs.Add(e);
-    coeffs.Add(initial_coeff);
-    long constant = 0;
-
-    while (exprs.Count > 0)
+    public static BoundedLinearExpression operator >=(LinearExpr a, LinearExpr b)
     {
-      IntegerExpression expr = exprs[0];
-      exprs.RemoveAt(0);
-      long coeff = coeffs[0];
-      coeffs.RemoveAt(0);
-      if (coeff == 0) continue;
+      return new BoundedLinearExpression(0, a - b, Int64.MaxValue);
+    }
 
-      if (expr is ProductCst)
-      {
-        ProductCst p = (ProductCst)expr;
-        if (p.Coeff != 0)
-        {
-          exprs.Add(p.Expr);
-          coeffs.Add(p.Coeff * coeff);
-        }
-      }
-      else if (expr is SumArray)
-      {
-        SumArray a = (SumArray)expr;
-        constant += coeff * a.Constant;
-        foreach (IntegerExpression sub in a.Expressions)
-        {
-          exprs.Add(sub);
-          coeffs.Add(coeff);
-        }
-      }
-      else if (expr is IntVar)
-      {
-        IntVar i = (IntVar)expr;
-        if (dict.ContainsKey(i))
-        {
-          dict[i] += coeff;
-        }
-        else
-        {
-          dict.Add(i, coeff);
-        }
+    public static BoundedLinearExpression operator >(LinearExpr a, LinearExpr b)
+    {
+      return new BoundedLinearExpression(1, a - b, Int64.MaxValue);
+    }
 
-      }
-      else if (expr is NotBooleanVariable)
+    public static BoundedLinearExpression operator <=(LinearExpr a, LinearExpr b)
+    {
+      return new BoundedLinearExpression(Int64.MinValue, a - b, 0);
+    }
+
+    public static BoundedLinearExpression operator <(LinearExpr a, LinearExpr b)
+    {
+      return new BoundedLinearExpression(Int64.MinValue, a - b, -1);
+    }
+
+    public static LinearExpr Prod(LinearExpr e, long v)
+    {
+      if (v == 1)
       {
-        throw new ArgumentException(
-            "Cannot interpret a literal in an integer expression.");
+        return e;
+      }
+      else if (e is ProductCst)
+      {
+        ProductCst p = (ProductCst)e;
+        return new ProductCst(p.Expr, p.Coeff * v);
       }
       else
       {
-        throw new ArgumentException("Cannot interpret '" + expr.ToString() +
-                                    "' in an integer expression");
+        return new ProductCst(e, v);
       }
     }
-    return constant;
-  }
-}
 
-public class ProductCst : IntegerExpression
-{
-  public ProductCst(IntegerExpression e, long v)
-  {
-    expr_ = e;
-    coeff_ = v;
-  }
-
-  public IntegerExpression Expr
-  {
-    get { return expr_; }
-  }
-
-  public long Coeff
-  {
-    get { return coeff_; }
-  }
-
-  private IntegerExpression expr_;
-  private long coeff_;
-
-}
-
-public class SumArray : IntegerExpression
-{
-  public SumArray(IntegerExpression a, IntegerExpression b)
-  {
-    expressions_ = new List<IntegerExpression>();
-    expressions_.Add(a);
-    expressions_.Add(b);
-    constant_ = 0L;
-  }
-
-  public SumArray(IntegerExpression a, long b)
-  {
-    expressions_ = new List<IntegerExpression>();
-    expressions_.Add(a);
-    constant_ = b;
-  }
-
-  public SumArray(IEnumerable<IntegerExpression> exprs)
-  {
-    expressions_ = new List<IntegerExpression>();
-    foreach (IntegerExpression e in exprs)
+    public static long GetVarValueMap(LinearExpr e,
+                                      long initial_coeff,
+                                      Dictionary<IntVar, long> dict)
     {
-      if (e != null)
+      List<LinearExpr> exprs = new List<LinearExpr>();
+      List<long> coeffs = new List<long>();
+      if ((Object)e != null)
       {
-        expressions_.Add(e);
+        exprs.Add(e);
+        coeffs.Add(initial_coeff);
       }
-    }
-    constant_ = 0L;
-  }
+      long constant = 0;
 
-  public SumArray(IEnumerable<IntegerExpression> exprs, long cte)
-  {
-    expressions_ = new List<IntegerExpression>();
-    foreach (IntegerExpression e in exprs)
-    {
-      if (e != null)
+      while (exprs.Count > 0)
       {
-        expressions_.Add(e);
-      }
-    }
-    constant_ = cte;
-  }
+        LinearExpr expr = exprs[0];
+        exprs.RemoveAt(0);
+        long coeff = coeffs[0];
+        coeffs.RemoveAt(0);
+        if (coeff == 0 || (Object)expr == null) continue;
 
-  public List<IntegerExpression> Expressions
-  {
-    get { return expressions_; }
-  }
-
-  public long Constant
-  {
-    get { return constant_; }
-  }
-
-  public override string ShortString()
-  {
-    return String.Format("({0})", ToString());
-  }
-
-  public override string ToString()
-  {
-    string result = "";
-    for (int i = 0; i < expressions_.Count; ++i)
-    {
-      bool negated = false;
-      IntegerExpression expr = expressions_[i];
-      if (i != 0)
-      {
-        if (expr is ProductCst && ((ProductCst)expr).Coeff < 0)
+        if (expr is ProductCst)
         {
-          result += String.Format(" - ");
-          negated = true;
+          ProductCst p = (ProductCst)expr;
+          if (p.Coeff != 0)
+          {
+            exprs.Add(p.Expr);
+            coeffs.Add(p.Coeff * coeff);
+          }
+        }
+        else if (expr is SumArray)
+        {
+          SumArray a = (SumArray)expr;
+          constant += coeff * a.Constant;
+          foreach (LinearExpr sub in a.Expressions)
+          {
+            if (sub is IntVar)
+            {
+              IntVar i = (IntVar)sub;
+              if (dict.ContainsKey(i))
+              {
+                dict[i] += coeff;
+              }
+              else
+              {
+                dict.Add(i, coeff);
+              }
+            }
+            else if (sub is ProductCst && ((ProductCst)sub).Expr is IntVar)
+            {
+              ProductCst sub_prod = (ProductCst)sub;
+              IntVar i = (IntVar)sub_prod.Expr;
+              long sub_coeff = sub_prod.Coeff;
+
+              if (dict.ContainsKey(i))
+              {
+                dict[i] += coeff * sub_coeff;
+              }
+              else
+              {
+                dict.Add(i, coeff * sub_coeff);
+              }
+            }
+            else
+            {
+              exprs.Add(sub);
+              coeffs.Add(coeff);
+            }
+          }
+        }
+        else if (expr is IntVar)
+        {
+          IntVar i = (IntVar)expr;
+          if (dict.ContainsKey(i))
+          {
+            dict[i] += coeff;
+          }
+          else
+          {
+            dict.Add(i, coeff);
+          }
+        }
+        else if (expr is NotBooleanVariable)
+        {
+          IntVar i = ((NotBooleanVariable)expr).NotVar();
+          if (dict.ContainsKey(i))
+          {
+            dict[i] -= coeff;
+          }
+          else
+          {
+            dict.Add(i, -coeff);
+          }
+          constant += coeff;
         }
         else
+        {
+          throw new ArgumentException("Cannot interpret '" + expr.ToString() +
+                                      "' in an integer expression");
+        }
+      }
+      return constant;
+    }
+  }
+
+  public class ProductCst : LinearExpr
+  {
+    public ProductCst(LinearExpr e, long v)
+    {
+      expr_ = e;
+      coeff_ = v;
+    }
+
+    public LinearExpr Expr
+    {
+      get { return expr_; }
+    }
+
+    public long Coeff
+    {
+      get { return coeff_; }
+    }
+
+    private LinearExpr expr_;
+    private long coeff_;
+
+  }
+
+  public class SumArray : LinearExpr
+  {
+    public SumArray(LinearExpr a, LinearExpr b)
+    {
+      expressions_ = new List<LinearExpr>();
+      AddExpr(a);
+      AddExpr(b);
+      constant_ = 0L;
+    }
+
+    public SumArray(LinearExpr a, long b)
+    {
+      expressions_ = new List<LinearExpr>();
+      AddExpr(a);
+      constant_ = b;
+    }
+
+    public SumArray(IEnumerable<LinearExpr> exprs)
+    {
+      expressions_ = new List<LinearExpr>(exprs);
+      constant_ = 0L;
+    }
+
+    public SumArray(IEnumerable<IntVar> vars)
+    {
+      expressions_ = new List<LinearExpr>(vars);
+      constant_ = 0L;
+    }
+
+    public SumArray(IntVar[] vars, long[] coeffs)
+    {
+      expressions_ = new List<LinearExpr>(vars.Length);
+      for (int i = 0; i < vars.Length; ++i)
+      {
+        AddExpr(Prod(vars[i], coeffs[i]));
+      }
+      constant_ = 0L;
+    }
+    public SumArray(IEnumerable<IntVar> vars, IEnumerable<long> coeffs)
+    {
+      List<IntVar> tmp_vars = new List<IntVar>();
+      foreach (IntVar v in vars)
+      {
+        tmp_vars.Add(v);
+      }
+      List<long> tmp_coeffs = new List<long>();
+      foreach (long c in coeffs)
+      {
+        tmp_coeffs.Add(c);
+      }
+      if (tmp_vars.Count != tmp_coeffs.Count)
+      {
+        throw new ArgumentException(
+          "in SumArray(vars, coeffs), the two lists do not have the same length");
+      }
+      IntVar[] flat_vars = tmp_vars.ToArray();
+      long[] flat_coeffs = tmp_coeffs.ToArray();
+      expressions_ = new List<LinearExpr>(flat_vars.Length);
+      for (int i = 0; i < flat_vars.Length; ++i)
+      {
+        expressions_.Add(Prod(flat_vars[i], flat_coeffs[i]));
+      }
+      constant_ = 0L;
+    }
+
+    public SumArray(IEnumerable<IntVar> vars, IEnumerable<int> coeffs)
+    {
+      List<IntVar> tmp_vars = new List<IntVar>();
+      foreach (IntVar v in vars)
+      {
+        tmp_vars.Add(v);
+      }
+      List<long> tmp_coeffs = new List<long>();
+      foreach (int c in coeffs)
+      {
+        tmp_coeffs.Add(c);
+      }
+      if (tmp_vars.Count != tmp_coeffs.Count)
+      {
+        throw new ArgumentException(
+          "in SumArray(vars, coeffs), the two lists do not have the same length");
+      }
+      IntVar[] flat_vars = tmp_vars.ToArray();
+      long[] flat_coeffs = tmp_coeffs.ToArray();
+      expressions_ = new List<LinearExpr>(flat_vars.Length);
+      for (int i = 0; i < flat_vars.Length; ++i)
+      {
+        expressions_.Add(Prod(flat_vars[i], flat_coeffs[i]));
+      }
+      constant_ = 0L;
+    }
+
+    public void AddExpr(LinearExpr expr)
+    {
+      if ((Object)expr != null)
+      {
+        expressions_.Add(expr);
+      }
+    }
+
+    public List<LinearExpr> Expressions
+    {
+      get { return expressions_; }
+    }
+
+    public long Constant
+    {
+      get { return constant_; }
+    }
+
+    public override string ShortString()
+    {
+      return String.Format("({0})", ToString());
+    }
+
+    public override string ToString()
+    {
+      string result = "";
+      foreach (LinearExpr expr in expressions_)
+      {
+        if ((Object)expr == null) continue;
+        if (!String.IsNullOrEmpty(result))
         {
           result += String.Format(" + ");
         }
-      }
 
-      if (expr is IntVar)
-      {
         result += expr.ShortString();
       }
-      else if (expr is ProductCst)
-      {
-        ProductCst p = (ProductCst)expr;
-        long coeff = negated ? -p.Coeff : p.Coeff;
-        IntegerExpression sub = p.Expr;
-        if (coeff == 1)
-        {
-          result += sub.ShortString();
-        }
-        else if (coeff == -1)
-        {
-          result += String.Format("-{0}", coeff, sub.ShortString());
-        }
-        else
-        {
-          result += String.Format("{0}*{1}", coeff, sub.ShortString());
-        }
-      }
-      else
-      {
-        result += String.Format("({0})", expr.ShortString());
-      }
+      return result;
     }
-    return result;
+
+    private List<LinearExpr> expressions_;
+    private long constant_;
   }
 
-  private List<IntegerExpression> expressions_;
-  private long constant_;
-
-}
-
-public class IntVar : IntegerExpression, ILiteral
-{
-  public IntVar(CpModelProto model, IEnumerable<long> bounds, string name) {
-    model_ = model;
-    index_ = model.Variables.Count;
-    var_ = new IntegerVariableProto();
-    var_.Name = name;
-    var_.Domain.Add(bounds);
-    model.Variables.Add(var_);
-    negation_ = null;
-  }
-
-  public int Index
+  public class IntVar : LinearExpr, ILiteral
   {
-    get  { return index_; }
-  }
-
-  public override int GetIndex()
-  {
-    return index_;
-  }
-
-  public IntegerVariableProto Proto
-  {
-    get { return var_; }
-    set { var_ = value; }
-  }
-
-  public override string ToString()
-  {
-    return var_.ToString();
-  }
-
-  public override string ShortString()
-  {
-    if (var_.Name != null)
+    public IntVar(CpModelProto model, Domain domain, string name)
     {
-      return var_.Name;
+      model_ = model;
+      index_ = model.Variables.Count;
+      var_ = new IntegerVariableProto();
+      var_.Name = name;
+      var_.Domain.Add(domain.FlattenedIntervals());
+      model.Variables.Add(var_);
+      negation_ = null;
     }
-    else
+
+    public int Index
+    {
+      get { return index_; }
+    }
+
+    public override int GetIndex()
+    {
+      return index_;
+    }
+
+    public IntegerVariableProto Proto
+    {
+      get { return var_; }
+      set { var_ = value; }
+    }
+
+    public override string ToString()
     {
       return var_.ToString();
     }
-  }
 
-  public string Name()
-  {
-    return var_.Name;
-  }
-
-  public ILiteral Not()
-  {
-    foreach (long b in var_.Domain)
+    public override string ShortString()
     {
-      if (b < 0 || b > 1)
+      if (var_.Name != null)
       {
-        throw new ArgumentException(
-            "Cannot call Not() on a non boolean variable");
+        return var_.Name;
+      }
+      else
+      {
+        return var_.ToString();
       }
     }
-    if (negation_ == null)
+
+    public string Name()
     {
-      negation_ = new NotBooleanVariable(this);
+      return var_.Name;
     }
-    return negation_;
-  }
 
-
-  private CpModelProto model_;
-  private int index_;
-  private List<long> bounds_;
-  private IntegerVariableProto var_;
-  private NotBooleanVariable negation_;
-}
-
-public class NotBooleanVariable : IntegerExpression, ILiteral
-{
-  public NotBooleanVariable(IntVar boolvar)
-  {
-    boolvar_ = boolvar;
-  }
-
-  public override int GetIndex()
-  {
-    return -boolvar_.Index - 1;
-  }
-
-  public ILiteral Not()
-  {
-    return boolvar_;
-  }
-
-  public override string ShortString()
-  {
-    return String.Format("Not({0})", boolvar_.ShortString());
-  }
-
-  private IntVar boolvar_;
-}
-
-public class BoundIntegerExpression
-{
-  public enum Type
-  {
-    BoundExpression,
-    VarEqVar,
-    VarDiffVar,
-    VarEqCst,
-    VarDiffCst,
-  }
-
-  public BoundIntegerExpression(long lb, IntegerExpression expr, long ub)
-  {
-    left_ = expr;
-    right_ = null;
-    lb_ = lb;
-    ub_ = ub;
-    type_ = Type.BoundExpression;
-  }
-
-  public BoundIntegerExpression(IntegerExpression left, IntegerExpression right,
-                                bool equality) {
-    left_ = left;
-    right_ = right;
-    lb_ = 0;
-    ub_ = 0;
-    type_ = equality ? Type.VarEqVar : Type.VarDiffVar;
-  }
-
-  public BoundIntegerExpression(IntegerExpression left, long v, bool equality) {
-    left_ = left;
-    right_ = null;
-    lb_ = v;
-    ub_ = 0;
-    type_ = equality ? Type.VarEqCst : Type.VarDiffCst;
-  }
-
-  bool IsTrue()
-  {
-    if (type_ == Type.VarEqVar)
+    public ILiteral Not()
     {
-      return (object)left_ == (object)right_;
+      foreach (long b in var_.Domain)
+      {
+        if (b < 0 || b > 1)
+        {
+          throw new ArgumentException(
+              "Cannot call Not() on a non boolean variable");
+        }
+      }
+      if (negation_ == null)
+      {
+        negation_ = new NotBooleanVariable(this);
+      }
+      return negation_;
     }
-    else if (type_ == Type.VarDiffVar)
+
+
+    private CpModelProto model_;
+    private int index_;
+    private List<long> bounds_;
+    private IntegerVariableProto var_;
+    private NotBooleanVariable negation_;
+  }
+
+  public class NotBooleanVariable : LinearExpr, ILiteral
+  {
+    public NotBooleanVariable(IntVar boolvar)
     {
-      return (object)left_ != (object)right_;
+      boolvar_ = boolvar;
     }
-    return false;
-  }
 
-  public static bool operator true(BoundIntegerExpression bie)
-  {
-    return bie.IsTrue();
-  }
-
-  public static bool operator false(BoundIntegerExpression bie)
-  {
-    return !bie.IsTrue();
-  }
-
-  public override string ToString()
-  {
-    switch (type_)
+    public override int GetIndex()
     {
-      case Type.BoundExpression:
-        return String.Format("{0} <= {1} <= {2}", lb_, left_, ub_);
-      case Type.VarEqVar:
-        return String.Format("{0} == {1}", left_, right_);
-      case Type.VarDiffVar:
-        return String.Format("{0} != {1}", left_, right_);
-      case Type.VarEqCst:
-        return String.Format("{0} == {1}", left_, lb_);
-      case Type.VarDiffCst:
-        return String.Format("{0} != {1}", left_, lb_);
-      default:
-        throw new ArgumentException("Wrong mode in BoundIntegerExpression.");
+      return -boolvar_.Index - 1;
     }
-  }
 
-  public static BoundIntegerExpression operator <=(BoundIntegerExpression a,
-                                                   long v) {
-    if (a.CtType != Type.BoundExpression || a.Ub != Int64.MaxValue)
+    public ILiteral Not()
     {
-      throw new ArgumentException(
-          "Operator <= not supported for this BoundIntegerExpression");
+      return boolvar_;
     }
-    return new BoundIntegerExpression(a.Lb, a.Left, v);
-  }
 
-  public static BoundIntegerExpression operator <(BoundIntegerExpression a,
-                                                  long v) {
-    if (a.CtType != Type.BoundExpression || a.Ub != Int64.MaxValue)
+    public IntVar NotVar()
     {
-      throw new ArgumentException(
-          "Operator < not supported for this BoundIntegerExpression");
+      return boolvar_;
     }
-    return new BoundIntegerExpression(a.Lb, a.Left, v - 1);
-  }
 
-  public static BoundIntegerExpression operator >=(BoundIntegerExpression a,
-                                                   long v) {
-    if (a.CtType != Type.BoundExpression || a.Lb != Int64.MinValue)
+    public override string ShortString()
     {
-      throw new ArgumentException(
-          "Operator >= not supported for this BoundIntegerExpression");
+      return String.Format("Not({0})", boolvar_.ShortString());
     }
-    return new BoundIntegerExpression(v, a.Left, a.Ub);
+
+    private IntVar boolvar_;
   }
 
-  public static BoundIntegerExpression operator >(BoundIntegerExpression a,
-                                                  long v) {
-    if (a.CtType != Type.BoundExpression || a.Lb != Int64.MinValue)
+  public class BoundedLinearExpression
+  {
+    public enum Type
     {
-      throw new ArgumentException(
-          "Operator < not supported for this BoundIntegerExpression");
+      BoundExpression,
+      VarEqVar,
+      VarDiffVar,
+      VarEqCst,
+      VarDiffCst,
     }
-    return new BoundIntegerExpression(v + 1, a.Left, a.Ub);
-  }
 
-  public IntegerExpression Left
-  {
-    get { return left_; }
-  }
+    public BoundedLinearExpression(long lb, LinearExpr expr, long ub)
+    {
+      left_ = expr;
+      right_ = null;
+      lb_ = lb;
+      ub_ = ub;
+      type_ = Type.BoundExpression;
+    }
 
-  public IntegerExpression Right
-  {
-    get { return right_; }
-  }
+    public BoundedLinearExpression(LinearExpr left, LinearExpr right,
+                                  bool equality)
+    {
+      left_ = left;
+      right_ = right;
+      lb_ = 0;
+      ub_ = 0;
+      type_ = equality ? Type.VarEqVar : Type.VarDiffVar;
+    }
 
-  public long Lb
-  {
-    get { return lb_; }
-  }
+    public BoundedLinearExpression(LinearExpr left, long v, bool equality)
+    {
+      left_ = left;
+      right_ = null;
+      lb_ = v;
+      ub_ = 0;
+      type_ = equality ? Type.VarEqCst : Type.VarDiffCst;
+    }
 
-  public long Ub
-  {
-    get { return ub_; }
-  }
+    bool IsTrue()
+    {
+      if (type_ == Type.VarEqVar)
+      {
+        return (object)left_ == (object)right_;
+      }
+      else if (type_ == Type.VarDiffVar)
+      {
+        return (object)left_ != (object)right_;
+      }
+      return false;
+    }
 
-  public Type CtType
-  {
-    get { return type_; }
-  }
+    public static bool operator true(BoundedLinearExpression bie)
+    {
+      return bie.IsTrue();
+    }
 
-  private IntegerExpression left_;
-  private IntegerExpression right_;
-  private long lb_;
-  private long ub_;
-  private Type type_;
-}
+    public static bool operator false(BoundedLinearExpression bie)
+    {
+      return !bie.IsTrue();
+    }
+
+    public override string ToString()
+    {
+      switch (type_)
+      {
+        case Type.BoundExpression:
+          return String.Format("{0} <= {1} <= {2}", lb_, left_, ub_);
+        case Type.VarEqVar:
+          return String.Format("{0} == {1}", left_, right_);
+        case Type.VarDiffVar:
+          return String.Format("{0} != {1}", left_, right_);
+        case Type.VarEqCst:
+          return String.Format("{0} == {1}", left_, lb_);
+        case Type.VarDiffCst:
+          return String.Format("{0} != {1}", left_, lb_);
+        default:
+          throw new ArgumentException("Wrong mode in BoundedLinearExpression.");
+      }
+    }
+
+    public static BoundedLinearExpression operator <=(BoundedLinearExpression a,
+                                                     long v)
+    {
+      if (a.CtType != Type.BoundExpression || a.Ub != Int64.MaxValue)
+      {
+        throw new ArgumentException(
+            "Operator <= not supported for this BoundedLinearExpression");
+      }
+      return new BoundedLinearExpression(a.Lb, a.Left, v);
+    }
+
+    public static BoundedLinearExpression operator <(BoundedLinearExpression a,
+                                                    long v)
+    {
+      if (a.CtType != Type.BoundExpression || a.Ub != Int64.MaxValue)
+      {
+        throw new ArgumentException(
+            "Operator < not supported for this BoundedLinearExpression");
+      }
+      return new BoundedLinearExpression(a.Lb, a.Left, v - 1);
+    }
+
+    public static BoundedLinearExpression operator >=(BoundedLinearExpression a,
+                                                     long v)
+    {
+      if (a.CtType != Type.BoundExpression || a.Lb != Int64.MinValue)
+      {
+        throw new ArgumentException(
+            "Operator >= not supported for this BoundedLinearExpression");
+      }
+      return new BoundedLinearExpression(v, a.Left, a.Ub);
+    }
+
+    public static BoundedLinearExpression operator >(BoundedLinearExpression a,
+                                                    long v)
+    {
+      if (a.CtType != Type.BoundExpression || a.Lb != Int64.MinValue)
+      {
+        throw new ArgumentException(
+            "Operator < not supported for this BoundedLinearExpression");
+      }
+      return new BoundedLinearExpression(v + 1, a.Left, a.Ub);
+    }
+
+    public LinearExpr Left
+    {
+      get { return left_; }
+    }
+
+    public LinearExpr Right
+    {
+      get { return right_; }
+    }
+
+    public long Lb
+    {
+      get { return lb_; }
+    }
+
+    public long Ub
+    {
+      get { return ub_; }
+    }
+
+    public Type CtType
+    {
+      get { return type_; }
+    }
+
+    private LinearExpr left_;
+    private LinearExpr right_;
+    private long lb_;
+    private long ub_;
+    private Type type_;
+  }
 
 }  // namespace Google.OrTools.Sat

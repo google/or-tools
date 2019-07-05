@@ -1,5 +1,5 @@
 // Renames all yy to orfz_ in public functions.
-%name-prefix "orfz_"
+%define api.prefix {orfz_}
 
 // List the parameter of the lexer.
 %lex-param {void* scanner}
@@ -54,7 +54,7 @@ using operations_research::fz::VariableRefOrValue;
 using operations_research::fz::VariableRefOrValueArray;
 }  // code
 
-%error-verbose
+%define parse.error verbose
 
 // Type declarations.
 

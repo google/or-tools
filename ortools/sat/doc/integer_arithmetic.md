@@ -1,9 +1,41 @@
-| [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Reference manual](reference.md) |
-| ----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | -------------------------------- |
-
+| [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Reference manual](reference.md) |
+| ----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | -------------------------------- |
 
 # Integer arithmetic recipes for the CP-SAT solver.
 
+
+<!--ts-->
+   * [Integer arithmetic recipes for the CP-SAT solver.](#integer-arithmetic-recipes-for-the-cp-sat-solver)
+      * [Introduction](#introduction)
+      * [Integer variables](#integer-variables)
+         * [Interval domain](#interval-domain)
+         * [Non-contiguous domain](#non-contiguous-domain)
+         * [Boolean variables](#boolean-variables)
+         * [Other methods](#other-methods)
+      * [Linear constraints](#linear-constraints)
+         * [C   and Java linear constraints and linear expressions](#c-and-java-linear-constraints-and-linear-expressions)
+         * [Python and C# linear constraints and linear expressions](#python-and-c-linear-constraints-and-linear-expressions)
+         * [Generic linear constraint](#generic-linear-constraint)
+         * [Limitations](#limitations)
+      * [Rabbits and Pheasants examples](#rabbits-and-pheasants-examples)
+         * [Python code](#python-code)
+         * [C   code](#c-code)
+         * [Java code](#java-code)
+         * [C# code](#c-code-1)
+      * [Earliness-Tardiness cost function.](#earliness-tardiness-cost-function)
+         * [Python code](#python-code-1)
+         * [C   code](#c-code-2)
+         * [Java code](#java-code-1)
+         * [C# code](#c-code-3)
+      * [Step function.](#step-function)
+         * [Python code](#python-code-2)
+         * [C   code](#c-code-4)
+         * [Java code](#java-code-2)
+         * [C# code](#c-code-5)
+
+<!-- Added by: lperron, at: Fri Jun  7 09:58:32 CEST 2019 -->
+
+<!--te-->
 
 
 ## Introduction
@@ -12,63 +44,98 @@ The CP-SAT solver can express integer variables and constraints.
 
 ## Integer variables
 
-Integer variables can take on 64 bit signed integer values. When creating them,
-a domain must be given. The format of this domain is not uniform across languages.
+Integer variables can take on 64-bit signed integer values. When creating them,
+a domain must be provided.
 
-In Java, Python, and C#:
+### Interval domain
 
--   To represent a interval from 0 to 10, just pass the two bounds (0, 10) as in
-    `NewIntVar(0, 10, "x")`. A single value will be represented by twice the
-    value as in [5, 5].
--   To create a variable with a single value domain, use the `NewConstant()` API
-    (or `newConstant()` in Java).
--   To represent an enumerated list of values, for example {-5, -4, -3, 1, 3, 4,
-    6, 6}, you need to rewrite it as a list of intervals [-5, -3] U [1] U [3,
-    6], then flatten the list into a single list of integers. This gives `[-5,
-    -3, 1, 1, 3, 6]` in python, or `new long[] {-5, -3, 1, 1, 3, 6}` in Java or
-    C#.
--   To create a variable with an enumerated domain, use the
-    `NewEnumeratedIntVar()` API as in:
-    -   Python: `model.NewEnumeratedIntVar([-5, -3, 1, 1, 3, 6], 'x')`
-    -   Java: `model.newEnumeratedIntVar(new long[] {-5, -3, 1, 1, 3, 6}, "x")`
-    -   C#: `model.NewEnumeratedIntVar(new long[] {-5, -3, 1, 1, 3, 6}, "x")`
--   To exclude a single value, use int64min and int64max values as in [int64min,
-    4, 6, int64max]:
-    -   Python: `cp_model.INT_MIN` and `cp_model.INT_MAX`
-    -   Java: `Long.MIN_VALUE` and `Long.MAX_VALUE`
-    -   C#: `Int64.MinValue` and `Int64.MaxValue`
+To create a single contiguous integer domain, just call the `NewIntVar` method
+with the lower and upper bounds. For instance, to create a variable that can
+take on any value between 0 and 10, inclusive:
 
-In C++, domains use the Domain class.
+-   **C++**: `IntVar x = model.NewIntVar({0, 10}).WithName("x");`
+-   **Python**: `x = model.NewIntVar(0, 10, 'x')`
+-   **Java**: `IntVar x = model.newIntVar(0, 10, "x");`
+-   **C#**: `IntVar x = model.NewIntVar(0, 10, "x");`
 
--   To represent a interval from 0 to 10, just pass a domain `{0, 10}` or
-    `Domain(0, 10)` as in `NewIntVar({0, 10})`.
--   To represent a single value (5), create a domain `{5, 5}` or `Domain(5)`.
--   To create a fixed variable (constant), use the `NewConstant()` API.
--   To represent an enumerated list of values, for instance {-5, -4, -3, 1, 3,
-    4, 5, 6}, you can use `Domain::FromValues({-5, -4, -3, 1, 3, 4, 5, 6})` or
-    `Domain::FromIntervals({{-5, -3}, {1, 1}, {3, 6}})`.
--   To create a variable with an enumerated domain, build the enumerated domain,
-    and use it as in `cp_model.NewIntVar(Domain::FromIntervals({{-5, -3}, {1,
-    1}, {3, 6}})).WithName("x")`.
--   To exclude a single value, use `Domain(5).Complement()`.
+### Non-contiguous domain
+
+An instance of the Domain class is needed to create variables with 
+non-contiguous domains. Here, the variable can be any of 1, 3, 4, or 6:
+
+-   **C++**: `model.NewIntVar(Domain::FromValues({1, 3, 4, 6});`
+-   **Python**: `model.NewIntVarFromDomain(cp_model.Domain.FromValues([1, 3, 4,
+    6]), 'x')`
+-   **Java**: `model.newIntVarFromDomain(Domain.fromValues(new long[] {1, 3, 4,
+    6}), "x");`
+-   **C#**: `model.NewIntVarFromDomain(Domain.FromValues(new long[] {1, 3, 4,
+    6}), "x");`
+
+Variables can also be created using a list of intervals. Below, the variable
+created is constrained to be 1, 2, 4, 5, or 6:
+
+-   **C++**: `model.NewIntVar(Domain::FromIntervals({{1, 2}, {4, 6}});`
+-   **Python**: `model.NewIntVarFromDomain(cp_model.Domain.FromIntervals([[1,
+    2], [4, 6]]), 'x')`
+-   **Java**: `model.newIntVarFromDomain(Domain.fromIntervals(new long[][] {{1,
+    2}, {4, 6}}), "x");`
+-   **C#**: `model.NewIntVarFromDomain(Domain.FromIntervals(new long[][] { new
+    long[] {1, 2}, new long[] {4, 6} }), "x");`
+
+### Boolean variables
+
+To create a Boolean variable, use the `NewBoolVar` method. Please note that
+Boolean variables are typed differently than integer variables, and that this
+type is not uniform across languages.
+
+-   **C++**: `BoolVar x = model.NewBoolVar().WithName("x");`
+-   **Python**: `x = model.NewBoolVar('x')`
+-   **Java**: `Literal x = model.newBoolVar("x");`
+-   **C#**: `ILiteral x = model.NewBoolVar("x");`
+
+### Other methods
+
+To exclude a single value, use ranges combined with int64min and int64max
+values, e.g., `[[int64min, -3], [-1, int64max]]`, or use the `Complement` method.
+
+To create a variable with a single value domain, use the `NewConstant()` API (or
+`newConstant()` in Java).
 
 ## Linear constraints
 
-In **C++** and **Java**, the model supports linear constraints as in:
+### C++ and Java linear constraints and linear expressions
 
-    x <= y + 3 (also ==, !=, <, >=, >).
+**C++** and **Java** APIs do not use arithmetic operators (+, \*, -, <=...).
+Linear constraints are created using a method of the model factory, such as 
+`cp_model.AddEquality(x, 3)` in C++, or `cp_model.addGreaterOrEqual(x, 10)` in
+Java.
 
-as well as domain constraints as in:
+Furthermore, helper methods can be used to create sums and scalar products like
+`LinearExpr::Sum({x, y, z})` in C++, and `LinearExpr.scalProd(new IntVar[] {x,
+y, z}, new long[] {1, 2, 3})` in Java.
 
-    sum(ai * xi) in domain
+### Python and C\# linear constraints and linear expressions
 
-where domain uses the same encoding as integer variables. These are available
-through specific methods of the cp_model like `cp_model.AddEquality(x, 3)` in
-C++, `cp_model.addGreaterThan(x, 10)` in java.
+**Python** and **C\#** CP-SAT APIs support general linear arithmetic (+, \*, -,
+==, >=, >, <, <=, !=). You need to use the Add method of the cp_model, as in
+`cp_model.Add(x + y != 3)`.
 
-**Python** and **C\#** CP-SAT APIs support general linear arithmetic (+, *, -,
-==, >=, >, <, <=, !=). You need to use the Add method of the cp_model as in
-`cp_model.Add(x != 3)`.
+### Generic linear constraint
+
+in **all languages**, the cp_model factory offers a generic method to constrain a
+linear expression to be in a domain. This is used in the step function examples
+below.
+
+### Limitations
+
+-   Everything must be linear. Multiplying two variables is not supported
+    with this API; instead, `model.AddProductEquality()` must be used.
+
+-   In C++, there is a typing issue when using an array of Boolean variables in
+    a sum or a scalar product. Use the `LinearExpr.BooleanSum()` method instead.
+
+-   The Python construct `sum()` is supported, but `min()`, `max()`
+    or any `numpy` constructs like `np.unique()` are not.
 
 ## Rabbits and Pheasants examples
 
@@ -157,6 +224,7 @@ import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
+import com.google.ortools.sat.LinearExpr;
 
 /**
  * In a field of rabbits and pheasants, there are 20 heads and 56 legs. How many rabbits and
@@ -173,9 +241,9 @@ public class RabbitsAndPheasantsSat {
     IntVar r = model.newIntVar(0, 100, "r");
     IntVar p = model.newIntVar(0, 100, "p");
     // 20 heads.
-    model.addLinearSumEqual(new IntVar[] {r, p}, 20);
+    model.addEquality(LinearExpr.sum(new IntVar[] {r, p}), 20);
     // 56 legs.
-    model.addScalProdEqual(new IntVar[] {r, p}, new long[] {4, 2}, 56);
+    model.addEquality(LinearExpr.scalProd(new IntVar[] {r, p}, new long[] {4, 2}), 56);
 
     // Creates a solver and solves the model.
     CpSolver solver = new CpSolver();
@@ -401,7 +469,7 @@ void EarlinessTardinessCostSampleSat() {
     LOG(INFO) << "x=" << SolutionIntegerValue(r, x) << " expr"
               << SolutionIntegerValue(r, expr);
   }));
-  SolveWithModel(cp_model.Build(), &model);
+  SolveCpModel(cp_model.Build(), &model);
 }
 
 }  // namespace sat
@@ -423,6 +491,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
+import com.google.ortools.sat.LinearExpr;
 
 /** Encode the piecewise linear expression. */
 public class EarlinessTardinessCostSampleSat {
@@ -451,16 +520,18 @@ public class EarlinessTardinessCostSampleSat {
 
     // First segment: s1 == earlinessCost * (earlinessDate - x).
     IntVar s1 = model.newIntVar(-largeConstant, largeConstant, "s1");
-    model.addScalProdEqual(
-        new IntVar[] {s1, x}, new long[] {1, earlinessCost}, earlinessCost * earlinessDate);
+    model.addEquality(
+        LinearExpr.scalProd(new IntVar[] {s1, x}, new long[] {1, earlinessCost}),
+        earlinessCost * earlinessDate);
 
     // Second segment.
     IntVar s2 = model.newConstant(0);
 
     // Third segment: s3 == latenessCost * (x - latenessDate).
     IntVar s3 = model.newIntVar(-largeConstant, largeConstant, "s3");
-    model.addScalProdEqual(
-        new IntVar[] {s3, x}, new long[] {1, -latenessCost}, -latenessCost * latenessDate);
+    model.addEquality(
+        LinearExpr.scalProd(new IntVar[] {s3, x}, new long[] {1, -latenessCost}),
+        -latenessCost * latenessDate);
 
     // Link together expr and x through s1, s2, and s3.
     model.addMaxEquality(expr, new IntVar[] {s1, s2, s3});
@@ -505,6 +576,7 @@ public class EarlinessTardinessCostSampleSat {
 ```cs
 using System;
 using Google.OrTools.Sat;
+using Google.OrTools.Util;
 
 public class VarArraySolutionPrinter : CpSolverSolutionCallback
 {
@@ -665,13 +737,15 @@ def step_function_sample_sat():
 
   # expr == 0 on [5, 6] U [8, 10]
   b0 = model.NewBoolVar('b0')
-  model.AddLinearConstraintWithBounds([(x, 1)], [5, 6, 8, 10]).OnlyEnforceIf(b0)
+  model.AddLinearExpressionInDomain(
+      x, cp_model.Domain.FromIntervals([(5, 6), (8, 10)])).OnlyEnforceIf(b0)
   model.Add(expr == 0).OnlyEnforceIf(b0)
 
   # expr == 2 on [0, 1] U [3, 4] U [11, 20]
   b2 = model.NewBoolVar('b2')
-  model.AddLinearConstraintWithBounds([(x, 1)],
-                                      [0, 1, 3, 4, 11, 20]).OnlyEnforceIf(b2)
+  model.AddLinearExpressionInDomain(
+      x, cp_model.Domain.FromIntervals([(0, 1), (3, 4),
+                                        (11, 20)])).OnlyEnforceIf(b2)
   model.Add(expr == 2).OnlyEnforceIf(b2)
 
   # expr == 3 when x == 7
@@ -763,7 +837,7 @@ void StepFunctionSampleSat() {
     LOG(INFO) << "x=" << SolutionIntegerValue(r, x) << " expr"
               << SolutionIntegerValue(r, expr);
   }));
-  SolveWithModel(cp_model.Build(), &model);
+  SolveCpModel(cp_model.Build(), &model);
 }
 
 }  // namespace sat
@@ -786,6 +860,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
+import com.google.ortools.util.Domain;
 
 /** Link integer constraints together. */
 public class StepFunctionSampleSat {
@@ -812,13 +887,16 @@ public class StepFunctionSampleSat {
 
     // expr == 0 on [5, 6] U [8, 10]
     Literal b0 = model.newBoolVar("b0");
-    model.addLinearSumWithBounds(new IntVar[] {x}, new long[] {5, 6, 8, 10}).onlyEnforceIf(b0);
+    model
+        .addLinearExpressionInDomain(x, Domain.fromValues(new long[] {5, 6, 8, 9, 10}))
+        .onlyEnforceIf(b0);
     model.addEquality(expr, 0).onlyEnforceIf(b0);
 
     // expr == 2 on [0, 1] U [3, 4] U [11, 20]
     Literal b2 = model.newBoolVar("b2");
     model
-        .addLinearSumWithBounds(new IntVar[] {x}, new long[] {0, 1, 3, 4, 11, 20})
+        .addLinearExpressionInDomain(
+            x, Domain.fromIntervals(new long[][] {{0, 1}, {3, 4}, {11, 20}}))
         .onlyEnforceIf(b2);
     model.addEquality(expr, 2).onlyEnforceIf(b2);
 
@@ -870,6 +948,7 @@ public class StepFunctionSampleSat {
 ```cs
 using System;
 using Google.OrTools.Sat;
+using Google.OrTools.Util;
 
 public class VarArraySolutionPrinter : CpSolverSolutionCallback
 {
@@ -915,18 +994,19 @@ public class StepFunctionSampleSat
 
     // expr == 0 on [5, 6] U [8, 10]
     ILiteral b0 = model.NewBoolVar("b0");
-    model.AddLinearConstraintWithBounds(
-        new IntVar[] {x},
-        new long[] {1},
-        new long[] {5, 6, 8, 10}).OnlyEnforceIf(b0);
+    model.AddLinearExpressionInDomain(
+        x,
+        Domain.FromValues(new long[] { 5, 6, 8, 9, 10 })).OnlyEnforceIf(b0);
     model.Add(expr == 0).OnlyEnforceIf(b0);
 
     // expr == 2 on [0, 1] U [3, 4] U [11, 20]
     ILiteral b2 = model.NewBoolVar("b2");
-    model.AddLinearConstraintWithBounds(
-        new IntVar[] {x},
-        new long[] {1},
-        new long[] {0, 1, 3, 4, 11, 20}).OnlyEnforceIf(b2);
+    model.AddLinearExpressionInDomain(
+        x,
+        Domain.FromIntervals(
+            new long[][] {new long[] {0, 1},
+                          new long[] {3, 4},
+                          new long[] {11, 20}})).OnlyEnforceIf(b2);
     model.Add(expr == 2).OnlyEnforceIf(b2);
 
     // expr == 3 when x == 7
@@ -935,11 +1015,11 @@ public class StepFunctionSampleSat
     model.Add(expr == 3).OnlyEnforceIf(b3);
 
     // At least one bi is true. (we could use a sum == 1).
-    model.AddBoolOr(new ILiteral[] {b0, b2, b3});
+    model.AddBoolOr(new ILiteral[] { b0, b2, b3 });
 
     // Search for x values in increasing order.
     model.AddDecisionStrategy(
-        new IntVar[] {x},
+        new IntVar[] { x },
         DecisionStrategyProto.Types.VariableSelectionStrategy.ChooseFirst,
         DecisionStrategyProto.Types.DomainReductionStrategy.SelectMinValue);
 
@@ -950,7 +1030,7 @@ public class StepFunctionSampleSat
     solver.StringParameters = "search_branching:FIXED_SEARCH";
 
     VarArraySolutionPrinter cb =
-        new VarArraySolutionPrinter(new IntVar[] {x, expr});
+        new VarArraySolutionPrinter(new IntVar[] { x, expr });
     solver.SearchAllSolutions(model, cb);
   }
 }

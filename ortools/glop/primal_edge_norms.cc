@@ -13,22 +13,16 @@
 
 #include "ortools/glop/primal_edge_norms.h"
 
-#ifdef OMP
-#include <omp.h>
-#endif
-
 #include "ortools/base/timer.h"
 #include "ortools/lp_data/lp_utils.h"
 
 namespace operations_research {
 namespace glop {
 
-PrimalEdgeNorms::PrimalEdgeNorms(const MatrixView& matrix,
-                                 const CompactSparseMatrix& compact_matrix,
+PrimalEdgeNorms::PrimalEdgeNorms(const CompactSparseMatrix& compact_matrix,
                                  const VariablesInfo& variables_info,
                                  const BasisFactorization& basis_factorization)
-    : matrix_(matrix),
-      compact_matrix_(compact_matrix),
+    : compact_matrix_(compact_matrix),
       variables_info_(variables_info),
       basis_factorization_(basis_factorization),
       stats_(),
@@ -119,10 +113,10 @@ void PrimalEdgeNorms::UpdateBeforeBasisPivot(ColIndex entering_col,
 
 void PrimalEdgeNorms::ComputeMatrixColumnNorms() {
   SCOPED_TIME_STAT(&stats_);
-  matrix_column_norms_.resize(matrix_.num_cols(), 0.0);
-  for (ColIndex col(0); col < matrix_.num_cols(); ++col) {
-    matrix_column_norms_[col] = sqrt(SquaredNorm(matrix_.column(col)));
-    num_operations_ += matrix_.column(col).num_entries().value();
+  matrix_column_norms_.resize(compact_matrix_.num_cols(), 0.0);
+  for (ColIndex col(0); col < compact_matrix_.num_cols(); ++col) {
+    matrix_column_norms_[col] = sqrt(SquaredNorm(compact_matrix_.column(col)));
+    num_operations_ += compact_matrix_.column(col).num_entries().value();
   }
 }
 
@@ -132,12 +126,12 @@ void PrimalEdgeNorms::ComputeEdgeSquaredNorms() {
   // Since we will do a lot of inversions, it is better to be as efficient and
   // precise as possible by refactorizing the basis.
   DCHECK(basis_factorization_.IsRefactorized());
-  edge_squared_norms_.resize(matrix_.num_cols(), 0.0);
+  edge_squared_norms_.resize(compact_matrix_.num_cols(), 0.0);
   for (const ColIndex col : variables_info_.GetIsRelevantBitRow()) {
     // Note the +1.0 in the squared norm for the component of the edge on the
     // 'entering_col'.
-    edge_squared_norms_[col] =
-        1.0 + basis_factorization_.RightSolveSquaredNorm(matrix_.column(col));
+    edge_squared_norms_[col] = 1.0 + basis_factorization_.RightSolveSquaredNorm(
+                                         compact_matrix_.column(col));
   }
   recompute_edge_squared_norms_ = false;
 }
@@ -208,69 +202,31 @@ void PrimalEdgeNorms::UpdateEdgeSquaredNorms(ColIndex entering_col,
 
   int stat_lower_bounded_norms = 0;
   const Fractional factor = 2.0 / pivot;
-#ifdef OMP
-  const int num_omp_threads = parameters_.num_omp_threads();
-#else
-  const int num_omp_threads = 1;
-#endif
-  if (num_omp_threads == 1) {
-    for (const ColIndex col : update_row.GetNonZeroPositions()) {
-      const Fractional coeff = update_row.GetCoefficient(col);
-      const Fractional scalar_product = compact_matrix_.ColumnScalarProduct(
-          col, direction_left_inverse_.values);
-      num_operations_ += compact_matrix_.column(col).num_entries().value();
+  for (const ColIndex col : update_row.GetNonZeroPositions()) {
+    const Fractional coeff = update_row.GetCoefficient(col);
+    const Fractional scalar_product = compact_matrix_.ColumnScalarProduct(
+        col, direction_left_inverse_.values);
+    num_operations_ += compact_matrix_.column(col).num_entries().value();
 
-      // Update the edge squared norm of this column. Note that the update
-      // formula used is important to maximize the precision. See an explanation
-      // in the dual context in Koberstein's PhD thesis, section 8.2.2.1.
-      edge_squared_norms_[col] +=
-          coeff * (coeff * leaving_squared_norm + factor * scalar_product);
+    // Update the edge squared norm of this column. Note that the update
+    // formula used is important to maximize the precision. See an explanation
+    // in the dual context in Koberstein's PhD thesis, section 8.2.2.1.
+    edge_squared_norms_[col] +=
+        coeff * (coeff * leaving_squared_norm + factor * scalar_product);
 
-      // Make sure it doesn't go under a known lower bound (TODO(user): ref?).
-      // This way norms are always >= 1.0 .
-      // TODO(user): precompute 1 / Square(pivot) or 1 / pivot? it will be
-      // slightly faster, but may introduce numerical issues. More generally,
-      // this test is only needed in a few cases, so is it worth it?
-      const Fractional lower_bound = 1.0 + Square(coeff / pivot);
-      if (edge_squared_norms_[col] < lower_bound) {
-        edge_squared_norms_[col] = lower_bound;
-        ++stat_lower_bounded_norms;
-      }
+    // Make sure it doesn't go under a known lower bound (TODO(user): ref?).
+    // This way norms are always >= 1.0 .
+    // TODO(user): precompute 1 / Square(pivot) or 1 / pivot? it will be
+    // slightly faster, but may introduce numerical issues. More generally,
+    // this test is only needed in a few cases, so is it worth it?
+    const Fractional lower_bound = 1.0 + Square(coeff / pivot);
+    if (edge_squared_norms_[col] < lower_bound) {
+      edge_squared_norms_[col] = lower_bound;
+      ++stat_lower_bounded_norms;
     }
-    edge_squared_norms_[leaving_col] = leaving_squared_norm;
-    stats_.lower_bounded_norms.Add(stat_lower_bounded_norms);
-  } else {
-#ifdef OMP
-    // In the multi-threaded case, perform the same computation as in the
-    // single-threaded case above.
-    //
-    // TODO(user): also update num_operations_.
-    std::vector<int> thread_local_stat_lower_bounded_norms(num_omp_threads, 0);
-    const std::vector<ColIndex>& relevant_rows =
-        update_row.GetNonZeroPositions();
-    const int parallel_loop_size = relevant_rows.size();
-#pragma omp parallel for num_threads(num_omp_threads)
-    for (int i = 0; i < parallel_loop_size; i++) {
-      const ColIndex col(relevant_rows[i]);
-      const Fractional coeff = update_row.GetCoefficient(col);
-      const Fractional scalar_product = compact_matrix_.ColumnScalarProduct(
-          col, direction_left_inverse_.values);
-      edge_squared_norms_[col] +=
-          coeff * (coeff * leaving_squared_norm + factor * scalar_product);
-      const Fractional lower_bound = 1.0 + Square(coeff / pivot);
-      if (edge_squared_norms_[col] < lower_bound) {
-        edge_squared_norms_[col] = lower_bound;
-        ++thread_local_stat_lower_bounded_norms[omp_get_thread_num()];
-      }
-    }
-    // end of omp parallel for
-    edge_squared_norms_[leaving_col] = leaving_squared_norm;
-    for (int i = 0; i < num_omp_threads; i++) {
-      stat_lower_bounded_norms += thread_local_stat_lower_bounded_norms[i];
-    }
-    stats_.lower_bounded_norms.Add(stat_lower_bounded_norms);
-#endif  // OMP
   }
+  edge_squared_norms_[leaving_col] = leaving_squared_norm;
+  stats_.lower_bounded_norms.Add(stat_lower_bounded_norms);
 }
 
 void PrimalEdgeNorms::UpdateDevexWeights(
@@ -298,7 +254,7 @@ void PrimalEdgeNorms::ResetDevexWeights() {
   if (parameters_.initialize_devex_with_column_norms()) {
     devex_weights_ = GetMatrixColumnNorms();
   } else {
-    devex_weights_.assign(matrix_.num_cols(), 1.0);
+    devex_weights_.assign(compact_matrix_.num_cols(), 1.0);
   }
   num_devex_updates_since_reset_ = 0;
   reset_devex_weights_ = false;

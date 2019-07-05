@@ -1,9 +1,25 @@
-| [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Reference manual](reference.md) |
-| ----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | -------------------------------- |
-
+| [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Reference manual](reference.md) |
+| ----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | -------------------------------- |
 
 # Channeling constraints
 
+
+<!--ts-->
+   * [Channeling constraints](#channeling-constraints)
+      * [If-Then-Else expressions](#if-then-else-expressions)
+         * [Python code](#python-code)
+         * [C   code](#c-code)
+         * [Java code](#java-code)
+         * [C# code](#c-code-1)
+      * [A bin-packing problem](#a-bin-packing-problem)
+         * [Python code](#python-code-1)
+         * [C   code](#c-code-2)
+         * [Java code](#java-code-1)
+         * [C# code](#c-code-3)
+
+<!-- Added by: lperron, at: Fri Jun  7 09:58:38 CEST 2019 -->
+
+<!--te-->
 
 
 A *channeling constraint* links variables inside a model. They're used when you
@@ -144,7 +160,7 @@ void ChannelingSampleSat() {
               << " y=" << SolutionIntegerValue(r, y)
               << " b=" << SolutionBooleanValue(r, b);
   }));
-  SolveWithModel(cp_model.Build(), &model);
+  SolveCpModel(cp_model.Build(), &model);
 }
 
 }  // namespace sat
@@ -166,6 +182,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
+import com.google.ortools.sat.LinearExpr;
 
 /** Link integer constraints together. */
 public class ChannelingSampleSat {
@@ -189,7 +206,7 @@ public class ChannelingSampleSat {
 
     // Create our two half-reified constraints.
     // First, b implies (y == 10 - x).
-    model.addLinearSumEqual(new IntVar[] {x, y}, 10).onlyEnforceIf(b);
+    model.addEquality(LinearExpr.sum(new IntVar[] {x, y}), 10).onlyEnforceIf(b);
     // Second, not(b) implies y == 0.
     model.addEquality(y, 0).onlyEnforceIf(b.not());
 
@@ -233,6 +250,7 @@ public class ChannelingSampleSat {
 ```cs
 using System;
 using Google.OrTools.Sat;
+using Google.OrTools.Util;
 
 public class VarArraySolutionPrinter : CpSolverSolutionCallback
 {
@@ -336,11 +354,10 @@ variables together:
 ```python
 """Solves a binpacking problem using the CP-SAT solver."""
 
-from __future__ import absolute_import
-from __future__ import division
 from __future__ import print_function
 
 from ortools.sat.python import cp_model
+
 
 
 def BinpackingProblemSat():
@@ -496,6 +513,7 @@ import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.IntVar;
+import com.google.ortools.sat.LinearExpr;
 
 /** Solves a bin packing problem with the CP-SAT solver. */
 public class BinPackingProblemSat {
@@ -545,7 +563,7 @@ public class BinPackingProblemSat {
       for (int i = 0; i < numItems; ++i) {
         vars[i] = x[i][b];
       }
-      model.addScalProdEqual(vars, sizes, load[b]);
+      model.addEquality(LinearExpr.scalProd(vars, sizes), load[b]);
     }
 
     // Place all items.
@@ -554,7 +572,7 @@ public class BinPackingProblemSat {
       for (int b = 0; b < numBins; ++b) {
         vars[b] = x[i][b];
       }
-      model.addLinearSumEqual(vars, items[i][1]);
+      model.addEquality(LinearExpr.sum(vars), items[i][1]);
     }
 
     // Links load and slack.
@@ -567,7 +585,7 @@ public class BinPackingProblemSat {
     }
 
     // Maximize sum of slacks.
-    model.maximizeSum(slacks);
+    model.maximize(LinearExpr.sum(slacks));
 
     // Solves and prints out the solution.
     CpSolver solver = new CpSolver();
@@ -603,9 +621,9 @@ public class BinPackingProblemSat
     // Data.
     int bin_capacity = 100;
     int slack_capacity = 20;
-    int num_bins = 10;
+    int num_bins = 5;
 
-    int[,] items = new int[,] { { 20, 12 }, { 15, 12 }, { 30, 8 }, { 45, 5 } };
+    int[,] items = new int[,] { { 20, 6 }, { 15, 6 }, { 30, 4 }, { 45, 3 } };
     int num_items = items.GetLength(0);
 
     // Model.
@@ -660,7 +678,7 @@ public class BinPackingProblemSat
       {
         tmp[b] = x[i, b];
       }
-      model.Add(tmp.Sum() == items[i, 1]);
+      model.Add(LinearExpr.Sum(tmp) == items[i, 1]);
     }
 
     // Links load and slack.
@@ -674,7 +692,7 @@ public class BinPackingProblemSat
     }
 
     // Maximize sum of slacks.
-    model.Maximize(slacks.Sum());
+    model.Maximize(LinearExpr.Sum(slacks));
 
     // Solves and prints out the solution.
     CpSolver solver = new CpSolver();

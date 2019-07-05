@@ -21,7 +21,7 @@ from ortools.sat.python import cp_model
 
 def main():
   """Magic sequence problem."""
-  n = 50
+  n = 100
   values = range(n)
 
   model = cp_model.CpModel()
@@ -42,6 +42,7 @@ def main():
 
   solver = cp_model.CpSolver()
   # No solution printer, this problem has only 1 solution.
+  solver.parameters.log_search_progress = True
   solver.Solve(model)
   print(solver.ResponseStats())
   for k in values:

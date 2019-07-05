@@ -70,6 +70,8 @@ void FixAndParseParameters(int* argc, char*** argv) {
   char seed_param[] = "--fz_seed";
   char verbose_param[] = "--fz_verbose";
   char debug_param[] = "--fz_debug";
+  char time_param[] = "--time_limit";
+  bool use_time_param = false;
   for (int i = 1; i < *argc; ++i) {
     if (strcmp((*argv)[i], "-a") == 0) {
       (*argv)[i] = all_param;
@@ -98,6 +100,10 @@ void FixAndParseParameters(int* argc, char*** argv) {
     if (strcmp((*argv)[i], "-d") == 0) {
       (*argv)[i] = debug_param;
     }
+    if (strcmp((*argv)[i], "-t") == 0) {
+      (*argv)[i] = time_param;
+      use_time_param = true;
+    }
   }
   const char kUsage[] =
       "Usage: see flags.\nThis program parses and solve a flatzinc problem.";
@@ -105,6 +111,11 @@ void FixAndParseParameters(int* argc, char*** argv) {
   gflags::SetUsageMessage(kUsage);
   gflags::ParseCommandLineFlags(argc, argv, true);
   google::InitGoogleLogging((*argv)[0]);
+
+  // Fix time limit if -t was used.
+  if (use_time_param) {
+    FLAGS_time_limit /= 1000.0;
+  }
 }
 
 Model ParseFlatzincModel(const std::string& input, bool input_is_filename) {

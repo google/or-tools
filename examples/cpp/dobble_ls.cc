@@ -18,7 +18,7 @@
 // generalized: we have N cards, each with K different symbols, and
 // there are N different symbols overall.
 //
-// This is a feasability problem. We transform that into an
+// This is a feasibility problem. We transform that into an
 // optimization problem where we penalize cards whose intersection is
 // of cardinality different from 1. A feasible solution of the
 // original problem is a solution with a zero cost.

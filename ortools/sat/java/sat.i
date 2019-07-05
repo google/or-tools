@@ -17,6 +17,8 @@
 
 %include "ortools/util/java/proto.i"
 
+%import "ortools/util/java/sorted_interval_list.i"
+
 %{
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"

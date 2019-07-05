@@ -13,9 +13,8 @@
 """Example of a simple nurse scheduling problem."""
 
 # [START program]
-from __future__ import division
-from __future__ import print_function
 # [START import]
+from __future__ import print_function
 from ortools.sat.python import cp_model
 
 # [END import]

@@ -1,4 +1,12 @@
+# Description:
+# Source code for the flatzinc interpreter. See www.minizinc.org.
+# This is a google owned implementation.
+
 package(default_visibility = ["//visibility:public"])
+
+# ---------------------------------------------------------------------------
+# Baseline flatzinc model.
+# ---------------------------------------------------------------------------
 
 cc_library(
     name = "logging",
@@ -140,7 +148,6 @@ cc_library(
         "//ortools/sat:optimization",
         "//ortools/sat:sat_solver",
         "//ortools/sat:table",
-        "//ortools/util:sigint",
         ":checker",
         ":logging",
         ":model",

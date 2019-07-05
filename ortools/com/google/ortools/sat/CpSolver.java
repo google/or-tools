@@ -23,7 +23,7 @@ import com.google.ortools.sat.SatParameters;
  * <p>This class proposes different solve() methods, as well as accessors to get the values of
  * variables in the best solution, as well as general statistics of the search.
  */
-public class CpSolver {
+public final class CpSolver {
   /** Main construction of the CpSolver class. */
   public CpSolver() {
     this.solveParameters = SatParameters.newBuilder();

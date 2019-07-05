@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_SAT_UTIL_H_
 #define OR_TOOLS_SAT_UTIL_H_
 
+#include <deque>
+
 #include "ortools/base/random.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
@@ -96,6 +98,78 @@ inline void RandomizeDecisionHeuristic(URBG* random,
   parameters->set_random_branches_ratio(absl::Bernoulli(*random, 0.5) ? 0.01
                                                                       : 0.0);
 }
+
+// Manages incremental averages.
+class IncrementalAverage {
+ public:
+  // Initializes the average with 'initial_average' and number of records to 0.
+  explicit IncrementalAverage(double initial_average)
+      : average_(initial_average) {}
+  IncrementalAverage() {}
+
+  // Sets the number of records to 0 and average to 'reset_value'.
+  void Reset(double reset_value);
+
+  double CurrentAverage() const { return average_; }
+  int64 NumRecords() const { return num_records_; }
+
+  void AddData(double new_record);
+
+ private:
+  double average_ = 0.0;
+  int64 num_records_ = 0;
+};
+
+// Manages exponential moving averages defined as
+// new_average = decaying_factor * old_average
+//               + (1 - decaying_factor) * new_record.
+// where 0 < decaying_factor < 1.
+class ExponentialMovingAverage {
+ public:
+  explicit ExponentialMovingAverage(double decaying_factor)
+      : decaying_factor_(decaying_factor) {
+    DCHECK_GE(decaying_factor, 0.0);
+    DCHECK_LE(decaying_factor, 1.0);
+  }
+
+  // Returns exponential moving average for all the added data so far.
+  double CurrentAverage() const { return average_; }
+
+  // Returns the total number of added records so far.
+  int64 NumRecords() const { return num_records_; }
+
+  void AddData(double new_record);
+
+ private:
+  double average_ = 0.0;
+  int64 num_records_ = 0;
+  const double decaying_factor_;
+};
+
+// Utility to calculate percentile (First variant) for limited number of
+// records. Reference: https://en.wikipedia.org/wiki/Percentile
+//
+// After the vector is sorted, we assume that the element with index i
+// correspond to the percentile 100*(i+0.5)/size. For percentiles before the
+// first element (resp. after the last one) we return the first element (resp.
+// the last). And otherwise we do a linear interpolation between the two element
+// around the asked percentile.
+class Percentile {
+ public:
+  explicit Percentile(int record_limit) : record_limit_(record_limit) {}
+
+  void AddRecord(double record);
+
+  // Returns number of stored records.
+  int64 NumRecords() const { return records_.size(); }
+
+  // Note that this is not fast and runs in O(n log n) for n records.
+  double GetPercentile(double percent);
+
+ private:
+  std::deque<double> records_;
+  const int record_limit_;
+};
 
 }  // namespace sat
 }  // namespace operations_research

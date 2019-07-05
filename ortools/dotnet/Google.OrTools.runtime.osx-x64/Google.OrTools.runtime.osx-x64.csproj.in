@@ -41,9 +41,6 @@
     <Compile Include="../../gen/ortools/algorithms/*.cs">
       <Link>algorithms/%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="../../algorithms/csharp/*.cs">
-      <Link>algorithms/%(Filename)%(Extension)</Link>
-    </Compile>
 
     <Compile Include="../../gen/ortools/graph/*.cs">
       <Link>graph/%(Filename)%(Extension)</Link>
@@ -94,6 +91,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Google.Protobuf" Version="3.7.0" />
+    <PackageReference Include="Google.Protobuf" Version="3.8.0" />
   </ItemGroup>
 </Project>

@@ -14,30 +14,102 @@
 #include "ortools/sat/synchronization.h"
 
 #include "absl/container/flat_hash_set.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_search.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
-#include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 
 namespace operations_research {
 namespace sat {
 
+int SharedSolutionRepository::NumSolutions() const {
+  absl::MutexLock mutex_lock(&mutex_);
+  return solutions_.size();
+}
+
+SharedSolutionRepository::Solution SharedSolutionRepository::GetSolution(
+    int i) const {
+  absl::MutexLock mutex_lock(&mutex_);
+  return solutions_[i];
+}
+
+void SharedSolutionRepository::Add(const Solution& solution) {
+  absl::MutexLock mutex_lock(&mutex_);
+  if (new_solutions_.size() < num_solutions_to_keep_) {
+    new_solutions_.push_back(solution);
+    return;
+  }
+  int worse_solution_index = 0;
+  for (int i = 0; i < new_solutions_.size(); ++i) {
+    // Do not add identical solution.
+    if (new_solutions_[i] == solution) return;
+    if (new_solutions_[worse_solution_index] < new_solutions_[i]) {
+      worse_solution_index = i;
+    }
+  }
+  if (solution < new_solutions_[worse_solution_index]) {
+    new_solutions_[worse_solution_index] = solution;
+  }
+}
+
+void SharedSolutionRepository::Synchronize() {
+  absl::MutexLock mutex_lock(&mutex_);
+  solutions_.insert(solutions_.end(), new_solutions_.begin(),
+                    new_solutions_.end());
+  new_solutions_.clear();
+  gtl::STLSortAndRemoveDuplicates(&solutions_);
+  if (solutions_.size() > num_solutions_to_keep_) {
+    solutions_.resize(num_solutions_to_keep_);
+  }
+}
+
+// TODO(user): Experiments and play with the num_solutions_to_keep parameter.
 SharedResponseManager::SharedResponseManager(bool log_updates,
                                              const CpModelProto* proto,
                                              const WallTimer* wall_timer)
     : log_updates_(log_updates),
       model_proto_(*proto),
-      wall_timer_(*wall_timer) {}
+      wall_timer_(*wall_timer),
+      solutions_(/*num_solutions_to_keep=*/10) {}
+
+namespace {
+
+void LogNewSolution(const std::string& event_or_solution_count,
+                    double time_in_seconds, double obj_best, double obj_lb,
+                    double obj_ub, const std::string& solution_info) {
+  const std::string obj_next =
+      absl::StrFormat("next:[%.9g,%.9g]", obj_lb, obj_ub);
+  LOG(INFO) << absl::StrFormat("#%-5s %6.2fs best:%-5.9g %-15s %s",
+                               event_or_solution_count, time_in_seconds,
+                               obj_best, obj_next, solution_info);
+}
+
+void LogNewSatSolution(const std::string& event_or_solution_count,
+                       double time_in_seconds,
+                       const std::string& solution_info) {
+  LOG(INFO) << absl::StrFormat("#%-5s %6.2fs  %s", event_or_solution_count,
+                               time_in_seconds, solution_info);
+}
+
+}  // namespace
 
 void SharedResponseManager::UpdateInnerObjectiveBounds(
     const std::string& worker_info, IntegerValue lb, IntegerValue ub) {
+  absl::MutexLock mutex_lock(&mutex_);
   CHECK(model_proto_.has_objective());
 
-  absl::MutexLock mutex_lock(&mutex_);
+  // The problem is already solved!
+  //
+  // TODO(user): A thread might not be notified right away that the new bounds
+  // that it is pushing make the problem infeasible. Fix that. For now we just
+  // abort early here to avoid logging the "#Done" message multiple times.
+  if (inner_objective_lower_bound_ > inner_objective_upper_bound_) {
+    return;
+  }
+
   bool change = false;
   if (lb > inner_objective_lower_bound_) {
     change = true;
@@ -59,12 +131,15 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
   }
   if (log_updates_ && change) {
     const CpObjectiveProto& obj = model_proto_.objective();
+    const double best =
+        ScaleObjectiveValue(obj, best_solution_objective_value_);
     double new_lb = ScaleObjectiveValue(obj, inner_objective_lower_bound_);
     double new_ub = ScaleObjectiveValue(obj, inner_objective_upper_bound_);
     if (model_proto_.objective().scaling_factor() < 0) {
       std::swap(new_lb, new_ub);
     }
-    LogNewSolution("Bound", wall_timer_.Get(), new_lb, new_ub, worker_info);
+    LogNewSolution("Bound", wall_timer_.Get(), best, new_lb, new_ub,
+                   worker_info);
   }
 }
 
@@ -83,6 +158,7 @@ void SharedResponseManager::NotifyThatImprovingProblemIsInfeasible(
       best_response_.set_all_solutions_were_found(true);
     }
   } else {
+    CHECK_EQ(num_solutions_, 0);
     best_response_.set_status(CpSolverStatus::INFEASIBLE);
   }
   if (log_updates_) LogNewSatSolution("Done", wall_timer_.Get(), worker_info);
@@ -96,6 +172,11 @@ IntegerValue SharedResponseManager::GetInnerObjectiveLowerBound() {
 IntegerValue SharedResponseManager::GetInnerObjectiveUpperBound() {
   absl::MutexLock mutex_lock(&mutex_);
   return IntegerValue(inner_objective_upper_bound_);
+}
+
+IntegerValue SharedResponseManager::BestSolutionInnerObjectiveValue() {
+  absl::MutexLock mutex_lock(&mutex_);
+  return IntegerValue(best_solution_objective_value_);
 }
 
 int SharedResponseManager::AddSolutionCallback(
@@ -158,18 +239,17 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
   absl::MutexLock mutex_lock(&mutex_);
   CHECK_NE(best_response_.status(), CpSolverStatus::INFEASIBLE);
 
-  int64 objective_value = 0;
   if (model_proto_.has_objective()) {
-    const CpObjectiveProto& obj = model_proto_.objective();
-    auto& repeated_field_values = response.solution().empty()
-                                      ? response.solution_lower_bounds()
-                                      : response.solution();
-    for (int i = 0; i < obj.vars_size(); ++i) {
-      int64 coeff = obj.coeffs(i);
-      const int ref = obj.vars(i);
-      const int var = PositiveRef(ref);
-      if (!RefIsPositive(ref)) coeff = -coeff;
-      objective_value += coeff * repeated_field_values[var];
+    const int64 objective_value =
+        ComputeInnerObjective(model_proto_.objective(), response);
+
+    // Add this solution to the pool, even if it is not improving.
+    if (!response.solution().empty()) {
+      SharedSolutionRepository::Solution solution;
+      solution.variable_values.assign(response.solution().begin(),
+                                      response.solution().end());
+      solution.internal_objective = objective_value;
+      solutions_.Add(solution);
     }
 
     // Ignore any non-strictly improving solution.
@@ -207,18 +287,20 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
     std::string solution_info = response.solution_info();
     if (model != nullptr) {
       absl::StrAppend(&solution_info,
-                      " num_bool:", model->Get<SatSolver>()->NumVariables());
+                      " num_bool:", model->Get<Trail>()->NumVariables());
     }
 
     if (model_proto_.has_objective()) {
       const CpObjectiveProto& obj = model_proto_.objective();
+      const double best =
+          ScaleObjectiveValue(obj, best_solution_objective_value_);
       double lb = ScaleObjectiveValue(obj, inner_objective_lower_bound_);
-      double ub = ScaleObjectiveValue(obj, objective_value);
+      double ub = ScaleObjectiveValue(obj, inner_objective_upper_bound_);
       if (model_proto_.objective().scaling_factor() < 0) {
         std::swap(lb, ub);
       }
-      LogNewSolution(absl::StrCat(num_solutions_), wall_timer_.Get(), lb, ub,
-                     solution_info);
+      LogNewSolution(absl::StrCat(num_solutions_), wall_timer_.Get(), best, lb,
+                     ub, solution_info);
     } else {
       LogNewSatSolution(absl::StrCat(num_solutions_), wall_timer_.Get(),
                         solution_info);
@@ -257,6 +339,20 @@ void SharedResponseManager::SetStatsFromModelInternal(Model* model) {
       time_limit->GetElapsedDeterministicTime());
 }
 
+bool SharedResponseManager::ProblemIsSolved() const {
+  absl::MutexLock mutex_lock(&mutex_);
+
+  // TODO(user): Currently this work because we do not allow enumerate all
+  // solution in multithread.
+  if (!model_proto_.has_objective() &&
+      best_response_.status() == CpSolverStatus::FEASIBLE) {
+    return true;
+  }
+
+  return best_response_.status() == CpSolverStatus::OPTIMAL ||
+         best_response_.status() == CpSolverStatus::INFEASIBLE;
+}
+
 SharedBoundsManager::SharedBoundsManager(int num_workers,
                                          const CpModelProto& model_proto)
     : num_workers_(num_workers),
@@ -281,40 +377,39 @@ void SharedBoundsManager::ReportPotentialNewBounds(
     const std::vector<int64>& new_upper_bounds) {
   CHECK_EQ(variables.size(), new_lower_bounds.size());
   CHECK_EQ(variables.size(), new_upper_bounds.size());
-  {
-    absl::MutexLock mutex_lock(&mutex_);
-    for (int i = 0; i < variables.size(); ++i) {
-      const int var = variables[i];
-      if (var >= num_variables_) continue;
-      const int64 old_lb = lower_bounds_[var];
-      const int64 old_ub = upper_bounds_[var];
-      const int64 new_lb = new_lower_bounds[i];
-      const int64 new_ub = new_upper_bounds[i];
-      const bool changed_lb = new_lb > old_lb;
-      const bool changed_ub = new_ub < old_ub;
-      CHECK_GE(var, 0);
-      if (!changed_lb && !changed_ub) continue;
 
-      if (changed_lb) {
-        lower_bounds_[var] = new_lb;
-      }
-      if (changed_ub) {
-        upper_bounds_[var] = new_ub;
-      }
+  absl::MutexLock mutex_lock(&mutex_);
+  for (int i = 0; i < variables.size(); ++i) {
+    const int var = variables[i];
+    if (var >= num_variables_) continue;
+    const int64 old_lb = lower_bounds_[var];
+    const int64 old_ub = upper_bounds_[var];
+    const int64 new_lb = new_lower_bounds[i];
+    const int64 new_ub = new_upper_bounds[i];
+    const bool changed_lb = new_lb > old_lb;
+    const bool changed_ub = new_ub < old_ub;
+    CHECK_GE(var, 0);
+    if (!changed_lb && !changed_ub) continue;
 
-      for (int j = 0; j < num_workers_; ++j) {
-        if (worker_id == j) continue;
-        changed_variables_per_workers_[j].Set(var);
-      }
-      if (VLOG_IS_ON(2)) {
-        const IntegerVariableProto& var_proto = model_proto.variables(var);
-        const std::string& var_name =
-            var_proto.name().empty() ? absl::StrCat("anonymous_var(", var, ")")
-                                     : var_proto.name();
-        LOG(INFO) << "  '" << worker_name << "' exports new bounds for "
-                  << var_name << ": from [" << old_lb << ", " << old_ub
-                  << "] to [" << new_lb << ", " << new_ub << "]";
-      }
+    if (changed_lb) {
+      lower_bounds_[var] = new_lb;
+    }
+    if (changed_ub) {
+      upper_bounds_[var] = new_ub;
+    }
+
+    for (int j = 0; j < num_workers_; ++j) {
+      if (worker_id == j) continue;
+      changed_variables_per_workers_[j].Set(var);
+    }
+    if (VLOG_IS_ON(2)) {
+      const IntegerVariableProto& var_proto = model_proto.variables(var);
+      const std::string& var_name =
+          var_proto.name().empty() ? absl::StrCat("anonymous_var(", var, ")")
+                                   : var_proto.name();
+      LOG(INFO) << "  '" << worker_name << "' exports new bounds for "
+                << var_name << ": from [" << old_lb << ", " << old_ub
+                << "] to [" << new_lb << ", " << new_ub << "]";
     }
   }
 }
@@ -338,189 +433,6 @@ void SharedBoundsManager::GetChangedBounds(
     }
     changed_variables_per_workers_[worker_id].ClearAll();
   }
-}
-
-void RegisterVariableBoundsLevelZeroExport(
-    const CpModelProto& model_proto, SharedBoundsManager* shared_bounds_manager,
-    Model* model) {
-  CHECK(shared_bounds_manager != nullptr);
-  const auto broadcast_level_zero_bounds =
-      [&model_proto, model, shared_bounds_manager](
-          const std::vector<IntegerVariable>& modified_vars) {
-        auto* integer_trail = model->Get<IntegerTrail>();
-        const WorkerInfo* const worker_info = model->GetOrCreate<WorkerInfo>();
-        CpModelMapping* const mapping = model->GetOrCreate<CpModelMapping>();
-
-        std::vector<int> model_variables;
-        std::vector<int64> new_lower_bounds;
-        std::vector<int64> new_upper_bounds;
-        absl::flat_hash_set<int> visited_variables;
-        for (const IntegerVariable& var : modified_vars) {
-          const IntegerVariable positive_var = PositiveVariable(var);
-          const int model_var =
-              mapping->GetProtoVariableFromIntegerVariable(positive_var);
-          if (model_var == -1 ||
-              gtl::ContainsKey(visited_variables, model_var)) {
-            continue;
-          } else {
-            visited_variables.insert(model_var);
-          }
-          const int64 new_lb =
-              integer_trail->LevelZeroLowerBound(positive_var).value();
-          const int64 new_ub =
-              integer_trail->LevelZeroUpperBound(positive_var).value();
-          // TODO(user): We could imagine an API based on atomic<int64>
-          // that could preemptively check if this new bounds are improving.
-          model_variables.push_back(model_var);
-          new_lower_bounds.push_back(new_lb);
-          new_upper_bounds.push_back(new_ub);
-        }
-        if (!model_variables.empty()) {
-          shared_bounds_manager->ReportPotentialNewBounds(
-              model_proto, worker_info->worker_id, worker_info->worker_name,
-              model_variables, new_lower_bounds, new_upper_bounds);
-        }
-      };
-
-  model->GetOrCreate<GenericLiteralWatcher>()
-      ->RegisterLevelZeroModifiedVariablesCallback(broadcast_level_zero_bounds);
-}
-
-void RegisterVariableBoundsLevelZeroImport(
-    const CpModelProto& model_proto, SharedBoundsManager* shared_bounds_manager,
-    Model* model) {
-  CHECK(shared_bounds_manager != nullptr);
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  const WorkerInfo* const worker_info = model->GetOrCreate<WorkerInfo>();
-  CpModelMapping* const mapping = model->GetOrCreate<CpModelMapping>();
-
-  const auto& import_level_zero_bounds = [&model_proto, shared_bounds_manager,
-                                          model, integer_trail, worker_info,
-                                          mapping]() {
-    std::vector<int> model_variables;
-    std::vector<int64> new_lower_bounds;
-    std::vector<int64> new_upper_bounds;
-    shared_bounds_manager->GetChangedBounds(worker_info->worker_id,
-                                            &model_variables, &new_lower_bounds,
-                                            &new_upper_bounds);
-    bool new_bounds_have_been_imported = false;
-    for (int i = 0; i < model_variables.size(); ++i) {
-      const int model_var = model_variables[i];
-      // This can happen if a boolean variables is forced to have an
-      // integer view in one thread, and not in another thread.
-      if (!mapping->IsInteger(model_var)) continue;
-      const IntegerVariable var = mapping->Integer(model_var);
-      const IntegerValue new_lb(new_lower_bounds[i]);
-      const IntegerValue new_ub(new_upper_bounds[i]);
-      const IntegerValue old_lb = integer_trail->LowerBound(var);
-      const IntegerValue old_ub = integer_trail->UpperBound(var);
-      const bool changed_lb = new_lb > old_lb;
-      const bool changed_ub = new_ub < old_ub;
-      if (!changed_lb && !changed_ub) continue;
-
-      new_bounds_have_been_imported = true;
-      if (VLOG_IS_ON(2)) {
-        const IntegerVariableProto& var_proto =
-            model_proto.variables(model_var);
-        const std::string& var_name =
-            var_proto.name().empty()
-                ? absl::StrCat("anonymous_var(", model_var, ")")
-                : var_proto.name();
-        LOG(INFO) << "  '" << worker_info->worker_name
-                  << "' imports new bounds for " << var_name << ": from ["
-                  << old_lb << ", " << old_ub << "] to [" << new_lb << ", "
-                  << new_ub << "]";
-      }
-
-      if (changed_lb &&
-          !integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(var, new_lb),
-                                  {}, {})) {
-        return false;
-      }
-      if (changed_ub &&
-          !integer_trail->Enqueue(IntegerLiteral::LowerOrEqual(var, new_ub), {},
-                                  {})) {
-        return false;
-      }
-    }
-    if (new_bounds_have_been_imported &&
-        !model->GetOrCreate<SatSolver>()->FinishPropagation()) {
-      return false;
-    }
-    return true;
-  };
-  model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
-      import_level_zero_bounds);
-}
-
-void RegisterObjectiveBestBoundExport(
-    IntegerVariable objective_var,
-    SharedResponseManager* shared_response_manager, Model* model) {
-  std::string worker_name = model->GetOrCreate<WorkerInfo>()->worker_name;
-  auto* integer_trail = model->Get<IntegerTrail>();
-  const auto broadcast_objective_lower_bound =
-      [worker_name, objective_var, integer_trail,
-       shared_response_manager](const std::vector<IntegerVariable>& unused) {
-        shared_response_manager->UpdateInnerObjectiveBounds(
-            worker_name, integer_trail->LevelZeroLowerBound(objective_var),
-            integer_trail->LevelZeroUpperBound(objective_var));
-      };
-  model->GetOrCreate<GenericLiteralWatcher>()
-      ->RegisterLevelZeroModifiedVariablesCallback(
-          broadcast_objective_lower_bound);
-}
-
-void RegisterObjectiveBoundsImport(
-    SharedResponseManager* shared_response_manager, Model* model) {
-  auto* solver = model->GetOrCreate<SatSolver>();
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  auto* worker_info = model->GetOrCreate<WorkerInfo>();
-  auto* objective = model->GetOrCreate<ObjectiveDefinition>();
-  const auto import_objective_bounds = [solver, integer_trail, worker_info,
-                                        objective, shared_response_manager]() {
-    if (solver->AssumptionLevel() != 0) return true;
-    bool propagate = false;
-
-    const IntegerValue external_lb =
-        shared_response_manager->GetInnerObjectiveLowerBound();
-    const IntegerValue current_lb =
-        integer_trail->LowerBound(objective->objective_var);
-    if (external_lb > current_lb) {
-      if (!integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(
-                                      objective->objective_var, external_lb),
-                                  {}, {})) {
-        return false;
-      }
-      propagate = true;
-    }
-
-    const IntegerValue external_ub =
-        shared_response_manager->GetInnerObjectiveUpperBound();
-    const IntegerValue current_ub =
-        integer_trail->UpperBound(objective->objective_var);
-    if (external_ub < current_ub) {
-      if (!integer_trail->Enqueue(IntegerLiteral::LowerOrEqual(
-                                      objective->objective_var, external_ub),
-                                  {}, {})) {
-        return false;
-      }
-      propagate = true;
-    }
-
-    if (!propagate) return true;
-
-    VLOG(1) << "'" << worker_info->worker_name
-            << "' imports objective bounds: external ["
-            << objective->ScaleIntegerObjective(external_lb) << ", "
-            << objective->ScaleIntegerObjective(external_ub) << "], current ["
-            << objective->ScaleIntegerObjective(current_lb) << ", "
-            << objective->ScaleIntegerObjective(current_ub) << "]";
-
-    return solver->FinishPropagation();
-  };
-
-  model->GetOrCreate<LevelZeroCallbackHelper>()->callbacks.push_back(
-      import_objective_bounds);
 }
 
 }  // namespace sat

@@ -13,17 +13,19 @@
 
 #include "ortools/base/logging.h"
 
+#include <mutex>  // NOLINT
+
 #include "ortools/base/commandlineflags.h"
 
 DECLARE_bool(log_prefix);
 DECLARE_bool(logtostderr);
 
+namespace {
+std::once_flag init_done;
+}  // namespace
+
 void FixFlagsAndEnvironmentForSwig() {
-  static bool initialized = false;
-  if (!initialized) {
-    google::InitGoogleLogging("swig_helper");
-    initialized = true;
-  }
+  std::call_once(init_done, [] { google::InitGoogleLogging("swig_helper"); });
   FLAGS_logtostderr = true;
   FLAGS_log_prefix = false;
 }

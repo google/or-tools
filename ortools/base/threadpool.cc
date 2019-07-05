@@ -13,6 +13,8 @@
 
 #include "ortools/base/threadpool.h"
 
+#include "ortools/base/logging.h"
+
 namespace operations_research {
 void RunWorker(void* data) {
   ThreadPool* const thread_pool = reinterpret_cast<ThreadPool*>(data);
@@ -24,7 +26,7 @@ void RunWorker(void* data) {
 }
 
 ThreadPool::ThreadPool(const std::string& prefix, int num_workers)
-    : num_workers_(num_workers), waiting_to_finish_(false), started_(false) {}
+    : num_workers_(num_workers) {}
 
 ThreadPool::~ThreadPool() {
   if (started_) {
@@ -36,6 +38,12 @@ ThreadPool::~ThreadPool() {
       all_workers_[i].join();
     }
   }
+}
+
+void ThreadPool::SetQueueCapacity(int capacity) {
+  CHECK_GT(capacity, num_workers_);
+  CHECK(!started_);
+  queue_capacity_ = capacity;
 }
 
 void ThreadPool::StartWorkers() {
@@ -51,6 +59,10 @@ std::function<void()> ThreadPool::GetNextTask() {
     if (!tasks_.empty()) {
       std::function<void()> task = tasks_.front();
       tasks_.pop_front();
+      if (tasks_.size() < queue_capacity_ && waiting_for_capacity_) {
+        waiting_for_capacity_ = false;
+        capacity_condition_.notify_all();
+      }
       return task;
     }
     if (waiting_to_finish_) {
@@ -64,10 +76,15 @@ std::function<void()> ThreadPool::GetNextTask() {
 
 void ThreadPool::Schedule(std::function<void()> closure) {
   std::unique_lock<std::mutex> lock(mutex_);
+  while (tasks_.size() >= queue_capacity_) {
+    waiting_for_capacity_ = true;
+    capacity_condition_.wait(lock);
+  }
   tasks_.push_back(closure);
   if (started_) {
     lock.unlock();
     condition_.notify_all();
   }
 }
+
 }  // namespace operations_research

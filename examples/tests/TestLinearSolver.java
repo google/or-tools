@@ -152,9 +152,44 @@ public class TestLinearSolver {
     logger.info("Success = " + success);
   }
 
+  static void testSetHintAndSolverGetters() {
+    MPSolver solver =  new MPSolver("testSetHintAndSolverGetters",
+				    MPSolver.OptimizationProblemType.GLOP_LINEAR_PROGRAMMING);
+    // x and y are continuous non-negative variables.
+    MPVariable x = solver.makeIntVar(0.0, Double.POSITIVE_INFINITY, "x");
+    MPVariable y = solver.makeIntVar(0.0, Double.POSITIVE_INFINITY, "y");
+
+    // Objectif function: Maximize x + 10 * y.
+    MPObjective objective = solver.objective();
+    objective.setCoefficient(x, 1);
+    objective.setCoefficient(y, 10);
+    objective.setMaximization();
+
+    // x + 7 * y <= 17.5.
+    final MPConstraint c0 = solver.makeConstraint(-Double.POSITIVE_INFINITY, 17.5, "c0");
+    c0.setCoefficient(x, 1);
+    c0.setCoefficient(y, 7);
+
+    // x <= 3.5.
+    final MPConstraint c1 = solver.makeConstraint(-Double.POSITIVE_INFINITY, 3.5, "c1");
+    c1.setCoefficient(x, 1);
+    c1.setCoefficient(y, 0);
+
+    if (solver.constraints().length != 2) {
+      throw new RuntimeException("WrongConstraintLength");
+    }
+    if (solver.variables().length != 2) {
+      throw new RuntimeException("WrongConstraintLength");
+    }
+
+    solver.setHint(new MPVariable[] {x, y}, new double[] {2.0, 3.0});
+  }
+
+
 
   public static void main(String[] args) throws Exception {
     testSameConstraintName();
+    testSetHintAndSolverGetters();
 
     MPSolver.OptimizationProblemType problem_types[] = MPSolver.OptimizationProblemType.values();
     for (MPSolver.OptimizationProblemType problem_type : problem_types) {

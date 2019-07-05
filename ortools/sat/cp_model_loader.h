@@ -179,6 +179,16 @@ class CpModelMapping {
   absl::flat_hash_set<const ConstraintProto*> is_half_encoding_ct_;
 };
 
+// Inspects the model and use some heuristic to decide which variable, if any,
+// should be fully encoded. Note that some constraints like the element or table
+// constraints require some of their variables to be fully encoded.
+//
+// TODO(user): This function exists so that we fully encode first all the
+// variable that needs to be fully encoded so that at loading time we can adapt
+// the algorithm used. Howeve it needs to duplicate the logic that decide what
+// needs to be fully encoded. Try to come up with a more robust design.
+void MaybeFullyEncodeMoreVariables(const CpModelProto& model_proto, Model* m);
+
 // Calls one of the functions below.
 // Returns false if we do not know how to load the given constraints.
 bool LoadConstraint(const ConstraintProto& ct, Model* m);

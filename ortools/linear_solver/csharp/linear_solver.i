@@ -62,6 +62,16 @@ class MPSolutionResponse;
 %template(MpDoubleVector) std::vector<double>;
 VECTOR_AS_CSHARP_ARRAY(double, double, double, MpDoubleVector);
 
+%define CONVERT_VECTOR(CTYPE, TYPE)
+SWIG_STD_VECTOR_ENHANCED(CTYPE*);
+%template(TYPE ## Vector) std::vector<CTYPE*>;
+%enddef  // CONVERT_VECTOR
+
+CONVERT_VECTOR(operations_research::MPConstraint, MPConstraint)
+CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
+
+#undef CONVERT_VECTOR
+
 %ignoreall
 
 %unignore operations_research;
@@ -125,8 +135,10 @@ VECTOR_AS_CSHARP_ARRAY(double, double, double, MpDoubleVector);
 %unignore operations_research::MPSolver::SetSolverSpecificParametersAsString;
 %rename (WallTime) operations_research::MPSolver::wall_time;
 %unignore operations_research::MPSolver::Clear;
-%unignore operations_research::MPSolver::NumVariables;
+%unignore operations_research::MPSolver::constraints;
 %unignore operations_research::MPSolver::NumConstraints;
+%unignore operations_research::MPSolver::NumVariables;
+%unignore operations_research::MPSolver::variables;
 %unignore operations_research::MPSolver::EnableOutput;
 %unignore operations_research::MPSolver::SuppressOutput;
 %unignore operations_research::MPSolver::LookupConstraintOrNull;
@@ -147,6 +159,10 @@ VECTOR_AS_CSHARP_ARRAY(double, double, double, MpDoubleVector);
 // Extend code.
 %unignore operations_research::MPSolver::ExportModelAsLpFormat(bool);
 %unignore operations_research::MPSolver::ExportModelAsMpsFormat(bool, bool);
+%unignore operations_research::MPSolver::SetHint(
+    const std::vector<operations_research::MPVariable*>&,
+    const std::vector<double>&);
+%unignore operations_research::MPSolver::SetNumThreads;
 %extend operations_research::MPSolver {
   std::string ExportModelAsLpFormat(bool obfuscated) {
     operations_research::MPModelExportOptions options;
@@ -162,6 +178,24 @@ VECTOR_AS_CSHARP_ARRAY(double, double, double, MpDoubleVector);
     operations_research::MPModelProto model;
     $self->ExportModelToProto(&model);
     return ExportModelAsMpsFormat(model, options).value_or("");
+  }
+
+  void SetHint(const std::vector<operations_research::MPVariable*>& variables,
+               const std::vector<double>& values) {
+    if (variables.size() != values.size()) {
+      LOG(FATAL) << "Different number of variables and values when setting "
+                 << "hint.";
+    }
+    std::vector<std::pair<const operations_research::MPVariable*, double> >
+        hint(variables.size());
+    for (int i = 0; i < variables.size(); ++i) {
+      hint[i] = std::make_pair(variables[i], values[i]);
+    }
+    $self->SetHint(hint);
+  }
+
+  bool SetNumThreads(int num_theads) {
+    return $self->SetNumThreads(num_theads).ok();
   }
 }
 

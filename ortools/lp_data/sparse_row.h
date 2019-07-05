@@ -20,7 +20,7 @@ namespace operations_research {
 namespace glop {
 
 // Specialization of SparseVectorEntry and SparseVectorIterator for the
-// SparseRow class. In addtion to index(), it also provides col() for better
+// SparseRow class. In addition to index(), it also provides col() for better
 // readability on the client side.
 class SparseRowEntry : public SparseVectorEntry<ColIndex> {
  public:

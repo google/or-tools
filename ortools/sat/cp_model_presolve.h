@@ -158,9 +158,12 @@ struct PresolveContext {
   CpModelProto* working_model;
   CpModelProto* mapping_model;
 
-  // Indicate if we are enumerating all solutions. This disable some presolve
-  // rules.
-  bool enumerate_all_solutions = false;
+  // Indicate if we are allowed to remove irrelevant feasible solution from the
+  // set of feasible solution. For example, if a variable is unused, can we fix
+  // it to an arbitrary value (or its mimimum objective one)? This must be true
+  // if the client wants to enumerate all solutions or wants correct tightened
+  // bounds in the response.
+  bool keep_all_feasible_solutions = false;
 
   // Just used to display statistics on the presolve rules that were used.
   absl::flat_hash_map<std::string, int> stats_by_rule_name;
@@ -184,6 +187,15 @@ struct PresolveContext {
   std::vector<Domain> domains;
 };
 
+// Replaces all the instance of a variable i (and the literals referring to it)
+// by mapping[i]. The definition of variables i is also moved to its new index.
+// Variables with a negative mapping value are ignored and it is an error if
+// such variable is referenced anywhere (this is CHECKed).
+//
+// The image of the mapping should be dense in [0, new_num_variables), this is
+// also CHECKed.
+void ApplyVariableMapping(const std::vector<int>& mapping, CpModelProto* proto);
+
 // Presolves the initial content of presolved_model.
 //
 // This also creates a mapping model that encode the correspondence between the
@@ -205,23 +217,114 @@ struct PresolveContext {
 // TODO(user): Identify disconnected components and returns a vector of
 // presolved model? If we go this route, it may be nicer to store the indices
 // inside the model. We can add a IntegerVariableProto::initial_index;
-//
-// Returns false if a non-recoverable error was encountered.
-//
-// TODO(user): Make sure this can never run into this case provided that the
-// initial model is valid!
+class CpModelPresolver {
+ public:
+  CpModelPresolver(const PresolveOptions& options,
+                   CpModelProto* presolved_model, CpModelProto* mapping_model,
+                   std::vector<int>* postsolve_mapping);
+
+  // Returns false if a non-recoverable error was encountered.
+  //
+  // TODO(user): Make sure this can never run into this case provided that the
+  // initial model is valid!
+  bool Presolve();
+
+  // Executes presolve method for the given constraint. Public for testing only.
+  bool PresolveOneConstraint(int c);
+
+  // Public for testing only.
+  void SyncDomainAndRemoveEmptyConstraints();
+
+ private:
+  void PresolveToFixPoint();
+
+  // Runs the probing.
+  void Probe();
+
+  // Presolve functions.
+  //
+  // They should return false only if the constraint <-> variable graph didn't
+  // change. This is just an optimization, returning true is always correct.
+  //
+  // Invariant about UNSAT: All these functions should abort right away if
+  // context_.IsUnsat() is true. And the only way to change the status to unsat
+  // is through ABSL_MUST_USE_RESULT function that should also abort right away
+  // the current code. This way we shouldn't keep doing computation on an
+  // inconsistent state.
+  // TODO(user,user): Make these public and unit test.
+  bool PresolveAutomaton(ConstraintProto* ct);
+  bool PresolveCircuit(ConstraintProto* ct);
+  bool PresolveCumulative(ConstraintProto* ct);
+  bool PresolveNoOverlap(ConstraintProto* ct);
+  bool PresolveAllDiff(ConstraintProto* ct);
+  bool PresolveTable(ConstraintProto* ct);
+  bool PresolveElement(ConstraintProto* ct);
+  bool PresolveInterval(int c, ConstraintProto* ct);
+  bool PresolveLinear(ConstraintProto* ct);
+  bool PresolveLinearOnBooleans(ConstraintProto* ct);
+  bool CanonicalizeLinear(ConstraintProto* ct);
+  bool RemoveSingletonInLinear(ConstraintProto* ct);
+  bool PresolveIntDiv(ConstraintProto* ct);
+  bool PresolveIntProd(ConstraintProto* ct);
+  bool PresolveIntMin(ConstraintProto* ct);
+  bool PresolveIntMax(ConstraintProto* ct);
+  bool PresolveBoolXor(ConstraintProto* ct);
+  bool PresolveAtMostOne(ConstraintProto* ct);
+  bool PresolveBoolAnd(ConstraintProto* ct);
+  bool PresolveBoolOr(ConstraintProto* ct);
+  bool PresolveEnforcementLiteral(ConstraintProto* ct);
+
+  // SetPPC is short for set packing, partitioning and covering constraints.
+  // These are sum of booleans <=, = and >= 1 respectively.
+  bool ProcessSetPPC();
+
+  // Removes dominated constraints or fixes some variables for given pair of
+  // setppc constraints. This assumes that literals in constraint c1 is subset
+  // of literals in constraint c2.
+  bool ProcessSetPPCSubset(int c1, int c2, const std::vector<int>& c2_minus_c1,
+                           const std::vector<int>& original_constraint_index,
+                           std::vector<bool>* marked_for_removal);
+
+  void PresolvePureSatPart();
+
+  // Extracts AtMostOne constraint from Linear constraint.
+  void ExtractAtMostOneFromLinear(ConstraintProto* ct);
+
+  void DivideLinearByGcd(ConstraintProto* ct);
+  void ExtractEnforcementLiteralFromLinearConstraint(ConstraintProto* ct);
+
+  // Extracts cliques from bool_and and small at_most_one constraints and
+  // transforms them into maximal cliques.
+  void TransformIntoMaxCliques();
+
+  // Converts bool_or and at_most_one of size 2 to bool_and.
+  void ExtractBoolAnd();
+
+  void ExpandObjective();
+
+  void TryToSimplifyDomains();
+
+  void MergeNoOverlapConstraints();
+
+  void RemoveUnusedEquivalentVariables();
+
+  bool IntervalsCanIntersect(const IntervalConstraintProto& interval1,
+                             const IntervalConstraintProto& interval2);
+
+  bool ExploitEquivalenceRelations(ConstraintProto* ct);
+
+  ABSL_MUST_USE_RESULT bool RemoveConstraint(ConstraintProto* ct);
+  ABSL_MUST_USE_RESULT bool MarkConstraintAsFalse(ConstraintProto* ct);
+
+  const PresolveOptions& options_;
+  std::vector<int>* postsolve_mapping_;
+  PresolveContext context_;
+};
+
+// Convenient wrapper to call the full presolve.
 bool PresolveCpModel(const PresolveOptions& options,
                      CpModelProto* presolved_model, CpModelProto* mapping_model,
                      std::vector<int>* postsolve_mapping);
-
-// Replaces all the instance of a variable i (and the literals referring to it)
-// by mapping[i]. The definition of variables i is also moved to its new index.
-// Variables with a negative mapping value are ignored and it is an error if
-// such variable is referenced anywhere (this is CHECKed).
-//
-// The image of the mapping should be dense in [0, new_num_variables), this is
-// also CHECKed.
-void ApplyVariableMapping(const std::vector<int>& mapping, CpModelProto* proto);
 
 }  // namespace sat
 }  // namespace operations_research

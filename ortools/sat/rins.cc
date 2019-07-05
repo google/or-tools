@@ -24,15 +24,16 @@ bool SharedRINSNeighborhoodManager::AddNeighborhood(
     const RINSNeighborhood& rins_neighborhood) {
   // Don't store this neighborhood if the current storage is already too large.
   // TODO(user): Consider instead removing one of the older neighborhoods.
-  if (total_num_fixed_vars_ + rins_neighborhood.fixed_vars.size() >
-      max_fixed_vars()) {
+  const int64 neighborhood_size = rins_neighborhood.fixed_vars.size() +
+                                  rins_neighborhood.reduced_domain_vars.size();
+  if (total_stored_vars_ + neighborhood_size > max_stored_vars()) {
     return false;
   }
 
   absl::MutexLock lock(&mutex_);
-  total_num_fixed_vars_ += rins_neighborhood.fixed_vars.size();
+  total_stored_vars_ += neighborhood_size;
   neighborhoods_.push_back(std::move(rins_neighborhood));
-  VLOG(1) << "total fixed vars: " << total_num_fixed_vars_;
+  VLOG(1) << "total stored vars: " << total_stored_vars_;
   return true;
 }
 
@@ -47,8 +48,10 @@ SharedRINSNeighborhoodManager::GetUnexploredNeighborhood() {
   // return the last added neighborhood and remove it.
   const RINSNeighborhood neighborhood = std::move(neighborhoods_.back());
   neighborhoods_.pop_back();
-  total_num_fixed_vars_ -= neighborhood.fixed_vars.size();
-  VLOG(1) << "total fixed vars: " << total_num_fixed_vars_;
+  const int64 neighborhood_size =
+      neighborhood.fixed_vars.size() + neighborhood.reduced_domain_vars.size();
+  total_stored_vars_ -= neighborhood_size;
+  VLOG(1) << "total stored vars: " << total_stored_vars_;
   return neighborhood;
 }
 
@@ -57,38 +60,66 @@ void AddRINSNeighborhood(Model* model) {
   auto* solution_details = model->Get<SolutionDetails>();
   const RINSVariables& rins_vars = *model->GetOrCreate<RINSVariables>();
 
-  if (solution_details == nullptr) return;
-
   RINSNeighborhood rins_neighborhood;
 
+  const double tolerance = 1e-6;
   for (const RINSVariable& rins_var : rins_vars.vars) {
     const IntegerVariable positive_var = rins_var.positive_var;
 
     if (integer_trail->IsCurrentlyIgnored(positive_var)) continue;
 
-    // TODO(user): Perform caching to make this more efficient.
     LinearProgrammingConstraint* lp = rins_var.lp;
     if (lp == nullptr || !lp->HasSolution()) continue;
-    if (positive_var >= solution_details->best_solution.size()) continue;
+    const double lp_value = lp->GetSolutionValue(positive_var);
 
-    const IntegerValue best_solution_value =
-        solution_details->best_solution[positive_var];
-    if (std::abs(best_solution_value.value() -
-                 lp->GetSolutionValue(positive_var)) < 1e-4) {
-      if (best_solution_value >= integer_trail->LowerBound(positive_var) ||
-          best_solution_value <= integer_trail->UpperBound(positive_var)) {
-        rins_neighborhood.fixed_vars.push_back(
-            {rins_var, best_solution_value.value()});
+    if (solution_details == nullptr || solution_details->solution_count == 0) {
+      // The tolerance make sure that if the lp_values is close to an integer,
+      // then we fix the variable to this integer value.
+      const int64 domain_lb =
+          static_cast<int64>(std::floor(lp_value + tolerance));
+      const int64 domain_ub =
+          static_cast<int64>(std::ceil(lp_value - tolerance));
+      if (domain_lb >= integer_trail->LowerBound(positive_var) &&
+          domain_ub <= integer_trail->UpperBound(positive_var)) {
+        if (domain_lb == domain_ub) {
+          rins_neighborhood.fixed_vars.push_back({rins_var, domain_lb});
+        } else {
+          rins_neighborhood.reduced_domain_vars.push_back(
+              {rins_var, {domain_lb, domain_ub}});
+        }
+
       } else {
         // The last lp_solution might not always be up to date.
-        VLOG(2) << "RINS common value out of bounds: " << best_solution_value
+        VLOG(2) << "RENS lp value out of bounds: " << lp_value
                 << " LB: " << integer_trail->LowerBound(positive_var)
                 << " UB: " << integer_trail->UpperBound(positive_var);
       }
+    } else {
+      if (positive_var >= solution_details->best_solution.size()) continue;
+
+      const IntegerValue best_solution_value =
+          solution_details->best_solution[positive_var];
+      if (std::abs(best_solution_value.value() - lp_value) < 1e-4) {
+        if (best_solution_value >= integer_trail->LowerBound(positive_var) &&
+            best_solution_value <= integer_trail->UpperBound(positive_var)) {
+          rins_neighborhood.fixed_vars.push_back(
+              {rins_var, best_solution_value.value()});
+        } else {
+          // The last lp_solution might not always be up to date.
+          VLOG(2) << "RINS common value out of bounds: " << best_solution_value
+                  << " LB: " << integer_trail->LowerBound(positive_var)
+                  << " UB: " << integer_trail->UpperBound(positive_var);
+        }
+      }
     }
   }
-  model->Mutable<SharedRINSNeighborhoodManager>()->AddNeighborhood(
-      rins_neighborhood);
+
+  const int64 neighborhood_size = rins_neighborhood.fixed_vars.size() +
+                                  rins_neighborhood.reduced_domain_vars.size();
+  if (neighborhood_size > 0) {
+    model->Mutable<SharedRINSNeighborhoodManager>()->AddNeighborhood(
+        rins_neighborhood);
+  }
 }
 
 }  // namespace sat

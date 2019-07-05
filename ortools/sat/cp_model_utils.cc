@@ -463,5 +463,21 @@ std::vector<int> UsedIntervals(const ConstraintProto& ct) {
   return used_intervals;
 }
 
+int64 ComputeInnerObjective(const CpObjectiveProto& objective,
+                            const CpSolverResponse& response) {
+  int64 objective_value = 0;
+  auto& repeated_field_values = response.solution().empty()
+                                    ? response.solution_lower_bounds()
+                                    : response.solution();
+  for (int i = 0; i < objective.vars_size(); ++i) {
+    int64 coeff = objective.coeffs(i);
+    const int ref = objective.vars(i);
+    const int var = PositiveRef(ref);
+    if (!RefIsPositive(ref)) coeff = -coeff;
+    objective_value += coeff * repeated_field_values[var];
+  }
+  return objective_value;
+}
+
 }  // namespace sat
 }  // namespace operations_research

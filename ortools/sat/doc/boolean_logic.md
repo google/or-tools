@@ -1,8 +1,35 @@
-| [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Reference manual](reference.md) |
-| ----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | -------------------------------- |
-
+| [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Reference manual](reference.md) |
+| ----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | -------------------------------- |
 
 # Boolean logic recipes for the CP-SAT solver.
+
+
+
+<!--ts-->
+   * [Boolean logic recipes for the CP-SAT solver.](#boolean-logic-recipes-for-the-cp-sat-solver)
+      * [Introduction](#introduction)
+      * [Boolean variables and literals](#boolean-variables-and-literals)
+         * [Python code](#python-code)
+         * [C   code](#c-code)
+         * [Java code](#java-code)
+         * [C# code](#c-code-1)
+      * [Boolean constraints](#boolean-constraints)
+         * [Python code](#python-code-1)
+         * [C   code](#c-code-2)
+         * [Java code](#java-code-1)
+         * [C# code](#c-code-3)
+      * [Reified constraints](#reified-constraints)
+         * [Python code](#python-code-2)
+         * [C   code](#c-code-4)
+         * [Java code](#java-code-2)
+         * [C# code](#c-code-5)
+      * [Product of two Boolean Variables](#product-of-two-boolean-variables)
+         * [Python code](#python-code-3)
+
+<!-- Added by: lperron, at: Fri Jun  7 09:58:27 CEST 2019 -->
+
+<!--te-->
+
 
 ## Introduction
 
@@ -14,8 +41,8 @@ https://en.wikipedia.org/wiki/Boolean_satisfiability_problem#Basic_definitions_a
 
 ## Boolean variables and literals
 
-We can create a Boolean variable 'x' and a literal 'not_x' equal to the logical
-negation of 'x'.
+We can create a Boolean variable `x` and a literal `not_x` equal to the logical
+negation of `x`.
 
 ### Python code
 
@@ -214,10 +241,10 @@ The CP-SAT solver supports *half-reified* constraints, also called
 
     x implies constraint
 
-where the constraint must hold if *x* is true.
+where the constraint must hold if `x` is true.
 
 Please note that this is not an equivalence relation. The constraint can still
-be true if *x* is false.
+be true if `x` is false.
 
 So we can write b => And(x, not y). That is, if b is true, then x is true and y
 is false. Note that in this particular example, there are multiple ways to
@@ -366,4 +393,60 @@ public class ReifiedSampleSat
     model.AddBoolOr(new ILiteral[] {b.Not(), y.Not()});
   }
 }
+```
+
+## Product of two Boolean Variables
+
+A useful construct is the product `p` of two Boolean variables `x` and `y`.
+
+    p == x * y
+
+This is equivalent to the logical relation
+
+    p <=> x and y
+
+This is encoded using one bool_or constraint and two implications. The following
+code samples output this truth table:
+
+    x = 0   y = 0   p = 0
+    x = 1   y = 0   p = 0
+    x = 0   y = 1   p = 0
+    x = 1   y = 1   p = 1
+
+### Python code
+
+```python
+"""Code sample that encodes the product of two Boolean variables."""
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+from ortools.sat.python import cp_model
+
+
+def BooleanProductSampleSat():
+  """Encoding of the product of two Boolean variables.
+
+  p == x * y, which is the same as p <=> x and y
+  """
+  model = cp_model.CpModel()
+  x = model.NewBoolVar('x')
+  y = model.NewBoolVar('y')
+  p = model.NewBoolVar('p')
+
+  # x and y implies p, rewrite as not(x and y) or p
+  model.AddBoolOr([x.Not(), y.Not(), p])
+
+  # p implies x and y, expanded into two implication
+  model.AddImplication(p, x)
+  model.AddImplication(p, y)
+
+  # Create a solver and solve.
+  solver = cp_model.CpSolver()
+  solution_printer = cp_model.VarArraySolutionPrinter([x, y, p])
+  solver.SearchForAllSolutions(model, solution_printer)
+
+
+BooleanProductSampleSat()
 ```

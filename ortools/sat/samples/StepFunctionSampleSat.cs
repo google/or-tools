@@ -13,6 +13,7 @@
 
 using System;
 using Google.OrTools.Sat;
+using Google.OrTools.Util;
 
 public class VarArraySolutionPrinter : CpSolverSolutionCallback
 {
@@ -58,18 +59,19 @@ public class StepFunctionSampleSat
 
     // expr == 0 on [5, 6] U [8, 10]
     ILiteral b0 = model.NewBoolVar("b0");
-    model.AddLinearConstraintWithBounds(
-        new IntVar[] {x},
-        new long[] {1},
-        new long[] {5, 6, 8, 10}).OnlyEnforceIf(b0);
+    model.AddLinearExpressionInDomain(
+        x,
+        Domain.FromValues(new long[] { 5, 6, 8, 9, 10 })).OnlyEnforceIf(b0);
     model.Add(expr == 0).OnlyEnforceIf(b0);
 
     // expr == 2 on [0, 1] U [3, 4] U [11, 20]
     ILiteral b2 = model.NewBoolVar("b2");
-    model.AddLinearConstraintWithBounds(
-        new IntVar[] {x},
-        new long[] {1},
-        new long[] {0, 1, 3, 4, 11, 20}).OnlyEnforceIf(b2);
+    model.AddLinearExpressionInDomain(
+        x,
+        Domain.FromIntervals(
+            new long[][] {new long[] {0, 1},
+                          new long[] {3, 4},
+                          new long[] {11, 20}})).OnlyEnforceIf(b2);
     model.Add(expr == 2).OnlyEnforceIf(b2);
 
     // expr == 3 when x == 7
@@ -78,11 +80,11 @@ public class StepFunctionSampleSat
     model.Add(expr == 3).OnlyEnforceIf(b3);
 
     // At least one bi is true. (we could use a sum == 1).
-    model.AddBoolOr(new ILiteral[] {b0, b2, b3});
+    model.AddBoolOr(new ILiteral[] { b0, b2, b3 });
 
     // Search for x values in increasing order.
     model.AddDecisionStrategy(
-        new IntVar[] {x},
+        new IntVar[] { x },
         DecisionStrategyProto.Types.VariableSelectionStrategy.ChooseFirst,
         DecisionStrategyProto.Types.DomainReductionStrategy.SelectMinValue);
 
@@ -93,7 +95,7 @@ public class StepFunctionSampleSat
     solver.StringParameters = "search_branching:FIXED_SEARCH";
 
     VarArraySolutionPrinter cb =
-        new VarArraySolutionPrinter(new IntVar[] {x, expr});
+        new VarArraySolutionPrinter(new IntVar[] { x, expr });
     solver.SearchAllSolutions(model, cb);
   }
 }

@@ -1,0 +1,5 @@
+<map id="operations_research::LocalSearchMonitor" name="operations_research::LocalSearchMonitor">
+<area shape="rect" id="node1" title="&#45;&#45;&#45;&#45;&#45;&#45;&#45;— LocalSearchMonitor &#45;&#45;&#45;&#45;&#45;&#45;&#45;—" alt="" coords="5,179,153,217"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events." alt="" coords="8,92,150,131"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="" coords="8,5,150,44"/>
+</map>

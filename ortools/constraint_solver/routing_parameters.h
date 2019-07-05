@@ -23,8 +23,8 @@ namespace operations_research {
 RoutingModelParameters DefaultRoutingModelParameters();
 RoutingSearchParameters DefaultRoutingSearchParameters();
 
-// Returns an empty std::string if the routing search parameters are valid, and
-// a non-empty, human readable error description if they're not.
+/// Returns an empty std::string if the routing search parameters are valid, and
+/// a non-empty, human readable error description if they're not.
 std::string FindErrorInRoutingSearchParameters(
     const RoutingSearchParameters& search_parameters);
 

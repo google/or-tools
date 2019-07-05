@@ -16,6 +16,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
+import com.google.ortools.sat.LinearExpr;
 
 /** Solves an optimization problem and displays all intermediate solutions. */
 public class SolveAndPrintIntermediateSolutionsSampleSat {
@@ -70,7 +71,7 @@ public class SolveAndPrintIntermediateSolutionsSampleSat {
 
     // Maximize a linear combination of variables.
     // [START objective]
-    model.maximizeScalProd(new IntVar[] {x, y, z}, new int[] {1, 2, 3});
+    model.maximize(LinearExpr.scalProd(new IntVar[] {x, y, z}, new int[] {1, 2, 3}));
     // [END objective]
 
     // Create a solver and solve the model.

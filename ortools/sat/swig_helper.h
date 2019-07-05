@@ -21,8 +21,6 @@
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/util/sigint.h"
-#include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -105,41 +103,23 @@ class SatHelper {
   static operations_research::sat::CpSolverResponse Solve(
       const operations_research::sat::CpModelProto& model_proto) {
     FixFlagsAndEnvironmentForSwig();
-    Model model;
-    std::atomic<bool> stopped(false);
-    model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped);
-    model.GetOrCreate<SigintHandler>()->Register(
-        [&stopped]() { stopped = true; });
-
-    return operations_research::sat::SolveCpModel(model_proto, &model);
+    return operations_research::sat::Solve(model_proto);
   }
 
   static operations_research::sat::CpSolverResponse SolveWithParameters(
       const operations_research::sat::CpModelProto& model_proto,
       const operations_research::sat::SatParameters& parameters) {
     FixFlagsAndEnvironmentForSwig();
-    Model model;
-    model.Add(NewSatParameters(parameters));
-    std::atomic<bool> stopped(false);
-    model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped);
-    model.GetOrCreate<SigintHandler>()->Register(
-        [&stopped]() { stopped = true; });
-
-    return SolveCpModel(model_proto, &model);
+    return operations_research::sat::SolveWithParameters(model_proto,
+                                                         parameters);
   }
 
   static operations_research::sat::CpSolverResponse SolveWithStringParameters(
       const operations_research::sat::CpModelProto& model_proto,
       const std::string& parameters) {
     FixFlagsAndEnvironmentForSwig();
-    Model model;
-    model.Add(NewSatParameters(parameters));
-    std::atomic<bool> stopped(false);
-    model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped);
-    model.GetOrCreate<SigintHandler>()->Register(
-        [&stopped]() { stopped = true; });
-
-    return SolveCpModel(model_proto, &model);
+    return operations_research::sat::SolveWithParameters(model_proto,
+                                                         parameters);
   }
 
   static operations_research::sat::CpSolverResponse
@@ -154,8 +134,6 @@ class SatHelper {
         [&callback](const CpSolverResponse& r) { return callback.Run(r); }));
     model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
         callback.stopped());
-    model.GetOrCreate<SigintHandler>()->Register(
-        [&callback]() { *callback.stopped() = true; });
 
     return SolveCpModel(model_proto, &model);
   }
@@ -171,8 +149,6 @@ class SatHelper {
         [&callback](const CpSolverResponse& r) { return callback.Run(r); }));
     model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
         callback.stopped());
-    model.GetOrCreate<SigintHandler>()->Register(
-        [&callback]() { *callback.stopped() = true; });
 
     return SolveCpModel(model_proto, &model);
   }
@@ -194,38 +170,6 @@ class SatHelper {
   static std::string ValidateModel(
       const operations_research::sat::CpModelProto& model_proto) {
     return ValidateCpModel(model_proto);
-  }
-
-  // Builds a flattened list of intervals from a set of values.
-  static std::vector<int64> DomainFromValues(const std::vector<int64>& values) {
-    Domain domain(Domain::FromValues(values));
-    std::vector<int64> result;
-    for (const auto& interval : domain) {
-      result.push_back(interval.start);
-      result.push_back(interval.end);
-    }
-    return result;
-  }
-
-  // Builds a flattened list of intervals from two parallel vectors of starts
-  // and ends.
-  static std::vector<int64> DomainFromStartsAndEnds(
-      const std::vector<int64>& starts,
-      const std::vector<int64>& ends) {
-    std::vector<ClosedInterval> input;
-    for (int i = 0; i < starts.size(); ++i) {
-      ClosedInterval tmp;
-      tmp.start = starts[i];
-      tmp.end = ends[i];
-      input.push_back(tmp);
-    }
-    Domain domain(Domain::FromIntervals(input));
-    std::vector<int64> result;
-    for (const auto& interval : domain) {
-      result.push_back(interval.start);
-      result.push_back(interval.end);
-    }
-    return result;
   }
 };
 

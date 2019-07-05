@@ -331,6 +331,15 @@ message RoutingSearchParameters {
   // If true, the solver should use depth-first search rather than local search
   // to solve the problem.
   bool use_depth_first_search = 6;
+  // If true, use the CP solver to find a solution. Either local or depth-first
+  // search will be used depending on the value of use_depth_first_search. Will
+  // be run before the CP-SAT solver (cf. use_cp_sat).
+  OptionalBoolean use_cp = 28;
+  // If true, use the CP-SAT solver to find a solution. If use_cp is also true,
+  // the CP-SAT solver will be run after the CP solver if there is time
+  // remaining and will use the CP solution as a hint for the CP-SAT search.
+  // As of 5/2019, only TSP models can be solved.
+  OptionalBoolean use_cp_sat = 27;
   // Minimum step by which the solution must be improved in local search. 0
   // means "unspecified". If this value is fractional, it will get rounded to
   // the nearest integer.

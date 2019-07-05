@@ -112,7 +112,7 @@ public class NursesSat
         {
           tmp[n] = shift[n, d, s];
         }
-        model.Add(tmp.Sum() == 1);
+        model.Add(LinearExpr.Sum(tmp) == 1);
       }
     }
 
@@ -126,7 +126,7 @@ public class NursesSat
         {
           tmp[s] = shift[n, d, s];
         }
-        model.Add(tmp.Sum() == 1);
+        model.Add(LinearExpr.Sum(tmp) == 1);
       }
     }
 
@@ -139,7 +139,7 @@ public class NursesSat
       {
         tmp[d] = shift[n, d, 0];
       }
-      model.Add(1 <= tmp.Sum() <= 2);
+      model.AddLinearConstraint(LinearExpr.Sum(tmp), 1, 2);
     }
 
     // works_shift[(n, s)] is 1 if nurse n works shift s at least one day in
@@ -169,7 +169,7 @@ public class NursesSat
       {
         tmp[n] = works_shift[n, s];
       }
-      model.Add(tmp.Sum() <= 2);
+      model.Add(LinearExpr.Sum(tmp) <= 2);
     }
 
     // If a nurse works shifts 2 or 3 on, she must also work that

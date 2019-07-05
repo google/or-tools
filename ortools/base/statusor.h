@@ -39,13 +39,13 @@ struct StatusOr {
 
   Status status() const { return status_; }
 
-template <typename U>
-T value_or(U&& default_value) const& {
-  if (ok()) {
-    return value_;
+  template <typename U>
+  T value_or(U&& default_value) const& {
+    if (ok()) {
+      return value_;
+    }
+    return std::forward<U>(default_value);
   }
-  return std::forward<U>(default_value);
-}
 
  private:
   T value_;

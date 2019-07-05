@@ -16,20 +16,26 @@
 
 #include <vector>
 
+#include "absl/synchronization/mutex.h"
 #include "absl/types/span.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/subsolver.h"
+#include "ortools/sat/synchronization.h"
 
 namespace operations_research {
 namespace sat {
 
 // Neighborhood returned by Neighborhood generators.
 struct Neighborhood {
+  // True if neighborhood generator was able to generate a neighborhood.
+  bool is_generated = false;
+
   // True if the CpModelProto below is not the same as the base model.
   // This is not expected to happen often but allows to handle this case
   // properly.
-  bool is_reduced;
+  bool is_reduced = false;
 
   // Relaxed model. Any feasible solution to this "local" model should be a
   // feasible solution to the base model too.
@@ -40,14 +46,20 @@ struct Neighborhood {
 // to be used to generate LNS neighborhood. This class can be shared between
 // more than one generator in order to reduce memory usage.
 //
-// Thread-safe.
-class NeighborhoodGeneratorHelper {
+// Note that its implement the SubSolver interface to be able to Synchronize()
+// the bounds of the base problem with the external world.
+class NeighborhoodGeneratorHelper : public SubSolver {
  public:
-  NeighborhoodGeneratorHelper(CpModelProto const* model_proto,
-                              bool focus_on_decision_variables);
+  NeighborhoodGeneratorHelper(int id, const CpModelProto& model_proto,
+                              SatParameters const* parameters,
+                              SharedTimeLimit* shared_time_limit = nullptr,
+                              SharedBoundsManager* shared_bounds = nullptr,
+                              SharedResponseManager* shared_response = nullptr);
 
-  // Updates private variables using the current 'model_proto_'.
-  void UpdateHelperData(bool focus_on_decision_variables);
+  // SubSolver interface.
+  bool TaskIsAvailable() override { return false; }
+  std::function<void()> GenerateTask(int64 task_id) override { return {}; }
+  void Synchronize() override;
 
   // Returns the LNS fragment where the given variables are fixed to the value
   // they take in the given solution.
@@ -64,6 +76,9 @@ class NeighborhoodGeneratorHelper {
   // Returns a trivial model by fixing all active variables to the initial
   // solution values.
   Neighborhood FixAllVariables(const CpSolverResponse& initial_solution) const;
+
+  // Return a neighborhood that correspond to the full problem.
+  Neighborhood FullNeighborhood() const;
 
   // Indicates if the variable can be frozen. It happens if the variable is non
   // constant, and if it is a decision variable, or if
@@ -89,13 +104,35 @@ class NeighborhoodGeneratorHelper {
   }
 
   // The initial problem.
+  // Note that the domain of the variables are not updated here.
   const CpModelProto& ModelProto() const { return model_proto_; }
+  const SatParameters& Parameters() const { return parameters_; }
+
+  // This mutex must be aquired before calling any of the function that access
+  // data that can be updated by Synchronize().
+  //
+  // TODO(user): Refactor the class to be thread-safe instead, it should be
+  // safer and more easily maintenable. Some complication with accessing the
+  // variable<->constraint graph efficiently though.
+  absl::Mutex* MutableMutex() const { return &mutex_; }
 
  private:
+  // Recompute most of the class member. This needs to be called when the
+  // domains of the variables are updated.
+  void RecomputeHelperData();
+
   // Indicates if a variable is fixed in the model.
   bool IsConstant(int var) const;
 
-  const CpModelProto& model_proto_;
+  // TODO(user): To reduce memory, take a const proto and keep the updated
+  // variable bounds separated.
+  CpModelProto model_proto_;
+  const SatParameters& parameters_;
+  SharedTimeLimit* shared_time_limit_;
+  SharedBoundsManager* shared_bounds_;
+  SharedResponseManager* shared_response_;
+
+  mutable absl::Mutex mutex_;
 
   // Constraints by types.
   std::vector<std::vector<int>> type_to_constraints_;
@@ -104,10 +141,10 @@ class NeighborhoodGeneratorHelper {
   std::vector<std::vector<int>> constraint_to_var_;
   std::vector<std::vector<int>> var_to_constraint_;
 
-  // The set of active variables, that is the list of non constant variables
-  // if focus_on_decision_variables_ is false, or the list of non constant
-  // decision variables otherwise.
-  // It is stored both as a list and as a set (using a Boolean vector).
+  // The set of active variables, that is the list of non constant variables if
+  // parameters_.focus_on_decision_variables() is false, or the list of non
+  // constant decision variables otherwise. It is stored both as a list and as a
+  // set (using a Boolean vector).
   std::vector<bool> active_variables_set_;
   std::vector<int> active_variables_;
 };
@@ -117,7 +154,7 @@ class NeighborhoodGenerator {
  public:
   NeighborhoodGenerator(const std::string& name,
                         NeighborhoodGeneratorHelper const* helper)
-      : helper_(*helper), name_(name) {}
+      : name_(name), helper_(*helper), difficulty_(0.5) {}
   virtual ~NeighborhoodGenerator() {}
 
   // Generates a "local" subproblem for the given seed.
@@ -137,8 +174,8 @@ class NeighborhoodGenerator {
   virtual Neighborhood Generate(const CpSolverResponse& initial_solution,
                                 int64 seed, double difficulty) const = 0;
 
-  // Returns a short description of the generator.
-  std::string name() const { return name_; }
+  // Returns true if the generator needs a solution to generate a neighborhood.
+  virtual bool NeedsFirstSolution() const { return true; }
 
   // Uses UCB1 algorithm to compute the score (Multi armed bandit problem).
   // Details are at
@@ -146,21 +183,109 @@ class NeighborhoodGenerator {
   // 'total_num_calls' should be the sum of calls across all generators part of
   // the multi armed bandit problem.
   // If the generator is called less than 10 times then the method returns
-  // inifinity as score in order to get more data about the generator
+  // infinity as score in order to get more data about the generator
   // performance.
   double GetUCBScore(int64 total_num_calls) const;
 
-  // Updates the records using the current improvement in objective for the
-  // generator.
-  void AddSolveData(double objective_diff, double deterministic_time);
+  // Adds solve data about one "solved" neighborhood.
+  //
+  // TODO(user): Add more data.
+  struct SolveData {
+    // The status of the sub-solve.
+    CpSolverStatus status = CpSolverStatus::UNKNOWN;
 
-  // Number of times this generator is called.
-  int64 num_calls() const { return num_calls_; }
+    // The difficulty when this neighborhood was solved.
+    double difficulty = 0.0;
+
+    // The time it took to solve this neighborhood.
+    double deterministic_time = 0.0;
+
+    // The objective improvement compared to the BEST solution at the time of
+    // generation. Positive if better, negative if worse. Note that we use
+    // the inner objective (without scaling or offset) so we are exact and it is
+    // always in the minimization direction.
+    //
+    // Note(user): It seems to make more sense to compare to the base solution
+    // objective, not the best one. However this causes issue in our adaptive
+    // parameter logic and selection because on some problems, its seems that
+    // the neighbhorhood is always improving. For example if you have two
+    // solutions, one worse, and it is super easy to find the better one from
+    // the worse one. This might not be a final solution, but it does work ok
+    // for now.
+    //
+    // TODO(user): Probably clearer to have 3 fields base_objective,
+    // best_objective and new_objective here. So we can easily change the logic.
+    IntegerValue objective_improvement = IntegerValue(0);
+
+    // This is just used to construct a deterministic order for the updates.
+    bool operator<(const SolveData& o) const {
+      return std::tie(status, difficulty, deterministic_time,
+                      objective_improvement) <
+             std::tie(o.status, o.difficulty, o.deterministic_time,
+                      o.objective_improvement);
+    }
+  };
+  void AddSolveData(SolveData data) {
+    absl::MutexLock mutex_lock(&mutex_);
+    solve_data_.push_back(data);
+  }
+
+  // Process all the recently added solve data and update this generator
+  // score and difficulty.
+  void Synchronize();
+
+  // Returns a short description of the generator.
+  std::string name() const { return name_; }
+
+  // Number of times this generator was called.
+  int64 num_calls() const {
+    absl::MutexLock mutex_lock(&mutex_);
+    return num_calls_;
+  }
+
+  // Number of time the neighborhood was fully solved (OPTIMAL/INFEASIBLE).
+  int64 num_fully_solved_calls() const {
+    absl::MutexLock mutex_lock(&mutex_);
+    return num_fully_solved_calls_;
+  }
+
+  // The current difficulty of this generator
+  double difficulty() const {
+    absl::MutexLock mutex_lock(&mutex_);
+    return difficulty_.value();
+  }
+
+  // The current time limit that the sub-solve should use on this generator.
+  double deterministic_limit() const {
+    absl::MutexLock mutex_lock(&mutex_);
+    return deterministic_limit_;
+  }
+
+  // The sum of the deterministic time spent in this generator.
+  double deterministic_time() const {
+    absl::MutexLock mutex_lock(&mutex_);
+    return deterministic_time_;
+  }
 
  protected:
-  const NeighborhoodGeneratorHelper& helper_;
   const std::string name_;
+  const NeighborhoodGeneratorHelper& helper_;
+
+ private:
+  mutable absl::Mutex mutex_;
+  std::vector<SolveData> solve_data_;
+
+  // Current parameters to be used when generating/solving a neighborhood with
+  // this generator. Only updated on Synchronize().
+  AdaptiveParameterValue difficulty_;
+  double deterministic_limit_ = 0.1;
+
+  // Current statistics of the last solved neighborhood.
+  // Only updated on Synchronize().
   int64 num_calls_ = 0;
+  int64 num_fully_solved_calls_ = 0;
+  int64 num_consecutive_non_improving_calls_ = 0;
+  double deterministic_time_ = 0.0;
   double current_average_ = 0.0;
 };
 
@@ -238,8 +363,13 @@ class SchedulingTimeWindowNeighborhoodGenerator : public NeighborhoodGenerator {
 // Generates a neighborhood by fixing the variables who have same solution value
 // as their linear relaxation. This was published in "Exploring relaxation
 // induced neighborhoods to improve MIP solutions" 2004 by E. Danna et.
-// TODO(user): This simulates RINS only at root node. Try to exploit it on
-// other nodes as well.
+//
+// If no solution is available, this generates a neighborhood using only the
+// linear relaxation values. This was published in "RENS – The Relaxation
+// Enforced Neighborhood" 2009 by Timo Berthold.
+//
+// NOTE: The neighborhoods are generated outside of this generator and are
+// managed by SharedRINSNeighborhoodManager.
 class RelaxationInducedNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   explicit RelaxationInducedNeighborhoodGenerator(
@@ -249,6 +379,8 @@ class RelaxationInducedNeighborhoodGenerator : public NeighborhoodGenerator {
 
   Neighborhood Generate(const CpSolverResponse& initial_solution, int64 seed,
                         double difficulty) const final;
+
+  bool NeedsFirstSolution() const override { return false; }
 
   const Model* model_;
 };

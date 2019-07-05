@@ -1,0 +1,4 @@
+<map id="com.google.ortools.sat.LinearExpr" name="com.google.ortools.sat.LinearExpr">
+<area shape="rect" id="node1" title="A linear expression interface that can be parsed." alt="" coords="5,5,225,32"/>
+<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html" title="An integer variable." alt="" coords="19,80,212,107"/>
+</map>

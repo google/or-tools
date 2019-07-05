@@ -33,10 +33,18 @@
 #ifndef YY_ORFZ_ORTOOLS_FLATZINC_PARSER_TAB_HH_INCLUDED
 #define YY_ORFZ_ORTOOLS_FLATZINC_PARSER_TAB_HH_INCLUDED
 /* Debug traces.  */
-#ifndef YYDEBUG
-#define YYDEBUG 1
-#endif
+#ifndef ORFZ_DEBUG
+#if defined YYDEBUG
 #if YYDEBUG
+#define ORFZ_DEBUG 1
+#else
+#define ORFZ_DEBUG 0
+#endif
+#else /* ! defined YYDEBUG */
+#define ORFZ_DEBUG 1
+#endif /* ! defined YYDEBUG */
+#endif /* ! defined ORFZ_DEBUG */
+#if ORFZ_DEBUG
 extern int orfz_debug;
 #endif
 /* "%code requires" blocks.  */
@@ -56,12 +64,12 @@ typedef operations_research::fz::LexerInfo YYSTYPE;
 
 #endif  // OR_TOOLS_FLATZINC_FLATZINC_TAB_HH_
 
-#line 60 "./ortools/flatzinc/parser.tab.hh" /* yacc.c:1909  */
+#line 68 "./ortools/flatzinc/parser.tab.hh" /* yacc.c:1909  */
 
 /* Token type.  */
-#ifndef YYTOKENTYPE
-#define YYTOKENTYPE
-enum yytokentype {
+#ifndef ORFZ_TOKENTYPE
+#define ORFZ_TOKENTYPE
+enum orfz_tokentype {
   ARRAY = 258,
   TOKEN_BOOL = 259,
   CONSTRAINT = 260,

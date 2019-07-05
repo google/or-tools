@@ -29,14 +29,118 @@
 namespace operations_research {
 namespace sat {
 
+// Wrapper around TimeLimit to make it thread safe and add Stop() support.
+class SharedTimeLimit {
+ public:
+  explicit SharedTimeLimit(TimeLimit* time_limit)
+      : time_limit_(time_limit), stopped_boolean_(false) {
+    // We use the one already registered if present or ours otherwise.
+    stopped_ = time_limit->ExternalBooleanAsLimit();
+    if (stopped_ == nullptr) {
+      stopped_ = &stopped_boolean_;
+      time_limit->RegisterExternalBooleanAsLimit(stopped_);
+    }
+
+    // We reset the Boolean to false in case it starts at true.
+    *stopped_ = false;
+  }
+
+  ~SharedTimeLimit() {
+    if (stopped_ == &stopped_boolean_) {
+      time_limit_->RegisterExternalBooleanAsLimit(nullptr);
+    }
+  }
+
+  bool LimitReached() const {
+    absl::MutexLock mutex_lock(&mutex_);
+    return time_limit_->LimitReached();
+  }
+
+  void Stop() {
+    absl::MutexLock mutex_lock(&mutex_);
+    *stopped_ = true;
+  }
+
+  void UpdateLocalLimit(TimeLimit* local_limit) {
+    absl::MutexLock mutex_lock(&mutex_);
+    local_limit->MergeWithGlobalTimeLimit(time_limit_);
+  }
+
+ private:
+  mutable absl::Mutex mutex_;
+  TimeLimit* time_limit_ GUARDED_BY(mutex_);
+  std::atomic<bool> stopped_boolean_ GUARDED_BY(mutex_);
+  std::atomic<bool>* stopped_ GUARDED_BY(mutex_);
+};
+
+// Thread-safe. Keeps a set of n unique best solution found so far.
+//
+// TODO(user): Maybe add some criteria to only keep solution with an objective
+// really close to the best solution.
+class SharedSolutionRepository {
+ public:
+  explicit SharedSolutionRepository(int num_solutions_to_keep)
+      : num_solutions_to_keep_(num_solutions_to_keep) {
+    CHECK_GE(num_solutions_to_keep_, 1);
+  }
+
+  // The solution format used by this class.
+  // We use the unscaled internal minimization objective.
+  struct Solution {
+    int64 internal_objective;
+    std::vector<int64> variable_values;
+
+    bool operator==(const Solution& other) const {
+      return internal_objective == other.internal_objective &&
+             variable_values == other.variable_values;
+    }
+    bool operator<(const Solution& other) const {
+      if (internal_objective != other.internal_objective) {
+        return internal_objective < other.internal_objective;
+      }
+      return variable_values < other.variable_values;
+    }
+  };
+
+  // Returns the number of current solution in the pool. This will never
+  // decrease.
+  int NumSolutions() const;
+
+  // Returns the solution #i where i must be smaller than NumSolutions().
+  Solution GetSolution(int index) const;
+
+  // Add a new solution. Note that it will not be added to the pool of solution
+  // right away. One must call Synchronize for this to happen.
+  //
+  // Works in O(num_solutions_to_keep_).
+  void Add(const Solution& solution);
+
+  // Updates the current pool of solution with the one recently added. Note that
+  // we use a stable ordering of solutions, so the final pool will be
+  // independent on the order of the calls to AddSolution() provided that the
+  // set of added solutions is the same.
+  //
+  // Works in O(num_solutions_to_keep_).
+  void Synchronize();
+
+ private:
+  const int num_solutions_to_keep_;
+  mutable absl::Mutex mutex_;
+
+  // Our two solutions pools, the current one and the new one that will be
+  // merged into the current one on each Synchronize() calls.
+  std::vector<Solution> solutions_ GUARDED_BY(mutex_);
+  std::vector<Solution> new_solutions_ GUARDED_BY(mutex_);
+};
+
 // Manages the global best response kept by the solver.
 // All functions are thread-safe.
 class SharedResponseManager {
  public:
   // If log_updates is true, then all updates to the global "state" will be
   // logged. This class is responsible for our solver log progress.
-  explicit SharedResponseManager(bool log_updates_, const CpModelProto* proto,
-                                 const WallTimer* wall_timer);
+  SharedResponseManager(bool log_updates_, const CpModelProto* proto,
+                        const WallTimer* wall_timer);
 
   // Returns the current solver response. That is the best known response at the
   // time of the call with the best feasible solution and objective bounds.
@@ -61,6 +165,10 @@ class SharedResponseManager {
   // always a valid bound for the global problem, but the upper bound is NOT.
   IntegerValue GetInnerObjectiveLowerBound();
   IntegerValue GetInnerObjectiveUpperBound();
+
+  // Returns the current best solution inner objective value or kInt64Max if
+  // there is no solution.
+  IntegerValue BestSolutionInnerObjectiveValue();
 
   // Updates the inner objective bounds.
   void UpdateInnerObjectiveBounds(const std::string& worker_info,
@@ -91,26 +199,38 @@ class SharedResponseManager {
   // TODO(user): Also support merging statistics together.
   void SetStatsFromModel(Model* model);
 
+  // Returns true if we found the optimal solution or the problem was proven
+  // infeasible.
+  bool ProblemIsSolved() const;
+
+  // Returns the underlying solution repository where we keep a set of best
+  // solutions.
+  const SharedSolutionRepository& SolutionsRepository() const {
+    return solutions_;
+  }
+  SharedSolutionRepository* MutableSolutionsRepository() { return &solutions_; }
+
  private:
-  void FillObjectiveValuesInBestResponse();
-  void SetStatsFromModelInternal(Model* model);
+  void FillObjectiveValuesInBestResponse() EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  void SetStatsFromModelInternal(Model* model) EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   const bool log_updates_;
   const CpModelProto& model_proto_;
   const WallTimer& wall_timer_;
 
-  absl::Mutex mutex_;
+  mutable absl::Mutex mutex_;
 
-  CpSolverResponse best_response_;
+  CpSolverResponse best_response_ GUARDED_BY(mutex_);
+  SharedSolutionRepository solutions_ GUARDED_BY(mutex_);
 
-  int num_solutions_ = 0;
-  int64 inner_objective_lower_bound_ = kint64min;
-  int64 inner_objective_upper_bound_ = kint64max;
-  int64 best_solution_objective_value_ = kint64max;
+  int num_solutions_ GUARDED_BY(mutex_) = 0;
+  int64 inner_objective_lower_bound_ GUARDED_BY(mutex_) = kint64min;
+  int64 inner_objective_upper_bound_ GUARDED_BY(mutex_) = kint64max;
+  int64 best_solution_objective_value_ GUARDED_BY(mutex_) = kint64max;
 
-  int next_callback_id_ = 0;
+  int next_callback_id_ GUARDED_BY(mutex_) = 0;
   std::vector<std::pair<int, std::function<void(const CpSolverResponse&)>>>
-      callbacks_;
+      callbacks_ GUARDED_BY(mutex_);
 };
 
 // This class manages a pool of lower and upper bounds on a set of variables in
@@ -137,36 +257,14 @@ class SharedBoundsManager {
  private:
   const int num_workers_;
   const int num_variables_;
-  std::vector<SparseBitset<int64>> changed_variables_per_workers_;
-  std::vector<int64> lower_bounds_;
-  std::vector<int64> upper_bounds_;
+
   absl::Mutex mutex_;
+
+  std::vector<SparseBitset<int64>> changed_variables_per_workers_
+      GUARDED_BY(mutex_);
+  std::vector<int64> lower_bounds_ GUARDED_BY(mutex_);
+  std::vector<int64> upper_bounds_ GUARDED_BY(mutex_);
 };
-
-// Registers a callback to import new variables bounds stored in the
-// shared_bounds_manager. These bounds are imported at level 0 of the search
-// in the linear scan minimize function.
-void RegisterVariableBoundsLevelZeroImport(
-    const CpModelProto& model_proto, SharedBoundsManager* shared_bounds_manager,
-    Model* model);
-
-// Registers a callback that will export variables bounds fixed at level 0 of
-// the search. This should not be registered to a LNS search.
-void RegisterVariableBoundsLevelZeroExport(
-    const CpModelProto& model_proto, SharedBoundsManager* shared_bounds_manager,
-    Model* model);
-
-// Registers a callback to import new objective bounds.
-//
-// Currently, standard search works fine with it.
-// LNS search and Core based search do not support it
-void RegisterObjectiveBoundsImport(
-    SharedResponseManager* shared_response_manager, Model* model);
-
-// Registers a callback that will report improving objective best bound.
-void RegisterObjectiveBestBoundExport(
-    IntegerVariable objective_var,
-    SharedResponseManager* shared_response_manager, Model* model);
 
 // Stores information on the worker in the parallel context.
 struct WorkerInfo {

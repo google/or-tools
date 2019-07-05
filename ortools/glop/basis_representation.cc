@@ -175,12 +175,10 @@ void EtaFactorization::RightSolve(DenseColumn* d) const {
 // BasisFactorization
 // --------------------------------------------------------
 BasisFactorization::BasisFactorization(
-    const MatrixView& matrix, const CompactSparseMatrix& compact_matrix,
-    const RowToColMapping& basis)
+    const CompactSparseMatrix* compact_matrix, const RowToColMapping* basis)
     : stats_(),
-      matrix_(matrix),
-      compact_matrix_(compact_matrix),
-      basis_(basis),
+      compact_matrix_(*compact_matrix),
+      basis_(*basis),
       tau_is_computed_(false),
       max_num_updates_(0),
       num_updates_(0),
@@ -209,8 +207,7 @@ Status BasisFactorization::Initialize() {
   SCOPED_TIME_STAT(&stats_);
   Clear();
   if (IsIdentityBasis()) return Status::OK();
-  MatrixView basis_matrix;
-  basis_matrix.PopulateFromBasis(matrix_, basis_);
+  CompactSparseMatrixView basis_matrix(&compact_matrix_, &basis_);
   return lu_factorization_.ComputeFactorization(basis_matrix);
 }
 
@@ -225,8 +222,7 @@ Status BasisFactorization::ForceRefactorization() {
   SCOPED_TIME_STAT(&stats_);
   stats_.refactorization_interval.Add(num_updates_);
   Clear();
-  MatrixView basis_matrix;
-  basis_matrix.PopulateFromBasis(matrix_, basis_);
+  CompactSparseMatrixView basis_matrix(&compact_matrix_, &basis_);
   const Status status = lu_factorization_.ComputeFactorization(basis_matrix);
 
   const double kLuComplexityFactor = 10;
@@ -314,7 +310,7 @@ void BasisFactorization::LeftSolve(ScatteredRow* y) const {
   if (use_middle_product_form_update_) {
     lu_factorization_.LeftSolveUWithNonZeros(y);
     rank_one_factorization_.LeftSolveWithNonZeros(y);
-    lu_factorization_.LeftSolveLWithNonZeros(y, nullptr);
+    lu_factorization_.LeftSolveLWithNonZeros(y);
     y->SortNonZerosIfNeeded();
   } else {
     y->non_zeros.clear();
@@ -345,8 +341,8 @@ const DenseColumn& BasisFactorization::RightSolveForTau(
   BumpDeterministicTimeForSolve(compact_matrix_.num_rows().value());
   if (use_middle_product_form_update_) {
     if (tau_computation_can_be_optimized_) {
-      // Once used, the intermediate result is overridden, so RightSolveForTau()
-      // can no longer use the optimized algorithm.
+      // Once used, the intermediate result is overwritten, so
+      // RightSolveForTau() can no longer use the optimized algorithm.
       tau_computation_can_be_optimized_ = false;
       lu_factorization_.RightSolveLWithPermutedInput(a.values, &tau_.values);
       tau_.non_zeros.clear();
@@ -413,7 +409,7 @@ void BasisFactorization::LeftSolveForUnitRow(ColIndex j,
     tau_.non_zeros.clear();
   } else {
     tau_computation_can_be_optimized_ = false;
-    lu_factorization_.LeftSolveLWithNonZeros(y, nullptr);
+    lu_factorization_.LeftSolveLWithNonZeros(y);
   }
   y->SortNonZerosIfNeeded();
 }
@@ -427,7 +423,7 @@ void BasisFactorization::TemporaryLeftSolveForUnitRow(ColIndex j,
   ClearAndResizeVectorWithNonZeros(RowToColIndex(compact_matrix_.num_rows()),
                                    y);
   lu_factorization_.LeftSolveUForUnitRow(j, y);
-  lu_factorization_.LeftSolveLWithNonZeros(y, nullptr);
+  lu_factorization_.LeftSolveLWithNonZeros(y);
   y->SortNonZerosIfNeeded();
 }
 
@@ -470,7 +466,7 @@ void BasisFactorization::RightSolveForProblemColumn(ColIndex col,
 }
 
 Fractional BasisFactorization::RightSolveSquaredNorm(
-    const SparseColumn& a) const {
+    const ColumnView& a) const {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(IsRefactorized());
   BumpDeterministicTimeForSolve(a.num_entries().value());
@@ -498,15 +494,13 @@ bool BasisFactorization::IsIdentityBasis() const {
 
 Fractional BasisFactorization::ComputeOneNorm() const {
   if (IsIdentityBasis()) return 1.0;
-  MatrixView basis_matrix;
-  basis_matrix.PopulateFromBasis(matrix_, basis_);
+  CompactSparseMatrixView basis_matrix(&compact_matrix_, &basis_);
   return basis_matrix.ComputeOneNorm();
 }
 
 Fractional BasisFactorization::ComputeInfinityNorm() const {
   if (IsIdentityBasis()) return 1.0;
-  MatrixView basis_matrix;
-  basis_matrix.PopulateFromBasis(matrix_, basis_);
+  CompactSparseMatrixView basis_matrix(&compact_matrix_, &basis_);
   return basis_matrix.ComputeInfinityNorm();
 }
 

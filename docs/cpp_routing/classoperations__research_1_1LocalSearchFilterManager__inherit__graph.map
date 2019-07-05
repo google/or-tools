@@ -1,0 +1,5 @@
+<map id="operations_research::LocalSearchFilterManager" name="operations_research::LocalSearchFilterManager">
+<area shape="rect" id="node1" title="Filter manager: when a move is made, filters are executed to decide whether the solution is feasible ..." alt="" coords="5,179,190,217"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1LocalSearchFilter.html" title="&#45;&#45;— Local Search Filters &#45;&#45;&#45;—" alt="" coords="26,92,169,131"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="" coords="26,5,169,44"/>
+</map>

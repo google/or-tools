@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Xunit;
 using Google.OrTools.Sat;
 
@@ -112,8 +113,8 @@ namespace Google.OrTools.Tests {
         IntVar v1 = model.NewIntVar(-10, 10, "v1");
         IntVar v2 = model.NewIntVar(-10, 10, "v2");
         IntVar v3 = model.NewIntVar(-100000, 100000, "v3");
-        model.AddLinearConstraint(new[] {v1, v2}, new[] {1, 1}, -1000000, 100000);
-        model.AddLinearConstraint(new[] {v1, v2, v3}, new[] {1, 2, -1}, 0, 100000);
+        model.AddLinearConstraint(v1 + v2, -1000000, 100000);
+        model.AddLinearConstraint(v1 + 2 * v2 - v3, 0, 100000);
         model.Maximize(v3);
         //Console.WriteLine("model = " + model.Model.ToString());
 
@@ -132,7 +133,7 @@ namespace Google.OrTools.Tests {
         CpModel model = new CpModel();
         IntVar v1 = model.NewIntVar(-10, 10, "v1");
         IntVar v2 = model.NewIntVar(-10, 10, "v2");
-        model.AddLinearConstraint(new[] {v1, v2}, new[] {1, 1}, -1000000, 100000);
+        model.AddLinearConstraint(v1 + v2, -1000000, 100000);
         model.Maximize(v1 - 2 * v2);
         //Console.WriteLine("model = " + model.Model.ToString());
 
@@ -264,6 +265,78 @@ namespace Google.OrTools.Tests {
         Assert.Equal(0, response.ObjectiveValue);
         //Console.WriteLine("response = " + reponse.ToString());
       }
+
+    [Fact]
+    public void LargeScalProdLong() {
+      CpModel model = new CpModel();
+      List<IntVar> vars = new List<IntVar>();
+      List<long> coeffs = new List<long>();
+
+      for (int i = 0; i < 100000; ++i) {
+        vars.Add(model.NewBoolVar(""));
+        coeffs.Add(i + 1);
+      }
+
+      var watch = System.Diagnostics.Stopwatch.StartNew();
+      model.Minimize(LinearExpr.ScalProd(vars, coeffs));
+      watch.Stop();
+      var elapsedMs = watch.ElapsedMilliseconds;
+      Console.WriteLine($"Long: Elapsed time {elapsedMs}");
+    }
+
+    [Fact]
+    public void LargeScalProdInt() {
+      CpModel model = new CpModel();
+      List<IntVar> vars = new List<IntVar>();
+      List<int> coeffs = new List<int>();
+
+      for (int i = 0; i < 100000; ++i) {
+        vars.Add(model.NewBoolVar(""));
+        coeffs.Add(i);
+      }
+
+      var watch = System.Diagnostics.Stopwatch.StartNew();
+      model.Minimize(LinearExpr.ScalProd(vars, coeffs));
+      watch.Stop();
+      var elapsedMs = watch.ElapsedMilliseconds;
+      Console.WriteLine($"Int: Elapsed time {elapsedMs}");
+    }
+
+    [Fact]
+    public void LargeScalProdExpr() {
+      CpModel model = new CpModel();
+      List<LinearExpr> exprs = new List<LinearExpr>();
+
+      for (int i = 0; i < 100000; ++i) {
+        exprs.Add(model.NewBoolVar("") * i);
+      }
+
+      var watch = System.Diagnostics.Stopwatch.StartNew();
+      model.Minimize(LinearExpr.Sum(exprs));
+      watch.Stop();
+      var elapsedMs = watch.ElapsedMilliseconds;
+      Console.WriteLine($"Exprs: Elapsed time {elapsedMs}");
+    }
+
+    [Fact]
+    public void LargeScalProdProto() {
+      CpModel model = new CpModel();
+      List<IntVar> vars = new List<IntVar>();
+      List<long> coeffs = new List<long>();
+
+      for (int i = 0; i < 100000; ++i) {
+        vars.Add(model.NewBoolVar(""));
+        coeffs.Add(i + 1);
+      }
+
+      var watch = System.Diagnostics.Stopwatch.StartNew();
+      model.Minimize();
+      for (int i = 0; i < 100000; ++i) {
+        model.AddTermToObjective(vars[i], coeffs[i]);
+      }
+      watch.Stop();
+      var elapsedMs = watch.ElapsedMilliseconds;
+      Console.WriteLine($"Proto: Elapsed time {elapsedMs}");
+    }
   }
 } // namespace Google.OrTools.Tests
-

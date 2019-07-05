@@ -285,6 +285,12 @@ void MPVariable::SetInteger(bool integer) {
   }
 }
 
+void MPVariable::SetBranchingPriority(int priority) {
+  if (priority == branching_priority_) return;
+  branching_priority_ = priority;
+  interface_->BranchingPriorityChangedForVariable(index_);
+}
+
 // ----- Interface shortcuts -----
 
 bool MPSolver::IsMIP() const { return interface_->IsMIP(); }
@@ -618,6 +624,9 @@ MPSolverResponseStatus MPSolver::LoadModelFromProtoInternal(
         MakeNumVar(var_proto.lower_bound(), var_proto.upper_bound(),
                    clear_names ? empty : var_proto.name());
     variable->SetInteger(var_proto.is_integer());
+    if (var_proto.branching_priority() != 0) {
+      variable->SetBranchingPriority(var_proto.branching_priority());
+    }
     objective->SetCoefficient(variable, var_proto.objective_coefficient());
   }
 
@@ -790,6 +799,9 @@ void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
     if (objective_->GetCoefficient(var) != 0.0) {
       variable_proto->set_objective_coefficient(
           objective_->GetCoefficient(var));
+    }
+    if (var->branching_priority() != 0) {
+      variable_proto->set_branching_priority(var->branching_priority());
     }
   }
 
@@ -1403,7 +1415,7 @@ bool MPSolver::ExportModelAsMpsFormat(bool fixed_format, bool obfuscate,
 //   if (fixed_format) {
 //     LOG_EVERY_N_SEC(WARNING, 10)
 //         << "Fixed format is deprecated. Using free format instead.";
-//   
+//
 
   MPModelProto proto;
   ExportModelToProto(&proto);

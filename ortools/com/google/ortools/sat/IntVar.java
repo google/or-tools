@@ -15,25 +15,16 @@ package com.google.ortools.sat;
 
 import com.google.ortools.sat.CpModelProto;
 import com.google.ortools.sat.IntegerVariableProto;
+import com.google.ortools.util.Domain;
 
 /** An integer variable. */
-public class IntVar implements Literal {
-  IntVar(CpModelProto.Builder builder, long lb, long ub, String name) {
+public final class IntVar implements Literal, LinearExpr {
+  IntVar(CpModelProto.Builder builder, Domain domain, String name) {
     this.modelBuilder = builder;
     this.variableIndex = modelBuilder.getVariablesCount();
     this.varBuilder = modelBuilder.addVariablesBuilder();
     this.varBuilder.setName(name);
-    this.varBuilder.addDomain(lb);
-    this.varBuilder.addDomain(ub);
-    this.negation_ = null;
-  }
-
-  IntVar(CpModelProto.Builder builder, long[] bounds, String name) {
-    this.modelBuilder = builder;
-    this.variableIndex = modelBuilder.getVariablesCount();
-    this.varBuilder = modelBuilder.addVariablesBuilder();
-    this.varBuilder.setName(name);
-    for (long b : bounds) {
+    for (long b : domain.flattenedIntervals()) {
       this.varBuilder.addDomain(b);
     }
     this.negation_ = null;
@@ -58,6 +49,24 @@ public class IntVar implements Literal {
   /** Returns the variable protobuf builder. */
   public IntegerVariableProto.Builder getBuilder() {
     return varBuilder;
+  }
+
+  // LinearExpr interface.
+  @Override
+  public int numElements() {
+    return 1;
+  }
+
+  @Override
+  public IntVar getVariable(int index) {
+    assert (index == 0);
+    return this;
+  }
+
+  @Override
+  public long getCoefficient(int index) {
+    assert (index == 0);
+    return 1;
   }
 
   /** Returns a short string describing the variable. */

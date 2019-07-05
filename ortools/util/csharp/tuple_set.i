@@ -14,13 +14,7 @@
 // This is the C# SWIG wrapper for ../tuple_set.h. See that file.
 // TODO(user): Refactor this file to comply with the SWIG style guide.
 
-%include "ortools/base/base.i"
-%include "ortools/util/csharp/vector.i"
-
 %{
-// TODO(user): See if we really need <vector>.
-#include <vector>
-#include "ortools/base/integral_types.h"
 #include "ortools/util/tuple_set.h"
 %}
 

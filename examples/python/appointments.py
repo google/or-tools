@@ -68,9 +68,9 @@ def find_combinations(durations, load_min, load_max, commute_time):
         model.NewIntVar(0, load_max // (duration + commute_time), '')
         for duration in durations
     ]
-    terms = [(variables[i], duration + commute_time)
-             for i, duration in enumerate(durations)]
-    model.AddLinearConstraintWithBounds(terms, [load_min, load_max])
+    terms = sum(variables[i] * (duration + commute_time)
+                for i, duration in enumerate(durations))
+    model.AddLinearConstraint(terms, load_min, load_max)
 
     solver = cp_model.CpSolver()
     solution_collector = AllSolutionCollector(variables)

@@ -29,6 +29,7 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/rev.h"
 #include "ortools/util/time_limit.h"
 
@@ -147,6 +148,11 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Tie-breaking is done using the variable natural order.
   std::function<LiteralIndex()> LPReducedCostAverageBranching();
 
+  // Average number of nonbasic variables with zero reduced costs.
+  double average_degeneracy() const {
+    return average_degeneracy_.CurrentAverage();
+  }
+
  private:
   // Reinitialize the LP from a potentially new set of constraints.
   // This fills all data structure and properly rescale the underlying LP.
@@ -196,6 +202,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // false in the case that the problem is not provably infeasible with exact
   // computations, true otherwise.
   bool FillExactDualRayReason();
+
+  // Returns number of non basic variables with zero reduced costs.
+  int64 CalculateDegeneracy() const;
 
   // From a set of row multipliers (at LP scale), scale them back to the CP
   // world and then make them integer (eventually multiplying them by a new
@@ -274,6 +283,14 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Callback underlying LPReducedCostAverageBranching().
   LiteralIndex LPReducedCostAverageDecision();
 
+  // Updates the simplex iteration limit for the next visit.
+  // As per current algorithm, we use a limit which is dependent on size of the
+  // problem and drop it significantly if degeneracy is detected. We use
+  // DUAL_FEASIBLE status as a signal to correct the prediction. The next limit
+  // is capped by 'min_iter' and 'max_iter'. Note that this is enabled only for
+  // linearization level 2 and above.
+  void UpdateSimplexIterationLimit(const int64 min_iter, const int64 max_iter);
+
   // This epsilon is related to the precision of the value/reduced_cost returned
   // by the LP once they have been scaled back into the CP domain. So for large
   // domain or cost coefficient, we may have some issues.
@@ -301,6 +318,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Underlying LP solver API.
   glop::LinearProgram lp_data_;
   glop::RevisedSimplex simplex_;
+  int64 next_simplex_iter_ = 500;
 
   // For the scaling.
   glop::SparseMatrixScaler scaler_;
@@ -377,6 +395,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   std::vector<double> sum_cost_down_;
   std::vector<int> num_cost_up_;
   std::vector<int> num_cost_down_;
+
+  // Defined as average number of nonbasic variables with zero reduced costs.
+  IncrementalAverage average_degeneracy_;
 };
 
 // A class that stores which LP propagator is associated to each variable.

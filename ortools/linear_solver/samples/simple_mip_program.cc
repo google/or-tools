@@ -13,7 +13,9 @@
 
 // Mixed Integer programming example that shows how to use the API.
 // [START program]
+// [START import]
 #include "ortools/linear_solver/linear_solver.h"
+// [END import]
 
 namespace operations_research {
 void simple_mip_program() {
@@ -64,9 +66,9 @@ void simple_mip_program() {
 
   // [START print_solution]
   LOG(INFO) << "Solution:";
+  LOG(INFO) << "Objective value = " << objective->Value();
   LOG(INFO) << "x = " << x->solution_value();
   LOG(INFO) << "y = " << y->solution_value();
-  LOG(INFO) << "Optimal objective value = " << objective->Value();
   // [END print_solution]
 
   // [START advanced]

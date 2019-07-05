@@ -45,9 +45,6 @@ class MPModelRequest;
 class MPSolutionResponse;
 }  // namespace operations_research
 
-typedef int64_t int64;
-typedef uint64_t uint64;
-
 %{
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/model_exporter.h"
@@ -57,8 +54,75 @@ typedef uint64_t uint64;
 import java.lang.reflect.*;
 %}
 
+// Conversion of array of MPVariable or MPConstraint from/to C++ vectors.
+CONVERT_VECTOR_WITH_CAST(operations_research::MPVariable, MPVariable, REINTERPRET_CAST,
+    com/google/ortools/linearsolver);
+CONVERT_VECTOR_WITH_CAST(operations_research::MPConstraint, MPConstraint, REINTERPRET_CAST,
+    com/google/ortools/linearsolver);
+
+// Support the proto-based APIs.
+// TODO(user): expose these in the open-source export as well.
+PROTO_INPUT(
+    operations_research::MPModelProto,
+    com.google.ortools.linearsolver.MPModelProto,
+    input_model);
+PROTO2_RETURN(
+    operations_research::MPModelProto,
+    com.google.ortools.linearsolver.MPModelProto);
+PROTO_INPUT(
+    operations_research::MPModelRequest,
+    com.google.ortools.linearsolver.MPModelRequest,
+    model_request);
+PROTO2_RETURN(
+    operations_research::MPSolutionResponse,
+    com.google.ortools.linearsolver.MPSolutionResponse);
+
 
 %extend operations_research::MPSolver {
+  // Replaces MPSolver::LoadModelFromProto. We simply return the error message,
+  // which will be empty iff the model is valid.
+  std::string loadModelFromProto(const operations_research::MPModelProto& input_model) {
+    std::string error_message;
+    $self->LoadModelFromProto(input_model, &error_message);
+    return error_message;
+  }
+
+  // Replaces MPSolver::LoadModelFromProtoWithUniqueNamesOrDie
+  std::string loadModelFromProtoWithUniqueNamesOrDie(
+      const operations_research::MPModelProto& input_model) {
+    std::unordered_set<std::string> names;
+    for (const auto var : input_model.variable()) {
+      if (!var.name().empty() && !names.insert(var.name()).second) {
+        LOG(FATAL) << "found duplicated variable names " + var.name();
+      }
+    }
+    std::string error_message;
+    $self->LoadModelFromProtoWithUniqueNamesOrDie(input_model, &error_message);
+    return error_message;
+  }
+
+  // Replaces MPSolver::ExportModelToProto
+  operations_research::MPModelProto exportModelToProto() {
+    operations_research::MPModelProto model;
+    $self->ExportModelToProto(&model);
+    return model;
+  }
+
+  // Replaces MPSolver::FillSolutionResponseProto
+  operations_research::MPSolutionResponse createSolutionResponseProto() {
+    operations_research::MPSolutionResponse response;
+    $self->FillSolutionResponseProto(&response);
+    return response;
+  }
+
+  // Replaces MPSolver::SolveWithProto
+  static operations_research::MPSolutionResponse solveWithProto(
+      const operations_research::MPModelRequest& model_request) {
+    operations_research::MPSolutionResponse response;
+    operations_research::MPSolver::SolveWithProto(model_request, &response);
+    return response;
+  }
+
   std::string exportModelAsLpFormat(
       const operations_research::MPModelExportOptions& options =
           operations_research::MPModelExportOptions()) {
@@ -75,11 +139,22 @@ import java.lang.reflect.*;
     return ExportModelAsMpsFormat(model, options).value_or("");
   }
 
+  /// Sets a hint for solution.
+  ///
+  /// If a feasible or almost-feasible solution to the problem is already known,
+  /// it may be helpful to pass it to the solver so that it can be used. A
+  /// solver that supports this feature will try to use this information to
+  /// create its initial feasible solution.
+  ///
+  /// Note that it may not always be faster to give a hint like this to the
+  /// solver. There is also no guarantee that the solver will use this hint or
+  /// try to return a solution "close" to this assignment in case of multiple
+  /// optimal solutions.
   void setHint(const std::vector<operations_research::MPVariable*>& variables,
                const std::vector<double>& values) {
     if (variables.size() != values.size()) {
       LOG(FATAL) << "Different number of variables and values when setting "
-          << "hint.";
+                 << "hint.";
     }
     std::vector<std::pair<const operations_research::MPVariable*, double> >
         hint(variables.size());
@@ -88,7 +163,12 @@ import java.lang.reflect.*;
     }
     $self->SetHint(hint);
   }
-}
+
+  /// Sets the number of threads to be used by the solver.
+  bool setNumThreads(int num_theads) {
+    return $self->SetNumThreads(num_theads).ok();
+  }
+}  // Extend operations_research::MPSolver
 
 // Add java code on MPSolver.
 %typemap(javacode) operations_research::MPSolver %{
@@ -132,7 +212,7 @@ import java.lang.reflect.*;
   public MPVariable[] makeBoolVarArray(int count, String var_name) {
     return makeVarArray(count, 0.0, 1.0, true, var_name);
   }
-%}
+%}  // %typemap(javacode) operations_research::MPSolver
 
 %ignoreall
 
@@ -194,6 +274,17 @@ import java.lang.reflect.*;
 %rename (infinity) operations_research::MPSolver::infinity;
 %rename (setTimeLimit) operations_research::MPSolver::set_time_limit;  // no test
 
+// Proto-based API of the MPSolver. Use is encouraged.
+// Note: the following proto-based methods aren't listed here, but are
+// supported (that's because we re-implement them in java below):
+// - loadModelFromProto
+// - exportModelToProto
+// - createSolutionResponseProto
+// - solveWithProto
+%unignore operations_research::MPSolver::LoadStatus;
+%unignore operations_research::MPSolver::NO_ERROR;  // no test
+%unignore operations_research::MPSolver::UNKNOWN_VARIABLE_ID;  // no test
+%rename (loadSolutionFromProto) operations_research::MPSolver::LoadSolutionFromProto;  // no test
 
 // Expose some of the more advanced MPSolver API.
 %rename (supportsProblemType) operations_research::MPSolver::SupportsProblemType;  // no test
@@ -202,6 +293,8 @@ import java.lang.reflect.*;
 %rename (interruptSolve) operations_research::MPSolver::InterruptSolve;  // no test
 %rename (wallTime) operations_research::MPSolver::wall_time;
 %rename (clear) operations_research::MPSolver::Clear;  // no test
+%unignore operations_research::MPSolver::constraints;
+%unignore operations_research::MPSolver::variables;
 %rename (numVariables) operations_research::MPSolver::NumVariables;
 %rename (numConstraints) operations_research::MPSolver::NumConstraints;
 %rename (enableOutput) operations_research::MPSolver::EnableOutput;  // no test

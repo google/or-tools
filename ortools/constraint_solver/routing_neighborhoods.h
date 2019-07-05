@@ -20,26 +20,26 @@
 
 namespace operations_research {
 
-// Relocate neighborhood which moves chains of neighbors.
-// The operator starts by relocating a node n after a node m, then continues
-// moving nodes which were after n as long as the "cost" added is less than
-// the "cost" of the arc (m, n). If the new chain doesn't respect the domain of
-// next variables, it will try reordering the nodes.
-// Possible neighbors for path 1 -> A -> B -> C -> D -> E -> 2 (where (1, 2) are
-// first and last nodes of the path and can therefore not be moved, A must
-// be performed before B, and A, D and E are located at the same place):
-// 1 -> A -> C -> [B] -> D -> E -> 2
-// 1 -> A -> C -> D -> [B] -> E -> 2
-// 1 -> A -> C -> D -> E -> [B] -> 2
-// 1 -> A -> B -> D -> [C] -> E -> 2
-// 1 -> A -> B -> D -> E -> [C] -> 2
-// 1 -> A -> [D] -> [E] -> B -> C -> 2
-// 1 -> A -> B -> [D] -> [E] ->  C -> 2
-// 1 -> A -> [E] -> B -> C -> D -> 2
-// 1 -> A -> B -> [E] -> C -> D -> 2
-// 1 -> A -> B -> C -> [E] -> D -> 2
-// This operator is extremely useful to move chains of nodes which are located
-// at the same place (for instance nodes part of a same stop).
+/// Relocate neighborhood which moves chains of neighbors.
+/// The operator starts by relocating a node n after a node m, then continues
+/// moving nodes which were after n as long as the "cost" added is less than
+/// the "cost" of the arc (m, n). If the new chain doesn't respect the domain of
+/// next variables, it will try reordering the nodes.
+/// Possible neighbors for path 1 -> A -> B -> C -> D -> E -> 2 (where (1, 2)
+/// are first and last nodes of the path and can therefore not be moved, A must
+/// be performed before B, and A, D and E are located at the same place):
+/// 1 -> A -> C -> [B] -> D -> E -> 2
+/// 1 -> A -> C -> D -> [B] -> E -> 2
+/// 1 -> A -> C -> D -> E -> [B] -> 2
+/// 1 -> A -> B -> D -> [C] -> E -> 2
+/// 1 -> A -> B -> D -> E -> [C] -> 2
+/// 1 -> A -> [D] -> [E] -> B -> C -> 2
+/// 1 -> A -> B -> [D] -> [E] ->  C -> 2
+/// 1 -> A -> [E] -> B -> C -> D -> 2
+/// 1 -> A -> B -> [E] -> C -> D -> 2
+/// 1 -> A -> B -> C -> [E] -> D -> 2
+/// This operator is extremely useful to move chains of nodes which are located
+/// at the same place (for instance nodes part of a same stop).
 // TODO(user): Consider merging with standard Relocate in local_search.cc.
 class MakeRelocateNeighborsOperator : public PathWithPreviousNodesOperator {
  public:
@@ -54,31 +54,31 @@ class MakeRelocateNeighborsOperator : public PathWithPreviousNodesOperator {
   std::string DebugString() const override { return "RelocateNeighbors"; }
 
  private:
-  // Moves a chain starting after 'before_chain' and ending at 'chain_end'
-  // after node 'destination'. Tries to repair the resulting solution by
-  // checking if the new arc created after 'destination' is compatible with
-  // NextVar domains, and moves the 'destination' down the path if the solution
-  // is inconsistent. Iterates the process on the new arcs created before
-  // the node 'destination' (if destination was moved).
+  /// Moves a chain starting after 'before_chain' and ending at 'chain_end'
+  /// after node 'destination'. Tries to repair the resulting solution by
+  /// checking if the new arc created after 'destination' is compatible with
+  /// NextVar domains, and moves the 'destination' down the path if the solution
+  /// is inconsistent. Iterates the process on the new arcs created before
+  /// the node 'destination' (if destination was moved).
   bool MoveChainAndRepair(int64 before_chain, int64 chain_end,
                           int64 destination);
 
-  // Moves node after 'before_to_move' down the path until a position is found
-  // where NextVar domains are not violated, if it exists. Stops when reaching
-  // position after 'up_to'.
-  // If the node was not moved (either because the current position does not
-  // violate any domains or because not such position could be found), returns
-  // -1. If the node was moved to a new position before up_to, returns up_to;
-  // if it was moved just after up_to returns the node which was after up_to.
+  /// Moves node after 'before_to_move' down the path until a position is found
+  /// where NextVar domains are not violated, if it exists. Stops when reaching
+  /// position after 'up_to'.
+  /// If the node was not moved (either because the current position does not
+  /// violate any domains or because not such position could be found), returns
+  /// -1. If the node was moved to a new position before up_to, returns up_to;
+  /// if it was moved just after up_to returns the node which was after up_to.
   int64 Reposition(int64 before_to_move, int64 up_to);
 
   RoutingTransitCallback2 arc_evaluator_;
 };
 
-// Pair-based neighborhood operators, designed to move nodes by pairs (pairs
-// are static and given). These neighborhoods are very useful for Pickup and
-// Delivery problems where pickup and delivery nodes must remain on the same
-// route.
+/// Pair-based neighborhood operators, designed to move nodes by pairs (pairs
+/// are static and given). These neighborhoods are very useful for Pickup and
+/// Delivery problems where pickup and delivery nodes must remain on the same
+/// route.
 // TODO(user): Add option to prune neighbords where the order of node pairs
 //                is violated (ie precedence between pickup and delivery nodes).
 // TODO(user): Move this to local_search.cc if it's generic enough.
@@ -86,18 +86,18 @@ class MakeRelocateNeighborsOperator : public PathWithPreviousNodesOperator {
 //                we could then get rid of the pair API in the RoutingModel
 //                class.
 
-// Operator which inserts pairs of inactive nodes into a path.
-// Possible neighbors for the path 1 -> 2 -> 3 with pair (A, B) inactive
-// (where 1 and 3 are first and last nodes of the path) are:
-//   1 -> [A] -> [B] ->  2  ->  3
-//   1 -> [B] ->  2 ->  [A] ->  3
-//   1 -> [A] ->  2  -> [B] ->  3
-//   1 ->  2  -> [A] -> [B] ->  3
-// Note that this operator does not expicitely insert the nodes of a pair one
-// after the other which forbids the following solutions:
-//   1 -> [B] -> [A] ->  2  ->  3
-//   1 ->  2  -> [B] -> [A] ->  3
-// which can only be obtained by inserting A after B.
+/// Operator which inserts pairs of inactive nodes into a path.
+/// Possible neighbors for the path 1 -> 2 -> 3 with pair (A, B) inactive
+/// (where 1 and 3 are first and last nodes of the path) are:
+///   1 -> [A] -> [B] ->  2  ->  3
+///   1 -> [B] ->  2 ->  [A] ->  3
+///   1 -> [A] ->  2  -> [B] ->  3
+///   1 ->  2  -> [A] -> [B] ->  3
+/// Note that this operator does not expicitely insert the nodes of a pair one
+/// after the other which forbids the following solutions:
+///   1 -> [B] -> [A] ->  2  ->  3
+///   1 ->  2  -> [B] -> [A] ->  3
+/// which can only be obtained by inserting A after B.
 class MakePairActiveOperator : public PathOperator {
  public:
   MakePairActiveOperator(const std::vector<IntVar*>& vars,
@@ -111,15 +111,15 @@ class MakePairActiveOperator : public PathOperator {
 
  protected:
   bool OnSamePathAsPreviousBase(int64 base_index) override {
-    // Both base nodes have to be on the same path since they represent the
-    // nodes after which unactive node pairs will be moved.
+    /// Both base nodes have to be on the same path since they represent the
+    /// nodes after which unactive node pairs will be moved.
     return true;
   }
 
   int64 GetBaseNodeRestartPosition(int base_index) override;
 
-  // Required to ensure that after synchronization the operator is in a state
-  // compatible with GetBaseNodeRestartPosition.
+  /// Required to ensure that after synchronization the operator is in a state
+  /// compatible with GetBaseNodeRestartPosition.
   bool RestartAtPathStartOnSynchronize() override { return true; }
 
  private:
@@ -129,7 +129,7 @@ class MakePairActiveOperator : public PathOperator {
   RoutingIndexPairs pairs_;
 };
 
-// Operator which makes pairs of active nodes inactive.
+/// Operator which makes pairs of active nodes inactive.
 class MakePairInactiveOperator : public PathWithPreviousNodesOperator {
  public:
   MakePairInactiveOperator(const std::vector<IntVar*>& vars,
@@ -144,14 +144,14 @@ class MakePairInactiveOperator : public PathWithPreviousNodesOperator {
   std::vector<int> pairs_;
 };
 
-// Operator which moves a pair of nodes to another position where the first
-// node of the pair must be before the second node on the same path.
-// Possible neighbors for the path 1 -> A -> B -> 2 -> 3 (where (1, 3) are
-// first and last nodes of the path and can therefore not be moved, and (A, B)
-// is a pair of nodes):
-//   1 -> [A] ->  2  -> [B] -> 3
-//   1 ->  2  -> [A] -> [B] -> 3
-// The pair can be moved to another path.
+/// Operator which moves a pair of nodes to another position where the first
+/// node of the pair must be before the second node on the same path.
+/// Possible neighbors for the path 1 -> A -> B -> 2 -> 3 (where (1, 3) are
+/// first and last nodes of the path and can therefore not be moved, and (A, B)
+/// is a pair of nodes):
+///   1 -> [A] ->  2  -> [B] -> 3
+///   1 ->  2  -> [A] -> [B] -> 3
+/// The pair can be moved to another path.
 class PairRelocateOperator : public PathWithPreviousNodesOperator {
  public:
   PairRelocateOperator(const std::vector<IntVar*>& vars,
@@ -165,7 +165,7 @@ class PairRelocateOperator : public PathWithPreviousNodesOperator {
 
  protected:
   bool OnSamePathAsPreviousBase(int64 base_index) override {
-    // Both destination nodes must be on the same path.
+    /// Both destination nodes must be on the same path.
     return base_index == kPairSecondNodeDestination;
   }
   int64 GetBaseNodeRestartPosition(int base_index) override;
@@ -197,12 +197,12 @@ class LightPairRelocateOperator : public PathWithPreviousNodesOperator {
   std::vector<int> pairs_;
 };
 
-// Operator which exchanges the position of two pairs; for both pairs the first
-// node of the pair must be before the second node on the same path.
-// Possible neighbors for the paths 1 -> A -> B -> 2 -> 3 and 4 -> C -> D -> 5
-// (where (1, 3) and (4, 5) are first and last nodes of the paths and can
-// therefore not be moved, and (A, B) and (C,D) are pairs of nodes):
-//   1 -> [C] ->  [D] -> 2 -> 3, 4 -> [A] -> [B] -> 5
+/// Operator which exchanges the position of two pairs; for both pairs the first
+/// node of the pair must be before the second node on the same path.
+/// Possible neighbors for the paths 1 -> A -> B -> 2 -> 3 and 4 -> C -> D -> 5
+/// (where (1, 3) and (4, 5) are first and last nodes of the paths and can
+/// therefore not be moved, and (A, B) and (C,D) are pairs of nodes):
+///   1 -> [C] ->  [D] -> 2 -> 3, 4 -> [A] -> [B] -> 5
 class PairExchangeOperator : public PathWithPreviousNodesOperator {
  public:
   PairExchangeOperator(const std::vector<IntVar*>& vars,
@@ -223,19 +223,19 @@ class PairExchangeOperator : public PathWithPreviousNodesOperator {
   std::vector<bool> is_first_;
 };
 
-// Operator which exchanges the paths of two pairs (path have to be different).
-// Pairs are inserted in all possible positions in their new path with the
-// constraint that the second node must be placed after the first.
-// Possible neighbors for the path 1 -> A -> B -> 2 -> 3, 4 -> C -> 5 -> D -> 6
-// 1 -> C -> D -> 2 -> 3 4 -> A -> B -> 5 -> 6
-// 1 -> C -> 2 -> D -> 3 4 -> A -> 5 -> B -> 6
-// 1 -> 2 -> C -> D -> 3 4 -> 5 -> A -> B -> 6
-// 1 -> C -> D -> 2 -> 3 4 -> A -> B -> 5 -> 6
-// 1 -> C -> 2 -> D -> 3 4 -> A -> 5 -> B -> 6
-// 1 -> 2 -> C -> D -> 3 4 -> 5 -> A -> B -> 6
-// 1 -> C -> D -> 2 -> 3 4 -> A -> B -> 5 -> 6
-// 1 -> C -> 2 -> D -> 3 4 -> A -> 5 -> B -> 6
-// 1 -> 2 -> C -> D -> 3 4 -> 5 -> A -> B -> 6
+/// Operator which exchanges the paths of two pairs (path have to be different).
+/// Pairs are inserted in all possible positions in their new path with the
+/// constraint that the second node must be placed after the first.
+/// Possible neighbors for the path 1 -> A -> B -> 2 -> 3, 4 -> C -> 5 -> D -> 6
+/// 1 -> C -> D -> 2 -> 3 4 -> A -> B -> 5 -> 6
+/// 1 -> C -> 2 -> D -> 3 4 -> A -> 5 -> B -> 6
+/// 1 -> 2 -> C -> D -> 3 4 -> 5 -> A -> B -> 6
+/// 1 -> C -> D -> 2 -> 3 4 -> A -> B -> 5 -> 6
+/// 1 -> C -> 2 -> D -> 3 4 -> A -> 5 -> B -> 6
+/// 1 -> 2 -> C -> D -> 3 4 -> 5 -> A -> B -> 6
+/// 1 -> C -> D -> 2 -> 3 4 -> A -> B -> 5 -> 6
+/// 1 -> C -> 2 -> D -> 3 4 -> A -> 5 -> B -> 6
+/// 1 -> 2 -> C -> D -> 3 4 -> 5 -> A -> B -> 6
 class PairExchangeRelocateOperator : public PathWithPreviousNodesOperator {
  public:
   PairExchangeRelocateOperator(const std::vector<IntVar*>& vars,
@@ -272,16 +272,16 @@ class PairExchangeRelocateOperator : public PathWithPreviousNodesOperator {
   static const int kSecondPairSecondNodeDestination = 5;
 };
 
-// Operator which iterates through each alternative of a set of pairs. If a
-// pair has n and m alternatives, n.m alternatives will be explored.
-// Possible neighbors for the path 1 -> A -> a -> 2 (where (1, 2) are first and
-// last nodes of a path and A has B, C as alternatives and a has b as
-// alternative):
-// 1 -> A -> [b] -> 2
-// 1 -> [B] -> a -> 2
-// 1 -> [B] -> [b] -> 2
-// 1 -> [C] -> a -> 2
-// 1 -> [C] -> [b] -> 2
+/// Operator which iterates through each alternative of a set of pairs. If a
+/// pair has n and m alternatives, n.m alternatives will be explored.
+/// Possible neighbors for the path 1 -> A -> a -> 2 (where (1, 2) are first and
+/// last nodes of a path and A has B, C as alternatives and a has b as
+/// alternative):
+/// 1 -> A -> [b] -> 2
+/// 1 -> [B] -> a -> 2
+/// 1 -> [B] -> [b] -> 2
+/// 1 -> [C] -> a -> 2
+/// 1 -> [C] -> [b] -> 2
 class SwapIndexPairOperator : public IntVarLocalSearchOperator {
  public:
   SwapIndexPairOperator(const std::vector<IntVar*>& vars,
@@ -294,10 +294,10 @@ class SwapIndexPairOperator : public IntVarLocalSearchOperator {
   std::string DebugString() const override { return "SwapIndexPairOperator"; }
 
  private:
-  // Updates first_active_ and second_active_ to make them correspond to the
-  // active nodes of the node pair of index pair_index_.
+  /// Updates first_active_ and second_active_ to make them correspond to the
+  /// active nodes of the node pair of index pair_index_.
   bool UpdateActiveNodes();
-  // Sets the to to be the node after from
+  /// Sets the to to be the node after from
   void SetNext(int64 from, int64 to, int64 path) {
     DCHECK_LT(from, number_of_nexts_);
     SetValue(from, to);
@@ -318,8 +318,8 @@ class SwapIndexPairOperator : public IntVarLocalSearchOperator {
   const bool ignore_path_vars_;
 };
 
-// Operator which inserts inactive nodes into a path and makes a pair of
-// active nodes inactive.
+/// Operator which inserts inactive nodes into a path and makes a pair of
+/// active nodes inactive.
 class IndexPairSwapActiveOperator : public PathWithPreviousNodesOperator {
  public:
   IndexPairSwapActiveOperator(const std::vector<IntVar*>& vars,
@@ -341,11 +341,13 @@ class IndexPairSwapActiveOperator : public PathWithPreviousNodesOperator {
   std::vector<int> pairs_;
 };
 
-// ----- RelocateExpensiveChain -----
-// Operator which relocates the most expensive subchains (given a cost callback)
-// in a path to a different position.
-// The most expensive chain on a path is the one resulting from cutting the 2
-// most expensive arcs on this path.
+/// RelocateExpensiveChain
+///
+/// Operator which relocates the most expensive subchains (given a cost
+/// callback) in a path to a different position.
+///
+/// The most expensive chain on a path is the one resulting from cutting the 2
+/// most expensive arcs on this path.
 class RelocateExpensiveChain : public PathOperator {
  public:
   RelocateExpensiveChain(
@@ -364,38 +366,38 @@ class RelocateExpensiveChain : public PathOperator {
   void OnNodeInitialization() override;
   void IncrementCurrentPath();
   bool IncrementCurrentArcIndices();
-  // Returns false if current_path_ is empty. Otherwise sets
-  // current_expensive_chain_ to the pair of {"preceding", "last"} nodes
-  // corresponding to the most expensive chain on current_path_, and returns
-  // true.
+  /// Returns false if current_path_ is empty. Otherwise sets
+  /// current_expensive_chain_ to the pair of {"preceding", "last"} nodes
+  /// corresponding to the most expensive chain on current_path_, and returns
+  /// true.
   bool FindMostExpensiveChainsOnCurrentPath();
-  // Calls FindMostExpensiveChainOnCurrentPath() on remaining paths until one
-  // of them returns true. Returns false if all remaining paths are empty.
+  /// Calls FindMostExpensiveChainOnCurrentPath() on remaining paths until one
+  /// of them returns true. Returns false if all remaining paths are empty.
   bool FindMostExpensiveChainsOnRemainingPaths();
 
   int num_arcs_to_consider_;
   int current_path_;
   std::vector<std::pair<int64, int> > most_expensive_arc_starts_and_ranks_;
-  // Indices in most_expensive_arc_starts_and_ranks_ corresponding to the first
-  // and second arcs currently being considered for removal.
+  /// Indices in most_expensive_arc_starts_and_ranks_ corresponding to the first
+  /// and second arcs currently being considered for removal.
   std::pair</*first_arc_index*/ int, /*second_arc_index*/ int>
       current_expensive_arc_indices_;
   std::function<int64(/*before_node*/ int64, /*after_node*/ int64,
                       /*path_start*/ int64)>
       arc_cost_for_path_start_;
   int end_path_;
-  // The following boolean indicates if there are any non-empty paths left to
-  // explore by the operator.
+  /// The following boolean indicates if there are any non-empty paths left to
+  /// explore by the operator.
   bool has_non_empty_paths_to_explore_;
 };
 
-// Operator which inserts pairs of inactive nodes into a path and makes an
-// active node inactive.
-// There are two versions:
-// - one which makes inactive the node being replaced by the first node of the
-//   pair (with swap_first true);
-// - one which makes inactive the node being replaced by the second node of the
-//   pair (with swap_first false).
+/// Operator which inserts pairs of inactive nodes into a path and makes an
+/// active node inactive.
+/// There are two versions:
+/// - one which makes inactive the node being replaced by the first node of the
+///   pair (with swap_first true);
+/// - one which makes inactive the node being replaced by the second node of the
+///   pair (with swap_first false).
 template <bool swap_first>
 class PairNodeSwapActiveOperator : public PathOperator {
  public:
@@ -413,15 +415,15 @@ class PairNodeSwapActiveOperator : public PathOperator {
 
  protected:
   bool OnSamePathAsPreviousBase(int64 base_index) override {
-    // Both base nodes have to be on the same path since they represent the
-    // nodes after which unactive node pairs will be moved.
+    /// Both base nodes have to be on the same path since they represent the
+    /// nodes after which unactive node pairs will be moved.
     return true;
   }
 
   int64 GetBaseNodeRestartPosition(int base_index) override;
 
-  // Required to ensure that after synchronization the operator is in a state
-  // compatible with GetBaseNodeRestartPosition.
+  /// Required to ensure that after synchronization the operator is in a state
+  /// compatible with GetBaseNodeRestartPosition.
   bool RestartAtPathStartOnSynchronize() override { return true; }
 
  private:
@@ -502,16 +504,17 @@ bool PairNodeSwapActiveOperator<swap_first>::MakeNeighbor() {
   }
 }
 
-// Tries to move subtrips after an insertion node.
-// A subtrip is a subsequence that contains only matched pickup and delivery
-// nodes, or pickup-only nodes, i.e. it cannot contain a pickup without a
-// corresponding delivery or vice-versa.
-// For a given subtrip given by path indices i_1 ... i_k, we call 'rejected' the
-// nodes with indices i_1 < j < i_k that are not in the subtrip.
-// If the base_node is a pickup, this operator selects the smallest subtrip
-// starting at base_node such that rejected nodes are only deliveries.
-// If the base_node is a delivery, it selects the smallest subtrip ending at
-// base_node such that rejected nodes are only pickups.
+/// Tries to move subtrips after an insertion node.
+/// A subtrip is a subsequence that contains only matched pickup and delivery
+/// nodes, or pickup-only nodes, i.e. it cannot contain a pickup without a
+/// corresponding delivery or vice-versa.
+///
+/// For a given subtrip given by path indices i_1 ... i_k, we call 'rejected'
+/// the nodes with indices i_1 < j < i_k that are not in the subtrip. If the
+/// base_node is a pickup, this operator selects the smallest subtrip starting
+/// at base_node such that rejected nodes are only deliveries. If the base_node
+/// is a delivery, it selects the smallest subtrip ending at base_node such that
+/// rejected nodes are only pickups.
 class RelocateSubtrip : public PathWithPreviousNodesOperator {
  public:
   RelocateSubtrip(const std::vector<IntVar*>& vars,
@@ -525,7 +528,7 @@ class RelocateSubtrip : public PathWithPreviousNodesOperator {
  private:
   // Relocates the subtrip starting at chain_first_node. It must be a pickup.
   bool RelocateSubTripFromPickup(int64 chain_first_node, int64 insertion_node);
-  // Relocates the subtrip ending at chain_first_node. It must be a delivery.
+  /// Relocates the subtrip ending at chain_first_node. It must be a delivery.
   bool RelocateSubTripFromDelivery(int64 chain_last_node, int64 insertion_node);
   std::vector<bool> is_pickup_node_;
   std::vector<bool> is_delivery_node_;

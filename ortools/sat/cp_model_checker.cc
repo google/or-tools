@@ -80,6 +80,17 @@ std::string ValidateIntegerVariable(const CpModelProto& model, int v) {
     return absl::StrCat("var #", v, " has and invalid domain() format: ",
                         ProtobufShortDebugString(proto));
   }
+
+  // We do compute ub - lb in some place in the code and do not want to deal
+  // with overflow everywhere. This seems like a reasonable precondition anyway.
+  const int64 lb = proto.domain(0);
+  const int64 ub = proto.domain(proto.domain_size() - 1);
+  if (lb < 0 && lb + kint64max < ub) {
+    return absl::StrCat(
+        "var #", v,
+        " has a domain that is too large, i.e. |UB - LB| overflow an int64: ",
+        ProtobufShortDebugString(proto));
+  }
   return "";
 }
 
@@ -212,6 +223,20 @@ std::string ValidateObjective(const CpModelProto& model,
   return "";
 }
 
+std::string ValidateSolutionHint(const CpModelProto& model) {
+  if (!model.has_solution_hint()) return "";
+  const auto& hint = model.solution_hint();
+  if (hint.vars().size() != hint.values().size()) {
+    return "Invalid solution hint: vars and values do not have the same size.";
+  }
+  for (const int ref : hint.vars()) {
+    if (!VariableReferenceIsValid(model, ref)) {
+      return absl::StrCat("Invalid variable reference in solution hint: ", ref);
+    }
+  }
+  return "";
+}
+
 }  // namespace
 
 std::string ValidateCpModel(const CpModelProto& model) {
@@ -266,6 +291,7 @@ std::string ValidateCpModel(const CpModelProto& model) {
     RETURN_IF_NOT_EMPTY(ValidateObjective(model, model.objective()));
   }
 
+  RETURN_IF_NOT_EMPTY(ValidateSolutionHint(model));
   return "";
 }
 
@@ -538,45 +564,44 @@ class ConstraintChecker {
   }
 
   bool CircuitConstraintIsFeasible(const ConstraintProto& ct) {
+    // Compute the set of relevant nodes for the constraint and set the next of
+    // each of them. This also detects duplicate nexts.
     const int num_arcs = ct.circuit().tails_size();
-    std::vector<int> nexts;
-    int first_node = kint32max;
+    absl::flat_hash_set<int> nodes;
+    absl::flat_hash_map<int, int> nexts;
     for (int i = 0; i < num_arcs; ++i) {
       const int tail = ct.circuit().tails(i);
       const int head = ct.circuit().heads(i);
-      first_node = std::min(first_node, std::min(tail, head));
-      const int min_size = std::max(tail, head) + 1;
-      if (min_size > nexts.size()) nexts.resize(min_size, -1);
-
+      nodes.insert(tail);
+      nodes.insert(head);
       if (LiteralIsFalse(ct.circuit().literals(i))) continue;
-
-      if (nexts[tail] != -1) return false;  // duplicate.
+      if (nexts.contains(tail)) return false;  // Duplicate.
       nexts[tail] = head;
     }
 
     // All node must have a next.
-    int in_cycle = -1;
+    int in_cycle;
     int cycle_size = 0;
-    for (int i = first_node; i < nexts.size(); ++i) {
-      if (nexts[i] == -1) return false;
-      if (nexts[i] != i) {
-        in_cycle = i;
-        ++cycle_size;
-      }
+    for (const int node : nodes) {
+      if (!nexts.contains(node)) return false;  // No next.
+      if (nexts[node] == node) continue;        // skip self-loop.
+      in_cycle = node;
+      ++cycle_size;
     }
-
     if (cycle_size == 0) return true;
 
-    // Check that we have only one cycle.
-    std::vector<bool> visited(nexts.size(), false);
+    // Check that we have only one cycle. visited is used to not loop forever if
+    // we have a "rho" shape instead of a cycle.
+    absl::flat_hash_set<int> visited;
     int current = in_cycle;
     int num_visited = 0;
-    while (!visited[current]) {
+    while (!visited.contains(current)) {
       ++num_visited;
-      visited[current] = true;
+      visited.insert(current);
       current = nexts[current];
     }
-    return num_visited == cycle_size;
+    if (current != in_cycle) return false;  // Rho shape.
+    return num_visited == cycle_size;       // Another cycle somewhere if false.
   }
 
   bool RoutesConstraintIsFeasible(const ConstraintProto& ct) {

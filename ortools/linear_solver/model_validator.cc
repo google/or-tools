@@ -13,6 +13,7 @@
 
 #include "ortools/linear_solver/model_validator.h"
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 
@@ -48,6 +49,26 @@ std::string FindErrorInMPVariable(const MPVariableProto& variable) {
                         (variable.objective_coefficient()));
   }
   return std::string();
+}
+
+// Returns an error message if 'var_indices' contains a duplicate index.
+template <typename Iterable>
+std::string FindDuplicateVarIndex(const Iterable& var_indices,
+                                  std::vector<bool>* var_mask) {
+  int duplicate_var_index = -1;
+  for (const int var_index : var_indices) {
+    if ((*var_mask)[var_index]) duplicate_var_index = var_index;
+    (*var_mask)[var_index] = true;
+  }
+  // Reset "var_mask" to all false, sparsely.
+  for (const int var_index : var_indices) {
+    (*var_mask)[var_index] = false;
+  }
+  if (duplicate_var_index >= 0) {
+    return absl::StrCat("var_index #", duplicate_var_index,
+                        " appears several times");
+  }
+  return "";
 }
 
 // Internal method to detect errors in a single constraint.
@@ -86,23 +107,89 @@ std::string FindErrorInMPConstraint(const MPConstraintProto& constraint,
     }
   }
 
-  // Verify that the var_index don't have duplicates. We use "var_mask".
-  int duplicate_var_index = -1;
-  for (const int var_index : constraint.var_index()) {
-    if ((*var_mask)[var_index]) duplicate_var_index = var_index;
-    (*var_mask)[var_index] = true;
-  }
-  // Reset "var_mask" to all false, sparsely.
-  for (const int var_index : constraint.var_index()) {
-    (*var_mask)[var_index] = false;
-  }
-  if (duplicate_var_index >= 0) {
-    return absl::StrCat("var_index #", duplicate_var_index,
-                        " appears several times");
-  }
+  const std::string error =
+      FindDuplicateVarIndex(constraint.var_index(), var_mask);
+  if (!error.empty()) return error;
 
   // We found no error, all is fine.
   return std::string();
+}
+
+std::string CroppedConstraintDebugString(const MPConstraintProto& constraint) {
+  const int kMaxPrintedVars = 10;
+
+  MPConstraintProto constraint_light = constraint;
+  std::string suffix_str;
+  if (constraint.var_index_size() > kMaxPrintedVars) {
+    constraint_light.mutable_var_index()->Truncate(kMaxPrintedVars);
+    absl::StrAppend(&suffix_str,
+                    " (var_index cropped; size=", constraint.var_index_size(),
+                    ").");
+  }
+  if (constraint.coefficient_size() > kMaxPrintedVars) {
+    constraint_light.mutable_coefficient()->Truncate(kMaxPrintedVars);
+    absl::StrAppend(&suffix_str, " (coefficient cropped; size=",
+                    constraint.coefficient_size(), ").");
+  }
+  return absl::StrCat("Constraint proto: ",
+                      ProtobufShortDebugString(constraint_light), suffix_str);
+}
+
+std::string FindErrorInMPIndicatorConstraint(
+    const MPModelProto& model, const MPIndicatorConstraint& indicator,
+    std::vector<bool>* var_mask) {
+  if (!indicator.has_var_index()) {
+    return "var_index is required.";
+  }
+  const int var_index = indicator.var_index();
+  if (var_index < 0 || var_index >= model.variable_size()) {
+    return absl::StrCat("var_index=", var_index, " is out of bounds.");
+  }
+  if (!model.variable(var_index).is_integer() ||
+      model.variable(var_index).lower_bound() < 0 ||
+      model.variable(var_index).upper_bound() > 1) {
+    return absl::StrCat("var_index=", var_index, " is not Boolean.");
+  }
+  const int var_value = indicator.var_value();
+  if (var_value < 0 || var_value > 1) {
+    return absl::StrCat("var_value=", var_value, " must be 0 or 1.");
+  }
+  const MPConstraintProto& constraint = indicator.constraint();
+  std::string error = FindErrorInMPConstraint(constraint, var_mask);
+  if (!error.empty()) {
+    // Constraint protos can be huge, theoretically. So we guard against
+    // that.
+    return absl::StrCat(error, " in constraint ",
+                        CroppedConstraintDebugString(constraint));
+  }
+  return "";
+}
+
+std::string FindErrorInMPSosConstraint(const MPModelProto& model,
+                                       const MPSosConstraint& sos,
+                                       std::vector<bool>* var_mask) {
+  if (sos.weight_size() != 0 && sos.weight_size() != sos.var_index_size()) {
+    return "weight_size() > 0 and var_index_size() != weight_size()";
+  }
+  for (const int var_index : sos.var_index()) {
+    if (var_index < 0 || var_index >= model.variable_size()) {
+      return absl::StrCat("var_index=", var_index, " is out of bounds.");
+    }
+  }
+  for (int i = 0; i < sos.weight_size(); ++i) {
+    if (!std::isfinite(sos.weight(i))) {
+      return absl::StrCat("Invalid weight: ", sos.weight(i));
+    }
+    if (i == 0) continue;
+    if (sos.weight(i - 1) >= sos.weight(i)) {
+      return "SOS weights must be strictly increasing";
+    }
+  }
+
+  const std::string error = FindDuplicateVarIndex(sos.var_index(), var_mask);
+  if (!error.empty()) return error;
+
+  return "";
 }
 
 std::string FindErrorInSolutionHint(
@@ -129,28 +216,6 @@ std::string FindErrorInSolutionHint(
     }
   }
   return std::string();
-}
-
-std::string GetCroppedConstraintError(const MPConstraintProto& constraint,
-                                      int constraint_index,
-                                      const std::string& error,
-                                      int max_printed_vars) {
-  MPConstraintProto constraint_light = constraint;
-  std::string suffix_str;
-  if (constraint.var_index_size() > max_printed_vars) {
-    constraint_light.mutable_var_index()->Truncate(max_printed_vars);
-    absl::StrAppend(&suffix_str,
-                    " (var_index cropped; size=", constraint.var_index_size(),
-                    ").");
-  }
-  if (constraint.coefficient_size() > max_printed_vars) {
-    constraint_light.mutable_coefficient()->Truncate(max_printed_vars);
-    absl::StrAppend(&suffix_str, " (coefficient cropped; size=",
-                    constraint.coefficient_size(), ").");
-  }
-  return absl::StrCat("In constraint #", constraint_index, ": ", error,
-                      ". Constraint proto: ",
-                      ProtobufShortDebugString(constraint_light), suffix_str);
 }
 }  // namespace
 
@@ -180,14 +245,13 @@ std::string FindErrorInMPModelProto(const MPModelProto& model) {
 
   // Validate constraints.
   std::vector<bool> variable_appears(num_vars, false);
-  const int kMaxNumVarsInPrintedConstraint = 10;
   for (int i = 0; i < num_cts; ++i) {
     const MPConstraintProto& constraint = model.constraint(i);
     error = FindErrorInMPConstraint(constraint, &variable_appears);
     if (!error.empty()) {
       // Constraint protos can be huge, theoretically. So we guard against that.
-      return GetCroppedConstraintError(constraint, i, error,
-                                       kMaxNumVarsInPrintedConstraint);
+      return absl::StrCat("In constraint #", i, ": ", error, ". ",
+                          CroppedConstraintDebugString(constraint));
     }
   }
 
@@ -195,45 +259,24 @@ std::string FindErrorInMPModelProto(const MPModelProto& model) {
   for (int i = 0; i < model.general_constraint_size(); ++i) {
     const MPGeneralConstraintProto& gen_constraint =
         model.general_constraint(i);
+    std::string error;
     switch (gen_constraint.general_constraint_case()) {
-      case MPGeneralConstraintProto::kIndicatorConstraint: {
-        if (!gen_constraint.indicator_constraint().has_var_index()) {
-          return absl::StrCat("In general constraint #", i,
-                              ": var_index is required.");
-        }
-        const int var_index = gen_constraint.indicator_constraint().var_index();
-        if (var_index < 0 || var_index >= num_vars) {
-          return absl::StrCat("In general constraint #", i,
-                              ": var_index=", var_index, " is out of bounds.");
-        }
-        if (!model.variable(var_index).is_integer() ||
-            model.variable(var_index).lower_bound() < 0 ||
-            model.variable(var_index).upper_bound() > 1) {
-          return absl::StrCat("In general constraint #", i,
-                              ": var_index=", var_index, " is not Boolean.");
-        }
-        const int var_value = gen_constraint.indicator_constraint().var_value();
-        if (var_value < 0 || var_value > 1) {
-          return absl::StrCat("In general constraint #", i,
-                              ": var_value=", var_value, " is invalid.");
-        }
-        const MPConstraintProto& constraint =
-            gen_constraint.indicator_constraint().constraint();
-        error = FindErrorInMPConstraint(constraint, &variable_appears);
-        if (!error.empty()) {
-          // Constraint protos can be huge, theoretically. So we guard against
-          // that.
-          return absl::StrCat(
-              "In general constraint #", i, ": ",
-              GetCroppedConstraintError(constraint, i, error,
-                                        kMaxNumVarsInPrintedConstraint));
-        }
+      case MPGeneralConstraintProto::kIndicatorConstraint:
+        error = FindErrorInMPIndicatorConstraint(
+            model, gen_constraint.indicator_constraint(), &variable_appears);
         break;
-      }
-      default: {
+
+      case MPGeneralConstraintProto::kSosConstraint:
+        error = FindErrorInMPSosConstraint(
+            model, gen_constraint.sos_constraint(), &variable_appears);
+        break;
+
+      default:
         return absl::StrCat("Unknown general constraint type ",
                             gen_constraint.general_constraint_case());
-      }
+    }
+    if (!error.empty()) {
+      return absl::StrCat("In general constraint #", i, ": ", error);
     }
   }
 

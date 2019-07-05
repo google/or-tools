@@ -257,7 +257,7 @@ NonOverlappingRectanglesDisjunctivePropagator::
       y_(y->NumTasks(), model),
       strict_(strict),
       watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
-      overload_checker_(true, &x_),
+      overload_checker_(&x_),
       forward_detectable_precedences_(true, &x_),
       backward_detectable_precedences_(false, &x_),
       forward_not_last_(true, &x_),

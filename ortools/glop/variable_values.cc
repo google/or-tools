@@ -19,11 +19,13 @@
 namespace operations_research {
 namespace glop {
 
-VariableValues::VariableValues(const CompactSparseMatrix& matrix,
+VariableValues::VariableValues(const GlopParameters& parameters,
+                               const CompactSparseMatrix& matrix,
                                const RowToColMapping& basis,
                                const VariablesInfo& variables_info,
                                const BasisFactorization& basis_factorization)
-    : matrix_(matrix),
+    : parameters_(parameters),
+      matrix_(matrix),
       basis_(basis),
       variables_info_(variables_info),
       basis_factorization_(basis_factorization),
@@ -117,29 +119,24 @@ Fractional VariableValues::ComputeMaximumPrimalResidual() const {
 
 Fractional VariableValues::ComputeMaximumPrimalInfeasibility() const {
   SCOPED_TIME_STAT(&stats_);
-  const DenseRow& lower_bounds = variables_info_.GetVariableLowerBounds();
-  const DenseRow& upper_bounds = variables_info_.GetVariableUpperBounds();
   Fractional primal_infeasibility = 0.0;
   const ColIndex num_cols = matrix_.num_cols();
   for (ColIndex col(0); col < num_cols; ++col) {
-    const Fractional value = variable_values_[col];
-    primal_infeasibility = std::max(
-        primal_infeasibility,
-        std::max(lower_bounds[col] - value, value - upper_bounds[col]));
+    const Fractional col_infeasibility = std::max(
+        GetUpperBoundInfeasibility(col), GetLowerBoundInfeasibility(col));
+    primal_infeasibility = std::max(primal_infeasibility, col_infeasibility);
   }
   return primal_infeasibility;
 }
 
 Fractional VariableValues::ComputeSumOfPrimalInfeasibilities() const {
   SCOPED_TIME_STAT(&stats_);
-  const DenseRow& lower_bounds = variables_info_.GetVariableLowerBounds();
-  const DenseRow& upper_bounds = variables_info_.GetVariableUpperBounds();
   Fractional sum = 0.0;
   const ColIndex num_cols = matrix_.num_cols();
   for (ColIndex col(0); col < num_cols; ++col) {
-    const Fractional value = variable_values_[col];
-    sum += std::max(
-        0.0, std::max(lower_bounds[col] - value, value - upper_bounds[col]));
+    const Fractional col_infeasibility = std::max(
+        GetUpperBoundInfeasibility(col), GetLowerBoundInfeasibility(col));
+    sum += std::max(0.0, col_infeasibility);
   }
   return sum;
 }
@@ -231,15 +228,13 @@ void VariableValues::ResetPrimalInfeasibilityInformation() {
   primal_squared_infeasibilities_.resize(num_rows, 0.0);
   primal_infeasible_positions_.ClearAndResize(num_rows);
 
-  const DenseRow& lower_bounds = variables_info_.GetVariableLowerBounds();
-  const DenseRow& upper_bounds = variables_info_.GetVariableUpperBounds();
+  const Fractional tolerance = parameters_.primal_feasibility_tolerance();
   for (RowIndex row(0); row < num_rows; ++row) {
     const ColIndex col = basis_[row];
-    const Fractional value = variable_values_[col];
-    const Fractional magnitude =
-        std::max(value - upper_bounds[col], lower_bounds[col] - value);
-    if (magnitude > tolerance_) {
-      primal_squared_infeasibilities_[row] = Square(magnitude);
+    const Fractional infeasibility = std::max(GetUpperBoundInfeasibility(col),
+                                              GetLowerBoundInfeasibility(col));
+    if (infeasibility > tolerance) {
+      primal_squared_infeasibilities_[row] = Square(infeasibility);
       primal_infeasible_positions_.Set(row);
     }
   }
@@ -255,15 +250,13 @@ void VariableValues::UpdatePrimalInfeasibilityInformation(
   // Note(user): this is the same as the code in
   // ResetPrimalInfeasibilityInformation(), but we do need the clear part.
   SCOPED_TIME_STAT(&stats_);
-  const DenseRow& lower_bounds = variables_info_.GetVariableLowerBounds();
-  const DenseRow& upper_bounds = variables_info_.GetVariableUpperBounds();
+  const Fractional tolerance = parameters_.primal_feasibility_tolerance();
   for (const RowIndex row : rows) {
     const ColIndex col = basis_[row];
-    const Fractional value = variable_values_[col];
-    const Fractional magnitude =
-        std::max(value - upper_bounds[col], lower_bounds[col] - value);
-    if (magnitude > tolerance_) {
-      primal_squared_infeasibilities_[row] = Square(magnitude);
+    const Fractional infeasibility = std::max(GetUpperBoundInfeasibility(col),
+                                              GetLowerBoundInfeasibility(col));
+    if (infeasibility > tolerance) {
+      primal_squared_infeasibilities_[row] = Square(infeasibility);
       primal_infeasible_positions_.Set(row);
     } else {
       primal_infeasible_positions_.Clear(row);

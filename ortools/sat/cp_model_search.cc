@@ -201,14 +201,14 @@ std::function<LiteralIndex()> ConstructSearchStrategy(
     }
     strategy.var_strategy = proto.variable_selection_strategy();
     strategy.domain_strategy = proto.domain_reduction_strategy();
-    for (const auto& tranform : proto.transformations()) {
-      const int ref = tranform.var();
+    for (const auto& transform : proto.transformations()) {
+      const int ref = transform.var();
       const IntegerVariable var =
           RefIsPositive(ref) ? variable_mapping[ref]
                              : NegationOf(variable_mapping[PositiveRef(ref)]);
       if (!gtl::ContainsKey(var_to_coeff_offset_pair, var.value())) {
-        var_to_coeff_offset_pair[var.value()] = {tranform.positive_coeff(),
-                                                 tranform.offset()};
+        var_to_coeff_offset_pair[var.value()] = {transform.positive_coeff(),
+                                                 transform.offset()};
       }
     }
   }
@@ -309,6 +309,7 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
 
     if (--index == 0) {
       new_params.set_search_branching(SatParameters::PSEUDO_COST_SEARCH);
+      new_params.set_exploit_best_solution(true);
       *name = "pseudo_cost";
       return new_params;
     }
@@ -350,8 +351,7 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
 
     // Use LNS for the remaining workers.
     new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-    new_params.set_use_lns(true);
-    new_params.set_lns_num_threads(1);
+    new_params.set_use_lns_only(true);
     *name = absl::StrFormat("lns_%i", index);
     return new_params;
   } else {
@@ -377,6 +377,14 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
       new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
       new_params.set_boolean_encoding_level(0);
       *name = "less encoding";
+      return new_params;
+    }
+
+    // TODO(user): Disable no_lp if linear part is small.
+    if (--index == 0) {  // Remove LP relaxation.
+      new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+      new_params.set_linearization_level(0);
+      *name = "no_lp";
       return new_params;
     }
 

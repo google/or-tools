@@ -16,6 +16,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
+import com.google.ortools.sat.LinearExpr;
 
 /** Cryptarithmetic puzzle. */
 public class CpIsFunSat {
@@ -73,9 +74,9 @@ public class CpIsFunSat {
     model.addAllDifferent(letters);
 
     // CP + IS + FUN = TRUE
-    model.addScalProdEqual(new IntVar[] {c, p, i, s, f, u, n, t, r, u, e},
-        new long[] {
-            base, 1, base, 1, base * base, base, 1, -base * base * base, -base * base, -base, -1},
+    model.addEquality(LinearExpr.scalProd(new IntVar[] {c, p, i, s, f, u, n, t, r, u, e},
+                          new long[] {base, 1, base, 1, base * base, base, 1, -base * base * base,
+                              -base * base, -base, -1}),
         0);
     // [END constraints]
 

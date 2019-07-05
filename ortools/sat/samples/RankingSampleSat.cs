@@ -54,7 +54,7 @@ public class RankingSampleSat
         // The following bool_or will enforce that for any two intervals:
         //    i precedes j or j precedes i or at least one interval is not
         //        performed.
-        model.AddBoolOr(tmp_array.ToArray());
+        model.AddBoolOr(tmp_array);
         // Redundant constraint: it propagates early that at most one precedence
         // is true.
         model.AddImplication(precedences[i, j], precedences[j, i].Not());
@@ -68,7 +68,7 @@ public class RankingSampleSat
       for (int j = 0; j < num_tasks; ++j) {
         tmp_array[j] = (IntVar)precedences[j, i];
       }
-      model.Add(ranks[i] == tmp_array.Sum() - 1);
+      model.Add(ranks[i] == LinearExpr.Sum(tmp_array) - 1);
     }
   }
 
@@ -129,7 +129,7 @@ public class RankingSampleSat
     for (int t = 0; t < num_tasks; ++t) {
       presences_as_int_vars[t] = (IntVar)presences[t];
     }
-    model.Minimize(2 * makespan - 7 * presences_as_int_vars.Sum());
+    model.Minimize(2 * makespan - 7 * LinearExpr.Sum(presences_as_int_vars));
 
     // Creates a solver and solves the model.
     CpSolver solver = new CpSolver();

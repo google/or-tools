@@ -20,7 +20,7 @@
 
 namespace operations_research {
 
-using random_engine_t = std::default_random_engine;
+using random_engine_t = std::mt19937;
 
 }  // namespace operations_research
 

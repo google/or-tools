@@ -20,7 +20,9 @@
 
 // std::function utilities.
 %include "ortools/util/python/functions.i"
-%include "ortools/util/python/vector.i"
+
+// import the domain class.
+%import "ortools/util/python/sorted_interval_list.i"
 
 %{
 #include "ortools/sat/cp_model.pb.h"
@@ -28,7 +30,11 @@
 #include "ortools/sat/swig_helper.h"
 %}
 
-%module(directors="1") operations_research_sat
+%pythoncode {
+import numbers
+}
+
+%module(directors="1", threads="1") operations_research_sat
 
 PY_PROTO_TYPEMAP(ortools.sat.cp_model_pb2,
                  CpModelProto,
@@ -54,8 +60,6 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
 %unignore operations_research::sat::SatHelper::ModelStats;
 %unignore operations_research::sat::SatHelper::SolverResponseStats;
 %unignore operations_research::sat::SatHelper::ValidateModel;
-%unignore operations_research::sat::SatHelper::DomainFromValues;
-%unignore operations_research::sat::SatHelper::DomainFromStartsAndEnds;
 
 %feature("director") operations_research::sat::SolutionCallback;
 %unignore operations_research::sat::SolutionCallback;
@@ -93,3 +97,4 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
 %include "ortools/sat/swig_helper.h"
 
 %unignoreall
+

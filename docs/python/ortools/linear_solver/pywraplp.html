@@ -1,0 +1,2637 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.6.2" />
+<title>pywraplp API documentation</title>
+<meta name="description" content="" />
+<link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
+<link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase;cursor:pointer}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<style type="text/css">
+a:link { color: #46641e; text-decoration: none}
+.ident { color: #46641e }
+</style>
+<link rel="icon" href="https://developers.google.com/optimization/images/orLogo.png">
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>pywraplp</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python"># This file was automatically generated by SWIG (http://www.swig.org).
+# Version 4.0.0
+#
+# Do not make changes to this file unless you know what you are doing--modify
+# the SWIG interface file instead.
+
+from sys import version_info as _swig_python_version_info
+if _swig_python_version_info &lt; (2, 7, 0):
+    raise RuntimeError(&#39;Python 2.7 or later required&#39;)
+
+# Import the low-level C/C++ module
+if __package__ or &#39;.&#39; in __name__:
+    from . import _pywraplp
+else:
+    import _pywraplp
+
+try:
+    import builtins as __builtin__
+except ImportError:
+    import __builtin__
+
+def _swig_setattr_nondynamic(self, class_type, name, value, static=1):
+    if name == &#34;thisown&#34;:
+        return self.this.own(value)
+    if name == &#34;this&#34;:
+        if type(value).__name__ == &#39;SwigPyObject&#39;:
+            self.__dict__[name] = value
+            return
+    method = class_type.__swig_setmethods__.get(name, None)
+    if method:
+        return method(self, value)
+    if not static:
+        object.__setattr__(self, name, value)
+    else:
+        raise AttributeError(&#34;You cannot add attributes to %s&#34; % self)
+
+
+def _swig_setattr(self, class_type, name, value):
+    return _swig_setattr_nondynamic(self, class_type, name, value, 0)
+
+
+def _swig_getattr(self, class_type, name):
+    if name == &#34;thisown&#34;:
+        return self.this.own()
+    method = class_type.__swig_getmethods__.get(name, None)
+    if method:
+        return method(self)
+    raise AttributeError(&#34;&#39;%s&#39; object has no attribute &#39;%s&#39;&#34; % (class_type.__name__, name))
+
+
+def _swig_repr(self):
+    try:
+        strthis = &#34;proxy of &#34; + self.this.__repr__()
+    except __builtin__.Exception:
+        strthis = &#34;&#34;
+    return &#34;&lt;%s.%s; %s &gt;&#34; % (self.__class__.__module__, self.__class__.__name__, strthis,)
+
+
+def _swig_setattr_nondynamic_instance_variable(set):
+    def set_instance_attr(self, name, value):
+        if name == &#34;thisown&#34;:
+            self.this.own(value)
+        elif name == &#34;this&#34;:
+            set(self, name, value)
+        elif hasattr(self, name) and isinstance(getattr(type(self), name), property):
+            set(self, name, value)
+        else:
+            raise AttributeError(&#34;You cannot add instance attributes to %s&#34; % self)
+    return set_instance_attr
+
+
+def _swig_setattr_nondynamic_class_variable(set):
+    def set_class_attr(cls, name, value):
+        if hasattr(cls, name) and not isinstance(getattr(cls, name), property):
+            set(cls, name, value)
+        else:
+            raise AttributeError(&#34;You cannot add class attributes to %s&#34; % cls)
+    return set_class_attr
+
+
+def _swig_add_metaclass(metaclass):
+    &#34;&#34;&#34;Class decorator for adding a metaclass to a SWIG wrapped class - a slimmed down version of six.add_metaclass&#34;&#34;&#34;
+    def wrapper(cls):
+        return metaclass(cls.__name__, cls.__bases__, cls.__dict__.copy())
+    return wrapper
+
+
+class _SwigNonDynamicMeta(type):
+    &#34;&#34;&#34;Meta class to enforce nondynamic attributes (no new attributes) for a class&#34;&#34;&#34;
+    __setattr__ = _swig_setattr_nondynamic_class_variable(type.__setattr__)
+
+
+
+import numbers
+from ortools.linear_solver.linear_solver_natural_api import OFFSET_KEY
+from ortools.linear_solver.linear_solver_natural_api import inf
+from ortools.linear_solver.linear_solver_natural_api import LinearExpr
+from ortools.linear_solver.linear_solver_natural_api import ProductCst
+from ortools.linear_solver.linear_solver_natural_api import Sum
+from ortools.linear_solver.linear_solver_natural_api import SumArray
+from ortools.linear_solver.linear_solver_natural_api import SumCst
+from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
+from ortools.linear_solver.linear_solver_natural_api import VariableExpr
+
+class Solver(object):
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
+    __repr__ = _swig_repr
+    CLP_LINEAR_PROGRAMMING = _pywraplp.Solver_CLP_LINEAR_PROGRAMMING
+    GLOP_LINEAR_PROGRAMMING = _pywraplp.Solver_GLOP_LINEAR_PROGRAMMING
+    CBC_MIXED_INTEGER_PROGRAMMING = _pywraplp.Solver_CBC_MIXED_INTEGER_PROGRAMMING
+    BOP_INTEGER_PROGRAMMING = _pywraplp.Solver_BOP_INTEGER_PROGRAMMING
+
+    def __init__(self, name: &#39;std::string const &amp;&#39;, problem_type: &#39;operations_research::MPSolver::OptimizationProblemType&#39;):
+        _pywraplp.Solver_swiginit(self, _pywraplp.new_Solver(name, problem_type))
+    __swig_destroy__ = _pywraplp.delete_Solver
+
+    @staticmethod
+    def SupportsProblemType(problem_type: &#39;operations_research::MPSolver::OptimizationProblemType&#39;) -&gt; &#34;bool&#34;:
+        return _pywraplp.Solver_SupportsProblemType(problem_type)
+
+    def Clear(self) -&gt; &#34;void&#34;:
+        return _pywraplp.Solver_Clear(self)
+
+    def NumVariables(self) -&gt; &#34;int&#34;:
+        return _pywraplp.Solver_NumVariables(self)
+
+    def variables(self) -&gt; &#34;std::vector&lt; operations_research::MPVariable * &gt; const &amp;&#34;:
+        return _pywraplp.Solver_variables(self)
+
+    def LookupVariable(self, var_name: &#39;std::string const &amp;&#39;) -&gt; &#34;operations_research::MPVariable *&#34;:
+        return _pywraplp.Solver_LookupVariable(self, var_name)
+
+    def Var(self, lb: &#39;double&#39;, ub: &#39;double&#39;, integer: &#39;bool&#39;, name: &#39;std::string const &amp;&#39;) -&gt; &#34;operations_research::MPVariable *&#34;:
+        return _pywraplp.Solver_Var(self, lb, ub, integer, name)
+
+    def NumVar(self, lb: &#39;double&#39;, ub: &#39;double&#39;, name: &#39;std::string const &amp;&#39;) -&gt; &#34;operations_research::MPVariable *&#34;:
+        return _pywraplp.Solver_NumVar(self, lb, ub, name)
+
+    def IntVar(self, lb: &#39;double&#39;, ub: &#39;double&#39;, name: &#39;std::string const &amp;&#39;) -&gt; &#34;operations_research::MPVariable *&#34;:
+        return _pywraplp.Solver_IntVar(self, lb, ub, name)
+
+    def BoolVar(self, name: &#39;std::string const &amp;&#39;) -&gt; &#34;operations_research::MPVariable *&#34;:
+        return _pywraplp.Solver_BoolVar(self, name)
+
+    def NumConstraints(self) -&gt; &#34;int&#34;:
+        return _pywraplp.Solver_NumConstraints(self)
+
+    def constraints(self) -&gt; &#34;std::vector&lt; operations_research::MPConstraint * &gt; const &amp;&#34;:
+        return _pywraplp.Solver_constraints(self)
+
+    def LookupConstraint(self, constraint_name: &#39;std::string const &amp;&#39;) -&gt; &#34;operations_research::MPConstraint *&#34;:
+        return _pywraplp.Solver_LookupConstraint(self, constraint_name)
+
+    def Constraint(self, *args) -&gt; &#34;operations_research::MPConstraint *&#34;:
+        return _pywraplp.Solver_Constraint(self, *args)
+
+    def Objective(self) -&gt; &#34;operations_research::MPObjective *&#34;:
+        return _pywraplp.Solver_Objective(self)
+    OPTIMAL = _pywraplp.Solver_OPTIMAL
+    FEASIBLE = _pywraplp.Solver_FEASIBLE
+    INFEASIBLE = _pywraplp.Solver_INFEASIBLE
+    UNBOUNDED = _pywraplp.Solver_UNBOUNDED
+    ABNORMAL = _pywraplp.Solver_ABNORMAL
+    NOT_SOLVED = _pywraplp.Solver_NOT_SOLVED
+
+    def Solve(self, *args) -&gt; &#34;operations_research::MPSolver::ResultStatus&#34;:
+        return _pywraplp.Solver_Solve(self, *args)
+
+    def ComputeConstraintActivities(self) -&gt; &#34;std::vector&lt; double &gt;&#34;:
+        return _pywraplp.Solver_ComputeConstraintActivities(self)
+
+    def VerifySolution(self, tolerance: &#39;double&#39;, log_errors: &#39;bool&#39;) -&gt; &#34;bool&#34;:
+        return _pywraplp.Solver_VerifySolution(self, tolerance, log_errors)
+
+    def InterruptSolve(self) -&gt; &#34;bool&#34;:
+        return _pywraplp.Solver_InterruptSolve(self)
+
+    def FillSolutionResponseProto(self, response: &#39;operations_research::MPSolutionResponse *&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Solver_FillSolutionResponseProto(self, response)
+
+    @staticmethod
+    def SolveWithProto(model_request: &#39;operations_research::MPModelRequest const &amp;&#39;, response: &#39;operations_research::MPSolutionResponse *&#39;) -&gt; &#34;operations_research::MPSolutionResponse *&#34;:
+        return _pywraplp.Solver_SolveWithProto(model_request, response)
+
+    def ExportModelToProto(self, output_model: &#39;operations_research::MPModelProto *&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Solver_ExportModelToProto(self, output_model)
+
+    def LoadSolutionFromProto(self, *args) -&gt; &#34;util::Status&#34;:
+        return _pywraplp.Solver_LoadSolutionFromProto(self, *args)
+
+    def SetSolverSpecificParametersAsString(self, parameters: &#39;std::string const &amp;&#39;) -&gt; &#34;bool&#34;:
+        return _pywraplp.Solver_SetSolverSpecificParametersAsString(self, parameters)
+    FREE = _pywraplp.Solver_FREE
+    AT_LOWER_BOUND = _pywraplp.Solver_AT_LOWER_BOUND
+    AT_UPPER_BOUND = _pywraplp.Solver_AT_UPPER_BOUND
+    FIXED_VALUE = _pywraplp.Solver_FIXED_VALUE
+    BASIC = _pywraplp.Solver_BASIC
+
+    @staticmethod
+    def infinity() -&gt; &#34;double&#34;:
+        return _pywraplp.Solver_infinity()
+
+    def EnableOutput(self) -&gt; &#34;void&#34;:
+        return _pywraplp.Solver_EnableOutput(self)
+
+    def SuppressOutput(self) -&gt; &#34;void&#34;:
+        return _pywraplp.Solver_SuppressOutput(self)
+
+    def iterations(self) -&gt; &#34;int64&#34;:
+        return _pywraplp.Solver_iterations(self)
+
+    def nodes(self) -&gt; &#34;int64&#34;:
+        return _pywraplp.Solver_nodes(self)
+
+    def ComputeExactConditionNumber(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Solver_ComputeExactConditionNumber(self)
+
+    def NextSolution(self) -&gt; &#34;bool&#34;:
+        return _pywraplp.Solver_NextSolution(self)
+
+    def set_time_limit(self, time_limit_milliseconds: &#39;int64&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Solver_set_time_limit(self, time_limit_milliseconds)
+
+    def wall_time(self) -&gt; &#34;int64&#34;:
+        return _pywraplp.Solver_wall_time(self)
+
+    def LoadModelFromProto(self, input_model: &#39;operations_research::MPModelProto const &amp;&#39;) -&gt; &#34;std::string&#34;:
+        return _pywraplp.Solver_LoadModelFromProto(self, input_model)
+
+    def ExportModelAsLpFormat(self, *args) -&gt; &#34;std::string&#34;:
+        return _pywraplp.Solver_ExportModelAsLpFormat(self, *args)
+
+    def ExportModelAsMpsFormat(self, *args) -&gt; &#34;std::string&#34;:
+        return _pywraplp.Solver_ExportModelAsMpsFormat(self, *args)
+
+    def SetHint(self, variables: &#39;std::vector&lt; operations_research::MPVariable * &gt; const &amp;&#39;, values: &#39;std::vector&lt; double &gt; const &amp;&#39;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Set a hint for solution. If a feasible or almost-feasible solution to the problem is already known, it may be helpful to pass it to the solver so that it can be used. A solver that supports this feature will try to use this information to create its initial feasible solution. Note that it may not always be faster to give a hint like this to the solver. There is also no guarantee that the solver will use this hint or try to return a solution &#34;close&#34; to this assignment in case of multiple optimal solutions.&#34;&#34;&#34;
+        return _pywraplp.Solver_SetHint(self, variables, values)
+
+    def SetNumThreads(self, num_theads: &#39;int&#39;) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34; Sets the number of threads to be used by the solver.&#34;&#34;&#34;
+        return _pywraplp.Solver_SetNumThreads(self, num_theads)
+
+    def Add(self, constraint, name=&#39;&#39;):
+      if isinstance(constraint, bool):
+        if constraint:
+          return self.RowConstraint(0, 0, name)
+        else:
+          return self.RowConstraint(1, 1, name)
+      else:
+        return constraint.Extract(self, name)
+
+    def Sum(self, expr_array):
+      result = SumArray(expr_array)
+      return result
+
+    def RowConstraint(self, *args):
+      return self.Constraint(*args)
+
+    def Minimize(self, expr):
+      objective = self.Objective()
+      objective.Clear()
+      objective.SetMinimization()
+      if isinstance(expr, numbers.Number):
+          objective.SetOffset(expr)
+      else:
+          coeffs = expr.GetCoeffs()
+          objective.SetOffset(coeffs.pop(OFFSET_KEY, 0.0))
+          for v, c, in list(coeffs.items()):
+            objective.SetCoefficient(v, float(c))
+
+    def Maximize(self, expr):
+      objective = self.Objective()
+      objective.Clear()
+      objective.SetMaximization()
+      if isinstance(expr, numbers.Number):
+          objective.SetOffset(expr)
+      else:
+          coeffs = expr.GetCoeffs()
+          objective.SetOffset(coeffs.pop(OFFSET_KEY, 0.0))
+          for v, c, in list(coeffs.items()):
+            objective.SetCoefficient(v, float(c))
+
+
+    @staticmethod
+    def Infinity() -&gt; &#34;double&#34;:
+        return _pywraplp.Solver_Infinity()
+
+    def SetTimeLimit(self, x: &#39;int64&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Solver_SetTimeLimit(self, x)
+
+    def WallTime(self) -&gt; &#34;int64&#34;:
+        return _pywraplp.Solver_WallTime(self)
+
+    def Iterations(self) -&gt; &#34;int64&#34;:
+        return _pywraplp.Solver_Iterations(self)
+
+# Register Solver in _pywraplp:
+_pywraplp.Solver_swigregister(Solver)
+
+def Solver_SupportsProblemType(problem_type: &#39;operations_research::MPSolver::OptimizationProblemType&#39;) -&gt; &#34;bool&#34;:
+    return _pywraplp.Solver_SupportsProblemType(problem_type)
+
+def Solver_SolveWithProto(model_request: &#39;operations_research::MPModelRequest const &amp;&#39;, response: &#39;operations_research::MPSolutionResponse *&#39;) -&gt; &#34;operations_research::MPSolutionResponse *&#34;:
+    return _pywraplp.Solver_SolveWithProto(model_request, response)
+
+def Solver_infinity() -&gt; &#34;double&#34;:
+    return _pywraplp.Solver_infinity()
+
+def Solver_Infinity() -&gt; &#34;double&#34;:
+    return _pywraplp.Solver_Infinity()
+
+
+def __lshift__(*args) -&gt; &#34;std::ostream &amp;&#34;:
+    return _pywraplp.__lshift__(*args)
+class Objective(object):
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
+
+    def __init__(self, *args, **kwargs):
+        raise AttributeError(&#34;No constructor defined&#34;)
+    __repr__ = _swig_repr
+
+    def Clear(self) -&gt; &#34;void&#34;:
+        return _pywraplp.Objective_Clear(self)
+
+    def SetCoefficient(self, var: &#39;Variable&#39;, coeff: &#39;double&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Objective_SetCoefficient(self, var, coeff)
+
+    def GetCoefficient(self, var: &#39;Variable&#39;) -&gt; &#34;double&#34;:
+        return _pywraplp.Objective_GetCoefficient(self, var)
+
+    def SetOffset(self, value: &#39;double&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Objective_SetOffset(self, value)
+
+    def offset(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Objective_offset(self)
+
+    def SetOptimizationDirection(self, maximize: &#39;bool&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Objective_SetOptimizationDirection(self, maximize)
+
+    def SetMinimization(self) -&gt; &#34;void&#34;:
+        return _pywraplp.Objective_SetMinimization(self)
+
+    def SetMaximization(self) -&gt; &#34;void&#34;:
+        return _pywraplp.Objective_SetMaximization(self)
+
+    def maximization(self) -&gt; &#34;bool&#34;:
+        return _pywraplp.Objective_maximization(self)
+
+    def minimization(self) -&gt; &#34;bool&#34;:
+        return _pywraplp.Objective_minimization(self)
+
+    def Value(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Objective_Value(self)
+
+    def BestBound(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Objective_BestBound(self)
+
+    def Offset(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Objective_Offset(self)
+    __swig_destroy__ = _pywraplp.delete_Objective
+
+# Register Objective in _pywraplp:
+_pywraplp.Objective_swigregister(Objective)
+
+class Variable(object):
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
+
+    def __init__(self, *args, **kwargs):
+        raise AttributeError(&#34;No constructor defined&#34;)
+
+    def name(self) -&gt; &#34;std::string const &amp;&#34;:
+        return _pywraplp.Variable_name(self)
+
+    def integer(self) -&gt; &#34;bool&#34;:
+        return _pywraplp.Variable_integer(self)
+
+    def solution_value(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Variable_solution_value(self)
+
+    def index(self) -&gt; &#34;int&#34;:
+        return _pywraplp.Variable_index(self)
+
+    def lb(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Variable_lb(self)
+
+    def ub(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Variable_ub(self)
+
+    def SetBounds(self, lb: &#39;double&#39;, ub: &#39;double&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Variable_SetBounds(self, lb, ub)
+
+    def reduced_cost(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Variable_reduced_cost(self)
+
+    def basis_status(self) -&gt; &#34;operations_research::MPSolver::BasisStatus&#34;:
+        return _pywraplp.Variable_basis_status(self)
+
+    def __str__(self) -&gt; &#34;std::string&#34;:
+        return _pywraplp.Variable___str__(self)
+
+    def __repr__(self) -&gt; &#34;std::string&#34;:
+        return _pywraplp.Variable___repr__(self)
+
+    def __getattr__(self, name):
+      return getattr(VariableExpr(self), name)
+
+
+    def SolutionValue(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Variable_SolutionValue(self)
+
+    def Integer(self) -&gt; &#34;bool&#34;:
+        return _pywraplp.Variable_Integer(self)
+
+    def Lb(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Variable_Lb(self)
+
+    def Ub(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Variable_Ub(self)
+
+    def SetLb(self, x: &#39;double&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Variable_SetLb(self, x)
+
+    def SetUb(self, x: &#39;double&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Variable_SetUb(self, x)
+
+    def ReducedCost(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Variable_ReducedCost(self)
+    __swig_destroy__ = _pywraplp.delete_Variable
+
+# Register Variable in _pywraplp:
+_pywraplp.Variable_swigregister(Variable)
+
+class Constraint(object):
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
+
+    def __init__(self, *args, **kwargs):
+        raise AttributeError(&#34;No constructor defined&#34;)
+    __repr__ = _swig_repr
+
+    def name(self) -&gt; &#34;std::string const &amp;&#34;:
+        return _pywraplp.Constraint_name(self)
+
+    def SetCoefficient(self, var: &#39;Variable&#39;, coeff: &#39;double&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Constraint_SetCoefficient(self, var, coeff)
+
+    def GetCoefficient(self, var: &#39;Variable&#39;) -&gt; &#34;double&#34;:
+        return _pywraplp.Constraint_GetCoefficient(self, var)
+
+    def lb(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Constraint_lb(self)
+
+    def ub(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Constraint_ub(self)
+
+    def SetBounds(self, lb: &#39;double&#39;, ub: &#39;double&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Constraint_SetBounds(self, lb, ub)
+
+    def set_is_lazy(self, laziness: &#39;bool&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Constraint_set_is_lazy(self, laziness)
+
+    def index(self) -&gt; &#34;int&#34;:
+        return _pywraplp.Constraint_index(self)
+
+    def dual_value(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Constraint_dual_value(self)
+
+    def basis_status(self) -&gt; &#34;operations_research::MPSolver::BasisStatus&#34;:
+        return _pywraplp.Constraint_basis_status(self)
+
+    def Lb(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Constraint_Lb(self)
+
+    def Ub(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Constraint_Ub(self)
+
+    def SetLb(self, x: &#39;double&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Constraint_SetLb(self, x)
+
+    def SetUb(self, x: &#39;double&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Constraint_SetUb(self, x)
+
+    def DualValue(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Constraint_DualValue(self)
+    __swig_destroy__ = _pywraplp.delete_Constraint
+
+# Register Constraint in _pywraplp:
+_pywraplp.Constraint_swigregister(Constraint)
+
+class MPSolverParameters(object):
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
+    __repr__ = _swig_repr
+    RELATIVE_MIP_GAP = _pywraplp.MPSolverParameters_RELATIVE_MIP_GAP
+    PRIMAL_TOLERANCE = _pywraplp.MPSolverParameters_PRIMAL_TOLERANCE
+    DUAL_TOLERANCE = _pywraplp.MPSolverParameters_DUAL_TOLERANCE
+    PRESOLVE = _pywraplp.MPSolverParameters_PRESOLVE
+    LP_ALGORITHM = _pywraplp.MPSolverParameters_LP_ALGORITHM
+    INCREMENTALITY = _pywraplp.MPSolverParameters_INCREMENTALITY
+    SCALING = _pywraplp.MPSolverParameters_SCALING
+    PRESOLVE_OFF = _pywraplp.MPSolverParameters_PRESOLVE_OFF
+    PRESOLVE_ON = _pywraplp.MPSolverParameters_PRESOLVE_ON
+    DUAL = _pywraplp.MPSolverParameters_DUAL
+    PRIMAL = _pywraplp.MPSolverParameters_PRIMAL
+    BARRIER = _pywraplp.MPSolverParameters_BARRIER
+    INCREMENTALITY_OFF = _pywraplp.MPSolverParameters_INCREMENTALITY_OFF
+    INCREMENTALITY_ON = _pywraplp.MPSolverParameters_INCREMENTALITY_ON
+    SCALING_OFF = _pywraplp.MPSolverParameters_SCALING_OFF
+    SCALING_ON = _pywraplp.MPSolverParameters_SCALING_ON
+
+    def __init__(self):
+        _pywraplp.MPSolverParameters_swiginit(self, _pywraplp.new_MPSolverParameters())
+
+    def SetDoubleParam(self, param: &#39;operations_research::MPSolverParameters::DoubleParam&#39;, value: &#39;double&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.MPSolverParameters_SetDoubleParam(self, param, value)
+
+    def SetIntegerParam(self, param: &#39;operations_research::MPSolverParameters::IntegerParam&#39;, value: &#39;int&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.MPSolverParameters_SetIntegerParam(self, param, value)
+
+    def GetDoubleParam(self, param: &#39;operations_research::MPSolverParameters::DoubleParam&#39;) -&gt; &#34;double&#34;:
+        return _pywraplp.MPSolverParameters_GetDoubleParam(self, param)
+
+    def GetIntegerParam(self, param: &#39;operations_research::MPSolverParameters::IntegerParam&#39;) -&gt; &#34;int&#34;:
+        return _pywraplp.MPSolverParameters_GetIntegerParam(self, param)
+    __swig_destroy__ = _pywraplp.delete_MPSolverParameters
+
+# Register MPSolverParameters in _pywraplp:
+_pywraplp.MPSolverParameters_swigregister(MPSolverParameters)
+cvar = _pywraplp.cvar
+MPSolverParameters.kDefaultRelativeMipGap = _pywraplp.cvar.MPSolverParameters_kDefaultRelativeMipGap
+MPSolverParameters.kDefaultPrimalTolerance = _pywraplp.cvar.MPSolverParameters_kDefaultPrimalTolerance
+MPSolverParameters.kDefaultDualTolerance = _pywraplp.cvar.MPSolverParameters_kDefaultDualTolerance
+MPSolverParameters.kDefaultPresolve = _pywraplp.cvar.MPSolverParameters_kDefaultPresolve
+MPSolverParameters.kDefaultIncrementality = _pywraplp.cvar.MPSolverParameters_kDefaultIncrementality
+
+class ModelExportOptions(object):
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
+    __repr__ = _swig_repr
+
+    def __init__(self):
+        _pywraplp.ModelExportOptions_swiginit(self, _pywraplp.new_ModelExportOptions())
+    __swig_destroy__ = _pywraplp.delete_ModelExportOptions
+
+# Register ModelExportOptions in _pywraplp:
+_pywraplp.ModelExportOptions_swigregister(ModelExportOptions)
+
+
+def ExportModelAsLpFormat(*args) -&gt; &#34;std::string&#34;:
+    return _pywraplp.ExportModelAsLpFormat(*args)
+
+def ExportModelAsMpsFormat(*args) -&gt; &#34;std::string&#34;:
+    return _pywraplp.ExportModelAsMpsFormat(*args)
+
+def setup_variable_operator(opname):
+  setattr(Variable, opname,
+          lambda self, *args: getattr(VariableExpr(self), opname)(*args))
+for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
+  setup_variable_operator(opname)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="pywraplp.ExportModelAsLpFormat"><code class="name flex">
+<span>def <span class="ident">ExportModelAsLpFormat</span></span>(<span>*args)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def ExportModelAsLpFormat(*args) -&gt; &#34;std::string&#34;:
+    return _pywraplp.ExportModelAsLpFormat(*args)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.ExportModelAsMpsFormat"><code class="name flex">
+<span>def <span class="ident">ExportModelAsMpsFormat</span></span>(<span>*args)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def ExportModelAsMpsFormat(*args) -&gt; &#34;std::string&#34;:
+    return _pywraplp.ExportModelAsMpsFormat(*args)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver_Infinity"><code class="name flex">
+<span>def <span class="ident">Solver_Infinity</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def Solver_Infinity() -&gt; &#34;double&#34;:
+    return _pywraplp.Solver_Infinity()</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver_SolveWithProto"><code class="name flex">
+<span>def <span class="ident">Solver_SolveWithProto</span></span>(<span>model_request, response)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def Solver_SolveWithProto(model_request: &#39;operations_research::MPModelRequest const &amp;&#39;, response: &#39;operations_research::MPSolutionResponse *&#39;) -&gt; &#34;operations_research::MPSolutionResponse *&#34;:
+    return _pywraplp.Solver_SolveWithProto(model_request, response)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver_SupportsProblemType"><code class="name flex">
+<span>def <span class="ident">Solver_SupportsProblemType</span></span>(<span>problem_type)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def Solver_SupportsProblemType(problem_type: &#39;operations_research::MPSolver::OptimizationProblemType&#39;) -&gt; &#34;bool&#34;:
+    return _pywraplp.Solver_SupportsProblemType(problem_type)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver_infinity"><code class="name flex">
+<span>def <span class="ident">Solver_infinity</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def Solver_infinity() -&gt; &#34;double&#34;:
+    return _pywraplp.Solver_infinity()</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.setup_variable_operator"><code class="name flex">
+<span>def <span class="ident">setup_variable_operator</span></span>(<span>opname)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def setup_variable_operator(opname):
+  setattr(Variable, opname,
+          lambda self, *args: getattr(VariableExpr(self), opname)(*args))</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="pywraplp.Constraint"><code class="flex name class">
+<span>class <span class="ident">Constraint</span></span>
+<span>(</span><span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">class Constraint(object):
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
+
+    def __init__(self, *args, **kwargs):
+        raise AttributeError(&#34;No constructor defined&#34;)
+    __repr__ = _swig_repr
+
+    def name(self) -&gt; &#34;std::string const &amp;&#34;:
+        return _pywraplp.Constraint_name(self)
+
+    def SetCoefficient(self, var: &#39;Variable&#39;, coeff: &#39;double&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Constraint_SetCoefficient(self, var, coeff)
+
+    def GetCoefficient(self, var: &#39;Variable&#39;) -&gt; &#34;double&#34;:
+        return _pywraplp.Constraint_GetCoefficient(self, var)
+
+    def lb(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Constraint_lb(self)
+
+    def ub(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Constraint_ub(self)
+
+    def SetBounds(self, lb: &#39;double&#39;, ub: &#39;double&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Constraint_SetBounds(self, lb, ub)
+
+    def set_is_lazy(self, laziness: &#39;bool&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Constraint_set_is_lazy(self, laziness)
+
+    def index(self) -&gt; &#34;int&#34;:
+        return _pywraplp.Constraint_index(self)
+
+    def dual_value(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Constraint_dual_value(self)
+
+    def basis_status(self) -&gt; &#34;operations_research::MPSolver::BasisStatus&#34;:
+        return _pywraplp.Constraint_basis_status(self)
+
+    def Lb(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Constraint_Lb(self)
+
+    def Ub(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Constraint_Ub(self)
+
+    def SetLb(self, x: &#39;double&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Constraint_SetLb(self, x)
+
+    def SetUb(self, x: &#39;double&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Constraint_SetUb(self, x)
+
+    def DualValue(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Constraint_DualValue(self)
+    __swig_destroy__ = _pywraplp.delete_Constraint</code></pre>
+</details>
+<h3>Instance variables</h3>
+<dl>
+<dt id="pywraplp.Constraint.thisown"><code class="name">var <span class="ident">thisown</span></code></dt>
+<dd>
+<section class="desc"><p>The membership flag</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="pywraplp.Constraint.DualValue"><code class="name flex">
+<span>def <span class="ident">DualValue</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def DualValue(self) -&gt; &#34;double&#34;:
+    return _pywraplp.Constraint_DualValue(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Constraint.GetCoefficient"><code class="name flex">
+<span>def <span class="ident">GetCoefficient</span></span>(<span>self, var)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def GetCoefficient(self, var: &#39;Variable&#39;) -&gt; &#34;double&#34;:
+    return _pywraplp.Constraint_GetCoefficient(self, var)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Constraint.Lb"><code class="name flex">
+<span>def <span class="ident">Lb</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def Lb(self) -&gt; &#34;double&#34;:
+    return _pywraplp.Constraint_Lb(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Constraint.SetBounds"><code class="name flex">
+<span>def <span class="ident">SetBounds</span></span>(<span>self, lb, ub)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def SetBounds(self, lb: &#39;double&#39;, ub: &#39;double&#39;) -&gt; &#34;void&#34;:
+    return _pywraplp.Constraint_SetBounds(self, lb, ub)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Constraint.SetCoefficient"><code class="name flex">
+<span>def <span class="ident">SetCoefficient</span></span>(<span>self, var, coeff)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def SetCoefficient(self, var: &#39;Variable&#39;, coeff: &#39;double&#39;) -&gt; &#34;void&#34;:
+    return _pywraplp.Constraint_SetCoefficient(self, var, coeff)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Constraint.SetLb"><code class="name flex">
+<span>def <span class="ident">SetLb</span></span>(<span>self, x)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def SetLb(self, x: &#39;double&#39;) -&gt; &#34;void&#34;:
+    return _pywraplp.Constraint_SetLb(self, x)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Constraint.SetUb"><code class="name flex">
+<span>def <span class="ident">SetUb</span></span>(<span>self, x)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def SetUb(self, x: &#39;double&#39;) -&gt; &#34;void&#34;:
+    return _pywraplp.Constraint_SetUb(self, x)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Constraint.Ub"><code class="name flex">
+<span>def <span class="ident">Ub</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def Ub(self) -&gt; &#34;double&#34;:
+    return _pywraplp.Constraint_Ub(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Constraint.basis_status"><code class="name flex">
+<span>def <span class="ident">basis_status</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def basis_status(self) -&gt; &#34;operations_research::MPSolver::BasisStatus&#34;:
+    return _pywraplp.Constraint_basis_status(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Constraint.dual_value"><code class="name flex">
+<span>def <span class="ident">dual_value</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def dual_value(self) -&gt; &#34;double&#34;:
+    return _pywraplp.Constraint_dual_value(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Constraint.index"><code class="name flex">
+<span>def <span class="ident">index</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def index(self) -&gt; &#34;int&#34;:
+    return _pywraplp.Constraint_index(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Constraint.lb"><code class="name flex">
+<span>def <span class="ident">lb</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def lb(self) -&gt; &#34;double&#34;:
+    return _pywraplp.Constraint_lb(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Constraint.name"><code class="name flex">
+<span>def <span class="ident">name</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def name(self) -&gt; &#34;std::string const &amp;&#34;:
+    return _pywraplp.Constraint_name(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Constraint.set_is_lazy"><code class="name flex">
+<span>def <span class="ident">set_is_lazy</span></span>(<span>self, laziness)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def set_is_lazy(self, laziness: &#39;bool&#39;) -&gt; &#34;void&#34;:
+    return _pywraplp.Constraint_set_is_lazy(self, laziness)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Constraint.ub"><code class="name flex">
+<span>def <span class="ident">ub</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def ub(self) -&gt; &#34;double&#34;:
+    return _pywraplp.Constraint_ub(self)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="pywraplp.MPSolverParameters"><code class="flex name class">
+<span>class <span class="ident">MPSolverParameters</span></span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">class MPSolverParameters(object):
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
+    __repr__ = _swig_repr
+    RELATIVE_MIP_GAP = _pywraplp.MPSolverParameters_RELATIVE_MIP_GAP
+    PRIMAL_TOLERANCE = _pywraplp.MPSolverParameters_PRIMAL_TOLERANCE
+    DUAL_TOLERANCE = _pywraplp.MPSolverParameters_DUAL_TOLERANCE
+    PRESOLVE = _pywraplp.MPSolverParameters_PRESOLVE
+    LP_ALGORITHM = _pywraplp.MPSolverParameters_LP_ALGORITHM
+    INCREMENTALITY = _pywraplp.MPSolverParameters_INCREMENTALITY
+    SCALING = _pywraplp.MPSolverParameters_SCALING
+    PRESOLVE_OFF = _pywraplp.MPSolverParameters_PRESOLVE_OFF
+    PRESOLVE_ON = _pywraplp.MPSolverParameters_PRESOLVE_ON
+    DUAL = _pywraplp.MPSolverParameters_DUAL
+    PRIMAL = _pywraplp.MPSolverParameters_PRIMAL
+    BARRIER = _pywraplp.MPSolverParameters_BARRIER
+    INCREMENTALITY_OFF = _pywraplp.MPSolverParameters_INCREMENTALITY_OFF
+    INCREMENTALITY_ON = _pywraplp.MPSolverParameters_INCREMENTALITY_ON
+    SCALING_OFF = _pywraplp.MPSolverParameters_SCALING_OFF
+    SCALING_ON = _pywraplp.MPSolverParameters_SCALING_ON
+
+    def __init__(self):
+        _pywraplp.MPSolverParameters_swiginit(self, _pywraplp.new_MPSolverParameters())
+
+    def SetDoubleParam(self, param: &#39;operations_research::MPSolverParameters::DoubleParam&#39;, value: &#39;double&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.MPSolverParameters_SetDoubleParam(self, param, value)
+
+    def SetIntegerParam(self, param: &#39;operations_research::MPSolverParameters::IntegerParam&#39;, value: &#39;int&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.MPSolverParameters_SetIntegerParam(self, param, value)
+
+    def GetDoubleParam(self, param: &#39;operations_research::MPSolverParameters::DoubleParam&#39;) -&gt; &#34;double&#34;:
+        return _pywraplp.MPSolverParameters_GetDoubleParam(self, param)
+
+    def GetIntegerParam(self, param: &#39;operations_research::MPSolverParameters::IntegerParam&#39;) -&gt; &#34;int&#34;:
+        return _pywraplp.MPSolverParameters_GetIntegerParam(self, param)
+    __swig_destroy__ = _pywraplp.delete_MPSolverParameters</code></pre>
+</details>
+<h3>Class variables</h3>
+<dl>
+<dt id="pywraplp.MPSolverParameters.BARRIER"><code class="name">var <span class="ident">BARRIER</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.MPSolverParameters.DUAL"><code class="name">var <span class="ident">DUAL</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.MPSolverParameters.DUAL_TOLERANCE"><code class="name">var <span class="ident">DUAL_TOLERANCE</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.MPSolverParameters.INCREMENTALITY"><code class="name">var <span class="ident">INCREMENTALITY</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.MPSolverParameters.INCREMENTALITY_OFF"><code class="name">var <span class="ident">INCREMENTALITY_OFF</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.MPSolverParameters.INCREMENTALITY_ON"><code class="name">var <span class="ident">INCREMENTALITY_ON</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.MPSolverParameters.LP_ALGORITHM"><code class="name">var <span class="ident">LP_ALGORITHM</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.MPSolverParameters.PRESOLVE"><code class="name">var <span class="ident">PRESOLVE</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.MPSolverParameters.PRESOLVE_OFF"><code class="name">var <span class="ident">PRESOLVE_OFF</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.MPSolverParameters.PRESOLVE_ON"><code class="name">var <span class="ident">PRESOLVE_ON</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.MPSolverParameters.PRIMAL"><code class="name">var <span class="ident">PRIMAL</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.MPSolverParameters.PRIMAL_TOLERANCE"><code class="name">var <span class="ident">PRIMAL_TOLERANCE</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.MPSolverParameters.RELATIVE_MIP_GAP"><code class="name">var <span class="ident">RELATIVE_MIP_GAP</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.MPSolverParameters.SCALING"><code class="name">var <span class="ident">SCALING</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.MPSolverParameters.SCALING_OFF"><code class="name">var <span class="ident">SCALING_OFF</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.MPSolverParameters.SCALING_ON"><code class="name">var <span class="ident">SCALING_ON</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.MPSolverParameters.kDefaultDualTolerance"><code class="name">var <span class="ident">kDefaultDualTolerance</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.MPSolverParameters.kDefaultIncrementality"><code class="name">var <span class="ident">kDefaultIncrementality</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.MPSolverParameters.kDefaultPresolve"><code class="name">var <span class="ident">kDefaultPresolve</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.MPSolverParameters.kDefaultPrimalTolerance"><code class="name">var <span class="ident">kDefaultPrimalTolerance</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.MPSolverParameters.kDefaultRelativeMipGap"><code class="name">var <span class="ident">kDefaultRelativeMipGap</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+</dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="pywraplp.MPSolverParameters.thisown"><code class="name">var <span class="ident">thisown</span></code></dt>
+<dd>
+<section class="desc"><p>The membership flag</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="pywraplp.MPSolverParameters.GetDoubleParam"><code class="name flex">
+<span>def <span class="ident">GetDoubleParam</span></span>(<span>self, param)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def GetDoubleParam(self, param: &#39;operations_research::MPSolverParameters::DoubleParam&#39;) -&gt; &#34;double&#34;:
+    return _pywraplp.MPSolverParameters_GetDoubleParam(self, param)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.MPSolverParameters.GetIntegerParam"><code class="name flex">
+<span>def <span class="ident">GetIntegerParam</span></span>(<span>self, param)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def GetIntegerParam(self, param: &#39;operations_research::MPSolverParameters::IntegerParam&#39;) -&gt; &#34;int&#34;:
+    return _pywraplp.MPSolverParameters_GetIntegerParam(self, param)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.MPSolverParameters.SetDoubleParam"><code class="name flex">
+<span>def <span class="ident">SetDoubleParam</span></span>(<span>self, param, value)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def SetDoubleParam(self, param: &#39;operations_research::MPSolverParameters::DoubleParam&#39;, value: &#39;double&#39;) -&gt; &#34;void&#34;:
+    return _pywraplp.MPSolverParameters_SetDoubleParam(self, param, value)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.MPSolverParameters.SetIntegerParam"><code class="name flex">
+<span>def <span class="ident">SetIntegerParam</span></span>(<span>self, param, value)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def SetIntegerParam(self, param: &#39;operations_research::MPSolverParameters::IntegerParam&#39;, value: &#39;int&#39;) -&gt; &#34;void&#34;:
+    return _pywraplp.MPSolverParameters_SetIntegerParam(self, param, value)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="pywraplp.ModelExportOptions"><code class="flex name class">
+<span>class <span class="ident">ModelExportOptions</span></span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">class ModelExportOptions(object):
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
+    __repr__ = _swig_repr
+
+    def __init__(self):
+        _pywraplp.ModelExportOptions_swiginit(self, _pywraplp.new_ModelExportOptions())
+    __swig_destroy__ = _pywraplp.delete_ModelExportOptions</code></pre>
+</details>
+<h3>Instance variables</h3>
+<dl>
+<dt id="pywraplp.ModelExportOptions.thisown"><code class="name">var <span class="ident">thisown</span></code></dt>
+<dd>
+<section class="desc"><p>The membership flag</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="pywraplp.Objective"><code class="flex name class">
+<span>class <span class="ident">Objective</span></span>
+<span>(</span><span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">class Objective(object):
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
+
+    def __init__(self, *args, **kwargs):
+        raise AttributeError(&#34;No constructor defined&#34;)
+    __repr__ = _swig_repr
+
+    def Clear(self) -&gt; &#34;void&#34;:
+        return _pywraplp.Objective_Clear(self)
+
+    def SetCoefficient(self, var: &#39;Variable&#39;, coeff: &#39;double&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Objective_SetCoefficient(self, var, coeff)
+
+    def GetCoefficient(self, var: &#39;Variable&#39;) -&gt; &#34;double&#34;:
+        return _pywraplp.Objective_GetCoefficient(self, var)
+
+    def SetOffset(self, value: &#39;double&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Objective_SetOffset(self, value)
+
+    def offset(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Objective_offset(self)
+
+    def SetOptimizationDirection(self, maximize: &#39;bool&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Objective_SetOptimizationDirection(self, maximize)
+
+    def SetMinimization(self) -&gt; &#34;void&#34;:
+        return _pywraplp.Objective_SetMinimization(self)
+
+    def SetMaximization(self) -&gt; &#34;void&#34;:
+        return _pywraplp.Objective_SetMaximization(self)
+
+    def maximization(self) -&gt; &#34;bool&#34;:
+        return _pywraplp.Objective_maximization(self)
+
+    def minimization(self) -&gt; &#34;bool&#34;:
+        return _pywraplp.Objective_minimization(self)
+
+    def Value(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Objective_Value(self)
+
+    def BestBound(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Objective_BestBound(self)
+
+    def Offset(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Objective_Offset(self)
+    __swig_destroy__ = _pywraplp.delete_Objective</code></pre>
+</details>
+<h3>Instance variables</h3>
+<dl>
+<dt id="pywraplp.Objective.thisown"><code class="name">var <span class="ident">thisown</span></code></dt>
+<dd>
+<section class="desc"><p>The membership flag</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="pywraplp.Objective.BestBound"><code class="name flex">
+<span>def <span class="ident">BestBound</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def BestBound(self) -&gt; &#34;double&#34;:
+    return _pywraplp.Objective_BestBound(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Objective.Clear"><code class="name flex">
+<span>def <span class="ident">Clear</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def Clear(self) -&gt; &#34;void&#34;:
+    return _pywraplp.Objective_Clear(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Objective.GetCoefficient"><code class="name flex">
+<span>def <span class="ident">GetCoefficient</span></span>(<span>self, var)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def GetCoefficient(self, var: &#39;Variable&#39;) -&gt; &#34;double&#34;:
+    return _pywraplp.Objective_GetCoefficient(self, var)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Objective.Offset"><code class="name flex">
+<span>def <span class="ident">Offset</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def Offset(self) -&gt; &#34;double&#34;:
+    return _pywraplp.Objective_Offset(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Objective.SetCoefficient"><code class="name flex">
+<span>def <span class="ident">SetCoefficient</span></span>(<span>self, var, coeff)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def SetCoefficient(self, var: &#39;Variable&#39;, coeff: &#39;double&#39;) -&gt; &#34;void&#34;:
+    return _pywraplp.Objective_SetCoefficient(self, var, coeff)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Objective.SetMaximization"><code class="name flex">
+<span>def <span class="ident">SetMaximization</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def SetMaximization(self) -&gt; &#34;void&#34;:
+    return _pywraplp.Objective_SetMaximization(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Objective.SetMinimization"><code class="name flex">
+<span>def <span class="ident">SetMinimization</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def SetMinimization(self) -&gt; &#34;void&#34;:
+    return _pywraplp.Objective_SetMinimization(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Objective.SetOffset"><code class="name flex">
+<span>def <span class="ident">SetOffset</span></span>(<span>self, value)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def SetOffset(self, value: &#39;double&#39;) -&gt; &#34;void&#34;:
+    return _pywraplp.Objective_SetOffset(self, value)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Objective.SetOptimizationDirection"><code class="name flex">
+<span>def <span class="ident">SetOptimizationDirection</span></span>(<span>self, maximize)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def SetOptimizationDirection(self, maximize: &#39;bool&#39;) -&gt; &#34;void&#34;:
+    return _pywraplp.Objective_SetOptimizationDirection(self, maximize)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Objective.Value"><code class="name flex">
+<span>def <span class="ident">Value</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def Value(self) -&gt; &#34;double&#34;:
+    return _pywraplp.Objective_Value(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Objective.maximization"><code class="name flex">
+<span>def <span class="ident">maximization</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def maximization(self) -&gt; &#34;bool&#34;:
+    return _pywraplp.Objective_maximization(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Objective.minimization"><code class="name flex">
+<span>def <span class="ident">minimization</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def minimization(self) -&gt; &#34;bool&#34;:
+    return _pywraplp.Objective_minimization(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Objective.offset"><code class="name flex">
+<span>def <span class="ident">offset</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def offset(self) -&gt; &#34;double&#34;:
+    return _pywraplp.Objective_offset(self)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="pywraplp.Solver"><code class="flex name class">
+<span>class <span class="ident">Solver</span></span>
+<span>(</span><span>name, problem_type)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">class Solver(object):
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
+    __repr__ = _swig_repr
+    CLP_LINEAR_PROGRAMMING = _pywraplp.Solver_CLP_LINEAR_PROGRAMMING
+    GLOP_LINEAR_PROGRAMMING = _pywraplp.Solver_GLOP_LINEAR_PROGRAMMING
+    CBC_MIXED_INTEGER_PROGRAMMING = _pywraplp.Solver_CBC_MIXED_INTEGER_PROGRAMMING
+    BOP_INTEGER_PROGRAMMING = _pywraplp.Solver_BOP_INTEGER_PROGRAMMING
+
+    def __init__(self, name: &#39;std::string const &amp;&#39;, problem_type: &#39;operations_research::MPSolver::OptimizationProblemType&#39;):
+        _pywraplp.Solver_swiginit(self, _pywraplp.new_Solver(name, problem_type))
+    __swig_destroy__ = _pywraplp.delete_Solver
+
+    @staticmethod
+    def SupportsProblemType(problem_type: &#39;operations_research::MPSolver::OptimizationProblemType&#39;) -&gt; &#34;bool&#34;:
+        return _pywraplp.Solver_SupportsProblemType(problem_type)
+
+    def Clear(self) -&gt; &#34;void&#34;:
+        return _pywraplp.Solver_Clear(self)
+
+    def NumVariables(self) -&gt; &#34;int&#34;:
+        return _pywraplp.Solver_NumVariables(self)
+
+    def variables(self) -&gt; &#34;std::vector&lt; operations_research::MPVariable * &gt; const &amp;&#34;:
+        return _pywraplp.Solver_variables(self)
+
+    def LookupVariable(self, var_name: &#39;std::string const &amp;&#39;) -&gt; &#34;operations_research::MPVariable *&#34;:
+        return _pywraplp.Solver_LookupVariable(self, var_name)
+
+    def Var(self, lb: &#39;double&#39;, ub: &#39;double&#39;, integer: &#39;bool&#39;, name: &#39;std::string const &amp;&#39;) -&gt; &#34;operations_research::MPVariable *&#34;:
+        return _pywraplp.Solver_Var(self, lb, ub, integer, name)
+
+    def NumVar(self, lb: &#39;double&#39;, ub: &#39;double&#39;, name: &#39;std::string const &amp;&#39;) -&gt; &#34;operations_research::MPVariable *&#34;:
+        return _pywraplp.Solver_NumVar(self, lb, ub, name)
+
+    def IntVar(self, lb: &#39;double&#39;, ub: &#39;double&#39;, name: &#39;std::string const &amp;&#39;) -&gt; &#34;operations_research::MPVariable *&#34;:
+        return _pywraplp.Solver_IntVar(self, lb, ub, name)
+
+    def BoolVar(self, name: &#39;std::string const &amp;&#39;) -&gt; &#34;operations_research::MPVariable *&#34;:
+        return _pywraplp.Solver_BoolVar(self, name)
+
+    def NumConstraints(self) -&gt; &#34;int&#34;:
+        return _pywraplp.Solver_NumConstraints(self)
+
+    def constraints(self) -&gt; &#34;std::vector&lt; operations_research::MPConstraint * &gt; const &amp;&#34;:
+        return _pywraplp.Solver_constraints(self)
+
+    def LookupConstraint(self, constraint_name: &#39;std::string const &amp;&#39;) -&gt; &#34;operations_research::MPConstraint *&#34;:
+        return _pywraplp.Solver_LookupConstraint(self, constraint_name)
+
+    def Constraint(self, *args) -&gt; &#34;operations_research::MPConstraint *&#34;:
+        return _pywraplp.Solver_Constraint(self, *args)
+
+    def Objective(self) -&gt; &#34;operations_research::MPObjective *&#34;:
+        return _pywraplp.Solver_Objective(self)
+    OPTIMAL = _pywraplp.Solver_OPTIMAL
+    FEASIBLE = _pywraplp.Solver_FEASIBLE
+    INFEASIBLE = _pywraplp.Solver_INFEASIBLE
+    UNBOUNDED = _pywraplp.Solver_UNBOUNDED
+    ABNORMAL = _pywraplp.Solver_ABNORMAL
+    NOT_SOLVED = _pywraplp.Solver_NOT_SOLVED
+
+    def Solve(self, *args) -&gt; &#34;operations_research::MPSolver::ResultStatus&#34;:
+        return _pywraplp.Solver_Solve(self, *args)
+
+    def ComputeConstraintActivities(self) -&gt; &#34;std::vector&lt; double &gt;&#34;:
+        return _pywraplp.Solver_ComputeConstraintActivities(self)
+
+    def VerifySolution(self, tolerance: &#39;double&#39;, log_errors: &#39;bool&#39;) -&gt; &#34;bool&#34;:
+        return _pywraplp.Solver_VerifySolution(self, tolerance, log_errors)
+
+    def InterruptSolve(self) -&gt; &#34;bool&#34;:
+        return _pywraplp.Solver_InterruptSolve(self)
+
+    def FillSolutionResponseProto(self, response: &#39;operations_research::MPSolutionResponse *&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Solver_FillSolutionResponseProto(self, response)
+
+    @staticmethod
+    def SolveWithProto(model_request: &#39;operations_research::MPModelRequest const &amp;&#39;, response: &#39;operations_research::MPSolutionResponse *&#39;) -&gt; &#34;operations_research::MPSolutionResponse *&#34;:
+        return _pywraplp.Solver_SolveWithProto(model_request, response)
+
+    def ExportModelToProto(self, output_model: &#39;operations_research::MPModelProto *&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Solver_ExportModelToProto(self, output_model)
+
+    def LoadSolutionFromProto(self, *args) -&gt; &#34;util::Status&#34;:
+        return _pywraplp.Solver_LoadSolutionFromProto(self, *args)
+
+    def SetSolverSpecificParametersAsString(self, parameters: &#39;std::string const &amp;&#39;) -&gt; &#34;bool&#34;:
+        return _pywraplp.Solver_SetSolverSpecificParametersAsString(self, parameters)
+    FREE = _pywraplp.Solver_FREE
+    AT_LOWER_BOUND = _pywraplp.Solver_AT_LOWER_BOUND
+    AT_UPPER_BOUND = _pywraplp.Solver_AT_UPPER_BOUND
+    FIXED_VALUE = _pywraplp.Solver_FIXED_VALUE
+    BASIC = _pywraplp.Solver_BASIC
+
+    @staticmethod
+    def infinity() -&gt; &#34;double&#34;:
+        return _pywraplp.Solver_infinity()
+
+    def EnableOutput(self) -&gt; &#34;void&#34;:
+        return _pywraplp.Solver_EnableOutput(self)
+
+    def SuppressOutput(self) -&gt; &#34;void&#34;:
+        return _pywraplp.Solver_SuppressOutput(self)
+
+    def iterations(self) -&gt; &#34;int64&#34;:
+        return _pywraplp.Solver_iterations(self)
+
+    def nodes(self) -&gt; &#34;int64&#34;:
+        return _pywraplp.Solver_nodes(self)
+
+    def ComputeExactConditionNumber(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Solver_ComputeExactConditionNumber(self)
+
+    def NextSolution(self) -&gt; &#34;bool&#34;:
+        return _pywraplp.Solver_NextSolution(self)
+
+    def set_time_limit(self, time_limit_milliseconds: &#39;int64&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Solver_set_time_limit(self, time_limit_milliseconds)
+
+    def wall_time(self) -&gt; &#34;int64&#34;:
+        return _pywraplp.Solver_wall_time(self)
+
+    def LoadModelFromProto(self, input_model: &#39;operations_research::MPModelProto const &amp;&#39;) -&gt; &#34;std::string&#34;:
+        return _pywraplp.Solver_LoadModelFromProto(self, input_model)
+
+    def ExportModelAsLpFormat(self, *args) -&gt; &#34;std::string&#34;:
+        return _pywraplp.Solver_ExportModelAsLpFormat(self, *args)
+
+    def ExportModelAsMpsFormat(self, *args) -&gt; &#34;std::string&#34;:
+        return _pywraplp.Solver_ExportModelAsMpsFormat(self, *args)
+
+    def SetHint(self, variables: &#39;std::vector&lt; operations_research::MPVariable * &gt; const &amp;&#39;, values: &#39;std::vector&lt; double &gt; const &amp;&#39;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Set a hint for solution. If a feasible or almost-feasible solution to the problem is already known, it may be helpful to pass it to the solver so that it can be used. A solver that supports this feature will try to use this information to create its initial feasible solution. Note that it may not always be faster to give a hint like this to the solver. There is also no guarantee that the solver will use this hint or try to return a solution &#34;close&#34; to this assignment in case of multiple optimal solutions.&#34;&#34;&#34;
+        return _pywraplp.Solver_SetHint(self, variables, values)
+
+    def SetNumThreads(self, num_theads: &#39;int&#39;) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34; Sets the number of threads to be used by the solver.&#34;&#34;&#34;
+        return _pywraplp.Solver_SetNumThreads(self, num_theads)
+
+    def Add(self, constraint, name=&#39;&#39;):
+      if isinstance(constraint, bool):
+        if constraint:
+          return self.RowConstraint(0, 0, name)
+        else:
+          return self.RowConstraint(1, 1, name)
+      else:
+        return constraint.Extract(self, name)
+
+    def Sum(self, expr_array):
+      result = SumArray(expr_array)
+      return result
+
+    def RowConstraint(self, *args):
+      return self.Constraint(*args)
+
+    def Minimize(self, expr):
+      objective = self.Objective()
+      objective.Clear()
+      objective.SetMinimization()
+      if isinstance(expr, numbers.Number):
+          objective.SetOffset(expr)
+      else:
+          coeffs = expr.GetCoeffs()
+          objective.SetOffset(coeffs.pop(OFFSET_KEY, 0.0))
+          for v, c, in list(coeffs.items()):
+            objective.SetCoefficient(v, float(c))
+
+    def Maximize(self, expr):
+      objective = self.Objective()
+      objective.Clear()
+      objective.SetMaximization()
+      if isinstance(expr, numbers.Number):
+          objective.SetOffset(expr)
+      else:
+          coeffs = expr.GetCoeffs()
+          objective.SetOffset(coeffs.pop(OFFSET_KEY, 0.0))
+          for v, c, in list(coeffs.items()):
+            objective.SetCoefficient(v, float(c))
+
+
+    @staticmethod
+    def Infinity() -&gt; &#34;double&#34;:
+        return _pywraplp.Solver_Infinity()
+
+    def SetTimeLimit(self, x: &#39;int64&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Solver_SetTimeLimit(self, x)
+
+    def WallTime(self) -&gt; &#34;int64&#34;:
+        return _pywraplp.Solver_WallTime(self)
+
+    def Iterations(self) -&gt; &#34;int64&#34;:
+        return _pywraplp.Solver_Iterations(self)</code></pre>
+</details>
+<h3>Class variables</h3>
+<dl>
+<dt id="pywraplp.Solver.ABNORMAL"><code class="name">var <span class="ident">ABNORMAL</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.Solver.AT_LOWER_BOUND"><code class="name">var <span class="ident">AT_LOWER_BOUND</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.Solver.AT_UPPER_BOUND"><code class="name">var <span class="ident">AT_UPPER_BOUND</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.Solver.BASIC"><code class="name">var <span class="ident">BASIC</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.Solver.BOP_INTEGER_PROGRAMMING"><code class="name">var <span class="ident">BOP_INTEGER_PROGRAMMING</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING"><code class="name">var <span class="ident">CBC_MIXED_INTEGER_PROGRAMMING</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.Solver.CLP_LINEAR_PROGRAMMING"><code class="name">var <span class="ident">CLP_LINEAR_PROGRAMMING</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.Solver.FEASIBLE"><code class="name">var <span class="ident">FEASIBLE</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.Solver.FIXED_VALUE"><code class="name">var <span class="ident">FIXED_VALUE</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.Solver.FREE"><code class="name">var <span class="ident">FREE</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.Solver.GLOP_LINEAR_PROGRAMMING"><code class="name">var <span class="ident">GLOP_LINEAR_PROGRAMMING</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.Solver.INFEASIBLE"><code class="name">var <span class="ident">INFEASIBLE</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.Solver.NOT_SOLVED"><code class="name">var <span class="ident">NOT_SOLVED</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.Solver.OPTIMAL"><code class="name">var <span class="ident">OPTIMAL</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+<dt id="pywraplp.Solver.UNBOUNDED"><code class="name">var <span class="ident">UNBOUNDED</span></code></dt>
+<dd>
+<section class="desc"></section>
+</dd>
+</dl>
+<h3>Static methods</h3>
+<dl>
+<dt id="pywraplp.Solver.Infinity"><code class="name flex">
+<span>def <span class="ident">Infinity</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">@staticmethod
+def Infinity() -&gt; &#34;double&#34;:
+    return _pywraplp.Solver_Infinity()</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.SolveWithProto"><code class="name flex">
+<span>def <span class="ident">SolveWithProto</span></span>(<span>model_request, response)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">@staticmethod
+def SolveWithProto(model_request: &#39;operations_research::MPModelRequest const &amp;&#39;, response: &#39;operations_research::MPSolutionResponse *&#39;) -&gt; &#34;operations_research::MPSolutionResponse *&#34;:
+    return _pywraplp.Solver_SolveWithProto(model_request, response)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.SupportsProblemType"><code class="name flex">
+<span>def <span class="ident">SupportsProblemType</span></span>(<span>problem_type)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">@staticmethod
+def SupportsProblemType(problem_type: &#39;operations_research::MPSolver::OptimizationProblemType&#39;) -&gt; &#34;bool&#34;:
+    return _pywraplp.Solver_SupportsProblemType(problem_type)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.infinity"><code class="name flex">
+<span>def <span class="ident">infinity</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">@staticmethod
+def infinity() -&gt; &#34;double&#34;:
+    return _pywraplp.Solver_infinity()</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="pywraplp.Solver.thisown"><code class="name">var <span class="ident">thisown</span></code></dt>
+<dd>
+<section class="desc"><p>The membership flag</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="pywraplp.Solver.Add"><code class="name flex">
+<span>def <span class="ident">Add</span></span>(<span>self, constraint, name='')</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def Add(self, constraint, name=&#39;&#39;):
+  if isinstance(constraint, bool):
+    if constraint:
+      return self.RowConstraint(0, 0, name)
+    else:
+      return self.RowConstraint(1, 1, name)
+  else:
+    return constraint.Extract(self, name)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.BoolVar"><code class="name flex">
+<span>def <span class="ident">BoolVar</span></span>(<span>self, name)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def BoolVar(self, name: &#39;std::string const &amp;&#39;) -&gt; &#34;operations_research::MPVariable *&#34;:
+    return _pywraplp.Solver_BoolVar(self, name)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.Clear"><code class="name flex">
+<span>def <span class="ident">Clear</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def Clear(self) -&gt; &#34;void&#34;:
+    return _pywraplp.Solver_Clear(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.ComputeConstraintActivities"><code class="name flex">
+<span>def <span class="ident">ComputeConstraintActivities</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def ComputeConstraintActivities(self) -&gt; &#34;std::vector&lt; double &gt;&#34;:
+    return _pywraplp.Solver_ComputeConstraintActivities(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.ComputeExactConditionNumber"><code class="name flex">
+<span>def <span class="ident">ComputeExactConditionNumber</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def ComputeExactConditionNumber(self) -&gt; &#34;double&#34;:
+    return _pywraplp.Solver_ComputeExactConditionNumber(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.Constraint"><code class="name flex">
+<span>def <span class="ident">Constraint</span></span>(<span>self, *args)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def Constraint(self, *args) -&gt; &#34;operations_research::MPConstraint *&#34;:
+    return _pywraplp.Solver_Constraint(self, *args)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.EnableOutput"><code class="name flex">
+<span>def <span class="ident">EnableOutput</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def EnableOutput(self) -&gt; &#34;void&#34;:
+    return _pywraplp.Solver_EnableOutput(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.ExportModelAsLpFormat"><code class="name flex">
+<span>def <span class="ident">ExportModelAsLpFormat</span></span>(<span>self, *args)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def ExportModelAsLpFormat(self, *args) -&gt; &#34;std::string&#34;:
+    return _pywraplp.Solver_ExportModelAsLpFormat(self, *args)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.ExportModelAsMpsFormat"><code class="name flex">
+<span>def <span class="ident">ExportModelAsMpsFormat</span></span>(<span>self, *args)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def ExportModelAsMpsFormat(self, *args) -&gt; &#34;std::string&#34;:
+    return _pywraplp.Solver_ExportModelAsMpsFormat(self, *args)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.ExportModelToProto"><code class="name flex">
+<span>def <span class="ident">ExportModelToProto</span></span>(<span>self, output_model)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def ExportModelToProto(self, output_model: &#39;operations_research::MPModelProto *&#39;) -&gt; &#34;void&#34;:
+    return _pywraplp.Solver_ExportModelToProto(self, output_model)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.FillSolutionResponseProto"><code class="name flex">
+<span>def <span class="ident">FillSolutionResponseProto</span></span>(<span>self, response)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def FillSolutionResponseProto(self, response: &#39;operations_research::MPSolutionResponse *&#39;) -&gt; &#34;void&#34;:
+    return _pywraplp.Solver_FillSolutionResponseProto(self, response)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.IntVar"><code class="name flex">
+<span>def <span class="ident">IntVar</span></span>(<span>self, lb, ub, name)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def IntVar(self, lb: &#39;double&#39;, ub: &#39;double&#39;, name: &#39;std::string const &amp;&#39;) -&gt; &#34;operations_research::MPVariable *&#34;:
+    return _pywraplp.Solver_IntVar(self, lb, ub, name)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.InterruptSolve"><code class="name flex">
+<span>def <span class="ident">InterruptSolve</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def InterruptSolve(self) -&gt; &#34;bool&#34;:
+    return _pywraplp.Solver_InterruptSolve(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.Iterations"><code class="name flex">
+<span>def <span class="ident">Iterations</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def Iterations(self) -&gt; &#34;int64&#34;:
+    return _pywraplp.Solver_Iterations(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.LoadModelFromProto"><code class="name flex">
+<span>def <span class="ident">LoadModelFromProto</span></span>(<span>self, input_model)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def LoadModelFromProto(self, input_model: &#39;operations_research::MPModelProto const &amp;&#39;) -&gt; &#34;std::string&#34;:
+    return _pywraplp.Solver_LoadModelFromProto(self, input_model)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.LoadSolutionFromProto"><code class="name flex">
+<span>def <span class="ident">LoadSolutionFromProto</span></span>(<span>self, *args)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def LoadSolutionFromProto(self, *args) -&gt; &#34;util::Status&#34;:
+    return _pywraplp.Solver_LoadSolutionFromProto(self, *args)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.LookupConstraint"><code class="name flex">
+<span>def <span class="ident">LookupConstraint</span></span>(<span>self, constraint_name)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def LookupConstraint(self, constraint_name: &#39;std::string const &amp;&#39;) -&gt; &#34;operations_research::MPConstraint *&#34;:
+    return _pywraplp.Solver_LookupConstraint(self, constraint_name)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.LookupVariable"><code class="name flex">
+<span>def <span class="ident">LookupVariable</span></span>(<span>self, var_name)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def LookupVariable(self, var_name: &#39;std::string const &amp;&#39;) -&gt; &#34;operations_research::MPVariable *&#34;:
+    return _pywraplp.Solver_LookupVariable(self, var_name)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.Maximize"><code class="name flex">
+<span>def <span class="ident">Maximize</span></span>(<span>self, expr)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def Maximize(self, expr):
+  objective = self.Objective()
+  objective.Clear()
+  objective.SetMaximization()
+  if isinstance(expr, numbers.Number):
+      objective.SetOffset(expr)
+  else:
+      coeffs = expr.GetCoeffs()
+      objective.SetOffset(coeffs.pop(OFFSET_KEY, 0.0))
+      for v, c, in list(coeffs.items()):
+        objective.SetCoefficient(v, float(c))</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.Minimize"><code class="name flex">
+<span>def <span class="ident">Minimize</span></span>(<span>self, expr)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def Minimize(self, expr):
+  objective = self.Objective()
+  objective.Clear()
+  objective.SetMinimization()
+  if isinstance(expr, numbers.Number):
+      objective.SetOffset(expr)
+  else:
+      coeffs = expr.GetCoeffs()
+      objective.SetOffset(coeffs.pop(OFFSET_KEY, 0.0))
+      for v, c, in list(coeffs.items()):
+        objective.SetCoefficient(v, float(c))</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.NextSolution"><code class="name flex">
+<span>def <span class="ident">NextSolution</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def NextSolution(self) -&gt; &#34;bool&#34;:
+    return _pywraplp.Solver_NextSolution(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.NumConstraints"><code class="name flex">
+<span>def <span class="ident">NumConstraints</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def NumConstraints(self) -&gt; &#34;int&#34;:
+    return _pywraplp.Solver_NumConstraints(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.NumVar"><code class="name flex">
+<span>def <span class="ident">NumVar</span></span>(<span>self, lb, ub, name)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def NumVar(self, lb: &#39;double&#39;, ub: &#39;double&#39;, name: &#39;std::string const &amp;&#39;) -&gt; &#34;operations_research::MPVariable *&#34;:
+    return _pywraplp.Solver_NumVar(self, lb, ub, name)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.NumVariables"><code class="name flex">
+<span>def <span class="ident">NumVariables</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def NumVariables(self) -&gt; &#34;int&#34;:
+    return _pywraplp.Solver_NumVariables(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.Objective"><code class="name flex">
+<span>def <span class="ident">Objective</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def Objective(self) -&gt; &#34;operations_research::MPObjective *&#34;:
+    return _pywraplp.Solver_Objective(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.RowConstraint"><code class="name flex">
+<span>def <span class="ident">RowConstraint</span></span>(<span>self, *args)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def RowConstraint(self, *args):
+  return self.Constraint(*args)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.SetHint"><code class="name flex">
+<span>def <span class="ident">SetHint</span></span>(<span>self, variables, values)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Set a hint for solution. If a feasible or almost-feasible solution to the problem is already known, it may be helpful to pass it to the solver so that it can be used. A solver that supports this feature will try to use this information to create its initial feasible solution. Note that it may not always be faster to give a hint like this to the solver. There is also no guarantee that the solver will use this hint or try to return a solution "close" to this assignment in case of multiple optimal solutions.</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def SetHint(self, variables: &#39;std::vector&lt; operations_research::MPVariable * &gt; const &amp;&#39;, values: &#39;std::vector&lt; double &gt; const &amp;&#39;) -&gt; &#34;void&#34;:
+    r&#34;&#34;&#34; Set a hint for solution. If a feasible or almost-feasible solution to the problem is already known, it may be helpful to pass it to the solver so that it can be used. A solver that supports this feature will try to use this information to create its initial feasible solution. Note that it may not always be faster to give a hint like this to the solver. There is also no guarantee that the solver will use this hint or try to return a solution &#34;close&#34; to this assignment in case of multiple optimal solutions.&#34;&#34;&#34;
+    return _pywraplp.Solver_SetHint(self, variables, values)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.SetNumThreads"><code class="name flex">
+<span>def <span class="ident">SetNumThreads</span></span>(<span>self, num_theads)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Sets the number of threads to be used by the solver.</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def SetNumThreads(self, num_theads: &#39;int&#39;) -&gt; &#34;bool&#34;:
+    r&#34;&#34;&#34; Sets the number of threads to be used by the solver.&#34;&#34;&#34;
+    return _pywraplp.Solver_SetNumThreads(self, num_theads)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.SetSolverSpecificParametersAsString"><code class="name flex">
+<span>def <span class="ident">SetSolverSpecificParametersAsString</span></span>(<span>self, parameters)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def SetSolverSpecificParametersAsString(self, parameters: &#39;std::string const &amp;&#39;) -&gt; &#34;bool&#34;:
+    return _pywraplp.Solver_SetSolverSpecificParametersAsString(self, parameters)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.SetTimeLimit"><code class="name flex">
+<span>def <span class="ident">SetTimeLimit</span></span>(<span>self, x)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def SetTimeLimit(self, x: &#39;int64&#39;) -&gt; &#34;void&#34;:
+    return _pywraplp.Solver_SetTimeLimit(self, x)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.Solve"><code class="name flex">
+<span>def <span class="ident">Solve</span></span>(<span>self, *args)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def Solve(self, *args) -&gt; &#34;operations_research::MPSolver::ResultStatus&#34;:
+    return _pywraplp.Solver_Solve(self, *args)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.Sum"><code class="name flex">
+<span>def <span class="ident">Sum</span></span>(<span>self, expr_array)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def Sum(self, expr_array):
+  result = SumArray(expr_array)
+  return result</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.SuppressOutput"><code class="name flex">
+<span>def <span class="ident">SuppressOutput</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def SuppressOutput(self) -&gt; &#34;void&#34;:
+    return _pywraplp.Solver_SuppressOutput(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.Var"><code class="name flex">
+<span>def <span class="ident">Var</span></span>(<span>self, lb, ub, integer, name)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def Var(self, lb: &#39;double&#39;, ub: &#39;double&#39;, integer: &#39;bool&#39;, name: &#39;std::string const &amp;&#39;) -&gt; &#34;operations_research::MPVariable *&#34;:
+    return _pywraplp.Solver_Var(self, lb, ub, integer, name)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.VerifySolution"><code class="name flex">
+<span>def <span class="ident">VerifySolution</span></span>(<span>self, tolerance, log_errors)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def VerifySolution(self, tolerance: &#39;double&#39;, log_errors: &#39;bool&#39;) -&gt; &#34;bool&#34;:
+    return _pywraplp.Solver_VerifySolution(self, tolerance, log_errors)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.WallTime"><code class="name flex">
+<span>def <span class="ident">WallTime</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def WallTime(self) -&gt; &#34;int64&#34;:
+    return _pywraplp.Solver_WallTime(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.constraints"><code class="name flex">
+<span>def <span class="ident">constraints</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def constraints(self) -&gt; &#34;std::vector&lt; operations_research::MPConstraint * &gt; const &amp;&#34;:
+    return _pywraplp.Solver_constraints(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.iterations"><code class="name flex">
+<span>def <span class="ident">iterations</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def iterations(self) -&gt; &#34;int64&#34;:
+    return _pywraplp.Solver_iterations(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.nodes"><code class="name flex">
+<span>def <span class="ident">nodes</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def nodes(self) -&gt; &#34;int64&#34;:
+    return _pywraplp.Solver_nodes(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.set_time_limit"><code class="name flex">
+<span>def <span class="ident">set_time_limit</span></span>(<span>self, time_limit_milliseconds)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def set_time_limit(self, time_limit_milliseconds: &#39;int64&#39;) -&gt; &#34;void&#34;:
+    return _pywraplp.Solver_set_time_limit(self, time_limit_milliseconds)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.variables"><code class="name flex">
+<span>def <span class="ident">variables</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def variables(self) -&gt; &#34;std::vector&lt; operations_research::MPVariable * &gt; const &amp;&#34;:
+    return _pywraplp.Solver_variables(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Solver.wall_time"><code class="name flex">
+<span>def <span class="ident">wall_time</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def wall_time(self) -&gt; &#34;int64&#34;:
+    return _pywraplp.Solver_wall_time(self)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="pywraplp.Variable"><code class="flex name class">
+<span>class <span class="ident">Variable</span></span>
+<span>(</span><span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">class Variable(object):
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
+
+    def __init__(self, *args, **kwargs):
+        raise AttributeError(&#34;No constructor defined&#34;)
+
+    def name(self) -&gt; &#34;std::string const &amp;&#34;:
+        return _pywraplp.Variable_name(self)
+
+    def integer(self) -&gt; &#34;bool&#34;:
+        return _pywraplp.Variable_integer(self)
+
+    def solution_value(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Variable_solution_value(self)
+
+    def index(self) -&gt; &#34;int&#34;:
+        return _pywraplp.Variable_index(self)
+
+    def lb(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Variable_lb(self)
+
+    def ub(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Variable_ub(self)
+
+    def SetBounds(self, lb: &#39;double&#39;, ub: &#39;double&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Variable_SetBounds(self, lb, ub)
+
+    def reduced_cost(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Variable_reduced_cost(self)
+
+    def basis_status(self) -&gt; &#34;operations_research::MPSolver::BasisStatus&#34;:
+        return _pywraplp.Variable_basis_status(self)
+
+    def __str__(self) -&gt; &#34;std::string&#34;:
+        return _pywraplp.Variable___str__(self)
+
+    def __repr__(self) -&gt; &#34;std::string&#34;:
+        return _pywraplp.Variable___repr__(self)
+
+    def __getattr__(self, name):
+      return getattr(VariableExpr(self), name)
+
+
+    def SolutionValue(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Variable_SolutionValue(self)
+
+    def Integer(self) -&gt; &#34;bool&#34;:
+        return _pywraplp.Variable_Integer(self)
+
+    def Lb(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Variable_Lb(self)
+
+    def Ub(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Variable_Ub(self)
+
+    def SetLb(self, x: &#39;double&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Variable_SetLb(self, x)
+
+    def SetUb(self, x: &#39;double&#39;) -&gt; &#34;void&#34;:
+        return _pywraplp.Variable_SetUb(self, x)
+
+    def ReducedCost(self) -&gt; &#34;double&#34;:
+        return _pywraplp.Variable_ReducedCost(self)
+    __swig_destroy__ = _pywraplp.delete_Variable</code></pre>
+</details>
+<h3>Instance variables</h3>
+<dl>
+<dt id="pywraplp.Variable.thisown"><code class="name">var <span class="ident">thisown</span></code></dt>
+<dd>
+<section class="desc"><p>The membership flag</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="pywraplp.Variable.Integer"><code class="name flex">
+<span>def <span class="ident">Integer</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def Integer(self) -&gt; &#34;bool&#34;:
+    return _pywraplp.Variable_Integer(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Variable.Lb"><code class="name flex">
+<span>def <span class="ident">Lb</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def Lb(self) -&gt; &#34;double&#34;:
+    return _pywraplp.Variable_Lb(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Variable.ReducedCost"><code class="name flex">
+<span>def <span class="ident">ReducedCost</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def ReducedCost(self) -&gt; &#34;double&#34;:
+    return _pywraplp.Variable_ReducedCost(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Variable.SetBounds"><code class="name flex">
+<span>def <span class="ident">SetBounds</span></span>(<span>self, lb, ub)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def SetBounds(self, lb: &#39;double&#39;, ub: &#39;double&#39;) -&gt; &#34;void&#34;:
+    return _pywraplp.Variable_SetBounds(self, lb, ub)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Variable.SetLb"><code class="name flex">
+<span>def <span class="ident">SetLb</span></span>(<span>self, x)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def SetLb(self, x: &#39;double&#39;) -&gt; &#34;void&#34;:
+    return _pywraplp.Variable_SetLb(self, x)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Variable.SetUb"><code class="name flex">
+<span>def <span class="ident">SetUb</span></span>(<span>self, x)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def SetUb(self, x: &#39;double&#39;) -&gt; &#34;void&#34;:
+    return _pywraplp.Variable_SetUb(self, x)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Variable.SolutionValue"><code class="name flex">
+<span>def <span class="ident">SolutionValue</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def SolutionValue(self) -&gt; &#34;double&#34;:
+    return _pywraplp.Variable_SolutionValue(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Variable.Ub"><code class="name flex">
+<span>def <span class="ident">Ub</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def Ub(self) -&gt; &#34;double&#34;:
+    return _pywraplp.Variable_Ub(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Variable.basis_status"><code class="name flex">
+<span>def <span class="ident">basis_status</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def basis_status(self) -&gt; &#34;operations_research::MPSolver::BasisStatus&#34;:
+    return _pywraplp.Variable_basis_status(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Variable.index"><code class="name flex">
+<span>def <span class="ident">index</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def index(self) -&gt; &#34;int&#34;:
+    return _pywraplp.Variable_index(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Variable.integer"><code class="name flex">
+<span>def <span class="ident">integer</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def integer(self) -&gt; &#34;bool&#34;:
+    return _pywraplp.Variable_integer(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Variable.lb"><code class="name flex">
+<span>def <span class="ident">lb</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def lb(self) -&gt; &#34;double&#34;:
+    return _pywraplp.Variable_lb(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Variable.name"><code class="name flex">
+<span>def <span class="ident">name</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def name(self) -&gt; &#34;std::string const &amp;&#34;:
+    return _pywraplp.Variable_name(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Variable.reduced_cost"><code class="name flex">
+<span>def <span class="ident">reduced_cost</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def reduced_cost(self) -&gt; &#34;double&#34;:
+    return _pywraplp.Variable_reduced_cost(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Variable.solution_value"><code class="name flex">
+<span>def <span class="ident">solution_value</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def solution_value(self) -&gt; &#34;double&#34;:
+    return _pywraplp.Variable_solution_value(self)</code></pre>
+</details>
+</dd>
+<dt id="pywraplp.Variable.ub"><code class="name flex">
+<span>def <span class="ident">ub</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def ub(self) -&gt; &#34;double&#34;:
+    return _pywraplp.Variable_ub(self)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<header>
+<a class="homelink" rel="home" title="OR-Tools Home" href="https://google.github.io/or-tools/">
+<img src="https://developers.google.com/optimization/images/orLogo.png" alt=""> OR-Tools
+</a>
+</header>
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="pywraplp.ExportModelAsLpFormat" href="#pywraplp.ExportModelAsLpFormat">ExportModelAsLpFormat</a></code></li>
+<li><code><a title="pywraplp.ExportModelAsMpsFormat" href="#pywraplp.ExportModelAsMpsFormat">ExportModelAsMpsFormat</a></code></li>
+<li><code><a title="pywraplp.Solver_Infinity" href="#pywraplp.Solver_Infinity">Solver_Infinity</a></code></li>
+<li><code><a title="pywraplp.Solver_SolveWithProto" href="#pywraplp.Solver_SolveWithProto">Solver_SolveWithProto</a></code></li>
+<li><code><a title="pywraplp.Solver_SupportsProblemType" href="#pywraplp.Solver_SupportsProblemType">Solver_SupportsProblemType</a></code></li>
+<li><code><a title="pywraplp.Solver_infinity" href="#pywraplp.Solver_infinity">Solver_infinity</a></code></li>
+<li><code><a title="pywraplp.setup_variable_operator" href="#pywraplp.setup_variable_operator">setup_variable_operator</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="pywraplp.Constraint" href="#pywraplp.Constraint">Constraint</a></code></h4>
+<ul class="two-column">
+<li><code><a title="pywraplp.Constraint.DualValue" href="#pywraplp.Constraint.DualValue">DualValue</a></code></li>
+<li><code><a title="pywraplp.Constraint.GetCoefficient" href="#pywraplp.Constraint.GetCoefficient">GetCoefficient</a></code></li>
+<li><code><a title="pywraplp.Constraint.Lb" href="#pywraplp.Constraint.Lb">Lb</a></code></li>
+<li><code><a title="pywraplp.Constraint.SetBounds" href="#pywraplp.Constraint.SetBounds">SetBounds</a></code></li>
+<li><code><a title="pywraplp.Constraint.SetCoefficient" href="#pywraplp.Constraint.SetCoefficient">SetCoefficient</a></code></li>
+<li><code><a title="pywraplp.Constraint.SetLb" href="#pywraplp.Constraint.SetLb">SetLb</a></code></li>
+<li><code><a title="pywraplp.Constraint.SetUb" href="#pywraplp.Constraint.SetUb">SetUb</a></code></li>
+<li><code><a title="pywraplp.Constraint.Ub" href="#pywraplp.Constraint.Ub">Ub</a></code></li>
+<li><code><a title="pywraplp.Constraint.basis_status" href="#pywraplp.Constraint.basis_status">basis_status</a></code></li>
+<li><code><a title="pywraplp.Constraint.dual_value" href="#pywraplp.Constraint.dual_value">dual_value</a></code></li>
+<li><code><a title="pywraplp.Constraint.index" href="#pywraplp.Constraint.index">index</a></code></li>
+<li><code><a title="pywraplp.Constraint.lb" href="#pywraplp.Constraint.lb">lb</a></code></li>
+<li><code><a title="pywraplp.Constraint.name" href="#pywraplp.Constraint.name">name</a></code></li>
+<li><code><a title="pywraplp.Constraint.set_is_lazy" href="#pywraplp.Constraint.set_is_lazy">set_is_lazy</a></code></li>
+<li><code><a title="pywraplp.Constraint.thisown" href="#pywraplp.Constraint.thisown">thisown</a></code></li>
+<li><code><a title="pywraplp.Constraint.ub" href="#pywraplp.Constraint.ub">ub</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="pywraplp.MPSolverParameters" href="#pywraplp.MPSolverParameters">MPSolverParameters</a></code></h4>
+<ul class="">
+<li><code><a title="pywraplp.MPSolverParameters.BARRIER" href="#pywraplp.MPSolverParameters.BARRIER">BARRIER</a></code></li>
+<li><code><a title="pywraplp.MPSolverParameters.DUAL" href="#pywraplp.MPSolverParameters.DUAL">DUAL</a></code></li>
+<li><code><a title="pywraplp.MPSolverParameters.DUAL_TOLERANCE" href="#pywraplp.MPSolverParameters.DUAL_TOLERANCE">DUAL_TOLERANCE</a></code></li>
+<li><code><a title="pywraplp.MPSolverParameters.GetDoubleParam" href="#pywraplp.MPSolverParameters.GetDoubleParam">GetDoubleParam</a></code></li>
+<li><code><a title="pywraplp.MPSolverParameters.GetIntegerParam" href="#pywraplp.MPSolverParameters.GetIntegerParam">GetIntegerParam</a></code></li>
+<li><code><a title="pywraplp.MPSolverParameters.INCREMENTALITY" href="#pywraplp.MPSolverParameters.INCREMENTALITY">INCREMENTALITY</a></code></li>
+<li><code><a title="pywraplp.MPSolverParameters.INCREMENTALITY_OFF" href="#pywraplp.MPSolverParameters.INCREMENTALITY_OFF">INCREMENTALITY_OFF</a></code></li>
+<li><code><a title="pywraplp.MPSolverParameters.INCREMENTALITY_ON" href="#pywraplp.MPSolverParameters.INCREMENTALITY_ON">INCREMENTALITY_ON</a></code></li>
+<li><code><a title="pywraplp.MPSolverParameters.LP_ALGORITHM" href="#pywraplp.MPSolverParameters.LP_ALGORITHM">LP_ALGORITHM</a></code></li>
+<li><code><a title="pywraplp.MPSolverParameters.PRESOLVE" href="#pywraplp.MPSolverParameters.PRESOLVE">PRESOLVE</a></code></li>
+<li><code><a title="pywraplp.MPSolverParameters.PRESOLVE_OFF" href="#pywraplp.MPSolverParameters.PRESOLVE_OFF">PRESOLVE_OFF</a></code></li>
+<li><code><a title="pywraplp.MPSolverParameters.PRESOLVE_ON" href="#pywraplp.MPSolverParameters.PRESOLVE_ON">PRESOLVE_ON</a></code></li>
+<li><code><a title="pywraplp.MPSolverParameters.PRIMAL" href="#pywraplp.MPSolverParameters.PRIMAL">PRIMAL</a></code></li>
+<li><code><a title="pywraplp.MPSolverParameters.PRIMAL_TOLERANCE" href="#pywraplp.MPSolverParameters.PRIMAL_TOLERANCE">PRIMAL_TOLERANCE</a></code></li>
+<li><code><a title="pywraplp.MPSolverParameters.RELATIVE_MIP_GAP" href="#pywraplp.MPSolverParameters.RELATIVE_MIP_GAP">RELATIVE_MIP_GAP</a></code></li>
+<li><code><a title="pywraplp.MPSolverParameters.SCALING" href="#pywraplp.MPSolverParameters.SCALING">SCALING</a></code></li>
+<li><code><a title="pywraplp.MPSolverParameters.SCALING_OFF" href="#pywraplp.MPSolverParameters.SCALING_OFF">SCALING_OFF</a></code></li>
+<li><code><a title="pywraplp.MPSolverParameters.SCALING_ON" href="#pywraplp.MPSolverParameters.SCALING_ON">SCALING_ON</a></code></li>
+<li><code><a title="pywraplp.MPSolverParameters.SetDoubleParam" href="#pywraplp.MPSolverParameters.SetDoubleParam">SetDoubleParam</a></code></li>
+<li><code><a title="pywraplp.MPSolverParameters.SetIntegerParam" href="#pywraplp.MPSolverParameters.SetIntegerParam">SetIntegerParam</a></code></li>
+<li><code><a title="pywraplp.MPSolverParameters.kDefaultDualTolerance" href="#pywraplp.MPSolverParameters.kDefaultDualTolerance">kDefaultDualTolerance</a></code></li>
+<li><code><a title="pywraplp.MPSolverParameters.kDefaultIncrementality" href="#pywraplp.MPSolverParameters.kDefaultIncrementality">kDefaultIncrementality</a></code></li>
+<li><code><a title="pywraplp.MPSolverParameters.kDefaultPresolve" href="#pywraplp.MPSolverParameters.kDefaultPresolve">kDefaultPresolve</a></code></li>
+<li><code><a title="pywraplp.MPSolverParameters.kDefaultPrimalTolerance" href="#pywraplp.MPSolverParameters.kDefaultPrimalTolerance">kDefaultPrimalTolerance</a></code></li>
+<li><code><a title="pywraplp.MPSolverParameters.kDefaultRelativeMipGap" href="#pywraplp.MPSolverParameters.kDefaultRelativeMipGap">kDefaultRelativeMipGap</a></code></li>
+<li><code><a title="pywraplp.MPSolverParameters.thisown" href="#pywraplp.MPSolverParameters.thisown">thisown</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="pywraplp.ModelExportOptions" href="#pywraplp.ModelExportOptions">ModelExportOptions</a></code></h4>
+<ul class="">
+<li><code><a title="pywraplp.ModelExportOptions.thisown" href="#pywraplp.ModelExportOptions.thisown">thisown</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="pywraplp.Objective" href="#pywraplp.Objective">Objective</a></code></h4>
+<ul class="">
+<li><code><a title="pywraplp.Objective.BestBound" href="#pywraplp.Objective.BestBound">BestBound</a></code></li>
+<li><code><a title="pywraplp.Objective.Clear" href="#pywraplp.Objective.Clear">Clear</a></code></li>
+<li><code><a title="pywraplp.Objective.GetCoefficient" href="#pywraplp.Objective.GetCoefficient">GetCoefficient</a></code></li>
+<li><code><a title="pywraplp.Objective.Offset" href="#pywraplp.Objective.Offset">Offset</a></code></li>
+<li><code><a title="pywraplp.Objective.SetCoefficient" href="#pywraplp.Objective.SetCoefficient">SetCoefficient</a></code></li>
+<li><code><a title="pywraplp.Objective.SetMaximization" href="#pywraplp.Objective.SetMaximization">SetMaximization</a></code></li>
+<li><code><a title="pywraplp.Objective.SetMinimization" href="#pywraplp.Objective.SetMinimization">SetMinimization</a></code></li>
+<li><code><a title="pywraplp.Objective.SetOffset" href="#pywraplp.Objective.SetOffset">SetOffset</a></code></li>
+<li><code><a title="pywraplp.Objective.SetOptimizationDirection" href="#pywraplp.Objective.SetOptimizationDirection">SetOptimizationDirection</a></code></li>
+<li><code><a title="pywraplp.Objective.Value" href="#pywraplp.Objective.Value">Value</a></code></li>
+<li><code><a title="pywraplp.Objective.maximization" href="#pywraplp.Objective.maximization">maximization</a></code></li>
+<li><code><a title="pywraplp.Objective.minimization" href="#pywraplp.Objective.minimization">minimization</a></code></li>
+<li><code><a title="pywraplp.Objective.offset" href="#pywraplp.Objective.offset">offset</a></code></li>
+<li><code><a title="pywraplp.Objective.thisown" href="#pywraplp.Objective.thisown">thisown</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="pywraplp.Solver" href="#pywraplp.Solver">Solver</a></code></h4>
+<ul class="">
+<li><code><a title="pywraplp.Solver.ABNORMAL" href="#pywraplp.Solver.ABNORMAL">ABNORMAL</a></code></li>
+<li><code><a title="pywraplp.Solver.AT_LOWER_BOUND" href="#pywraplp.Solver.AT_LOWER_BOUND">AT_LOWER_BOUND</a></code></li>
+<li><code><a title="pywraplp.Solver.AT_UPPER_BOUND" href="#pywraplp.Solver.AT_UPPER_BOUND">AT_UPPER_BOUND</a></code></li>
+<li><code><a title="pywraplp.Solver.Add" href="#pywraplp.Solver.Add">Add</a></code></li>
+<li><code><a title="pywraplp.Solver.BASIC" href="#pywraplp.Solver.BASIC">BASIC</a></code></li>
+<li><code><a title="pywraplp.Solver.BOP_INTEGER_PROGRAMMING" href="#pywraplp.Solver.BOP_INTEGER_PROGRAMMING">BOP_INTEGER_PROGRAMMING</a></code></li>
+<li><code><a title="pywraplp.Solver.BoolVar" href="#pywraplp.Solver.BoolVar">BoolVar</a></code></li>
+<li><code><a title="pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING" href="#pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING">CBC_MIXED_INTEGER_PROGRAMMING</a></code></li>
+<li><code><a title="pywraplp.Solver.CLP_LINEAR_PROGRAMMING" href="#pywraplp.Solver.CLP_LINEAR_PROGRAMMING">CLP_LINEAR_PROGRAMMING</a></code></li>
+<li><code><a title="pywraplp.Solver.Clear" href="#pywraplp.Solver.Clear">Clear</a></code></li>
+<li><code><a title="pywraplp.Solver.ComputeConstraintActivities" href="#pywraplp.Solver.ComputeConstraintActivities">ComputeConstraintActivities</a></code></li>
+<li><code><a title="pywraplp.Solver.ComputeExactConditionNumber" href="#pywraplp.Solver.ComputeExactConditionNumber">ComputeExactConditionNumber</a></code></li>
+<li><code><a title="pywraplp.Solver.Constraint" href="#pywraplp.Solver.Constraint">Constraint</a></code></li>
+<li><code><a title="pywraplp.Solver.EnableOutput" href="#pywraplp.Solver.EnableOutput">EnableOutput</a></code></li>
+<li><code><a title="pywraplp.Solver.ExportModelAsLpFormat" href="#pywraplp.Solver.ExportModelAsLpFormat">ExportModelAsLpFormat</a></code></li>
+<li><code><a title="pywraplp.Solver.ExportModelAsMpsFormat" href="#pywraplp.Solver.ExportModelAsMpsFormat">ExportModelAsMpsFormat</a></code></li>
+<li><code><a title="pywraplp.Solver.ExportModelToProto" href="#pywraplp.Solver.ExportModelToProto">ExportModelToProto</a></code></li>
+<li><code><a title="pywraplp.Solver.FEASIBLE" href="#pywraplp.Solver.FEASIBLE">FEASIBLE</a></code></li>
+<li><code><a title="pywraplp.Solver.FIXED_VALUE" href="#pywraplp.Solver.FIXED_VALUE">FIXED_VALUE</a></code></li>
+<li><code><a title="pywraplp.Solver.FREE" href="#pywraplp.Solver.FREE">FREE</a></code></li>
+<li><code><a title="pywraplp.Solver.FillSolutionResponseProto" href="#pywraplp.Solver.FillSolutionResponseProto">FillSolutionResponseProto</a></code></li>
+<li><code><a title="pywraplp.Solver.GLOP_LINEAR_PROGRAMMING" href="#pywraplp.Solver.GLOP_LINEAR_PROGRAMMING">GLOP_LINEAR_PROGRAMMING</a></code></li>
+<li><code><a title="pywraplp.Solver.INFEASIBLE" href="#pywraplp.Solver.INFEASIBLE">INFEASIBLE</a></code></li>
+<li><code><a title="pywraplp.Solver.Infinity" href="#pywraplp.Solver.Infinity">Infinity</a></code></li>
+<li><code><a title="pywraplp.Solver.IntVar" href="#pywraplp.Solver.IntVar">IntVar</a></code></li>
+<li><code><a title="pywraplp.Solver.InterruptSolve" href="#pywraplp.Solver.InterruptSolve">InterruptSolve</a></code></li>
+<li><code><a title="pywraplp.Solver.Iterations" href="#pywraplp.Solver.Iterations">Iterations</a></code></li>
+<li><code><a title="pywraplp.Solver.LoadModelFromProto" href="#pywraplp.Solver.LoadModelFromProto">LoadModelFromProto</a></code></li>
+<li><code><a title="pywraplp.Solver.LoadSolutionFromProto" href="#pywraplp.Solver.LoadSolutionFromProto">LoadSolutionFromProto</a></code></li>
+<li><code><a title="pywraplp.Solver.LookupConstraint" href="#pywraplp.Solver.LookupConstraint">LookupConstraint</a></code></li>
+<li><code><a title="pywraplp.Solver.LookupVariable" href="#pywraplp.Solver.LookupVariable">LookupVariable</a></code></li>
+<li><code><a title="pywraplp.Solver.Maximize" href="#pywraplp.Solver.Maximize">Maximize</a></code></li>
+<li><code><a title="pywraplp.Solver.Minimize" href="#pywraplp.Solver.Minimize">Minimize</a></code></li>
+<li><code><a title="pywraplp.Solver.NOT_SOLVED" href="#pywraplp.Solver.NOT_SOLVED">NOT_SOLVED</a></code></li>
+<li><code><a title="pywraplp.Solver.NextSolution" href="#pywraplp.Solver.NextSolution">NextSolution</a></code></li>
+<li><code><a title="pywraplp.Solver.NumConstraints" href="#pywraplp.Solver.NumConstraints">NumConstraints</a></code></li>
+<li><code><a title="pywraplp.Solver.NumVar" href="#pywraplp.Solver.NumVar">NumVar</a></code></li>
+<li><code><a title="pywraplp.Solver.NumVariables" href="#pywraplp.Solver.NumVariables">NumVariables</a></code></li>
+<li><code><a title="pywraplp.Solver.OPTIMAL" href="#pywraplp.Solver.OPTIMAL">OPTIMAL</a></code></li>
+<li><code><a title="pywraplp.Solver.Objective" href="#pywraplp.Solver.Objective">Objective</a></code></li>
+<li><code><a title="pywraplp.Solver.RowConstraint" href="#pywraplp.Solver.RowConstraint">RowConstraint</a></code></li>
+<li><code><a title="pywraplp.Solver.SetHint" href="#pywraplp.Solver.SetHint">SetHint</a></code></li>
+<li><code><a title="pywraplp.Solver.SetNumThreads" href="#pywraplp.Solver.SetNumThreads">SetNumThreads</a></code></li>
+<li><code><a title="pywraplp.Solver.SetSolverSpecificParametersAsString" href="#pywraplp.Solver.SetSolverSpecificParametersAsString">SetSolverSpecificParametersAsString</a></code></li>
+<li><code><a title="pywraplp.Solver.SetTimeLimit" href="#pywraplp.Solver.SetTimeLimit">SetTimeLimit</a></code></li>
+<li><code><a title="pywraplp.Solver.Solve" href="#pywraplp.Solver.Solve">Solve</a></code></li>
+<li><code><a title="pywraplp.Solver.SolveWithProto" href="#pywraplp.Solver.SolveWithProto">SolveWithProto</a></code></li>
+<li><code><a title="pywraplp.Solver.Sum" href="#pywraplp.Solver.Sum">Sum</a></code></li>
+<li><code><a title="pywraplp.Solver.SupportsProblemType" href="#pywraplp.Solver.SupportsProblemType">SupportsProblemType</a></code></li>
+<li><code><a title="pywraplp.Solver.SuppressOutput" href="#pywraplp.Solver.SuppressOutput">SuppressOutput</a></code></li>
+<li><code><a title="pywraplp.Solver.UNBOUNDED" href="#pywraplp.Solver.UNBOUNDED">UNBOUNDED</a></code></li>
+<li><code><a title="pywraplp.Solver.Var" href="#pywraplp.Solver.Var">Var</a></code></li>
+<li><code><a title="pywraplp.Solver.VerifySolution" href="#pywraplp.Solver.VerifySolution">VerifySolution</a></code></li>
+<li><code><a title="pywraplp.Solver.WallTime" href="#pywraplp.Solver.WallTime">WallTime</a></code></li>
+<li><code><a title="pywraplp.Solver.constraints" href="#pywraplp.Solver.constraints">constraints</a></code></li>
+<li><code><a title="pywraplp.Solver.infinity" href="#pywraplp.Solver.infinity">infinity</a></code></li>
+<li><code><a title="pywraplp.Solver.iterations" href="#pywraplp.Solver.iterations">iterations</a></code></li>
+<li><code><a title="pywraplp.Solver.nodes" href="#pywraplp.Solver.nodes">nodes</a></code></li>
+<li><code><a title="pywraplp.Solver.set_time_limit" href="#pywraplp.Solver.set_time_limit">set_time_limit</a></code></li>
+<li><code><a title="pywraplp.Solver.thisown" href="#pywraplp.Solver.thisown">thisown</a></code></li>
+<li><code><a title="pywraplp.Solver.variables" href="#pywraplp.Solver.variables">variables</a></code></li>
+<li><code><a title="pywraplp.Solver.wall_time" href="#pywraplp.Solver.wall_time">wall_time</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="pywraplp.Variable" href="#pywraplp.Variable">Variable</a></code></h4>
+<ul class="two-column">
+<li><code><a title="pywraplp.Variable.Integer" href="#pywraplp.Variable.Integer">Integer</a></code></li>
+<li><code><a title="pywraplp.Variable.Lb" href="#pywraplp.Variable.Lb">Lb</a></code></li>
+<li><code><a title="pywraplp.Variable.ReducedCost" href="#pywraplp.Variable.ReducedCost">ReducedCost</a></code></li>
+<li><code><a title="pywraplp.Variable.SetBounds" href="#pywraplp.Variable.SetBounds">SetBounds</a></code></li>
+<li><code><a title="pywraplp.Variable.SetLb" href="#pywraplp.Variable.SetLb">SetLb</a></code></li>
+<li><code><a title="pywraplp.Variable.SetUb" href="#pywraplp.Variable.SetUb">SetUb</a></code></li>
+<li><code><a title="pywraplp.Variable.SolutionValue" href="#pywraplp.Variable.SolutionValue">SolutionValue</a></code></li>
+<li><code><a title="pywraplp.Variable.Ub" href="#pywraplp.Variable.Ub">Ub</a></code></li>
+<li><code><a title="pywraplp.Variable.basis_status" href="#pywraplp.Variable.basis_status">basis_status</a></code></li>
+<li><code><a title="pywraplp.Variable.index" href="#pywraplp.Variable.index">index</a></code></li>
+<li><code><a title="pywraplp.Variable.integer" href="#pywraplp.Variable.integer">integer</a></code></li>
+<li><code><a title="pywraplp.Variable.lb" href="#pywraplp.Variable.lb">lb</a></code></li>
+<li><code><a title="pywraplp.Variable.name" href="#pywraplp.Variable.name">name</a></code></li>
+<li><code><a title="pywraplp.Variable.reduced_cost" href="#pywraplp.Variable.reduced_cost">reduced_cost</a></code></li>
+<li><code><a title="pywraplp.Variable.solution_value" href="#pywraplp.Variable.solution_value">solution_value</a></code></li>
+<li><code><a title="pywraplp.Variable.thisown" href="#pywraplp.Variable.thisown">thisown</a></code></li>
+<li><code><a title="pywraplp.Variable.ub" href="#pywraplp.Variable.ub">ub</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p><span style="color:#ddd">&#21328;</span></p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.6.2</a>.</p>
+</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad()</script>
+</body>
+</html>

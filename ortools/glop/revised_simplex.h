@@ -446,11 +446,6 @@ class RevisedSimplex {
                                   Fractional* step_length,
                                   Fractional* target_bound);
 
-  // Updates the primal phase-I costs of the given basic variables. Such
-  // variable has a cost of +1/-1 if it is primal-infeasible and of 0 otherwise.
-  template <typename Rows>
-  void UpdatePrimalPhaseICosts(const Rows& rows);
-
   // Chooses the leaving variable for the primal phase-I algorithm. The
   // algorithm follows more or less what is described in Istvan Maros's book in
   // chapter 9.6 and what is done for the dual phase-I algorithm which was
@@ -584,15 +579,7 @@ class RevisedSimplex {
   // it's as fast as std::unique_ptr as long as the size is properly reserved
   // beforehand.
 
-  // Temporary view of the matrix given to Solve(). Note that it is an error
-  // to access this view once Solve() is finished since there is no guarantee
-  // that the stored pointers are still valid.
-  // TODO(user): The matrix view is identical to the matrix of the linear
-  // program after pre-processing. Investigate if we could get rid of it and use
-  // compact_matrix_ in all places.
-  MatrixView matrix_with_slack_;
-
-  // The compact version of matrix_with_slack_.
+  // Compact version of the matrix given to Solve().
   CompactSparseMatrix compact_matrix_;
 
   // The transpose of compact_matrix_, it may be empty if it is not needed.

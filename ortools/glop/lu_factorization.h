@@ -48,7 +48,8 @@ class LuFactorization {
   // it being confused by this revert to identity factorization behavior. The
   // reason behind it is that this way, calling any public function of this
   // class will never cause a crash of the program.
-  ABSL_MUST_USE_RESULT Status ComputeFactorization(const MatrixView& matrix);
+  ABSL_MUST_USE_RESULT Status
+  ComputeFactorization(const CompactSparseMatrixView& compact_matrix);
 
   // Returns the column permutation used by the LU factorization.
   const ColumnPermutation& GetColumnPermutation() const { return col_perm_; }
@@ -98,13 +99,13 @@ class LuFactorization {
   // then false is returned.
   bool LeftSolveLWithNonZeros(ScatteredRow* y,
                               ScatteredColumn* result_before_permutation) const;
+  void LeftSolveLWithNonZeros(ScatteredRow* y) const;
 
   // Specialized version of RightSolveLWithNonZeros() that takes a SparseColumn
   // or a ScatteredColumn as input. non_zeros will either be cleared or set to
   // the non zeros of the result. Important: the output x must be of the correct
   // size and all zero.
-  void RightSolveLForColumnView(const CompactSparseMatrix::ColumnView& b,
-                                ScatteredColumn* x) const;
+  void RightSolveLForColumnView(const ColumnView& b, ScatteredColumn* x) const;
   void RightSolveLForScatteredColumn(const ScatteredColumn& b,
                                      ScatteredColumn* x) const;
 
@@ -124,7 +125,7 @@ class LuFactorization {
   const SparseColumn& GetColumnOfU(ColIndex col) const;
 
   // Returns the norm of B^{-1}.a
-  Fractional RightSolveSquaredNorm(const SparseColumn& a) const;
+  Fractional RightSolveSquaredNorm(const ColumnView& a) const;
 
   // Returns the norm of (B^T)^{-1}.e_row where e is an unit vector.
   Fractional DualEdgeSquaredNorm(RowIndex row) const;
@@ -135,7 +136,7 @@ class LuFactorization {
   //
   // This returns the number of entries in lower + upper as the percentage of
   // the number of entries in B.
-  double GetFillInPercentage(const MatrixView& matrix) const;
+  double GetFillInPercentage(const CompactSparseMatrixView& matrix) const;
 
   // Returns the number of entries in L + U.
   // If the factorization is the identity, this returns 0.
@@ -173,8 +174,10 @@ class LuFactorization {
   // for ComputeFactorization().
   //
   // TODO(user): separate this from LuFactorization.
-  Fractional ComputeOneNormConditionNumber(const MatrixView& matrix) const;
-  Fractional ComputeInfinityNormConditionNumber(const MatrixView& matrix) const;
+  Fractional ComputeOneNormConditionNumber(
+      const CompactSparseMatrixView& matrix) const;
+  Fractional ComputeInfinityNormConditionNumber(
+      const CompactSparseMatrixView& matrix) const;
   Fractional ComputeInverseInfinityNormUpperBound() const;
 
   // Sets the current parameters.
@@ -226,7 +229,8 @@ class LuFactorization {
 
   // Computes R = P.B.Q^{-1} - L.U and returns false if the largest magnitude of
   // the coefficients of P.B.Q^{-1} - L.U is greater than tolerance.
-  bool CheckFactorization(const MatrixView& matrix, Fractional tolerance) const;
+  bool CheckFactorization(const CompactSparseMatrixView& matrix,
+                          Fractional tolerance) const;
 
   // Special case where we have nothing to do. This happens at the beginning
   // when we start the problem with an all-slack basis and gives a good speedup

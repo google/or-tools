@@ -35,6 +35,23 @@ public static class NestedArrayHelper
 
     return flat;
   }
+
+  public static T[] GetFlatArrayFromMatrix<T>(T[,] arr)
+  {
+    int flatLength = arr.GetLength(0) * arr.GetLength(1);
+
+    int idx = 0;
+    T[] flat = new T[flatLength];
+
+    for (int i = 0; i < arr.GetLength(0); i++)
+    {
+      for (int j = 0; j < arr.GetLength(1); j++)
+        flat[idx++] = arr[i, j];
+    }
+
+    return flat;
+  }
+
   public static int[] GetArraySecondSize<T>(T[][]arr)
   {
     var result = new int[arr.GetLength(0)];

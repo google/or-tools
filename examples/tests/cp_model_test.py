@@ -4,6 +4,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+
+import unittest
 from ortools.sat import cp_model_pb2
 from ortools.sat.python import cp_model
 from ortools.sat.python import cp_model_helper
@@ -23,31 +25,19 @@ class SolutionCounter(cp_model.CpSolverSolutionCallback):
         return self.__solution_count
 
 
-class CpModelTest(object):
-    def assertEqual(self, a, b):
-        if isinstance(a, cp_model.LinearExpression) and hasattr(
-                a.__class__, 'Index'):
-            if a.Index() != b.Index():
-                print('Error: ' + repr(a) + ' != ' + repr(b) + '|' +
-                      str(a.Index()) + " <-> " + str(b.Index()))
-        elif a != b:
-            print('Error: ' + str(a) + ' != ' + str(b))
-
-    def assertTrue(self, a, msg):
-        if not a:
-            print('Error:', msg)
+class CpModelTest(unittest.TestCase):
 
     def testDomainFromValues(self):
         print('testDomainFromValues')
         model = cp_model.CpModel()
-        d = model.DomainFromValues([0, 1, 2, -2, 5, 4])
-        self.assertEqual(d, [-2, -2, 0, 2, 4, 5])
+        d = cp_model.Domain.FromValues([0, 1, 2, -2, 5, 4])
+        self.assertEqual(d.FlattenedIntervals(), [-2, -2, 0, 2, 4, 5])
 
     def testDomainFromIntervals(self):
-        print('testDomainFromValues')
+        print('testDomainFromIntervals')
         model = cp_model.CpModel()
-        d = model.DomainFromIntervals([(0, 3), (5, 5), (-1, 1)])
-        self.assertEqual(d, [-1, 3, 5, 5])
+        d = cp_model.Domain.FromIntervals([(0, 3), (5, 5), (-1, 1)])
+        self.assertEqual(d.FlattenedIntervals(), [-1, 3, 5, 5])
 
     def testCreateIntegerVariable(self):
         print('testCreateIntegerVariable')
@@ -71,12 +61,19 @@ class CpModelTest(object):
         model = cp_model.CpModel()
         x = model.NewIntVar(-10, 10, 'x')
         y = model.NewIntVar(-10, 10, 'y')
-        model.AddLinearConstraint([(x, 1), (y, 2)], 0, 10)
+        model.AddLinearConstraint(x + 2 * y, 0, 10)
         model.Minimize(y)
         solver = cp_model.CpSolver()
         self.assertEqual(cp_model_pb2.OPTIMAL, solver.Solve(model))
         self.assertEqual(10, solver.Value(x))
         self.assertEqual(-5, solver.Value(y))
+
+    def testCstLeVar(self):
+        print('testCstLeVar')
+        model = cp_model.CpModel()
+        x = model.NewIntVar(-10, 10, 'x')
+        model.Add(3 <= x)
+        print(model.Proto())
 
     def testLinearNonEqual(self):
         print('testLinearNonEqual')
@@ -270,7 +267,7 @@ class CpModelTest(object):
         x = model.NewIntVar(-10, 10, 'x')
         y = model.NewIntVar(-10, 10, 'y')
         b = model.NewBoolVar('b')
-        model.AddLinearConstraint([(x, 1), (y, 2)], 0, 10).OnlyEnforceIf(
+        model.AddLinearConstraint(x + 2 * y, 0, 10).OnlyEnforceIf(
             b.Not())
         model.Minimize(y)
         self.assertEqual(1, len(model.Proto().constraints))
@@ -375,7 +372,8 @@ class CpModelTest(object):
             z = abs(x)
         except NotImplementedError as e:
             self.assertEqual(
-                'LinearExpression.__abs__, please use cp_model.AddAbsEquality',
+                'calling abs() on a linear expression is not supported, '
+                'please use CpModel.AddAbsEquality',
                 str(e))
             passed = True
         self.assertTrue(passed, 'abs() did not raise an error')
@@ -519,7 +517,7 @@ class CpModelTest(object):
             str(x != y),
             '(x + -y) in [-9223372036854775808..-1, 1..9223372036854775807]')
         self.assertEqual('0 <= x <= 10',
-                         str(cp_model.LinearInequality(x, [0, 10])))
+                         str(cp_model.BoundedLinearExpression(x, [0, 10])))
         print(str(model))
 
     def testRepr(self):
@@ -585,52 +583,35 @@ class CpModelTest(object):
         status2 = solver.Solve(model)
         self.assertEqual(status1, status2)
 
+    def testPresolveBoolean(self):
+        print('testPresolveBoolean')
+        model = cp_model.CpModel()
+
+        b = model.NewBoolVar('b')
+        x = model.NewIntVar(1, 10, 'x')
+        y = model.NewIntVar(1, 10, 'y')
+
+        # b implies x == y  via linear inequations
+        model.Add(x - y >= 9 * (b - 1))
+        model.Add(y - x >= 9 * (b - 1))
+
+        obj = 100 * b + x - 2 * y
+        model.Minimize(obj)
+
+        solver = cp_model.CpSolver()
+        status = solver.Solve(model)
+        self.assertEqual(solver.ObjectiveValue(), -19.0)
+
+    def testWindowsProtobufOverflow(self):
+        print('testWindowsProtobufOverflow')
+        model = cp_model.CpModel()
+
+        a = model.NewIntVar(0, 10, 'a')
+        b = model.NewIntVar(0, 10, 'b')
+
+        ct = model.Add(a+b >= 5)
+        self.assertEqual(ct.Proto().linear.domain[1], cp_model.INT_MAX)
+
 
 if __name__ == '__main__':
-    cp_model_test = CpModelTest()
-    cp_model_test.testDomainFromValues()
-    cp_model_test.testDomainFromIntervals()
-    cp_model_test.testCreateIntegerVariable()
-    cp_model_test.testNegation()
-    cp_model_test.testLinear()
-    cp_model_test.testLinearNonEqual()
-    cp_model_test.testEq()
-    cp_model_test.testGe()
-    cp_model_test.testGt()
-    cp_model_test.testLe()
-    cp_model_test.testLt()
-    cp_model_test.testEqVar()
-    cp_model_test.testGeVar()
-    cp_model_test.testGtVar()
-    cp_model_test.testLeVar()
-    cp_model_test.testLtVar()
-    cp_model_test.testSimplification1()
-    cp_model_test.testSimplification2()
-    cp_model_test.testSimplification3()
-    cp_model_test.testSimplification4()
-    cp_model_test.testLinearNonEqualWithConstant()
-    cp_model_test.testLinearWithEnforcement()
-    cp_model_test.testNaturalApiMinimize()
-    cp_model_test.testNaturalApiMaximize()
-    cp_model_test.testSum()
-    cp_model_test.testAllDifferent()
-    cp_model_test.testMaxEquality()
-    cp_model_test.testMinEquality()
-    cp_model_test.testMinEqualityWithConstant()
-    cp_model_test.testAbs()
-    cp_model_test.testDivision()
-    cp_model_test.testModulo()
-    cp_model_test.testProdEquality()
-    cp_model_test.testBoolOr()
-    cp_model_test.testBoolAnd()
-    cp_model_test.testBoolXOr()
-    cp_model_test.testAssertIsInt64()
-    cp_model_test.testCapInt64()
-    cp_model_test.testCapSub()
-    cp_model_test.testGetOrMakeIndexFromConstant()
-    cp_model_test.testStr()
-    cp_model_test.testRepr()
-    cp_model_test.testDisplayBounds()
-    cp_model_test.testIntegerExpressionErrors()
-    cp_model_test.testLinearizedBoolAndEqual()
-    cp_model_test.testSequentialSolve()
+    unittest.main()

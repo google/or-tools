@@ -16,7 +16,10 @@ import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
 import java.util.logging.Logger;
 
-/** Sample showing how to model using the constraint programming solver. */
+/**
+ * Sample showing how to model using the constraint programming solver.
+ *
+ */
 public class RabbitsPheasants {
   private static Logger logger = Logger.getLogger(RabbitsPheasants.class.getName());
 
@@ -25,8 +28,9 @@ public class RabbitsPheasants {
   }
 
   /**
-   * Solves the rabbits + pheasants problem. We are seing 20 heads and 56 legs. How many rabbits and
-   * how many pheasants are we thus seeing?
+   * Solves the rabbits + pheasants problem.  We are seing 20 heads
+   * and 56 legs. How many rabbits and how many pheasants are we thus
+   * seeing?
    */
   private static void solve(boolean traceSearch) {
     ConstraintSolverParameters parameters = ConstraintSolverParameters.newBuilder()

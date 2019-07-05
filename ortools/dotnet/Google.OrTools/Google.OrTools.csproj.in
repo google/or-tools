@@ -43,6 +43,7 @@
   <Target Name="ValidateRuntimeRef" BeforeTargets="Compile">
     <ItemGroup>
       <RefLinux Include="../Google.OrTools.runtime.linux-x64/bin/$(Configuration)/$(TargetFramework)/linux-x64/ref/*.dll" />
+      <RefCentosLinux Include="../Google.OrTools.runtime.linux-x64/bin/LINUX/$(Configuration)/$(TargetFramework)/linux-x64/ref/*.dll" />
       <RefOsx Include="../Google.OrTools.runtime.osx-x64/bin/$(Configuration)/$(TargetFramework)/osx-x64/ref/*.dll" />
       <RefWin Include="../Google.OrTools.runtime.win-x64/bin/x64/$(Configuration)/$(TargetFramework)/win-x64/ref/*.dll" />
     </ItemGroup>
@@ -54,6 +55,14 @@
       Importance="high"
       Text="RefAssembly from Google.OrTools.runtime.linux-x64: not found"
       Condition="!Exists('@(RefLinux)')" />
+    <Message
+      Importance="high"
+      Text="RefAssembly from Google.OrTools.runtime.linux-x64 (CentOs): found"
+      Condition="Exists('@(RefCentosLinux)')" />
+    <Message
+      Importance="high"
+      Text="RefAssembly from Google.OrTools.runtime.linux-x64 (CentOs): not found"
+      Condition="!Exists('@(RefCentosLinux)')" />
     <Message
       Importance="high"
       Text="RefAssembly from Google.OrTools.runtime.osx-x64: found"
@@ -72,17 +81,25 @@
       Condition="!Exists('@(RefWin)')" />
     <Error
       Text="You must locally 'dotnet build' at least one Google.OrTools.runtime.{rid} Project."
-      Condition="!Exists('@(RefLinux)') AND !Exists('@(RefOsx)') AND !Exists('@(RefWin)')" />
+      Condition="!Exists('@(RefLinux)') AND !Exists('@(RefOsx)') AND !Exists('@(RefWin)') AND !Exists('@(RefCentosLinux)')" />
   </Target>
 
   <!-- Need to copy one of the reference assembly generated -->
   <ItemGroup>
     <RefLinux Include="../Google.OrTools.runtime.linux-x64/bin/$(Configuration)/$(TargetFramework)/linux-x64/ref/*.dll" />
+    <RefCentosLinux Include="../Google.OrTools.runtime.linux-x64/bin/LINUX/$(Configuration)/$(TargetFramework)/linux-x64/ref/*.dll" />
     <RefOsx Include="../Google.OrTools.runtime.osx-x64/bin/$(Configuration)/$(TargetFramework)/osx-x64/ref/*.dll" />
     <RefWin Include="../Google.OrTools.runtime.win-x64/bin/x64/$(Configuration)/$(TargetFramework)/win-x64/ref/*.dll" />
     <Content
       Include="@(RefLinux)"
       Condition="Exists('@(RefLinux)')">
+      <PackagePath>ref/$(TargetFramework)/%(Filename)%(Extension)</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content
+      Include="@(RefCentosLinux)"
+      Condition="Exists('@(RefCentosLinux)')">
       <PackagePath>ref/$(TargetFramework)/%(Filename)%(Extension)</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -138,6 +155,55 @@
       Text="You must locally 'dotnet pack' at least one Google.OrTools.runtime.{rid} Project."
       Condition="!Exists('@(RuntimeLinux)') AND !Exists('@(RuntimeOsx)') AND !Exists('@(RuntimeWin)')" />
   </Target>
+
+  <!-- Copy all .proto file(s) -->
+  <ItemGroup>
+    <Content Include="../../algorithms/*.proto">
+      <PackagePath>content/algorithms</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="../../graph/*.proto">
+      <PackagePath>content/graph</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="../../linear_solver/*.proto">
+      <PackagePath>content/linear_solver</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="../../bop/*.proto">
+      <PackagePath>content/bop</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="../../glop/*.proto">
+      <PackagePath>content/glop</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="../../constraint_solver/*.proto">
+      <PackagePath>content/constraint_solver</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="../../sat/*.proto">
+      <PackagePath>content/sat</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="../../util/*.proto">
+      <PackagePath>content/util</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="../../data/*.proto">
+      <PackagePath>content/data</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
   <!-- Need to add some dependencies so Meta-Project will pull runtime Project(s) -->
   <PropertyGroup>

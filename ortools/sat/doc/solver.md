@@ -1,9 +1,35 @@
-| [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Reference manual](reference.md) |
-| ----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | -------------------------------- |
-
+| [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Reference manual](reference.md) |
+| ----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | -------------------------------- |
 
 # Solving a CP-SAT model
 
+
+<!--ts-->
+   * [Solving a CP-SAT model](#solving-a-cp-sat-model)
+      * [Changing the parameters of the solver](#changing-the-parameters-of-the-solver)
+         * [Specifying the time limit in Python](#specifying-the-time-limit-in-python)
+         * [Specifying the time limit in C  ](#specifying-the-time-limit-in-c)
+         * [Specifying the time limit in Java](#specifying-the-time-limit-in-java)
+         * [Specifying the time limit in C#.](#specifying-the-time-limit-in-c-1)
+      * [Printing intermediate solutions](#printing-intermediate-solutions)
+         * [Python code](#python-code)
+         * [C   code](#c-code)
+         * [Java code](#java-code)
+         * [C# code](#c-code-1)
+      * [Searching for all solutions in a satisfiability model](#searching-for-all-solutions-in-a-satisfiability-model)
+         * [Python code](#python-code-1)
+         * [C   code](#c-code-2)
+         * [Java code](#java-code-1)
+         * [C# code](#c-code-3)
+      * [Stopping search early](#stopping-search-early)
+         * [Python code](#python-code-2)
+         * [C   code](#c-code-4)
+         * [Java code](#java-code-2)
+         * [C# code](#c-code-5)
+
+<!-- Added by: lperron, at: Fri Jun  7 09:58:47 CEST 2019 -->
+
+<!--te-->
 
 
 ## Changing the parameters of the solver
@@ -81,7 +107,7 @@ void SolveWithTimeLimitSampleSat() {
   model.Add(NewSatParameters(parameters));
 
   // Solve.
-  const CpSolverResponse response = SolveWithModel(cp_model.Build(), &model);
+  const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
   LOG(INFO) << CpSolverResponseStats(response);
 
   if (response.status() == CpSolverStatus::FEASIBLE) {
@@ -281,7 +307,7 @@ void SolveAndPrintIntermediateSolutionsSampleSat() {
     num_solutions++;
   }));
 
-  const CpSolverResponse response = SolveWithModel(cp_model.Build(), &model);
+  const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
 
   LOG(INFO) << "Number of solutions found: " << num_solutions;
 }
@@ -303,6 +329,7 @@ import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.IntVar;
+import com.google.ortools.sat.LinearExpr;
 
 /** Solves an optimization problem and displays all intermediate solutions. */
 public class SolveAndPrintIntermediateSolutionsSampleSat {
@@ -347,7 +374,7 @@ public class SolveAndPrintIntermediateSolutionsSampleSat {
     model.addDifferent(x, y);
 
     // Maximize a linear combination of variables.
-    model.maximizeScalProd(new IntVar[] {x, y, z}, new int[] {1, 2, 3});
+    model.maximize(LinearExpr.scalProd(new IntVar[] {x, y, z}, new int[] {1, 2, 3}));
 
     // Create a solver and solve the model.
     CpSolver solver = new CpSolver();
@@ -533,7 +560,7 @@ void SearchAllSolutionsSampleSat() {
   SatParameters parameters;
   parameters.set_enumerate_all_solutions(true);
   model.Add(NewSatParameters(parameters));
-  const CpSolverResponse response = SolveWithModel(cp_model.Build(), &model);
+  const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
 
   LOG(INFO) << "Number of solutions found: " << num_solutions;
 }
@@ -787,7 +814,7 @@ void StopAfterNSolutionsSampleSat() {
       LOG(INFO) << "Stop search after " << kSolutionLimit << " solutions.";
     }
   }));
-  const CpSolverResponse response = SolveWithModel(cp_model.Build(), &model);
+  const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
   LOG(INFO) << "Number of solutions found: " << num_solutions;
   CHECK_EQ(num_solutions, kSolutionLimit);
 }

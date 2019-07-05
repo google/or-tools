@@ -134,6 +134,33 @@ Domain Domain::FromIntervals(absl::Span<const ClosedInterval> intervals) {
   return result;
 }
 
+Domain Domain::FromVectorIntervals(
+    const std::vector<std::vector<int64>>& intervals) {
+  Domain result;
+  for (const std::vector<int64>& interval : intervals) {
+    if (interval.size() == 1) {
+      result.intervals_.push_back({interval[0], interval[0]});
+    } else {
+      result.intervals_.push_back({interval[0], interval[1]});
+    }
+  }
+  std::sort(result.intervals_.begin(), result.intervals_.end());
+  UnionOfSortedIntervals(&result.intervals_);
+  return result;
+}
+
+Domain Domain::FromFlatIntervals(const std::vector<int64>& flat_intervals) {
+  Domain result;
+  const int new_size = flat_intervals.size() / 2;
+  for (int i = 0; i < new_size; ++i) {
+    result.intervals_.push_back(
+        {flat_intervals[2 * i], flat_intervals[2 * i + 1]});
+  }
+  std::sort(result.intervals_.begin(), result.intervals_.end());
+  UnionOfSortedIntervals(&result.intervals_);
+  return result;
+}
+
 bool Domain::IsEmpty() const { return intervals_.empty(); }
 
 int64 Domain::Size() const {
@@ -158,12 +185,15 @@ int64 Domain::Max() const {
   return intervals_.back().end;
 }
 
-// TODO(user): binary search if size is large?
 bool Domain::Contains(int64 value) const {
-  for (const ClosedInterval& interval : intervals_) {
-    if (interval.start <= value && interval.end >= value) return true;
-  }
-  return false;
+  // Because we only compare by start and there is no duplicate starts, this
+  // should be the next interval after the one that has a chance to contains
+  // value.
+  auto it = std::upper_bound(intervals_.begin(), intervals_.end(),
+                             ClosedInterval(value, value));
+  if (it == intervals_.begin()) return false;
+  --it;
+  return value <= it->end;
 }
 
 bool Domain::IsIncludedIn(const Domain& domain) const {
@@ -262,7 +292,10 @@ Domain Domain::AdditionWith(const Domain& domain) const {
     }
   }
 
-  std::sort(result.intervals_.begin(), result.intervals_.end());
+  // The copy is not needed if one of the list is of size 1.
+  if (a.size() > 1 && b.size() > 1) {
+    std::sort(result.intervals_.begin(), result.intervals_.end());
+  }
   UnionOfSortedIntervals(&result.intervals_);
   return result;
 }
@@ -311,6 +344,25 @@ Domain Domain::ContinuousMultiplicationBy(int64 coeff) const {
   return coeff > 0 ? result : result.Negation();
 }
 
+Domain Domain::ContinuousMultiplicationBy(const Domain& domain) const {
+  Domain result;
+  for (const ClosedInterval& i : this->intervals_) {
+    for (const ClosedInterval& j : domain.intervals_) {
+      ClosedInterval new_interval;
+      const int64 a = CapProd(i.start, j.start);
+      const int64 b = CapProd(i.end, j.end);
+      const int64 c = CapProd(i.start, j.end);
+      const int64 d = CapProd(i.end, j.start);
+      new_interval.start = std::min({a, b, c, d});
+      new_interval.end = std::max({a, b, c, d});
+      result.intervals_.push_back(new_interval);
+    }
+  }
+  std::sort(result.intervals_.begin(), result.intervals_.end());
+  UnionOfSortedIntervals(&result.intervals_);
+  return result;
+}
+
 Domain Domain::DivisionBy(int64 coeff) const {
   CHECK_NE(coeff, 0);
   Domain result = *this;
@@ -344,6 +396,29 @@ Domain Domain::InverseMultiplicationBy(const int64 coeff) const {
   result.intervals_.shrink_to_fit();
   DCHECK(IntervalsAreSortedAndNonAdjacent(result.intervals_));
   return coeff > 0 ? result : result.Negation();
+}
+
+// TODO(user): This could be computed more efficiently with a dedicated code
+// like for the intersection.
+Domain Domain::SimplifyUsingImpliedDomain(const Domain& implied_domain) const {
+  Domain result;
+  for (const ClosedInterval i : UnionWith(implied_domain.Complement())) {
+    const Domain d = implied_domain.IntersectionWith(Domain(i.start, i.end));
+    if (!d.IsEmpty()) {
+      result.intervals_.push_back({d.Min(), d.Max()});
+    }
+  }
+  DCHECK(IntervalsAreSortedAndNonAdjacent(result.intervals_));
+  return result;
+}
+
+std::vector<int64> Domain::FlattenedIntervals() const {
+  std::vector<int64> result;
+  for (const ClosedInterval& interval : intervals_) {
+    result.push_back(interval.start);
+    result.push_back(interval.end);
+  }
+  return result;
 }
 
 bool Domain::operator<(const Domain& other) const {

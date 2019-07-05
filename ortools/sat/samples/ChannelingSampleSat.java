@@ -16,6 +16,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
 import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.IntVar;
+import com.google.ortools.sat.LinearExpr;
 import com.google.ortools.sat.SatParameters;
 
 /** Link integer constraints together. */
@@ -41,7 +42,7 @@ public class ChannelingSampleSat {
 
     // Create our two half-reified constraints.
     // First, b implies (y == 10 - x).
-    model.addLinearSumEqual(new IntVar[] {x, y}, 10).onlyEnforceIf(b);
+    model.addEquality(LinearExpr.sum(new IntVar[] {x, y}), 10).onlyEnforceIf(b);
     // Second, not(b) implies y == 0.
     model.addEquality(y, 0).onlyEnforceIf(b.not());
 

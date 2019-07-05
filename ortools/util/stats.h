@@ -70,11 +70,14 @@
 
 #include <map>
 #include <string>
+
 #ifdef HAS_PERF_SUBSYSTEM
 #include "absl/strings/str_replace.h"
 #include "exegesis/exegesis/itineraries/perf_subsystem.h"
 #include "ortools/util/time_limit.h"
 #endif  // HAS_PERF_SUBSYSTEM
+
+#include "ortools/base/macros.h"
 #include "ortools/base/timer.h"
 
 namespace operations_research {

@@ -253,6 +253,8 @@ void AddLocalSearchNeighborhoodOperatorsFromFlags(
 void SetSearchLimitsFromFlags(RoutingSearchParameters* parameters) {
   CHECK(parameters != nullptr);
   parameters->set_use_depth_first_search(FLAGS_routing_dfs);
+  parameters->set_use_cp(BOOL_TRUE);
+  parameters->set_use_cp_sat(BOOL_FALSE);
   parameters->set_optimization_step(FLAGS_routing_optimization_step);
   parameters->set_number_of_solutions_to_collect(
       FLAGS_routing_number_of_solutions_to_collect);
