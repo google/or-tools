@@ -3582,10 +3582,13 @@ void CpModelPresolver::MergeNoOverlapConstraints() {
 
   // We reuse the max-clique code from sat.
   Model local_model;
+  local_model.GetOrCreate<Trail>()->Resize(num_constraints);
   auto* graph = local_model.GetOrCreate<BinaryImplicationGraph>();
   graph->Resize(num_constraints);
   for (const std::vector<Literal>& clique : cliques) {
-    graph->AddAtMostOne(clique);
+    // All variables at false is always a valid solution of the local model,
+    // so this should never return UNSAT.
+    CHECK(graph->AddAtMostOne(clique));
   }
   CHECK(graph->DetectEquivalences());
   graph->TransformIntoMaxCliques(&cliques, /*max_num_explored_nodes=*/1e10);
@@ -3655,11 +3658,14 @@ void CpModelPresolver::TransformIntoMaxCliques() {
 
   // We reuse the max-clique code from sat.
   Model local_model;
-  auto* graph = local_model.GetOrCreate<BinaryImplicationGraph>();
   const int num_variables = context_.working_model->variables().size();
+  local_model.GetOrCreate<Trail>()->Resize(num_variables);
+  auto* graph = local_model.GetOrCreate<BinaryImplicationGraph>();
   graph->Resize(num_variables);
   for (const std::vector<Literal>& clique : cliques) {
-    if (clique.size() <= 100) graph->AddAtMostOne(clique);
+    if (!graph->AddAtMostOne(clique)) {
+      return (void)context_.NotifyThatModelIsUnsat();
+    }
   }
   if (!graph->DetectEquivalences()) {
     return (void)context_.NotifyThatModelIsUnsat();
