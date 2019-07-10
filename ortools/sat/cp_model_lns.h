@@ -23,6 +23,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/util/adaptative_parameter_value.h"
 
 namespace operations_research {
 namespace sat {
