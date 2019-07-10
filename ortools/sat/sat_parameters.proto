@@ -707,7 +707,7 @@ message SatParameters {
   optional bool lns_focus_on_decision_variables = 105 [default = false];
 
   // Turns on relaxation induced neighborhood generator.
-  optional bool use_rins_lns = 129 [default = false];
+  optional bool use_rins_lns = 129 [default = true];
 
   // Randomize fixed search.
   optional bool randomize_search = 103 [default = false];
