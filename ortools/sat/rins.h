@@ -69,6 +69,11 @@ class SharedRINSNeighborhoodManager {
   // true for success.
   bool AddNeighborhood(const RINSNeighborhood& neighborhood);
 
+  bool HasUnexploredNeighborhood() {
+    absl::MutexLock lock(&mutex_);
+    return !neighborhoods_.empty();
+  }
+
   // Returns an unexplored RINS neighborhood if any, otherwise returns nullopt.
   // TODO(user): This also deletes the returned neighborhood. Consider having
   // a different method/logic instead for deletion.

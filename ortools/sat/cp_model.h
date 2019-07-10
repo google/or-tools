@@ -104,8 +104,8 @@ class BoolVar {
 
   BoolVar(int index, CpModelProto* cp_model);
 
-  CpModelProto* cp_model_;
-  int index_;
+  CpModelProto* cp_model_ = nullptr;
+  int index_ = kint32min;
 };
 
 std::ostream& operator<<(std::ostream& os, const BoolVar& var);
@@ -169,8 +169,8 @@ class IntVar {
 
   IntVar(int index, CpModelProto* cp_model);
 
-  CpModelProto* cp_model_;
-  int index_;
+  CpModelProto* cp_model_ = nullptr;
+  int index_ = kint32min;
 };
 
 std::ostream& operator<<(std::ostream& os, const IntVar& var);
@@ -326,8 +326,8 @@ class IntervalVar {
 
   IntervalVar(int index, CpModelProto* cp_model);
 
-  CpModelProto* cp_model_;
-  int index_;
+  CpModelProto* cp_model_ = nullptr;
+  int index_ = kint32min;
 };
 
 std::ostream& operator<<(std::ostream& os, const IntervalVar& var);
@@ -374,7 +374,7 @@ class Constraint {
 
   explicit Constraint(ConstraintProto* proto);
 
-  ConstraintProto* proto_;
+  ConstraintProto* proto_ = nullptr;
 };
 
 // Specialized circuit constraint.
