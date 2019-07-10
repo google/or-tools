@@ -1101,8 +1101,14 @@ Status RevisedSimplex::InitializeFirstBasis(const RowToColMapping& basis) {
   // that if we want to do that, we need to reset variables_info_ to a
   // consistent state.
   variable_values_.RecomputeBasicVariableValues();
-  const Fractional tolerance = parameters_.primal_feasibility_tolerance();
-  DCHECK_LE(variable_values_.ComputeMaximumPrimalResidual(), tolerance);
+  if (VLOG_IS_ON(1)) {
+    const Fractional tolerance = parameters_.primal_feasibility_tolerance();
+    if (variable_values_.ComputeMaximumPrimalResidual() > tolerance) {
+      VLOG(1) << absl::StrCat(
+          "The primal residual of the initial basis is above the tolerance, ",
+          variable_values_.ComputeMaximumPrimalResidual(), " vs. ", tolerance);
+    }
+  }
   return Status::OK();
 }
 
