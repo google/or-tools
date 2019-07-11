@@ -2598,6 +2598,11 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
     context_.UpdateRuleStats("cumulative: removed intervals with no demands");
   }
 
+  if (new_size == 0) {
+    context_.UpdateRuleStats("cumulative: removed empty constraint");
+    return RemoveConstraint(ct);
+  }
+
   if (HasEnforcementLiteral(*ct)) return changed;
   if (!context_.IsFixed(proto.capacity())) return changed;
   const int64 capacity = context_.MinOf(proto.capacity());
