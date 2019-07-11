@@ -17,6 +17,7 @@
 #include <cmath>
 
 #include "ortools/sat/integer.h"
+#include "ortools/sat/linear_constraint.h"
 
 namespace operations_research {
 namespace sat {
@@ -131,12 +132,38 @@ LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
   constraint_l2_norms_.push_back(ComputeL2Norm(ct));
   constraint_is_in_lp_.push_back(false);
   constraint_is_cut_.push_back(false);
+  constraint_objective_parallelism_computed_.push_back(false);
+  constraint_objective_parallelisms_.push_back(0.0);
   constraint_inactive_count_.push_back(0);
   constraint_permanently_removed_.push_back(false);
   equiv_constraints_[key] = ct_index;
   constraint_hashes_.push_back(key);
   constraints_.push_back(std::move(ct));
   return ct_index;
+}
+
+void LinearConstraintManager::ComputeObjectiveParallelism(
+    const ConstraintIndex ct_index) {
+  CHECK(objective_is_defined_);
+  // lazy computation of objective norm.
+  if (!objective_norm_computed_) {
+    DivideByGCD(&objective_);
+    CanonicalizeConstraint(&objective_);
+    objective_l2_norm_ = ComputeL2Norm(objective_);
+    objective_norm_computed_ = true;
+  }
+  CHECK_GT(objective_l2_norm_, 0.0);
+
+  constraint_objective_parallelism_computed_[ct_index] = true;
+  if (constraint_l2_norms_[ct_index] == 0.0) {
+    constraint_objective_parallelisms_[ct_index] = 0.0;
+    return;
+  }
+  const double objective_parallelism =
+      ScalarProduct(constraints_[ct_index], objective_) /
+      (constraint_l2_norms_[ct_index] * objective_l2_norm_);
+  constraint_objective_parallelisms_[ct_index] =
+      std::abs(objective_parallelism);
 }
 
 // Same as Add(), but logs some information about the newly added constraint.
@@ -167,6 +194,13 @@ void LinearConstraintManager::AddCut(
     type_to_num_cuts_[type_name]++;
     constraint_is_cut_[ct_index] = true;
   }
+}
+
+void LinearConstraintManager::SetObjectiveCoefficient(IntegerVariable var,
+                                                      IntegerValue coeff) {
+  if (coeff == IntegerValue(0)) return;
+  objective_is_defined_ = true;
+  objective_.AddTerm(var, coeff);
 }
 
 bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
@@ -238,7 +272,7 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
   // TODO(user): Split constraint in two if it is boxed and there is possible
   // reduction?
   //
-  // TODO(user): Make sure there cannot be any overflow. They should't, but
+  // TODO(user): Make sure there cannot be any overflow. They shouldn't, but
   // I am not sure all the generated cuts are safe regarding min/max sum
   // computation. We should check this.
   if (ct->ub != kMaxIntegerValue && max_magnitude > max_sum - ct->ub) {
@@ -387,10 +421,17 @@ bool LinearConstraintManager::ChangeLp(
         VLOG(2) << "Constraint permanently removed: " << new_constraint;
         continue;
       }
+
+      if (objective_is_defined_ &&
+          !constraint_objective_parallelism_computed_[new_constraint]) {
+        ComputeObjectiveParallelism(new_constraint);
+      }
+
       // TODO(user): Experiment with different weights or different
       // functions for computing score.
-      const double score =
-          new_constraints_orthogonalities[j] + new_constraints_efficacies[j];
+      const double score = new_constraints_orthogonalities[j] +
+                           new_constraints_efficacies[j] +
+                           constraint_objective_parallelisms_[new_constraint];
       CHECK_GE(score, 0.0);
       if (score > best_score || best_candidate == kInvalidConstraintIndex) {
         best_score = score;

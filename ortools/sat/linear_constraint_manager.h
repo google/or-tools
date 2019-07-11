@@ -55,6 +55,10 @@ class LinearConstraintManager {
   void AddCut(LinearConstraint ct, std::string type_name,
               const gtl::ITIVector<IntegerVariable, double>& lp_solution);
 
+  // The objective is used as one of the criterion to score cuts.
+  // The more a cut is parallel to the objective, the better its score is.
+  void SetObjectiveCoefficient(IntegerVariable var, IntegerValue coeff);
+
   // Heuristic to decides what LP is best solved next. The given lp_solution
   // should usually be the optimal solution of the LP returned by GetLp() before
   // this call, but is just used as an heuristic.
@@ -93,6 +97,10 @@ class LinearConstraintManager {
   // Returns true if the terms of the constraint changed.
   bool SimplifyConstraint(LinearConstraint* ct);
 
+  // Helper method to compute objective parallelism for a given constraint. This
+  // also lazily computes objective norm.
+  void ComputeObjectiveParallelism(const ConstraintIndex ct_index);
+
   const SatParameters& sat_parameters_;
   const IntegerTrail& integer_trail_;
 
@@ -108,6 +116,9 @@ class LinearConstraintManager {
   gtl::ITIVector<ConstraintIndex, double> constraint_l2_norms_;
   gtl::ITIVector<ConstraintIndex, bool> constraint_is_cut_;
   gtl::ITIVector<ConstraintIndex, int64> constraint_inactive_count_;
+  gtl::ITIVector<ConstraintIndex, double> constraint_objective_parallelisms_;
+  gtl::ITIVector<ConstraintIndex, bool>
+      constraint_objective_parallelism_computed_;
 
   // Temporary list of constraints marked for removal. Note that we remove
   // constraints in batch to avoid changing LP too frequently.
@@ -137,6 +148,11 @@ class LinearConstraintManager {
 
   int64 num_cuts_ = 0;
   std::map<std::string, int> type_to_num_cuts_;
+
+  bool objective_is_defined_ = false;
+  bool objective_norm_computed_ = false;
+  LinearConstraint objective_;
+  double objective_l2_norm_ = 0.0;
 };
 
 }  // namespace sat

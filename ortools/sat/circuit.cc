@@ -97,6 +97,12 @@ void CircuitPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   watcher->RegisterReversibleClass(id, this);
   watcher->RegisterReversibleInt(id, &propagation_trail_index_);
   watcher->RegisterReversibleInt(id, &rev_must_be_in_cycle_size_);
+
+  // This is needed in case a Literal is used for more than one arc, we may
+  // propagate it to false/true here, and it might trigger more propagation.
+  //
+  // TODO(user): come up with a test that fail when this is not here.
+  watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
 
 void CircuitPropagator::SetLevel(int level) {
