@@ -31,7 +31,6 @@
     <ul class="tablist">
       <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
       <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="inherits.html"><span>Class&#160;Hierarchy</span></a></li>
       <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
     </ul>
   </div>
@@ -48,30 +47,10 @@
 <div class="title">com.google.ortools.sat.SatParametersOrBuilder Interface Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
 <p class="definition">Definition at line <a class="el" href="SatParametersOrBuilder_8java_source.html#l00006">6</a> of file <a class="el" href="SatParametersOrBuilder_8java_source.html">SatParametersOrBuilder.java</a>.</p>
-</div><div class="dynheader">
-Inheritance diagram for com.google.ortools.sat.SatParametersOrBuilder:</div>
-<div class="dyncontent">
-<div class="center"><img src="interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder__inherit__graph.png" border="0" usemap="#com_8google_8ortools_8sat_8SatParametersOrBuilder_inherit__map" alt="Inheritance graph"/></div>
-<map name="com_8google_8ortools_8sat_8SatParametersOrBuilder_inherit__map" id="com_8google_8ortools_8sat_8SatParametersOrBuilder_inherit__map">
-<area shape="rect"  title=" " alt="" coords="107,80,285,121"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html" title=" " alt="" coords="5,169,184,211"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html" title=" " alt="" coords="208,169,387,211"/>
-<area shape="rect"  title=" " alt="" coords="131,5,261,32"/>
-</map>
-<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
-<div class="dynheader">
-Collaboration diagram for com.google.ortools.sat.SatParametersOrBuilder:</div>
-<div class="dyncontent">
-<div class="center"><img src="interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder__coll__graph.png" border="0" usemap="#com_8google_8ortools_8sat_8SatParametersOrBuilder_coll__map" alt="Collaboration graph"/></div>
-<map name="com_8google_8ortools_8sat_8SatParametersOrBuilder_coll__map" id="com_8google_8ortools_8sat_8SatParametersOrBuilder_coll__map">
-<area shape="rect"  title=" " alt="" coords="5,80,184,121"/>
-<area shape="rect"  title=" " alt="" coords="30,5,159,32"/>
-</map>
-<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
-<table class="memberdecls">
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a12ae5981c31d80b253a224014a59426b"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html#a12ae5981c31d80b253a224014a59426b">hasPreferredVariableOrder</a> ()</td></tr>
@@ -1760,9 +1739,11 @@ client.
       </table>
 </div><div class="memdoc">
 <pre>
-For now, we don't have any manager for the LP cuts, so we just add any
-generated cuts until this limit is reached.
-</pre><p><code>optional int32 max_num_cuts = 91 [default = 1000];</code> </p>
+The limit on the number of cuts in our cut pool. When this is reached we do
+not generate cuts anymore.
+TODO(user): We should probably remove this parameters, and just always
+generate cuts but only keep the best n or something.
+</pre><p><code>optional int32 max_num_cuts = 91 [default = 5000];</code> </p>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#adfe153fab09186908eb04c07220a7203">com.google.ortools.sat.SatParameters.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#a19588d773e1b5d10348cdb399b2fcde4">com.google.ortools.sat.SatParameters</a>.</p>
 
@@ -4537,9 +4518,11 @@ client.
       </table>
 </div><div class="memdoc">
 <pre>
-For now, we don't have any manager for the LP cuts, so we just add any
-generated cuts until this limit is reached.
-</pre><p><code>optional int32 max_num_cuts = 91 [default = 1000];</code> </p>
+The limit on the number of cuts in our cut pool. When this is reached we do
+not generate cuts anymore.
+TODO(user): We should probably remove this parameters, and just always
+generate cuts but only keep the best n or something.
+</pre><p><code>optional int32 max_num_cuts = 91 [default = 5000];</code> </p>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a4e0fe091f546a48e76f5ec96705b2e75">com.google.ortools.sat.SatParameters.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#a14df4e74cdc239d4ce29cc962b518ecc">com.google.ortools.sat.SatParameters</a>.</p>
 

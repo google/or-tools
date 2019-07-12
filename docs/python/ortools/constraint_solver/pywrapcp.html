@@ -3659,6 +3659,9 @@ class RoutingModel(object):
         r&#34;&#34;&#34; Registers &#39;callback&#39; and returns its index.&#34;&#34;&#34;
         return _pywrapcp.RoutingModel_RegisterUnaryTransitCallback(self, callback)
 
+    def RegisterPositiveUnaryTransitCallback(self, callback: &#39;operations_research::RoutingModel::TransitCallback1&#39;) -&gt; &#34;int&#34;:
+        return _pywrapcp.RoutingModel_RegisterPositiveUnaryTransitCallback(self, callback)
+
     def RegisterTransitCallback(self, callback: &#39;operations_research::RoutingModel::TransitCallback2&#39;) -&gt; &#34;int&#34;:
         return _pywrapcp.RoutingModel_RegisterTransitCallback(self, callback)
 
@@ -12974,6 +12977,9 @@ RoutingModel model(manager);</p></section>
         r&#34;&#34;&#34; Registers &#39;callback&#39; and returns its index.&#34;&#34;&#34;
         return _pywrapcp.RoutingModel_RegisterUnaryTransitCallback(self, callback)
 
+    def RegisterPositiveUnaryTransitCallback(self, callback: &#39;operations_research::RoutingModel::TransitCallback1&#39;) -&gt; &#34;int&#34;:
+        return _pywrapcp.RoutingModel_RegisterPositiveUnaryTransitCallback(self, callback)
+
     def RegisterTransitCallback(self, callback: &#39;operations_research::RoutingModel::TransitCallback2&#39;) -&gt; &#34;int&#34;:
         return _pywrapcp.RoutingModel_RegisterTransitCallback(self, callback)
 
@@ -14852,6 +14858,17 @@ minimal cumul cost. - Given these minimal end cumuls, the route start cumuls are
 <summary>Source code</summary>
 <pre><code class="python">def RegisterPositiveTransitCallback(self, callback: &#39;operations_research::RoutingModel::TransitCallback2&#39;) -&gt; &#34;int&#34;:
     return _pywrapcp.RoutingModel_RegisterPositiveTransitCallback(self, callback)</code></pre>
+</details>
+</dd>
+<dt id="pywrapcp.RoutingModel.RegisterPositiveUnaryTransitCallback"><code class="name flex">
+<span>def <span class="ident">RegisterPositiveUnaryTransitCallback</span></span>(<span>self, callback)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def RegisterPositiveUnaryTransitCallback(self, callback: &#39;operations_research::RoutingModel::TransitCallback1&#39;) -&gt; &#34;int&#34;:
+    return _pywrapcp.RoutingModel_RegisterPositiveUnaryTransitCallback(self, callback)</code></pre>
 </details>
 </dd>
 <dt id="pywrapcp.RoutingModel.RegisterTransitCallback"><code class="name flex">
@@ -22139,6 +22156,7 @@ p2/d2. - For a temporal requirement, p2 must be visited between p1 and d1.</p></
 <li><code><a title="pywrapcp.RoutingModel.ReadAssignment" href="#pywrapcp.RoutingModel.ReadAssignment">ReadAssignment</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.ReadAssignmentFromRoutes" href="#pywrapcp.RoutingModel.ReadAssignmentFromRoutes">ReadAssignmentFromRoutes</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.RegisterPositiveTransitCallback" href="#pywrapcp.RoutingModel.RegisterPositiveTransitCallback">RegisterPositiveTransitCallback</a></code></li>
+<li><code><a title="pywrapcp.RoutingModel.RegisterPositiveUnaryTransitCallback" href="#pywrapcp.RoutingModel.RegisterPositiveUnaryTransitCallback">RegisterPositiveUnaryTransitCallback</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.RegisterTransitCallback" href="#pywrapcp.RoutingModel.RegisterTransitCallback">RegisterTransitCallback</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.RegisterUnaryTransitCallback" href="#pywrapcp.RoutingModel.RegisterUnaryTransitCallback">RegisterUnaryTransitCallback</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.RemainingTime" href="#pywrapcp.RoutingModel.RemainingTime">RemainingTime</a></code></li>

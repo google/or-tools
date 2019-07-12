@@ -11201,6 +11201,27 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
+      <type>double</type>
+      <name>getLogCostOffset</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1Builder.html</anchorfile>
+      <anchor>a96abeb21d4040e34cc3acf7622b29bbe</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setLogCostOffset</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1Builder.html</anchorfile>
+      <anchor>a121f120b9c55cf389c2ba2feb4500c03</anchor>
+      <arglist>(double value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearLogCostOffset</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1Builder.html</anchorfile>
+      <anchor>a414bb8e45a1ccaeef2c8d948489e3d55</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
       <type>.lang.Override final Builder</type>
       <name>setUnknownFields</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1Builder.html</anchorfile>
@@ -37337,6 +37358,13 @@
     </member>
     <member kind="function">
       <type>int</type>
+      <name>RegisterPositiveUnaryTransitCallback</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a3c0eca2c1787ab809ad1b149b7a5158c</anchor>
+      <arglist>(LongUnaryOperator callback)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
       <name>registerTransitCallback</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
       <anchor>a36b69016b7610939d29db553d03e9e8a</anchor>
@@ -38938,6 +38966,13 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
+      <type>double</type>
+      <name>getLogCostOffset</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters.html</anchorfile>
+      <anchor>a9f861ebd384a0c639b470f9c7bada4a5</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
       <type>.lang.Override final boolean</type>
       <name>isInitialized</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters.html</anchorfile>
@@ -39287,6 +39322,13 @@
       <anchor>a30caeca6e8b24420ea3e152f7719a4ab</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>LOG_COST_OFFSET_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters.html</anchorfile>
+      <anchor>a5181e9daa7e06e4a649d08bf1e312cd3</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="function" protection="protected">
       <type>.lang.Override java.lang.Object</type>
       <name>newInstance</name>
@@ -39548,6 +39590,13 @@
       <name>getLogCostScalingFactor</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html</anchorfile>
       <anchor>af084f4c39031b63ebcf9ec9bb962f11e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>getLogCostOffset</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html</anchorfile>
+      <anchor>a0786588ac026ec9cbb88497a3ebcff14</anchor>
       <arglist>()</arglist>
     </member>
   </compound>

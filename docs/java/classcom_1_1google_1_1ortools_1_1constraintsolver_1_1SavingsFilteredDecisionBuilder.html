@@ -31,7 +31,6 @@
     <ul class="tablist">
       <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
       <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="inherits.html"><span>Class&#160;Hierarchy</span></a></li>
       <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
     </ul>
   </div>
@@ -50,38 +49,12 @@
 <div class="title">com.google.ortools.constraintsolver.SavingsFilteredDecisionBuilder Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Filter-based decision builder which builds a solution by using Clarke &amp; Wright's Savings heuristic. </p>
 <p>For each pair of nodes, the savings value is the difference between the cost of two routes visiting one node each and one route visiting both nodes. Routes are built sequentially, each route being initialized from the pair with the best avalaible savings value then extended by selecting the nodes with best savings on both ends of the partial route. Cost is based on the arc cost function of the routing model and cost classes are taken into account. </p>
 
 <p class="definition">Definition at line <a class="el" href="SavingsFilteredDecisionBuilder_8java_source.html#l00014">14</a> of file <a class="el" href="SavingsFilteredDecisionBuilder_8java_source.html">SavingsFilteredDecisionBuilder.java</a>.</p>
-</div><div class="dynheader">
-Inheritance diagram for com.google.ortools.constraintsolver.SavingsFilteredDecisionBuilder:</div>
-<div class="dyncontent">
-<div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder__inherit__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8SavingsFilteredDecisionBuilder_inherit__map" alt="Inheritance graph"/></div>
-<map name="com_8google_8ortools_8constraintsolver_8SavingsFilteredDecisionBuilder_inherit__map" id="com_8google_8ortools_8constraintsolver_8SavingsFilteredDecisionBuilder_inherit__map">
-<area shape="rect"  title="Filter&#45;based decision builder which builds a solution by using Clarke &amp; Wright&#39;s Savings heuristic." alt="" coords="1125,39,1357,80"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ParallelSavingsFilteredDecisionBuilder.html" title=" " alt="" coords="1414,5,1661,47"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequentialSavingsFilteredDecisionBuilder.html" title=" " alt="" coords="1405,71,1669,112"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html" title="Filter&#45;based decision builder dedicated to routing." alt="" coords="845,39,1077,80"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html" title="Decision builders building a solution using local search filters to evaluate its feasibility." alt="" coords="565,39,797,80"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html" title="A DecisionBuilder is responsible for creating the search tree." alt="" coords="285,39,517,80"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,39,237,80"/>
-</map>
-<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
-<div class="dynheader">
-Collaboration diagram for com.google.ortools.constraintsolver.SavingsFilteredDecisionBuilder:</div>
-<div class="dyncontent">
-<div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder__coll__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8SavingsFilteredDecisionBuilder_coll__map" alt="Collaboration graph"/></div>
-<map name="com_8google_8ortools_8constraintsolver_8SavingsFilteredDecisionBuilder_coll__map" id="com_8google_8ortools_8constraintsolver_8SavingsFilteredDecisionBuilder_coll__map">
-<area shape="rect"  title="Filter&#45;based decision builder which builds a solution by using Clarke &amp; Wright&#39;s Savings heuristic." alt="" coords="5,363,237,404"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html" title="Filter&#45;based decision builder dedicated to routing." alt="" coords="5,273,237,315"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html" title="Decision builders building a solution using local search filters to evaluate its feasibility." alt="" coords="5,184,237,225"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html" title="A DecisionBuilder is responsible for creating the search tree." alt="" coords="5,95,237,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,5,237,47"/>
-</map>
-<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
-<table class="memberdecls">
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html">SavingsParameters</a></td></tr>
