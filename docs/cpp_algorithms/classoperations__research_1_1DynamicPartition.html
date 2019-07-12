@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -51,9 +50,6 @@
 </div><!--header-->
 <div class="contents">
 
-<p>Partition class that supports incremental splitting, with backtracking.  
- <a href="classoperations__research_1_1DynamicPartition.html#details">More...</a></p>
-
 <p><code>#include &lt;<a class="el" href="dynamic__partition_8h_source.html">dynamic_partition.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
@@ -66,24 +62,19 @@ Public Types</h2></td></tr>
 <tr class="memitem:a67b2a5be57842485dcb3c3db93bc2e1a"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DynamicPartition.html#a67b2a5be57842485dcb3c3db93bc2e1a">DebugStringSorting</a> { <a class="el" href="classoperations__research_1_1DynamicPartition.html#a67b2a5be57842485dcb3c3db93bc2e1aacb9b001cac613035de5d6f1f38f7fda1">SORT_LEXICOGRAPHICALLY</a>, 
 <a class="el" href="classoperations__research_1_1DynamicPartition.html#a67b2a5be57842485dcb3c3db93bc2e1aa5edad0b79a2c83ec1b1560960504c161">SORT_BY_PART</a>
  }</td></tr>
-<tr class="memdesc:a67b2a5be57842485dcb3c3db93bc2e1a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dump the partition to a std::string.  <a href="classoperations__research_1_1DynamicPartition.html#a67b2a5be57842485dcb3c3db93bc2e1a">More...</a><br /></td></tr>
 <tr class="separator:a67b2a5be57842485dcb3c3db93bc2e1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:afe6f90b99c0b1d646b00ad2d1bb0a09d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DynamicPartition.html#afe6f90b99c0b1d646b00ad2d1bb0a09d">DynamicPartition</a> (int num_elements)</td></tr>
-<tr class="memdesc:afe6f90b99c0b1d646b00ad2d1bb0a09d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a <a class="el" href="classoperations__research_1_1DynamicPartition.html" title="Partition class that supports incremental splitting, with backtracking.">DynamicPartition</a> on n elements, numbered 0..n-1.  <a href="#afe6f90b99c0b1d646b00ad2d1bb0a09d">More...</a><br /></td></tr>
 <tr class="separator:afe6f90b99c0b1d646b00ad2d1bb0a09d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae0789ce355b93a5161e63666b4467e67"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DynamicPartition.html#ae0789ce355b93a5161e63666b4467e67">DynamicPartition</a> (const std::vector&lt; int &gt; &amp;initial_part_of_element)</td></tr>
-<tr class="memdesc:ae0789ce355b93a5161e63666b4467e67"><td class="mdescLeft">&#160;</td><td class="mdescRight">Ditto, but specify the initial part of each elements.  <a href="#ae0789ce355b93a5161e63666b4467e67">More...</a><br /></td></tr>
 <tr class="separator:ae0789ce355b93a5161e63666b4467e67"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4b07bd0eb40bb3fcb3419672313342ea"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DynamicPartition.html#a4b07bd0eb40bb3fcb3419672313342ea">NumElements</a> () const</td></tr>
-<tr class="memdesc:a4b07bd0eb40bb3fcb3419672313342ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Accessors.  <a href="#a4b07bd0eb40bb3fcb3419672313342ea">More...</a><br /></td></tr>
 <tr class="separator:a4b07bd0eb40bb3fcb3419672313342ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0f4d81d407e148e26480f5ef01778270"><td class="memItemLeft" align="right" valign="top">const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DynamicPartition.html#a0f4d81d407e148e26480f5ef01778270">NumParts</a> () const</td></tr>
 <tr class="separator:a0f4d81d407e148e26480f5ef01778270"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac1dcc361f73f495e0f362f834b224e89"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structoperations__research_1_1DynamicPartition_1_1IterablePart.html">IterablePart</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DynamicPartition.html#ac1dcc361f73f495e0f362f834b224e89">ElementsInPart</a> (int i) const</td></tr>
-<tr class="memdesc:ac1dcc361f73f495e0f362f834b224e89"><td class="mdescLeft">&#160;</td><td class="mdescRight">*** Implementation of inline methods of the above classes. ***  <a href="#ac1dcc361f73f495e0f362f834b224e89">More...</a><br /></td></tr>
 <tr class="separator:ac1dcc361f73f495e0f362f834b224e89"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af3a2c6e1e18891125f15e42e391055bb"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DynamicPartition.html#af3a2c6e1e18891125f15e42e391055bb">PartOf</a> (int element) const</td></tr>
 <tr class="separator:af3a2c6e1e18891125f15e42e391055bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -92,32 +83,20 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a079d605b371556e228347843c9b15d2d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DynamicPartition.html#a079d605b371556e228347843c9b15d2d">ParentOfPart</a> (int part) const</td></tr>
 <tr class="separator:a079d605b371556e228347843c9b15d2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a79106998d8499c5c25f4c74c14456b60"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structoperations__research_1_1DynamicPartition_1_1IterablePart.html">IterablePart</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DynamicPartition.html#a79106998d8499c5c25f4c74c14456b60">ElementsInSamePartAs</a> (int i) const</td></tr>
-<tr class="memdesc:a79106998d8499c5c25f4c74c14456b60"><td class="mdescLeft">&#160;</td><td class="mdescRight">A handy shortcut to ElementsInPart(PartOf(e)).  <a href="#a79106998d8499c5c25f4c74c14456b60">More...</a><br /></td></tr>
 <tr class="separator:a79106998d8499c5c25f4c74c14456b60"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4e68b8de69272cf549b346595d332198"><td class="memItemLeft" align="right" valign="top">uint64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DynamicPartition.html#a4e68b8de69272cf549b346595d332198">FprintOfPart</a> (int part) const</td></tr>
-<tr class="memdesc:a4e68b8de69272cf549b346595d332198"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a fingerprint of the given part.  <a href="#a4e68b8de69272cf549b346595d332198">More...</a><br /></td></tr>
 <tr class="separator:a4e68b8de69272cf549b346595d332198"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a16fce09dd4c359a6acfd0a864e0a5ebd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DynamicPartition.html#a16fce09dd4c359a6acfd0a864e0a5ebd">Refine</a> (const std::vector&lt; int &gt; &amp;distinguished_subset)</td></tr>
-<tr class="memdesc:a16fce09dd4c359a6acfd0a864e0a5ebd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Refines the partition such that elements that are in distinguished_subset never share the same part as elements that aren't in that subset.  <a href="#a16fce09dd4c359a6acfd0a864e0a5ebd">More...</a><br /></td></tr>
 <tr class="separator:a16fce09dd4c359a6acfd0a864e0a5ebd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a968140cdf9d2766625e1d476a7a71590"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DynamicPartition.html#a968140cdf9d2766625e1d476a7a71590">UndoRefineUntilNumPartsEqual</a> (int original_num_parts)</td></tr>
-<tr class="memdesc:a968140cdf9d2766625e1d476a7a71590"><td class="mdescLeft">&#160;</td><td class="mdescRight">Undo one or several <a class="el" href="classoperations__research_1_1DynamicPartition.html#a16fce09dd4c359a6acfd0a864e0a5ebd" title="Refines the partition such that elements that are in distinguished_subset never share the same part a...">Refine()</a> operations, until the number of parts becomes equal to "original_num_parts".  <a href="#a968140cdf9d2766625e1d476a7a71590">More...</a><br /></td></tr>
 <tr class="separator:a968140cdf9d2766625e1d476a7a71590"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac535d0a440192c96effe5b938a9482c7"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DynamicPartition.html#ac535d0a440192c96effe5b938a9482c7">DebugString</a> (<a class="el" href="classoperations__research_1_1DynamicPartition.html#a67b2a5be57842485dcb3c3db93bc2e1a">DebugStringSorting</a> sorting) const</td></tr>
 <tr class="separator:ac535d0a440192c96effe5b938a9482c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab516c7e5e0e64a4fca27ab1790d459e5"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; int &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DynamicPartition.html#ab516c7e5e0e64a4fca27ab1790d459e5">ElementsInHierarchicalOrder</a> () const</td></tr>
-<tr class="memdesc:ab516c7e5e0e64a4fca27ab1790d459e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">ADVANCED USAGE: All elements (0..n-1) of the partition, sorted in a way that's compatible with the hierarchical partitioning:  <a href="#ab516c7e5e0e64a4fca27ab1790d459e5">More...</a><br /></td></tr>
 <tr class="separator:ab516c7e5e0e64a4fca27ab1790d459e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Partition class that supports incremental splitting, with backtracking. </p>
-<p>See <a href="http://en.wikipedia.org/wiki/Partition_refinement">http://en.wikipedia.org/wiki/Partition_refinement</a> . More precisely, the supported edit operations are:</p><ul>
-<li>Refine the partition so that a subset S (typically, <code>S</code> &lt;&lt;&lt; N) of elements are all considered non-equivalent to any element in ¬S. Typically, this should be done in O(<code>S</code>).</li>
-<li><p class="startli">Undo the above operations (backtracking).</p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000002">Todo:</a></b></dt><dd>(user): rename this to BacktrackableSplittingPartition. </dd></dl>
-</li>
-</ul>
-
+<div class="textblock">
 <p class="definition">Definition at line <a class="el" href="dynamic__partition_8h_source.html#l00049">49</a> of file <a class="el" href="dynamic__partition_8h_source.html">dynamic_partition.h</a>.</p>
 </div><h2 class="groupheader">Member Enumeration Documentation</h2>
 <a id="a67b2a5be57842485dcb3c3db93bc2e1a"></a>
@@ -131,14 +110,9 @@ Public Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>Dump the partition to a std::string. </p>
-<p>There might be different conventions for sorting the parts and the elements inside them. </p>
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a67b2a5be57842485dcb3c3db93bc2e1aacb9b001cac613035de5d6f1f38f7fda1"></a>SORT_LEXICOGRAPHICALLY&#160;</td><td class="fielddoc"><p>Elements are sorted within parts, and parts are then sorted lexicographically. </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a67b2a5be57842485dcb3c3db93bc2e1aa5edad0b79a2c83ec1b1560960504c161"></a>SORT_BY_PART&#160;</td><td class="fielddoc"><p>Elements are sorted within parts, and parts are kept in order. </p>
-</td></tr>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a67b2a5be57842485dcb3c3db93bc2e1aacb9b001cac613035de5d6f1f38f7fda1"></a>SORT_LEXICOGRAPHICALLY&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a67b2a5be57842485dcb3c3db93bc2e1aa5edad0b79a2c83ec1b1560960504c161"></a>SORT_BY_PART&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
 <p class="definition">Definition at line <a class="el" href="dynamic__partition_8h_source.html#l00117">117</a> of file <a class="el" href="dynamic__partition_8h_source.html">dynamic_partition.h</a>.</p>
@@ -170,9 +144,6 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Creates a <a class="el" href="classoperations__research_1_1DynamicPartition.html" title="Partition class that supports incremental splitting, with backtracking.">DynamicPartition</a> on n elements, numbered 0..n-1. </p>
-<p>Start with the trivial partition (only one subset containing all elements). </p>
-
 </div>
 </div>
 <a id="ae0789ce355b93a5161e63666b4467e67"></a>
@@ -198,9 +169,6 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Ditto, but specify the initial part of each elements. </p>
-<p>Part indices must form a dense integer set starting at 0; eg. [2, 1, 0, 1, 1, 3, 0] is valid. </p>
 
 </div>
 </div>
@@ -246,14 +214,6 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>ADVANCED USAGE: All elements (0..n-1) of the partition, sorted in a way that's compatible with the hierarchical partitioning: </p>
-<ul>
-<li>All the elements of any given part are contiguous.</li>
-<li>Elements of a part P are always after elements of part Parent(P).</li>
-<li>The order remains identical (and the above property holds) after any UndoRefine*() operation. <dl class="section note"><dt>Note</dt><dd>the order does get changed by <a class="el" href="classoperations__research_1_1DynamicPartition.html#a16fce09dd4c359a6acfd0a864e0a5ebd" title="Refines the partition such that elements that are in distinguished_subset never share the same part a...">Refine()</a> operations. This is a reference, so it'll only remain valid and constant until the class is destroyed or until <a class="el" href="classoperations__research_1_1DynamicPartition.html#a16fce09dd4c359a6acfd0a864e0a5ebd" title="Refines the partition such that elements that are in distinguished_subset never share the same part a...">Refine()</a> get called. </dd></dl>
-</li>
-</ul>
-
 <p class="definition">Definition at line <a class="el" href="dynamic__partition_8h_source.html#l00136">136</a> of file <a class="el" href="dynamic__partition_8h_source.html">dynamic_partition.h</a>.</p>
 
 </div>
@@ -281,8 +241,6 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>*** Implementation of inline methods of the above classes. *** </p>
 
 <p class="definition">Definition at line <a class="el" href="dynamic__partition_8h_source.html#l00276">276</a> of file <a class="el" href="dynamic__partition_8h_source.html">dynamic_partition.h</a>.</p>
 
@@ -312,9 +270,6 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>A handy shortcut to ElementsInPart(PartOf(e)). </p>
-<p>The returned <a class="el" href="structoperations__research_1_1DynamicPartition_1_1IterablePart.html">IterablePart</a> will never be empty, since it contains at least i. </p>
-
 <p class="definition">Definition at line <a class="el" href="dynamic__partition_8h_source.html#l00303">303</a> of file <a class="el" href="dynamic__partition_8h_source.html">dynamic_partition.h</a>.</p>
 
 </div>
@@ -343,9 +298,6 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Returns a fingerprint of the given part. </p>
-<p>While collisions are possible, their probability is quite low. Two parts that have the same size and the same fingerprint are most likely identical. Also, two parts that have the exact same set of elements will <em>always</em> have the same fingerprint. </p>
-
 <p class="definition">Definition at line <a class="el" href="dynamic__partition_8h_source.html#l00308">308</a> of file <a class="el" href="dynamic__partition_8h_source.html">dynamic_partition.h</a>.</p>
 
 </div>
@@ -372,8 +324,6 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Accessors. </p>
 
 <p class="definition">Definition at line <a class="el" href="dynamic__partition_8h_source.html#l00060">60</a> of file <a class="el" href="dynamic__partition_8h_source.html">dynamic_partition.h</a>.</p>
 
@@ -478,11 +428,6 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Refines the partition such that elements that are in distinguished_subset never share the same part as elements that aren't in that subset. </p>
-<p>This might be a no-op: in that case, <a class="el" href="classoperations__research_1_1DynamicPartition.html#a0f4d81d407e148e26480f5ef01778270">NumParts()</a> won't change, but the order of elements inside each part may change.</p>
-<p>ORDERING OF PARTS: For each i such that Part #i has a non-trivial intersection with "distinguished_subset" (neither empty, nor the full Part); Part #i is stripped out of all elements that are in "distinguished_subset", and those elements are sent to a newly created part, whose parent_part = i. The parts newly created by a single <a class="el" href="classoperations__research_1_1DynamicPartition.html#a16fce09dd4c359a6acfd0a864e0a5ebd" title="Refines the partition such that elements that are in distinguished_subset never share the same part a...">Refine()</a> operations are sorted by parent_part. Example: a <a class="el" href="classoperations__research_1_1DynamicPartition.html#a16fce09dd4c359a6acfd0a864e0a5ebd" title="Refines the partition such that elements that are in distinguished_subset never share the same part a...">Refine()</a> on a partition with 6 parts causes parts #1, #3 and #4 to be split: the partition will now contain 3 new parts: part #6 (with parent_part = 1), part #7 (with parent_part = 3) and part #8 (with parent_part = 4).</p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000003">Todo:</a></b></dt><dd>(user): the graph symmetry finder could probably benefit a lot from keeping track of one additional bit of information for each part that remains unchanged by a <a class="el" href="classoperations__research_1_1DynamicPartition.html#a16fce09dd4c359a6acfd0a864e0a5ebd" title="Refines the partition such that elements that are in distinguished_subset never share the same part a...">Refine()</a> operation: was that part entirely <em>in</em> the distinguished subset or entirely <em>out</em>? </dd></dl>
-
 </div>
 </div>
 <a id="a87ccb17e1972d153100a9b061a918ba1"></a>
@@ -528,9 +473,6 @@ Public Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>Undo one or several <a class="el" href="classoperations__research_1_1DynamicPartition.html#a16fce09dd4c359a6acfd0a864e0a5ebd" title="Refines the partition such that elements that are in distinguished_subset never share the same part a...">Refine()</a> operations, until the number of parts becomes equal to "original_num_parts". </p>
-<p>Prerequisite: <a class="el" href="classoperations__research_1_1DynamicPartition.html#a0f4d81d407e148e26480f5ef01778270">NumParts()</a> &gt;= original_num_parts. </p>
 
 </div>
 </div>

@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -42,7 +41,6 @@
 </div><!-- top -->
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="classoperations__research_1_1GraphSymmetryFinder-members.html">List of all members</a>  </div>
@@ -61,19 +59,14 @@ Public Types</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:af670a8f7f325e3a7431f2723c52ec25d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1GraphSymmetryFinder.html#af670a8f7f325e3a7431f2723c52ec25d">GraphSymmetryFinder</a> (const <a class="el" href="classoperations__research_1_1GraphSymmetryFinder.html#aeabd870fd44ae7ee75a3341b86e140a6">Graph</a> &amp;graph, bool is_undirected)</td></tr>
-<tr class="memdesc:af670a8f7f325e3a7431f2723c52ec25d"><td class="mdescLeft">&#160;</td><td class="mdescRight">If the Graph passed to the <a class="el" href="classoperations__research_1_1GraphSymmetryFinder.html">GraphSymmetryFinder</a> is undirected, i.e.  <a href="#af670a8f7f325e3a7431f2723c52ec25d">More...</a><br /></td></tr>
 <tr class="separator:af670a8f7f325e3a7431f2723c52ec25d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afb920046454e1c278a6189cf6634a48c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1GraphSymmetryFinder.html#afb920046454e1c278a6189cf6634a48c">IsGraphAutomorphism</a> (const <a class="el" href="classoperations__research_1_1DynamicPermutation.html">DynamicPermutation</a> &amp;permutation) const</td></tr>
-<tr class="memdesc:afb920046454e1c278a6189cf6634a48c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether the given permutation is an automorphism of the graph given at construction.  <a href="#afb920046454e1c278a6189cf6634a48c">More...</a><br /></td></tr>
 <tr class="separator:afb920046454e1c278a6189cf6634a48c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0923c1bbc2e1514814a1d7fa55d7b0dc"><td class="memItemLeft" align="right" valign="top">util::Status&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1GraphSymmetryFinder.html#a0923c1bbc2e1514814a1d7fa55d7b0dc">FindSymmetries</a> (double time_limit_seconds, std::vector&lt; int &gt; *node_equivalence_classes_io, std::vector&lt; std::unique_ptr&lt; <a class="el" href="classoperations__research_1_1SparsePermutation.html">SparsePermutation</a> &gt; &gt; *generators, std::vector&lt; int &gt; *factorized_automorphism_group_size)</td></tr>
-<tr class="memdesc:a0923c1bbc2e1514814a1d7fa55d7b0dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find a set of generators of the automorphism subgroup of the graph that respects the given node equivalence classes.  <a href="#a0923c1bbc2e1514814a1d7fa55d7b0dc">More...</a><br /></td></tr>
 <tr class="separator:a0923c1bbc2e1514814a1d7fa55d7b0dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a70544105d8f21edcbed63fdd7f6d34ab"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1GraphSymmetryFinder.html#a70544105d8f21edcbed63fdd7f6d34ab">RecursivelyRefinePartitionByAdjacency</a> (int first_unrefined_part_index, <a class="el" href="classoperations__research_1_1DynamicPartition.html">DynamicPartition</a> *partition)</td></tr>
-<tr class="memdesc:a70544105d8f21edcbed63fdd7f6d34ab"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fully refine the partition of nodes, using the graph as symmetry breaker.  <a href="#a70544105d8f21edcbed63fdd7f6d34ab">More...</a><br /></td></tr>
 <tr class="separator:a70544105d8f21edcbed63fdd7f6d34ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af15616e8b6f42c682ff091b989190ff8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1GraphSymmetryFinder.html#af15616e8b6f42c682ff091b989190ff8">DistinguishNodeInPartition</a> (int node, <a class="el" href="classoperations__research_1_1DynamicPartition.html">DynamicPartition</a> *partition, std::vector&lt; int &gt; *new_singletons_or_null)</td></tr>
-<tr class="memdesc:af15616e8b6f42c682ff091b989190ff8"><td class="mdescLeft">&#160;</td><td class="mdescRight">**** Methods below are public FOR TESTING ONLY. ****  <a href="#af15616e8b6f42c682ff091b989190ff8">More...</a><br /></td></tr>
 <tr class="separator:af15616e8b6f42c682ff091b989190ff8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
@@ -123,11 +116,6 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>If the Graph passed to the <a class="el" href="classoperations__research_1_1GraphSymmetryFinder.html">GraphSymmetryFinder</a> is undirected, i.e. </p>
-<p>for every arc a-&gt;b, b-&gt;a is also present, then you should set "is_undirected" to true. This will, in effect, DCHECK() that the graph is indeed undirected, and bypass the need for reverse adjacency lists.</p>
-<p>If you don't know this in advance, you may use GraphIsSymmetric() from ortools/graph/util.h.</p>
-<p>"graph" must not have multi-arcs. </p><dl class="todo"><dt><b><a class="el" href="todo.html#_todo000005">Todo:</a></b></dt><dd>(user): support multi-arcs. </dd></dl>
-
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
@@ -162,9 +150,6 @@ Public Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>**** Methods below are public FOR TESTING ONLY. **** </p>
-<p>Special wrapper of the above method: assuming that partition is already fully refined, further refine it by {node}, and propagate by adjacency. Also, optionally collect all the new singletons of the partition in "new_singletons", sorted by their part number in the partition. </p>
 
 </div>
 </div>
@@ -206,22 +191,6 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Find a set of generators of the automorphism subgroup of the graph that respects the given node equivalence classes. </p>
-<p>The generators are themselves permutations of the nodes: see <a href="http://en.wikipedia.org/wiki/Automorphism">http://en.wikipedia.org/wiki/Automorphism</a>. These permutations may only map a node onto a node of its equivalence class: two nodes i and j are in the same equivalence class iff node_equivalence_classes_io[i] == node_equivalence_classes_io[j];</p>
-<p>This set of generators is not necessarily the smallest possible (neither in the number of generators, nor in the size of these generators), but it is minimal in that no generator can be removed while keeping the generated group intact. </p><dl class="todo"><dt><b><a class="el" href="todo.html#_todo000006">Todo:</a></b></dt><dd>(user): verify the minimality in unit tests.</dd></dl>
-<dl class="section note"><dt>Note</dt><dd>if "generators" is empty, then the graph has no symmetry: the only automorphism is the identity.</dd></dl>
-<p>The equivalence classes are actually an input/output: they are refined according to all asymmetries found. In the end, n1 and n2 will be considered equivalent (i.e. node_equivalence_classes_io[n1] == node_equivalence_classes_io[n2]) if and only if there exists a permutation of nodes that:</p><ul>
-<li>keeps the graph invariant</li>
-<li>maps n1 onto n2</li>
-<li>maps each node to a node of its original equivalence class.</li>
-</ul>
-<p>This method also outputs the size of the automorphism group, expressed as a factorized product of integers (note that the size itself may be as large as N!).</p>
-<p>DEADLINE AND PARTIAL COMPLETION: If the deadline passed as argument is reached, this method will return quickly (within a few milliseconds). The outputs may be partially filled:</p><ul>
-<li>Each element of "generators", if non-empty, will be a valid permutation.</li>
-<li>"node_equivalence_classes_io" will contain the equivalence classes corresponding to the orbits under all the generators in "generators".</li>
-<li>"factorized_automorphism_group_size" will also be incomplete, and partially valid: its last element may be undervalued. But all prior elements are valid factors of the automorphism group size. </li>
-</ul>
-
 </div>
 </div>
 <a id="afb920046454e1c278a6189cf6634a48c"></a>
@@ -239,9 +208,6 @@ Public Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>Whether the given permutation is an automorphism of the graph given at construction. </p>
-<p>This costs O(sum(degree(x))) (the sum is over all nodes x that are displaced by the permutation). </p>
 
 </div>
 </div>
@@ -270,13 +236,6 @@ Public Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>Fully refine the partition of nodes, using the graph as symmetry breaker. </p>
-<p>This means applying the following steps on each part P of the partition:</p><ul>
-<li>Compute the aggregated in-degree of all nodes of the graph, only looking at arcs originating from nodes in P.</li>
-<li>For each in-degree d=1...max_in_degree, refine the partition by the set of nodes with in-degree d. And recursively applying it on all new or modified parts.</li>
-</ul>
-<p>In our use cases, we may call this in a scenario where the partition was already partially refined on all parts #0...#K, then you should set "first_unrefined_part_index" to K+1. </p>
 
 </div>
 </div>

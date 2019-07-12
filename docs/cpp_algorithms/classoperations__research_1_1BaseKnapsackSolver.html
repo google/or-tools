@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -49,17 +48,14 @@
 </div><!--header-->
 <div class="contents">
 
-<p>--&mdash; <a class="el" href="classoperations__research_1_1BaseKnapsackSolver.html" title="--— BaseKnapsackSolver --— This is the base class for knapsack solvers.">BaseKnapsackSolver</a> --&mdash; This is the base class for knapsack solvers.  
- <a href="classoperations__research_1_1BaseKnapsackSolver.html#details">More...</a></p>
-
 <p><code>#include &lt;<a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for operations_research::BaseKnapsackSolver:</div>
 <div class="dyncontent">
 <div class="center"><img src="classoperations__research_1_1BaseKnapsackSolver__inherit__graph.png" border="0" usemap="#operations__research_1_1BaseKnapsackSolver_inherit__map" alt="Inheritance graph"/></div>
 <map name="operations__research_1_1BaseKnapsackSolver_inherit__map" id="operations__research_1_1BaseKnapsackSolver_inherit__map">
-<area shape="rect"  title="&#45;&#45;â BaseKnapsackSolver &#45;&#45;â This is the base class for knapsack solvers." alt="" coords="13,5,169,44"/>
-<area shape="rect"  href="classoperations__research_1_1KnapsackGenericSolver.html" title="&#45;&#45;â KnapsackGenericSolver &#45;&#45;â KnapsackGenericSolver is the multi&#45;dimensional knapsack solver class." alt="" coords="5,92,177,131"/>
+<area shape="rect"  title=" " alt="" coords="13,5,168,47"/>
+<area shape="rect"  href="classoperations__research_1_1KnapsackGenericSolver.html" title=" " alt="" coords="5,95,176,136"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -70,24 +66,19 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a5f685ec61d9de86d57bdc53124c08b12"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1BaseKnapsackSolver.html#a5f685ec61d9de86d57bdc53124c08b12">~BaseKnapsackSolver</a> ()</td></tr>
 <tr class="separator:a5f685ec61d9de86d57bdc53124c08b12"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3e8f72facec15537065c1625e647d58b"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1BaseKnapsackSolver.html#a3e8f72facec15537065c1625e647d58b">Init</a> (const std::vector&lt; int64 &gt; &amp;profits, const std::vector&lt; std::vector&lt; int64 &gt; &gt; &amp;weights, const std::vector&lt; int64 &gt; &amp;capacities)=0</td></tr>
-<tr class="memdesc:a3e8f72facec15537065c1625e647d58b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initializes the solver and enters the problem to be solved.  <a href="#a3e8f72facec15537065c1625e647d58b">More...</a><br /></td></tr>
 <tr class="separator:a3e8f72facec15537065c1625e647d58b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a381cc9d7b544a8ec4727f9618f0b4f8f"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1BaseKnapsackSolver.html#a381cc9d7b544a8ec4727f9618f0b4f8f">GetLowerAndUpperBoundWhenItem</a> (int item_id, bool is_item_in, int64 *lower_bound, int64 *upper_bound)</td></tr>
-<tr class="memdesc:a381cc9d7b544a8ec4727f9618f0b4f8f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the lower and upper bound when the item is in or out of the knapsack.  <a href="#a381cc9d7b544a8ec4727f9618f0b4f8f">More...</a><br /></td></tr>
 <tr class="separator:a381cc9d7b544a8ec4727f9618f0b4f8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a952deb24e032890d2781e52fedb70efa"><td class="memItemLeft" align="right" valign="top">virtual int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1BaseKnapsackSolver.html#a952deb24e032890d2781e52fedb70efa">Solve</a> (TimeLimit *time_limit, bool *is_solution_optimal)=0</td></tr>
-<tr class="memdesc:a952deb24e032890d2781e52fedb70efa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Solves the problem and returns the profit of the optimal solution.  <a href="#a952deb24e032890d2781e52fedb70efa">More...</a><br /></td></tr>
 <tr class="separator:a952deb24e032890d2781e52fedb70efa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a08bf62b91f6cf3fca10a504f7dd278a6"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1BaseKnapsackSolver.html#a08bf62b91f6cf3fca10a504f7dd278a6">best_solution</a> (int item_id) const =0</td></tr>
-<tr class="memdesc:a08bf62b91f6cf3fca10a504f7dd278a6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the item 'item_id' is packed in the optimal knapsack.  <a href="#a08bf62b91f6cf3fca10a504f7dd278a6">More...</a><br /></td></tr>
 <tr class="separator:a08bf62b91f6cf3fca10a504f7dd278a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae19aff92b4b38e712ead1cfcafd81f03"><td class="memItemLeft" align="right" valign="top">virtual std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1BaseKnapsackSolver.html#ae19aff92b4b38e712ead1cfcafd81f03">GetName</a> () const</td></tr>
 <tr class="separator:ae19aff92b4b38e712ead1cfcafd81f03"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>--&mdash; <a class="el" href="classoperations__research_1_1BaseKnapsackSolver.html" title="--— BaseKnapsackSolver --— This is the base class for knapsack solvers.">BaseKnapsackSolver</a> --&mdash; This is the base class for knapsack solvers. </p>
-
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00494">494</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<div class="textblock">
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00518">518</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a507afd9932799f0be34f34605cd5ffee"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a507afd9932799f0be34f34605cd5ffee">&#9670;&nbsp;</a></span>BaseKnapsackSolver()</h2>
@@ -113,7 +104,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00496">496</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00520">520</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>
@@ -140,7 +131,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00498">498</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00522">522</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>
@@ -168,8 +159,6 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Returns true if the item 'item_id' is packed in the optimal knapsack. </p>
 
 <p>Implemented in <a class="el" href="classoperations__research_1_1KnapsackGenericSolver.html#a3f48cb5dfceb3c4129779568d2569606">operations_research::KnapsackGenericSolver</a>.</p>
 
@@ -221,9 +210,6 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Gets the lower and upper bound when the item is in or out of the knapsack. </p>
-<p>To ensure objects are correctly initialized, this method should not be called before ::Init. </p>
-
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1KnapsackGenericSolver.html#aa49dbbb2b6eae494f521992c964bad53">operations_research::KnapsackGenericSolver</a>.</p>
 
 </div>
@@ -251,7 +237,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00518">518</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00542">542</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>
@@ -295,8 +281,6 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Initializes the solver and enters the problem to be solved. </p>
-
 <p>Implemented in <a class="el" href="classoperations__research_1_1KnapsackGenericSolver.html#af9635774fd7761f62ee92e64205034b3">operations_research::KnapsackGenericSolver</a>.</p>
 
 </div>
@@ -334,8 +318,6 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Solves the problem and returns the profit of the optimal solution. </p>
 
 <p>Implemented in <a class="el" href="classoperations__research_1_1KnapsackGenericSolver.html#a8f57ec05930a3df316b5df101c814984">operations_research::KnapsackGenericSolver</a>.</p>
 
