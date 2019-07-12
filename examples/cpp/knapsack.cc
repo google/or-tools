@@ -20,10 +20,10 @@
 #include "ortools/base/logging.h"
 
 namespace operations_research {
-void RunKnapsackExample(KnapsackSolver::SolverType solver_type) {
+void RunKnapsackExample() {
   // Instantiate the solver.
   KnapsackSolver solver(
-	  solver_type,
+      KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
       "KnapsackExample");
 
   std::vector<int64> values = {
@@ -75,9 +75,6 @@ void RunKnapsackExample(KnapsackSolver::SolverType solver_type) {
 int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
   FLAGS_logtostderr = 1;
-  operations_research::RunKnapsackExample(operations_research::KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER);
-//#if defined(USE_XPRESS)
-  //operations_research::RunKnapsackExample(operations_research::KnapsackSolver::KNAPSACK_MULTIDIMENSION_XPRESS_MIP_SOLVER);
-//#endif
+  operations_research::RunKnapsackExample();
   return EXIT_SUCCESS;
 }

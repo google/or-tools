@@ -1452,7 +1452,9 @@ void MPSolver::GenerateConstraintNameIndex() const {
   }
 }
 
+#if defined(USE_GUROBI)
 bool MPSolver::NextSolution() { return interface_->NextSolution(); }
+#endif
 
 // ---------- MPSolverInterface ----------
 

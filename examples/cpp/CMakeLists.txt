@@ -88,3 +88,7 @@ foreach(TEST
     )
   add_test(NAME cc_${TEST} COMMAND ${TEST})
 endforeach()
+
+if (USE_CPLEX)
+	add_test(NAME "cc_strawberry_fields_with_column_generation_cplex" COMMAND strawberry_fields_with_column_generation -colgen_solver cplex)
+endif()

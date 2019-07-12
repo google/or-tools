@@ -67,3 +67,14 @@ if (USE_XPRESS)
 		target_link_libraries(${NAME} PUBLIC ${XPRESSDIR}/lib/xprs.lib)
 	endif()
 endif(USE_XPRESS)
+
+if (USE_CPLEX)
+	target_include_directories(${NAME} PUBLIC
+		${CPLEXDIR}/include
+	)
+	if(UNIX)
+		target_link_libraries(${NAME} PUBLIC ${CPLEXDIR}/lib/x64_windows_vs2015/stat_mda/cplex1270.a)
+	elseif(MSVC)
+		target_link_libraries(${NAME} PUBLIC ${CPLEXDIR}/lib/x64_windows_vs2015/stat_mda/cplex1270.lib)
+	endif()
+endif(USE_CPLEX)

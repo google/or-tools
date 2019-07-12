@@ -215,8 +215,9 @@ class MPSolver {
     BOP_INTEGER_PROGRAMMING = 12,
 #endif
 #if defined(USE_XPRESS)
-	XPRESS_MIXED_INTEGER_PROGRAMMING = 13,
-	XPRESS_LINEAR_PROGRAMMING = 14,
+	XPRESS_LINEAR_PROGRAMMING = 101,
+	XPRESS_MIXED_INTEGER_PROGRAMMING = 102,
+#endif
 #endif
   };
 
@@ -612,7 +613,9 @@ class MPSolver {
   // As of 2018-08-09, only Gurobi supports NextSolution(), see
   // linear_solver_underlying_gurobi_test for an example of how to configure
   // Gurobi for this purpose. The other solvers return false unconditionally.
+#if defined(USE_GUROBI)
   ABSL_MUST_USE_RESULT bool NextSolution();
+#endif
 
   // DEPRECATED: Use TimeLimit() and SetTimeLimit(absl::Duration) instead.
   // NOTE: These deprecated functions used the convention time_limit = 0 to mean

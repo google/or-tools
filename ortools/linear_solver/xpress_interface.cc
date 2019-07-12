@@ -260,16 +260,18 @@ namespace operations_research {
 		char *xpresspath;
 		xpresspath = getenv("XPRESS");
 
+		google::InitGoogleLogging("Xpress");
+
 		if (!xpresspath)
 		{
-			VLOG(0) << ("XpressInterface Error : Environment variable XPRESS undefined.\n");
+			VLOG(0) << "XpressInterface Error : Environment variable XPRESS undefined.\n";
 			return -1;
 		}
 
 		/** if not an OEM key */
 		if (xpress_oem_license_key == 0)
 		{
-			VLOG(0) << ("XpressInterface : Initialising xpress-MP with parameter %s\n", xpresspath);
+			VLOG(0) << "XpressInterface : Initialising xpress-MP with parameter " << xpresspath << std::endl;
 
 			code = XPRSinit(xpresspath);
 
@@ -278,8 +280,8 @@ namespace operations_research {
 				/** XPRSbanner informs about Xpress version, options and error messages */
 				char banner[1000];
 				XPRSgetbanner(banner);
-				
-				VLOG(0) << ("XpressInterface : Xpress banner :\n%s\n", banner);
+
+				VLOG(0) << "XpressInterface : Xpress banner :\n" << banner << std::endl;
 
 				return 0;
 			}
@@ -288,53 +290,53 @@ namespace operations_research {
 				char errmsg[256];
 				XPRSgetlicerrmsg(errmsg, 256);
 
-				VLOG(0) << ("XpressInterface : License error : %s\n", errmsg);
-				VLOG(0) << ("XpressInterface : XPRSinit returned code : %d\n", code);
+				VLOG(0) << "XpressInterface : License error : " << errmsg << std::endl;
+				VLOG(0) << "XpressInterface : XPRSinit returned code : "<< code <<"\n";
 
 				char banner[1000];
 				XPRSgetbanner(banner);
 
-				VLOG(0) << ("XpressInterface : Xpress banner :\n%s\n", banner);
+				VLOG(google::GLOG_ERROR) << "XpressInterface : Xpress banner :\n"<< banner << "\n";
 				return -1;
 			}
 		}
 		/** if OEM key */
 		else
 		{
-			VLOG(0) << ("XpressInterface : Initialising xpress-MP with OEM key %d\n", xpress_oem_license_key);
-		
+			VLOG(0) << "XpressInterface : Initialising xpress-MP with OEM key " << xpress_oem_license_key << "\n";
+
 			int nvalue = 0;
 			int ierr;
 			char slicmsg[256] = "";
 			char errmsg[256];
-		
+
 			XPRSlicense(&nvalue, slicmsg);
-			VLOG(0) << ("XpressInterface : First message from XPRSLicense : %s\n", slicmsg);
-		
+			VLOG(0) << "XpressInterface : First message from XPRSLicense : " << slicmsg << "\n";
+
 			nvalue = xpress_oem_license_key - ((nvalue * nvalue) / 19);
 			ierr = XPRSlicense(&nvalue, slicmsg);
-		
-			VLOG(0) << ("XpressInterface : Second message from XPRSLicense : %s\n", slicmsg);
+
+			VLOG(0) << "XpressInterface : Second message from XPRSLicense : " << slicmsg << "\n";
 			if (ierr == 16)
 			{
-				VLOG(0) << ("XpressInterface : Optimizer development software detected\n");
+				VLOG(0) << "XpressInterface : Optimizer development software detected\n";
 			}
 			else if (ierr != 0)
 			{
 				/** get the license error message */
 				XPRSgetlicerrmsg(errmsg, 256);
-		
-				VLOG(0) << ("XpressInterface : %s\n", errmsg);
+
+				VLOG(google::GLOG_ERROR) << "XpressInterface : " << errmsg << "\n";
 				return -1;
 			}
-		
+
 			code = XPRSinit(NULL);
-		
+
 			if (!code)
 				return 0;
 			else
 			{
-				VLOG(0) << ("XPRSinit returned code : %d\n", code);
+				VLOG(google::GLOG_ERROR) << "XPRSinit returned code : " << code << "\n";
 				return -1;
 			}
 		}
@@ -350,10 +352,10 @@ namespace operations_research {
 		supportIncrementalExtraction(false),
 		mCstat(),
 		mRstat() {
-		int status;
 
 		char const *name = solver_->name_.c_str();
-		init_xpress_env();
+		int status = init_xpress_env();
+		CHECK_STATUS(status);
 		status = XPRScreateprob(&mLp);
 		CHECK_STATUS(status);
 		DCHECK(mLp != nullptr);  // should not be NULL if status=0
@@ -364,6 +366,7 @@ namespace operations_research {
 
 	XpressInterface::~XpressInterface() {
 		CHECK_STATUS(XPRSdestroyprob(mLp));
+		google::ShutdownGoogleLogging();
 	}
 
 	std::string XpressInterface::SolverVersion() const {
@@ -1310,13 +1313,20 @@ namespace operations_research {
 		// Do not CHECK_STATUS here since some errors (for example CPXERR_NO_MEMORY)
 		// still allow us to query useful information.
 		timer.Restart();
+		
 		int xpressstat = 0;
 		if (mMip) {
-			status = XPRSminim(mLp, "g");
+			if (this->maximize_)
+				status = XPRSmaxim(mLp, "g");
+			else
+				status = XPRSminim(mLp, "g");
 			XPRSgetintattrib(mLp, XPRS_MIPSTATUS, &xpressstat);
 		}
 		else {
-			status = XPRSminim(mLp, "");
+			if (this->maximize_)
+				status = XPRSmaxim(mLp, "");
+			else
+				status = XPRSminim(mLp, "");
 			XPRSgetintattrib(mLp, XPRS_LPSTATUS, &xpressstat);
 		}
 

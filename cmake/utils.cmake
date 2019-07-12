@@ -106,16 +106,28 @@ function(build_git_dependency)
     ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt.in
     ${CMAKE_CURRENT_BINARY_DIR}/${GIT_DEP_NAME}/CMakeLists.txt @ONLY)
 
+  if(MSVC)
+    if (${BUILD_DEP_MP})
+      set(MSVCSpecific -DCMAKE_CXX_FLAGS_RELEASE="/MP ${CMAKE_CXX_FLAGS_RELEASE}")
+	endif(MSVC)
+  endif(MSVC)
+  
   execute_process(
-    COMMAND ${CMAKE_COMMAND} -H. -Bproject_build -G "${CMAKE_GENERATOR}"
+    COMMAND ${CMAKE_COMMAND} -H. -Bproject_build -G "${CMAKE_GENERATOR}" ${MSVCSpecific}
     RESULT_VARIABLE result
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${GIT_DEP_NAME})
   if(result)
     message(FATAL_ERROR "CMake step for ${GIT_DEP_NAME} failed: ${result}")
   endif()
 
+  if ( NOT MSVC )
+    if (${BUILD_DEP_NB_PROC})
+	  set(Unix_specific -- -j${BUILD_DEP_NB_PROC})
+	endif()
+  endif()
+  
   execute_process(
-    COMMAND ${CMAKE_COMMAND} --build project_build --config ${CMAKE_BUILD_TYPE}
+    COMMAND ${CMAKE_COMMAND} --build project_build --config ${CMAKE_BUILD_TYPE} ${Unix_specific}
     RESULT_VARIABLE result
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${GIT_DEP_NAME})
   if(result)
