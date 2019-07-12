@@ -439,6 +439,7 @@ int main(int argc, char** argv) {
   //  absl::SetFlag(&FLAGS_vmodule, "*cp_model*=1");
   gflags::SetUsageMessage(kUsage);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
+  google::InitGoogleLogging(argv[0]);
   absl::SetFlag(&FLAGS_alsologtostderr, true);
   return operations_research::sat::Run();
 }

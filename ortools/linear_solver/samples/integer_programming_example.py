@@ -15,7 +15,6 @@
 from __future__ import print_function
 # [START import]
 from ortools.linear_solver import pywraplp
-
 # [END import]
 
 

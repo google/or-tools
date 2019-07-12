@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -49,9 +48,6 @@
 </div><!--header-->
 <div class="contents">
 
-<p>--&mdash; <a class="el" href="classoperations__research_1_1KnapsackSearchPath.html" title="--— KnapsackSearchPath --— KnapsackSearchPath is a small class used to represent the path between a n...">KnapsackSearchPath</a> --&mdash; <a class="el" href="classoperations__research_1_1KnapsackSearchPath.html" title="--— KnapsackSearchPath --— KnapsackSearchPath is a small class used to represent the path between a n...">KnapsackSearchPath</a> is a small class used to represent the path between a node to another node in the search tree.  
- <a href="classoperations__research_1_1KnapsackSearchPath.html#details">More...</a></p>
-
 <p><code>#include &lt;<a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
@@ -70,12 +66,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a3c129707bd16aea17d0eb3ad6c4e10e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>--&mdash; <a class="el" href="classoperations__research_1_1KnapsackSearchPath.html" title="--— KnapsackSearchPath --— KnapsackSearchPath is a small class used to represent the path between a n...">KnapsackSearchPath</a> --&mdash; <a class="el" href="classoperations__research_1_1KnapsackSearchPath.html" title="--— KnapsackSearchPath --— KnapsackSearchPath is a small class used to represent the path between a n...">KnapsackSearchPath</a> is a small class used to represent the path between a node to another node in the search tree. </p>
-<p>As the solution state is not stored for each search node, the state should be rebuilt at each node. One simple solution is to apply all decisions between the node 'to' and the root. This can be computed in O(number_of_items).</p>
-<p>However, it is possible to achieve better average complexity. Two consecutively explored nodes are usually close enough (i.e., much less than number_of_items) to benefit from an incremental update from the node 'from' to the node 'to'.</p>
-<p>The 'via' field is the common parent of 'from' field and 'to' field. So the state can be built by reverting all decisions from 'from' to 'via' and then applying all decisions from 'via' to 'to'. </p>
-
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00313">313</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<div class="textblock">
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00337">337</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a459653bd55ab09a55714f660419367b1"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a459653bd55ab09a55714f660419367b1">&#9670;&nbsp;</a></span>KnapsackSearchPath()</h2>
@@ -129,7 +121,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00318">318</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00342">342</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>
@@ -201,7 +193,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00320">320</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00344">344</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>
@@ -228,7 +220,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00319">319</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00343">343</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>

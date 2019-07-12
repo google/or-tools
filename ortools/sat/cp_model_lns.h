@@ -23,6 +23,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/util/adaptative_parameter_value.h"
 
 namespace operations_research {
 namespace sat {
@@ -52,9 +53,9 @@ class NeighborhoodGeneratorHelper : public SubSolver {
  public:
   NeighborhoodGeneratorHelper(int id, const CpModelProto& model_proto,
                               SatParameters const* parameters,
+                              SharedResponseManager* shared_response,
                               SharedTimeLimit* shared_time_limit = nullptr,
-                              SharedBoundsManager* shared_bounds = nullptr,
-                              SharedResponseManager* shared_response = nullptr);
+                              SharedBoundsManager* shared_bounds = nullptr);
 
   // SubSolver interface.
   bool TaskIsAvailable() override { return false; }
@@ -116,6 +117,10 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // variable<->constraint graph efficiently though.
   absl::Mutex* MutableMutex() const { return &mutex_; }
 
+  const SharedResponseManager& shared_response() const {
+    return *shared_response_;
+  }
+
  private:
   // Recompute most of the class member. This needs to be called when the
   // domains of the variables are updated.
@@ -174,8 +179,8 @@ class NeighborhoodGenerator {
   virtual Neighborhood Generate(const CpSolverResponse& initial_solution,
                                 int64 seed, double difficulty) const = 0;
 
-  // Returns true if the generator needs a solution to generate a neighborhood.
-  virtual bool NeedsFirstSolution() const { return true; }
+  // Returns true if a neighborhood generator can generate a neighborhood.
+  virtual bool ReadyToGenerate() const;
 
   // Uses UCB1 algorithm to compute the score (Multi armed bandit problem).
   // Details are at
@@ -380,7 +385,8 @@ class RelaxationInducedNeighborhoodGenerator : public NeighborhoodGenerator {
   Neighborhood Generate(const CpSolverResponse& initial_solution, int64 seed,
                         double difficulty) const final;
 
-  bool NeedsFirstSolution() const override { return false; }
+  // Returns true if SharedRINSNeighborhoodManager has unexplored neighborhoods.
+  bool ReadyToGenerate() const override;
 
   const Model* model_;
 };

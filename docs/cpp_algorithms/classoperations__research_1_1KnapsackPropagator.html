@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -50,17 +49,14 @@
 </div><!--header-->
 <div class="contents">
 
-<p>--&mdash; <a class="el" href="classoperations__research_1_1KnapsackPropagator.html" title="--— KnapsackPropagator --— KnapsackPropagator is the base class for modeling and propagating a constr...">KnapsackPropagator</a> --&mdash; <a class="el" href="classoperations__research_1_1KnapsackPropagator.html" title="--— KnapsackPropagator --— KnapsackPropagator is the base class for modeling and propagating a constr...">KnapsackPropagator</a> is the base class for modeling and propagating a constraint given an assignment.  
- <a href="classoperations__research_1_1KnapsackPropagator.html#details">More...</a></p>
-
 <p><code>#include &lt;<a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for operations_research::KnapsackPropagator:</div>
 <div class="dyncontent">
 <div class="center"><img src="classoperations__research_1_1KnapsackPropagator__inherit__graph.png" border="0" usemap="#operations__research_1_1KnapsackPropagator_inherit__map" alt="Inheritance graph"/></div>
 <map name="operations__research_1_1KnapsackPropagator_inherit__map" id="operations__research_1_1KnapsackPropagator_inherit__map">
-<area shape="rect"  title="&#45;&#45;â KnapsackPropagator &#45;&#45;â KnapsackPropagator is the base class for modeling and propagating a constr..." alt="" coords="31,5,185,44"/>
-<area shape="rect"  href="classoperations__research_1_1KnapsackCapacityPropagator.html" title="&#45;&#45;â KnapsackCapacityPropagator &#45;&#45;â KnapsackCapacityPropagator is a KnapsackPropagator used to enforce..." alt="" coords="5,92,210,131"/>
+<area shape="rect"  title=" " alt="" coords="31,5,182,47"/>
+<area shape="rect"  href="classoperations__research_1_1KnapsackCapacityPropagator.html" title=" " alt="" coords="5,95,208,136"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -71,16 +67,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a510e0ee59d597e16200ee04ab2e417ac"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1KnapsackPropagator.html#a510e0ee59d597e16200ee04ab2e417ac">~KnapsackPropagator</a> ()</td></tr>
 <tr class="separator:a510e0ee59d597e16200ee04ab2e417ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeb74436e19f4e74afdeb17f623bb0335"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1KnapsackPropagator.html#aeb74436e19f4e74afdeb17f623bb0335">Init</a> (const std::vector&lt; int64 &gt; &amp;profits, const std::vector&lt; int64 &gt; &amp;weights)</td></tr>
-<tr class="memdesc:aeb74436e19f4e74afdeb17f623bb0335"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initializes data structure and then calls InitPropagator.  <a href="#aeb74436e19f4e74afdeb17f623bb0335">More...</a><br /></td></tr>
 <tr class="separator:aeb74436e19f4e74afdeb17f623bb0335"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5843f83c839a81d039724b6d49ba325a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1KnapsackPropagator.html#a5843f83c839a81d039724b6d49ba325a">Update</a> (bool revert, const <a class="el" href="structoperations__research_1_1KnapsackAssignment.html">KnapsackAssignment</a> &amp;assignment)</td></tr>
-<tr class="memdesc:a5843f83c839a81d039724b6d49ba325a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Updates data structure and then calls UpdatePropagator.  <a href="#a5843f83c839a81d039724b6d49ba325a">More...</a><br /></td></tr>
 <tr class="separator:a5843f83c839a81d039724b6d49ba325a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8133fbb05961e760ed907e1f599966d8"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1KnapsackPropagator.html#a8133fbb05961e760ed907e1f599966d8">ComputeProfitBounds</a> ()=0</td></tr>
-<tr class="memdesc:a8133fbb05961e760ed907e1f599966d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">ComputeProfitBounds should set 'profit_lower_bound_' and 'profit_upper_bound_' which are constraint specific.  <a href="#a8133fbb05961e760ed907e1f599966d8">More...</a><br /></td></tr>
 <tr class="separator:a8133fbb05961e760ed907e1f599966d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a44b8bedd2218a210512ab3f8f3172312"><td class="memItemLeft" align="right" valign="top">virtual int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1KnapsackPropagator.html#a44b8bedd2218a210512ab3f8f3172312">GetNextItemId</a> () const =0</td></tr>
-<tr class="memdesc:a44b8bedd2218a210512ab3f8f3172312"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the id of next item to assign.  <a href="#a44b8bedd2218a210512ab3f8f3172312">More...</a><br /></td></tr>
 <tr class="separator:a44b8bedd2218a210512ab3f8f3172312"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a49bb0497f50479663fc4b37bb4a08268"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1KnapsackPropagator.html#a49bb0497f50479663fc4b37bb4a08268">current_profit</a> () const</td></tr>
 <tr class="separator:a49bb0497f50479663fc4b37bb4a08268"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -88,20 +80,16 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a11ea8cfd2264c8f033d59e2848f9a871"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaa95c66b22228756739735f4574cb4a1"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1KnapsackPropagator.html#aaa95c66b22228756739735f4574cb4a1">profit_upper_bound</a> () const</td></tr>
 <tr class="separator:aaa95c66b22228756739735f4574cb4a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4a8ef9517e0c8bf1eb1e450b72aa4e05"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1KnapsackPropagator.html#a4a8ef9517e0c8bf1eb1e450b72aa4e05">CopyCurrentStateToSolution</a> (bool has_one_propagator, std::vector&lt; bool &gt; *<a class="el" href="namespaceoperations__research.html#a35a30dc825cd0afa0e095f47118cd3cd">solution</a>) const</td></tr>
-<tr class="memdesc:a4a8ef9517e0c8bf1eb1e450b72aa4e05"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copies the current state into 'solution'.  <a href="#a4a8ef9517e0c8bf1eb1e450b72aa4e05">More...</a><br /></td></tr>
+<tr class="memitem:a4a8ef9517e0c8bf1eb1e450b72aa4e05"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1KnapsackPropagator.html#a4a8ef9517e0c8bf1eb1e450b72aa4e05">CopyCurrentStateToSolution</a> (bool has_one_propagator, std::vector&lt; bool &gt; *solution) const</td></tr>
 <tr class="separator:a4a8ef9517e0c8bf1eb1e450b72aa4e05"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
 <tr class="memitem:aeb99e95f19c68257f0b450cfff8fc3d0"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1KnapsackPropagator.html#aeb99e95f19c68257f0b450cfff8fc3d0">InitPropagator</a> ()=0</td></tr>
-<tr class="memdesc:aeb99e95f19c68257f0b450cfff8fc3d0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initializes data structure.  <a href="#aeb99e95f19c68257f0b450cfff8fc3d0">More...</a><br /></td></tr>
 <tr class="separator:aeb99e95f19c68257f0b450cfff8fc3d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abaf6d9225cde1b0d83d1a54299705ccb"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1KnapsackPropagator.html#abaf6d9225cde1b0d83d1a54299705ccb">UpdatePropagator</a> (bool revert, const <a class="el" href="structoperations__research_1_1KnapsackAssignment.html">KnapsackAssignment</a> &amp;assignment)=0</td></tr>
-<tr class="memdesc:abaf6d9225cde1b0d83d1a54299705ccb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Updates internal data structure incrementally.  <a href="#abaf6d9225cde1b0d83d1a54299705ccb">More...</a><br /></td></tr>
 <tr class="separator:abaf6d9225cde1b0d83d1a54299705ccb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a95551ecb408465b2fcf57aaaac393336"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1KnapsackPropagator.html#a95551ecb408465b2fcf57aaaac393336">CopyCurrentStateToSolutionPropagator</a> (std::vector&lt; bool &gt; *<a class="el" href="namespaceoperations__research.html#a35a30dc825cd0afa0e095f47118cd3cd">solution</a>) const =0</td></tr>
-<tr class="memdesc:a95551ecb408465b2fcf57aaaac393336"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copies the current state into 'solution'.  <a href="#a95551ecb408465b2fcf57aaaac393336">More...</a><br /></td></tr>
+<tr class="memitem:a95551ecb408465b2fcf57aaaac393336"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1KnapsackPropagator.html#a95551ecb408465b2fcf57aaaac393336">CopyCurrentStateToSolutionPropagator</a> (std::vector&lt; bool &gt; *solution) const =0</td></tr>
 <tr class="separator:a95551ecb408465b2fcf57aaaac393336"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af652548ebe8eeb5b0abfb900cf7f2927"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classoperations__research_1_1KnapsackState.html">KnapsackState</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1KnapsackPropagator.html#af652548ebe8eeb5b0abfb900cf7f2927">state</a> () const</td></tr>
 <tr class="separator:af652548ebe8eeb5b0abfb900cf7f2927"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -113,10 +101,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a7bbc1ccc57318641a01cd253299f5861"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>--&mdash; <a class="el" href="classoperations__research_1_1KnapsackPropagator.html" title="--— KnapsackPropagator --— KnapsackPropagator is the base class for modeling and propagating a constr...">KnapsackPropagator</a> --&mdash; <a class="el" href="classoperations__research_1_1KnapsackPropagator.html" title="--— KnapsackPropagator --— KnapsackPropagator is the base class for modeling and propagating a constr...">KnapsackPropagator</a> is the base class for modeling and propagating a constraint given an assignment. </p>
-<p>When some work has to be done both by the base and the derived class, a protected pure virtual method ending by 'Propagator' is defined. For instance, 'Init' creates a vector of items, and then calls 'InitPropagator' to let the derived class perform its own initialization. </p>
-
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00368">368</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<div class="textblock">
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00392">392</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a8d55d0c6ac3f05b72100f1635cfd2250"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8d55d0c6ac3f05b72100f1635cfd2250">&#9670;&nbsp;</a></span>KnapsackPropagator()</h2>
@@ -193,8 +179,6 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>ComputeProfitBounds should set 'profit_lower_bound_' and 'profit_upper_bound_' which are constraint specific. </p>
-
 <p>Implemented in <a class="el" href="classoperations__research_1_1KnapsackCapacityPropagator.html#af1d7d1e175e652c64962af490ab42247">operations_research::KnapsackCapacityPropagator</a>.</p>
 
 </div>
@@ -225,9 +209,6 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Copies the current state into 'solution'. </p>
-<p>All unbound items are set to false (i.e. not in the knapsack). When 'has_one_propagator' is true, CopyCurrentSolutionPropagator is called to have a better solution. When there is only one propagator there is no need to check the solution with other propagators, so the partial solution can be smartly completed. </p>
-
 </div>
 </div>
 <a id="a95551ecb408465b2fcf57aaaac393336"></a>
@@ -253,9 +234,6 @@ Protected Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Copies the current state into 'solution'. </p>
-<p>Only unbound items have to be copied as CopyCurrentSolution was already called with current state. This method is useful when a propagator is able to find a better solution than the blind instantiation to false of unbound items. </p>
 
 <p>Implemented in <a class="el" href="classoperations__research_1_1KnapsackCapacityPropagator.html#a03745304f7f106699428e4ed6efdef9d">operations_research::KnapsackCapacityPropagator</a>.</p>
 
@@ -284,7 +262,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00387">387</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00411">411</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>
@@ -310,9 +288,6 @@ Protected Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Returns the id of next item to assign. </p>
-<p>Returns kNoSelection when all items are bound. </p>
 
 <p>Implemented in <a class="el" href="classoperations__research_1_1KnapsackCapacityPropagator.html#aeea8be32ceca77b5eaf9139df5e4ea4a">operations_research::KnapsackCapacityPropagator</a>.</p>
 
@@ -344,8 +319,6 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Initializes data structure and then calls InitPropagator. </p>
-
 </div>
 </div>
 <a id="aeb99e95f19c68257f0b450cfff8fc3d0"></a>
@@ -370,9 +343,6 @@ Protected Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Initializes data structure. </p>
-<p>This method is called after initialization of <a class="el" href="classoperations__research_1_1KnapsackPropagator.html" title="--— KnapsackPropagator --— KnapsackPropagator is the base class for modeling and propagating a constr...">KnapsackPropagator</a> data structure. </p>
 
 <p>Implemented in <a class="el" href="classoperations__research_1_1KnapsackCapacityPropagator.html#a59eff70af400b44d87d57b90047ada6e">operations_research::KnapsackCapacityPropagator</a>.</p>
 
@@ -401,7 +371,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00419">419</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00443">443</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>
@@ -428,7 +398,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00388">388</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00412">412</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>
@@ -455,7 +425,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00389">389</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00413">413</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>
@@ -483,7 +453,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00421">421</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00445">445</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>
@@ -511,7 +481,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00422">422</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00446">446</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>
@@ -538,7 +508,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00418">418</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00442">442</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>
@@ -567,9 +537,6 @@ Protected Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>Updates data structure and then calls UpdatePropagator. </p>
-<p>Returns false when failure. </p>
 
 </div>
 </div>
@@ -606,9 +573,6 @@ Protected Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Updates internal data structure incrementally. </p>
-<p>This method is called after update of <a class="el" href="classoperations__research_1_1KnapsackPropagator.html" title="--— KnapsackPropagator --— KnapsackPropagator is the base class for modeling and propagating a constr...">KnapsackPropagator</a> data structure. </p>
 
 <p>Implemented in <a class="el" href="classoperations__research_1_1KnapsackCapacityPropagator.html#a944c99875dbcc49d557c129f4077799b">operations_research::KnapsackCapacityPropagator</a>.</p>
 

@@ -1,6 +1,12 @@
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
+    name = "adaptative_parameter_value",
+    hdrs = ["adaptative_parameter_value.h"],
+    deps = ["//ortools/base"],
+)
+
+cc_library(
     name = "affine_relation",
     hdrs = ["affine_relation.h"],
     deps = [

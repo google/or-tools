@@ -28,14 +28,16 @@ namespace sat {
 
 NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
     int id, const CpModelProto& model_proto, SatParameters const* parameters,
+    SharedResponseManager* shared_response,
     class SharedTimeLimit* shared_time_limit,
-    SharedBoundsManager* shared_bounds, SharedResponseManager* shared_response)
+    SharedBoundsManager* shared_bounds)
     : SubSolver(id, "helper"),
       model_proto_(model_proto),
       parameters_(*parameters),
       shared_time_limit_(shared_time_limit),
       shared_bounds_(shared_bounds),
       shared_response_(shared_response) {
+  CHECK(shared_response_ != nullptr);
   RecomputeHelperData();
   Synchronize();
 }
@@ -79,9 +81,7 @@ void NeighborhoodGeneratorHelper::Synchronize() {
       RecomputeHelperData();
     }
   }
-  if (shared_response_ != nullptr) {
-    shared_response_->MutableSolutionsRepository()->Synchronize();
-  }
+  shared_response_->MutableSolutionsRepository()->Synchronize();
 }
 
 void NeighborhoodGeneratorHelper::RecomputeHelperData() {
@@ -208,6 +208,10 @@ Neighborhood NeighborhoodGeneratorHelper::FixAllVariables(
     fixed_variables.push_back(i);
   }
   return FixGivenVariables(initial_solution, fixed_variables);
+}
+
+bool NeighborhoodGenerator::ReadyToGenerate() const {
+  return (helper_.shared_response().SolutionsRepository().NumSolutions() > 0);
 }
 
 double NeighborhoodGenerator::GetUCBScore(int64 total_num_calls) const {
@@ -550,6 +554,13 @@ Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
   }
   return GenerateSchedulingNeighborhoodForRelaxation(intervals_to_relax,
                                                      initial_solution, helper_);
+}
+
+bool RelaxationInducedNeighborhoodGenerator::ReadyToGenerate() const {
+  SharedRINSNeighborhoodManager* rins_manager =
+      model_->Mutable<SharedRINSNeighborhoodManager>();
+  CHECK(rins_manager != nullptr);
+  return rins_manager->HasUnexploredNeighborhood();
 }
 
 Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(

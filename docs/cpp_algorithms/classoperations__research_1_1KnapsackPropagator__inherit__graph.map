@@ -1,4 +1,4 @@
 <map id="operations_research::KnapsackPropagator" name="operations_research::KnapsackPropagator">
-<area shape="rect" id="node1" title="&#45;&#45;— KnapsackPropagator &#45;&#45;— KnapsackPropagator is the base class for modeling and propagating a constr..." alt="" coords="31,5,185,44"/>
-<area shape="rect" id="node2" href="$classoperations__research_1_1KnapsackCapacityPropagator.html" title="&#45;&#45;— KnapsackCapacityPropagator &#45;&#45;— KnapsackCapacityPropagator is a KnapsackPropagator used to enforce..." alt="" coords="5,92,210,131"/>
+<area shape="rect" id="node1" title=" " alt="" coords="31,5,182,47"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1KnapsackCapacityPropagator.html" title=" " alt="" coords="5,95,208,136"/>
 </map>

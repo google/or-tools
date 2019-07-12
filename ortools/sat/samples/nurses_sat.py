@@ -34,7 +34,6 @@ class NursesPartialSolutionPrinter(cp_model.CpSolverSolutionCallback):
         self._solution_count = 0
 
     def on_solution_callback(self):
-        self._solution_count += 1
         if self._solution_count in self._solutions:
             print('Solution %i' % self._solution_count)
             for d in range(self._num_days):
@@ -48,6 +47,7 @@ class NursesPartialSolutionPrinter(cp_model.CpSolverSolutionCallback):
                     if not is_working:
                         print('  Nurse {} does not work'.format(n))
             print()
+        self._solution_count += 1
 
     def solution_count(self):
         return self._solution_count

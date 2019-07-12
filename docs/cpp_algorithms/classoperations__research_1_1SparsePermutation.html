@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -50,9 +49,6 @@
 </div><!--header-->
 <div class="contents">
 
-<p>A compact representation for permutations of {0..N-1} that displaces few elements: it needs only O(K) memory for a permutation that displaces K elements.  
- <a href="classoperations__research_1_1SparsePermutation.html#details">More...</a></p>
-
 <p><code>#include &lt;<a class="el" href="sparse__permutation_8h_source.html">sparse_permutation.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
@@ -69,28 +65,22 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a4941ad4a0095fa3bc4e8aa0e8fb521bf"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SparsePermutation.html#a4941ad4a0095fa3bc4e8aa0e8fb521bf">NumCycles</a> () const</td></tr>
 <tr class="separator:a4941ad4a0095fa3bc4e8aa0e8fb521bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b05b1e840388f9aba5bbe79a392d7d6"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; int &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SparsePermutation.html#a0b05b1e840388f9aba5bbe79a392d7d6">Support</a> () const</td></tr>
-<tr class="memdesc:a0b05b1e840388f9aba5bbe79a392d7d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the "support" of this permutation; that is, the set of elements displaced by it.  <a href="#a0b05b1e840388f9aba5bbe79a392d7d6">More...</a><br /></td></tr>
 <tr class="separator:a0b05b1e840388f9aba5bbe79a392d7d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a59a2f011b1fdc9a63d6557749542c354"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structoperations__research_1_1SparsePermutation_1_1Iterator.html">Iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SparsePermutation.html#a59a2f011b1fdc9a63d6557749542c354">Cycle</a> (int i) const</td></tr>
 <tr class="separator:a59a2f011b1fdc9a63d6557749542c354"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9fc0ca5752b5ad6cc2a78ff7c512b22a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SparsePermutation.html#a9fc0ca5752b5ad6cc2a78ff7c512b22a">LastElementInCycle</a> (int i) const</td></tr>
-<tr class="memdesc:a9fc0ca5752b5ad6cc2a78ff7c512b22a"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is useful for iterating over the pair {element, image} of a permutation:  <a href="#a9fc0ca5752b5ad6cc2a78ff7c512b22a">More...</a><br /></td></tr>
 <tr class="separator:a9fc0ca5752b5ad6cc2a78ff7c512b22a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac1e64e1e738964d338be3cac2b2a58fd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SparsePermutation.html#ac1e64e1e738964d338be3cac2b2a58fd">AddToCurrentCycle</a> (int x)</td></tr>
-<tr class="memdesc:ac1e64e1e738964d338be3cac2b2a58fd"><td class="mdescLeft">&#160;</td><td class="mdescRight">To add a cycle to the permutation, repeatedly call <a class="el" href="classoperations__research_1_1SparsePermutation.html#ac1e64e1e738964d338be3cac2b2a58fd" title="To add a cycle to the permutation, repeatedly call AddToCurrentCycle() with the cycle&#39;s orbit,...">AddToCurrentCycle()</a> with the cycle's orbit, then call <a class="el" href="classoperations__research_1_1SparsePermutation.html#ac1e42a48198d2abc8642d81f6b846fee">CloseCurrentCycle()</a>; This shouldn't be called on trivial cycles (of length 1).  <a href="#ac1e64e1e738964d338be3cac2b2a58fd">More...</a><br /></td></tr>
 <tr class="separator:ac1e64e1e738964d338be3cac2b2a58fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac1e42a48198d2abc8642d81f6b846fee"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SparsePermutation.html#ac1e42a48198d2abc8642d81f6b846fee">CloseCurrentCycle</a> ()</td></tr>
 <tr class="separator:ac1e42a48198d2abc8642d81f6b846fee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abca48ca404a02f35f06f295814407100"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SparsePermutation.html#abca48ca404a02f35f06f295814407100">RemoveCycles</a> (const std::vector&lt; int &gt; &amp;cycle_indices)</td></tr>
-<tr class="memdesc:abca48ca404a02f35f06f295814407100"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes the cycles with given indices from the permutation.  <a href="#abca48ca404a02f35f06f295814407100">More...</a><br /></td></tr>
 <tr class="separator:abca48ca404a02f35f06f295814407100"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6886dcada3acf697af20e88ce32a7ae1"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SparsePermutation.html#a6886dcada3acf697af20e88ce32a7ae1">DebugString</a> () const</td></tr>
-<tr class="memdesc:a6886dcada3acf697af20e88ce32a7ae1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Output all non-identity cycles of the permutation, sorted lexicographically (each cycle is described starting by its smallest element; and all cycles are sorted lexicographically against each other).  <a href="#a6886dcada3acf697af20e88ce32a7ae1">More...</a><br /></td></tr>
 <tr class="separator:a6886dcada3acf697af20e88ce32a7ae1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>A compact representation for permutations of {0..N-1} that displaces few elements: it needs only O(K) memory for a permutation that displaces K elements. </p>
-
+<div class="textblock">
 <p class="definition">Definition at line <a class="el" href="sparse__permutation_8h_source.html#l00027">27</a> of file <a class="el" href="sparse__permutation_8h_source.html">sparse_permutation.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ab4ee5c7df12fcaeb042a8c52654569bd"></a>
@@ -145,8 +135,6 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>To add a cycle to the permutation, repeatedly call <a class="el" href="classoperations__research_1_1SparsePermutation.html#ac1e64e1e738964d338be3cac2b2a58fd" title="To add a cycle to the permutation, repeatedly call AddToCurrentCycle() with the cycle&#39;s orbit,...">AddToCurrentCycle()</a> with the cycle's orbit, then call <a class="el" href="classoperations__research_1_1SparsePermutation.html#ac1e42a48198d2abc8642d81f6b846fee">CloseCurrentCycle()</a>; This shouldn't be called on trivial cycles (of length 1). </p>
 
 <p class="definition">Definition at line <a class="el" href="sparse__permutation_8h_source.html#l00084">84</a> of file <a class="el" href="sparse__permutation_8h_source.html">sparse_permutation.h</a>.</p>
 
@@ -222,9 +210,6 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Output all non-identity cycles of the permutation, sorted lexicographically (each cycle is described starting by its smallest element; and all cycles are sorted lexicographically against each other). </p>
-<p>This isn't efficient; use for debugging only. Example: "(1 4 3) (5 9) (6 8 7)". </p>
-
 </div>
 </div>
 <a id="a9fc0ca5752b5ad6cc2a78ff7c512b22a"></a>
@@ -250,10 +235,6 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>This is useful for iterating over the pair {element, image} of a permutation: </p>
-<p>for (int c = 0; c &lt; perm.NumCycles(); ++c) { int element = LastElementInCycle(c); for (int image : perm.Cycle(c)) { ///&lt; The pair is (element, image). ... element = image; } }</p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000013">Todo:</a></b></dt><dd>(user): Provide a full iterator for this? Note that we have more information with the loop above. Not sure it is needed though. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="sparse__permutation_8h_source.html#l00124">124</a> of file <a class="el" href="sparse__permutation_8h_source.html">sparse_permutation.h</a>.</p>
 
@@ -302,9 +283,6 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Removes the cycles with given indices from the permutation. </p>
-<p>This works in O(K) for a permutation displacing K elements. </p>
-
 </div>
 </div>
 <a id="aff385d18c768ffa364c5dccb5fb35c0a"></a>
@@ -329,7 +307,6 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000012">Todo:</a></b></dt><dd>(user,user): complete the reader API. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="sparse__permutation_8h_source.html#l00032">32</a> of file <a class="el" href="sparse__permutation_8h_source.html">sparse_permutation.h</a>.</p>
 
@@ -357,8 +334,6 @@ Public Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Returns the "support" of this permutation; that is, the set of elements displaced by it. </p>
 
 <p class="definition">Definition at line <a class="el" href="sparse__permutation_8h_source.html#l00037">37</a> of file <a class="el" href="sparse__permutation_8h_source.html">sparse_permutation.h</a>.</p>
 
