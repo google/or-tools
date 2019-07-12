@@ -2599,7 +2599,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
   }
 
   if (new_size == 0) {
-    context_.UpdateRuleStats("cumulative: removed empty constraint");
+    context_.UpdateRuleStats("cumulative: no intervals");
     return RemoveConstraint(ct);
   }
 
@@ -2670,6 +2670,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       for (const int var : start_indices) {
         arg->add_vars(var);
       }
+      context_.UpdateNewConstraintsVariableUsage();
       return RemoveConstraint(ct);
     } else {
       context_.UpdateRuleStats("cumulative: convert to no_overlap");
@@ -2678,6 +2679,7 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
       for (const int interval : proto.intervals()) {
         arg->add_intervals(interval);
       }
+      context_.UpdateNewConstraintsVariableUsage();
       return RemoveConstraint(ct);
     }
   }

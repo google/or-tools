@@ -116,6 +116,15 @@ void LinearProgrammingConstraint::SetObjectiveCoefficient(IntegerVariable ivar,
 // this to reduce the number of variables in the LP and in the
 // ConstraintManager? We might also detect during the search that two variable
 // are equivalent.
+//
+// TODO(user): On TSP/VRP with a lot of cuts, this can take 20% of the overall
+// running time. We should be able to almost remove most of this from the
+// profile by being more incremental (modulo LP scaling).
+//
+// TODO(user): A longer term idea for LP with a lot of variables is to not
+// add all variables to each LP solve and do some "sifting". That can be useful
+// for TSP for instance where the number of edges is large, but only a small
+// fraction will be used in the optimal solution.
 void LinearProgrammingConstraint::CreateLpFromConstraintManager() {
   // Fill integer_lp_.
   integer_lp_.clear();
@@ -167,6 +176,7 @@ void LinearProgrammingConstraint::CreateLpFromConstraintManager() {
       lp_data_.SetCoefficient(row, term.first, ToDouble(term.second));
     }
   }
+  lp_data_.NotifyThatColumnsAreClean();
 
   // Scale lp_data_.
   scaler_.Clear();
@@ -492,7 +502,7 @@ void LinearProgrammingConstraint::AddCutFromConstraints(
   const double kMinViolation = 1e-4;
   const double violation = activity - ToDouble(cut.ub);
   if (violation < kMinViolation) {
-    VLOG(2) << "Bad cut " << activity << " <= " << ToDouble(cut.ub);
+    VLOG(3) << "Bad cut " << activity << " <= " << ToDouble(cut.ub);
     return;
   }
 
@@ -746,7 +756,8 @@ bool LinearProgrammingConstraint::Propagate() {
         if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
           VLOG(1) << "Cuts relaxation improvement " << old_obj << " -> "
                   << simplex_.GetObjectiveValue()
-                  << " diff: " << simplex_.GetObjectiveValue() - old_obj;
+                  << " diff: " << simplex_.GetObjectiveValue() - old_obj
+                  << " level: " << trail_->CurrentDecisionLevel();
         }
       } else {
         if (trail_->CurrentDecisionLevel() == 0) {
@@ -1447,36 +1458,31 @@ void LinearProgrammingConstraint::ReducedCostStrengtheningDeductions(
 
 namespace {
 
-// TODO(user): we could use a sparser algorithm, even if this do not seems to
-// matter for now.
-void AddIncomingAndOutgoingCutsIfNeeded(
-    int num_nodes, const std::vector<int>& s, const std::vector<int>& tails,
-    const std::vector<int>& heads, const std::vector<IntegerVariable>& vars,
-    const std::vector<double>& var_lp_values, int64 rhs_lower_bound,
-    const gtl::ITIVector<IntegerVariable, double>& lp_values,
-    LinearConstraintManager* manager) {
-  LinearConstraint incoming;
+// Add a cut of the form Sum_{outgoing arcs from S} lp >= rhs_lower_bound.
+//
+// Note that we used to also add the same cut for the incoming arcs, but because
+// of flow conservation on these problems, the outgoing flow is always the same
+// as the incoming flow, so adding this extra cut doesn't seem relevant.
+void AddOutgoingCut(int num_nodes, int subset_size,
+                    const std::vector<bool>& in_subset,
+                    const std::vector<int>& tails,
+                    const std::vector<int>& heads,
+                    const std::vector<IntegerVariable>& vars,
+                    const std::vector<double>& var_lp_values,
+                    int64 rhs_lower_bound,
+                    const gtl::ITIVector<IntegerVariable, double>& lp_values,
+                    LinearConstraintManager* manager) {
   LinearConstraint outgoing;
-  double sum_incoming = 0.0;
   double sum_outgoing = 0.0;
-  incoming.lb = outgoing.lb = IntegerValue(rhs_lower_bound);
-  incoming.ub = outgoing.ub = kMaxIntegerValue;
-  const std::set<int> subset(s.begin(), s.end());
+  outgoing.lb = IntegerValue(rhs_lower_bound);
+  outgoing.ub = kMaxIntegerValue;
 
-  // Add incoming/outgoing cut arcs, compute flow through cuts.
+  // Add outgoing arcs, compute outgoing flow.
   for (int i = 0; i < tails.size(); ++i) {
-    const bool out = gtl::ContainsKey(subset, tails[i]);
-    const bool in = gtl::ContainsKey(subset, heads[i]);
-    if (out && in) continue;
-    if (out) {
+    if (in_subset[tails[i]] && !in_subset[heads[i]]) {
       sum_outgoing += var_lp_values[i];
       outgoing.vars.push_back(vars[i]);
       outgoing.coeffs.push_back(IntegerValue(1));
-    }
-    if (in) {
-      sum_incoming += var_lp_values[i];
-      incoming.vars.push_back(vars[i]);
-      incoming.coeffs.push_back(IntegerValue(1));
     }
   }
 
@@ -1492,7 +1498,7 @@ void AddIncomingAndOutgoingCutsIfNeeded(
   int optional_loop_out = -1;
   for (int i = 0; i < tails.size(); ++i) {
     if (tails[i] != heads[i]) continue;
-    if (gtl::ContainsKey(subset, tails[i])) {
+    if (in_subset[tails[i]]) {
       num_optional_nodes_in++;
       if (optional_loop_in == -1 ||
           var_lp_values[i] < var_lp_values[optional_loop_in]) {
@@ -1509,49 +1515,251 @@ void AddIncomingAndOutgoingCutsIfNeeded(
   if (num_optional_nodes_in + num_optional_nodes_out > 0) {
     CHECK_EQ(rhs_lower_bound, 1);
     // When all optionals of one side are excluded in lp solution, no cut.
-    if (num_optional_nodes_in == subset.size() &&
+    if (num_optional_nodes_in == subset_size &&
         (optional_loop_in == -1 ||
          var_lp_values[optional_loop_in] > 1.0 - 1e-6)) {
       return;
     }
-    if (num_optional_nodes_out == num_nodes - subset.size() &&
+    if (num_optional_nodes_out == num_nodes - subset_size &&
         (optional_loop_out == -1 ||
          var_lp_values[optional_loop_out] > 1.0 - 1e-6)) {
       return;
     }
 
     // There is no mandatory node in subset, add optional_loop_in.
-    if (num_optional_nodes_in == subset.size()) {
-      incoming.vars.push_back(vars[optional_loop_in]);
-      incoming.coeffs.push_back(IntegerValue(1));
-      sum_incoming += var_lp_values[optional_loop_in];
-
+    if (num_optional_nodes_in == subset_size) {
       outgoing.vars.push_back(vars[optional_loop_in]);
       outgoing.coeffs.push_back(IntegerValue(1));
       sum_outgoing += var_lp_values[optional_loop_in];
     }
 
     // There is no mandatory node out of subset, add optional_loop_out.
-    if (num_optional_nodes_out == num_nodes - subset.size()) {
-      incoming.vars.push_back(vars[optional_loop_out]);
-      incoming.coeffs.push_back(IntegerValue(1));
-      sum_incoming += var_lp_values[optional_loop_out];
-
+    if (num_optional_nodes_out == num_nodes - subset_size) {
       outgoing.vars.push_back(vars[optional_loop_out]);
       outgoing.coeffs.push_back(IntegerValue(1));
       sum_outgoing += var_lp_values[optional_loop_out];
     }
   }
 
-  if (sum_incoming < rhs_lower_bound - 1e-6) {
-    manager->AddCut(incoming, "Circuit", lp_values);
-  }
   if (sum_outgoing < rhs_lower_bound - 1e-6) {
     manager->AddCut(outgoing, "Circuit", lp_values);
   }
 }
 
 }  // namespace
+
+// We roughly follow the algorithm described in section 6 of "The Traveling
+// Salesman Problem, A computational Study", David L. Applegate, Robert E.
+// Bixby, Vasek Chvatal, William J. Cook.
+//
+// Note that this is mainly a "symmetric" case algo, but it does still work for
+// the asymmetric case.
+void SeparateSubtourInequalities(
+    int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
+    const std::vector<IntegerVariable>& vars,
+    const gtl::ITIVector<IntegerVariable, double>& lp_values,
+    absl::Span<const int64> demands, int64 capacity,
+    LinearConstraintManager* manager) {
+  if (num_nodes <= 2) return;
+
+  // We will collect only the arcs with a positive lp_values to speed up some
+  // computation below.
+  struct Arc {
+    int tail;
+    int head;
+    double lp_value;
+  };
+  std::vector<Arc> relevant_arcs;
+
+  // Sort the arcs by non-increasing lp_values.
+  std::vector<std::pair<double, int>> arc_by_decreasing_lp_values;
+  std::vector<double> var_lp_values;
+  for (int i = 0; i < vars.size(); ++i) {
+    const double lp_value = lp_values[vars[i]];
+    var_lp_values.push_back(lp_value);
+    if (lp_value < 1e-6) continue;
+    relevant_arcs.push_back({tails[i], heads[i], lp_value});
+    arc_by_decreasing_lp_values.push_back({lp_value, i});
+  }
+  std::sort(arc_by_decreasing_lp_values.begin(),
+            arc_by_decreasing_lp_values.end(),
+            std::greater<std::pair<double, int>>());
+
+  // We will do a union-find by adding one by one the arc of the lp solution
+  // in the order above. Every intermediate set during this construction will
+  // be a candidate for a cut.
+  //
+  // In parallel to the union-find, to efficiently reconstruct these sets (at
+  // most num_nodes), we construct a "decomposition forest" of the different
+  // connected components. Note that we don't exploit any asymmetric nature of
+  // the graph here. This is exactly the algo 6.3 in the book above.
+  int num_components = num_nodes;
+  std::vector<int> parent(num_nodes);
+  std::vector<int> root(num_nodes);
+  for (int i = 0; i < num_nodes; ++i) {
+    parent[i] = i;
+    root[i] = i;
+  }
+  auto get_root_and_compress_path = [&root](int node) {
+    int r = node;
+    while (root[r] != r) r = root[r];
+    while (root[node] != r) {
+      const int next = root[node];
+      root[node] = r;
+      node = next;
+    }
+    return r;
+  };
+  for (const auto pair : arc_by_decreasing_lp_values) {
+    if (num_components == 2) break;
+    const int tail = get_root_and_compress_path(tails[pair.second]);
+    const int head = get_root_and_compress_path(heads[pair.second]);
+    if (tail != head) {
+      // Update the decomposition forest, note that the number of nodes is
+      // growing.
+      const int new_node = parent.size();
+      parent.push_back(new_node);
+      parent[head] = new_node;
+      parent[tail] = new_node;
+      --num_components;
+
+      // It is important that the union-find representative is the same node.
+      root.push_back(new_node);
+      root[head] = new_node;
+      root[tail] = new_node;
+    }
+  }
+
+  // For each node in the decomposition forest, try to add a cut for the set
+  // formed by the nodes and its children. To do that efficiently, we first
+  // order the nodes so that for each node in a tree, the set of children forms
+  // a consecutive span in the pre_order vector. This vector just lists the
+  // nodes in the "pre-order" graph traversal order. The Spans will point inside
+  // the pre_order vector, it is why we initialize it once and for all.
+  int new_size = 0;
+  std::vector<int> pre_order(num_nodes);
+  std::vector<absl::Span<const int>> subsets;
+  {
+    std::vector<absl::InlinedVector<int, 2>> graph(parent.size());
+    for (int i = 0; i < parent.size(); ++i) {
+      if (parent[i] != i) graph[parent[i]].push_back(i);
+    }
+    std::vector<int> queue;
+    std::vector<bool> seen(graph.size(), false);
+    std::vector<int> start_index(parent.size());
+    for (int i = num_nodes; i < parent.size(); ++i) {
+      // Note that because of the way we constructed 'parent', the graph is a
+      // binary tree. This is not required for the correctness of the algorithm
+      // here though.
+      CHECK(graph[i].empty() || graph[i].size() == 2);
+      if (parent[i] != i) continue;
+
+      // Explore the subtree rooted at node i.
+      CHECK(!seen[i]);
+      queue.push_back(i);
+      while (!queue.empty()) {
+        const int node = queue.back();
+        if (seen[node]) {
+          queue.pop_back();
+          // All the children of node are in the span [start, end) of the
+          // pre_order vector.
+          const int start = start_index[node];
+          if (new_size - start > 1) {
+            subsets.emplace_back(&pre_order[start], new_size - start);
+          }
+          continue;
+        }
+        seen[node] = true;
+        start_index[node] = new_size;
+        if (node < num_nodes) pre_order[new_size++] = node;
+        for (const int child : graph[node]) {
+          if (!seen[child]) queue.push_back(child);
+        }
+      }
+    }
+  }
+
+  // Compute the total demands in order to know the minimum incoming/outgoing
+  // flow.
+  int64 total_demands = 0;
+  if (!demands.empty()) {
+    for (const int64 demand : demands) total_demands += demand;
+  }
+
+  // Process each subsets and add any violated cut.
+  CHECK_EQ(pre_order.size(), num_nodes);
+  std::vector<bool> in_subset(num_nodes, false);
+  for (const absl::Span<const int> subset : subsets) {
+    CHECK_GT(subset.size(), 1);
+    CHECK_LT(subset.size(), num_nodes);
+
+    // These fields will be left untouched if demands.empty().
+    bool contain_depot = false;
+    int64 subset_demand = 0;
+
+    // Initialize "in_subset" and the subset demands.
+    for (const int n : subset) {
+      in_subset[n] = true;
+      if (!demands.empty()) {
+        if (n == 0) contain_depot = true;
+        subset_demand += demands[n];
+      }
+    }
+
+    // Compute a lower bound on the outgoing flow.
+    //
+    // TODO(user): This lower bound assume all nodes in subset must be served,
+    // which is not the case. For TSP we do the correct thing in
+    // AddOutgoingCut() but not for CVRP... Fix!!
+    //
+    // TODO(user): It could be very interesting to see if this "min outgoing
+    // flow" cannot be automatically infered from the constraint in the
+    // precedence graph. This might work if we assume that any kind of path
+    // cumul constraint is encoded with constraints:
+    //   [edge => value_head >= value_tail + edge_weight].
+    // We could take the minimum incoming edge weight per node in the set, and
+    // use the cumul variable domain to infer some capacity.
+    int64 min_outgoing_flow = 1;
+    if (!demands.empty()) {
+      min_outgoing_flow =
+          contain_depot
+              ? (total_demands - subset_demand + capacity - 1) / capacity
+              : (subset_demand + capacity - 1) / capacity;
+    }
+
+    // We still need to serve nodes with a demand of zero, and in the corner
+    // case where all node in subset have a zero demand, the formula above
+    // result in a min_outgoing_flow of zero.
+    min_outgoing_flow = std::max(min_outgoing_flow, int64{1});
+
+    // Compute the current outgoing flow out of the subset.
+    //
+    // This can take a significant portion of the running time, it is why it is
+    // faster to do it only on arcs with non-zero lp values which should be in
+    // linear number rather than the total number of arc which can be quadratic.
+    //
+    // TODO(user): For the symmetric case there is an even faster algo. See if
+    // it can be generalized to the asymmetric one if become needed.
+    // Reference is algo 6.4 of the "The Traveling Salesman Problem" book
+    // mentionned above.
+    double outgoing_flow = 0.0;
+    for (const auto arc : relevant_arcs) {
+      if (in_subset[arc.tail] && !in_subset[arc.head]) {
+        outgoing_flow += arc.lp_value;
+      }
+    }
+
+    // Add a cut if the current outgoing flow is not enough.
+    if (outgoing_flow < min_outgoing_flow - 1e-6) {
+      AddOutgoingCut(num_nodes, subset.size(), in_subset, tails, heads, vars,
+                     var_lp_values,
+                     /*rhs_lower_bound=*/min_outgoing_flow, lp_values, manager);
+    }
+
+    // Sparse clean up.
+    for (const int n : subset) in_subset[n] = false;
+  }
+}
 
 // We use a basic algorithm to detect components that are not connected to the
 // rest of the graph in the LP solution, and add cuts to force some arcs to
@@ -1565,37 +1773,8 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
       [num_nodes, tails, heads, vars](
           const gtl::ITIVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
-        int num_arcs_in_lp_solution = 0;
-        std::vector<double> var_lp_values;
-        std::vector<std::vector<int>> graph(num_nodes);
-        for (int i = 0; i < vars.size(); ++i) {
-          var_lp_values.push_back(lp_values[vars[i]]);
-
-          // TODO(user): a more advanced algorithm consist of adding the arcs
-          // in the decreasing order of their lp_values, and for each strongly
-          // connected components S along the way, try to add the corresponding
-          // cuts. We can stop as soon as there is only two components left,
-          // after adding the corresponding cut.
-          if (lp_values[vars[i]] > 1e-6) {
-            ++num_arcs_in_lp_solution;
-            graph[tails[i]].push_back(heads[i]);
-          }
-        }
-        std::vector<std::vector<int>> components;
-        FindStronglyConnectedComponents(num_nodes, graph, &components);
-        if (components.size() == 1) return;
-
-        VLOG(1) << "num_arcs_in_lp_solution:" << num_arcs_in_lp_solution
-                << " sccs:" << components.size();
-        for (const std::vector<int>& component : components) {
-          if (component.size() == 1) continue;
-          AddIncomingAndOutgoingCutsIfNeeded(
-              num_nodes, component, tails, heads, vars, var_lp_values,
-              /*rhs_lower_bound=*/1, lp_values, manager);
-
-          // In this case, the cuts for each component are the same.
-          if (components.size() == 2) break;
-        }
+        SeparateSubtourInequalities(num_nodes, tails, heads, vars, lp_values,
+                                    /*demands=*/{}, /*capacity=*/0, manager);
       };
   return result;
 }
@@ -1606,54 +1785,14 @@ CutGenerator CreateCVRPCutGenerator(int num_nodes,
                                     const std::vector<IntegerVariable>& vars,
                                     const std::vector<int64>& demands,
                                     int64 capacity) {
-  CHECK_GT(capacity, 0);
-  int64 total_demands = 0;
-  for (const int64 demand : demands) total_demands += demand;
-
   CutGenerator result;
   result.vars = vars;
   result.generate_cuts =
-      [num_nodes, tails, heads, total_demands, demands, capacity, vars](
+      [num_nodes, tails, heads, demands, capacity, vars](
           const gtl::ITIVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
-        int num_arcs_in_lp_solution = 0;
-        std::vector<double> var_lp_values;
-        std::vector<std::vector<int>> graph(num_nodes);
-        for (int i = 0; i < vars.size(); ++i) {
-          var_lp_values.push_back(lp_values[vars[i]]);
-          if (lp_values[vars[i]] > 1e-6) {
-            ++num_arcs_in_lp_solution;
-            graph[tails[i]].push_back(heads[i]);
-          }
-        }
-        std::vector<std::vector<int>> components;
-        FindStronglyConnectedComponents(num_nodes, graph, &components);
-        if (components.size() == 1) return;
-
-        VLOG(1) << "num_arcs_in_lp_solution:" << num_arcs_in_lp_solution
-                << " sccs:" << components.size();
-        for (const std::vector<int>& component : components) {
-          if (component.size() == 1) continue;
-
-          bool contain_depot = false;
-          int64 component_demand = 0;
-          for (const int node : component) {
-            if (node == 0) contain_depot = true;
-            component_demand += demands[node];
-          }
-          const int min_num_vehicles =
-              contain_depot
-                  ? (total_demands - component_demand + capacity - 1) / capacity
-                  : (component_demand + capacity - 1) / capacity;
-          CHECK_GE(min_num_vehicles, 1);
-
-          AddIncomingAndOutgoingCutsIfNeeded(
-              num_nodes, component, tails, heads, vars, var_lp_values,
-              /*rhs_lower_bound=*/min_num_vehicles, lp_values, manager);
-
-          // In this case, the cuts for each component are the same.
-          if (components.size() == 2) break;
-        }
+        SeparateSubtourInequalities(num_nodes, tails, heads, vars, lp_values,
+                                    demands, capacity, manager);
       };
   return result;
 }
