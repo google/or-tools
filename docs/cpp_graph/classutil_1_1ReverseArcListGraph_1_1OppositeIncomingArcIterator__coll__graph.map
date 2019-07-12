@@ -1,7 +1,7 @@
 <map id="util::ReverseArcListGraph&lt; NodeIndexType, ArcIndexType &gt;::OppositeIncomingArcIterator" name="util::ReverseArcListGraph&lt; NodeIndexType, ArcIndexType &gt;::OppositeIncomingArcIterator">
-<area shape="rect" id="node1" title=" " alt="" coords="110,319,325,371"/>
-<area shape="rect" id="node2" href="$classutil_1_1ReverseArcListGraph.html" title="Extends the ListGraph by also storing the reverse arcs." alt="" coords="30,219,256,257"/>
-<area shape="rect" id="node3" href="$classutil_1_1BaseGraph.html" title=" " alt="" coords="48,119,237,157"/>
-<area shape="rect" id="node4" title=" " alt="" coords="5,5,120,31"/>
-<area shape="rect" id="node5" title=" " alt="" coords="193,5,295,31"/>
+<area shape="rect" id="node1" title=" " alt="" coords="109,332,323,388"/>
+<area shape="rect" id="node2" href="$classutil_1_1ReverseArcListGraph.html" title="Extends the ListGraph by also storing the reverse arcs." alt="" coords="27,228,253,269"/>
+<area shape="rect" id="node3" href="$classutil_1_1BaseGraph.html" title=" " alt="" coords="47,124,233,165"/>
+<area shape="rect" id="node4" title=" " alt="" coords="5,5,120,32"/>
+<area shape="rect" id="node5" title=" " alt="" coords="191,5,294,32"/>
 </map>

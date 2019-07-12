@@ -24,32 +24,15 @@ for the JavaScript code in this file
 var NAVTREE =
 [
   [ "OR-Tools", "index.html", [
-    [ "Namespaces", "namespaces.html", [
-      [ "Namespace List", "namespaces.html", "namespaces_dup" ],
-      [ "Namespace Members", "namespacemembers.html", [
-        [ "All", "namespacemembers.html", null ],
-        [ "Functions", "namespacemembers_func.html", null ]
-      ] ]
-    ] ],
-    [ "Classes", "annotated.html", [
-      [ "Class List", "annotated.html", "annotated_dup" ],
-      [ "Class Index", "classes.html", null ],
-      [ "Class Members", "functions.html", [
-        [ "All", "functions.html", null ],
-        [ "Functions", "functions_func.html", null ],
-        [ "Enumerations", "functions_enum.html", null ],
-        [ "Enumerator", "functions_eval.html", null ]
-      ] ]
-    ] ],
-    [ "Files", "files.html", [
-      [ "File List", "files.html", "files_dup" ]
-    ] ]
+    [ "Namespaces", "namespaces.html", null ],
+    [ "Classes", "annotated.html", null ],
+    [ "File List", "files.html", "files" ]
   ] ]
 ];
 
 var NAVTREEINDEX =
 [
-"annotated.html"
+"dense__doubly__linked__list_8h.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

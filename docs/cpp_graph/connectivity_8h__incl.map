@@ -1,7 +1,7 @@
 <map id="connectivity.h" name="connectivity.h">
-<area shape="rect" id="node1" title=" " alt="" coords="193,5,294,31"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,85,63,111"/>
-<area shape="rect" id="node3" title=" " alt="" coords="87,79,229,117"/>
-<area shape="rect" id="node4" title=" " alt="" coords="253,85,405,111"/>
-<area shape="rect" id="node5" title=" " alt="" coords="429,85,581,111"/>
+<area shape="rect" id="node1" title=" " alt="" coords="190,5,293,32"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,87,64,114"/>
+<area shape="rect" id="node3" title=" " alt="" coords="88,80,227,121"/>
+<area shape="rect" id="node4" title=" " alt="" coords="251,87,400,114"/>
+<area shape="rect" id="node5" title=" " alt="" coords="425,87,575,114"/>
 </map>

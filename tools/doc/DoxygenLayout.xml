@@ -6,30 +6,30 @@
     <tab type="pages" visible="yes" title="" intro=""/>
     <tab type="modules" visible="yes" title="" intro=""/>
     <tab type="namespaces" visible="yes" title="">
-      <tab type="namespacelist" visible="yes" title="" intro=""/>
-      <tab type="namespacemembers" visible="yes" title="" intro=""/>
+      <tab type="namespacelist" visible="no" title="" intro=""/>
+      <tab type="namespacemembers" visible="no" title="" intro=""/>
     </tab>
-    <tab type="interfaces" visible="yes" title="">
+    <tab type="interfaces" visible="no" title="">
       <tab type="interfacelist" visible="yes" title="" intro=""/>
       <tab type="interfaceindex" visible="$ALPHABETICAL_INDEX" title=""/> 
       <tab type="interfacehierarchy" visible="yes" title="" intro=""/>
     </tab>
     <tab type="classes" visible="yes" title="">
-      <tab type="classlist" visible="yes" title="" intro=""/>
-      <tab type="classindex" visible="$ALPHABETICAL_INDEX" title=""/> 
+      <tab type="classlist" visible="no" title="" intro=""/>
+      <tab type="classindex" visible="no" title=""/> 
       <tab type="hierarchy" visible="no" title="" intro=""/>
-      <tab type="classmembers" visible="yes" title="" intro=""/>
+      <tab type="classmembers" visible="no" title="" intro=""/>
     </tab>
-    <tab type="structs" visible="yes" title="">
+    <tab type="structs" visible="no" title="">
       <tab type="structlist" visible="yes" title="" intro=""/>
       <tab type="structindex" visible="$ALPHABETICAL_INDEX" title=""/> 
     </tab>
-    <tab type="exceptions" visible="yes" title="">
+    <tab type="exceptions" visible="no" title="">
       <tab type="exceptionlist" visible="yes" title="" intro=""/>
       <tab type="exceptionindex" visible="$ALPHABETICAL_INDEX" title=""/> 
       <tab type="exceptionhierarchy" visible="yes" title="" intro=""/>
     </tab>
-    <tab type="files" visible="yes" title="">
+    <tab type="files" visible="no" title="">
       <tab type="filelist" visible="yes" title="" intro=""/>
       <tab type="globals" visible="yes" title="" intro=""/>
     </tab>

@@ -1,5 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classoperations__research_1_1StarGraphBase.html" title=" " alt="" coords="5,5,246,57"/>
-<area shape="rect" id="node2" href="$classoperations__research_1_1EbertGraphBase.html" title="A template for the base class that holds the functionality that exists in common between the EbertGra..." alt="" coords="294,5,534,57"/>
-<area shape="rect" id="node3" href="$classoperations__research_1_1EbertGraph.html" title="Forward declarations." alt="" coords="582,5,788,57"/>
+<area shape="rect" id="node1" href="$classoperations__research_1_1StarGraphBase.html" title=" " alt="" coords="5,5,245,61"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1EbertGraphBase.html" title="A template for the base class that holds the functionality that exists in common between the EbertGra..." alt="" coords="293,5,533,61"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1EbertGraph.html" title="Forward declarations." alt="" coords="581,5,785,61"/>
 </map>

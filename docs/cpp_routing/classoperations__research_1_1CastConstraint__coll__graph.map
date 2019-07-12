@@ -1,8 +1,0 @@
-<map id="operations_research::CastConstraint" name="operations_research::CastConstraint">
-<area shape="rect" id="node1" title="Cast constraints are special channeling constraints designed to keep a variable in sync with an expre..." alt="" coords="27,407,170,445"/>
-<area shape="rect" id="node2" href="$classoperations__research_1_1Constraint.html" title="A constraint is the main modeling object." alt="" coords="5,244,148,283"/>
-<area shape="rect" id="node3" href="$classoperations__research_1_1PropagationBaseObject.html" title="The PropagationBaseObject is a subclass of BaseObject that is also friend to the Solver class." alt="" coords="8,93,178,132"/>
-<area shape="rect" id="node6" href="$classoperations__research_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming." alt="" coords="115,181,258,220"/>
-<area shape="rect" id="node4" href="$classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="" coords="21,5,164,44"/>
-<area shape="rect" id="node5" href="$classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr." alt="" coords="115,307,258,345"/>
-</map>

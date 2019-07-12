@@ -1,6 +1,0 @@
-<map id="operations_research::CastConstraint" name="operations_research::CastConstraint">
-<area shape="rect" id="node1" title="Cast constraints are special channeling constraints designed to keep a variable in sync with an expre..." alt="" coords="19,265,162,304"/>
-<area shape="rect" id="node2" href="$classoperations__research_1_1Constraint.html" title="A constraint is the main modeling object." alt="" coords="19,179,162,217"/>
-<area shape="rect" id="node3" href="$classoperations__research_1_1PropagationBaseObject.html" title="The PropagationBaseObject is a subclass of BaseObject that is also friend to the Solver class." alt="" coords="5,92,175,131"/>
-<area shape="rect" id="node4" href="$classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="" coords="19,5,162,44"/>
-</map>

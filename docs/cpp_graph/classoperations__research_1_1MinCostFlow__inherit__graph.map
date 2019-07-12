@@ -1,5 +1,5 @@
 <map id="operations_research::MinCostFlow" name="operations_research::MinCostFlow">
-<area shape="rect" id="node1" title="Default MinCostFlow instance that uses StarGraph." alt="" coords="10,192,153,231"/>
-<area shape="rect" id="node2" href="$classoperations__research_1_1GenericMinCostFlow.html" title=" " alt="" coords="5,92,158,144"/>
-<area shape="rect" id="node3" href="$classoperations__research_1_1MinCostFlowBase.html" title="Different statuses for a solved problem." alt="" coords="10,5,153,44"/>
+<area shape="rect" id="node1" title="Default MinCostFlow instance that uses StarGraph." alt="" coords="12,199,151,240"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1GenericMinCostFlow.html" title=" " alt="" coords="5,95,157,151"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1MinCostFlowBase.html" title="Different statuses for a solved problem." alt="" coords="12,5,151,47"/>
 </map>

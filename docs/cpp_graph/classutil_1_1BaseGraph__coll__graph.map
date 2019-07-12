@@ -1,5 +1,5 @@
 <map id="util::BaseGraph&lt; NodeIndexType, ArcIndexType, HasReverseArcs &gt;" name="util::BaseGraph&lt; NodeIndexType, ArcIndexType, HasReverseArcs &gt;">
-<area shape="rect" id="node1" title="Base class of all Graphs implemented here." alt="" coords="20,119,239,171"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,120,31"/>
-<area shape="rect" id="node3" title=" " alt="" coords="145,5,247,31"/>
+<area shape="rect" id="node1" title="Base class of all Graphs implemented here." alt="" coords="19,124,240,180"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,120,32"/>
+<area shape="rect" id="node3" title=" " alt="" coords="145,5,247,32"/>
 </map>

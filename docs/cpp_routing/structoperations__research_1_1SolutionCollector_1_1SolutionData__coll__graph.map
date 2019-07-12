@@ -1,6 +1,0 @@
-<map id="operations_research::SolutionCollector::SolutionData" name="operations_research::SolutionCollector::SolutionData">
-<area shape="rect" id="node1" title=" " alt="" coords="19,281,162,333"/>
-<area shape="rect" id="node2" href="$classoperations__research_1_1Assignment.html" title="&#45;&#45;— Assignment &#45;&#45;—" alt="" coords="19,181,162,220"/>
-<area shape="rect" id="node3" href="$classoperations__research_1_1PropagationBaseObject.html" title="The PropagationBaseObject is a subclass of BaseObject that is also friend to the Solver class." alt="" coords="5,93,175,132"/>
-<area shape="rect" id="node4" href="$classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="" coords="19,5,162,44"/>
-</map>

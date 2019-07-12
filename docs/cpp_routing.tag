@@ -24511,6 +24511,13 @@
       <arglist>(int vehicle) const</arglist>
     </member>
     <member kind="function">
+      <type>const RoutingModel::TransitCallback1 &amp;</type>
+      <name>GetUnaryTransitEvaluator</name>
+      <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
+      <anchor>a57ff38168114496e87dc253924fb3e46</anchor>
+      <arglist>(int vehicle) const</arglist>
+    </member>
+    <member kind="function">
       <type>bool</type>
       <name>AreVehicleTransitsPositive</name>
       <anchorfile>classoperations__research_1_1RoutingDimension.html</anchorfile>
@@ -25341,6 +25348,13 @@
       <name>RegisterUnaryTransitCallback</name>
       <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
       <anchor>a82ee9c63870a985cbad7ee8474375a26</anchor>
+      <arglist>(TransitCallback1 callback)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>RegisterPositiveUnaryTransitCallback</name>
+      <anchorfile>classoperations__research_1_1RoutingModel.html</anchorfile>
+      <anchor>a14427509278088e0b8b6200fb6ac4142</anchor>
       <arglist>(TransitCallback1 callback)</arglist>
     </member>
     <member kind="function">
@@ -27575,6 +27589,27 @@
       <anchor>af061e852cc23ec2935da9207314d31b0</anchor>
       <arglist>(::operations_research::OptionalBoolean value)</arglist>
     </member>
+    <member kind="function">
+      <type>void</type>
+      <name>clear_log_cost_offset</name>
+      <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
+      <anchor>a52682c96f003fe3ab9febed73af4af59</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>log_cost_offset</name>
+      <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
+      <anchor>a3b153ed0eca7b2f05066e966053ca7a0</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_log_cost_offset</name>
+      <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
+      <anchor>aede613e15b53e6167f59223039c71ec6</anchor>
+      <arglist>(double value)</arglist>
+    </member>
     <member kind="function" static="yes">
       <type>static const ::PROTOBUF_NAMESPACE_ID::Descriptor *</type>
       <name>descriptor</name>
@@ -27790,6 +27825,13 @@
       <name>kUseCpFieldNumber</name>
       <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a81c71dac58ad69cb3911fffe65603587</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const int</type>
+      <name>kLogCostOffsetFieldNumber</name>
+      <anchorfile>classoperations__research_1_1RoutingSearchParameters.html</anchorfile>
+      <anchor>a98ba3030e12a891406932488e2d5fc57</anchor>
       <arglist></arglist>
     </member>
     <member kind="friend">

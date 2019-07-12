@@ -15180,34 +15180,6 @@
     </member>
     <member kind="function">
       <type>bool</type>
-      <name>has_use_combined_no_overlap</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a0fac786be2bdbb5d93781523b3f4ce64</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>clear_use_combined_no_overlap</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ade4963c7a1a6d8c0b7ecc20ce142a94e</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>use_combined_no_overlap</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a3fc6d6586318ccabe142e90b27d97507</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>set_use_combined_no_overlap</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ac3327bb59d47a20656eed1666e84d4c1</anchor>
-      <arglist>(bool value)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
       <name>has_use_lns_only</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>ab918690648f23e16d9563d91729f8272</anchor>
@@ -15264,34 +15236,6 @@
     </member>
     <member kind="function">
       <type>bool</type>
-      <name>has_use_rins_lns</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>afe58ed279e3d20a901d37511a3f909e7</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>clear_use_rins_lns</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>af08e4ab996af1aa521993c004738bf4c</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>use_rins_lns</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a4ff91e7794cb0ea0407949ddaa4f258d</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>set_use_rins_lns</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>af476cc00b893ebfeb5ab7e6d69e2ac92</anchor>
-      <arglist>(bool value)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
       <name>has_randomize_search</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>ac10d3776f2e92ffa9fde04a56ae06145</anchor>
@@ -15316,6 +15260,34 @@
       <name>set_randomize_search</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>aeec72bea45ed9de54d9fc17cb511b8f7</anchor>
+      <arglist>(bool value)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>has_use_combined_no_overlap</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a0fac786be2bdbb5d93781523b3f4ce64</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>clear_use_combined_no_overlap</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>ade4963c7a1a6d8c0b7ecc20ce142a94e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>use_combined_no_overlap</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a3fc6d6586318ccabe142e90b27d97507</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_use_combined_no_overlap</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>ac3327bb59d47a20656eed1666e84d4c1</anchor>
       <arglist>(bool value)</arglist>
     </member>
     <member kind="function">
@@ -17224,6 +17196,62 @@
     </member>
     <member kind="function">
       <type>bool</type>
+      <name>has_max_integer_rounding_scaling</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a7afb62ad9e9d6be5a26d00b383affd49</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>clear_max_integer_rounding_scaling</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a2d19d28ab90f0193d49b6d9dadf3b2da</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
+      <name>max_integer_rounding_scaling</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a3aee2d5ca527b9b127fea3bcdc4d7fc7</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_max_integer_rounding_scaling</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a62c7db88ac0975d6ccb2adf297cdc175</anchor>
+      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>has_use_rins_lns</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>afe58ed279e3d20a901d37511a3f909e7</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>clear_use_rins_lns</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>af08e4ab996af1aa521993c004738bf4c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>use_rins_lns</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a4ff91e7794cb0ea0407949ddaa4f258d</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_use_rins_lns</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>af476cc00b893ebfeb5ab7e6d69e2ac92</anchor>
+      <arglist>(bool value)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
       <name>has_use_optional_variables</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a7f895da906479be37a0fa925c65a919e</anchor>
@@ -17305,34 +17333,6 @@
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a15b841f95072176fb4996916efb06cda</anchor>
       <arglist>(bool value)</arglist>
-    </member>
-    <member kind="function">
-      <type>bool</type>
-      <name>has_max_integer_rounding_scaling</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a7afb62ad9e9d6be5a26d00b383affd49</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>clear_max_integer_rounding_scaling</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a2d19d28ab90f0193d49b6d9dadf3b2da</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>::PROTOBUF_NAMESPACE_ID::int32</type>
-      <name>max_integer_rounding_scaling</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a3aee2d5ca527b9b127fea3bcdc4d7fc7</anchor>
-      <arglist>() const</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>set_max_integer_rounding_scaling</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a62c7db88ac0975d6ccb2adf297cdc175</anchor>
-      <arglist>(::PROTOBUF_NAMESPACE_ID::int32 value)</arglist>
     </member>
     <member kind="function">
       <type>bool</type>
@@ -18568,13 +18568,6 @@
     </member>
     <member kind="variable" static="yes">
       <type>static const int</type>
-      <name>kUseCombinedNoOverlapFieldNumber</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a0fce1691547c5fac1bad1e5247a0ec08</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>static const int</type>
       <name>kUseLnsOnlyFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a8b7db13a78d8770898ab371ff1f67147</anchor>
@@ -18589,16 +18582,16 @@
     </member>
     <member kind="variable" static="yes">
       <type>static const int</type>
-      <name>kUseRinsLnsFieldNumber</name>
+      <name>kRandomizeSearchFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a23df77ed9b4c43561c0b77d774186703</anchor>
+      <anchor>a1c5b8a718fe62e6426ee9d44207ed459</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static const int</type>
-      <name>kRandomizeSearchFieldNumber</name>
+      <name>kUseCombinedNoOverlapFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a1c5b8a718fe62e6426ee9d44207ed459</anchor>
+      <anchor>a0fce1691547c5fac1bad1e5247a0ec08</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -19079,6 +19072,20 @@
     </member>
     <member kind="variable" static="yes">
       <type>static const int</type>
+      <name>kMaxIntegerRoundingScalingFieldNumber</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a2bf7fbe9acaffe79c4300ec8f3ae2162</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const int</type>
+      <name>kUseRinsLnsFieldNumber</name>
+      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a23df77ed9b4c43561c0b77d774186703</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const int</type>
       <name>kUseOptionalVariablesFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>ab235b1dadc66cfdcc2028440e484fff4</anchor>
@@ -19096,13 +19103,6 @@
       <name>kCatchSigintSignalFieldNumber</name>
       <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a970da03f7dabd7898f2e4abbe218e8f4</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>static const int</type>
-      <name>kMaxIntegerRoundingScalingFieldNumber</name>
-      <anchorfile>classoperations__research_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a2bf7fbe9acaffe79c4300ec8f3ae2162</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">

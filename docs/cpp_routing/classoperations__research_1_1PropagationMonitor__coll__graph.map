@@ -1,5 +1,0 @@
-<map id="operations_research::PropagationMonitor" name="operations_research::PropagationMonitor">
-<area shape="rect" id="node1" title="&#45;&#45;&#45;&#45;&#45;&#45;&#45;— PropagationMonitor &#45;&#45;&#45;&#45;&#45;&#45;&#45;—" alt="" coords="5,179,150,217"/>
-<area shape="rect" id="node2" href="$classoperations__research_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events." alt="" coords="6,92,149,131"/>
-<area shape="rect" id="node3" href="$classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="" coords="6,5,149,44"/>
-</map>
