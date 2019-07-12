@@ -24,16 +24,25 @@
       <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li class="current"><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li><a href="annotated.html"><span>Classes</span></a></li>
-      <li><a href="files.html"><span>Files</span></a></li>
-    </ul>
-  </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="namespaces.html"><span>Namespace&#160;List</span></a></li>
-      <li><a href="namespacemembers.html"><span>Namespace&#160;Members</span></a></li>
     </ul>
   </div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('namespaceoperations__research.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
@@ -186,6 +195,10 @@ Enumerations</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:a3175c0c8e9fc36a30b70b6b9c132474a"><td class="memTemplParams" colspan="2">template&lt;typename WeightFunctionType , typename GraphType &gt; </td></tr>
+<tr class="memitem:a3175c0c8e9fc36a30b70b6b9c132474a"><td class="memTemplItemLeft" align="right" valign="top">std::vector&lt; typename GraphType::ArcIndex &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a3175c0c8e9fc36a30b70b6b9c132474a">ComputeMinimumWeightMatchingWithMIP</a> (const GraphType &amp;graph, const WeightFunctionType &amp;weight)</td></tr>
+<tr class="memdesc:a3175c0c8e9fc36a30b70b6b9c132474a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes a minimum weight perfect matching on an undirected graph using a Mixed Integer Programming model.  <a href="#a3175c0c8e9fc36a30b70b6b9c132474a">More...</a><br /></td></tr>
+<tr class="separator:a3175c0c8e9fc36a30b70b6b9c132474a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a509097448ff5705cf3e64d889362bdec"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a509097448ff5705cf3e64d889362bdec">FindCliques</a> (std::function&lt; bool(int, int)&gt; graph, int node_count, std::function&lt; bool(const std::vector&lt; int &gt; &amp;)&gt; callback)</td></tr>
 <tr class="memdesc:a509097448ff5705cf3e64d889362bdec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Finds all maximal cliques, even of size 1, in the graph described by the graph callback.  <a href="#a509097448ff5705cf3e64d889362bdec">More...</a><br /></td></tr>
 <tr class="separator:a509097448ff5705cf3e64d889362bdec"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -255,7 +268,7 @@ Functions</h2></td></tr>
 <p>You may obtain a copy of the License at </p><div class="fragment"><div class="line">http:<span class="comment">//www.apache.org/licenses/LICENSE-2.0</span></div></div><!-- fragment --><p> Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License. Maximal clique algorithms, based on the Bron-Kerbosch algorithm. See <a href="http://en.wikipedia.org/wiki/Bron-Kerbosch_algorithm">http://en.wikipedia.org/wiki/Bron-Kerbosch_algorithm</a> and C. Bron and J. Kerbosch, Joep, "Algorithm 457: finding all cliques of an
 undirected graph", CACM 16 (9): 575-577, 1973. <a href="http://dl.acm.org/citation.cfm?id=362367&bnc=1">http://dl.acm.org/citation.cfm?id=362367&amp;bnc=1</a>.</p>
 <p>Keywords: undirected graph, clique, clique cover, Bron, Kerbosch.</p>
-<p>You may obtain a copy of the License at </p><div class="fragment"><div class="line">http:<span class="comment">//www.apache.org/licenses/LICENSE-2.0</span></div></div><!-- fragment --><p> Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License. Graph connectivity algorithm for undirected graphs. Memory consumption: O(n) where m is the number of arcs and n the number of nodes. </p><dl class="todo"><dt><b><a class="el" href="todo.html#_todo000004">Todo:</a></b></dt><dd><p class="startdd">(user): add depth-first-search based connectivity for directed graphs. </p>
+<p>You may obtain a copy of the License at </p><div class="fragment"><div class="line">http:<span class="comment">//www.apache.org/licenses/LICENSE-2.0</span></div></div><!-- fragment --><p> Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License. Graph connectivity algorithm for undirected graphs. Memory consumption: O(n) where m is the number of arcs and n the number of nodes. </p><dl class="todo"><dt><b><a class="el" href="todo.html#_todo000005">Todo:</a></b></dt><dd><p class="startdd">(user): add depth-first-search based connectivity for directed graphs. </p>
 <p class="enddd">(user): add depth-first-search based biconnectivity for directed graphs. </p>
 </dd></dl>
 <p>You may obtain a copy of the License at </p><div class="fragment"><div class="line">http:<span class="comment">//www.apache.org/licenses/LICENSE-2.0</span></div></div><!-- fragment --><p> Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License. A few variations on a theme of the "star" graph representation by Ebert, as described in J. Ebert, "A versatile data structure for
@@ -289,7 +302,7 @@ Now, for an integer u in [0..n-1] denoting the index of a node:</li>
 <li>arcs are represented using an (i, ~i) approach, whereas Ebert used (i, -i). Indices for direct arcs thus start at 0, in a fashion that is compatible with the index numbering in C and C++. Note that we also tested a (2*i, 2*i+1) storage pattern, which did not show any speed benefit, and made the use of the API much more difficult.</li>
 <li>because of this, the 'nil' values for nodes and arcs are not 0, as Ebert first described. The value for the 'nil' node is set to -1, while the value for the 'nil' arc is set to the smallest integer representable with ArcIndexSize bytes.</li>
 <li>it is possible to add arcs to the graph, with AddArc, in a much simpler way than described by Ebert.</li>
-<li><dl class="todo"><dt><b><a class="el" href="todo.html#_todo000006">Todo:</a></b></dt><dd>(user) although it is already possible, using the GroupForwardArcsByFunctor method, to group all the outgoing (resp. incoming) arcs of a node, the iterator logic could still be improved to allow traversing the outgoing (resp. incoming) arcs in O(out_degree(node)) (resp. O(in_degree(node))) instead of O(degree(node)).</dd></dl>
+<li><dl class="todo"><dt><b><a class="el" href="todo.html#_todo000007">Todo:</a></b></dt><dd>(user) although it is already possible, using the GroupForwardArcsByFunctor method, to group all the outgoing (resp. incoming) arcs of a node, the iterator logic could still be improved to allow traversing the outgoing (resp. incoming) arcs in O(out_degree(node)) (resp. O(in_degree(node))) instead of O(degree(node)).</dd></dl>
 </li>
 </ul>
 <p>The <a class="el" href="classoperations__research_1_1ForwardEbertGraph.html" title="A forward-star-only graph representation for greater efficiency in those algorithms that don&#39;t need r...">ForwardEbertGraph</a> representation is like the <a class="el" href="classoperations__research_1_1EbertGraph.html" title="Forward declarations.">EbertGraph</a> case described above, with the following modifications:</p><ul>
@@ -324,7 +337,7 @@ Now, for an integer u in [0..n-1] denoting the index of a node:</li>
 <p>The advantage of the Held and Karp formulation is that it enables:</p><ul>
 <li>to build the dynamic programming lattice layer by layer starting from the subsets with cardinality 1, and increasing the cardinality.</li>
 <li>to traverse the dynamic programming lattice using sequential memory accesses, making the algorithm cache-friendly, and faster, despite the large amount of computation needed to get the position when f(S, j) is stored.</li>
-<li><dl class="todo"><dt><b><a class="el" href="todo.html#_todo000024">Todo:</a></b></dt><dd>(user): implement pruning procedures on top of the Held-Karp algorithm.</dd></dl>
+<li><dl class="todo"><dt><b><a class="el" href="todo.html#_todo000025">Todo:</a></b></dt><dd>(user): implement pruning procedures on top of the Held-Karp algorithm.</dd></dl>
 </li>
 </ul>
 <p>The set S can be represented by an integer where bit i corresponds to element i in the set. In the following S denotes the integer corresponding to set S.</p>
@@ -358,10 +371,10 @@ Now, for an integer u in [0..n-1] denoting the index of a node:</li>
 Problems", Algorithmica 11(4): 353-359 (1994). and J. Cheriyan and K. Mehlhorn, "An analysis of the highest-level selection rule
 in the preflow-push max-flow algorithm", Information processing letters, 69(5):239-242 (1999). <a href="http://www.math.uwaterloo.ca/~jcheriya/PS_files/me3.0.ps">http://www.math.uwaterloo.ca/~jcheriya/PS_files/me3.0.ps</a></p>
 <p>...that choosing the active node with the highest level yields a complexity of O(n^2 * sqrt(m)).</p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000039">Todo:</a></b></dt><dd>(user): implement the above active node choice rule.</dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000040">Todo:</a></b></dt><dd>(user): implement the above active node choice rule.</dd></dl>
 <p>This has been validated experimentally in: R.K. Ahuja, M. Kodialam, A.K. Mishra, and J.B. Orlin, "Computational
 Investigations of Maximum Flow Algorithms", EJOR 97:509-542(1997). <a href="http://jorlin.scripts.mit.edu/docs/publications/58-comput%20investigations%20of.pdf">http://jorlin.scripts.mit.edu/docs/publications/58-comput%20investigations%20of.pdf</a>.</p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000040">Todo:</a></b></dt><dd>(user): an alternative would be to evaluate: A.V. Goldberg, "The Partial Augment-Relabel Algorithm for the Maximum Flow Problem.” In Proceedings of Algorithms ESA, LNCS 5193:466-477, Springer 2008. <a href="http://www.springerlink.com/index/5535k2j1mt646338.pdf">http://www.springerlink.com/index/5535k2j1mt646338.pdf</a></dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000041">Todo:</a></b></dt><dd>(user): an alternative would be to evaluate: A.V. Goldberg, "The Partial Augment-Relabel Algorithm for the Maximum Flow Problem.” In Proceedings of Algorithms ESA, LNCS 5193:466-477, Springer 2008. <a href="http://www.springerlink.com/index/5535k2j1mt646338.pdf">http://www.springerlink.com/index/5535k2j1mt646338.pdf</a></dd></dl>
 <p>An interesting general reference on network flows is: R. K. Ahuja, T. L. Magnanti, J. B. Orlin, "Network Flows: Theory, Algorithms,
 and Applications," Prentice Hall, 1993, ISBN: 978-0136175490, <a href="http://www.amazon.com/dp/013617549X">http://www.amazon.com/dp/013617549X</a></p>
 <p>Keywords: Push-relabel, max-flow, network, graph, Goldberg, Tarjan, Dinic, Dinitz.</p>
@@ -395,7 +408,7 @@ Algorithm," Journal of Algorithms, (1997) 22:1-29 <a href="http://citeseerx.ist.
 <p>A.V. Goldberg and M. Kharitonov, "On Implementing Scaling Push-Relabel
 Algorithms for the Minimum-Cost Flow Problem", Network flows and matching: First DIMACS implementation challenge, DIMACS Series in Discrete Mathematics and Theoretical Computer Science, (1993) 12:157-198. <a href="ftp://dimacs.rutgers.edu/pub/netflow/submit/papers/Goldberg-mincost/scalmin.ps">ftp://dimacs.rutgers.edu/pub/netflow/submit/papers/Goldberg-mincost/scalmin.ps</a> and in: ﻿U. Bunnagel, B. Korte, and J. Vygen. “Efficient implementation of the Goldberg-Tarjan minimum-cost flow algorithm.” Optimization Methods and Software (1998) vol. 10, no. 2:157-174. <a href="http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.84.9897">http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.84.9897</a></p>
 <p>We have tried as much as possible in this implementation to keep the notations and namings of the papers cited above, except for 'demand' or 'balance' which have been replaced by 'supply', with the according sign changes to better accommodate with the API of the rest of our tools. A demand is denoted by a negative supply.</p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000047">Todo:</a></b></dt><dd>(user): See whether the following can bring any improvements on real-life problems. R.K. Ahuja, A.V. Goldberg, J.B. Orlin, and R.E. Tarjan, "Finding minimum-cost
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000048">Todo:</a></b></dt><dd>(user): See whether the following can bring any improvements on real-life problems. R.K. Ahuja, A.V. Goldberg, J.B. Orlin, and R.E. Tarjan, "Finding minimum-cost
 flows by double scaling," Mathematical Programming, (1992) 53:243-266. <a href="http://www.springerlink.com/index/gu7404218u6kt166.pdf">http://www.springerlink.com/index/gu7404218u6kt166.pdf</a></dd></dl>
 <p>An interesting general reference on network flows is: R. K. Ahuja, T. L. Magnanti, J. B. Orlin, "Network Flows: Theory, Algorithms,
 and Applications," Prentice Hall, 1993, ISBN: 978-0136175490, <a href="http://www.amazon.com/dp/013617549X">http://www.amazon.com/dp/013617549X</a></p>
@@ -967,7 +980,7 @@ template&lt;typename Graph &gt; </div>
 </div><div class="memdoc">
 
 <p>Implementation of Kruskal's mininumum spanning tree algorithm (c.f. </p>
-<p><a href="https://en.wikipedia.org/wiki/Kruskal%27s_algorithm">https://en.wikipedia.org/wiki/Kruskal%27s_algorithm</a>). Returns the index of the arcs appearing in the tree; will return a forest if the graph is disconnected. Nodes without any arcs will be ignored. Each arc of the graph is interpreted as an undirected arc. Complexity of the algorithm is O(E * log(E)) where E is the number of arcs in the graph. Memory usage is O(E * log(E)). </p><dl class="todo"><dt><b><a class="el" href="todo.html#_todo000050">Todo:</a></b></dt><dd>(user): Add a global Minimum Spanning Tree API automatically switching between Prim and Kruskal depending on problem size.</dd></dl>
+<p><a href="https://en.wikipedia.org/wiki/Kruskal%27s_algorithm">https://en.wikipedia.org/wiki/Kruskal%27s_algorithm</a>). Returns the index of the arcs appearing in the tree; will return a forest if the graph is disconnected. Nodes without any arcs will be ignored. Each arc of the graph is interpreted as an undirected arc. Complexity of the algorithm is O(E * log(E)) where E is the number of arcs in the graph. Memory usage is O(E * log(E)). </p><dl class="todo"><dt><b><a class="el" href="todo.html#_todo000051">Todo:</a></b></dt><dd>(user): Add a global Minimum Spanning Tree API automatically switching between Prim and Kruskal depending on problem size.</dd></dl>
 <p>Version taking sorted graph arcs. Allows somewhat incremental recomputation of minimum spanning trees as most of the processing time is spent sorting arcs. Usage: ListGraph&lt;int, int&gt; graph(...); std::vector&lt;int&gt; sorted_arcs = ...; std::vector&lt;int&gt; mst = BuildKruskalMinimumSpanningTreeFromSortedArcs( graph, sorted_arcs); </p>
 
 <p class="definition">Definition at line <a class="el" href="minimum__spanning__tree_8h_source.html#l00050">50</a> of file <a class="el" href="minimum__spanning__tree_8h_source.html">minimum_spanning_tree.h</a>.</p>
@@ -1043,6 +1056,44 @@ template&lt;typename Graph , typename ArcValue &gt; </div>
 <p>This struct represents entries in the adjustable priority queue which maintains active nodes (not added to the tree yet) in decreasing insertion cost order. AdjustablePriorityQueue requires the existence of the SetHeapIndex and GetHeapIndex methods. </p>
 
 <p class="definition">Definition at line <a class="el" href="minimum__spanning__tree_8h_source.html#l00117">117</a> of file <a class="el" href="minimum__spanning__tree_8h_source.html">minimum_spanning_tree.h</a>.</p>
+
+</div>
+</div>
+<a id="a3175c0c8e9fc36a30b70b6b9c132474a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3175c0c8e9fc36a30b70b6b9c132474a">&#9670;&nbsp;</a></span>ComputeMinimumWeightMatchingWithMIP()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename WeightFunctionType , typename GraphType &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;typename GraphType::ArcIndex&gt; operations_research::ComputeMinimumWeightMatchingWithMIP </td>
+          <td>(</td>
+          <td class="paramtype">const GraphType &amp;&#160;</td>
+          <td class="paramname"><em>graph</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const WeightFunctionType &amp;&#160;</td>
+          <td class="paramname"><em>weight</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Computes a minimum weight perfect matching on an undirected graph using a Mixed Integer Programming model. </p>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000001">Todo:</a></b></dt><dd>(user): Handle infeasible cases if this algorithm is used outside of Christofides. </dd></dl>
+<p>The model is composed of Boolean decision variables to select matching arcs and constraints ensuring that each node appears in exactly one selected arc. The objective is to minimize the sum of the weights of selected arcs. It is assumed the graph is symmetrical.</p>
+<p>Creating arc-selection Boolean variable.</p>
+<p>Creating matching constraint: for all node i, sum(j) arc(i,j) + sum(j) arc(j,i) = 1 </p>
+
+<p class="definition">Definition at line <a class="el" href="christofides_8h_source.html#l00107">107</a> of file <a class="el" href="christofides_8h_source.html">christofides.h</a>.</p>
 
 </div>
 </div>
@@ -1194,7 +1245,7 @@ template&lt;typename Graph &gt; </div>
 </div><div class="memdoc">
 
 <p>Returns true if a graph is Eulerian, aka all its nodes are of even degree. </p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000010">Todo:</a></b></dt><dd>(user): Check graph connectivity. </dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000011">Todo:</a></b></dt><dd>(user): Check graph connectivity. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="eulerian__path_8h_source.html#l00040">40</a> of file <a class="el" href="eulerian__path_8h_source.html">eulerian_path.h</a>.</p>
 
@@ -1230,7 +1281,7 @@ template&lt;typename NodeIndex , typename Graph &gt; </div>
 
 <p>Returns true if a graph is Semi-Eulerian, aka at most two of its nodes are of odd degree. </p>
 <p>odd_nodes is filled with odd nodes of the graph. </p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000011">Todo:</a></b></dt><dd>(user): Check graph connectivity. </dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000012">Todo:</a></b></dt><dd>(user): Check graph connectivity. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="eulerian__path_8h_source.html#l00055">55</a> of file <a class="el" href="eulerian__path_8h_source.html">eulerian_path.h</a>.</p>
 
@@ -1326,6 +1377,7 @@ template&lt;typename CostType , typename CostFunction &gt; </div>
 </div>
 </div>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

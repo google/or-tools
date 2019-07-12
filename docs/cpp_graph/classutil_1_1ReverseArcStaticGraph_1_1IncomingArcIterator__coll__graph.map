@@ -1,8 +1,0 @@
-<map id="util::ReverseArcStaticGraph&lt; NodeIndexType, ArcIndexType &gt;::IncomingArcIterator" name="util::ReverseArcStaticGraph&lt; NodeIndexType, ArcIndexType &gt;::IncomingArcIterator">
-<area shape="rect" id="node1" title=" " alt="" coords="1124,101,1339,157"/>
-<area shape="rect" id="node2" href="$classutil_1_1ReverseArcStaticGraph_1_1OppositeIncomingArcIterator.html" title=" " alt="" coords="860,101,1075,157"/>
-<area shape="rect" id="node3" href="$classutil_1_1ReverseArcStaticGraph.html" title="StaticGraph with reverse arc." alt="" coords="541,75,768,117"/>
-<area shape="rect" id="node4" href="$classutil_1_1BaseGraph.html" title=" " alt="" coords="264,75,451,117"/>
-<area shape="rect" id="node5" title=" " alt="" coords="5,23,120,49"/>
-<area shape="rect" id="node6" title=" " alt="" coords="11,119,114,145"/>
-</map>

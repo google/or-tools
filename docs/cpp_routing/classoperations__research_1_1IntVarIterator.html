@@ -23,22 +23,25 @@
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
-      <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="hierarchy.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="namespaceoperations__research.html">operations_research</a></li><li class="navelem"><a class="el" href="classoperations__research_1_1IntVarIterator.html">IntVarIterator</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classoperations__research_1_1IntVarIterator.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
@@ -47,21 +50,12 @@
 <div class="title">operations_research::IntVarIterator Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
 </div><!--header-->
 <div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>The class Iterator has two direct subclasses. </p>
+<p>HoleIterators iterates over all holes, that is value removed between the current min and max of the variable since the last time the variable was processed in the queue. DomainIterators iterates over all elements of the variable domain. Both iterators are not robust to domain changes. Hole iterators can also report values outside the current min and max of the variable. HoleIterators should only be called from a demon attached to the variable that has created this iterator. IntVar* current_var; std::unique_ptr&lt;IntVarIterator&gt; it(current_var-&gt;MakeHoleIterator(false)); for (const int64 hole : InitAndGetValues(it)) { /// use the hole } </p>
 
-<p>The class Iterator has two direct subclasses.  
- <a href="classoperations__research_1_1IntVarIterator.html#details">More...</a></p>
-
-<p><code>#include &lt;<a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>&gt;</code></p>
-<div class="dynheader">
-Inheritance diagram for operations_research::IntVarIterator:</div>
-<div class="dyncontent">
- <div class="center">
-  <img src="classoperations__research_1_1IntVarIterator.png" usemap="#operations_5Fresearch::IntVarIterator_map" alt=""/>
-  <map id="operations_5Fresearch::IntVarIterator_map" name="operations_5Fresearch::IntVarIterator_map">
-<area href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="operations_research::BaseObject" shape="rect" coords="0,0,209,24"/>
-  </map>
-</div></div>
-<table class="memberdecls">
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03851">3851</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a85fb1088ff1184b4cb867259ee512fc5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarIterator.html#a85fb1088ff1184b4cb867259ee512fc5">~IntVarIterator</a> () override</td></tr>
@@ -82,12 +76,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:afcbc1c1ac6f9230d7037807d3dbd46dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pretty Print.  <a href="#afcbc1c1ac6f9230d7037807d3dbd46dc">More...</a><br /></td></tr>
 <tr class="separator:afcbc1c1ac6f9230d7037807d3dbd46dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>The class Iterator has two direct subclasses. </p>
-<p>HoleIterators iterates over all holes, that is value removed between the current min and max of the variable since the last time the variable was processed in the queue. DomainIterators iterates over all elements of the variable domain. Both iterators are not robust to domain changes. Hole iterators can also report values outside the current min and max of the variable. HoleIterators should only be called from a demon attached to the variable that has created this iterator. IntVar* current_var; std::unique_ptr&lt;IntVarIterator&gt; it(current_var-&gt;MakeHoleIterator(false)); for (const int64 hole : InitAndGetValues(it)) { /// use the hole } </p>
-
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03851">3851</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a85fb1088ff1184b4cb867259ee512fc5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a85fb1088ff1184b4cb867259ee512fc5">&#9670;&nbsp;</a></span>~IntVarIterator()</h2>
 
@@ -259,6 +248,7 @@ Public Member Functions</h2></td></tr>
 <li><a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

@@ -23,22 +23,25 @@
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
-      <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="hierarchy.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="namespaceoperations__research.html">operations_research</a></li><li class="navelem"><a class="el" href="classoperations__research_1_1BaseLns.html">BaseLns</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classoperations__research_1_1BaseLns.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
@@ -49,24 +52,15 @@
 <div class="title">operations_research::BaseLns Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
 </div><!--header-->
 <div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>This is the base class for building an Lns operator. </p>
+<p>An Lns fragment is a collection of variables which will be relaxed. Fragments are built with <a class="el" href="classoperations__research_1_1BaseLns.html#ad86de5fe7fa58d23b953923ff1c60ef2">NextFragment()</a>, which returns false if there are no more fragments to build. Optionally one can override InitFragments, which is called from <a class="el" href="classoperations__research_1_1LocalSearchOperator.html#a832fd07f7355d16895841a4735e544c1">LocalSearchOperator::Start</a> to initialize fragment data.</p>
+<p>Here's a sample relaxing one variable at a time:</p>
+<p>class OneVarLns : public <a class="el" href="classoperations__research_1_1BaseLns.html" title="This is the base class for building an Lns operator.">BaseLns</a> { public: OneVarLns(const std::vector&lt;IntVar*&gt;&amp; vars) : BaseLns(vars), index_(0) {} virtual ~OneVarLns() {} virtual void <a class="el" href="classoperations__research_1_1BaseLns.html#a9d18ce7a9e739df8e4e48550616e7985">InitFragments()</a> { index_ = 0; } virtual bool <a class="el" href="classoperations__research_1_1BaseLns.html#ad86de5fe7fa58d23b953923ff1c60ef2">NextFragment()</a> { const int size = <a class="el" href="classoperations__research_1_1VarLocalSearchOperator.html#a24d7846b013b9940fbf367e3f9575eab">Size()</a>; if (index_ &lt; size) { AppendToFragment(index_); ++index_; return true; } else { return false; } }</p>
+<p>private: int index_; }; </p>
 
-<p>This is the base class for building an Lns operator.  
- <a href="classoperations__research_1_1BaseLns.html#details">More...</a></p>
-
-<p><code>#include &lt;<a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>&gt;</code></p>
-<div class="dynheader">
-Inheritance diagram for operations_research::BaseLns:</div>
-<div class="dyncontent">
- <div class="center">
-  <img src="classoperations__research_1_1BaseLns.png" usemap="#operations_5Fresearch::BaseLns_map" alt=""/>
-  <map id="operations_5Fresearch::BaseLns_map" name="operations_5Fresearch::BaseLns_map">
-<area href="classoperations__research_1_1IntVarLocalSearchOperator.html" title="Specialization of LocalSearchOperator built from an array of IntVars which specifies the scope of the..." alt="operations_research::IntVarLocalSearchOperator" shape="rect" coords="0,168,533,192"/>
-<area href="classoperations__research_1_1VarLocalSearchOperator.html" alt="operations_research::VarLocalSearchOperator&lt; IntVar, int64, IntVarLocalSearchHandler &gt;" shape="rect" coords="0,112,533,136"/>
-<area href="classoperations__research_1_1LocalSearchOperator.html" title="The base class for all local search operators." alt="operations_research::LocalSearchOperator" shape="rect" coords="0,56,533,80"/>
-<area href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="operations_research::BaseObject" shape="rect" coords="0,0,533,24"/>
-  </map>
-</div></div>
-<table class="memberdecls">
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01208">1208</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ab86ba3827c156713a060c3dc3386a440"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1BaseLns.html#ab86ba3827c156713a060c3dc3386a440">BaseLns</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;vars)</td></tr>
@@ -160,15 +154,7 @@ Protected Attributes</h2></td></tr>
 <tr class="memitem:a79bf2242dc1962d10e6b04cf09be2c56"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1IntVarLocalSearchHandler.html">IntVarLocalSearchHandler</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1VarLocalSearchOperator.html#a79bf2242dc1962d10e6b04cf09be2c56">var_handler_</a></td></tr>
 <tr class="separator:a79bf2242dc1962d10e6b04cf09be2c56"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>This is the base class for building an Lns operator. </p>
-<p>An Lns fragment is a collection of variables which will be relaxed. Fragments are built with <a class="el" href="classoperations__research_1_1BaseLns.html#ad86de5fe7fa58d23b953923ff1c60ef2">NextFragment()</a>, which returns false if there are no more fragments to build. Optionally one can override InitFragments, which is called from <a class="el" href="classoperations__research_1_1LocalSearchOperator.html#a832fd07f7355d16895841a4735e544c1">LocalSearchOperator::Start</a> to initialize fragment data.</p>
-<p>Here's a sample relaxing one variable at a time:</p>
-<p>class OneVarLns : public <a class="el" href="classoperations__research_1_1BaseLns.html" title="This is the base class for building an Lns operator.">BaseLns</a> { public: OneVarLns(const std::vector&lt;IntVar*&gt;&amp; vars) : BaseLns(vars), index_(0) {} virtual ~OneVarLns() {} virtual void <a class="el" href="classoperations__research_1_1BaseLns.html#a9d18ce7a9e739df8e4e48550616e7985">InitFragments()</a> { index_ = 0; } virtual bool <a class="el" href="classoperations__research_1_1BaseLns.html#ad86de5fe7fa58d23b953923ff1c60ef2">NextFragment()</a> { const int size = <a class="el" href="classoperations__research_1_1VarLocalSearchOperator.html#a24d7846b013b9940fbf367e3f9575eab">Size()</a>; if (index_ &lt; size) { AppendToFragment(index_); ++index_; return true; } else { return false; } }</p>
-<p>private: int index_; }; </p>
-
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01208">1208</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ab86ba3827c156713a060c3dc3386a440"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab86ba3827c156713a060c3dc3386a440">&#9670;&nbsp;</a></span>BaseLns()</h2>
 
@@ -1242,6 +1228,7 @@ Protected Attributes</h2></td></tr>
 <li><a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

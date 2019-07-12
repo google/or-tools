@@ -24,22 +24,25 @@
       <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
-      <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="inherits.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="namespaceutil.html">util</a></li><li class="navelem"><a class="el" href="classutil_1_1ReverseArcMixedGraph.html">ReverseArcMixedGraph</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classutil_1_1ReverseArcMixedGraph.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
@@ -53,32 +56,21 @@
 <div class="title">util::ReverseArcMixedGraph&lt; NodeIndexType, ArcIndexType &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><h3>template&lt;typename NodeIndexType = int32, typename ArcIndexType = int32&gt;<br />
+class util::ReverseArcMixedGraph&lt; NodeIndexType, ArcIndexType &gt;</h3>
 
-<p>This graph is a mix between the <a class="el" href="classutil_1_1ReverseArcListGraph.html" title="Extends the ListGraph by also storing the reverse arcs.">ReverseArcListGraph</a> and the <a class="el" href="classutil_1_1ReverseArcStaticGraph.html" title="StaticGraph with reverse arc.">ReverseArcStaticGraph</a>.  
- <a href="classutil_1_1ReverseArcMixedGraph.html#details">More...</a></p>
+<p>This graph is a mix between the <a class="el" href="classutil_1_1ReverseArcListGraph.html" title="Extends the ListGraph by also storing the reverse arcs.">ReverseArcListGraph</a> and the <a class="el" href="classutil_1_1ReverseArcStaticGraph.html" title="StaticGraph with reverse arc.">ReverseArcStaticGraph</a>. </p>
+<p>It uses less memory:</p><ul>
+<li>It takes 2 * ArcIndexType * <a class="el" href="classutil_1_1BaseGraph.html#a463d57480c9563a7a707c5d0928c9946" title="Capacity reserved for future nodes, always &gt;= num_nodes_.">node_capacity()</a><ul>
+<li>(2 * NodeIndexType + ArcIndexType) * <a class="el" href="classutil_1_1BaseGraph.html#a92ffd852b2ab2e5241f9832e71a2de71" title="Capacity reserved for future arcs, always &gt;= num_arcs_.">arc_capacity()</a> memory.</li>
+</ul>
+</li>
+<li>If the ArcIndexPermutation is needed, then an extra ArcIndexType * <a class="el" href="classutil_1_1BaseGraph.html#a92ffd852b2ab2e5241f9832e71a2de71" title="Capacity reserved for future arcs, always &gt;= num_arcs_.">arc_capacity()</a> is needed for it. </li>
+</ul>
 
-<p><code>#include &lt;<a class="el" href="graph_8h_source.html">graph.h</a>&gt;</code></p>
-<div class="dynheader">
-Inheritance diagram for util::ReverseArcMixedGraph&lt; NodeIndexType, ArcIndexType &gt;:</div>
-<div class="dyncontent">
-<div class="center"><img src="classutil_1_1ReverseArcMixedGraph__inherit__graph.png" border="0" usemap="#util_1_1ReverseArcMixedGraph_3_01NodeIndexType_00_01ArcIndexType_01_4_inherit__map" alt="Inheritance graph"/></div>
-<map name="util_1_1ReverseArcMixedGraph_3_01NodeIndexType_00_01ArcIndexType_01_4_inherit__map" id="util_1_1ReverseArcMixedGraph_3_01NodeIndexType_00_01ArcIndexType_01_4_inherit__map">
-<area shape="rect"  title="This graph is a mix between the ReverseArcListGraph and the ReverseArcStaticGraph." alt="" coords="5,95,232,136"/>
-<area shape="rect"  href="classutil_1_1BaseGraph.html" title=" " alt="" coords="25,5,212,47"/>
-</map>
-<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
-<div class="dynheader">
-Collaboration diagram for util::ReverseArcMixedGraph&lt; NodeIndexType, ArcIndexType &gt;:</div>
-<div class="dyncontent">
-<div class="center"><img src="classutil_1_1ReverseArcMixedGraph__coll__graph.png" border="0" usemap="#util_1_1ReverseArcMixedGraph_3_01NodeIndexType_00_01ArcIndexType_01_4_coll__map" alt="Collaboration graph"/></div>
-<map name="util_1_1ReverseArcMixedGraph_3_01NodeIndexType_00_01ArcIndexType_01_4_coll__map" id="util_1_1ReverseArcMixedGraph_3_01NodeIndexType_00_01ArcIndexType_01_4_coll__map">
-<area shape="rect"  title="This graph is a mix between the ReverseArcListGraph and the ReverseArcStaticGraph." alt="" coords="16,215,243,256"/>
-<area shape="rect"  href="classutil_1_1BaseGraph.html" title=" " alt="" coords="36,124,223,165"/>
-<area shape="rect"  title=" " alt="" coords="5,5,120,32"/>
-<area shape="rect"  title=" " alt="" coords="145,5,247,32"/>
-</map>
-<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
-<table class="memberdecls">
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00635">635</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutil_1_1ReverseArcMixedGraph_1_1IncomingArcIterator.html">IncomingArcIterator</a></td></tr>
@@ -209,21 +201,7 @@ Protected Attributes</h2></td></tr>
 <tr class="memitem:aa980e5526b9ded17a83928fc339c71e4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutil_1_1BaseGraph.html#aa980e5526b9ded17a83928fc339c71e4">const_capacities_</a></td></tr>
 <tr class="separator:aa980e5526b9ded17a83928fc339c71e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><h3>template&lt;typename NodeIndexType = int32, typename ArcIndexType = int32&gt;<br />
-class util::ReverseArcMixedGraph&lt; NodeIndexType, ArcIndexType &gt;</h3>
-
-<p>This graph is a mix between the <a class="el" href="classutil_1_1ReverseArcListGraph.html" title="Extends the ListGraph by also storing the reverse arcs.">ReverseArcListGraph</a> and the <a class="el" href="classutil_1_1ReverseArcStaticGraph.html" title="StaticGraph with reverse arc.">ReverseArcStaticGraph</a>. </p>
-<p>It uses less memory:</p><ul>
-<li>It takes 2 * ArcIndexType * <a class="el" href="classutil_1_1BaseGraph.html#a463d57480c9563a7a707c5d0928c9946" title="Capacity reserved for future nodes, always &gt;= num_nodes_.">node_capacity()</a><ul>
-<li>(2 * NodeIndexType + ArcIndexType) * <a class="el" href="classutil_1_1BaseGraph.html#a92ffd852b2ab2e5241f9832e71a2de71" title="Capacity reserved for future arcs, always &gt;= num_arcs_.">arc_capacity()</a> memory.</li>
-</ul>
-</li>
-<li>If the ArcIndexPermutation is needed, then an extra ArcIndexType * <a class="el" href="classutil_1_1BaseGraph.html#a92ffd852b2ab2e5241f9832e71a2de71" title="Capacity reserved for future arcs, always &gt;= num_arcs_.">arc_capacity()</a> is needed for it. </li>
-</ul>
-
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00635">635</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
-</div><h2 class="groupheader">Member Typedef Documentation</h2>
+<h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a0eba6e5899924388644dfa2258ae8929"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0eba6e5899924388644dfa2258ae8929">&#9670;&nbsp;</a></span>ArcIndex</h2>
 
@@ -483,7 +461,7 @@ template&lt;typename NodeIndexType , typename ArcIndexType &gt; </div>
 </div><div class="memdoc">
 
 <p>Capacity reserved for future arcs, always &gt;= num_arcs_. </p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000014">Todo:</a></b></dt><dd>(user): Same questions as the ones in <a class="el" href="classutil_1_1BaseGraph.html#a463d57480c9563a7a707c5d0928c9946" title="Capacity reserved for future nodes, always &gt;= num_nodes_.">node_capacity()</a>. </dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000015">Todo:</a></b></dt><dd>(user): Same questions as the ones in <a class="el" href="classutil_1_1BaseGraph.html#a463d57480c9563a7a707c5d0928c9946" title="Capacity reserved for future nodes, always &gt;= num_nodes_.">node_capacity()</a>. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00959">959</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
@@ -655,7 +633,7 @@ template&lt;typename NodeIndexType , typename ArcIndexType &gt; </div>
 </div><div class="memdoc">
 
 <p><a class="el" href="classutil_1_1BaseGraph.html#aa3bd051d1e141b09dda17aa9b5f24f69" title="FreezeCapacities() makes any future attempt to change the graph capacities crash in DEBUG mode.">FreezeCapacities()</a> makes any future attempt to change the graph capacities crash in DEBUG mode. </p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000015">Todo:</a></b></dt><dd>(user): Only define this in debug mode at the cost of having a lot of ifndef NDEBUG all over the place? remove the function completely ? </dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000016">Todo:</a></b></dt><dd>(user): Only define this in debug mode at the cost of having a lot of ifndef NDEBUG all over the place? remove the function completely ? </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00966">966</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
@@ -694,7 +672,7 @@ template&lt;typename NodeIndexType , typename ArcIndexType &gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000017">Todo:</a></b></dt><dd>(user): remove the public functions below.</dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000018">Todo:</a></b></dt><dd>(user): remove the public functions below.</dd></dl>
 <p>They are just here during the transition from the old ebert_graph api to this new graph api. </p>
 
 <p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00264">264</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
@@ -718,7 +696,7 @@ template&lt;typename NodeIndexType , typename ArcIndexType &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000019">Todo:</a></b></dt><dd>(user): support <a class="el" href="classutil_1_1ReverseArcMixedGraph.html#a5ebe11f2abcd78ad1f5606e27d1688bb">Head()</a> and <a class="el" href="classutil_1_1ReverseArcMixedGraph.html#a351cbc3c0c79e22f010e697bf65d7100">Tail()</a> before <a class="el" href="classutil_1_1ReverseArcMixedGraph.html#a06e56a529396bbd2595f5c32c2f73142">Build()</a>, like StaticGraph&lt;&gt;. </dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000020">Todo:</a></b></dt><dd>(user): support <a class="el" href="classutil_1_1ReverseArcMixedGraph.html#a5ebe11f2abcd78ad1f5606e27d1688bb">Head()</a> and <a class="el" href="classutil_1_1ReverseArcMixedGraph.html#a351cbc3c0c79e22f010e697bf65d7100">Tail()</a> before <a class="el" href="classutil_1_1ReverseArcMixedGraph.html#a06e56a529396bbd2595f5c32c2f73142">Build()</a>, like StaticGraph&lt;&gt;. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l01972">1972</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
@@ -908,7 +886,7 @@ template&lt;typename NodeIndexType , typename ArcIndexType &gt; </div>
 </div><div class="memdoc">
 
 <p>Capacity reserved for future nodes, always &gt;= num_nodes_. </p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000013">Todo:</a></b></dt><dd>(user): Is it needed? remove completely? return the real capacities at the cost of having a different implementation for each graphs? </dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000014">Todo:</a></b></dt><dd>(user): Is it needed? remove completely? return the real capacities at the cost of having a different implementation for each graphs? </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00951">951</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
@@ -1496,6 +1474,7 @@ template&lt;typename NodeIndexType , typename ArcIndexType &gt; </div>
 <li><a class="el" href="graph_8h_source.html">graph.h</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

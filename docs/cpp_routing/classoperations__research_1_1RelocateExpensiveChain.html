@@ -23,22 +23,25 @@
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
-      <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="hierarchy.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="namespaceoperations__research.html">operations_research</a></li><li class="navelem"><a class="el" href="classoperations__research_1_1RelocateExpensiveChain.html">RelocateExpensiveChain</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classoperations__research_1_1RelocateExpensiveChain.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
@@ -49,25 +52,13 @@
 <div class="title">operations_research::RelocateExpensiveChain Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p><a class="el" href="classoperations__research_1_1RelocateExpensiveChain.html" title="RelocateExpensiveChain.">RelocateExpensiveChain</a>. </p>
+<p>Operator which relocates the most expensive subchains (given a cost callback) in a path to a different position.</p>
+<p>The most expensive chain on a path is the one resulting from cutting the 2 most expensive arcs on this path. </p>
 
-<p><a class="el" href="classoperations__research_1_1RelocateExpensiveChain.html" title="RelocateExpensiveChain.">RelocateExpensiveChain</a>.  
- <a href="classoperations__research_1_1RelocateExpensiveChain.html#details">More...</a></p>
-
-<p><code>#include &lt;<a class="el" href="routing__neighborhoods_8h_source.html">routing_neighborhoods.h</a>&gt;</code></p>
-<div class="dynheader">
-Inheritance diagram for operations_research::RelocateExpensiveChain:</div>
-<div class="dyncontent">
- <div class="center">
-  <img src="classoperations__research_1_1RelocateExpensiveChain.png" usemap="#operations_5Fresearch::RelocateExpensiveChain_map" alt=""/>
-  <map id="operations_5Fresearch::RelocateExpensiveChain_map" name="operations_5Fresearch::RelocateExpensiveChain_map">
-<area href="classoperations__research_1_1PathOperator.html" title="Base class of the local search operators dedicated to path modifications (a path is a set of nodes li..." alt="operations_research::PathOperator" shape="rect" coords="0,224,533,248"/>
-<area href="classoperations__research_1_1IntVarLocalSearchOperator.html" title="Specialization of LocalSearchOperator built from an array of IntVars which specifies the scope of the..." alt="operations_research::IntVarLocalSearchOperator" shape="rect" coords="0,168,533,192"/>
-<area href="classoperations__research_1_1VarLocalSearchOperator.html" alt="operations_research::VarLocalSearchOperator&lt; IntVar, int64, IntVarLocalSearchHandler &gt;" shape="rect" coords="0,112,533,136"/>
-<area href="classoperations__research_1_1LocalSearchOperator.html" title="The base class for all local search operators." alt="operations_research::LocalSearchOperator" shape="rect" coords="0,56,533,80"/>
-<area href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="operations_research::BaseObject" shape="rect" coords="0,0,533,24"/>
-  </map>
-</div></div>
-<table class="memberdecls">
+<p class="definition">Definition at line <a class="el" href="routing__neighborhoods_8h_source.html#l00351">351</a> of file <a class="el" href="routing__neighborhoods_8h_source.html">routing_neighborhoods.h</a>.</p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ad0e60e3542bae5a5d5cd547e437b9e7a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RelocateExpensiveChain.html#ad0e60e3542bae5a5d5cd547e437b9e7a">RelocateExpensiveChain</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;vars, const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;secondary_vars, std::function&lt; int(int64)&gt; start_empty_path_class, int num_arcs_to_consider, std::function&lt; int64(int64, int64, int64)&gt; arc_cost_for_path_start)</td></tr>
@@ -227,13 +218,7 @@ Protected Attributes</h2></td></tr>
 <tr class="memitem:a79bf2242dc1962d10e6b04cf09be2c56"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1IntVarLocalSearchHandler.html">IntVarLocalSearchHandler</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1VarLocalSearchOperator.html#a79bf2242dc1962d10e6b04cf09be2c56">var_handler_</a></td></tr>
 <tr class="separator:a79bf2242dc1962d10e6b04cf09be2c56"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p><a class="el" href="classoperations__research_1_1RelocateExpensiveChain.html" title="RelocateExpensiveChain.">RelocateExpensiveChain</a>. </p>
-<p>Operator which relocates the most expensive subchains (given a cost callback) in a path to a different position.</p>
-<p>The most expensive chain on a path is the one resulting from cutting the 2 most expensive arcs on this path. </p>
-
-<p class="definition">Definition at line <a class="el" href="routing__neighborhoods_8h_source.html#l00351">351</a> of file <a class="el" href="routing__neighborhoods_8h_source.html">routing_neighborhoods.h</a>.</p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ad0e60e3542bae5a5d5cd547e437b9e7a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad0e60e3542bae5a5d5cd547e437b9e7a">&#9670;&nbsp;</a></span>RelocateExpensiveChain()</h2>
 
@@ -2104,6 +2089,7 @@ Protected Attributes</h2></td></tr>
 <li><a class="el" href="routing__neighborhoods_8h_source.html">routing_neighborhoods.h</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

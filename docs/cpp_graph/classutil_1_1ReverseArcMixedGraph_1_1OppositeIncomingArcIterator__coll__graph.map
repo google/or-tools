@@ -1,7 +1,0 @@
-<map id="util::ReverseArcMixedGraph&lt; NodeIndexType, ArcIndexType &gt;::OppositeIncomingArcIterator" name="util::ReverseArcMixedGraph&lt; NodeIndexType, ArcIndexType &gt;::OppositeIncomingArcIterator">
-<area shape="rect" id="node1" title=" " alt="" coords="109,332,323,388"/>
-<area shape="rect" id="node2" href="$classutil_1_1ReverseArcMixedGraph.html" title="This graph is a mix between the ReverseArcListGraph and the ReverseArcStaticGraph." alt="" coords="27,228,253,269"/>
-<area shape="rect" id="node3" href="$classutil_1_1BaseGraph.html" title=" " alt="" coords="47,124,233,165"/>
-<area shape="rect" id="node4" title=" " alt="" coords="5,5,120,32"/>
-<area shape="rect" id="node5" title=" " alt="" coords="191,5,294,32"/>
-</map>

@@ -23,22 +23,25 @@
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
-      <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="hierarchy.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="namespaceoperations__research.html">operations_research</a></li><li class="navelem"><a class="el" href="classoperations__research_1_1BaseObject.html">BaseObject</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classoperations__research_1_1BaseObject.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
@@ -47,33 +50,12 @@
 <div class="title">operations_research::BaseObject Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>A <a class="el" href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects.">BaseObject</a> is the root of all reversibly allocated objects. </p>
+<p>A DebugString method and the associated &lt;&lt; operator are implemented as a convenience. </p>
 
-<p>A <a class="el" href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects.">BaseObject</a> is the root of all reversibly allocated objects.  
- <a href="classoperations__research_1_1BaseObject.html#details">More...</a></p>
-
-<p><code>#include &lt;<a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>&gt;</code></p>
-<div class="dynheader">
-Inheritance diagram for operations_research::BaseObject:</div>
-<div class="dyncontent">
- <div class="center">
-  <img src="classoperations__research_1_1BaseObject.png" usemap="#operations_5Fresearch::BaseObject_map" alt=""/>
-  <map id="operations_5Fresearch::BaseObject_map" name="operations_5Fresearch::BaseObject_map">
-<area href="classoperations__research_1_1ArrayWithOffset.html" alt="operations_research::ArrayWithOffset&lt; T &gt;" shape="rect" coords="278,56,546,80"/>
-<area href="classoperations__research_1_1Decision.html" title="A Decision represents a choice point in the search tree." alt="operations_research::Decision" shape="rect" coords="278,112,546,136"/>
-<area href="classoperations__research_1_1DecisionBuilder.html" title="A DecisionBuilder is responsible for creating the search tree." alt="operations_research::DecisionBuilder" shape="rect" coords="278,168,546,192"/>
-<area href="classoperations__research_1_1DecisionVisitor.html" title="A DecisionVisitor is used to inspect a decision." alt="operations_research::DecisionVisitor" shape="rect" coords="278,224,546,248"/>
-<area href="classoperations__research_1_1Demon.html" title="A Demon is the base element of a propagation queue." alt="operations_research::Demon" shape="rect" coords="278,280,546,304"/>
-<area href="classoperations__research_1_1IntVarIterator.html" title="The class Iterator has two direct subclasses." alt="operations_research::IntVarIterator" shape="rect" coords="278,336,546,360"/>
-<area href="classoperations__research_1_1LocalSearchFilter.html" title="Local Search Filters are used for fast neighbor pruning." alt="operations_research::LocalSearchFilter" shape="rect" coords="278,392,546,416"/>
-<area href="classoperations__research_1_1LocalSearchOperator.html" title="The base class for all local search operators." alt="operations_research::LocalSearchOperator" shape="rect" coords="278,448,546,472"/>
-<area href="classoperations__research_1_1ModelVisitor.html" title="Model visitor." alt="operations_research::ModelVisitor" shape="rect" coords="278,504,546,528"/>
-<area href="classoperations__research_1_1PropagationBaseObject.html" title="NOLINT." alt="operations_research::PropagationBaseObject" shape="rect" coords="278,560,546,584"/>
-<area href="classoperations__research_1_1RoutingModelVisitor.html" title="Routing model visitor." alt="operations_research::RoutingModelVisitor" shape="rect" coords="278,616,546,640"/>
-<area href="classoperations__research_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events." alt="operations_research::SearchMonitor" shape="rect" coords="278,672,546,696"/>
-<area href="classoperations__research_1_1SolutionPool.html" title="This class is used to manage a pool of solutions." alt="operations_research::SolutionPool" shape="rect" coords="278,728,546,752"/>
-  </map>
-</div></div>
-<table class="memberdecls">
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03089">3089</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:abcf5669a8a0612adb1665e276efb416f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1BaseObject.html#abcf5669a8a0612adb1665e276efb416f">BaseObject</a> ()</td></tr>
@@ -83,12 +65,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:afb3b013c5063d71566d5273793c1d828"><td class="memItemLeft" align="right" valign="top">virtual std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1BaseObject.html#afb3b013c5063d71566d5273793c1d828">DebugString</a> () const</td></tr>
 <tr class="separator:afb3b013c5063d71566d5273793c1d828"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>A <a class="el" href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects.">BaseObject</a> is the root of all reversibly allocated objects. </p>
-<p>A DebugString method and the associated &lt;&lt; operator are implemented as a convenience. </p>
-
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03089">3089</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="abcf5669a8a0612adb1665e276efb416f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abcf5669a8a0612adb1665e276efb416f">&#9670;&nbsp;</a></span>BaseObject()</h2>
 
@@ -177,6 +154,7 @@ Public Member Functions</h2></td></tr>
 <li><a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

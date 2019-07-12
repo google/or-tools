@@ -24,22 +24,25 @@
       <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
-      <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="inherits.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="namespaceoperations__research.html">operations_research</a></li><li class="navelem"><a class="el" href="namespaceoperations__research_1_1sat.html">sat</a></li><li class="navelem"><a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html">LinearExpr</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1LinearExpr.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
@@ -49,12 +52,15 @@
 <div class="title">operations_research::sat::LinearExpr Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>A dedicated container for linear expressions. </p>
+<p>This class helps building and manipulating linear expressions. With the use of implicit constructors, it can accept integer values, Boolean and Integer variables. Note that Not(x) will be silently transformed into 1 - x when added to the linear expression.</p>
+<p>Furthermore, static methods allows sums and scalar products, with or without an additional constant.</p>
+<p>Usage: <a class="el" href="classoperations__research_1_1sat_1_1CpModelBuilder.html" title="Wrapper class around the cp_model proto.">CpModelBuilder</a> cp_model; <a class="el" href="classoperations__research_1_1sat_1_1IntVar.html" title="An integer variable.">IntVar</a> x = model.NewIntVar(0, 10, "x"); <a class="el" href="classoperations__research_1_1sat_1_1IntVar.html" title="An integer variable.">IntVar</a> y = model.NewIntVar(0, 10, "y"); <a class="el" href="classoperations__research_1_1sat_1_1BoolVar.html" title="A Boolean variable.">BoolVar</a> b = model.NewBoolVar().WithName("b"); <a class="el" href="classoperations__research_1_1sat_1_1BoolVar.html" title="A Boolean variable.">BoolVar</a> c = model.NewBoolVar().WithName("c"); <a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html" title="A dedicated container for linear expressions.">LinearExpr</a> e1(x); ///&lt; e1 = x. <a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html" title="A dedicated container for linear expressions.">LinearExpr</a> e2 = <a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html#a74026647307b38916135e8c3dad3421f" title="Constructs the sum of a list of variables.">LinearExpr::Sum</a>({x, y}).AddConstant(5); ///&lt; e2 = x + y + 5; <a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html" title="A dedicated container for linear expressions.">LinearExpr</a> e3 = <a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html#a3b49fe9924ad61a609f65f4a7bc4c861" title="Constructs the scalar product of variables and coefficients.">LinearExpr::ScalProd</a>({x, y}, {2, -1}); ///&lt; e3 = 2 * x - y. <a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html" title="A dedicated container for linear expressions.">LinearExpr</a> e4(b); ///&lt; e4 = b. <a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html" title="A dedicated container for linear expressions.">LinearExpr</a> e5(<a class="el" href="namespaceoperations__research_1_1sat.html#a5e3de118c1f8dd5a7ec21704e05684b9" title="A convenient wrapper so we can write Not(x) instead of x.Not() which is sometimes clearer.">b.Not()</a>); ///&lt; e5 = 1 - b. ///&lt; If passing a std::vector&lt;BoolVar&gt;, a specialized method must be called. std::vector&lt;BoolVar&gt; bools = {b, Not(c)}; <a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html" title="A dedicated container for linear expressions.">LinearExpr</a> e6 = LinearExpr::BooleanSum(bools); ///&lt; e6 = b + 1 - c; ///&lt; e7 = -3 * b + 1 - c; <a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html" title="A dedicated container for linear expressions.">LinearExpr</a> e7 = <a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html#ae62c3c0da3b623e5e43530c08f7bf379" title="Constructs the scalar product of Booleans and coefficients.">LinearExpr::BooleanScalProd</a>(bools, {-3, 1});</p>
+<p>This can be used implicitly in some of the <a class="el" href="classoperations__research_1_1sat_1_1CpModelBuilder.html" title="Wrapper class around the cp_model proto.">CpModelBuilder</a> methods. cp_model.AddGreaterThan(x, 5); ///&lt; x &gt; 5 cp_model.AddEquality(x, LinearExpr(y).AddConstant(5)); ///&lt; x == y + 5 </p>
 
-<p>A dedicated container for linear expressions.  
- <a href="classoperations__research_1_1sat_1_1LinearExpr.html#details">More...</a></p>
-
-<p><code>#include &lt;<a class="el" href="cp__model_8h_source.html">cp_model.h</a>&gt;</code></p>
-<table class="memberdecls">
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00208">208</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ab33a810593c0a9f585133edcb22deb55"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html#ab33a810593c0a9f585133edcb22deb55">LinearExpr</a> ()</td></tr>
@@ -100,15 +106,7 @@ Static Public Member Functions</h2></td></tr>
 <tr class="memdesc:ae62c3c0da3b623e5e43530c08f7bf379"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs the scalar product of Booleans and coefficients.  <a href="#ae62c3c0da3b623e5e43530c08f7bf379">More...</a><br /></td></tr>
 <tr class="separator:ae62c3c0da3b623e5e43530c08f7bf379"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>A dedicated container for linear expressions. </p>
-<p>This class helps building and manipulating linear expressions. With the use of implicit constructors, it can accept integer values, Boolean and Integer variables. Note that Not(x) will be silently transformed into 1 - x when added to the linear expression.</p>
-<p>Furthermore, static methods allows sums and scalar products, with or without an additional constant.</p>
-<p>Usage: <a class="el" href="classoperations__research_1_1sat_1_1CpModelBuilder.html" title="Wrapper class around the cp_model proto.">CpModelBuilder</a> cp_model; <a class="el" href="classoperations__research_1_1sat_1_1IntVar.html" title="An integer variable.">IntVar</a> x = model.NewIntVar(0, 10, "x"); <a class="el" href="classoperations__research_1_1sat_1_1IntVar.html" title="An integer variable.">IntVar</a> y = model.NewIntVar(0, 10, "y"); <a class="el" href="classoperations__research_1_1sat_1_1BoolVar.html" title="A Boolean variable.">BoolVar</a> b = model.NewBoolVar().WithName("b"); <a class="el" href="classoperations__research_1_1sat_1_1BoolVar.html" title="A Boolean variable.">BoolVar</a> c = model.NewBoolVar().WithName("c"); <a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html" title="A dedicated container for linear expressions.">LinearExpr</a> e1(x); ///&lt; e1 = x. <a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html" title="A dedicated container for linear expressions.">LinearExpr</a> e2 = <a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html#a74026647307b38916135e8c3dad3421f" title="Constructs the sum of a list of variables.">LinearExpr::Sum</a>({x, y}).AddConstant(5); ///&lt; e2 = x + y + 5; <a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html" title="A dedicated container for linear expressions.">LinearExpr</a> e3 = <a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html#a3b49fe9924ad61a609f65f4a7bc4c861" title="Constructs the scalar product of variables and coefficients.">LinearExpr::ScalProd</a>({x, y}, {2, -1}); ///&lt; e3 = 2 * x - y. <a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html" title="A dedicated container for linear expressions.">LinearExpr</a> e4(b); ///&lt; e4 = b. <a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html" title="A dedicated container for linear expressions.">LinearExpr</a> e5(<a class="el" href="namespaceoperations__research_1_1sat.html#a5e3de118c1f8dd5a7ec21704e05684b9" title="A convenient wrapper so we can write Not(x) instead of x.Not() which is sometimes clearer.">b.Not()</a>); ///&lt; e5 = 1 - b. ///&lt; If passing a std::vector&lt;BoolVar&gt;, a specialized method must be called. std::vector&lt;BoolVar&gt; bools = {b, Not(c)}; <a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html" title="A dedicated container for linear expressions.">LinearExpr</a> e6 = LinearExpr::BooleanSum(bools); ///&lt; e6 = b + 1 - c; ///&lt; e7 = -3 * b + 1 - c; <a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html" title="A dedicated container for linear expressions.">LinearExpr</a> e7 = <a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html#ae62c3c0da3b623e5e43530c08f7bf379" title="Constructs the scalar product of Booleans and coefficients.">LinearExpr::BooleanScalProd</a>(bools, {-3, 1});</p>
-<p>This can be used implicitly in some of the <a class="el" href="classoperations__research_1_1sat_1_1CpModelBuilder.html" title="Wrapper class around the cp_model proto.">CpModelBuilder</a> methods. cp_model.AddGreaterThan(x, 5); ///&lt; x &gt; 5 cp_model.AddEquality(x, LinearExpr(y).AddConstant(5)); ///&lt; x == y + 5 </p>
-
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00208">208</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ab33a810593c0a9f585133edcb22deb55"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab33a810593c0a9f585133edcb22deb55">&#9670;&nbsp;</a></span>LinearExpr() <span class="overload">[1/4]</span></h2>
 
@@ -477,6 +475,7 @@ Static Public Member Functions</h2></td></tr>
 <li><a class="el" href="cp__model_8h_source.html">cp_model.h</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

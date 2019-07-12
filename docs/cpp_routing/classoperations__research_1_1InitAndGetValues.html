@@ -23,22 +23,25 @@
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
-      <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="hierarchy.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="namespaceoperations__research.html">operations_research</a></li><li class="navelem"><a class="el" href="classoperations__research_1_1InitAndGetValues.html">InitAndGetValues</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classoperations__research_1_1InitAndGetValues.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
@@ -48,12 +51,13 @@
 <div class="title">operations_research::InitAndGetValues Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Utility class to encapsulate an <a class="el" href="classoperations__research_1_1IntVarIterator.html" title="The class Iterator has two direct subclasses.">IntVarIterator</a> and use it in a range-based loop. </p>
+<p>See the code snippet above <a class="el" href="classoperations__research_1_1IntVarIterator.html" title="The class Iterator has two direct subclasses.">IntVarIterator</a>.</p>
+<p>It contains DEBUG_MODE-enabled code that DCHECKs that the same iterator instance isn't being iterated on in multiple places simultaneously. </p>
 
-<p>Utility class to encapsulate an <a class="el" href="classoperations__research_1_1IntVarIterator.html" title="The class Iterator has two direct subclasses.">IntVarIterator</a> and use it in a range-based loop.  
- <a href="classoperations__research_1_1InitAndGetValues.html#details">More...</a></p>
-
-<p><code>#include &lt;<a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>&gt;</code></p>
-<table class="memberdecls">
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03878">3878</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1InitAndGetValues_1_1Iterator.html">Iterator</a></td></tr>
@@ -68,13 +72,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a56ec665aa9b3314c60e52ab26e8f9fc6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structoperations__research_1_1InitAndGetValues_1_1Iterator.html">Iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1InitAndGetValues.html#a56ec665aa9b3314c60e52ab26e8f9fc6">end</a> ()</td></tr>
 <tr class="separator:a56ec665aa9b3314c60e52ab26e8f9fc6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Utility class to encapsulate an <a class="el" href="classoperations__research_1_1IntVarIterator.html" title="The class Iterator has two direct subclasses.">IntVarIterator</a> and use it in a range-based loop. </p>
-<p>See the code snippet above <a class="el" href="classoperations__research_1_1IntVarIterator.html" title="The class Iterator has two direct subclasses.">IntVarIterator</a>.</p>
-<p>It contains DEBUG_MODE-enabled code that DCHECKs that the same iterator instance isn't being iterated on in multiple places simultaneously. </p>
-
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03878">3878</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="abb257dd5cc47ff82a1be987c6f0614c7"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abb257dd5cc47ff82a1be987c6f0614c7">&#9670;&nbsp;</a></span>InitAndGetValues()</h2>
 
@@ -162,6 +160,7 @@ Public Member Functions</h2></td></tr>
 <li><a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

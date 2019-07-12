@@ -1,0 +1,5 @@
+var structoperations__research_1_1graph__traits_3_01ForwardEbertGraph_3_01NodeIndexType_00_01ArcIndexType_01_4_01_4 =
+[
+    [ "has_reverse_arcs", "structoperations__research_1_1graph__traits_3_01ForwardEbertGraph_3_01NodeIndexType_00_01ArcIndexType_01_4_01_4.html#a64a8352a30e4dd38414813ef444236e6", null ],
+    [ "is_dynamic", "structoperations__research_1_1graph__traits_3_01ForwardEbertGraph_3_01NodeIndexType_00_01ArcIndexType_01_4_01_4.html#a013b3e9341d6c84014d7dc15ded99396", null ]
+];

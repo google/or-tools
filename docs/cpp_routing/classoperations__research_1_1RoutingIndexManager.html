@@ -23,22 +23,25 @@
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
-      <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="hierarchy.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="namespaceoperations__research.html">operations_research</a></li><li class="navelem"><a class="el" href="classoperations__research_1_1RoutingIndexManager.html">RoutingIndexManager</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classoperations__research_1_1RoutingIndexManager.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
@@ -49,12 +52,13 @@
 <div class="title">operations_research::RoutingIndexManager Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Manager for any NodeIndex &lt;-&gt; variable index conversion. </p>
+<p>The routing solver uses variable indices internally and through its API. These variable indices are tricky to manage directly because one Node can correspond to a multitude of variables, depending on the number of times they appear in the model, and if they're used as start and/or end points. This class aims to simplify variable index usage, allowing users to use NodeIndex instead.</p>
+<p>Usage: </p><div class="fragment"><div class="line"><span class="keyword">auto</span> starts_ends = ...;  </div><div class="line"><a class="code" href="classoperations__research_1_1RoutingIndexManager.html#a7e8c8961302fc7f090b47a9e033fbcc8">RoutingIndexManager</a> manager(10, 4, starts_ends);  <span class="comment">// 10 nodes, 4 vehicles.</span></div><div class="line">RoutingModel model(manager);</div></div><!-- fragment --><p>Then, use 'manager.NodeToIndex(node)' whenever model requires a variable index. </p>
 
-<p>Manager for any NodeIndex &lt;-&gt; variable index conversion.  
- <a href="classoperations__research_1_1RoutingIndexManager.html#details">More...</a></p>
-
-<p><code>#include &lt;<a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>&gt;</code></p>
-<table class="memberdecls">
+<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00042">42</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
 <tr class="memitem:a31feb605a82521fcdb67d19c4f962f5c"><td class="memItemLeft" align="right" valign="top">typedef RoutingNodeIndex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingIndexManager.html#a31feb605a82521fcdb67d19c4f962f5c">NodeIndex</a></td></tr>
@@ -100,13 +104,7 @@ Static Public Attributes</h2></td></tr>
 <tr class="memitem:a2d397cd2af41ff1e0dd035c3ea1e65e5"><td class="memItemLeft" align="right" valign="top">static const int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingIndexManager.html#a2d397cd2af41ff1e0dd035c3ea1e65e5">kUnassigned</a></td></tr>
 <tr class="separator:a2d397cd2af41ff1e0dd035c3ea1e65e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Manager for any NodeIndex &lt;-&gt; variable index conversion. </p>
-<p>The routing solver uses variable indices internally and through its API. These variable indices are tricky to manage directly because one Node can correspond to a multitude of variables, depending on the number of times they appear in the model, and if they're used as start and/or end points. This class aims to simplify variable index usage, allowing users to use NodeIndex instead.</p>
-<p>Usage: </p><div class="fragment"><div class="line"><span class="keyword">auto</span> starts_ends = ...;  </div><div class="line"><a class="code" href="classoperations__research_1_1RoutingIndexManager.html#a7e8c8961302fc7f090b47a9e033fbcc8">RoutingIndexManager</a> manager(10, 4, starts_ends);  <span class="comment">// 10 nodes, 4 vehicles.</span></div><div class="line">RoutingModel model(manager);</div></div><!-- fragment --><p>Then, use 'manager.NodeToIndex(node)' whenever model requires a variable index. </p>
-
-<p class="definition">Definition at line <a class="el" href="routing__index__manager_8h_source.html#l00042">42</a> of file <a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a>.</p>
-</div><h2 class="groupheader">Member Typedef Documentation</h2>
+<h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a31feb605a82521fcdb67d19c4f962f5c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a31feb605a82521fcdb67d19c4f962f5c">&#9670;&nbsp;</a></span>NodeIndex</h2>
 
@@ -586,6 +584,7 @@ Static Public Attributes</h2></td></tr>
 <li><a class="el" href="routing__index__manager_8h_source.html">routing_index_manager.h</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

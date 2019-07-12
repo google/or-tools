@@ -23,22 +23,25 @@
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
-      <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="hierarchy.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="namespaceoperations__research.html">operations_research</a></li><li class="navelem"><a class="el" href="classoperations__research_1_1BaseIntExpr.html">BaseIntExpr</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classoperations__research_1_1BaseIntExpr.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
@@ -47,23 +50,16 @@
 <div class="title">operations_research::BaseIntExpr Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
 </div><!--header-->
 <div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>This is the base class for all expressions that are not variables. </p>
+<p>It provides a basic '<a class="el" href="classoperations__research_1_1BaseIntExpr.html#ac03c6f867b7e567f25a14a9e0c49a04b">CastToVar()</a>' implementation.</p>
+<p>The class of expressions represent two types of objects: variables and subclasses of <a class="el" href="classoperations__research_1_1BaseIntExpr.html" title="This is the base class for all expressions that are not variables.">BaseIntExpr</a>. Variables are stateful objects that provide a rich API (remove values, WhenBound...). On the other hand, subclasses of <a class="el" href="classoperations__research_1_1BaseIntExpr.html" title="This is the base class for all expressions that are not variables.">BaseIntExpr</a> represent range-only stateless objects. That is, min(A + B) is recomputed each time as min(A) + min(B).</p>
+<p>Furthermore, sometimes, the propagation on an expression is not complete, and <a class="el" href="classoperations__research_1_1IntExpr.html#a58d589131cbea30d4826248a2fa06aba">Min()</a>, <a class="el" href="classoperations__research_1_1IntExpr.html#a1fb9e08cff06a9a5b5739de4acba587c">Max()</a> are not monotonic with respect to <a class="el" href="classoperations__research_1_1IntExpr.html#afec5a6eea8ee64fbc7fa34d7d28f8d8f">SetMin()</a> and <a class="el" href="classoperations__research_1_1IntExpr.html#adee9a082160df545671781df47f2b985">SetMax()</a>. For instance, if A is a var with domain [0 .. 5], and B another variable with domain [0 .. 5], then Plus(A, B) has domain [0, 10].</p>
+<p>If we apply SetMax(Plus(A, B), 4)), we will deduce that both A and B have domain [0 .. 4]. In that case, Max(Plus(A, B)) is 8 and not 4. To get back monotonicity, we 'cast' the expression into a variable using the <a class="el" href="classoperations__research_1_1BaseIntExpr.html#a1482a8f4291d806dc98deaf586777f0a" title="Creates a variable from the expression.">Var()</a> method (that will call <a class="el" href="classoperations__research_1_1BaseIntExpr.html#ac03c6f867b7e567f25a14a9e0c49a04b">CastToVar()</a> internally). The resulting variable will be stateful and monotonic.</p>
+<p>Finally, one should never store a pointer to a <a class="el" href="classoperations__research_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming.">IntExpr</a>, or <a class="el" href="classoperations__research_1_1BaseIntExpr.html" title="This is the base class for all expressions that are not variables.">BaseIntExpr</a> in the code. The safe code should always call <a class="el" href="classoperations__research_1_1BaseIntExpr.html#a1482a8f4291d806dc98deaf586777f0a" title="Creates a variable from the expression.">Var()</a> on an expression built by the solver, and store the object as an IntVar*. This is a consequence of the stateless nature of the expressions that makes the code error-prone. </p>
 
-<p>This is the base class for all expressions that are not variables.  
- <a href="classoperations__research_1_1BaseIntExpr.html#details">More...</a></p>
-
-<p><code>#include &lt;<a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>&gt;</code></p>
-<div class="dynheader">
-Inheritance diagram for operations_research::BaseIntExpr:</div>
-<div class="dyncontent">
- <div class="center">
-  <img src="classoperations__research_1_1BaseIntExpr.png" usemap="#operations_5Fresearch::BaseIntExpr_map" alt=""/>
-  <map id="operations_5Fresearch::BaseIntExpr_map" name="operations_5Fresearch::BaseIntExpr_map">
-<area href="classoperations__research_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming." alt="operations_research::IntExpr" shape="rect" coords="0,112,268,136"/>
-<area href="classoperations__research_1_1PropagationBaseObject.html" title="NOLINT." alt="operations_research::PropagationBaseObject" shape="rect" coords="0,56,268,80"/>
-<area href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="operations_research::BaseObject" shape="rect" coords="0,0,268,24"/>
-  </map>
-</div></div>
-<table class="memberdecls">
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00109">109</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ad7d12cdfcb4b9340db0ea792b5545419"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1BaseIntExpr.html#ad7d12cdfcb4b9340db0ea792b5545419">BaseIntExpr</a> (<a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *const s)</td></tr>
@@ -152,16 +148,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:ab34671f68433c582260a443f3d15bfae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a base name for automatic naming.  <a href="#ab34671f68433c582260a443f3d15bfae">More...</a><br /></td></tr>
 <tr class="separator:ab34671f68433c582260a443f3d15bfae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>This is the base class for all expressions that are not variables. </p>
-<p>It provides a basic '<a class="el" href="classoperations__research_1_1BaseIntExpr.html#ac03c6f867b7e567f25a14a9e0c49a04b">CastToVar()</a>' implementation.</p>
-<p>The class of expressions represent two types of objects: variables and subclasses of <a class="el" href="classoperations__research_1_1BaseIntExpr.html" title="This is the base class for all expressions that are not variables.">BaseIntExpr</a>. Variables are stateful objects that provide a rich API (remove values, WhenBound...). On the other hand, subclasses of <a class="el" href="classoperations__research_1_1BaseIntExpr.html" title="This is the base class for all expressions that are not variables.">BaseIntExpr</a> represent range-only stateless objects. That is, min(A + B) is recomputed each time as min(A) + min(B).</p>
-<p>Furthermore, sometimes, the propagation on an expression is not complete, and <a class="el" href="classoperations__research_1_1IntExpr.html#a58d589131cbea30d4826248a2fa06aba">Min()</a>, <a class="el" href="classoperations__research_1_1IntExpr.html#a1fb9e08cff06a9a5b5739de4acba587c">Max()</a> are not monotonic with respect to <a class="el" href="classoperations__research_1_1IntExpr.html#afec5a6eea8ee64fbc7fa34d7d28f8d8f">SetMin()</a> and <a class="el" href="classoperations__research_1_1IntExpr.html#adee9a082160df545671781df47f2b985">SetMax()</a>. For instance, if A is a var with domain [0 .. 5], and B another variable with domain [0 .. 5], then Plus(A, B) has domain [0, 10].</p>
-<p>If we apply SetMax(Plus(A, B), 4)), we will deduce that both A and B have domain [0 .. 4]. In that case, Max(Plus(A, B)) is 8 and not 4. To get back monotonicity, we 'cast' the expression into a variable using the <a class="el" href="classoperations__research_1_1BaseIntExpr.html#a1482a8f4291d806dc98deaf586777f0a" title="Creates a variable from the expression.">Var()</a> method (that will call <a class="el" href="classoperations__research_1_1BaseIntExpr.html#ac03c6f867b7e567f25a14a9e0c49a04b">CastToVar()</a> internally). The resulting variable will be stateful and monotonic.</p>
-<p>Finally, one should never store a pointer to a <a class="el" href="classoperations__research_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming.">IntExpr</a>, or <a class="el" href="classoperations__research_1_1BaseIntExpr.html" title="This is the base class for all expressions that are not variables.">BaseIntExpr</a> in the code. The safe code should always call <a class="el" href="classoperations__research_1_1BaseIntExpr.html#a1482a8f4291d806dc98deaf586777f0a" title="Creates a variable from the expression.">Var()</a> on an expression built by the solver, and store the object as an IntVar*. This is a consequence of the stateless nature of the expressions that makes the code error-prone. </p>
-
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00109">109</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ad7d12cdfcb4b9340db0ea792b5545419"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad7d12cdfcb4b9340db0ea792b5545419">&#9670;&nbsp;</a></span>BaseIntExpr()</h2>
 
@@ -1134,6 +1121,7 @@ Public Member Functions</h2></td></tr>
 <li><a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

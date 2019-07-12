@@ -1,0 +1,5 @@
+var structoperations__research_1_1graph__traits_3_01ForwardStaticGraph_3_01NodeIndexType_00_01ArcIndexType_01_4_01_4 =
+[
+    [ "has_reverse_arcs", "structoperations__research_1_1graph__traits_3_01ForwardStaticGraph_3_01NodeIndexType_00_01ArcIndexType_01_4_01_4.html#ad92212c66a65a79b42f0d5b6b2693e69", null ],
+    [ "is_dynamic", "structoperations__research_1_1graph__traits_3_01ForwardStaticGraph_3_01NodeIndexType_00_01ArcIndexType_01_4_01_4.html#af0cb76b0565277bd556aa738f83534bf", null ]
+];

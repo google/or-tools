@@ -23,22 +23,25 @@
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
-      <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="hierarchy.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="namespaceoperations__research.html">operations_research</a></li><li class="navelem"><a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html">IntVarLocalSearchOperator</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classoperations__research_1_1IntVarLocalSearchOperator.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
@@ -49,40 +52,12 @@
 <div class="title">operations_research::IntVarLocalSearchOperator Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Specialization of <a class="el" href="classoperations__research_1_1LocalSearchOperator.html" title="The base class for all local search operators.">LocalSearchOperator</a> built from an array of IntVars which specifies the scope of the operator. </p>
+<p>This class also takes care of storing current variable values in <a class="el" href="classoperations__research_1_1VarLocalSearchOperator.html#aea532902ec6591bfdd80bfcf8bc101e5" title="This method should not be overridden.">Start()</a>, keeps track of changes done by the operator and builds the delta. The <a class="el" href="classoperations__research_1_1VarLocalSearchOperator.html#aed4a4938ec6ea3c46a8b9df80b5656e1">Deactivate()</a> method can be used to perform Large Neighborhood Search. </p>
 
-<p>Specialization of <a class="el" href="classoperations__research_1_1LocalSearchOperator.html" title="The base class for all local search operators.">LocalSearchOperator</a> built from an array of IntVars which specifies the scope of the operator.  
- <a href="classoperations__research_1_1IntVarLocalSearchOperator.html#details">More...</a></p>
-
-<p><code>#include &lt;<a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>&gt;</code></p>
-<div class="dynheader">
-Inheritance diagram for operations_research::IntVarLocalSearchOperator:</div>
-<div class="dyncontent">
- <div class="center">
-  <img src="classoperations__research_1_1IntVarLocalSearchOperator.png" usemap="#operations_5Fresearch::IntVarLocalSearchOperator_map" alt=""/>
-  <map id="operations_5Fresearch::IntVarLocalSearchOperator_map" name="operations_5Fresearch::IntVarLocalSearchOperator_map">
-<area href="classoperations__research_1_1VarLocalSearchOperator.html" alt="operations_research::VarLocalSearchOperator&lt; IntVar, int64, IntVarLocalSearchHandler &gt;" shape="rect" coords="814,112,1347,136"/>
-<area href="classoperations__research_1_1LocalSearchOperator.html" title="The base class for all local search operators." alt="operations_research::LocalSearchOperator" shape="rect" coords="814,56,1347,80"/>
-<area href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="operations_research::BaseObject" shape="rect" coords="814,0,1347,24"/>
-<area href="classoperations__research_1_1BaseLns.html" title="This is the base class for building an Lns operator." alt="operations_research::BaseLns" shape="rect" coords="0,224,533,248"/>
-<area href="classoperations__research_1_1ChangeValue.html" title="Defines operators which change the value of variables; each neighbor corresponds to one modified vari..." alt="operations_research::ChangeValue" shape="rect" coords="543,224,1076,248"/>
-<area href="classoperations__research_1_1PathOperator.html" title="Base class of the local search operators dedicated to path modifications (a path is a set of nodes li..." alt="operations_research::PathOperator" shape="rect" coords="1086,224,1619,248"/>
-<area href="classoperations__research_1_1SwapIndexPairOperator.html" title="Operator which iterates through each alternative of a set of pairs." alt="operations_research::SwapIndexPairOperator" shape="rect" coords="1629,224,2162,248"/>
-<area href="classoperations__research_1_1MakePairActiveOperator.html" title="Pair-based neighborhood operators, designed to move nodes by pairs (pairs are static and given)." alt="operations_research::MakePairActiveOperator" shape="rect" coords="271,280,804,304"/>
-<area href="classoperations__research_1_1PairNodeSwapActiveOperator.html" title="Operator which inserts pairs of inactive nodes into a path and makes an active node inactive." alt="operations_research::PairNodeSwapActiveOperator&lt; swap_first &gt;" shape="rect" coords="814,280,1347,304"/>
-<area href="classoperations__research_1_1PathWithPreviousNodesOperator.html" title="Simple PathOperator wrapper that also stores the current previous nodes, and is thus able to provide ..." alt="operations_research::PathWithPreviousNodesOperator" shape="rect" coords="1357,280,1890,304"/>
-<area href="classoperations__research_1_1RelocateExpensiveChain.html" title="RelocateExpensiveChain." alt="operations_research::RelocateExpensiveChain" shape="rect" coords="1900,280,2433,304"/>
-<area href="classoperations__research_1_1ExchangeSubtrip.html" alt="operations_research::ExchangeSubtrip" shape="rect" coords="1900,336,2433,360"/>
-<area href="classoperations__research_1_1IndexPairSwapActiveOperator.html" title="Operator which inserts inactive nodes into a path and makes a pair of active nodes inactive." alt="operations_research::IndexPairSwapActiveOperator" shape="rect" coords="1900,392,2433,416"/>
-<area href="classoperations__research_1_1LightPairRelocateOperator.html" alt="operations_research::LightPairRelocateOperator" shape="rect" coords="1900,448,2433,472"/>
-<area href="classoperations__research_1_1MakePairInactiveOperator.html" title="Operator which makes pairs of active nodes inactive." alt="operations_research::MakePairInactiveOperator" shape="rect" coords="1900,504,2433,528"/>
-<area href="classoperations__research_1_1MakeRelocateNeighborsOperator.html" title="Relocate neighborhood which moves chains of neighbors." alt="operations_research::MakeRelocateNeighborsOperator" shape="rect" coords="1900,560,2433,584"/>
-<area href="classoperations__research_1_1PairExchangeOperator.html" title="Operator which exchanges the position of two pairs; for both pairs the first node of the pair must be..." alt="operations_research::PairExchangeOperator" shape="rect" coords="1900,616,2433,640"/>
-<area href="classoperations__research_1_1PairExchangeRelocateOperator.html" title="Operator which exchanges the paths of two pairs (path have to be different)." alt="operations_research::PairExchangeRelocateOperator" shape="rect" coords="1900,672,2433,696"/>
-<area href="classoperations__research_1_1PairRelocateOperator.html" title="Operator which moves a pair of nodes to another position where the first node of the pair must be bef..." alt="operations_research::PairRelocateOperator" shape="rect" coords="1900,728,2433,752"/>
-<area href="classoperations__research_1_1RelocateSubtrip.html" title="Tries to move subtrips after an insertion node." alt="operations_research::RelocateSubtrip" shape="rect" coords="1900,784,2433,808"/>
-  </map>
-</div></div>
-<table class="memberdecls">
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01033">1033</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a1981dffba9e0458f5bd4669a5f1c15e1"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchOperator.html#a1981dffba9e0458f5bd4669a5f1c15e1">IntVarLocalSearchOperator</a> ()</td></tr>
@@ -173,12 +148,7 @@ Protected Attributes</h2></td></tr>
 <tr class="memitem:a79bf2242dc1962d10e6b04cf09be2c56"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1IntVarLocalSearchHandler.html">IntVarLocalSearchHandler</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1VarLocalSearchOperator.html#a79bf2242dc1962d10e6b04cf09be2c56">var_handler_</a></td></tr>
 <tr class="separator:a79bf2242dc1962d10e6b04cf09be2c56"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Specialization of <a class="el" href="classoperations__research_1_1LocalSearchOperator.html" title="The base class for all local search operators.">LocalSearchOperator</a> built from an array of IntVars which specifies the scope of the operator. </p>
-<p>This class also takes care of storing current variable values in <a class="el" href="classoperations__research_1_1VarLocalSearchOperator.html#aea532902ec6591bfdd80bfcf8bc101e5" title="This method should not be overridden.">Start()</a>, keeps track of changes done by the operator and builds the delta. The <a class="el" href="classoperations__research_1_1VarLocalSearchOperator.html#aed4a4938ec6ea3c46a8b9df80b5656e1">Deactivate()</a> method can be used to perform Large Neighborhood Search. </p>
-
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01033">1033</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a1981dffba9e0458f5bd4669a5f1c15e1"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1981dffba9e0458f5bd4669a5f1c15e1">&#9670;&nbsp;</a></span>IntVarLocalSearchOperator() <span class="overload">[1/2]</span></h2>
 
@@ -1231,6 +1201,7 @@ Protected Attributes</h2></td></tr>
 <li><a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

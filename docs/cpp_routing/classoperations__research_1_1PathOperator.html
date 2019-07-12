@@ -23,22 +23,25 @@
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
-      <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="hierarchy.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="namespaceoperations__research.html">operations_research</a></li><li class="navelem"><a class="el" href="classoperations__research_1_1PathOperator.html">PathOperator</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classoperations__research_1_1PathOperator.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
@@ -49,37 +52,16 @@
 <div class="title">operations_research::PathOperator Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
 </div><!--header-->
 <div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Base class of the local search operators dedicated to path modifications (a path is a set of nodes linked together by arcs). </p>
+<p>This family of neighborhoods supposes they are handling next variables representing the arcs (var[i] represents the node immediately after i on a path). Several services are provided:</p><ul>
+<li>arc manipulators (<a class="el" href="classoperations__research_1_1PathOperator.html#a2f05e5dce708fd86775e612d08ffc08e" title="Sets the to to be the node after from.">SetNext()</a>, <a class="el" href="classoperations__research_1_1PathOperator.html#ad819515eabc14b84e8e31b574a59d2fb" title="Reverses the chain starting after before_chain and ending before after_chain.">ReverseChain()</a>, <a class="el" href="classoperations__research_1_1PathOperator.html#aa6d431b31dc1fce0520698179e165817" title="Moves the chain starting after the node before_chain and ending at the node chain_end after the node ...">MoveChain()</a>)</li>
+<li>path inspectors (<a class="el" href="classoperations__research_1_1PathOperator.html#af916e434b85cddbe48e0378242a04aca" title="Returns the index of the node after the node of index node_index in the current assignment.">Next()</a>, <a class="el" href="classoperations__research_1_1PathOperator.html#a31f03e7418e4d1bd53d8d1212cdba731" title="Returns true if i is the last node on the path; defined by the fact that i outside the range of the v...">IsPathEnd()</a>)</li>
+<li>path iterators: operators need a given number of nodes to define a neighbor; this class provides the iteration on a given number of (base) nodes which can be used to define a neighbor (through the BaseNode method) Subclasses only need to override MakeNeighbor to create neighbors using the services above (no direct manipulation of assignments). </li>
+</ul>
 
-<p>Base class of the local search operators dedicated to path modifications (a path is a set of nodes linked together by arcs).  
- <a href="classoperations__research_1_1PathOperator.html#details">More...</a></p>
-
-<p><code>#include &lt;<a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>&gt;</code></p>
-<div class="dynheader">
-Inheritance diagram for operations_research::PathOperator:</div>
-<div class="dyncontent">
- <div class="center">
-  <img src="classoperations__research_1_1PathOperator.png" usemap="#operations_5Fresearch::PathOperator_map" alt=""/>
-  <map id="operations_5Fresearch::PathOperator_map" name="operations_5Fresearch::PathOperator_map">
-<area href="classoperations__research_1_1IntVarLocalSearchOperator.html" title="Specialization of LocalSearchOperator built from an array of IntVars which specifies the scope of the..." alt="operations_research::IntVarLocalSearchOperator" shape="rect" coords="814,168,1347,192"/>
-<area href="classoperations__research_1_1VarLocalSearchOperator.html" alt="operations_research::VarLocalSearchOperator&lt; IntVar, int64, IntVarLocalSearchHandler &gt;" shape="rect" coords="814,112,1347,136"/>
-<area href="classoperations__research_1_1LocalSearchOperator.html" title="The base class for all local search operators." alt="operations_research::LocalSearchOperator" shape="rect" coords="814,56,1347,80"/>
-<area href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="operations_research::BaseObject" shape="rect" coords="814,0,1347,24"/>
-<area href="classoperations__research_1_1MakePairActiveOperator.html" title="Pair-based neighborhood operators, designed to move nodes by pairs (pairs are static and given)." alt="operations_research::MakePairActiveOperator" shape="rect" coords="0,280,533,304"/>
-<area href="classoperations__research_1_1PairNodeSwapActiveOperator.html" title="Operator which inserts pairs of inactive nodes into a path and makes an active node inactive." alt="operations_research::PairNodeSwapActiveOperator&lt; swap_first &gt;" shape="rect" coords="543,280,1076,304"/>
-<area href="classoperations__research_1_1PathWithPreviousNodesOperator.html" title="Simple PathOperator wrapper that also stores the current previous nodes, and is thus able to provide ..." alt="operations_research::PathWithPreviousNodesOperator" shape="rect" coords="1086,280,1619,304"/>
-<area href="classoperations__research_1_1RelocateExpensiveChain.html" title="RelocateExpensiveChain." alt="operations_research::RelocateExpensiveChain" shape="rect" coords="1629,280,2162,304"/>
-<area href="classoperations__research_1_1ExchangeSubtrip.html" alt="operations_research::ExchangeSubtrip" shape="rect" coords="1629,336,2162,360"/>
-<area href="classoperations__research_1_1IndexPairSwapActiveOperator.html" title="Operator which inserts inactive nodes into a path and makes a pair of active nodes inactive." alt="operations_research::IndexPairSwapActiveOperator" shape="rect" coords="1629,392,2162,416"/>
-<area href="classoperations__research_1_1LightPairRelocateOperator.html" alt="operations_research::LightPairRelocateOperator" shape="rect" coords="1629,448,2162,472"/>
-<area href="classoperations__research_1_1MakePairInactiveOperator.html" title="Operator which makes pairs of active nodes inactive." alt="operations_research::MakePairInactiveOperator" shape="rect" coords="1629,504,2162,528"/>
-<area href="classoperations__research_1_1MakeRelocateNeighborsOperator.html" title="Relocate neighborhood which moves chains of neighbors." alt="operations_research::MakeRelocateNeighborsOperator" shape="rect" coords="1629,560,2162,584"/>
-<area href="classoperations__research_1_1PairExchangeOperator.html" title="Operator which exchanges the position of two pairs; for both pairs the first node of the pair must be..." alt="operations_research::PairExchangeOperator" shape="rect" coords="1629,616,2162,640"/>
-<area href="classoperations__research_1_1PairExchangeRelocateOperator.html" title="Operator which exchanges the paths of two pairs (path have to be different)." alt="operations_research::PairExchangeRelocateOperator" shape="rect" coords="1629,672,2162,696"/>
-<area href="classoperations__research_1_1PairRelocateOperator.html" title="Operator which moves a pair of nodes to another position where the first node of the pair must be bef..." alt="operations_research::PairRelocateOperator" shape="rect" coords="1629,728,2162,752"/>
-<area href="classoperations__research_1_1RelocateSubtrip.html" title="Tries to move subtrips after an insertion node." alt="operations_research::RelocateSubtrip" shape="rect" coords="1629,784,2162,808"/>
-  </map>
-</div></div>
-<table class="memberdecls">
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01261">1261</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:aefe922e3f6a2233cf3c2a6bbc079181d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1PathOperator.html#aefe922e3f6a2233cf3c2a6bbc079181d">PathOperator</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;next_vars, const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;path_vars, int number_of_base_nodes, bool skip_locally_optimal_paths, std::function&lt; int(int64)&gt; start_empty_path_class)</td></tr>
@@ -240,16 +222,7 @@ Protected Attributes</h2></td></tr>
 <tr class="memitem:a79bf2242dc1962d10e6b04cf09be2c56"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1IntVarLocalSearchHandler.html">IntVarLocalSearchHandler</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1VarLocalSearchOperator.html#a79bf2242dc1962d10e6b04cf09be2c56">var_handler_</a></td></tr>
 <tr class="separator:a79bf2242dc1962d10e6b04cf09be2c56"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Base class of the local search operators dedicated to path modifications (a path is a set of nodes linked together by arcs). </p>
-<p>This family of neighborhoods supposes they are handling next variables representing the arcs (var[i] represents the node immediately after i on a path). Several services are provided:</p><ul>
-<li>arc manipulators (<a class="el" href="classoperations__research_1_1PathOperator.html#a2f05e5dce708fd86775e612d08ffc08e" title="Sets the to to be the node after from.">SetNext()</a>, <a class="el" href="classoperations__research_1_1PathOperator.html#ad819515eabc14b84e8e31b574a59d2fb" title="Reverses the chain starting after before_chain and ending before after_chain.">ReverseChain()</a>, <a class="el" href="classoperations__research_1_1PathOperator.html#aa6d431b31dc1fce0520698179e165817" title="Moves the chain starting after the node before_chain and ending at the node chain_end after the node ...">MoveChain()</a>)</li>
-<li>path inspectors (<a class="el" href="classoperations__research_1_1PathOperator.html#af916e434b85cddbe48e0378242a04aca" title="Returns the index of the node after the node of index node_index in the current assignment.">Next()</a>, <a class="el" href="classoperations__research_1_1PathOperator.html#a31f03e7418e4d1bd53d8d1212cdba731" title="Returns true if i is the last node on the path; defined by the fact that i outside the range of the v...">IsPathEnd()</a>)</li>
-<li>path iterators: operators need a given number of nodes to define a neighbor; this class provides the iteration on a given number of (base) nodes which can be used to define a neighbor (through the BaseNode method) Subclasses only need to override MakeNeighbor to create neighbors using the services above (no direct manipulation of assignments). </li>
-</ul>
-
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01261">1261</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="aefe922e3f6a2233cf3c2a6bbc079181d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aefe922e3f6a2233cf3c2a6bbc079181d">&#9670;&nbsp;</a></span>PathOperator()</h2>
 
@@ -2125,6 +2098,7 @@ Protected Attributes</h2></td></tr>
 <li><a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

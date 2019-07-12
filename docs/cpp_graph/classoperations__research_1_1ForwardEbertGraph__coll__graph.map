@@ -1,7 +1,0 @@
-<map id="operations_research::ForwardEbertGraph&lt; NodeIndexType, ArcIndexType &gt;" name="operations_research::ForwardEbertGraph&lt; NodeIndexType, ArcIndexType &gt;">
-<area shape="rect" id="node1" title="A forward&#45;star&#45;only graph representation for greater efficiency in those algorithms that don&#39;t need r..." alt="" coords="923,89,1149,145"/>
-<area shape="rect" id="node2" href="$classoperations__research_1_1EbertGraphBase.html" title=" " alt="" coords="599,82,873,153"/>
-<area shape="rect" id="node3" href="$classoperations__research_1_1StarGraphBase.html" title=" " alt="" coords="275,82,549,153"/>
-<area shape="rect" id="node4" title=" " alt="" coords="5,52,120,79"/>
-<area shape="rect" id="node5" title=" " alt="" coords="11,156,114,183"/>
-</map>

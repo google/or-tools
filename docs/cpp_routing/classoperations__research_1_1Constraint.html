@@ -23,22 +23,25 @@
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
-      <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="hierarchy.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="namespaceoperations__research.html">operations_research</a></li><li class="navelem"><a class="el" href="classoperations__research_1_1Constraint.html">Constraint</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classoperations__research_1_1Constraint.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
@@ -47,27 +50,15 @@
 <div class="title">operations_research::Constraint Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
 </div><!--header-->
 <div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>A constraint is the main modeling object. </p>
+<p>It provides two methods:</p><ul>
+<li><a class="el" href="classoperations__research_1_1Constraint.html#aaa882d58b5fc0f2e3df6eff957ad4a0d" title="This method is called when the constraint is processed by the solver.">Post()</a> is responsible for creating the demons and attaching them to immediate demons().</li>
+<li><a class="el" href="classoperations__research_1_1Constraint.html#a64ab23714e57db311ba5b9fe1e742979" title="This method performs the initial propagation of the constraint.">InitialPropagate()</a> is called once just after Post and performs the initial propagation. The subsequent propagations will be performed by the demons Posted during the post() method. </li>
+</ul>
 
-<p>A constraint is the main modeling object.  
- <a href="classoperations__research_1_1Constraint.html#details">More...</a></p>
-
-<p><code>#include &lt;<a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>&gt;</code></p>
-<div class="dynheader">
-Inheritance diagram for operations_research::Constraint:</div>
-<div class="dyncontent">
- <div class="center">
-  <img src="classoperations__research_1_1Constraint.png" usemap="#operations_5Fresearch::Constraint_map" alt=""/>
-  <map id="operations_5Fresearch::Constraint_map" name="operations_5Fresearch::Constraint_map">
-<area href="classoperations__research_1_1PropagationBaseObject.html" title="NOLINT." alt="operations_research::PropagationBaseObject" shape="rect" coords="640,56,950,80"/>
-<area href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="operations_research::BaseObject" shape="rect" coords="640,0,950,24"/>
-<area href="classoperations__research_1_1CastConstraint.html" title="Cast constraints are special channeling constraints designed to keep a variable in sync with an expre..." alt="operations_research::CastConstraint" shape="rect" coords="0,168,310,192"/>
-<area href="classoperations__research_1_1DisjunctiveConstraint.html" alt="operations_research::DisjunctiveConstraint" shape="rect" coords="320,168,630,192"/>
-<area href="classoperations__research_1_1GlobalVehicleBreaksConstraint.html" title="GlobalVehicleBreaksConstraint ensures breaks constraints are enforced on all vehicles in the dimensio..." alt="operations_research::GlobalVehicleBreaksConstraint" shape="rect" coords="640,168,950,192"/>
-<area href="classoperations__research_1_1Pack.html" alt="operations_research::Pack" shape="rect" coords="960,168,1270,192"/>
-<area href="classoperations__research_1_1TypeRegulationsConstraint.html" title="The following constraint ensures that incompatibilities and requirements between types are respected." alt="operations_research::TypeRegulationsConstraint" shape="rect" coords="1280,168,1590,192"/>
-  </map>
-</div></div>
-<table class="memberdecls">
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03521">3521</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ae4bce2b10b1b0b3f953e356e6a34f339"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Constraint.html#ae4bce2b10b1b0b3f953e356e6a34f339">Constraint</a> (<a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *const <a class="el" href="classoperations__research_1_1PropagationBaseObject.html#ab3aa61657c74294f198a16d1dbc52580">solver</a>)</td></tr>
@@ -131,15 +122,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:ab34671f68433c582260a443f3d15bfae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a base name for automatic naming.  <a href="#ab34671f68433c582260a443f3d15bfae">More...</a><br /></td></tr>
 <tr class="separator:ab34671f68433c582260a443f3d15bfae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>A constraint is the main modeling object. </p>
-<p>It provides two methods:</p><ul>
-<li><a class="el" href="classoperations__research_1_1Constraint.html#aaa882d58b5fc0f2e3df6eff957ad4a0d" title="This method is called when the constraint is processed by the solver.">Post()</a> is responsible for creating the demons and attaching them to immediate demons().</li>
-<li><a class="el" href="classoperations__research_1_1Constraint.html#a64ab23714e57db311ba5b9fe1e742979" title="This method performs the initial propagation of the constraint.">InitialPropagate()</a> is called once just after Post and performs the initial propagation. The subsequent propagations will be performed by the demons Posted during the post() method. </li>
-</ul>
-
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03521">3521</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ae4bce2b10b1b0b3f953e356e6a34f339"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae4bce2b10b1b0b3f953e356e6a34f339">&#9670;&nbsp;</a></span>Constraint()</h2>
 
@@ -780,6 +763,7 @@ Public Member Functions</h2></td></tr>
 <li><a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">
