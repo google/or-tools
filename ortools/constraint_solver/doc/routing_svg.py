@@ -344,14 +344,13 @@ class SVG():
                           'marker-mid:url(#arrow_{colorname})"').format(
                               sz=size, fg=fg_color, colorname=colorname)
         print(r'<polyline points="{x1},{y1} {x2},{y2} {x3},{y3}" {style}/>'.
-              format(
-                  x1=position_1[0],
-                  y1=position_1[1],
-                  x2=(position_1[0] + position_2[0]) / 2,
-                  y2=(position_1[1] + position_2[1]) / 2,
-                  x3=position_2[0],
-                  y3=position_2[1],
-                  style=polyline_style))
+              format(x1=position_1[0],
+                     y1=position_1[1],
+                     x2=(position_1[0] + position_2[0]) / 2,
+                     y2=(position_1[1] + position_2[1]) / 2,
+                     x3=position_2[0],
+                     y3=position_2[1],
+                     style=polyline_style))
 
     @staticmethod
     def draw_circle(position, radius, size, fg_color, bg_color='white'):
@@ -523,9 +522,9 @@ class SVGPrinter():  # pylint: disable=too-many-instance-attributes
                 for x, y in zip(loc, [self._radius * 0, -self._radius * 1.6])
             ]
             color = self._color_palette.value_from_name('red')
-            self._svg.draw_text('[{t1},{t2}]'.format(
-                t1=time_window[0], t2=time_window[1]), position,
-                                self._radius * 0.75, 'white', color)
+            self._svg.draw_text(
+                '[{t1},{t2}]'.format(t1=time_window[0], t2=time_window[1]),
+                position, self._radius * 0.75, 'white', color)
 
 ##############
 ##  ROUTES  ##
@@ -630,8 +629,8 @@ class SVGPrinter():  # pylint: disable=too-many-instance-attributes
             if loc_idx == 0:  # special case for depot
                 position = [
                     x + y for x, y in zip(loc, [
-                        self._radius * is_start, self._radius * (
-                            1.8 + route_idx)
+                        self._radius * is_start, self._radius *
+                        (1.8 + route_idx)
                     ])
                 ]
                 is_start = 1
@@ -640,12 +639,8 @@ class SVGPrinter():  # pylint: disable=too-many-instance-attributes
                     x + y
                     for x, y in zip(loc, [self._radius * 0, self._radius * 1.8])
                 ]
-            self._svg.draw_text(
-                '[{t_min}]'.format(t_min=time_window[0]),
-                position,
-                self._radius * 0.75,
-                'white',
-                color)
+            self._svg.draw_text('[{t_min}]'.format(t_min=time_window[0]),
+                                position, self._radius * 0.75, 'white', color)
 
     def draw_tw_routes(self):
         """Draws the time window routes."""
@@ -691,57 +686,54 @@ class SVGPrinter():  # pylint: disable=too-many-instance-attributes
 def main():  # pylint: disable=too-many-locals,too-many-branches
     """Entry point of the program."""
     parser = argparse.ArgumentParser(description='Output VRP as svg image.')
-    parser.add_argument(
-        '-tsp', '--tsp', action='store_true', help='use 1 vehicle')
-    parser.add_argument(
-        '-vrp', '--vrp', action='store_true', help='use 4 vehicle')
-    parser.add_argument(
-        '-gs',
-        '--global-span',
-        action='store_true',
-        help='use global span constraints')
-    parser.add_argument(
-        '-c',
-        '--capacity',
-        action='store_true',
-        help='use capacity constraints')
-    parser.add_argument(
-        '-r',
-        '--resources',
-        action='store_true',
-        help='use resources constraints')
-    parser.add_argument(
-        '-dn',
-        '--drop-nodes',
-        action='store_true',
-        help='allow drop nodes (disjuntion constraints)')
-    parser.add_argument(
-        '-tw',
-        '--time-windows',
-        action='store_true',
-        help='use time-window constraints')
-    parser.add_argument(
-        '-se',
-        '--starts-ends',
-        action='store_true',
-        help='use multiple starts & ends')
-    parser.add_argument(
-        '-pd',
-        '--pickup-delivery',
-        action='store_true',
-        help='use pickup & delivery constraints')
-    parser.add_argument(
-        '-fifo',
-        '--fifo',
-        action='store_true',
-        help='use pickup & delivery FIFO Policy')
-    parser.add_argument(
-        '-lifo',
-        '--lifo',
-        action='store_true',
-        help='use pickup & delivery LIFO Policy')
-    parser.add_argument(
-        '-s', '--solution', action='store_true', help='print solution')
+    parser.add_argument('-tsp',
+                        '--tsp',
+                        action='store_true',
+                        help='use 1 vehicle')
+    parser.add_argument('-vrp',
+                        '--vrp',
+                        action='store_true',
+                        help='use 4 vehicle')
+    parser.add_argument('-gs',
+                        '--global-span',
+                        action='store_true',
+                        help='use global span constraints')
+    parser.add_argument('-c',
+                        '--capacity',
+                        action='store_true',
+                        help='use capacity constraints')
+    parser.add_argument('-r',
+                        '--resources',
+                        action='store_true',
+                        help='use resources constraints')
+    parser.add_argument('-dn',
+                        '--drop-nodes',
+                        action='store_true',
+                        help='allow drop nodes (disjuntion constraints)')
+    parser.add_argument('-tw',
+                        '--time-windows',
+                        action='store_true',
+                        help='use time-window constraints')
+    parser.add_argument('-se',
+                        '--starts-ends',
+                        action='store_true',
+                        help='use multiple starts & ends')
+    parser.add_argument('-pd',
+                        '--pickup-delivery',
+                        action='store_true',
+                        help='use pickup & delivery constraints')
+    parser.add_argument('-fifo',
+                        '--fifo',
+                        action='store_true',
+                        help='use pickup & delivery FIFO Policy')
+    parser.add_argument('-lifo',
+                        '--lifo',
+                        action='store_true',
+                        help='use pickup & delivery LIFO Policy')
+    parser.add_argument('-s',
+                        '--solution',
+                        action='store_true',
+                        help='print solution')
     args = vars(parser.parse_args())
 
     # Instantiate the data problem.
@@ -758,11 +750,12 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
     # Create the routing index manager.
     # [START index_manager]
     if args['starts_ends']:
-        manager = pywrapcp.RoutingIndexManager(
-            len(data.locations), data.num_vehicles, data.starts, data.ends)
+        manager = pywrapcp.RoutingIndexManager(len(data.locations),
+                                               data.num_vehicles, data.starts,
+                                               data.ends)
     else:
-        manager = pywrapcp.RoutingIndexManager(
-            len(data.locations), data.num_vehicles, data.depot)
+        manager = pywrapcp.RoutingIndexManager(len(data.locations),
+                                               data.num_vehicles, data.depot)
     # [END index_manager]
 
     # Create Routing Model.
@@ -814,8 +807,9 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
         distance_dimension.SetGlobalSpanCostCoefficient(100)
 
     if args['capacity'] or args['drop_nodes']:
-        routing.AddDimensionWithVehicleCapacity(
-            demand_callback_index, 0, data.vehicle_capacities, True, 'Capacity')
+        routing.AddDimensionWithVehicleCapacity(demand_callback_index, 0,
+                                                data.vehicle_capacities, True,
+                                                'Capacity')
 
     if args['drop_nodes']:
         # Allow to drop nodes.

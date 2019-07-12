@@ -507,7 +507,7 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     linear_program->SetObjectiveCoefficient(lp_cumuls.front(), -span_cost_coef);
   }
   // Add soft span cost.
-  if (dimension_->HasSoftSpanUpperBounds()) {
+  if (optimize_costs && dimension_->HasSoftSpanUpperBounds()) {
     SimpleBoundCosts::BoundCost bound_cost =
         dimension_->GetSoftSpanUpperBoundForVehicle(vehicle);
     if (bound_cost.bound < kint64max && bound_cost.cost > 0) {

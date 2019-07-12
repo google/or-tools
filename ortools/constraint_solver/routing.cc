@@ -650,10 +650,10 @@ static int64 ReturnZero(A a, B b) {
   return 0;
 }
 
-bool TransitCallbackPositive(const RoutingTransitCallback2& callback,
-                             int size) {
-  for (int i = 0; i < size; i++) {
-    for (int j = 0; j < size; j++) {
+bool TransitCallbackPositive(const RoutingTransitCallback2& callback, int size1,
+                             int size2) {
+  for (int i = 0; i < size1; i++) {
+    for (int j = 0; j < size2; j++) {
       if (callback(i, j) < 0) {
         return false;
       }
@@ -661,6 +661,7 @@ bool TransitCallbackPositive(const RoutingTransitCallback2& callback,
   }
   return true;
 }
+
 }  // namespace
 
 // ----- Routing model -----
@@ -785,6 +786,14 @@ int RoutingModel::RegisterUnaryTransitCallback(TransitCallback1 callback) {
   });
 }
 
+int RoutingModel::RegisterPositiveUnaryTransitCallback(
+    TransitCallback1 callback) {
+  is_transit_evaluator_positive_.push_back(true);
+  DCHECK(TransitCallbackPositive(
+      [&callback](int i, int) { return callback(i); }, Size() + vehicles(), 1));
+  return RegisterUnaryTransitCallback(std::move(callback));
+}
+
 int RoutingModel::RegisterTransitCallback(TransitCallback2 callback) {
   if (cache_callbacks_) {
     const int size = Size() + vehicles();
@@ -813,7 +822,8 @@ int RoutingModel::RegisterTransitCallback(TransitCallback2 callback) {
 
 int RoutingModel::RegisterPositiveTransitCallback(TransitCallback2 callback) {
   is_transit_evaluator_positive_.push_back(true);
-  DCHECK(TransitCallbackPositive(callback, Size() + vehicles()));
+  DCHECK(TransitCallbackPositive(callback, Size() + vehicles(),
+                                 Size() + vehicles()));
   return RegisterTransitCallback(std::move(callback));
 }
 
@@ -926,13 +936,21 @@ int RegisterCallback(RoutingTransitCallback2 callback, bool is_positive,
   }
   return model->RegisterTransitCallback(std::move(callback));
 }
+
+int RegisterUnaryCallback(RoutingTransitCallback1 callback, bool is_positive,
+                          RoutingModel* model) {
+  if (is_positive) {
+    return model->RegisterPositiveUnaryTransitCallback(std::move(callback));
+  }
+  return model->RegisterUnaryTransitCallback(std::move(callback));
+}
 }  // namespace
 
 bool RoutingModel::AddConstantDimensionWithSlack(
     int64 value, int64 capacity, int64 slack_max, bool fix_start_cumul_to_zero,
     const std::string& dimension_name) {
-  return AddDimension(RegisterCallback([value](int64, int64) { return value; },
-                                       /*is_positive=*/value >= 0, this),
+  return AddDimension(RegisterUnaryCallback([value](int64) { return value; },
+                                            /*is_positive=*/value >= 0, this),
                       slack_max, capacity, fix_start_cumul_to_zero,
                       dimension_name);
 }
@@ -941,8 +959,8 @@ bool RoutingModel::AddVectorDimension(std::vector<int64> values, int64 capacity,
                                       bool fix_start_cumul_to_zero,
                                       const std::string& dimension_name) {
   return AddDimension(
-      RegisterCallback(
-          [this, values](int64 i, int64 j) {
+      RegisterUnaryCallback(
+          [this, values](int64 i) {
             return values[manager_.IndexToNode(i).value()];
           },
           /*is_positive=*/
