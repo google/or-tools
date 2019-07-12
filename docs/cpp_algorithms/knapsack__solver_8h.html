@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li><a href="annotated.html"><span>Classes</span></a></li>
       <li class="current"><a href="files.html"><span>Files</span></a></li>
@@ -41,8 +40,7 @@
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
 <a href="#namespaces">Namespaces</a> &#124;
-<a href="#typedef-members">Typedefs</a> &#124;
-<a href="#func-members">Functions</a>  </div>
+<a href="#typedef-members">Typedefs</a>  </div>
   <div class="headertitle">
 <div class="title">knapsack_solver.h File Reference</div>  </div>
 </div><!--header-->
@@ -81,53 +79,36 @@ Include dependency graph for knapsack_solver.h:</div>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1KnapsackSolver.html">operations_research::KnapsackSolver</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This library solves knapsack problems.  <a href="classoperations__research_1_1KnapsackSolver.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1KnapsackAssignment.html">operations_research::KnapsackAssignment</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">--&mdash; KnapsackAssignement --&mdash; KnapsackAssignement is a small struct used to pair an item with its assignment.  <a href="structoperations__research_1_1KnapsackAssignment.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1KnapsackItem.html">operations_research::KnapsackItem</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">--&mdash; <a class="el" href="structoperations__research_1_1KnapsackItem.html" title="--— KnapsackItem --— KnapsackItem is a small struct to pair an item weight with its corresponding pro...">KnapsackItem</a> --&mdash; <a class="el" href="structoperations__research_1_1KnapsackItem.html" title="--— KnapsackItem --— KnapsackItem is a small struct to pair an item weight with its corresponding pro...">KnapsackItem</a> is a small struct to pair an item weight with its corresponding profit.  <a href="structoperations__research_1_1KnapsackItem.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1KnapsackSearchNode.html">operations_research::KnapsackSearchNode</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">--&mdash; <a class="el" href="classoperations__research_1_1KnapsackSearchNode.html" title="--— KnapsackSearchNode --— KnapsackSearchNode is a class used to describe a decision in the decision ...">KnapsackSearchNode</a> --&mdash; <a class="el" href="classoperations__research_1_1KnapsackSearchNode.html" title="--— KnapsackSearchNode --— KnapsackSearchNode is a class used to describe a decision in the decision ...">KnapsackSearchNode</a> is a class used to describe a decision in the decision search tree.  <a href="classoperations__research_1_1KnapsackSearchNode.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1KnapsackSearchPath.html">operations_research::KnapsackSearchPath</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">--&mdash; <a class="el" href="classoperations__research_1_1KnapsackSearchPath.html" title="--— KnapsackSearchPath --— KnapsackSearchPath is a small class used to represent the path between a n...">KnapsackSearchPath</a> --&mdash; <a class="el" href="classoperations__research_1_1KnapsackSearchPath.html" title="--— KnapsackSearchPath --— KnapsackSearchPath is a small class used to represent the path between a n...">KnapsackSearchPath</a> is a small class used to represent the path between a node to another node in the search tree.  <a href="classoperations__research_1_1KnapsackSearchPath.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1KnapsackState.html">operations_research::KnapsackState</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">--&mdash; <a class="el" href="classoperations__research_1_1KnapsackState.html" title="--— KnapsackState --— KnapsackState represents a partial solution to the knapsack problem.">KnapsackState</a> --&mdash; <a class="el" href="classoperations__research_1_1KnapsackState.html" title="--— KnapsackState --— KnapsackState represents a partial solution to the knapsack problem.">KnapsackState</a> represents a partial solution to the knapsack problem.  <a href="classoperations__research_1_1KnapsackState.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1KnapsackPropagator.html">operations_research::KnapsackPropagator</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">--&mdash; <a class="el" href="classoperations__research_1_1KnapsackPropagator.html" title="--— KnapsackPropagator --— KnapsackPropagator is the base class for modeling and propagating a constr...">KnapsackPropagator</a> --&mdash; <a class="el" href="classoperations__research_1_1KnapsackPropagator.html" title="--— KnapsackPropagator --— KnapsackPropagator is the base class for modeling and propagating a constr...">KnapsackPropagator</a> is the base class for modeling and propagating a constraint given an assignment.  <a href="classoperations__research_1_1KnapsackPropagator.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1KnapsackCapacityPropagator.html">operations_research::KnapsackCapacityPropagator</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">--&mdash; <a class="el" href="classoperations__research_1_1KnapsackCapacityPropagator.html" title="--— KnapsackCapacityPropagator --— KnapsackCapacityPropagator is a KnapsackPropagator used to enforce...">KnapsackCapacityPropagator</a> --&mdash; <a class="el" href="classoperations__research_1_1KnapsackCapacityPropagator.html" title="--— KnapsackCapacityPropagator --— KnapsackCapacityPropagator is a KnapsackPropagator used to enforce...">KnapsackCapacityPropagator</a> is a <a class="el" href="classoperations__research_1_1KnapsackPropagator.html" title="--— KnapsackPropagator --— KnapsackPropagator is the base class for modeling and propagating a constr...">KnapsackPropagator</a> used to enforce a capacity constraint.  <a href="classoperations__research_1_1KnapsackCapacityPropagator.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1BaseKnapsackSolver.html">operations_research::BaseKnapsackSolver</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">--&mdash; <a class="el" href="classoperations__research_1_1BaseKnapsackSolver.html" title="--— BaseKnapsackSolver --— This is the base class for knapsack solvers.">BaseKnapsackSolver</a> --&mdash; This is the base class for knapsack solvers.  <a href="classoperations__research_1_1BaseKnapsackSolver.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1KnapsackGenericSolver.html">operations_research::KnapsackGenericSolver</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">--&mdash; <a class="el" href="classoperations__research_1_1KnapsackGenericSolver.html" title="--— KnapsackGenericSolver --— KnapsackGenericSolver is the multi-dimensional knapsack solver class.">KnapsackGenericSolver</a> --&mdash; <a class="el" href="classoperations__research_1_1KnapsackGenericSolver.html" title="--— KnapsackGenericSolver --— KnapsackGenericSolver is the multi-dimensional knapsack solver class.">KnapsackGenericSolver</a> is the multi-dimensional knapsack solver class.  <a href="classoperations__research_1_1KnapsackGenericSolver.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:namespaceoperations__research"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html">operations_research</a></td></tr>
-<tr class="memdesc:namespaceoperations__research"><td class="mdescLeft">&#160;</td><td class="mdescRight">Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
 <tr class="memitem:ab6f3adbb119982fdfb9a85d87310f255"><td class="memItemLeft" align="right" valign="top">typedef KnapsackItem *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ab6f3adbb119982fdfb9a85d87310f255">operations_research::KnapsackItemPtr</a></td></tr>
 <tr class="separator:ab6f3adbb119982fdfb9a85d87310f255"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
-Functions</h2></td></tr>
-<tr class="memitem:ab0de44378545d5727eb4400210e568f8"><td class="memItemLeft" align="right" valign="top">Select next search node to expand Select next item_i to&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ab0de44378545d5727eb4400210e568f8">operations_research::assign</a> (using master propagator) - Generate a new search node where item_i is in the knapsack - Check validity of this new partial solution(using propagators) - If valid</td></tr>
-<tr class="memdesc:ab0de44378545d5727eb4400210e568f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">The following code defines needed classes for the <a class="el" href="classoperations__research_1_1KnapsackGenericSolver.html" title="--— KnapsackGenericSolver --— KnapsackGenericSolver is the multi-dimensional knapsack solver class.">KnapsackGenericSolver</a> class which is the entry point to extend knapsack with new constraints such as conflicts between items.  <a href="namespaceoperations__research.html#ab0de44378545d5727eb4400210e568f8">More...</a><br /></td></tr>
-<tr class="separator:ab0de44378545d5727eb4400210e568f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a35a30dc825cd0afa0e095f47118cd3cd"><td class="memItemLeft" align="right" valign="top">Select next search node to expand Select next item_i to add this new search node to the search Generate a new search node where item_i is not in the knapsack Check validity of this new partial&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a35a30dc825cd0afa0e095f47118cd3cd">operations_research::solution</a> (using propagators) - If valid</td></tr>
-<tr class="separator:a35a30dc825cd0afa0e095f47118cd3cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
         </div>

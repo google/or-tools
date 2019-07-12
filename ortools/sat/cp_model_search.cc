@@ -388,6 +388,15 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
       return new_params;
     }
 
+    // TODO(user): Disable max_lp if no change in linearization against auto.
+    if (--index == 0) {  // Reinforce LP relaxation.
+      new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+      new_params.set_linearization_level(2);
+      new_params.set_add_cg_cuts(true);
+      *name = "max_lp";
+      return new_params;
+    }
+
     if (--index == 0) {
       new_params.set_search_branching(
           SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);

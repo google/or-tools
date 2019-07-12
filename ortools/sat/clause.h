@@ -391,8 +391,9 @@ class BinaryImplicationGraph : public SatPropagator {
  public:
   explicit BinaryImplicationGraph(Model* model)
       : SatPropagator("BinaryImplicationGraph"),
-        stats_("BinaryImplicationGraph") {
-    model->GetOrCreate<Trail>()->RegisterPropagator(this);
+        stats_("BinaryImplicationGraph"),
+        trail_(model->GetOrCreate<Trail>()) {
+    trail_->RegisterPropagator(this);
   }
 
   ~BinaryImplicationGraph() override {
@@ -402,12 +403,16 @@ class BinaryImplicationGraph : public SatPropagator {
     });
   }
 
+  // SatPropagator interface.
   bool Propagate(Trail* trail) final;
   absl::Span<const Literal> Reason(const Trail& trail,
                                    int trail_index) const final;
 
   // Resizes the data structure.
   void Resize(int num_variables);
+
+  // Returns true if there is no constraints in this class.
+  bool IsEmpty() { return num_implications_ == 0 && at_most_ones_.empty(); }
 
   // Adds the binary clause (a OR b), which is the same as (not a => b).
   // Note that it is also equivalent to (not b => a).
@@ -419,11 +424,11 @@ class BinaryImplicationGraph : public SatPropagator {
   void AddBinaryClauseDuringSearch(Literal a, Literal b, Trail* trail);
 
   // An at most one constraint of size n is a compact way to encode n * (n - 1)
-  // implications.
+  // implications. This must only be called at level zero.
   //
-  // TODO(user): For large constraint, handle them natively instead of
-  // converting them into implications?
-  void AddAtMostOne(absl::Span<const Literal> at_most_one);
+  // Returns false if this creates a conflict. Currently this can only happens
+  // if there is duplicate literal already assigned to true in this constraint.
+  ABSL_MUST_USE_RESULT bool AddAtMostOne(absl::Span<const Literal> at_most_one);
 
   // Uses the binary implication graph to minimize the given conflict by
   // removing literals that implies others. The idea is that if a and b are two
@@ -449,10 +454,6 @@ class BinaryImplicationGraph : public SatPropagator {
   // - Frees the propagation list of the assigned literals.
   void RemoveFixedVariables(int first_unprocessed_trail_index,
                             const Trail& trail);
-
-  // Remove all duplicate implications. Note that as a side effect, this will
-  // sort the propagation lists.
-  void RemoveDuplicates();
 
   // Returns false if the model is unsat, otherwise detects equivalent variable
   // (with respect to the implications only) and reorganize the propagation
@@ -544,6 +545,15 @@ class BinaryImplicationGraph : public SatPropagator {
   std::vector<Literal> ExpandAtMostOne(
       const absl::Span<const Literal> at_most_one);
 
+  // Process all at most one constraints starting at or after base_index in
+  // at_most_one_buffer_. This replace literal by their representative, remove
+  // fixed literals and deal with duplicates. Return false iff the model is
+  // UNSAT.
+  bool CleanUpAndAddAtMostOnes(const int base_index);
+
+  mutable StatsGroup stats_;
+  Trail* trail_;
+
   // Binary reasons by trail_index. We need a deque because we kept pointers to
   // elements of this array and this can dynamically change size.
   std::deque<Literal> reasons_;
@@ -560,6 +570,16 @@ class BinaryImplicationGraph : public SatPropagator {
   // for us and we could store in common the inlined/not-inlined size.
   gtl::ITIVector<LiteralIndex, absl::InlinedVector<Literal, 6>> implications_;
   int64 num_implications_ = 0;
+
+  // Internal representation of at_most_one constraints. Each entry point to the
+  // start of a constraint in the buffer. Contraints are terminated by
+  // kNoLiteral. When LiteralIndex is true, then all entry in the at most one
+  // constraint must be false except the one refering to LiteralIndex.
+  //
+  // TODO(user): We could be more cache efficient by combining this with
+  // implications_ in some way. Do some propagation speed benchmark.
+  gtl::ITIVector<LiteralIndex, absl::InlinedVector<int32, 6>> at_most_ones_;
+  std::vector<Literal> at_most_one_buffer_;
 
   // Some stats.
   int64 num_propagations_ = 0;
@@ -588,7 +608,6 @@ class BinaryImplicationGraph : public SatPropagator {
   gtl::ITIVector<LiteralIndex, bool> is_redundant_;
   gtl::ITIVector<LiteralIndex, LiteralIndex> representative_of_;
 
-  mutable StatsGroup stats_;
   DISALLOW_COPY_AND_ASSIGN(BinaryImplicationGraph);
 };
 

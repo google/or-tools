@@ -105,6 +105,7 @@ void LinearProgrammingConstraint::SetObjectiveCoefficient(IntegerVariable ivar,
   IntegerVariable pos_var = VariableIsPositive(ivar) ? ivar : NegationOf(ivar);
   if (ivar != pos_var) coeff = -coeff;
 
+  constraint_manager_.SetObjectiveCoefficient(pos_var, coeff);
   const glop::ColIndex col = GetOrCreateMirrorVariable(pos_var);
   integer_objective_.push_back({col, coeff});
   objective_infinity_norm_ =

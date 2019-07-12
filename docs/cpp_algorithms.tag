@@ -74,20 +74,6 @@
       <anchor>ab6f3adbb119982fdfb9a85d87310f255</anchor>
       <arglist></arglist>
     </member>
-    <member kind="function">
-      <type>Select next search node to expand Select next item_i to</type>
-      <name>assign</name>
-      <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab0de44378545d5727eb4400210e568f8</anchor>
-      <arglist>(using master propagator) - Generate a new search node where item_i is in the knapsack - Check validity of this new partial solution(using propagators) - If valid</arglist>
-    </member>
-    <member kind="function">
-      <type>Select next search node to expand Select next item_i to add this new search node to the search Generate a new search node where item_i is not in the knapsack Check validity of this new partial</type>
-      <name>solution</name>
-      <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a35a30dc825cd0afa0e095f47118cd3cd</anchor>
-      <arglist>(using propagators) - If valid</arglist>
-    </member>
   </compound>
   <compound kind="file">
     <name>sparse_permutation.h</name>
@@ -1112,9 +1098,21 @@
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
+      <name>KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER</name>
+      <anchorfile>classoperations__research_1_1KnapsackSolver.html</anchorfile>
+      <anchor>a81ce17438663c39f7793e8db92ff1893ae1b7e0ea856a376a9c04130e0abdf812</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
       <name>KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER</name>
       <anchorfile>classoperations__research_1_1KnapsackSolver.html</anchorfile>
       <anchor>a81ce17438663c39f7793e8db92ff1893ae8c15c25eaf606f5f853821aaabba164</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER</name>
+      <anchorfile>classoperations__research_1_1KnapsackSolver.html</anchorfile>
+      <anchor>a81ce17438663c39f7793e8db92ff1893aa6d83fc5b8d17db1f82c1b414a4e8b20</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
@@ -1136,9 +1134,21 @@
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
+      <name>KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER</name>
+      <anchorfile>classoperations__research_1_1KnapsackSolver.html</anchorfile>
+      <anchor>a81ce17438663c39f7793e8db92ff1893ae1b7e0ea856a376a9c04130e0abdf812</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
       <name>KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER</name>
       <anchorfile>classoperations__research_1_1KnapsackSolver.html</anchorfile>
       <anchor>a81ce17438663c39f7793e8db92ff1893ae8c15c25eaf606f5f853821aaabba164</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER</name>
+      <anchorfile>classoperations__research_1_1KnapsackSolver.html</anchorfile>
+      <anchor>a81ce17438663c39f7793e8db92ff1893aa6d83fc5b8d17db1f82c1b414a4e8b20</anchor>
       <arglist></arglist>
     </member>
     <member kind="function">
@@ -1166,8 +1176,8 @@
       <type>void</type>
       <name>Init</name>
       <anchorfile>classoperations__research_1_1KnapsackSolver.html</anchorfile>
-      <anchor>ad2a0397c061a1cf0bfc759b35f23e463</anchor>
-      <arglist>(const std::vector&lt; int64 &gt; &amp;profits, const std::vector&lt; std::vector&lt; int64 &gt; &gt; &amp;weights, const std::vector&lt; int64 &gt; &amp;capacities)</arglist>
+      <anchor>aca019151f60942f2e7245874bb89cd62</anchor>
+      <arglist>(const std::vector&lt; int64 &gt; &amp;profits, const std::vector&lt; std::vector&lt; int64 &gt;&gt; &amp;weights, const std::vector&lt; int64 &gt; &amp;capacities)</arglist>
     </member>
     <member kind="function">
       <type>int64</type>
@@ -1467,20 +1477,6 @@
       <anchorfile>namespaceoperations__research.html</anchorfile>
       <anchor>ada8ccc36ef736b10ce389fbd347c4282</anchor>
       <arglist>(const std::vector&lt; std::vector&lt; double &gt; &gt; &amp;cost, absl::flat_hash_map&lt; int, int &gt; *direct_assignment, absl::flat_hash_map&lt; int, int &gt; *reverse_assignment)</arglist>
-    </member>
-    <member kind="function">
-      <type>Select next search node to expand Select next item_i to</type>
-      <name>assign</name>
-      <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>ab0de44378545d5727eb4400210e568f8</anchor>
-      <arglist>(using master propagator) - Generate a new search node where item_i is in the knapsack - Check validity of this new partial solution(using propagators) - If valid</arglist>
-    </member>
-    <member kind="function">
-      <type>Select next search node to expand Select next item_i to add this new search node to the search Generate a new search node where item_i is not in the knapsack Check validity of this new partial</type>
-      <name>solution</name>
-      <anchorfile>namespaceoperations__research.html</anchorfile>
-      <anchor>a35a30dc825cd0afa0e095f47118cd3cd</anchor>
-      <arglist>(using propagators) - If valid</arglist>
     </member>
   </compound>
 </tagfile>

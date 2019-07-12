@@ -118,7 +118,7 @@ $(GEN_DIR)/ortools/algorithms/knapsack_solver_java_wrap.cc: \
  $(SRC_DIR)/ortools/util/java/vector.i \
  $(SRC_DIR)/ortools/algorithms/knapsack_solver.h \
  | $(GEN_DIR)/ortools/algorithms $(GEN_DIR)/com/google/ortools/algorithms
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -java \
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -java $(SWIG_DOXYGEN) \
  -o $(GEN_PATH)$Sortools$Salgorithms$Sknapsack_solver_java_wrap.cc \
  -package com.google.ortools.algorithms \
  -module main \

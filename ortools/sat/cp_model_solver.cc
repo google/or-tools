@@ -1856,12 +1856,7 @@ class LnsSolver : public SubSolver {
 
   bool TaskIsAvailable() override {
     if (SearchIsDone()) return false;
-    if (generator_->NeedsFirstSolution()) {
-      if (shared_->response->SolutionsRepository().NumSolutions() == 0) {
-        return false;
-      }
-    }
-    return true;
+    return generator_->ReadyToGenerate();
   }
 
   std::function<void()> GenerateTask(int64 task_id) override {
@@ -2043,6 +2038,8 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   if (global_model->GetOrCreate<SatParameters>()->use_rins_lns()) {
     shared_rins_manager = absl::make_unique<SharedRINSNeighborhoodManager>(
         model_proto.variables_size());
+    global_model->Register<SharedRINSNeighborhoodManager>(
+        shared_rins_manager.get());
   }
 
   SharedClasses shared;
@@ -2088,8 +2085,9 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     // Add the NeighborhoodGeneratorHelper as a special subsolver so that its
     // Synchronize() is called before any LNS neighborhood solvers.
     auto unique_helper = absl::make_unique<NeighborhoodGeneratorHelper>(
-        /*id=*/subsolvers.size(), model_proto, &parameters, shared_time_limit,
-        shared_bounds_manager.get(), shared_response_manager);
+        /*id=*/subsolvers.size(), model_proto, &parameters,
+        shared_response_manager, shared_time_limit,
+        shared_bounds_manager.get());
     NeighborhoodGeneratorHelper* helper = unique_helper.get();
     subsolvers.push_back(std::move(unique_helper));
 

@@ -241,19 +241,16 @@ bool SatSolver::AddLinearConstraintInternal(
 
   // Detect at most one constraints. Note that this use the fact that the
   // coefficient are sorted.
-  //
-  // TODO(user): For now we don't put at most ones with a size of more than 100
-  // into the binary_implication_graph_ because the later has no custom code
-  // to handle large at most one, and it will simply expand it into a quadratic
-  // number of implications.
   if (parameters_->treat_binary_clauses_separately() &&
       !parameters_->use_pb_resolution() && max_coeff <= rhs &&
-      2 * min_coeff > rhs && cst.size() <= 100) {
+      2 * min_coeff > rhs) {
     literals_scratchpad_.clear();
     for (const LiteralWithCoeff& term : cst) {
       literals_scratchpad_.push_back(term.literal);
     }
-    binary_implication_graph_->AddAtMostOne(literals_scratchpad_);
+    if (!binary_implication_graph_->AddAtMostOne(literals_scratchpad_)) {
+      return SetModelUnsat();
+    }
 
     // In case this is the first constraint in the binary_implication_graph_.
     // TODO(user): refactor so this is not needed!
@@ -693,7 +690,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   // MinimizeConflict() can take advantage of that. Because of this, the
   // LBD of the learned conflict can change.
   DCHECK(ClauseIsValidUnderDebugAssignement(learned_conflict_));
-  if (binary_implication_graph_->NumberOfImplications() != 0) {
+  if (!binary_implication_graph_->IsEmpty()) {
     if (parameters_->binary_minimization_algorithm() ==
         SatParameters::BINARY_MINIMIZATION_FIRST) {
       binary_implication_graph_->MinimizeConflictFirst(
@@ -712,7 +709,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   MinimizeConflict(&learned_conflict_, &reason_used_to_infer_the_conflict_);
 
   // Minimize it further with binary clauses?
-  if (binary_implication_graph_->NumberOfImplications() != 0) {
+  if (!binary_implication_graph_->IsEmpty()) {
     // Note that on the contrary to the MinimizeConflict() above that
     // just uses the reason graph, this minimization can change the
     // clause LBD and even the backtracking level.
@@ -1603,7 +1600,7 @@ void SatSolver::InitializePropagators() {
   // model.GetOrCreate<BinaryImplicationGraph>() when the first binary
   // constraint is needed, and have a mecanism to always make this propagator
   // first. Same for the linear constraints.
-  if (binary_implication_graph_->NumberOfImplications() > 0) {
+  if (!binary_implication_graph_->IsEmpty()) {
     propagators_.push_back(binary_implication_graph_);
   }
   propagators_.push_back(clauses_propagator_);

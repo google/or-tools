@@ -1016,6 +1016,7 @@ cc_library(
         ":synchronization",
         "//ortools/base",
         "//ortools/base:threadpool",
+        "//ortools/util:adaptative_parameter_value",
         "//ortools/util:random_engine",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/synchronization",        

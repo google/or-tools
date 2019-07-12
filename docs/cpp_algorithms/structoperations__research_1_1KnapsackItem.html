@@ -21,7 +21,6 @@
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
-      <li><a href="pages.html"><span>Related&#160;Pages</span></a></li>
       <li><a href="namespaces.html"><span>Namespaces</span></a></li>
       <li class="current"><a href="annotated.html"><span>Classes</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
@@ -50,9 +49,6 @@
 </div><!--header-->
 <div class="contents">
 
-<p>--&mdash; <a class="el" href="structoperations__research_1_1KnapsackItem.html" title="--— KnapsackItem --— KnapsackItem is a small struct to pair an item weight with its corresponding pro...">KnapsackItem</a> --&mdash; <a class="el" href="structoperations__research_1_1KnapsackItem.html" title="--— KnapsackItem --— KnapsackItem is a small struct to pair an item weight with its corresponding pro...">KnapsackItem</a> is a small struct to pair an item weight with its corresponding profit.  
- <a href="structoperations__research_1_1KnapsackItem.html#details">More...</a></p>
-
 <p><code>#include &lt;<a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
@@ -65,7 +61,6 @@ Public Member Functions</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:a69aae0cb6039a8a356744648c8dfb9c1"><td class="memItemLeft" align="right" valign="top">const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1KnapsackItem.html#a69aae0cb6039a8a356744648c8dfb9c1">id</a></td></tr>
-<tr class="memdesc:a69aae0cb6039a8a356744648c8dfb9c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">The 'id' field is used to retrieve the initial item in order to communicate with other propagators and state.  <a href="#a69aae0cb6039a8a356744648c8dfb9c1">More...</a><br /></td></tr>
 <tr class="separator:a69aae0cb6039a8a356744648c8dfb9c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab974e9e70c585c50c96851ecb454d882"><td class="memItemLeft" align="right" valign="top">const int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1KnapsackItem.html#ab974e9e70c585c50c96851ecb454d882">weight</a></td></tr>
 <tr class="separator:ab974e9e70c585c50c96851ecb454d882"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -73,10 +68,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a057015810b94bfb1b5efac74e9d8d487"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>--&mdash; <a class="el" href="structoperations__research_1_1KnapsackItem.html" title="--— KnapsackItem --— KnapsackItem is a small struct to pair an item weight with its corresponding pro...">KnapsackItem</a> --&mdash; <a class="el" href="structoperations__research_1_1KnapsackItem.html" title="--— KnapsackItem --— KnapsackItem is a small struct to pair an item weight with its corresponding pro...">KnapsackItem</a> is a small struct to pair an item weight with its corresponding profit. </p>
-<p>The aim of the knapsack problem is to pack as many valuable items as possible. A straight forward heuristic is to take those with the greatest profit-per-unit-weight. This ratio is called efficiency in this implementation. So items will be grouped in vectors, and sorted by decreasing efficiency. </p><dl class="section note"><dt>Note</dt><dd>profits are duplicated for each dimension. This is done to simplify the code, especially the GetEfficiency method and vector sorting. As there usually are only few dimensions, the overhead should not be an issue. </dd></dl>
-
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00234">234</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<div class="textblock">
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00258">258</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a5ae427adb88e21ec0f883b8bbcc4b1d4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5ae427adb88e21ec0f883b8bbcc4b1d4">&#9670;&nbsp;</a></span>KnapsackItem()</h2>
@@ -118,7 +111,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00235">235</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00259">259</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>
@@ -147,7 +140,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00237">237</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00261">261</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>
@@ -164,9 +157,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>The 'id' field is used to retrieve the initial item in order to communicate with other propagators and state. </p>
-
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00245">245</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00269">269</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>
@@ -182,7 +173,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00247">247</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00271">271</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>
@@ -198,7 +189,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00246">246</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00270">270</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>
