@@ -119,7 +119,7 @@ $(GEN_DIR)/ortools/algorithms/pywrapknapsack_solver.py: \
  $(SRC_DIR)/ortools/algorithms/knapsack_solver.h \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/algorithms
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) \
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) $(SWIG_PY_DOXYGEN) \
  -o $(GEN_PATH)$Sortools$Salgorithms$Sknapsack_solver_python_wrap.cc \
  -module pywrapknapsack_solver \
  ortools$Salgorithms$Spython$Sknapsack_solver.i

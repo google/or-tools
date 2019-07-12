@@ -51,12 +51,56 @@
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00011">11</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
+<div class="textblock"><p>This library solves knapsack problems. </p>
+<p><br />
+ <br />
+ Problems the library solves include:<br />
+</p><ul>
+<li>0-1 knapsack problems,<br />
+</li>
+<li>Multi-dimensional knapsack problems,<br />
+ <br />
+ Given n items, each with a profit and a weight, given a knapsack of<br />
+ capacity c, the goal is to find a subset of items which fits inside c<br />
+ and maximizes the total profit.<br />
+ The knapsack problem can easily be extended from 1 to d dimensions.<br />
+ As an example, this can be useful to constrain the maximum number of<br />
+ items inside the knapsack.<br />
+ Without loss of generality, profits and weights are assumed to be positive.<br />
+ <br />
+ From a mathematical point of view, the multi-dimensional knapsack problem<br />
+ can be modeled by d linear constraints:<br />
+ <br />
+ ForEach(j:1..d)(Sum(i:1..n)(weight_ij * item_i) &lt;= c_j<br />
+ where item_i is a 0-1 integer variable.<br />
+ <br />
+ Then the goal is to maximize:<br />
+ <br />
+ Sum(i:1..n)(profit_i * item_i).<br />
+ <br />
+ There are several ways to solve knapsack problems. One of the most<br />
+ efficient is based on dynamic programming (mainly when weights, profits<br />
+ and dimensions are small, and the algorithm runs in pseudo polynomial time).<br />
+ Unfortunately, when adding conflict constraints the problem becomes strongly<br />
+ NP-hard, i.e. there is no pseudo-polynomial algorithm to solve it.<br />
+ That's the reason why the most of the following code is based on branch and<br />
+ bound search.<br />
+ <br />
+ For instance to solve a 2-dimensional knapsack problem with 9 items,<br />
+ one just has to feed a profit vector with the 9 profits, a vector of 2<br />
+ vectors for weights, and a vector of capacities.<br />
+ E.g.:<br />
+ <div class="fragment"><div class="line">vector: profits = [1, 2, 3, 4, 5, 6, 7, 8, 9]</div><div class="line">vector of vector: weights = [ [1, 2, 3, 4, 5, 6, 7, 8, 9],</div><div class="line">                              [1, 1, 1, 1, 1, 1, 1, 1, 1]]</div><div class="line">vector: capacities = [34, 4]</div></div><!-- fragment --> <br />
+ And then:<br />
+ <div class="fragment"><div class="line"><a class="code" href="classcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver.html#a4af9744830d1c4b8a1428f6987a83848">KnapsackSolver</a> solver(</div><div class="line">    KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,</div><div class="line">    <span class="stringliteral">&quot;Multi-dimensional solver&quot;</span>);</div><div class="line">solver.Init(profits, weights, capacities);</div><div class="line">int64 profit = solver.Solve();</div></div><!-- fragment --> </li>
+</ul>
+
+<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00063">63</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html">SolverType</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enum controlling which underlying algorithm is used.  <a href="enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
@@ -68,12 +112,16 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a6c87ed971aadba08e35a4ea8966100c1"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver.html#a6c87ed971aadba08e35a4ea8966100c1">KnapsackSolver</a> (KnapsackSolver.SolverType solver_type, String solver_name)</td></tr>
 <tr class="separator:a6c87ed971aadba08e35a4ea8966100c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4c448eb5e9b767c402d9c3b55ead64f3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver.html#a4c448eb5e9b767c402d9c3b55ead64f3">init</a> (long[] profits, long[][] weights, long[] capacities)</td></tr>
+<tr class="memdesc:a4c448eb5e9b767c402d9c3b55ead64f3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initializes the solver and enters the problem to be solved.  <a href="#a4c448eb5e9b767c402d9c3b55ead64f3">More...</a><br /></td></tr>
 <tr class="separator:a4c448eb5e9b767c402d9c3b55ead64f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a86b9400f19838acc60411703ece777c6"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver.html#a86b9400f19838acc60411703ece777c6">solve</a> ()</td></tr>
+<tr class="memdesc:a86b9400f19838acc60411703ece777c6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Solves the problem and returns the profit of the optimal solution.  <a href="#a86b9400f19838acc60411703ece777c6">More...</a><br /></td></tr>
 <tr class="separator:a86b9400f19838acc60411703ece777c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4289dd15929df6a7b20acbac3f6eae55"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver.html#a4289dd15929df6a7b20acbac3f6eae55">bestSolutionContains</a> (int item_id)</td></tr>
+<tr class="memdesc:a4289dd15929df6a7b20acbac3f6eae55"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the item 'item_id' is packed in the optimal knapsack.  <a href="#a4289dd15929df6a7b20acbac3f6eae55">More...</a><br /></td></tr>
 <tr class="separator:a4289dd15929df6a7b20acbac3f6eae55"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4739782e483a17d41c93850f372f22e4"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver.html#a4739782e483a17d41c93850f372f22e4">isSolutionOptimal</a> ()</td></tr>
+<tr class="memdesc:a4739782e483a17d41c93850f372f22e4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the solution was proven optimal.  <a href="#a4739782e483a17d41c93850f372f22e4">More...</a><br /></td></tr>
 <tr class="separator:a4739782e483a17d41c93850f372f22e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3ca12bb3360598c0548d0de81b38c34b"><td class="memItemLeft" align="right" valign="top">String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver.html#a3ca12bb3360598c0548d0de81b38c34b">getName</a> ()</td></tr>
 <tr class="separator:a3ca12bb3360598c0548d0de81b38c34b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -82,6 +130,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a807708964205a04f7fd5252341200daf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver.html#a807708964205a04f7fd5252341200daf">setUseReduction</a> (boolean use_reduction)</td></tr>
 <tr class="separator:a807708964205a04f7fd5252341200daf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5b08123bb36b0d7294f2630cbfeb9121"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver.html#a5b08123bb36b0d7294f2630cbfeb9121">setTimeLimit</a> (double time_limit_seconds)</td></tr>
+<tr class="memdesc:a5b08123bb36b0d7294f2630cbfeb9121"><td class="mdescLeft">&#160;</td><td class="mdescRight">Time limit in seconds.  <a href="#a5b08123bb36b0d7294f2630cbfeb9121">More...</a><br /></td></tr>
 <tr class="separator:a5b08123bb36b0d7294f2630cbfeb9121"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
@@ -124,7 +173,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00015">15</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00067">67</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
 
 </div>
 </div>
@@ -152,7 +201,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00039">39</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00091">91</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
 
 </div>
 </div>
@@ -190,7 +239,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00043">43</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00095">95</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
 
 </div>
 </div>
@@ -219,7 +268,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00055">55</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
+<p>Returns true if the item 'item_id' is packed in the optimal knapsack. </p>
+
+<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00116">116</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
 
 </div>
 </div>
@@ -246,7 +297,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00029">29</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00081">81</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
 
 </div>
 </div>
@@ -273,7 +324,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00063">63</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00127">127</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
 
 </div>
 </div>
@@ -317,7 +368,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00047">47</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
+<p>Initializes the solver and enters the problem to be solved. </p>
+
+<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00102">102</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
 
 </div>
 </div>
@@ -344,7 +397,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00059">59</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
+<p>Returns true if the solution was proven optimal. </p>
+
+<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00123">123</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
 
 </div>
 </div>
@@ -372,7 +427,13 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00075">75</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
+<p>Time limit in seconds. </p>
+<p><br />
+ <br />
+ When a finite time limit is set the solution obtained might not be optimal<br />
+ if the limit is reached. </p>
+
+<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00145">145</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
 
 </div>
 </div>
@@ -400,7 +461,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00071">71</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00135">135</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
 
 </div>
 </div>
@@ -427,7 +488,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00051">51</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
+<p>Solves the problem and returns the profit of the optimal solution. </p>
+
+<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00109">109</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
 
 </div>
 </div>
@@ -454,7 +517,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00067">67</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="KnapsackSolver_8java_source.html#l00131">131</a> of file <a class="el" href="KnapsackSolver_8java_source.html">KnapsackSolver.java</a>.</p>
 
 </div>
 </div>
