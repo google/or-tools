@@ -110,8 +110,12 @@ Public Member Functions</h2></td></tr>
     where item_i is a 0-1 integer variable.
 </pre><p>Then the goal is to maximize: </p><pre class="fragment">Sum(i:1..n)(profit_i * item_i).
 </pre><p>There are several ways to solve knapsack problems. One of the most efficient is based on dynamic programming (mainly when weights, profits and dimensions are small, and the algorithm runs in pseudo polynomial time). Unfortunately, when adding conflict constraints the problem becomes strongly NP-hard, i.e. there is no pseudo-polynomial algorithm to solve it. That's the reason why the most of the following code is based on branch and bound search.</p>
-<p>For instance to solve a 2-dimensional knapsack problem with 9 items, one just has to feed a profit vector with the 9 profits, a vector of 2 vectors for weights, and a vector of capacities. E.g.: </p><div class="fragment"><div class="line">vector: profits = [1, 2, 3, 4, 5, 6, 7, 8, 9]</div><div class="line">vector of vector: weights = [ [1, 2, 3, 4, 5, 6, 7, 8, 9],</div><div class="line">                              [1, 1, 1, 1, 1, 1, 1, 1, 1]]</div><div class="line">vector: capacities = [34, 4]</div></div><!-- fragment --><p> And then: </p><div class="fragment"><div class="line"><a class="code" href="classoperations__research_1_1KnapsackSolver.html#a7638cb76df7cb79d956dda62d179a554">KnapsackSolver</a> solver(</div><div class="line">    <a class="code" href="classoperations__research_1_1KnapsackSolver.html#a81ce17438663c39f7793e8db92ff1893ae8c15c25eaf606f5f853821aaabba164">KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER</a>,</div><div class="line">    <span class="stringliteral">&quot;Multi-dimensional solver&quot;</span>);</div><div class="line">solver.Init(profits, weights, capacities);</div><div class="line">int64 profit = solver.Solve();</div></div><!-- fragment --> 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00085">85</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p>For instance to solve a 2-dimensional knapsack problem with 9 items, one just has to feed a profit vector with the 9 profits, a vector of 2 vectors for weights, and a vector of capacities. E.g.:</p>
+<p><b>Python:</b> </p>
+<div class="fragment"><div class="line">profits = [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]</div><div class="line">weights = [ [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ],</div><div class="line">            [ 1, 1, 1, 1, 1, 1, 1, 1, 1 ]</div><div class="line">          ]</div><div class="line">capacities = [ 34, 4 ]</div><div class="line"></div><div class="line">solver = pywrapknapsack_solver.KnapsackSolver(</div><div class="line">    pywrapknapsack_solver.KnapsackSolver</div><div class="line">        .KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,</div><div class="line">    <span class="stringliteral">&#39;Multi-dimensional solver&#39;</span>)</div><div class="line">solver.Init(profits, weights, capacities)</div><div class="line">profit = solver.Solve()</div></div><!-- fragment --><p><b>C++</b>:</p>
+<div class="fragment"><div class="line"><span class="keyword">const</span> std::vector&lt;int64&gt; profits = {1, 2, 3, 4, 5, 6, 7, 8, 9};</div><div class="line"><span class="keyword">const</span> std::vector&lt;std::vector&lt;int64&gt;&gt; weights = </div><div class="line">    { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },</div><div class="line">      { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };</div><div class="line"><span class="keyword">const</span> std::vector&lt;int64&gt; capacities = { 34, 4 };</div><div class="line"></div><div class="line"><a class="code" href="classoperations__research_1_1KnapsackSolver.html#a7638cb76df7cb79d956dda62d179a554">KnapsackSolver</a> solver(</div><div class="line">    <a class="code" href="classoperations__research_1_1KnapsackSolver.html#a81ce17438663c39f7793e8db92ff1893ae8c15c25eaf606f5f853821aaabba164">KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER</a>,</div><div class="line">    <span class="stringliteral">&quot;Multi-dimensional solver&quot;</span>);</div><div class="line">solver.Init(profits, weights, capacities);</div><div class="line"><span class="keyword">const</span> int64 profit = solver.Solve();</div></div><!-- fragment --><p><b>Java:</b> </p>
+<div class="fragment"><div class="line"><span class="keyword">final</span> <span class="keywordtype">long</span>[] profits = {1, 2, 3, 4, 5, 6, 7, 8, 9};</div><div class="line"><span class="keyword">final</span> <span class="keywordtype">long</span>[][] weights = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },</div><div class="line">       { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };</div><div class="line"><span class="keyword">final</span> <span class="keywordtype">long</span>[] capacities = { 34, 4 };</div><div class="line"></div><div class="line"><a class="code" href="classoperations__research_1_1KnapsackSolver.html#a7638cb76df7cb79d956dda62d179a554">KnapsackSolver</a> solver = <span class="keyword">new</span> <a class="code" href="classoperations__research_1_1KnapsackSolver.html#a7638cb76df7cb79d956dda62d179a554">KnapsackSolver</a>(</div><div class="line">    <a class="code" href="classoperations__research_1_1KnapsackSolver.html#a7638cb76df7cb79d956dda62d179a554">KnapsackSolver</a>.SolverType.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER, <span class="stringliteral">&quot;Multi-dimensional solver&quot;</span>);</div><div class="line">solver.init(values, weights, capacities);</div><div class="line"><span class="keyword">final</span> <span class="keywordtype">long</span> computedValue = solver.solve();</div></div><!-- fragment --> 
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00119">119</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 </div><h2 class="groupheader">Member Enumeration Documentation</h2>
 <a id="a81ce17438663c39f7793e8db92ff1893"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a81ce17438663c39f7793e8db92ff1893">&#9670;&nbsp;</a></span>SolverType</h2>
@@ -157,7 +161,7 @@ dimensions. This solver is based on Integer Programming solver SCIP.
 </pre> </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00092">92</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00126">126</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>
@@ -340,7 +344,7 @@ dimensions. This solver is based on Integer Programming solver SCIP.
 
 <p>Returns true if the solution was proven optimal. </p>
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00166">166</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00200">200</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>
@@ -371,7 +375,7 @@ dimensions. This solver is based on Integer Programming solver SCIP.
 <p>Time limit in seconds. </p>
 <p>When a finite time limit is set the solution obtained might not be optimal if the limit is reached. </p>
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00179">179</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00213">213</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>
@@ -399,7 +403,7 @@ dimensions. This solver is based on Integer Programming solver SCIP.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00170">170</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00204">204</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>
@@ -445,7 +449,7 @@ dimensions. This solver is based on Integer Programming solver SCIP.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00169">169</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="knapsack__solver_8h_source.html#l00203">203</a> of file <a class="el" href="knapsack__solver_8h_source.html">knapsack_solver.h</a>.</p>
 
 </div>
 </div>

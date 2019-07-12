@@ -67,20 +67,55 @@ class BaseKnapsackSolver;
  * one just has to feed a profit vector with the 9 profits, a vector of 2
  * vectors for weights, and a vector of capacities.
  * E.g.:
- \code
-     vector: profits = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-     vector of vector: weights = [ [1, 2, 3, 4, 5, 6, 7, 8, 9],
-                                   [1, 1, 1, 1, 1, 1, 1, 1, 1]]
-     vector: capacities = [34, 4]
-\endcode
- * And then:
- \code
+
+  \b Python: 
+
+  \code
+      profits = [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+      weights = [ [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ],
+                  [ 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
+                ]
+      capacities = [ 34, 4 ]
+      
+      solver = pywrapknapsack_solver.KnapsackSolver(
+          pywrapknapsack_solver.KnapsackSolver
+              .KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+          'Multi-dimensional solver')
+      solver.Init(profits, weights, capacities)
+      profit = solver.Solve()
+  \endcode
+
+  \b C++:
+
+  \code
+     const std::vector<int64> profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+     const std::vector<std::vector<int64>> weights = 
+         { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
+           { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+     const std::vector<int64> capacities = { 34, 4 };
+     
      KnapsackSolver solver(
          KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
          "Multi-dimensional solver");
      solver.Init(profits, weights, capacities);
-     int64 profit = solver.Solve();
-\endcode
+     const int64 profit = solver.Solve();
+  \endcode
+
+  \b Java:
+
+  \code
+    final long[] profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    final long[][] weights = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
+           { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+    final long[] capacities = { 34, 4 };
+
+    KnapsackSolver solver = new KnapsackSolver(
+        KnapsackSolver.SolverType.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+        "Multi-dimensional solver");
+    solver.init(profits, weights, capacities);
+    final long profit = solver.solve();
+  \endcode
+
  */
 class KnapsackSolver {
  public:

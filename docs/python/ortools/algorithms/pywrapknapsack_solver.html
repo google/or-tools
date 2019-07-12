@@ -158,24 +158,62 @@ class KnapsackSolver(object):
     vectors for weights, and a vector of capacities.
     E.g.:
 
-     .. code-block:: c++
+      **Python**:
 
 
-              vector: profits = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-              vector of vector: weights = [ [1, 2, 3, 4, 5, 6, 7, 8, 9],
-                                            [1, 1, 1, 1, 1, 1, 1, 1, 1]]
-              vector: capacities = [34, 4]
-
-    And then:
-
-     .. code-block:: c++
+      .. code-block:: c++
 
 
-              KnapsackSolver solver(
-                  KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+                profits = [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+                weights = [ [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ],
+                            [ 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
+                          ]
+                capacities = [ 34, 4 ]
+
+                solver = pywrapknapsack_solver.KnapsackSolver(
+                    pywrapknapsack_solver.KnapsackSolver
+                        .KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+                    &#39;Multi-dimensional solver&#39;)
+                solver.Init(profits, weights, capacities)
+                profit = solver.Solve()
+
+
+      **C++**:
+
+
+      .. code-block:: c++
+
+
+               const std::vectorint64 profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+               const std::vectorstd::vector&lt;int64 weights =
+                   { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
+                     { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+               const std::vectorint64 capacities = { 34, 4 };
+
+               KnapsackSolver solver(
+                   KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+                   &#34;Multi-dimensional solver&#34;);
+               solver.Init(profits, weights, capacities);
+               const int64 profit = solver.Solve();
+
+
+      **Java**:
+
+
+      .. code-block:: c++
+
+
+              final long[] profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+              final long[][] weights = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
+                     { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+              final long[] capacities = { 34, 4 };
+
+              KnapsackSolver solver = new KnapsackSolver(
+                  KnapsackSolver.SolverType.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
                   &#34;Multi-dimensional solver&#34;);
-              solver.Init(profits, weights, capacities);
-              int64 profit = solver.Solve();
+              solver.init(profits, weights, capacities);
+              final long profit = solver.solve();
+
 
     &#34;&#34;&#34;
 
@@ -306,19 +344,47 @@ bound search.</p>
 one just has to feed a profit vector with the 9 profits, a vector of 2
 vectors for weights, and a vector of capacities.
 E.g.:</p>
+<p><strong>Python</strong>:</p>
 <p>.. code-block:: c++</p>
-<pre><code>      vector: profits = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-      vector of vector: weights = [ [1, 2, 3, 4, 5, 6, 7, 8, 9],
-                                    [1, 1, 1, 1, 1, 1, 1, 1, 1]]
-      vector: capacities = [34, 4]
+<pre><code>        profits = [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+        weights = [ [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ],
+                    [ 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
+                  ]
+        capacities = [ 34, 4 ]
+
+        solver = pywrapknapsack_solver.KnapsackSolver(
+            pywrapknapsack_solver.KnapsackSolver
+                .KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+            'Multi-dimensional solver')
+        solver.Init(profits, weights, capacities)
+        profit = solver.Solve()
 </code></pre>
-<p>And then:</p>
+<p><strong>C++</strong>:</p>
 <p>.. code-block:: c++</p>
-<pre><code>      KnapsackSolver solver(
-          KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+<pre><code>       const std::vectorint64 profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+       const std::vectorstd::vector&lt;int64 weights =
+           { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
+             { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+       const std::vectorint64 capacities = { 34, 4 };
+
+       KnapsackSolver solver(
+           KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+           "Multi-dimensional solver");
+       solver.Init(profits, weights, capacities);
+       const int64 profit = solver.Solve();
+</code></pre>
+<p><strong>Java</strong>:</p>
+<p>.. code-block:: c++</p>
+<pre><code>      final long[] profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+      final long[][] weights = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
+             { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+      final long[] capacities = { 34, 4 };
+
+      KnapsackSolver solver = new KnapsackSolver(
+          KnapsackSolver.SolverType.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
           "Multi-dimensional solver");
-      solver.Init(profits, weights, capacities);
-      int64 profit = solver.Solve();
+      solver.init(profits, weights, capacities);
+      final long profit = solver.solve();
 </code></pre></section>
 <details class="source">
 <summary>Source code</summary>
@@ -361,24 +427,62 @@ E.g.:</p>
     vectors for weights, and a vector of capacities.
     E.g.:
 
-     .. code-block:: c++
+      **Python**:
 
 
-              vector: profits = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-              vector of vector: weights = [ [1, 2, 3, 4, 5, 6, 7, 8, 9],
-                                            [1, 1, 1, 1, 1, 1, 1, 1, 1]]
-              vector: capacities = [34, 4]
-
-    And then:
-
-     .. code-block:: c++
+      .. code-block:: c++
 
 
-              KnapsackSolver solver(
-                  KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+                profits = [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+                weights = [ [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ],
+                            [ 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
+                          ]
+                capacities = [ 34, 4 ]
+
+                solver = pywrapknapsack_solver.KnapsackSolver(
+                    pywrapknapsack_solver.KnapsackSolver
+                        .KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+                    &#39;Multi-dimensional solver&#39;)
+                solver.Init(profits, weights, capacities)
+                profit = solver.Solve()
+
+
+      **C++**:
+
+
+      .. code-block:: c++
+
+
+               const std::vectorint64 profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+               const std::vectorstd::vector&lt;int64 weights =
+                   { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
+                     { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+               const std::vectorint64 capacities = { 34, 4 };
+
+               KnapsackSolver solver(
+                   KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+                   &#34;Multi-dimensional solver&#34;);
+               solver.Init(profits, weights, capacities);
+               const int64 profit = solver.Solve();
+
+
+      **Java**:
+
+
+      .. code-block:: c++
+
+
+              final long[] profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+              final long[][] weights = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
+                     { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+              final long[] capacities = { 34, 4 };
+
+              KnapsackSolver solver = new KnapsackSolver(
+                  KnapsackSolver.SolverType.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
                   &#34;Multi-dimensional solver&#34;);
-              solver.Init(profits, weights, capacities);
-              int64 profit = solver.Solve();
+              solver.init(profits, weights, capacities);
+              final long profit = solver.solve();
+
 
     &#34;&#34;&#34;
 
