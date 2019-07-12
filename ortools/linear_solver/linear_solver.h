@@ -218,7 +218,6 @@ class MPSolver {
 	XPRESS_LINEAR_PROGRAMMING = 101,
 	XPRESS_MIXED_INTEGER_PROGRAMMING = 102,
 #endif
-#endif
   };
 
   MPSolver(const std::string& name, OptimizationProblemType problem_type);
