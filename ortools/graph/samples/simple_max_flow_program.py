@@ -15,7 +15,6 @@
 # [START import]
 from __future__ import print_function
 from ortools.graph import pywrapgraph
-
 # [END import]
 
 

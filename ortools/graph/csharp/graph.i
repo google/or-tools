@@ -116,7 +116,8 @@
 // We only expose the C++ "operations_research::SimpleLinearSumAssignment"
 // class, and we rename it "LinearSumAssignment".
 %rename(LinearSumAssignment) operations_research::SimpleLinearSumAssignment;
-%unignore operations_research::SimpleLinearSumAssignment::SimpleLinearSumAssignment;
+%unignore
+    operations_research::SimpleLinearSumAssignment::SimpleLinearSumAssignment;
 %unignore operations_research::SimpleLinearSumAssignment::AddArcWithCost;
 %unignore operations_research::SimpleLinearSumAssignment::Solve;
 %unignore operations_research::SimpleLinearSumAssignment::NumNodes;
