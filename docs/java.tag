@@ -481,20 +481,6 @@
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
-    <name>main_research_linear_solver.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
-    <filename>main__research__linear__solver_8java</filename>
-    <class kind="class">com::google::ortools::linearsolver::main_research_linear_solver</class>
-    <namespace>com::google::ortools::linearsolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>main_research_linear_solverJNI.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
-    <filename>main__research__linear__solverJNI_8java</filename>
-    <class kind="class">com::google::ortools::linearsolver::main_research_linear_solverJNI</class>
-    <namespace>com::google::ortools::linearsolver</namespace>
-  </compound>
-  <compound kind="file">
     <name>mainConstants.java</name>
     <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>mainConstants_8java</filename>
@@ -24532,917 +24518,6 @@
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverParameters_1_1LpAlgorithmValues.html</anchorfile>
       <anchor>a4f33761902bddd1072b576364debba57</anchor>
       <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>com::google::ortools::linearsolver::main_research_linear_solver</name>
-    <filename>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solver.html</filename>
-  </compound>
-  <compound kind="class">
-    <name>com::google::ortools::linearsolver::main_research_linear_solverJNI</name>
-    <filename>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</filename>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolver_CLP_LINEAR_PROGRAMMING_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a4af141dfb42264e4d94f8e62ba024594</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolver_GLOP_LINEAR_PROGRAMMING_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a58685082b167f4b9834f4a406ac5f427</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolver_CBC_MIXED_INTEGER_PROGRAMMING_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>acf9f9a1bab27337d23bf47177074fad1</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolver_BOP_INTEGER_PROGRAMMING_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>aa77f66a1461086ea1cab8bea4f8422b4</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native long</type>
-      <name>new_MPSolver</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a434da16e6e359e066bfcd0b2cab80265</anchor>
-      <arglist>(String jarg1, int jarg2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>delete_MPSolver</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a9a2ee73545458929bfcfd8b30240afb1</anchor>
-      <arglist>(long jarg1)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native boolean</type>
-      <name>MPSolver_supportsProblemType</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>aef11a28025320407e94e7900d4e81a81</anchor>
-      <arglist>(int jarg1)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPSolver_clear</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>aedfbae3474bf546f4c2f2a0d1ccc1ee5</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolver_numVariables</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a3d5c6ee65dadf3806be8a35339dce9b0</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native MPVariable []</type>
-      <name>MPSolver_variables</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a6742a94be968b03cca76d4170ccd62bd</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native long</type>
-      <name>MPSolver_lookupVariableOrNull</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a02996c08a63bd9b8755a37b53fab9741</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_, String jarg2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native long</type>
-      <name>MPSolver_makeVar</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a7fcfab9e09ca3912b4c967eb89f42c29</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_, double jarg2, double jarg3, boolean jarg4, String jarg5)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native long</type>
-      <name>MPSolver_makeNumVar</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a220ac14e8dfaccc95df6d7ce08387edc</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_, double jarg2, double jarg3, String jarg4)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native long</type>
-      <name>MPSolver_makeIntVar</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a974ac078259bc68f02f7d76ad9c2b48a</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_, double jarg2, double jarg3, String jarg4)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native long</type>
-      <name>MPSolver_makeBoolVar</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a4da97ad42798808de9f6ed60cb7aed19</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_, String jarg2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolver_numConstraints</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a2536c25ffe43114f57dca000a620be5c</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native MPConstraint []</type>
-      <name>MPSolver_constraints</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>acc25af239d01c93fa95e6eade555c5ef</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native long</type>
-      <name>MPSolver_lookupConstraintOrNull</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>aa7acee227aae94f9808b2688ca97958b</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_, String jarg2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native long</type>
-      <name>MPSolver_makeConstraint__SWIG_0</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>ac59de89ad40991bf37f6477749491609</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_, double jarg2, double jarg3)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native long</type>
-      <name>MPSolver_makeConstraint__SWIG_1</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a7df087637e42eac836e30d19706e9359</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native long</type>
-      <name>MPSolver_makeConstraint__SWIG_2</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>ae49d8bf45027e93ba0a18f5d864a26a7</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_, double jarg2, double jarg3, String jarg4)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native long</type>
-      <name>MPSolver_makeConstraint__SWIG_3</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a04b952950f29be77c21dd511375b0422</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_, String jarg2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native long</type>
-      <name>MPSolver_objective</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a886f41a93efad0425064ef8353760fe2</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolver_NOT_SOLVED_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>abba417c546927696857bf6e75d9eaf11</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolver_solve__SWIG_0</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a5ee69b06eef20ccff412db308a6410f5</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolver_solve__SWIG_1</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>ab0f06ec1ce0b5e907b5a232ceffbb146</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_, long jarg2, MPSolverParameters jarg2_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native double []</type>
-      <name>MPSolver_computeConstraintActivities</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>aa32fd282254bef2c86c6bd972ccf781d</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native boolean</type>
-      <name>MPSolver_verifySolution</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a9730a4570e09b96612099fbfb1867267</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_, double jarg2, boolean jarg3)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPSolver_reset</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a2a989f34e4e645311276b442629e909f</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native boolean</type>
-      <name>MPSolver_interruptSolve</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>ad050d5c9ca3bd8a0aa768bcdc27d4f44</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native long</type>
-      <name>MPSolver_loadSolutionFromProto__SWIG_0</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>ac6555a3681152d4551b6aca6ad25e821</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_, long jarg2, double jarg3)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native long</type>
-      <name>MPSolver_loadSolutionFromProto__SWIG_1</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a8478ed379f63856e73670ae490a94b71</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_, long jarg2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native boolean</type>
-      <name>MPSolver_setSolverSpecificParametersAsString</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a2b030017cd0eb571afe21a71c0403c9e</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_, String jarg2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolver_FREE_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a6de1522028f4e6f19ea0b78947d8ab3a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native double</type>
-      <name>MPSolver_infinity</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>adca2bde4ec0664c82fccd19b2e31f1db</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPSolver_enableOutput</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a97c2b55a5bb86e03cc72677cf6fe7e9a</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPSolver_suppressOutput</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a33dce34916e8b28a23b4809084ff7718</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native long</type>
-      <name>MPSolver_iterations</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>add1f2f481c35a74defc31196f032a095</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native long</type>
-      <name>MPSolver_nodes</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>ae95339a9e06b351c1c90c1a00150ec1b</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native double</type>
-      <name>MPSolver_computeExactConditionNumber</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>ae6ddf0808fe8c646b29b53c8cd5d48a9</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPSolver_setTimeLimit</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a49feee525e244019b1bcd9704be0f2c6</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_, long jarg2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native long</type>
-      <name>MPSolver_wallTime</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a876d7265e790fb9426670277ce564a25</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native String</type>
-      <name>MPSolver_loadModelFromProto</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a3c0c9a48c06070788caa58da2018a10e</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_, byte[] jarg2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native String</type>
-      <name>MPSolver_loadModelFromProtoWithUniqueNamesOrDie</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>ae6777b2a3ff397f2220ee5662c6bdd95</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_, byte[] jarg2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native byte []</type>
-      <name>MPSolver_exportModelToProto</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a2881457adf54a38b0cabb7bef6dedad6</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native byte []</type>
-      <name>MPSolver_createSolutionResponseProto</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>aa9dc9f905683c3d8068943856cd2ee1e</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native byte []</type>
-      <name>MPSolver_solveWithProto</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>add1a9f1c645e000c3d72688a387c7fde</anchor>
-      <arglist>(byte[] jarg1)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native String</type>
-      <name>MPSolver_exportModelAsLpFormat__SWIG_0</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>ad9eec18208f81b900a285dedf51e4660</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_, long jarg2, MPModelExportOptions jarg2_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native String</type>
-      <name>MPSolver_exportModelAsLpFormat__SWIG_1</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a608d48a7aba19dbd2767507ee7180f73</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native String</type>
-      <name>MPSolver_exportModelAsMpsFormat__SWIG_0</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>aef75b83c73f59262d9fea8298b218974</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_, long jarg2, MPModelExportOptions jarg2_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native String</type>
-      <name>MPSolver_exportModelAsMpsFormat__SWIG_1</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a7bf8cfb72a6fc71349aa2c723a0b5f4c</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPSolver_setHint</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a5f6d986983782304a19041e6b6a3beb6</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_, MPVariable[] jarg2, double[] jarg3)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native boolean</type>
-      <name>MPSolver_setNumThreads</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a9383849e6ea9aa2540edc199b9d06187</anchor>
-      <arglist>(long jarg1, MPSolver jarg1_, int jarg2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPObjective_clear</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a7523b6e4c0fe69cc6f67f78c2a2d1297</anchor>
-      <arglist>(long jarg1, MPObjective jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPObjective_setCoefficient</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>add2701f454a62387170376b2798124fe</anchor>
-      <arglist>(long jarg1, MPObjective jarg1_, long jarg2, MPVariable jarg2_, double jarg3)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native double</type>
-      <name>MPObjective_getCoefficient</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a6773c7b2ff97742d73abf6ecf59d4609</anchor>
-      <arglist>(long jarg1, MPObjective jarg1_, long jarg2, MPVariable jarg2_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPObjective_setOffset</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>abcb145a1f094b92dea75fe82218de05c</anchor>
-      <arglist>(long jarg1, MPObjective jarg1_, double jarg2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native double</type>
-      <name>MPObjective_offset</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>afdb9e7be9c48b751ff01db10aa973e61</anchor>
-      <arglist>(long jarg1, MPObjective jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPObjective_setOptimizationDirection</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>afe2addfd4634333dc2c8c145a74a93b6</anchor>
-      <arglist>(long jarg1, MPObjective jarg1_, boolean jarg2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPObjective_setMinimization</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a885ad9b3d8103b2bc0a26ded7b5a3e08</anchor>
-      <arglist>(long jarg1, MPObjective jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPObjective_setMaximization</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>acc8edb82cc3c047331cf03cc28fb3866</anchor>
-      <arglist>(long jarg1, MPObjective jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native boolean</type>
-      <name>MPObjective_maximization</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>ac9ca9bc661ded7732747cb6eb88d3476</anchor>
-      <arglist>(long jarg1, MPObjective jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native boolean</type>
-      <name>MPObjective_minimization</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a06112a5e9d387b3fa5c534668dee36cf</anchor>
-      <arglist>(long jarg1, MPObjective jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native double</type>
-      <name>MPObjective_value</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a5844f4fb716c94cf34c720e31c4e7b7a</anchor>
-      <arglist>(long jarg1, MPObjective jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native double</type>
-      <name>MPObjective_bestBound</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a278407abb509fa8d1bcd05a701053991</anchor>
-      <arglist>(long jarg1, MPObjective jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>delete_MPObjective</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>acce3a11ae1fe20bc4f227776373ecf88</anchor>
-      <arglist>(long jarg1)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native String</type>
-      <name>MPVariable_name</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a9038f4b57df6585d817d32d3ba368faf</anchor>
-      <arglist>(long jarg1, MPVariable jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPVariable_setInteger</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a871c6d65c5dc4711f668220a0324712e</anchor>
-      <arglist>(long jarg1, MPVariable jarg1_, boolean jarg2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native double</type>
-      <name>MPVariable_solutionValue</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a9a4d5bb136296ac1d8bfd4bcd7851000</anchor>
-      <arglist>(long jarg1, MPVariable jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPVariable_index</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a815d8b79e546402468ba070f59edcd71</anchor>
-      <arglist>(long jarg1, MPVariable jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native double</type>
-      <name>MPVariable_lb</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a18022496cc1420329a68a64459de2bed</anchor>
-      <arglist>(long jarg1, MPVariable jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native double</type>
-      <name>MPVariable_ub</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>afb20b0ade5f1c310d9acc65b0da65163</anchor>
-      <arglist>(long jarg1, MPVariable jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPVariable_setLb</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a191123b431a7701fa6c2799543501401</anchor>
-      <arglist>(long jarg1, MPVariable jarg1_, double jarg2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPVariable_setUb</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a0b7a91c4fcd173241f8b8565582b96df</anchor>
-      <arglist>(long jarg1, MPVariable jarg1_, double jarg2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPVariable_setBounds</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>acd872a1cedd33f167c77fa52b9ca69b2</anchor>
-      <arglist>(long jarg1, MPVariable jarg1_, double jarg2, double jarg3)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native double</type>
-      <name>MPVariable_reducedCost</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a3c0b4ee10cb94e7e70b398bfdef51621</anchor>
-      <arglist>(long jarg1, MPVariable jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPVariable_basisStatus</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>ae06b7882cd821913ccec6b792cfad04f</anchor>
-      <arglist>(long jarg1, MPVariable jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>delete_MPVariable</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a4da86ff369f9eb5130346dcef02240ea</anchor>
-      <arglist>(long jarg1)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native String</type>
-      <name>MPConstraint_name</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>ab812a74390839bf37b15572a3d78958f</anchor>
-      <arglist>(long jarg1, MPConstraint jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPConstraint_setCoefficient</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a4b5f9853406f0e2076ed057d4004797c</anchor>
-      <arglist>(long jarg1, MPConstraint jarg1_, long jarg2, MPVariable jarg2_, double jarg3)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native double</type>
-      <name>MPConstraint_getCoefficient</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a70edc2446b668e4b500ee6fb48517356</anchor>
-      <arglist>(long jarg1, MPConstraint jarg1_, long jarg2, MPVariable jarg2_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native double</type>
-      <name>MPConstraint_lb</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>ae7200a315a010431436775b0c8b89868</anchor>
-      <arglist>(long jarg1, MPConstraint jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native double</type>
-      <name>MPConstraint_ub</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a629ce25a8fc15eaef1ab7f6a74b9dc65</anchor>
-      <arglist>(long jarg1, MPConstraint jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPConstraint_setLb</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a39c39c95f6bf6626c49ea2659e7844e1</anchor>
-      <arglist>(long jarg1, MPConstraint jarg1_, double jarg2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPConstraint_setUb</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>abec817a51c2b5ddbdf495895413d41ca</anchor>
-      <arglist>(long jarg1, MPConstraint jarg1_, double jarg2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPConstraint_setBounds</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>abf35cfd4707b73f3fcb336754aee8893</anchor>
-      <arglist>(long jarg1, MPConstraint jarg1_, double jarg2, double jarg3)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native boolean</type>
-      <name>MPConstraint_isLazy</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a29d593af28acdf0dc4bb515331025094</anchor>
-      <arglist>(long jarg1, MPConstraint jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPConstraint_setIsLazy</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>aa312976c32e1b8357e67742ea560dfa7</anchor>
-      <arglist>(long jarg1, MPConstraint jarg1_, boolean jarg2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPConstraint_index</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>aafc67e2cd655a17d093960e50bdece92</anchor>
-      <arglist>(long jarg1, MPConstraint jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native double</type>
-      <name>MPConstraint_dualValue</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a2044553d54de865bad648d5c59d40232</anchor>
-      <arglist>(long jarg1, MPConstraint jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPConstraint_basisStatus</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a0617deb1b66631e98045a9b9bab71964</anchor>
-      <arglist>(long jarg1, MPConstraint jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>delete_MPConstraint</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>ad80c03fc0ab425336a6694a71d4f1ccd</anchor>
-      <arglist>(long jarg1)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolverParameters_RELATIVE_MIP_GAP_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>aa45814f773daed6c7ba5c035ed0fb725</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolverParameters_PRIMAL_TOLERANCE_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a29ca64b90445651ca39771df70480974</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolverParameters_DUAL_TOLERANCE_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a5157695c91d3ff674c1ad9008d33c9d8</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolverParameters_PRESOLVE_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a54f18f2c8aecfbf32252f60728dbf61e</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolverParameters_LP_ALGORITHM_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a47759fb63e7575e86b4fa19e274b394b</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolverParameters_INCREMENTALITY_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>aacd7c3d3a21989c3fba3282a21ce6ee9</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolverParameters_SCALING_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>abedbfd834faec9091111a2010d70b497</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolverParameters_PRESOLVE_OFF_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a796a10d9271484e4f0d39eb536c9ef6a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolverParameters_PRESOLVE_ON_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>af45d3b32fa0efb004bbb0a2fa73a2859</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolverParameters_DUAL_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a2f4687b5ff17684b1841f1a581e8a316</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolverParameters_PRIMAL_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a26a2dc69853c3042415aed25eb3347d5</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolverParameters_BARRIER_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a73db67bf80070585533a6277cf85493a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolverParameters_INCREMENTALITY_OFF_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>ad9b813575ae0a7940bd383c7be5f3ecd</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolverParameters_INCREMENTALITY_ON_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a79a63560a89baf674b898e1617df1de6</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolverParameters_SCALING_OFF_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>aa5dd987d78544bd2cbf8e83b17bda6d8</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolverParameters_SCALING_ON_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>ac6811750ba08ebba5e71648abe0bba7f</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native double</type>
-      <name>MPSolverParameters_kDefaultRelativeMipGap_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>af7a7c4a3609691435ec802e86cfc8ac5</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native double</type>
-      <name>MPSolverParameters_kDefaultPrimalTolerance_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>acd3702986a8d4a4e1ddb44e40ff567d5</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native double</type>
-      <name>MPSolverParameters_kDefaultDualTolerance_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>ad16dc1648ceb990ed8982fb3c81ab169</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolverParameters_kDefaultPresolve_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a4f5815e25bfacc896d4da39c7ca658ca</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolverParameters_kDefaultIncrementality_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>af0221cb9f621aac1c1b8b84f4a0883d8</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native long</type>
-      <name>new_MPSolverParameters</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>aa6f0ebe6d451b5c4f9604cc34348ff2d</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPSolverParameters_setDoubleParam</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>ad3dd653d5ed5acad6a0a297e255c4cf5</anchor>
-      <arglist>(long jarg1, MPSolverParameters jarg1_, int jarg2, double jarg3)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPSolverParameters_setIntegerParam</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>aa70534010dbaf56c87c717afab23b675</anchor>
-      <arglist>(long jarg1, MPSolverParameters jarg1_, int jarg2, int jarg3)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native double</type>
-      <name>MPSolverParameters_getDoubleParam</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>ab32d0776818ffc98bdea3dbcb4fbbe28</anchor>
-      <arglist>(long jarg1, MPSolverParameters jarg1_, int jarg2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPSolverParameters_getIntegerParam</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a095176988e4f0f88ce301da1d8cc47e6</anchor>
-      <arglist>(long jarg1, MPSolverParameters jarg1_, int jarg2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>delete_MPSolverParameters</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>abf9da488e09a3e7ea63c35b7a27d319f</anchor>
-      <arglist>(long jarg1)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native long</type>
-      <name>new_MPModelExportOptions</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>ac66585819277d4d11b781ba6c9790128</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPModelExportOptions_Obfuscate_set</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>afe6b9b282820c28cc4e2308caf24b2f7</anchor>
-      <arglist>(long jarg1, MPModelExportOptions jarg1_, boolean jarg2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native boolean</type>
-      <name>MPModelExportOptions_Obfuscate_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a9a709a60829b57cb3c906cf29c320831</anchor>
-      <arglist>(long jarg1, MPModelExportOptions jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPModelExportOptions_LogInvalidNames_set</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a139fa5f211cc81b0acde83d8d666132b</anchor>
-      <arglist>(long jarg1, MPModelExportOptions jarg1_, boolean jarg2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native boolean</type>
-      <name>MPModelExportOptions_LogInvalidNames_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a9938b43068b67c4b6282d8d84513394d</anchor>
-      <arglist>(long jarg1, MPModelExportOptions jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPModelExportOptions_ShowUnusedVariables_set</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a6593a914f120200152ee2950f1dc3bb3</anchor>
-      <arglist>(long jarg1, MPModelExportOptions jarg1_, boolean jarg2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native boolean</type>
-      <name>MPModelExportOptions_ShowUnusedVariables_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a1c8d7312e81238bf00bea0cc420edafc</anchor>
-      <arglist>(long jarg1, MPModelExportOptions jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>MPModelExportOptions_MaxLineLength_set</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>a90e3cdc47869f66a5eebe2502d677250</anchor>
-      <arglist>(long jarg1, MPModelExportOptions jarg1_, int jarg2)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native int</type>
-      <name>MPModelExportOptions_MaxLineLength_get</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>afd6daff7c618e71900c4da5edae1e78c</anchor>
-      <arglist>(long jarg1, MPModelExportOptions jarg1_)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final native void</type>
-      <name>delete_MPModelExportOptions</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html</anchorfile>
-      <anchor>ab52a87697980e0acaeb6f1bbac0f7dd0</anchor>
-      <arglist>(long jarg1)</arglist>
     </member>
   </compound>
   <compound kind="interface">
@@ -50032,6 +49107,59 @@
     </member>
   </compound>
   <compound kind="enum">
+    <name>com::google::ortools::algorithms::KnapsackSolver::SolverType</name>
+    <filename>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</filename>
+    <member kind="function">
+      <type>final int</type>
+      <name>swigValue</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
+      <anchor>ad42ed19878d99f727cfb897963df6fe5</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static SolverType</type>
+      <name>swigToEnum</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
+      <anchor>a04b824b5950c38369889c8f4d5522867</anchor>
+      <arglist>(int swigValue)</arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>KNAPSACK_BRUTE_FORCE_SOLVER</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
+      <anchor>a70d82302e63947eaa0c6611bc374a1d7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>KNAPSACK_64ITEMS_SOLVER</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
+      <anchor>a0f4f9a731e7b06b97363d3db5e7242b2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
+      <anchor>acabadf68ecf9fc0cf8d6536fb3c9849b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
+      <anchor>ad51bb5a93f6c00dbdb8f2dce5d4bc0ba</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
+      <anchor>a01954933c623c5525a6c1cfdfaa05de7</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="enum">
     <name>com::google::ortools::linearsolver::MPModelRequest::SolverType</name>
     <filename>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</filename>
     <member kind="function">
@@ -50273,59 +49401,6 @@
       <arglist></arglist>
     </member>
   </compound>
-  <compound kind="enum">
-    <name>com::google::ortools::algorithms::KnapsackSolver::SolverType</name>
-    <filename>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</filename>
-    <member kind="function">
-      <type>final int</type>
-      <name>swigValue</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
-      <anchor>ad42ed19878d99f727cfb897963df6fe5</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static SolverType</type>
-      <name>swigToEnum</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
-      <anchor>a04b824b5950c38369889c8f4d5522867</anchor>
-      <arglist>(int swigValue)</arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>KNAPSACK_BRUTE_FORCE_SOLVER</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
-      <anchor>a70d82302e63947eaa0c6611bc374a1d7</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>KNAPSACK_64ITEMS_SOLVER</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
-      <anchor>a0f4f9a731e7b06b97363d3db5e7242b2</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
-      <anchor>acabadf68ecf9fc0cf8d6536fb3c9849b</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
-      <anchor>ad51bb5a93f6c00dbdb8f2dce5d4bc0ba</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
-      <anchor>a01954933c623c5525a6c1cfdfaa05de7</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
   <compound kind="class">
     <name>com::google::ortools::util::SortedDisjointIntervalList</name>
     <filename>classcom_1_1google_1_1ortools_1_1util_1_1SortedDisjointIntervalList.html</filename>
@@ -50415,52 +49490,6 @@
     </member>
   </compound>
   <compound kind="enum">
-    <name>com::google::ortools::graph::MaxFlow::Status</name>
-    <filename>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</filename>
-    <member kind="function">
-      <type>final int</type>
-      <name>swigValue</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</anchorfile>
-      <anchor>a6ee05bd289e9c94659b32df1ddf569fc</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static Status</type>
-      <name>swigToEnum</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</anchorfile>
-      <anchor>a23557046d218f7645297fbb48ced2a53</anchor>
-      <arglist>(int swigValue)</arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>OPTIMAL</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</anchorfile>
-      <anchor>aef2051b1577773dba4ab35206ffd512b</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>POSSIBLE_OVERFLOW</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</anchorfile>
-      <anchor>a3d3396ee4ca20facf18be311a4d93aed</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>BAD_INPUT</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</anchorfile>
-      <anchor>a8d021b9754de129689c78b82263c18b4</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>BAD_RESULT</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</anchorfile>
-      <anchor>aa3378f9f010f20a8c192abdc01c9ca4a</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="enum">
     <name>com::google::ortools::graph::MinCostFlowBase::Status</name>
     <filename>enumcom_1_1google_1_1ortools_1_1graph_1_1MinCostFlowBase_1_1Status.html</filename>
     <member kind="function">
@@ -50524,6 +49553,52 @@
       <name>BAD_COST_RANGE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MinCostFlowBase_1_1Status.html</anchorfile>
       <anchor>a47ee6496ebd61dcc326ecd98f7bde971</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="enum">
+    <name>com::google::ortools::graph::MaxFlow::Status</name>
+    <filename>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</filename>
+    <member kind="function">
+      <type>final int</type>
+      <name>swigValue</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</anchorfile>
+      <anchor>a6ee05bd289e9c94659b32df1ddf569fc</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Status</type>
+      <name>swigToEnum</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</anchorfile>
+      <anchor>a23557046d218f7645297fbb48ced2a53</anchor>
+      <arglist>(int swigValue)</arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>OPTIMAL</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</anchorfile>
+      <anchor>aef2051b1577773dba4ab35206ffd512b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>POSSIBLE_OVERFLOW</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</anchorfile>
+      <anchor>a3d3396ee4ca20facf18be311a4d93aed</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>BAD_INPUT</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</anchorfile>
+      <anchor>a8d021b9754de129689c78b82263c18b4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>BAD_RESULT</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</anchorfile>
+      <anchor>aa3378f9f010f20a8c192abdc01c9ca4a</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -51828,8 +50903,6 @@
     <name>com::google::ortools::linearsolver</name>
     <filename>namespacecom_1_1google_1_1ortools_1_1linearsolver.html</filename>
     <class kind="class">com::google::ortools::linearsolver::LinearSolver</class>
-    <class kind="class">com::google::ortools::linearsolver::main_research_linear_solver</class>
-    <class kind="class">com::google::ortools::linearsolver::main_research_linear_solverJNI</class>
     <class kind="class">com::google::ortools::linearsolver::MPConstraint</class>
     <class kind="class">com::google::ortools::linearsolver::MPConstraintProto</class>
     <class kind="interface">com::google::ortools::linearsolver::MPConstraintProtoOrBuilder</class>
