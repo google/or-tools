@@ -68,7 +68,7 @@ class BaseKnapsackSolver;
  * vectors for weights, and a vector of capacities.
  * E.g.:
 
-  \b Python: 
+  \b Python:
 
   \code
       profits = [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
@@ -76,7 +76,7 @@ class BaseKnapsackSolver;
                   [ 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
                 ]
       capacities = [ 34, 4 ]
-      
+
       solver = pywrapknapsack_solver.KnapsackSolver(
           pywrapknapsack_solver.KnapsackSolver
               .KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
@@ -89,11 +89,11 @@ class BaseKnapsackSolver;
 
   \code
      const std::vector<int64> profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-     const std::vector<std::vector<int64>> weights = 
+     const std::vector<std::vector<int64>> weights =
          { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
            { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
      const std::vector<int64> capacities = { 34, 4 };
-     
+
      KnapsackSolver solver(
          KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
          "Multi-dimensional solver");
@@ -119,102 +119,100 @@ class BaseKnapsackSolver;
  */
 class KnapsackSolver {
  public:
-   /** Enum controlling which underlying algorithm is used.
-    * 
-    * This enum is passed to the constructor of the KnapsackSolver object.
-    * It selects which solving method will be used.
-    */
-   enum SolverType {
-     /** Brute force method.
-      *
-      * Limited to 30 items and one dimension, this
-      * solver uses a brute force algorithm, ie. explores all possible states.
-      * Experiments show competitive performance for instances with less than
-      * 15 items. */
-     KNAPSACK_BRUTE_FORCE_SOLVER = 0,
+  /** Enum controlling which underlying algorithm is used.
+   *
+   * This enum is passed to the constructor of the KnapsackSolver object.
+   * It selects which solving method will be used.
+   */
+  enum SolverType {
+    /** Brute force method.
+     *
+     * Limited to 30 items and one dimension, this
+     * solver uses a brute force algorithm, ie. explores all possible states.
+     * Experiments show competitive performance for instances with less than
+     * 15 items. */
+    KNAPSACK_BRUTE_FORCE_SOLVER = 0,
 
-     /** Optimized method for single dimension small problems
-      *
-      * Limited to 64 items and one dimension, this
-      * solver uses a branch & bound algorithm. This solver is about 4 times
-      * faster than KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER.
-      */
-     KNAPSACK_64ITEMS_SOLVER = 1,
+    /** Optimized method for single dimension small problems
+     *
+     * Limited to 64 items and one dimension, this
+     * solver uses a branch & bound algorithm. This solver is about 4 times
+     * faster than KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER.
+     */
+    KNAPSACK_64ITEMS_SOLVER = 1,
 
-     /** Dynamic Programming approach for single dimension problems
-      *
-      * Limited to one dimension, this solver is based on a dynamic programming
-      * algorithm. The time and space complexity is O(capacity *
-      * number_of_items).
-      */
-     KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER = 2,
+    /** Dynamic Programming approach for single dimension problems
+     *
+     * Limited to one dimension, this solver is based on a dynamic programming
+     * algorithm. The time and space complexity is O(capacity *
+     * number_of_items).
+     */
+    KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER = 2,
 
 #if defined(USE_CBC)
-     /** CBC Based Solver
-      *
-      *  This solver can deal with both large number of items and several
-      * dimensions. This solver is based on Integer Programming solver CBC.
-      */
-     KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER = 3,
+    /** CBC Based Solver
+     *
+     *  This solver can deal with both large number of items and several
+     * dimensions. This solver is based on Integer Programming solver CBC.
+     */
+    KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER = 3,
 #endif  // USE_CBC
 
-     /** Generic Solver.
-      *
-      * This solver can deal with both large number of items and several
-      * dimensions. This solver is based on branch and bound.
-      */
-     KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER = 5,
+    /** Generic Solver.
+     *
+     * This solver can deal with both large number of items and several
+     * dimensions. This solver is based on branch and bound.
+     */
+    KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER = 5,
 
 #if defined(USE_SCIP)
-     /** SCIP based solver
-      *
-      * This solver can deal with both large number of items and several
-      * dimensions. This solver is based on Integer Programming solver SCIP.
-      */
-     KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER = 6,
-#endif // USE_SCIP
-   };
+    /** SCIP based solver
+     *
+     * This solver can deal with both large number of items and several
+     * dimensions. This solver is based on Integer Programming solver SCIP.
+     */
+    KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER = 6,
+#endif  // USE_SCIP
+  };
 
-   explicit KnapsackSolver(const std::string &solver_name);
-   KnapsackSolver(SolverType solver_type, const std::string &solver_name);
-   virtual ~KnapsackSolver();
+  explicit KnapsackSolver(const std::string& solver_name);
+  KnapsackSolver(SolverType solver_type, const std::string& solver_name);
+  virtual ~KnapsackSolver();
 
-   /** 
-    * Initializes the solver and enters the problem to be solved. 
-    */
-   void Init(const std::vector<int64> &profits,
-             const std::vector<std::vector<int64>> &weights,
-             const std::vector<int64> &capacities);
+  /**
+   * Initializes the solver and enters the problem to be solved.
+   */
+  void Init(const std::vector<int64>& profits,
+            const std::vector<std::vector<int64> >& weights,
+            const std::vector<int64>& capacities);
 
-   /**
-    * Solves the problem and returns the profit of the optimal solution.
-    */
-   int64 Solve();
+  /**
+   * Solves the problem and returns the profit of the optimal solution.
+   */
+  int64 Solve();
 
-   /**
-    * Returns true if the item 'item_id' is packed in the optimal knapsack.
-    */
-   bool BestSolutionContains(int item_id) const;
-   /**
-    * Returns true if the solution was proven optimal.
-    */
-   bool IsSolutionOptimal() const { return is_solution_optimal_; }
-   std::string GetName() const;
+  /**
+   * Returns true if the item 'item_id' is packed in the optimal knapsack.
+   */
+  bool BestSolutionContains(int item_id) const;
+  /**
+   * Returns true if the solution was proven optimal.
+   */
+  bool IsSolutionOptimal() const { return is_solution_optimal_; }
+  std::string GetName() const;
 
-   bool use_reduction() const { return use_reduction_; }
-   void set_use_reduction(bool use_reduction) {
-     use_reduction_ = use_reduction;
-   }
+  bool use_reduction() const { return use_reduction_; }
+  void set_use_reduction(bool use_reduction) { use_reduction_ = use_reduction; }
 
-   /** Time limit in seconds.
-    *
-    * When a finite time limit is set the solution obtained might not be optimal
-    * if the limit is reached.
-    */
-   void set_time_limit(double time_limit_seconds) {
-     time_limit_seconds_ = time_limit_seconds;
-     time_limit_ = absl::make_unique<TimeLimit>(time_limit_seconds_);
-   }
+  /** Time limit in seconds.
+   *
+   * When a finite time limit is set the solution obtained might not be optimal
+   * if the limit is reached.
+   */
+  void set_time_limit(double time_limit_seconds) {
+    time_limit_seconds_ = time_limit_seconds;
+    time_limit_ = absl::make_unique<TimeLimit>(time_limit_seconds_);
+  }
 
  private:
   // Trivial reduction of capacity constraints when the capacity is higher than
