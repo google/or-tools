@@ -61,7 +61,6 @@ CONVERT_VECTOR_WITH_CAST(operations_research::MPConstraint, MPConstraint, REINTE
     com/google/ortools/linearsolver);
 
 // Support the proto-based APIs.
-// TODO(user): expose these in the open-source export as well.
 PROTO_INPUT(
     operations_research::MPModelProto,
     com.google.ortools.linearsolver.MPModelProto,
@@ -73,6 +72,10 @@ PROTO_INPUT(
     operations_research::MPModelRequest,
     com.google.ortools.linearsolver.MPModelRequest,
     model_request);
+PROTO_INPUT(
+    operations_research::MPSolutionResponse,
+    com.google.ortools.linearsolver.MPSolutionResponse,
+    response);
 PROTO2_RETURN(
     operations_research::MPSolutionResponse,
     com.google.ortools.linearsolver.MPSolutionResponse);

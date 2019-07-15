@@ -30258,15 +30258,15 @@
       <type>SWIGTYPE_p_util__Status</type>
       <name>loadSolutionFromProto</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
-      <anchor>ad77877af2c719e9df249afb216d0fc25</anchor>
-      <arglist>(SWIGTYPE_p_operations_research__MPSolutionResponse response, double tolerance)</arglist>
+      <anchor>aa816cab0e1d166d7f51264eb39ba5f5b</anchor>
+      <arglist>(com.google.ortools.linearsolver.MPSolutionResponse response, double tolerance)</arglist>
     </member>
     <member kind="function">
       <type>SWIGTYPE_p_util__Status</type>
       <name>loadSolutionFromProto</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
-      <anchor>a4da1391d92f031dbb802ac64edee189a</anchor>
-      <arglist>(SWIGTYPE_p_operations_research__MPSolutionResponse response)</arglist>
+      <anchor>aeea0da9d16ab53de4d9b02aaa205df96</anchor>
+      <arglist>(com.google.ortools.linearsolver.MPSolutionResponse response)</arglist>
     </member>
     <member kind="function">
       <type>boolean</type>
