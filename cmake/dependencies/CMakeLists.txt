@@ -102,7 +102,7 @@ if(BUILD_Protobuf)
     REPOSITORY
       "https://github.com/protocolbuffers/protobuf.git"
     TAG
-      "v3.7.1"
+      "v3.8.0"
     CMAKE_ARGS
       "SOURCE_SUBDIR cmake"
   )
