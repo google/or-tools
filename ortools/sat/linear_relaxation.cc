@@ -257,6 +257,7 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
                               const ConstraintProto& ct, Model* model,
                               int linearization_level,
                               LinearRelaxation* relaxation) {
+  CHECK_EQ(model->GetOrCreate<SatSolver>()->CurrentDecisionLevel(), 0);
   DCHECK_GT(linearization_level, 0);
   auto* mapping = model->GetOrCreate<CpModelMapping>();
   if (ct.constraint_case() == ConstraintProto::ConstraintCase::kBoolOr) {
@@ -580,7 +581,6 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& constraint_proto,
     }
     const IntegerVariable int_var = mapping->Integer(ref);
     const auto* integer_trail = model.Get<IntegerTrail>();
-    integer_trail->LowerBound(int_var);
     if (coeff > 0.0) {
       min_sum += coeff * integer_trail->LowerBound(int_var);
       max_sum += coeff * integer_trail->UpperBound(int_var);
@@ -590,7 +590,7 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& constraint_proto,
     }
   }
 
-  if (rhs_domain_min != kint64min) {
+  if (rhs_domain_min > min_sum) {
     // And(ei) => terms >= rhs_domain_min
     // <=> Sum_i (~ei * (rhs_domain_min - min_sum)) + terms >= rhs_domain_min
     LinearConstraintBuilder lc(&model, rhs_domain_min, kMaxIntegerValue);
@@ -605,7 +605,7 @@ void AppendLinearConstraintRelaxation(const ConstraintProto& constraint_proto,
     }
     relaxation->linear_constraints.push_back(lc.Build());
   }
-  if (rhs_domain_max != kint64max) {
+  if (rhs_domain_max < max_sum) {
     // And(ei) => terms <= rhs_domain_max
     // <=> Sum_i (~ei * (rhs_domain_max - max_sum)) + terms <= rhs_domain_max
     LinearConstraintBuilder lc(&model, kMinIntegerValue, rhs_domain_max);

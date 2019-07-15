@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
 
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint.h"
@@ -88,7 +89,7 @@ void LinearConstraintManager::RemoveMarkedConstraints() {
   for (int i = 0; i < lp_constraints_.size(); ++i) {
     const ConstraintIndex constraint = lp_constraints_[i];
     if (constraints_removal_list_.contains(constraint)) {
-      constraint_is_in_lp_[constraint] = false;
+      constraint_infos_[constraint].is_in_lp = false;
       continue;
     }
     lp_constraints_[new_index] = constraint;
@@ -113,32 +114,35 @@ LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
   const size_t key = ComputeHashOfTerms(ct);
   if (gtl::ContainsKey(equiv_constraints_, key)) {
     const ConstraintIndex ct_index = equiv_constraints_[key];
-    if (constraints_[ct_index].vars == ct.vars &&
-        constraints_[ct_index].coeffs == ct.coeffs) {
-      if (ct.lb > constraints_[ct_index].lb) {
-        if (constraint_is_in_lp_[ct_index]) current_lp_is_changed_ = true;
-        constraints_[ct_index].lb = ct.lb;
+    if (constraint_infos_[ct_index].constraint.vars == ct.vars &&
+        constraint_infos_[ct_index].constraint.coeffs == ct.coeffs) {
+      if (ct.lb > constraint_infos_[ct_index].constraint.lb) {
+        if (constraint_infos_[ct_index].is_in_lp) current_lp_is_changed_ = true;
+        constraint_infos_[ct_index].constraint.lb = ct.lb;
       }
-      if (ct.ub < constraints_[ct_index].ub) {
-        if (constraint_is_in_lp_[ct_index]) current_lp_is_changed_ = true;
-        constraints_[ct_index].ub = ct.ub;
+      if (ct.ub < constraint_infos_[ct_index].constraint.ub) {
+        if (constraint_infos_[ct_index].is_in_lp) current_lp_is_changed_ = true;
+        constraint_infos_[ct_index].constraint.ub = ct.ub;
       }
       ++num_merged_constraints_;
       return ct_index;
     }
   }
 
-  const ConstraintIndex ct_index(constraints_.size());
-  constraint_l2_norms_.push_back(ComputeL2Norm(ct));
-  constraint_is_in_lp_.push_back(false);
-  constraint_is_cut_.push_back(false);
-  constraint_objective_parallelism_computed_.push_back(false);
-  constraint_objective_parallelisms_.push_back(0.0);
-  constraint_inactive_count_.push_back(0);
-  constraint_permanently_removed_.push_back(false);
+  const ConstraintIndex ct_index(constraint_infos_.size());
+  ConstraintInfo ct_info;
+  ct_info.constraint = std::move(ct);
+  ct_info.l2_norm = ComputeL2Norm(ct_info.constraint);
+  ct_info.is_in_lp = false;
+  ct_info.is_cut = false;
+  ct_info.objective_parallelism_computed = false;
+  ct_info.objective_parallelism = 0.0;
+  ct_info.inactive_count = 0;
+  ct_info.permanently_removed = false;
+  ct_info.hash = key;
   equiv_constraints_[key] = ct_index;
-  constraint_hashes_.push_back(key);
-  constraints_.push_back(std::move(ct));
+
+  constraint_infos_.push_back(std::move(ct_info));
   return ct_index;
 }
 
@@ -154,15 +158,15 @@ void LinearConstraintManager::ComputeObjectiveParallelism(
   }
   CHECK_GT(objective_l2_norm_, 0.0);
 
-  constraint_objective_parallelism_computed_[ct_index] = true;
-  if (constraint_l2_norms_[ct_index] == 0.0) {
-    constraint_objective_parallelisms_[ct_index] = 0.0;
+  constraint_infos_[ct_index].objective_parallelism_computed = true;
+  if (constraint_infos_[ct_index].l2_norm == 0.0) {
+    constraint_infos_[ct_index].objective_parallelism = 0.0;
     return;
   }
   const double objective_parallelism =
-      ScalarProduct(constraints_[ct_index], objective_) /
-      (constraint_l2_norms_[ct_index] * objective_l2_norm_);
-  constraint_objective_parallelisms_[ct_index] =
+      ScalarProduct(constraint_infos_[ct_index].constraint, objective_) /
+      (constraint_infos_[ct_index].l2_norm * objective_l2_norm_);
+  constraint_infos_[ct_index].objective_parallelism =
       std::abs(objective_parallelism);
 }
 
@@ -189,10 +193,10 @@ void LinearConstraintManager::AddCut(
   // Add the constraint. We only mark the constraint as a cut if it is not an
   // update of an already existing one.
   const ConstraintIndex ct_index = Add(std::move(ct));
-  if (ct_index + 1 == constraints_.size()) {
+  if (ct_index + 1 == constraint_infos_.size()) {
     num_cuts_++;
     type_to_num_cuts_[type_name]++;
-    constraint_is_cut_[ct_index] = true;
+    constraint_infos_[ct_index].is_cut = true;
   }
 }
 
@@ -341,38 +345,46 @@ bool LinearConstraintManager::ChangeLp(
   // We keep any constraints that is already present, and otherwise, we add the
   // ones that are currently not satisfied by at least "tolerance".
   const double tolerance = 1e-6;
-  for (ConstraintIndex i(0); i < constraints_.size(); ++i) {
-    if (constraint_permanently_removed_[i]) continue;
+  for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
+    if (constraint_infos_[i].permanently_removed) continue;
 
     // Inprocessing of the constraint.
-    if (simplify_constraints && SimplifyConstraint(&constraints_[i])) {
-      DivideByGCD(&constraints_[i]);
-      constraint_l2_norms_[i] = ComputeL2Norm(constraints_[i]);
+    if (simplify_constraints &&
+        SimplifyConstraint(&constraint_infos_[i].constraint)) {
+      DivideByGCD(&constraint_infos_[i].constraint);
+      constraint_infos_[i].l2_norm =
+          ComputeL2Norm(constraint_infos_[i].constraint);
 
-      if (constraint_is_in_lp_[i]) current_lp_is_changed_ = true;
-      equiv_constraints_.erase(constraint_hashes_[i]);
-      constraint_hashes_[i] = ComputeHashOfTerms(constraints_[i]);
-      equiv_constraints_[constraint_hashes_[i]] = i;
+      if (constraint_infos_[i].is_in_lp) current_lp_is_changed_ = true;
+      equiv_constraints_.erase(constraint_infos_[i].hash);
+      constraint_infos_[i].hash =
+          ComputeHashOfTerms(constraint_infos_[i].constraint);
+      equiv_constraints_[constraint_infos_[i].hash] = i;
     }
 
     // TODO(user,user): Use constraint status from GLOP for constraints
     // already in LP.
-    const double activity = ComputeActivity(constraints_[i], lp_solution);
+    const double activity =
+        ComputeActivity(constraint_infos_[i].constraint, lp_solution);
 
-    const double lb_violation = ToDouble(constraints_[i].lb) - activity;
-    const double ub_violation = activity - ToDouble(constraints_[i].ub);
+    const double lb_violation =
+        ToDouble(constraint_infos_[i].constraint.lb) - activity;
+    const double ub_violation =
+        activity - ToDouble(constraint_infos_[i].constraint.ub);
     const double violation = std::max(lb_violation, ub_violation);
-    if (constraint_is_in_lp_[i] && violation < tolerance) {
-      constraint_inactive_count_[i]++;
-      if (constraint_is_cut_[i] && constraint_inactive_count_[i] >
-                                       sat_parameters_.max_inactive_count()) {
+    if (constraint_infos_[i].is_in_lp && violation < tolerance) {
+      constraint_infos_[i].inactive_count++;
+      if (constraint_infos_[i].is_cut &&
+          constraint_infos_[i].inactive_count >
+              sat_parameters_.max_inactive_count()) {
         // Mark cut for removal.
         constraints_removal_list_.insert(i);
       }
-    } else if (!constraint_is_in_lp_[i] && violation >= tolerance) {
-      constraint_inactive_count_[i] = 0;
+    } else if (!constraint_infos_[i].is_in_lp && violation >= tolerance) {
+      constraint_infos_[i].inactive_count = 0;
       new_constraints.push_back(i);
-      new_constraints_efficacies.push_back(violation / constraint_l2_norms_[i]);
+      new_constraints_efficacies.push_back(violation /
+                                           constraint_infos_[i].l2_norm);
       new_constraints_orthogonalities.push_back(1.0);
     }
   }
@@ -397,15 +409,16 @@ bool LinearConstraintManager::ChangeLp(
     ConstraintIndex best_candidate = kInvalidConstraintIndex;
     for (int j = 0; j < new_constraints.size(); ++j) {
       const ConstraintIndex new_constraint = new_constraints[j];
-      if (constraint_permanently_removed_[new_constraint]) continue;
-      if (constraint_is_in_lp_[new_constraint]) continue;
+      if (constraint_infos_[new_constraint].permanently_removed) continue;
+      if (constraint_infos_[new_constraint].is_in_lp) continue;
 
       if (last_added_candidate != kInvalidConstraintIndex) {
         const double current_orthogonality =
-            1.0 - (std::abs(ScalarProduct(constraints_[last_added_candidate],
-                                          constraints_[new_constraint])) /
-                   (constraint_l2_norms_[last_added_candidate] *
-                    constraint_l2_norms_[new_constraint]));
+            1.0 - (std::abs(ScalarProduct(
+                       constraint_infos_[last_added_candidate].constraint,
+                       constraint_infos_[new_constraint].constraint)) /
+                   (constraint_infos_[last_added_candidate].l2_norm *
+                    constraint_infos_[new_constraint].l2_norm));
         new_constraints_orthogonalities[j] =
             std::min(new_constraints_orthogonalities[j], current_orthogonality);
       }
@@ -417,21 +430,21 @@ bool LinearConstraintManager::ChangeLp(
       // making the LP larger.
       if (new_constraints_orthogonalities[j] <
           sat_parameters_.min_orthogonality_for_lp_constraints()) {
-        constraint_permanently_removed_[new_constraint] = true;
+        constraint_infos_[new_constraint].permanently_removed = true;
         VLOG(2) << "Constraint permanently removed: " << new_constraint;
         continue;
       }
 
       if (objective_is_defined_ &&
-          !constraint_objective_parallelism_computed_[new_constraint]) {
+          !constraint_infos_[new_constraint].objective_parallelism_computed) {
         ComputeObjectiveParallelism(new_constraint);
       }
 
       // TODO(user): Experiment with different weights or different
       // functions for computing score.
-      const double score = new_constraints_orthogonalities[j] +
-                           new_constraints_efficacies[j] +
-                           constraint_objective_parallelisms_[new_constraint];
+      const double score =
+          new_constraints_orthogonalities[j] + new_constraints_efficacies[j] +
+          constraint_infos_[new_constraint].objective_parallelism;
       CHECK_GE(score, 0.0);
       if (score > best_score || best_candidate == kInvalidConstraintIndex) {
         best_score = score;
@@ -441,7 +454,7 @@ bool LinearConstraintManager::ChangeLp(
 
     if (best_candidate != kInvalidConstraintIndex) {
       // Add the best constraint in the LP.
-      constraint_is_in_lp_[best_candidate] = true;
+      constraint_infos_[best_candidate].is_in_lp = true;
       // Note that it is important for LP incremental solving that the old
       // constraints stays at the same position in this list (and thus in the
       // returned GetLp()).
@@ -461,9 +474,9 @@ bool LinearConstraintManager::ChangeLp(
 }
 
 void LinearConstraintManager::AddAllConstraintsToLp() {
-  for (ConstraintIndex i(0); i < constraints_.size(); ++i) {
-    if (constraint_is_in_lp_[i]) continue;
-    constraint_is_in_lp_[i] = true;
+  for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
+    if (constraint_infos_[i].is_in_lp) continue;
+    constraint_infos_[i].is_in_lp = true;
     lp_constraints_.push_back(i);
   }
 }

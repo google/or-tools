@@ -104,7 +104,7 @@ class SharedRINSNeighborhoodManager {
   absl::Mutex mutex_;
 
   // TODO(user): Use better data structure (e.g. queue) to store this
-  // collection.
+  // collection. In particular, to be deterministic, we need to be FIFO.
   std::vector<RINSNeighborhood> neighborhoods_ GUARDED_BY(mutex_);
 
   // This is the sum of number of fixed and reduced variables across all the

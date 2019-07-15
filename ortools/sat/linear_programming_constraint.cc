@@ -131,7 +131,7 @@ void LinearProgrammingConstraint::CreateLpFromConstraintManager() {
   infinity_norms_.clear();
   const auto& all_constraints = constraint_manager_.AllConstraints();
   for (const auto index : constraint_manager_.LpConstraints()) {
-    const LinearConstraint& ct = all_constraints[index];
+    const LinearConstraint& ct = all_constraints[index].constraint;
     integer_lp_.push_back(LinearConstraintInternal());
     LinearConstraintInternal& new_ct = integer_lp_.back();
     new_ct.lb = ct.lb;
