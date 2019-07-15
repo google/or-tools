@@ -43,16 +43,23 @@
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00013">13</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<div class="textblock"><p>This mathematical programming (MP) solver class is the main class<br />
+ though which users build and solve problems. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00017">17</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1BasisStatus.html">BasisStatus</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advanced usage: possible basis status values for a variable and the slack<br />
+ variable of a linear constraint.  <a href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1BasisStatus.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html">OptimizationProblemType</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">The type of problems (LP or MIP) that will be solved and the underlying<br />
+ solver (GLOP, GLPK, CLP, CBC or SCIP) that will solve them.  <a href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1ResultStatus.html">ResultStatus</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">The status of solving the problem.  <a href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1ResultStatus.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
@@ -76,66 +83,103 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a34cd290be0b03fd41549eb4c053a6181"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html">MPVariable</a> []&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a34cd290be0b03fd41549eb4c053a6181">makeBoolVarArray</a> (int count, String var_name)</td></tr>
 <tr class="separator:a34cd290be0b03fd41549eb4c053a6181"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0be09afcd0a7a479c3e2a28f99d8cdd9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a0be09afcd0a7a479c3e2a28f99d8cdd9">MPSolver</a> (String name, MPSolver.OptimizationProblemType problem_type)</td></tr>
+<tr class="memdesc:a0be09afcd0a7a479c3e2a28f99d8cdd9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a solver with the given name and underlying solver backend.  <a href="#a0be09afcd0a7a479c3e2a28f99d8cdd9">More...</a><br /></td></tr>
 <tr class="separator:a0be09afcd0a7a479c3e2a28f99d8cdd9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a383f49027e47246b5c412dd93e685734"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a383f49027e47246b5c412dd93e685734">clear</a> ()</td></tr>
+<tr class="memdesc:a383f49027e47246b5c412dd93e685734"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clears the objective (including the optimization direction), all variables<br />
+ and constraints.  <a href="#a383f49027e47246b5c412dd93e685734">More...</a><br /></td></tr>
 <tr class="separator:a383f49027e47246b5c412dd93e685734"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af9a95c8101cc414058de5b05030204c8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#af9a95c8101cc414058de5b05030204c8">numVariables</a> ()</td></tr>
+<tr class="memdesc:af9a95c8101cc414058de5b05030204c8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of variables.  <a href="#af9a95c8101cc414058de5b05030204c8">More...</a><br /></td></tr>
 <tr class="separator:af9a95c8101cc414058de5b05030204c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a363486679622594bda617ef2bfff415f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html">MPVariable</a> []&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a363486679622594bda617ef2bfff415f">variables</a> ()</td></tr>
+<tr class="memdesc:a363486679622594bda617ef2bfff415f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the array of variables handled by the <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html" title="This mathematical programming (MP) solver class is the main class  though which users build and solve...">MPSolver</a>.  <a href="#a363486679622594bda617ef2bfff415f">More...</a><br /></td></tr>
 <tr class="separator:a363486679622594bda617ef2bfff415f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad10bc63f593692a2a04fa655730444fb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html">MPVariable</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#ad10bc63f593692a2a04fa655730444fb">lookupVariableOrNull</a> (String var_name)</td></tr>
+<tr class="memdesc:ad10bc63f593692a2a04fa655730444fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Looks up a variable by name, and returns nullptr if it does not exist.  <a href="#ad10bc63f593692a2a04fa655730444fb">More...</a><br /></td></tr>
 <tr class="separator:ad10bc63f593692a2a04fa655730444fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae2552475092fb67b9a36dbe40260f414"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html">MPVariable</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#ae2552475092fb67b9a36dbe40260f414">makeVar</a> (double lb, double ub, boolean integer, String name)</td></tr>
+<tr class="memdesc:ae2552475092fb67b9a36dbe40260f414"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a variable with the given bounds, integrality requirement and<br />
+ name.  <a href="#ae2552475092fb67b9a36dbe40260f414">More...</a><br /></td></tr>
 <tr class="separator:ae2552475092fb67b9a36dbe40260f414"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a15644507cc8ab0340fa2c081a9ce6971"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html">MPVariable</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a15644507cc8ab0340fa2c081a9ce6971">makeNumVar</a> (double lb, double ub, String name)</td></tr>
+<tr class="memdesc:a15644507cc8ab0340fa2c081a9ce6971"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a continuous variable.  <a href="#a15644507cc8ab0340fa2c081a9ce6971">More...</a><br /></td></tr>
 <tr class="separator:a15644507cc8ab0340fa2c081a9ce6971"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c671bda706e057364c1893049f38c66"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html">MPVariable</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a6c671bda706e057364c1893049f38c66">makeIntVar</a> (double lb, double ub, String name)</td></tr>
+<tr class="memdesc:a6c671bda706e057364c1893049f38c66"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates an integer variable.  <a href="#a6c671bda706e057364c1893049f38c66">More...</a><br /></td></tr>
 <tr class="separator:a6c671bda706e057364c1893049f38c66"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a67e2b23c9d5524715e8823bc920435fb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html">MPVariable</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a67e2b23c9d5524715e8823bc920435fb">makeBoolVar</a> (String name)</td></tr>
+<tr class="memdesc:a67e2b23c9d5524715e8823bc920435fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a boolean variable.  <a href="#a67e2b23c9d5524715e8823bc920435fb">More...</a><br /></td></tr>
 <tr class="separator:a67e2b23c9d5524715e8823bc920435fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e410fd90605e06e42bcb1b096d79769"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a2e410fd90605e06e42bcb1b096d79769">numConstraints</a> ()</td></tr>
+<tr class="memdesc:a2e410fd90605e06e42bcb1b096d79769"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of constraints.  <a href="#a2e410fd90605e06e42bcb1b096d79769">More...</a><br /></td></tr>
 <tr class="separator:a2e410fd90605e06e42bcb1b096d79769"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aad1eda829e45719734aca8a269ed253b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html">MPConstraint</a> []&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#aad1eda829e45719734aca8a269ed253b">constraints</a> ()</td></tr>
+<tr class="memdesc:aad1eda829e45719734aca8a269ed253b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the array of constraints handled by the <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html" title="This mathematical programming (MP) solver class is the main class  though which users build and solve...">MPSolver</a>.  <a href="#aad1eda829e45719734aca8a269ed253b">More...</a><br /></td></tr>
 <tr class="separator:aad1eda829e45719734aca8a269ed253b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abe57559108cc98bffedac87926d8756b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html">MPConstraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#abe57559108cc98bffedac87926d8756b">lookupConstraintOrNull</a> (String constraint_name)</td></tr>
+<tr class="memdesc:abe57559108cc98bffedac87926d8756b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Looks up a constraint by name, and returns nullptr if it does not exist.  <a href="#abe57559108cc98bffedac87926d8756b">More...</a><br /></td></tr>
 <tr class="separator:abe57559108cc98bffedac87926d8756b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3ce0ce830904758c0a43ecf824980755"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html">MPConstraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a3ce0ce830904758c0a43ecf824980755">makeConstraint</a> (double lb, double ub)</td></tr>
+<tr class="memdesc:a3ce0ce830904758c0a43ecf824980755"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a linear constraint with given bounds.  <a href="#a3ce0ce830904758c0a43ecf824980755">More...</a><br /></td></tr>
 <tr class="separator:a3ce0ce830904758c0a43ecf824980755"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad4eb589f52d36bbd78d87023539b4cd2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html">MPConstraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#ad4eb589f52d36bbd78d87023539b4cd2">makeConstraint</a> ()</td></tr>
+<tr class="memdesc:ad4eb589f52d36bbd78d87023539b4cd2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a constraint with -infinity and +infinity bounds.  <a href="#ad4eb589f52d36bbd78d87023539b4cd2">More...</a><br /></td></tr>
 <tr class="separator:ad4eb589f52d36bbd78d87023539b4cd2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1210c80339faea184219e95d0673060c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html">MPConstraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a1210c80339faea184219e95d0673060c">makeConstraint</a> (double lb, double ub, String name)</td></tr>
+<tr class="memdesc:a1210c80339faea184219e95d0673060c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a named constraint with given bounds.  <a href="#a1210c80339faea184219e95d0673060c">More...</a><br /></td></tr>
 <tr class="separator:a1210c80339faea184219e95d0673060c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6955c0d806f7bd52f5485e6e79bd35ad"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html">MPConstraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a6955c0d806f7bd52f5485e6e79bd35ad">makeConstraint</a> (String name)</td></tr>
+<tr class="memdesc:a6955c0d806f7bd52f5485e6e79bd35ad"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a named constraint with -infinity and +infinity bounds.  <a href="#a6955c0d806f7bd52f5485e6e79bd35ad">More...</a><br /></td></tr>
 <tr class="separator:a6955c0d806f7bd52f5485e6e79bd35ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae5ee1c277142decb79a2f8124eef55cf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPObjective.html">MPObjective</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#ae5ee1c277142decb79a2f8124eef55cf">objective</a> ()</td></tr>
+<tr class="memdesc:ae5ee1c277142decb79a2f8124eef55cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the mutable objective object.  <a href="#ae5ee1c277142decb79a2f8124eef55cf">More...</a><br /></td></tr>
 <tr class="separator:ae5ee1c277142decb79a2f8124eef55cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4cb539145ead1c91afda210644e52aa1"><td class="memItemLeft" align="right" valign="top">MPSolver.ResultStatus&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a4cb539145ead1c91afda210644e52aa1">solve</a> ()</td></tr>
+<tr class="memdesc:a4cb539145ead1c91afda210644e52aa1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Solves the problem using default parameter values.  <a href="#a4cb539145ead1c91afda210644e52aa1">More...</a><br /></td></tr>
 <tr class="separator:a4cb539145ead1c91afda210644e52aa1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1844b54fdedbd493ded8e3128b75fbf5"><td class="memItemLeft" align="right" valign="top">MPSolver.ResultStatus&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a1844b54fdedbd493ded8e3128b75fbf5">solve</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverParameters.html">MPSolverParameters</a> param)</td></tr>
+<tr class="memdesc:a1844b54fdedbd493ded8e3128b75fbf5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Solves the problem using the specified parameter values.  <a href="#a1844b54fdedbd493ded8e3128b75fbf5">More...</a><br /></td></tr>
 <tr class="separator:a1844b54fdedbd493ded8e3128b75fbf5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a993cb753af9cbea763277b7f0ec7274f"><td class="memItemLeft" align="right" valign="top">double []&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a993cb753af9cbea763277b7f0ec7274f">computeConstraintActivities</a> ()</td></tr>
+<tr class="memdesc:a993cb753af9cbea763277b7f0ec7274f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advanced usage: compute the "activities" of all constraints, which are the<br />
+ sums of their linear terms.  <a href="#a993cb753af9cbea763277b7f0ec7274f">More...</a><br /></td></tr>
 <tr class="separator:a993cb753af9cbea763277b7f0ec7274f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e87b3e192b81d1df9f79055efedeceb"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a2e87b3e192b81d1df9f79055efedeceb">verifySolution</a> (double tolerance, boolean log_errors)</td></tr>
+<tr class="memdesc:a2e87b3e192b81d1df9f79055efedeceb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advanced usage: Verifies the <em>correctness</em> of the solution.  <a href="#a2e87b3e192b81d1df9f79055efedeceb">More...</a><br /></td></tr>
 <tr class="separator:a2e87b3e192b81d1df9f79055efedeceb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5f9b2aa2ecb330bba498b0a78919b4ad"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a5f9b2aa2ecb330bba498b0a78919b4ad">reset</a> ()</td></tr>
+<tr class="memdesc:a5f9b2aa2ecb330bba498b0a78919b4ad"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advanced usage: resets extracted model to solve from scratch.  <a href="#a5f9b2aa2ecb330bba498b0a78919b4ad">More...</a><br /></td></tr>
 <tr class="separator:a5f9b2aa2ecb330bba498b0a78919b4ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a336148f74465d5c49970c59b6fb9a49b"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a336148f74465d5c49970c59b6fb9a49b">interruptSolve</a> ()</td></tr>
+<tr class="memdesc:a336148f74465d5c49970c59b6fb9a49b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Interrupts the Solve() execution to terminate processing if possible.  <a href="#a336148f74465d5c49970c59b6fb9a49b">More...</a><br /></td></tr>
 <tr class="separator:a336148f74465d5c49970c59b6fb9a49b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad77877af2c719e9df249afb216d0fc25"><td class="memItemLeft" align="right" valign="top">SWIGTYPE_p_util__Status&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#ad77877af2c719e9df249afb216d0fc25">loadSolutionFromProto</a> (SWIGTYPE_p_operations_research__MPSolutionResponse response, double tolerance)</td></tr>
+<tr class="memdesc:ad77877af2c719e9df249afb216d0fc25"><td class="mdescLeft">&#160;</td><td class="mdescRight">Load a solution encoded in a protocol buffer onto this solver for easy<br />
+ access via the <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html" title="This mathematical programming (MP) solver class is the main class  though which users build and solve...">MPSolver</a> interface.  <a href="#ad77877af2c719e9df249afb216d0fc25">More...</a><br /></td></tr>
 <tr class="separator:ad77877af2c719e9df249afb216d0fc25"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4da1391d92f031dbb802ac64edee189a"><td class="memItemLeft" align="right" valign="top">SWIGTYPE_p_util__Status&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a4da1391d92f031dbb802ac64edee189a">loadSolutionFromProto</a> (SWIGTYPE_p_operations_research__MPSolutionResponse response)</td></tr>
+<tr class="memdesc:a4da1391d92f031dbb802ac64edee189a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Load a solution encoded in a protocol buffer onto this solver for easy<br />
+ access via the <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html" title="This mathematical programming (MP) solver class is the main class  though which users build and solve...">MPSolver</a> interface.  <a href="#a4da1391d92f031dbb802ac64edee189a">More...</a><br /></td></tr>
 <tr class="separator:a4da1391d92f031dbb802ac64edee189a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d568e4b648bf9f69be28a14024834b1"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a4d568e4b648bf9f69be28a14024834b1">setSolverSpecificParametersAsString</a> (String parameters)</td></tr>
+<tr class="memdesc:a4d568e4b648bf9f69be28a14024834b1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advanced usage: pass solver specific parameters in text format.  <a href="#a4d568e4b648bf9f69be28a14024834b1">More...</a><br /></td></tr>
 <tr class="separator:a4d568e4b648bf9f69be28a14024834b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6a8a894b9be78043a9376298ddf70eea"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a6a8a894b9be78043a9376298ddf70eea">enableOutput</a> ()</td></tr>
+<tr class="memdesc:a6a8a894b9be78043a9376298ddf70eea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enable output.  <a href="#a6a8a894b9be78043a9376298ddf70eea">More...</a><br /></td></tr>
 <tr class="separator:a6a8a894b9be78043a9376298ddf70eea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afc95fb469e11467330069ebef1d38449"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#afc95fb469e11467330069ebef1d38449">suppressOutput</a> ()</td></tr>
+<tr class="memdesc:afc95fb469e11467330069ebef1d38449"><td class="mdescLeft">&#160;</td><td class="mdescRight">Suppress output.  <a href="#afc95fb469e11467330069ebef1d38449">More...</a><br /></td></tr>
 <tr class="separator:afc95fb469e11467330069ebef1d38449"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a60623dc8a2de85b855343ccec4b2d4cc"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a60623dc8a2de85b855343ccec4b2d4cc">iterations</a> ()</td></tr>
+<tr class="memdesc:a60623dc8a2de85b855343ccec4b2d4cc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of simplex iterations.  <a href="#a60623dc8a2de85b855343ccec4b2d4cc">More...</a><br /></td></tr>
 <tr class="separator:a60623dc8a2de85b855343ccec4b2d4cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6404e9bd9c7c550ced0552d5b0ca69a9"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a6404e9bd9c7c550ced0552d5b0ca69a9">nodes</a> ()</td></tr>
+<tr class="memdesc:a6404e9bd9c7c550ced0552d5b0ca69a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of branch-and-bound nodes evaluated during the solve.  <a href="#a6404e9bd9c7c550ced0552d5b0ca69a9">More...</a><br /></td></tr>
 <tr class="separator:a6404e9bd9c7c550ced0552d5b0ca69a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7b9313343b822cac63073838f14363b1"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a7b9313343b822cac63073838f14363b1">computeExactConditionNumber</a> ()</td></tr>
+<tr class="memdesc:a7b9313343b822cac63073838f14363b1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advanced usage: computes the exact condition number of the current scaled<br />
+ basis: L1norm(B) * L1norm(inverse(B)), where B is the scaled basis.  <a href="#a7b9313343b822cac63073838f14363b1">More...</a><br /></td></tr>
 <tr class="separator:a7b9313343b822cac63073838f14363b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a59cc36067f863a9a57ea05b955bea0c1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a59cc36067f863a9a57ea05b955bea0c1">setTimeLimit</a> (long time_limit_milliseconds)</td></tr>
 <tr class="separator:a59cc36067f863a9a57ea05b955bea0c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -167,8 +211,11 @@ Public Member Functions</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
 <tr class="memitem:afc9ca90b777f2cc3d262b945b9694859"><td class="memItemLeft" align="right" valign="top">static boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#afc9ca90b777f2cc3d262b945b9694859">supportsProblemType</a> (MPSolver.OptimizationProblemType problem_type)</td></tr>
+<tr class="memdesc:afc9ca90b777f2cc3d262b945b9694859"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether the given problem type is supported (this will depend on the<br />
+ targets that you linked).  <a href="#afc9ca90b777f2cc3d262b945b9694859">More...</a><br /></td></tr>
 <tr class="separator:afc9ca90b777f2cc3d262b945b9694859"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7b7cfaa5fc10f98db57f554706355c66"><td class="memItemLeft" align="right" valign="top">static double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a7b7cfaa5fc10f98db57f554706355c66">infinity</a> ()</td></tr>
+<tr class="memdesc:a7b7cfaa5fc10f98db57f554706355c66"><td class="mdescLeft">&#160;</td><td class="mdescRight">Infinity.  <a href="#a7b7cfaa5fc10f98db57f554706355c66">More...</a><br /></td></tr>
 <tr class="separator:a7b7cfaa5fc10f98db57f554706355c66"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af8af13423e19b7ab1e1c386dd5246631"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolutionResponse.html">com.google.ortools.linearsolver.MPSolutionResponse</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#af8af13423e19b7ab1e1c386dd5246631">solveWithProto</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest.html">com.google.ortools.linearsolver.MPModelRequest</a> model_request)</td></tr>
 <tr class="separator:af8af13423e19b7ab1e1c386dd5246631"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -213,7 +260,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00017">17</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00021">21</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -251,7 +298,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00082">82</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Create a solver with the given name and underlying solver backend. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00089">89</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -279,7 +328,12 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00090">90</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Clears the objective (including the optimization direction), all variables<br />
+ and constraints. </p>
+<p>All the other properties of the <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html" title="This mathematical programming (MP) solver class is the main class  though which users build and solve...">MPSolver</a> (like the time<br />
+ limit) are kept untouched. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00106">106</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -306,7 +360,13 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00173">173</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Advanced usage: compute the "activities" of all constraints, which are the<br />
+ sums of their linear terms. </p>
+<p>The activities are returned in the same order<br />
+ as <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#aad1eda829e45719734aca8a269ed253b" title="Returns the array of constraints handled by the MPSolver.">constraints()</a>, which is the order in which constraints were added; but<br />
+ you can also use <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html#a618f2f3ec61372cf3d815474dd4cfe37" title="Returns the index of the constraint in the MPSolver::constraints_.">MPConstraint::index()</a> to get a constraint's index. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00264">264</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -333,7 +393,36 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00221">221</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Advanced usage: computes the exact condition number of the current scaled<br />
+ basis: L1norm(B) * L1norm(inverse(B)), where B is the scaled basis. </p>
+<p><br />
+ <br />
+ This method requires that a basis exists: it should be called after Solve.<br />
+ It is only available for continuous problems. It is implemented for GLPK<br />
+ but not CLP because CLP does not provide the API for doing it.<br />
+ <br />
+ The condition number measures how well the constraint matrix is conditioned<br />
+ and can be used to predict whether numerical issues will arise during the<br />
+ solve: the model is declared infeasible whereas it is feasible (or<br />
+ vice-versa), the solution obtained is not optimal or violates some<br />
+ constraints, the resolution is slow because of repeated singularities.<br />
+ <br />
+ The rule of thumb to interpret the condition number kappa is:<br />
+</p><ul>
+<li>o kappa &lt;= 1e7: virtually no chance of numerical issues<br />
+</li>
+<li>o 1e7 &lt; kappa &lt;= 1e10: small chance of numerical issues<br />
+</li>
+<li>o 1e10 &lt; kappa &lt;= 1e13: medium chance of numerical issues<br />
+</li>
+<li>o kappa &gt; 1e13: high chance of numerical issues<br />
+ <br />
+ The computation of the condition number depends on the quality of the LU<br />
+ decomposition, so it is not very accurate when the matrix is ill<br />
+ conditioned. </li>
+</ul>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00461">461</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -360,7 +449,12 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00131">131</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Returns the array of constraints handled by the <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html" title="This mathematical programming (MP) solver class is the main class  though which users build and solve...">MPSolver</a>. </p>
+<p><br />
+ <br />
+ They are listed in the order in which they were created. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00183">183</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -387,7 +481,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00254">254</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00494">494</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -414,7 +508,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00031">31</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00035">35</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -441,7 +535,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00205">205</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Enable output. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00410">410</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -469,7 +565,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00280">280</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00520">520</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -496,7 +592,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00284">284</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00524">524</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -524,7 +620,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00288">288</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00528">528</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -551,7 +647,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00292">292</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00532">532</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -578,7 +674,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00241">241</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00481">481</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -605,7 +701,12 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00201">201</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Infinity. </p>
+<p><br />
+ <br />
+ You can use -<a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a7b7cfaa5fc10f98db57f554706355c66" title="Infinity.">MPSolver::infinity()</a> for negative infinity. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00403">403</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -632,7 +733,15 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00185">185</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Interrupts the Solve() execution to terminate processing if possible. </p>
+<p><br />
+ <br />
+ If the underlying interface supports interruption; it does that and returns<br />
+ true regardless of whether there's an ongoing Solve() or not. The Solve()<br />
+ call may still linger for a while depending on the conditions. If<br />
+ interruption is not supported; returns false and does nothing. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00310">310</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -659,7 +768,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00213">213</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Returns the number of simplex iterations. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00424">424</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -687,7 +798,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00233">233</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00473">473</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -715,7 +826,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00237">237</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00477">477</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -753,7 +864,30 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00189">189</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Load a solution encoded in a protocol buffer onto this solver for easy<br />
+ access via the <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html" title="This mathematical programming (MP) solver class is the main class  though which users build and solve...">MPSolver</a> interface. </p>
+<p><br />
+ <br />
+ IMPORTANT: This may only be used in conjunction with ExportModel(),<br />
+ following this example:<br />
+ <br />
+ </p><div class="fragment"><div class="line"><a class="code" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a6d6bb58d5db8f6b6c5b7e66229d2a815">MPSolver</a> my_solver;</div><div class="line">... add <a class="code" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a363486679622594bda617ef2bfff415f">variables</a> and <a class="code" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#aad1eda829e45719734aca8a269ed253b">constraints</a> ...</div><div class="line">MPModelProto model_proto;</div><div class="line">my_solver.ExportModelToProto(model_proto);</div><div class="line">MPSolutionResponse solver_response;</div><div class="line">MPSolver::SolveWithProto(model_proto, solver_response);</div><div class="line"><span class="keywordflow">if</span> (solver_response.result_status() == MPSolutionResponse::OPTIMAL) {</div><div class="line">  CHECK_OK(my_solver.LoadSolutionFromProto(solver_response));</div><div class="line">  ... inspect the solution <span class="keyword">using</span> the usual API: solution_value(), etc...</div><div class="line">}</div></div><!-- fragment --><p> <br />
+ <br />
+ The response must be in OPTIMAL or FEASIBLE status.<br />
+ <br />
+ Returns a non-OK status if a problem arised (typically, if it wasn't used<br />
+ like it should be):<br />
+</p><ul>
+<li>loading a solution whose variables don't correspond to the solver's<br />
+ current variables<br />
+</li>
+<li>loading a solution with a status other than OPTIMAL / FEASIBLE.<br />
+ <br />
+ Note: the objective value isn't checked. You can use VerifySolution() for<br />
+ that. </li>
+</ul>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00345">345</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -781,7 +915,30 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00193">193</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Load a solution encoded in a protocol buffer onto this solver for easy<br />
+ access via the <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html" title="This mathematical programming (MP) solver class is the main class  though which users build and solve...">MPSolver</a> interface. </p>
+<p><br />
+ <br />
+ IMPORTANT: This may only be used in conjunction with ExportModel(),<br />
+ following this example:<br />
+ <br />
+ </p><div class="fragment"><div class="line"><a class="code" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a6d6bb58d5db8f6b6c5b7e66229d2a815">MPSolver</a> my_solver;</div><div class="line">... add <a class="code" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a363486679622594bda617ef2bfff415f">variables</a> and <a class="code" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#aad1eda829e45719734aca8a269ed253b">constraints</a> ...</div><div class="line">MPModelProto model_proto;</div><div class="line">my_solver.ExportModelToProto(model_proto);</div><div class="line">MPSolutionResponse solver_response;</div><div class="line">MPSolver::SolveWithProto(model_proto, solver_response);</div><div class="line"><span class="keywordflow">if</span> (solver_response.result_status() == MPSolutionResponse::OPTIMAL) {</div><div class="line">  CHECK_OK(my_solver.LoadSolutionFromProto(solver_response));</div><div class="line">  ... inspect the solution <span class="keyword">using</span> the usual API: solution_value(), etc...</div><div class="line">}</div></div><!-- fragment --><p> <br />
+ <br />
+ The response must be in OPTIMAL or FEASIBLE status.<br />
+ <br />
+ Returns a non-OK status if a problem arised (typically, if it wasn't used<br />
+ like it should be):<br />
+</p><ul>
+<li>loading a solution whose variables don't correspond to the solver's<br />
+ current variables<br />
+</li>
+<li>loading a solution with a status other than OPTIMAL / FEASIBLE.<br />
+ <br />
+ Note: the objective value isn't checked. You can use VerifySolution() for<br />
+ that. </li>
+</ul>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00380">380</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -809,7 +966,14 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00135">135</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Looks up a constraint by name, and returns nullptr if it does not exist. </p>
+<p><br />
+ <br />
+ The first call has a O(n) complexity, as the constraint name index is<br />
+ lazily created upon first use. Will crash if constraint names are not<br />
+ unique. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00194">194</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -837,7 +1001,12 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00102">102</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Looks up a variable by name, and returns nullptr if it does not exist. </p>
+<p>The<br />
+ first call has a O(n) complexity, as the variable name index is lazily<br />
+ created upon first use. Will crash if variable names are not unique. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00130">130</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -865,7 +1034,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00122">122</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Creates a boolean variable. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00166">166</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -893,7 +1064,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00074">74</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00078">78</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -931,7 +1102,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00078">78</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00082">82</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -969,7 +1140,15 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00140">140</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Creates a linear constraint with given bounds. </p>
+<p><br />
+ <br />
+ Bounds can be finite or +/- <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a7b7cfaa5fc10f98db57f554706355c66" title="Infinity.">MPSolver::infinity()</a>. The <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html" title="This mathematical programming (MP) solver class is the main class  though which users build and solve...">MPSolver</a> class<br />
+ assumes ownership of the constraint.<br />
+ <br />
+ </p><dl class="section return"><dt>Returns</dt><dd>a pointer to the newly created constraint. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00207">207</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -996,7 +1175,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00145">145</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Creates a constraint with -infinity and +infinity bounds. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00215">215</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1040,7 +1221,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00150">150</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Creates a named constraint with given bounds. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00223">223</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1068,7 +1251,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00155">155</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Creates a named constraint with -infinity and +infinity bounds. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00231">231</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1112,7 +1297,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00117">117</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Creates an integer variable. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00158">158</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1156,7 +1343,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00066">66</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00070">70</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1206,7 +1393,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00070">70</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00074">74</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1250,7 +1437,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00112">112</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Creates a continuous variable. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00150">150</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1294,7 +1483,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00058">58</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00062">62</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1344,7 +1533,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00062">62</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00066">66</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1394,7 +1583,14 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00107">107</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Creates a variable with the given bounds, integrality requirement and<br />
+ name. </p>
+<p>Bounds can be finite or +/- <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a7b7cfaa5fc10f98db57f554706355c66" title="Infinity.">MPSolver::infinity()</a>. The <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html" title="This mathematical programming (MP) solver class is the main class  though which users build and solve...">MPSolver</a> owns<br />
+ the variable (i.e. the returned pointer is borrowed). Variable names are<br />
+ optional. If you give an empty name, name() will auto-generate one for you<br />
+ upon request. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00142">142</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1444,7 +1640,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00041">41</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00045">45</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1500,7 +1696,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00049">49</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00053">53</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1527,7 +1723,12 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00217">217</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Returns the number of branch-and-bound nodes evaluated during the solve. </p>
+<p><br />
+ <br />
+ Only available for discrete problems. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00433">433</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1554,7 +1755,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00127">127</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Returns the number of constraints. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00174">174</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1581,7 +1784,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00094">94</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Returns the number of variables. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00113">113</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1608,7 +1813,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00160">160</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Returns the mutable objective object. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00239">239</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1635,7 +1842,15 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00181">181</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Advanced usage: resets extracted model to solve from scratch. </p>
+<p><br />
+ <br />
+ This won't reset the parameters that were set with<br />
+ SetSolverSpecificParametersAsString() or set_time_limit() or even clear the<br />
+ linear program. It will just make sure that next Solve() will be as if<br />
+ everything was reconstructed from scratch. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00298">298</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1676,7 +1891,7 @@ Protected Member Functions</h2></td></tr>
 <p>Sets a hint for solution. </p>
 <p>If a feasible or almost-feasible solution to the problem is already known, it may be helpful to pass it to the solver so that it can be used. A solver that supports this feature will try to use this information to create its initial feasible solution. Note that it may not always be faster to give a hint like this to the solver. There is also no guarantee that the solver will use this hint or try to return a solution "close" to this assignment in case of multiple optimal solutions. </p>
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00299">299</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00539">539</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1706,7 +1921,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Sets the number of threads to be used by the solver. </p>
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00306">306</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00546">546</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1734,7 +1949,17 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00197">197</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Advanced usage: pass solver specific parameters in text format. </p>
+<p><br />
+ <br />
+ The format is solver-specific and is the same as the corresponding solver<br />
+ configuration file format. Returns true if the operation was successful.<br />
+ <br />
+ TODO(user): Currently SCIP will always return true even if the format is<br />
+ wrong (you can check the log if you suspect an issue there). This seems to<br />
+ be a bug in SCIP though. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00394">394</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1762,7 +1987,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00225">225</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00465">465</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1789,7 +2014,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00165">165</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Solves the problem using default parameter values. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00247">247</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1817,7 +2044,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00169">169</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Solves the problem using the specified parameter values. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00254">254</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1845,7 +2074,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00267">267</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00507">507</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1873,7 +2102,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00086">86</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Whether the given problem type is supported (this will depend on the<br />
+ targets that you linked). </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00097">97</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1900,7 +2132,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00209">209</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Suppress output. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00417">417</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1927,7 +2161,11 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00098">98</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Returns the array of variables handled by the <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html" title="This mathematical programming (MP) solver class is the main class  though which users build and solve...">MPSolver</a>. </p>
+<p>(They are listed in<br />
+ the order in which they were created.) </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00121">121</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1965,7 +2203,31 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00177">177</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Advanced usage: Verifies the <em>correctness</em> of the solution. </p>
+<p><br />
+ <br />
+ It verifies that all variables must be within their domains, all<br />
+ constraints must be satisfied, and the reported objective value must be<br />
+ accurate.<br />
+ <br />
+ Usage:<br />
+</p><ul>
+<li>This can only be called after Solve() was called.<br />
+</li>
+<li>"tolerance" is interpreted as an absolute error threshold.<br />
+</li>
+<li>For the objective value only, if the absolute error is too large,<br />
+ the tolerance is interpreted as a relative error threshold instead.<br />
+</li>
+<li>If "log_errors" is true, every single violation will be logged.<br />
+</li>
+<li>If "tolerance" is negative, it will be set to <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a7b7cfaa5fc10f98db57f554706355c66" title="Infinity.">infinity()</a>.<br />
+ <br />
+ Most users should just set the &ndash;verify_solution flag and not bother using<br />
+ this method directly. </li>
+</ul>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00286">286</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -1992,7 +2254,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00229">229</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00469">469</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>

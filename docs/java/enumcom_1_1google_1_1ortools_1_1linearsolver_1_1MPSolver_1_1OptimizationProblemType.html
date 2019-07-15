@@ -43,8 +43,13 @@
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00310">310</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<div class="textblock"><p>The type of problems (LP or MIP) that will be solved and the underlying<br />
+ solver (GLOP, GLPK, CLP, CBC or SCIP) that will solve them. </p>
+<p>This must<br />
+ remain consistent with MPModelRequest::OptimizationProblemType<br />
+ (take particular care of the open-source version). </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00556">556</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -59,12 +64,16 @@ Static Public Member Functions</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:a1fa0e034e1a6a232d244d0ff0ef827be"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#a1fa0e034e1a6a232d244d0ff0ef827be">CLP_LINEAR_PROGRAMMING</a> =(<a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html#a4af141dfb42264e4d94f8e62ba024594">main_research_linear_solverJNI.MPSolver_CLP_LINEAR_PROGRAMMING_get</a>())</td></tr>
+<tr class="memdesc:a1fa0e034e1a6a232d244d0ff0ef827be"><td class="mdescLeft">&#160;</td><td class="mdescRight">Linear Programming solver using Coin CBC.  <a href="#a1fa0e034e1a6a232d244d0ff0ef827be">More...</a><br /></td></tr>
 <tr class="separator:a1fa0e034e1a6a232d244d0ff0ef827be"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a68deaeb6505ee40b763ef284797a5bef"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#a68deaeb6505ee40b763ef284797a5bef">GLOP_LINEAR_PROGRAMMING</a> =(<a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html#a58685082b167f4b9834f4a406ac5f427">main_research_linear_solverJNI.MPSolver_GLOP_LINEAR_PROGRAMMING_get</a>())</td></tr>
+<tr class="memdesc:a68deaeb6505ee40b763ef284797a5bef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Linear Programming solver using GLOP (Recommended solver).  <a href="#a68deaeb6505ee40b763ef284797a5bef">More...</a><br /></td></tr>
 <tr class="separator:a68deaeb6505ee40b763ef284797a5bef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a684f4f16f0e9c9e8758456282da662fd"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#a684f4f16f0e9c9e8758456282da662fd">CBC_MIXED_INTEGER_PROGRAMMING</a> =(<a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html#acf9f9a1bab27337d23bf47177074fad1">main_research_linear_solverJNI.MPSolver_CBC_MIXED_INTEGER_PROGRAMMING_get</a>())</td></tr>
+<tr class="memdesc:a684f4f16f0e9c9e8758456282da662fd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mixed integer Programming Solver using Coin CBC.  <a href="#a684f4f16f0e9c9e8758456282da662fd">More...</a><br /></td></tr>
 <tr class="separator:a684f4f16f0e9c9e8758456282da662fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a858054bb17280965ff437a9dad16938e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#a858054bb17280965ff437a9dad16938e">BOP_INTEGER_PROGRAMMING</a> =(<a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html#aa77f66a1461086ea1cab8bea4f8422b4">main_research_linear_solverJNI.MPSolver_BOP_INTEGER_PROGRAMMING_get</a>())</td></tr>
+<tr class="memdesc:a858054bb17280965ff437a9dad16938e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Linear Boolean Programming Solver.  <a href="#a858054bb17280965ff437a9dad16938e">More...</a><br /></td></tr>
 <tr class="separator:a858054bb17280965ff437a9dad16938e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
@@ -92,7 +101,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00320">320</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00578">578</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -119,7 +128,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00316">316</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00574">574</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -136,7 +145,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00314">314</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Linear Boolean Programming Solver. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00572">572</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -152,7 +163,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00313">313</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Mixed integer Programming Solver using Coin CBC. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00568">568</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -168,7 +181,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00311">311</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Linear Programming solver using Coin CBC. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00560">560</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -184,7 +199,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00312">312</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>Linear Programming solver using GLOP (Recommended solver). </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00564">564</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>

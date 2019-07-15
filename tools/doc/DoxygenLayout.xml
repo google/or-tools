@@ -73,7 +73,7 @@
       <privatestaticmethods title=""/>
       <privateattributes title=""/>
       <privatestaticattributes title=""/>
-      <friends title=""/>
+      <friends visible="no" title=""/>
       <related title="" subtitle=""/>
       <membergroups visible="yes"/>
     </memberdecl>

@@ -236,8 +236,8 @@ class LinearExpr(object):
         while to_process:  # Flatten to avoid recursion.
             expr, coef = to_process.pop()
             if isinstance(expr, _ProductCst):
-                to_process.append((expr.Expression(),
-                                   coef * expr.Coefficient()))
+                to_process.append(
+                    (expr.Expression(), coef * expr.Coefficient()))
             elif isinstance(expr, _SumArray):
                 for e in expr.Expressions():
                     to_process.append((e, coef))
@@ -424,8 +424,8 @@ class _SumArray(LinearExpr):
                                       self.__constant)
 
     def __repr__(self):
-        return &#39;SumArray({}, {})&#39;.format(&#39;, &#39;.join(
-            map(repr, self.__expressions)), self.__constant)
+        return &#39;SumArray({}, {})&#39;.format(
+            &#39;, &#39;.join(map(repr, self.__expressions)), self.__constant)
 
     def Expressions(self):
         return self.__expressions
@@ -482,9 +482,9 @@ class _ScalProd(LinearExpr):
         return output
 
     def __repr__(self):
-        return &#39;ScalProd([{}], [{}], {})&#39;.format(&#39;, &#39;.join(
-            map(repr, self.__expressions)), &#39;, &#39;.join(
-                map(repr, self.__coefficients)), self.__constant)
+        return &#39;ScalProd([{}], [{}], {})&#39;.format(
+            &#39;, &#39;.join(map(repr, self.__expressions)),
+            &#39;, &#39;.join(map(repr, self.__coefficients)), self.__constant)
 
     def Expressions(self):
         return self.__expressions
@@ -723,14 +723,14 @@ class IntervalVar(object):
         if self.__ct.enforcement_literal:
             return &#39;%s(start = %s, size = %s, end = %s, is_present = %s)&#39; % (
                 self.__ct.name, ShortName(self.__model, interval.start),
-                ShortName(self.__model, interval.size),
-                ShortName(self.__model, interval.end),
+                ShortName(self.__model,
+                          interval.size), ShortName(self.__model, interval.end),
                 ShortName(self.__model, self.__ct.enforcement_literal[0]))
         else:
             return &#39;%s(start = %s, size = %s, end = %s)&#39; % (
                 self.__ct.name, ShortName(self.__model, interval.start),
-                ShortName(self.__model, interval.size),
-                ShortName(self.__model, interval.end))
+                ShortName(self.__model,
+                          interval.size), ShortName(self.__model, interval.end))
 
     def Name(self):
         return self.__ct.name
@@ -836,9 +836,8 @@ class CpModel(object):
       An instance of the `Constraint` class.
     &#34;&#34;&#34;
         if isinstance(ct, BoundedLinearExpression):
-            return self.AddLinearExpressionInDomain(ct.Expression(),
-                                                    Domain.FromFlatIntervals(
-                                                        ct.Bounds()))
+            return self.AddLinearExpressionInDomain(
+                ct.Expression(), Domain.FromFlatIntervals(ct.Bounds()))
         elif ct and isinstance(ct, bool):
             return self.AddBoolOr([True])
         elif not ct and isinstance(ct, bool):
@@ -1047,8 +1046,8 @@ class CpModel(object):
             model_ct.automaton.final_states.append(v)
         for t in transition_triples:
             if len(t) != 3:
-                raise TypeError(
-                    &#39;Tuple &#39; + str(t) + &#39; has the wrong arity (!= 3)&#39;)
+                raise TypeError(&#39;Tuple &#39; + str(t) +
+                                &#39; has the wrong arity (!= 3)&#39;)
             cp_model_helper.AssertIsInt64(t[0])
             cp_model_helper.AssertIsInt64(t[1])
             cp_model_helper.AssertIsInt64(t[2])
@@ -1452,8 +1451,8 @@ class CpModel(object):
             cp_model_helper.AssertIsInt64(arg)
             return self.GetOrMakeIndexFromConstant(arg)
         else:
-            raise TypeError(
-                &#39;NotSupported: model.GetOrMakeIndex(&#39; + str(arg) + &#39;)&#39;)
+            raise TypeError(&#39;NotSupported: model.GetOrMakeIndex(&#39; + str(arg) +
+                            &#39;)&#39;)
 
     def GetOrMakeBooleanIndex(self, arg):
         &#34;&#34;&#34;Returns an index from a boolean expression.&#34;&#34;&#34;
@@ -1467,8 +1466,8 @@ class CpModel(object):
             cp_model_helper.AssertIsBoolean(arg)
             return self.GetOrMakeIndexFromConstant(arg)
         else:
-            raise TypeError(
-                &#39;NotSupported: model.GetOrMakeBooleanIndex(&#39; + str(arg) + &#39;)&#39;)
+            raise TypeError(&#39;NotSupported: model.GetOrMakeBooleanIndex(&#39; +
+                            str(arg) + &#39;)&#39;)
 
     def GetIntervalIndex(self, arg):
         if not isinstance(arg, IntervalVar):
@@ -1521,8 +1520,8 @@ class CpModel(object):
             self.__model.objective.offset = obj
             self.__model.objective.scaling_factor = 1
         else:
-            raise TypeError(
-                &#39;TypeError: &#39; + str(obj) + &#39; is not a valid objective&#39;)
+            raise TypeError(&#39;TypeError: &#39; + str(obj) +
+                            &#39; is not a valid objective&#39;)
 
     def Minimize(self, obj):
         &#34;&#34;&#34;Sets the objective of the model to minimize(obj).&#34;&#34;&#34;
@@ -1565,11 +1564,11 @@ class CpModel(object):
         if isinstance(x, IntVar):
             var = self.__model.variables[x.Index()]
             if len(var.domain) != 2 or var.domain[0] &lt; 0 or var.domain[1] &gt; 1:
-                raise TypeError(
-                    &#39;TypeError: &#39; + str(x) + &#39; is not a boolean variable&#39;)
+                raise TypeError(&#39;TypeError: &#39; + str(x) +
+                                &#39; is not a boolean variable&#39;)
         elif not isinstance(x, _NotBooleanVariable):
-            raise TypeError(
-                &#39;TypeError: &#39; + str(x) + &#39; is not a boolean variable&#39;)
+            raise TypeError(&#39;TypeError: &#39; + str(x) +
+                            &#39; is not a boolean variable&#39;)
 
 
 def EvaluateLinearExpr(expression, solution):
@@ -1609,8 +1608,8 @@ def EvaluateBooleanExpression(literal, solution):
         else:
             return not solution.solution[-index - 1]
     else:
-        raise TypeError(
-            &#39;Cannot interpret %s as a boolean expression.&#39; % literal)
+        raise TypeError(&#39;Cannot interpret %s as a boolean expression.&#39; %
+                        literal)
 
 
 class CpSolver(object):
@@ -1778,8 +1777,8 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
             index = lit.Index()
             return self.SolutionBooleanValue(index)
         else:
-            raise TypeError(
-                &#39;Cannot interpret %s as a boolean expression.&#39; % lit)
+            raise TypeError(&#39;Cannot interpret %s as a boolean expression.&#39; %
+                            lit)
 
     def Value(self, expression):
         &#34;&#34;&#34;Evaluates an linear expression in the current solution.
@@ -1803,8 +1802,8 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
         while to_process:
             expr, coef = to_process.pop()
             if isinstance(expr, _ProductCst):
-                to_process.append((expr.Expression(),
-                                   coef * expr.Coefficient()))
+                to_process.append(
+                    (expr.Expression(), coef * expr.Coefficient()))
             elif isinstance(expr, _SumArray):
                 for e in expr.Expressions():
                     to_process.append((e, coef))
@@ -1816,8 +1815,8 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
             elif isinstance(expr, IntVar):
                 value += coef * self.SolutionIntegerValue(expr.Index())
             elif isinstance(expr, _NotBooleanVariable):
-                value += coef * (
-                    1 - self.SolutionIntegerValue(expr.Not().Index()))
+                value += coef * (1 -
+                                 self.SolutionIntegerValue(expr.Not().Index()))
         return value
 
 
@@ -2245,9 +2244,8 @@ Returns:
       An instance of the `Constraint` class.
     &#34;&#34;&#34;
         if isinstance(ct, BoundedLinearExpression):
-            return self.AddLinearExpressionInDomain(ct.Expression(),
-                                                    Domain.FromFlatIntervals(
-                                                        ct.Bounds()))
+            return self.AddLinearExpressionInDomain(
+                ct.Expression(), Domain.FromFlatIntervals(ct.Bounds()))
         elif ct and isinstance(ct, bool):
             return self.AddBoolOr([True])
         elif not ct and isinstance(ct, bool):
@@ -2456,8 +2454,8 @@ Returns:
             model_ct.automaton.final_states.append(v)
         for t in transition_triples:
             if len(t) != 3:
-                raise TypeError(
-                    &#39;Tuple &#39; + str(t) + &#39; has the wrong arity (!= 3)&#39;)
+                raise TypeError(&#39;Tuple &#39; + str(t) +
+                                &#39; has the wrong arity (!= 3)&#39;)
             cp_model_helper.AssertIsInt64(t[0])
             cp_model_helper.AssertIsInt64(t[1])
             cp_model_helper.AssertIsInt64(t[2])
@@ -2861,8 +2859,8 @@ Returns:
             cp_model_helper.AssertIsInt64(arg)
             return self.GetOrMakeIndexFromConstant(arg)
         else:
-            raise TypeError(
-                &#39;NotSupported: model.GetOrMakeIndex(&#39; + str(arg) + &#39;)&#39;)
+            raise TypeError(&#39;NotSupported: model.GetOrMakeIndex(&#39; + str(arg) +
+                            &#39;)&#39;)
 
     def GetOrMakeBooleanIndex(self, arg):
         &#34;&#34;&#34;Returns an index from a boolean expression.&#34;&#34;&#34;
@@ -2876,8 +2874,8 @@ Returns:
             cp_model_helper.AssertIsBoolean(arg)
             return self.GetOrMakeIndexFromConstant(arg)
         else:
-            raise TypeError(
-                &#39;NotSupported: model.GetOrMakeBooleanIndex(&#39; + str(arg) + &#39;)&#39;)
+            raise TypeError(&#39;NotSupported: model.GetOrMakeBooleanIndex(&#39; +
+                            str(arg) + &#39;)&#39;)
 
     def GetIntervalIndex(self, arg):
         if not isinstance(arg, IntervalVar):
@@ -2930,8 +2928,8 @@ Returns:
             self.__model.objective.offset = obj
             self.__model.objective.scaling_factor = 1
         else:
-            raise TypeError(
-                &#39;TypeError: &#39; + str(obj) + &#39; is not a valid objective&#39;)
+            raise TypeError(&#39;TypeError: &#39; + str(obj) +
+                            &#39; is not a valid objective&#39;)
 
     def Minimize(self, obj):
         &#34;&#34;&#34;Sets the objective of the model to minimize(obj).&#34;&#34;&#34;
@@ -2974,11 +2972,11 @@ Returns:
         if isinstance(x, IntVar):
             var = self.__model.variables[x.Index()]
             if len(var.domain) != 2 or var.domain[0] &lt; 0 or var.domain[1] &gt; 1:
-                raise TypeError(
-                    &#39;TypeError: &#39; + str(x) + &#39; is not a boolean variable&#39;)
+                raise TypeError(&#39;TypeError: &#39; + str(x) +
+                                &#39; is not a boolean variable&#39;)
         elif not isinstance(x, _NotBooleanVariable):
-            raise TypeError(
-                &#39;TypeError: &#39; + str(x) + &#39; is not a boolean variable&#39;)</code></pre>
+            raise TypeError(&#39;TypeError: &#39; + str(x) +
+                            &#39; is not a boolean variable&#39;)</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
@@ -3006,9 +3004,8 @@ Returns:
   An instance of the `Constraint` class.
 &#34;&#34;&#34;
     if isinstance(ct, BoundedLinearExpression):
-        return self.AddLinearExpressionInDomain(ct.Expression(),
-                                                Domain.FromFlatIntervals(
-                                                    ct.Bounds()))
+        return self.AddLinearExpressionInDomain(
+            ct.Expression(), Domain.FromFlatIntervals(ct.Bounds()))
     elif ct and isinstance(ct, bool):
         return self.AddBoolOr([True])
     elif not ct and isinstance(ct, bool):
@@ -3246,8 +3243,8 @@ Raises:
         model_ct.automaton.final_states.append(v)
     for t in transition_triples:
         if len(t) != 3:
-            raise TypeError(
-                &#39;Tuple &#39; + str(t) + &#39; has the wrong arity (!= 3)&#39;)
+            raise TypeError(&#39;Tuple &#39; + str(t) +
+                            &#39; has the wrong arity (!= 3)&#39;)
         cp_model_helper.AssertIsInt64(t[0])
         cp_model_helper.AssertIsInt64(t[1])
         cp_model_helper.AssertIsInt64(t[2])
@@ -4065,11 +4062,11 @@ Raises:
     if isinstance(x, IntVar):
         var = self.__model.variables[x.Index()]
         if len(var.domain) != 2 or var.domain[0] &lt; 0 or var.domain[1] &gt; 1:
-            raise TypeError(
-                &#39;TypeError: &#39; + str(x) + &#39; is not a boolean variable&#39;)
+            raise TypeError(&#39;TypeError: &#39; + str(x) +
+                            &#39; is not a boolean variable&#39;)
     elif not isinstance(x, _NotBooleanVariable):
-        raise TypeError(
-            &#39;TypeError: &#39; + str(x) + &#39; is not a boolean variable&#39;)</code></pre>
+        raise TypeError(&#39;TypeError: &#39; + str(x) +
+                        &#39; is not a boolean variable&#39;)</code></pre>
 </details>
 </dd>
 <dt id="cp_model.CpModel.GetIntervalIndex"><code class="name flex">
@@ -4104,8 +4101,8 @@ Raises:
         cp_model_helper.AssertIsBoolean(arg)
         return self.GetOrMakeIndexFromConstant(arg)
     else:
-        raise TypeError(
-            &#39;NotSupported: model.GetOrMakeBooleanIndex(&#39; + str(arg) + &#39;)&#39;)</code></pre>
+        raise TypeError(&#39;NotSupported: model.GetOrMakeBooleanIndex(&#39; +
+                        str(arg) + &#39;)&#39;)</code></pre>
 </details>
 </dd>
 <dt id="cp_model.CpModel.GetOrMakeIndex"><code class="name flex">
@@ -4126,8 +4123,8 @@ Raises:
         cp_model_helper.AssertIsInt64(arg)
         return self.GetOrMakeIndexFromConstant(arg)
     else:
-        raise TypeError(
-            &#39;NotSupported: model.GetOrMakeIndex(&#39; + str(arg) + &#39;)&#39;)</code></pre>
+        raise TypeError(&#39;NotSupported: model.GetOrMakeIndex(&#39; + str(arg) +
+                        &#39;)&#39;)</code></pre>
 </details>
 </dd>
 <dt id="cp_model.CpModel.GetOrMakeIndexFromConstant"><code class="name flex">
@@ -4901,8 +4898,8 @@ and Value() methods.</p>
             index = lit.Index()
             return self.SolutionBooleanValue(index)
         else:
-            raise TypeError(
-                &#39;Cannot interpret %s as a boolean expression.&#39; % lit)
+            raise TypeError(&#39;Cannot interpret %s as a boolean expression.&#39; %
+                            lit)
 
     def Value(self, expression):
         &#34;&#34;&#34;Evaluates an linear expression in the current solution.
@@ -4926,8 +4923,8 @@ and Value() methods.</p>
         while to_process:
             expr, coef = to_process.pop()
             if isinstance(expr, _ProductCst):
-                to_process.append((expr.Expression(),
-                                   coef * expr.Coefficient()))
+                to_process.append(
+                    (expr.Expression(), coef * expr.Coefficient()))
             elif isinstance(expr, _SumArray):
                 for e in expr.Expressions():
                     to_process.append((e, coef))
@@ -4939,8 +4936,8 @@ and Value() methods.</p>
             elif isinstance(expr, IntVar):
                 value += coef * self.SolutionIntegerValue(expr.Index())
             elif isinstance(expr, _NotBooleanVariable):
-                value += coef * (
-                    1 - self.SolutionIntegerValue(expr.Not().Index()))
+                value += coef * (1 -
+                                 self.SolutionIntegerValue(expr.Not().Index()))
         return value</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -4994,8 +4991,8 @@ Raises:
         index = lit.Index()
         return self.SolutionBooleanValue(index)
     else:
-        raise TypeError(
-            &#39;Cannot interpret %s as a boolean expression.&#39; % lit)</code></pre>
+        raise TypeError(&#39;Cannot interpret %s as a boolean expression.&#39; %
+                        lit)</code></pre>
 </details>
 </dd>
 <dt id="cp_model.CpSolverSolutionCallback.OnSolutionCallback"><code class="name flex">
@@ -5055,8 +5052,8 @@ Raises:
     while to_process:
         expr, coef = to_process.pop()
         if isinstance(expr, _ProductCst):
-            to_process.append((expr.Expression(),
-                               coef * expr.Coefficient()))
+            to_process.append(
+                (expr.Expression(), coef * expr.Coefficient()))
         elif isinstance(expr, _SumArray):
             for e in expr.Expressions():
                 to_process.append((e, coef))
@@ -5068,8 +5065,8 @@ Raises:
         elif isinstance(expr, IntVar):
             value += coef * self.SolutionIntegerValue(expr.Index())
         elif isinstance(expr, _NotBooleanVariable):
-            value += coef * (
-                1 - self.SolutionIntegerValue(expr.Not().Index()))
+            value += coef * (1 -
+                             self.SolutionIntegerValue(expr.Not().Index()))
     return value</code></pre>
 </details>
 </dd>
@@ -5302,14 +5299,14 @@ intervals into the schedule.</p></section>
         if self.__ct.enforcement_literal:
             return &#39;%s(start = %s, size = %s, end = %s, is_present = %s)&#39; % (
                 self.__ct.name, ShortName(self.__model, interval.start),
-                ShortName(self.__model, interval.size),
-                ShortName(self.__model, interval.end),
+                ShortName(self.__model,
+                          interval.size), ShortName(self.__model, interval.end),
                 ShortName(self.__model, self.__ct.enforcement_literal[0]))
         else:
             return &#39;%s(start = %s, size = %s, end = %s)&#39; % (
                 self.__ct.name, ShortName(self.__model, interval.start),
-                ShortName(self.__model, interval.size),
-                ShortName(self.__model, interval.end))
+                ShortName(self.__model,
+                          interval.size), ShortName(self.__model, interval.end))
 
     def Name(self):
         return self.__ct.name</code></pre>
@@ -5422,8 +5419,8 @@ model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) &gt;= 0)
         while to_process:  # Flatten to avoid recursion.
             expr, coef = to_process.pop()
             if isinstance(expr, _ProductCst):
-                to_process.append((expr.Expression(),
-                                   coef * expr.Coefficient()))
+                to_process.append(
+                    (expr.Expression(), coef * expr.Coefficient()))
             elif isinstance(expr, _SumArray):
                 for e in expr.Expressions():
                     to_process.append((e, coef))
@@ -5611,8 +5608,8 @@ def Sum(cls, expressions):
     while to_process:  # Flatten to avoid recursion.
         expr, coef = to_process.pop()
         if isinstance(expr, _ProductCst):
-            to_process.append((expr.Expression(),
-                               coef * expr.Coefficient()))
+            to_process.append(
+                (expr.Expression(), coef * expr.Coefficient()))
         elif isinstance(expr, _SumArray):
             for e in expr.Expressions():
                 to_process.append((e, coef))

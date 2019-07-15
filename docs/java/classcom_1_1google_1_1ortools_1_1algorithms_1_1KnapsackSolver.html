@@ -82,13 +82,13 @@
  vectors for weights, and a vector of capacities.<br />
  E.g.:<br />
  <br />
- <b>Python</b>: <br />
+ <b>Python</b>:<br />
  <br />
  <div class="fragment"><div class="line">profits = [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]</div><div class="line">weights = [ [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ],</div><div class="line">            [ 1, 1, 1, 1, 1, 1, 1, 1, 1 ]</div><div class="line">          ]</div><div class="line">capacities = [ 34, 4 ]</div><div class="line"></div><div class="line">solver = pywrapknapsack_solver.KnapsackSolver(</div><div class="line">    pywrapknapsack_solver.KnapsackSolver</div><div class="line">        .KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,</div><div class="line">    <span class="stringliteral">&#39;Multi-dimensional solver&#39;</span>)</div><div class="line">solver.Init(profits, weights, capacities)</div><div class="line">profit = solver.Solve()</div></div><!-- fragment --> <br />
  <br />
  <b>C++</b>:<br />
  <br />
- <div class="fragment"><div class="line"><span class="keyword">const</span> std::vectorint64 profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };</div><div class="line"><span class="keyword">const</span> std::vectorstd::vector&lt;int64 weights = </div><div class="line">    { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },</div><div class="line">      { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };</div><div class="line"><span class="keyword">const</span> std::vectorint64 capacities = { 34, 4 };</div><div class="line"></div><div class="line"><a class="code" href="classcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver.html#a4af9744830d1c4b8a1428f6987a83848">KnapsackSolver</a> solver(</div><div class="line">    KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,</div><div class="line">    <span class="stringliteral">&quot;Multi-dimensional solver&quot;</span>);</div><div class="line">solver.Init(profits, weights, capacities);</div><div class="line"><span class="keyword">const</span> int64 profit = solver.Solve();</div></div><!-- fragment --> <br />
+ <div class="fragment"><div class="line"><span class="keyword">const</span> std::vectorint64 profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };</div><div class="line"><span class="keyword">const</span> std::vectorstd::vector&lt;int64 weights =</div><div class="line">    { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },</div><div class="line">      { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };</div><div class="line"><span class="keyword">const</span> std::vectorint64 capacities = { 34, 4 };</div><div class="line"></div><div class="line"><a class="code" href="classcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver.html#a4af9744830d1c4b8a1428f6987a83848">KnapsackSolver</a> solver(</div><div class="line">    KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,</div><div class="line">    <span class="stringliteral">&quot;Multi-dimensional solver&quot;</span>);</div><div class="line">solver.Init(profits, weights, capacities);</div><div class="line"><span class="keyword">const</span> int64 profit = solver.Solve();</div></div><!-- fragment --> <br />
  <br />
  <b>Java</b>:<br />
  <br />
