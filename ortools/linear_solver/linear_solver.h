@@ -17,8 +17,6 @@
 // and Python via SWIG.
 //
 //
-// -----------------------------------
-//
 // What is Linear Programming?
 //
 //   In mathematics, linear programming (LP) is a technique for optimization of
@@ -173,63 +171,62 @@ class MPVariable;
  */
 class MPSolver {
  public:
-   /**
-    * The type of problems (LP or MIP) that will be solved and the underlying
-    *  solver (GLOP, GLPK, CLP, CBC or SCIP) that will solve them. This must
-    * remain consistent with MPModelRequest::OptimizationProblemType
-    *  (take particular care of the open-source version).
-    */
-   enum OptimizationProblemType {
+  /**
+   * The type of problems (LP or MIP) that will be solved and the underlying
+   *  solver (GLOP, GLPK, CLP, CBC or SCIP) that will solve them. This must
+   * remain consistent with MPModelRequest::OptimizationProblemType
+   *  (take particular care of the open-source version).
+   */
+  enum OptimizationProblemType {
 #ifdef USE_CLP
-     /** Linear Programming solver using Coin CBC. */
-     CLP_LINEAR_PROGRAMMING = 0,
+    /// Linear Programming solver using Coin CBC.
+    CLP_LINEAR_PROGRAMMING = 0,
 #endif
 #ifdef USE_GLPK
-     /** Linear Programming solver using GLPK. */
-     GLPK_LINEAR_PROGRAMMING = 1,
+    /// Linear Programming solver using GLPK.
+    GLPK_LINEAR_PROGRAMMING = 1,
 #endif
 #ifdef USE_GLOP
-     /** Linear Programming solver using GLOP (Recommended solver). */
-     GLOP_LINEAR_PROGRAMMING = 2,
+    /// Linear Programming solver using GLOP (Recommended solver).
+    GLOP_LINEAR_PROGRAMMING = 2,
 #endif
 #ifdef USE_GUROBI
-     /** Linear Programming solver using GUROBI. */
-     GUROBI_LINEAR_PROGRAMMING = 6,
+    /// Linear Programming solver using GUROBI.
+    GUROBI_LINEAR_PROGRAMMING = 6,
 #endif
 #ifdef USE_CPLEX
-     /** Linear Programming solver using CPLEX. */
-     CPLEX_LINEAR_PROGRAMMING = 10,
+    /// Linear Programming solver using CPLEX.
+    CPLEX_LINEAR_PROGRAMMING = 10,
 #endif
 
 // Integer programming problems.
 #ifdef USE_SCIP
-     /** Mixed integer Programming Solver using SCIP. (Recommended for problems
-        with continous variables) */
-     SCIP_MIXED_INTEGER_PROGRAMMING = 3, // Recommended default value.
+    /// Mixed integer Programming Solver using SCIP.
+    SCIP_MIXED_INTEGER_PROGRAMMING = 3,  // Recommended default value.
 #endif
 #ifdef USE_GLPK
-     /** Mixed integer Programming Solver using SCIP. */
-     GLPK_MIXED_INTEGER_PROGRAMMING = 4,
+    /// Mixed integer Programming Solver using SCIP.
+    GLPK_MIXED_INTEGER_PROGRAMMING = 4,
 #endif
 #ifdef USE_CBC
-     /** Mixed integer Programming Solver using Coin CBC. */
-     CBC_MIXED_INTEGER_PROGRAMMING = 5,
+    /// Mixed integer Programming Solver using Coin CBC.
+    CBC_MIXED_INTEGER_PROGRAMMING = 5,
 #endif
 #if defined(USE_GUROBI)
-     /** Mixed integer Programming Solver using GUROBI. */
-     GUROBI_MIXED_INTEGER_PROGRAMMING = 7,
+    /// Mixed integer Programming Solver using GUROBI.
+    GUROBI_MIXED_INTEGER_PROGRAMMING = 7,
 #endif
 #if defined(USE_CPLEX)
-     /** Mixed integer Programming Solver using CPLEX. */
-     CPLEX_MIXED_INTEGER_PROGRAMMING = 11,
+    /// Mixed integer Programming Solver using CPLEX.
+    CPLEX_MIXED_INTEGER_PROGRAMMING = 11,
 #endif
 #if defined(USE_BOP)
-     /** Linear Boolean Programming Solver. */
-     BOP_INTEGER_PROGRAMMING = 12,
+    /// Linear Boolean Programming Solver.
+    BOP_INTEGER_PROGRAMMING = 12,
 #endif
-   };
+  };
 
-  /** 
+  /**
    * Create a solver with the given name and underlying solver backend.
    */
   MPSolver(const std::string& name, OptimizationProblemType problem_type);
@@ -264,7 +261,7 @@ class MPSolver {
     return problem_type_;  // Set at construction.
   }
 
-  /** 
+  /**
    * Clears the objective (including the optimization direction), all variables
    * and constraints. All the other properties of the MPSolver (like the time
    * limit) are kept untouched.
@@ -298,18 +295,18 @@ class MPSolver {
    */
   MPVariable* MakeVar(double lb, double ub, bool integer,
                       const std::string& name);
-  
+
   /**
    * Creates a continuous variable.
    */
   MPVariable* MakeNumVar(double lb, double ub, const std::string& name);
 
-  /** 
+  /**
    * Creates an integer variable.
    */
   MPVariable* MakeIntVar(double lb, double ub, const std::string& name);
 
-  /** 
+  /**
    * Creates a boolean variable.
    */
   MPVariable* MakeBoolVar(const std::string& name);
@@ -331,7 +328,7 @@ class MPSolver {
   void MakeVarArray(int nb, double lb, double ub, bool integer,
                     const std::string& name_prefix,
                     std::vector<MPVariable*>* vars);
-  
+
   /**
    * Creates an array of continuous variables.
    */
@@ -355,9 +352,9 @@ class MPSolver {
    */
   int NumConstraints() const { return constraints_.size(); }
 
-  /** 
-   * Returns the array of constraints handled by the MPSolver. 
-   * 
+  /**
+   * Returns the array of constraints handled by the MPSolver.
+   *
    * They are listed in the order in which they were created.
    */
   const std::vector<MPConstraint*>& constraints() const { return constraints_; }
@@ -572,13 +569,13 @@ class MPSolver {
    * The response must be in OPTIMAL or FEASIBLE status.
    *
    * Returns a non-OK status if a problem arised (typically, if it wasn't used
-  *     like it should be):
+   *     like it should be):
    * - loading a solution whose variables don't correspond to the solver's
-  current variables
+   *   current variables
    * - loading a solution with a status other than OPTIMAL / FEASIBLE.
    *
    * Note: the objective value isn't checked. You can use VerifySolution() for
-  *      that.
+   *       that.
    */
   util::Status LoadSolutionFromProto(
       const MPSolutionResponse& response,
@@ -611,6 +608,7 @@ class MPSolver {
    * enable multi-threading via SetSolverSpecificParametersAsString().
    */
   util::Status SetNumThreads(int num_threads);
+
   /**
    * Returns the number of threads to be used during solve.
    */
@@ -621,7 +619,7 @@ class MPSolver {
    *
    * The format is solver-specific and is the same as the corresponding solver
    * configuration file format. Returns true if the operation was successful.
-   * 
+   *
    * TODO(user): Currently SCIP will always return true even if the format is
    * wrong (you can check the log if you suspect an issue there). This seems to
    * be a bug in SCIP though.
@@ -644,6 +642,23 @@ class MPSolver {
    * try to return a solution "close" to this assignment in case of multiple
    * optimal solutions.
    */
+  // MOE:begin_strip
+  // As of 2018-08, this is only used by SCIP, BOP, Gurobi, GLIP, with various
+  // behaviors, and ignored by other solvers. Contact or-core-team@ for details.
+  // In particular, SCIP 6.0 is using the hint in the following way:
+  // 1. If the hint is complete (i.e., all variables have assigned values) it is
+  //    used as the first incumbent. Consequently, if the hint is infeasible
+  //    (any linear constraint *or* any integrality constraint is violated),
+  //    the hint is disregarded.
+  // 2. If the hint is partial, SCIP creates a sub-MIP with the variables fixed
+  //    to the values from the hint. Consequently, if the hint results in
+  //    an immediate infeasibility, it is disregarded. Otherwise, SCIP tries
+  //    to solve the sub-MIP by running a restricted "sub-SCIP" (i.e., no
+  //    costly presolve, no cuts, limited heuristics, small time/node limits).
+  //    If the sub-SCIP finds a solution it will be added as an incumbent
+  //    (if not, nothing happens). Finally, SCIP proceeds to solve the entire
+  //    model as usual.
+  // MOE:end_strip
   void SetHint(std::vector<std::pair<const MPVariable*, double> > hint);
 
   /**
@@ -673,9 +688,9 @@ class MPSolver {
       const std::vector<MPSolver::BasisStatus>& variable_statuses,
       const std::vector<MPSolver::BasisStatus>& constraint_statuses);
 
-  /** 
+  /**
    * Infinity.
-   * 
+   *
    * You can use -MPSolver::infinity() for negative infinity.
    */
   static double infinity() { return std::numeric_limits<double>::infinity(); }
@@ -711,7 +726,7 @@ class MPSolver {
 
   /**
    * Returns the number of branch-and-bound nodes evaluated during the solve.
-   * 
+   *
    * Only available for discrete problems.
    */
   int64 nodes() const;
@@ -917,34 +932,34 @@ inline std::string AbslUnparseFlag(
  */
 class MPObjective {
  public:
-   /**
-    *  Clears the offset, all variables and coefficients, and the optimization
-    * direction.
-    */
-   void Clear();
+  /**
+   *  Clears the offset, all variables and coefficients, and the optimization
+   * direction.
+   */
+  void Clear();
 
-   /**
-    * Sets the coefficient of the variable in the objective.
-    *
-    * If the variable does not belong to the solver, the function just returns,
-    * or crashes in non-opt mode.
-    */
-   void SetCoefficient(const MPVariable *const var, double coeff);
+  /**
+   * Sets the coefficient of the variable in the objective.
+   *
+   * If the variable does not belong to the solver, the function just returns,
+   * or crashes in non-opt mode.
+   */
+  void SetCoefficient(const MPVariable* const var, double coeff);
 
-   /**
-    *  Gets the coefficient of a given variable in the objective
-    * 
-    * It returns 0 if the variable does not appear in the objective).
-    */
-   double GetCoefficient(const MPVariable *const var) const;
+  /**
+   *  Gets the coefficient of a given variable in the objective
+   *
+   * It returns 0 if the variable does not appear in the objective).
+   */
+  double GetCoefficient(const MPVariable* const var) const;
 
-   /**
-    * Returns a map from variables to their coefficients in the objective.
-    * 
-    * If a variable is not present in the map, then its coefficient is zero.
-    */
-   const absl::flat_hash_map<const MPVariable *, double> &terms() const {
-     return coefficients_;
+  /**
+   * Returns a map from variables to their coefficients in the objective.
+   *
+   * If a variable is not present in the map, then its coefficient is zero.
+   */
+  const absl::flat_hash_map<const MPVariable*, double>& terms() const {
+    return coefficients_;
   }
 
   /**
@@ -1111,7 +1126,7 @@ class MPVariable {
    * Sets the upper bound.
    */
   void SetUB(double ub) { SetBounds(lb_, ub); }
-  
+
   /**
    * Sets both the lower and upper bounds.
    */
@@ -1132,8 +1147,9 @@ class MPVariable {
   double reduced_cost() const;
 
   /**
-   *  Advanced usage: returns the basis status of the variable in the current solution (only available for continuous problems).
-   * 
+   *  Advanced usage: returns the basis status of the variable in the current
+   * solution (only available for continuous problems).
+   *
    * @see MPSolver::BasisStatus.
    */
   MPSolver::BasisStatus basis_status() const;
@@ -1199,7 +1215,7 @@ class MPVariable {
 
 /**
  * The class for constraints of a Mathematical Programming (MP) model.
- * 
+ *
  * A constraint is represented as a linear equation or inequality.
  */
 class MPConstraint {
@@ -1230,7 +1246,7 @@ class MPConstraint {
 
   /**
    * Returns a map from variables to their coefficients in the constraint.
-   * 
+   *
    * If a variable is not present in the map, then its coefficient is zero.
    */
   const absl::flat_hash_map<const MPVariable*, double>& terms() const {
@@ -1270,7 +1286,8 @@ class MPConstraint {
   /**
    * Advanced usage: sets the constraint "laziness".
    *
-   * <em>This is only supported for SCIP and has no effect on other solvers.</em>
+   * <em>This is only supported for SCIP and has no effect on other
+   * solvers.</em>
    *
    * When \b laziness is true, the constraint is only considered by the Linear
    * Programming solver if its current solution violates the constraint. In this
@@ -1403,162 +1420,161 @@ class MPConstraint {
  */
 class MPSolverParameters {
  public:
-   /**
-    * Enumeration of parameters that take continuous values.
-    */
-   enum DoubleParam {
-     /**
-      * Limit for relative MIP gap.
-      */
-     RELATIVE_MIP_GAP = 0,
+  /**
+   * Enumeration of parameters that take continuous values.
+   */
+  enum DoubleParam {
+    /**
+     * Limit for relative MIP gap.
+     */
+    RELATIVE_MIP_GAP = 0,
 
-     /**Advanced usage: tolerance for primal feasibility of basic solutions.
-      *
-      * This does not control the integer feasibility tolerance of integer
-      * solutions for MIP or the tolerance used during presolve.
-      */
-     PRIMAL_TOLERANCE = 1,
-     /**
-      * Advanced usage: tolerance for dual feasibility of basic solutions.
-      */
-     DUAL_TOLERANCE = 2
-   };
+    /**Advanced usage: tolerance for primal feasibility of basic solutions.
+     *
+     * This does not control the integer feasibility tolerance of integer
+     * solutions for MIP or the tolerance used during presolve.
+     */
+    PRIMAL_TOLERANCE = 1,
+    /**
+     * Advanced usage: tolerance for dual feasibility of basic solutions.
+     */
+    DUAL_TOLERANCE = 2
+  };
 
-   /**
-    * Enumeration of parameters that take integer or categorical values.
-    */
-   enum IntegerParam {
-     /**
-      * Advanced usage: presolve mode.
-      */
-     PRESOLVE = 1000,
-     /** 
-      * Algorithm to solve linear programs.
-      */
-     LP_ALGORITHM = 1001,
-     /**
-      * Advanced usage: incrementality from one solve to the next.
-      */
-     INCREMENTALITY = 1002,
-     /**
-      * Advanced usage: enable or disable matrix scaling.
-      */
-     SCALING = 1003
-   };
+  /**
+   * Enumeration of parameters that take integer or categorical values.
+   */
+  enum IntegerParam {
+    /**
+     * Advanced usage: presolve mode.
+     */
+    PRESOLVE = 1000,
+    /**
+     * Algorithm to solve linear programs.
+     */
+    LP_ALGORITHM = 1001,
+    /**
+     * Advanced usage: incrementality from one solve to the next.
+     */
+    INCREMENTALITY = 1002,
+    /**
+     * Advanced usage: enable or disable matrix scaling.
+     */
+    SCALING = 1003
+  };
 
-   /**
-    * For each categorical parameter, enumeration of possible values.
-    */
-   enum PresolveValues {
-     PRESOLVE_OFF = 0, // Presolve is off.
-     PRESOLVE_ON = 1   // Presolve is on.
-   };
+  /**
+   * For each categorical parameter, enumeration of possible values.
+   */
+  enum PresolveValues {
+    PRESOLVE_OFF = 0,  // Presolve is off.
+    PRESOLVE_ON = 1    // Presolve is on.
+  };
 
-   /**
-    * LP algorithm to use.
-    */
-   enum LpAlgorithmValues {
-     DUAL = 10,   // Dual simplex.
-     PRIMAL = 11, // Primal simplex.
-     BARRIER = 12 // Barrier algorithm.
-   };
+  /**
+   * LP algorithm to use.
+   */
+  enum LpAlgorithmValues {
+    DUAL = 10,    // Dual simplex.
+    PRIMAL = 11,  // Primal simplex.
+    BARRIER = 12  // Barrier algorithm.
+  };
 
-   /**
-    * Advanced usage: Incrementality options.
-    */
-   enum IncrementalityValues {
-     /**
-      * Start solve from scratch.
-      */
-     INCREMENTALITY_OFF = 0,
+  /**
+   * Advanced usage: Incrementality options.
+   */
+  enum IncrementalityValues {
+    /**
+     * Start solve from scratch.
+     */
+    INCREMENTALITY_OFF = 0,
 
-     /**
-      * Reuse results from previous solve as much as the underlying solver
-      * allows.
-      */
-     INCREMENTALITY_ON = 1
-   };
+    /**
+     * Reuse results from previous solve as much as the underlying solver
+     * allows.
+     */
+    INCREMENTALITY_ON = 1
+  };
 
   /**
    * Advanced usage: Scaling options.
    */
-   enum ScalingValues {
-     /// Scaling is off.
-     SCALING_OFF = 0, 
-     /// Scaling is on.
-     SCALING_ON = 1   
-   };
+  enum ScalingValues {
+    /// Scaling is off.
+    SCALING_OFF = 0,
+    /// Scaling is on.
+    SCALING_ON = 1
+  };
 
-   // @{
-   // Placeholder value to indicate that a parameter is set to
-   // the default value defined in the wrapper.
-   static const double kDefaultDoubleParamValue;
-   static const int kDefaultIntegerParamValue;
-   // @}
+  // @{
+  // Placeholder value to indicate that a parameter is set to
+  // the default value defined in the wrapper.
+  static const double kDefaultDoubleParamValue;
+  static const int kDefaultIntegerParamValue;
+  // @}
 
-   // @{
-   // Placeholder value to indicate that a parameter is unknown.
-   static const double kUnknownDoubleParamValue;
-   static const int kUnknownIntegerParamValue;
-   // @}
+  // @{
+  // Placeholder value to indicate that a parameter is unknown.
+  static const double kUnknownDoubleParamValue;
+  static const int kUnknownIntegerParamValue;
+  // @}
 
-   // @{
-   // Default values for parameters. Only parameters that define the
-   // properties of the solution returned need to have a default value
-   // (that is the same for all solvers). You can also define a default
-   // value for performance parameters when you are confident it is a
-   // good choice (example: always turn presolve on).
-   static const double kDefaultRelativeMipGap;
-   static const double kDefaultPrimalTolerance;
-   static const double kDefaultDualTolerance;
-   static const PresolveValues kDefaultPresolve;
-   static const IncrementalityValues kDefaultIncrementality;
-   // @}
+  // @{
+  // Default values for parameters. Only parameters that define the
+  // properties of the solution returned need to have a default value
+  // (that is the same for all solvers). You can also define a default
+  // value for performance parameters when you are confident it is a
+  // good choice (example: always turn presolve on).
+  static const double kDefaultRelativeMipGap;
+  static const double kDefaultPrimalTolerance;
+  static const double kDefaultDualTolerance;
+  static const PresolveValues kDefaultPresolve;
+  static const IncrementalityValues kDefaultIncrementality;
+  // @}
 
-   /**
-    * The constructor sets all parameters to their default value.
-    */
-   MPSolverParameters();
+  /**
+   * The constructor sets all parameters to their default value.
+   */
+  MPSolverParameters();
 
-   /**
-    * Sets a double parameter to a specific value.
-    */
-   void SetDoubleParam(MPSolverParameters::DoubleParam param, double value);
-   /**
-    * Sets a integer parameter to a specific value.
-    */
-   void SetIntegerParam(MPSolverParameters::IntegerParam param, int value);
+  /**
+   * Sets a double parameter to a specific value.
+   */
+  void SetDoubleParam(MPSolverParameters::DoubleParam param, double value);
+  /**
+   * Sets a integer parameter to a specific value.
+   */
+  void SetIntegerParam(MPSolverParameters::IntegerParam param, int value);
 
-   /**
-    * Sets a double parameter to its default value (default value defined in
-    * MPSolverParameters if it exists, otherwise the default value defined in
-    * the underlying solver).
-    */
+  /**
+   * Sets a double parameter to its default value (default value defined in
+   * MPSolverParameters if it exists, otherwise the default value defined in
+   * the underlying solver).
+   */
 
-   void ResetDoubleParam(MPSolverParameters::DoubleParam param);
-   /**
-    * Sets an integer parameter to its default value (default value defined in
-    * MPSolverParameters if it exists, otherwise the default value defined in
-    * the underlying solver).
-    */
-   void ResetIntegerParam(MPSolverParameters::IntegerParam param);
-   /**
-    * Sets all parameters to their default value.
-    */
-   void Reset();
+  void ResetDoubleParam(MPSolverParameters::DoubleParam param);
+  /**
+   * Sets an integer parameter to its default value (default value defined in
+   * MPSolverParameters if it exists, otherwise the default value defined in
+   * the underlying solver).
+   */
+  void ResetIntegerParam(MPSolverParameters::IntegerParam param);
+  /**
+   * Sets all parameters to their default value.
+   */
+  void Reset();
 
-   /**
-    * Returns the value of a double parameter.
-    */
-   double GetDoubleParam(MPSolverParameters::DoubleParam param) const;
+  /**
+   * Returns the value of a double parameter.
+   */
+  double GetDoubleParam(MPSolverParameters::DoubleParam param) const;
 
-   /**
-    * Returns the value of an integer parameter.
-    */
-   int GetIntegerParam(MPSolverParameters::IntegerParam param) const;
+  /**
+   * Returns the value of an integer parameter.
+   */
+  int GetIntegerParam(MPSolverParameters::IntegerParam param) const;
 
  private:
-  // @{
   // Parameter value for each parameter.
   // @see DoubleParam
   // @see IntegerParam
@@ -1569,7 +1585,6 @@ class MPSolverParameters {
   int scaling_value_;
   int lp_algorithm_value_;
   int incrementality_value_;
-  // @}
 
   // Boolean value indicating whether each parameter is set to the
   // solver's default value. Only parameters for which the wrapper

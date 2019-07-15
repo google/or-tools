@@ -82,8 +82,10 @@ PROTO2_RETURN(
 
 
 %extend operations_research::MPSolver {
-  // Replaces MPSolver::LoadModelFromProto. We simply return the error message,
-  // which will be empty iff the model is valid.
+  /**
+   * Loads a model and returns the error message, which will be empty iff the
+   * model is valid.
+   */
   std::string loadModelFromProto(const operations_research::MPModelProto& input_model) {
     std::string error_message;
     $self->LoadModelFromProto(input_model, &error_message);
@@ -104,21 +106,62 @@ PROTO2_RETURN(
     return error_message;
   }
 
-  // Replaces MPSolver::ExportModelToProto
+  /**
+   * Export the loaded model to proto and returns it.
+   */
   operations_research::MPModelProto exportModelToProto() {
     operations_research::MPModelProto model;
     $self->ExportModelToProto(&model);
     return model;
   }
 
-  // Replaces MPSolver::FillSolutionResponseProto
+  /**
+   * Fills the solution found to a response proto and returns it.
+   */
   operations_research::MPSolutionResponse createSolutionResponseProto() {
     operations_research::MPSolutionResponse response;
     $self->FillSolutionResponseProto(&response);
     return response;
   }
 
-  // Replaces MPSolver::SolveWithProto
+  /**
+   * Load a solution encoded in a protocol buffer onto this solver for easy
+  access via the MPSolver interface.
+   *
+   * IMPORTANT: This may only be used in conjunction with ExportModel(),
+  following this example:
+   *
+   \code
+     MPSolver my_solver;
+     ... add variables and constraints ...
+     MPModelProto model_proto;
+     my_solver.ExportModelToProto(&model_proto);
+     MPSolutionResponse solver_response;
+     MPSolver::SolveWithProto(model_proto, &solver_response);
+     if (solver_response.result_status() == MPSolutionResponse::OPTIMAL) {
+       CHECK_OK(my_solver.LoadSolutionFromProto(solver_response));
+       ... inspect the solution using the usual API: solution_value(), etc...
+     }
+  \endcode
+   *
+   * The response must be in OPTIMAL or FEASIBLE status.
+   *
+   * Returns a false if a problem arised (typically, if it wasn't used
+   *     like it should be):
+   * - loading a solution whose variables don't correspond to the solver's
+   *   current variables
+   * - loading a solution with a status other than OPTIMAL / FEASIBLE.
+   *
+   * Note: the objective value isn't checked. You can use VerifySolution() for
+   *       that.
+   */
+   bool loadSolutionFromProto(const MPSolutionResponse& response) {
+     return $self->LoadSolutionFromProto(response).ok();
+   }
+
+  /**
+   * Solves the given model proto and returns a response proto.
+   */
   static operations_research::MPSolutionResponse solveWithProto(
       const operations_research::MPModelRequest& model_request) {
     operations_research::MPSolutionResponse response;
@@ -126,6 +169,9 @@ PROTO2_RETURN(
     return response;
   }
 
+  /**
+   * Export the loaded model in LP format.
+   */
   std::string exportModelAsLpFormat(
       const operations_research::MPModelExportOptions& options =
           operations_research::MPModelExportOptions()) {
@@ -134,6 +180,9 @@ PROTO2_RETURN(
     return ExportModelAsLpFormat(model, options).value_or("");
   }
 
+  /**
+   * Export the loaded model in MPS format.
+   */
   std::string exportModelAsMpsFormat(
       const operations_research::MPModelExportOptions& options =
           operations_research::MPModelExportOptions()) {
@@ -142,17 +191,19 @@ PROTO2_RETURN(
     return ExportModelAsMpsFormat(model, options).value_or("");
   }
 
-  /// Sets a hint for solution.
-  ///
-  /// If a feasible or almost-feasible solution to the problem is already known,
-  /// it may be helpful to pass it to the solver so that it can be used. A
-  /// solver that supports this feature will try to use this information to
-  /// create its initial feasible solution.
-  ///
-  /// Note that it may not always be faster to give a hint like this to the
-  /// solver. There is also no guarantee that the solver will use this hint or
-  /// try to return a solution "close" to this assignment in case of multiple
-  /// optimal solutions.
+  /**
+   * Sets a hint for solution.
+   *
+   * If a feasible or almost-feasible solution to the problem is already known,
+   * it may be helpful to pass it to the solver so that it can be used. A
+   * solver that supports this feature will try to use this information to
+   * create its initial feasible solution.
+   *
+   * Note that it may not always be faster to give a hint like this to the
+   * solver. There is also no guarantee that the solver will use this hint or
+   * try to return a solution "close" to this assignment in case of multiple
+   * optimal solutions.
+   */
   void setHint(const std::vector<operations_research::MPVariable*>& variables,
                const std::vector<double>& values) {
     if (variables.size() != values.size()) {
@@ -167,7 +218,9 @@ PROTO2_RETURN(
     $self->SetHint(hint);
   }
 
-  /// Sets the number of threads to be used by the solver.
+  /**
+   * Sets the number of threads to be used by the solver.
+   */
   bool setNumThreads(int num_theads) {
     return $self->SetNumThreads(num_theads).ok();
   }
@@ -175,6 +228,9 @@ PROTO2_RETURN(
 
 // Add java code on MPSolver.
 %typemap(javacode) operations_research::MPSolver %{
+  /**
+   * Creates and returns an array of variables.
+   */
   public MPVariable[] makeVarArray(int count, double lb, double ub, boolean integer) {
     MPVariable[] array = new MPVariable[count];
     for (int i = 0; i < count; ++i) {
@@ -183,6 +239,9 @@ PROTO2_RETURN(
     return array;
   }
 
+  /**
+   * Creates and returns an array of named variables.
+   */
   public MPVariable[] makeVarArray(int count, double lb, double ub, boolean integer,
                                    String var_name) {
     MPVariable[] array = new MPVariable[count];
@@ -287,7 +346,7 @@ PROTO2_RETURN(
 %unignore operations_research::MPSolver::LoadStatus;
 %unignore operations_research::MPSolver::NO_ERROR;  // no test
 %unignore operations_research::MPSolver::UNKNOWN_VARIABLE_ID;  // no test
-%rename (loadSolutionFromProto) operations_research::MPSolver::LoadSolutionFromProto;  // no test
+// - loadSolutionFromProto;  // Use hand-written version.
 
 // Expose some of the more advanced MPSolver API.
 %rename (supportsProblemType) operations_research::MPSolver::SupportsProblemType;  // no test

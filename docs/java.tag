@@ -30255,20 +30255,6 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>SWIGTYPE_p_util__Status</type>
-      <name>loadSolutionFromProto</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
-      <anchor>aa816cab0e1d166d7f51264eb39ba5f5b</anchor>
-      <arglist>(com.google.ortools.linearsolver.MPSolutionResponse response, double tolerance)</arglist>
-    </member>
-    <member kind="function">
-      <type>SWIGTYPE_p_util__Status</type>
-      <name>loadSolutionFromProto</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
-      <anchor>aeea0da9d16ab53de4d9b02aaa205df96</anchor>
-      <arglist>(com.google.ortools.linearsolver.MPSolutionResponse response)</arglist>
-    </member>
-    <member kind="function">
       <type>boolean</type>
       <name>setSolverSpecificParametersAsString</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
@@ -30351,6 +30337,13 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
       <anchor>a0cfeb3d424b1823acedc91eaebb3fc60</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>loadSolutionFromProto</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
+      <anchor>a496bf7a8ed6ecae40620c15f702c0291</anchor>
+      <arglist>(com.google.ortools.linearsolver.MPSolutionResponse response)</arglist>
     </member>
     <member kind="function">
       <type>String</type>
