@@ -74,9 +74,7 @@
  *
  *    * \c LinearExpr e1 = LinearExpr(x) + (y + 5);
  *    * \c LinearExpr e1 = y + 5 + LinearExpr(x);
- * \endpage
  */
-
 #include "absl/container/flat_hash_map.h"
 
 namespace operations_research {
@@ -119,14 +117,14 @@ class LinearExpr {
 
   /***
    * Possible implicit conversions are intentional.
-   * 
+   *
    * Warning: var is not owned.
    */
   LinearExpr(const MPVariable* var);  // NOLINT
 
   /**
    * Returns 1-var.
-   * 
+   *
    * NOTE(user): if var is binary variable, this corresponds to the logical
    * negation of var.
    * Passing by value is intentional, see the discussion on binary ops.
@@ -146,7 +144,7 @@ class LinearExpr {
 
   /**
    * Evaluates the value of this expression at the solution found.
-   * 
+   *
    * It must be called only after calling MPSolver::Solve.
    */
   double SolutionValue() const;
@@ -171,7 +169,7 @@ LinearExpr operator*(double lhs, LinearExpr rhs);
 
 /**
  * An expression of the form:
- * 
+ *
  * \code lower_bound <= sum_{i in S} a_i*x_i <= upper_bound. \endcode
  * The sum is represented as a LinearExpr with offset 0.
  *

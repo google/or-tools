@@ -69,7 +69,7 @@ $(document).ready(function(){initNavTree('linear__expr_8h.html','');});
 <p>Likewise, the following code is NOT recommended: </p><div class="fragment"><div class="line">MPSolver solver = ...;</div><div class="line">MPVariable* x = solver.MakeVar(...);</div><div class="line">MPVariable* y = solver.MakeVar(...);</div><div class="line">LinearExpr e1 = LinearExpr(x) + y + 5;</div></div><!-- fragment --><p>While it is correct, it violates the natural assumption that the + operator is associative. Thus you are setting a trap for future modifications of the code, as any of the following changes would lead to the above failure mode:</p>
 <ul>
 <li><code>LinearExpr</code> e1 = LinearExpr(x) + (y + 5);</li>
-<li><code>LinearExpr</code> e1 = y + 5 + LinearExpr(x); \endpage </li>
+<li><code>LinearExpr</code> e1 = y + 5 + LinearExpr(x); </li>
 </ul>
 
 <p class="definition">Definition in file <a class="el" href="linear__expr_8h_source.html">linear_expr.h</a>.</p>

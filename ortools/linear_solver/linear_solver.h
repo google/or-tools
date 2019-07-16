@@ -644,23 +644,6 @@ class MPSolver {
    * try to return a solution "close" to this assignment in case of multiple
    * optimal solutions.
    */
-  // MOE:begin_strip
-  // As of 2018-08, this is only used by SCIP, BOP, Gurobi, GLIP, with various
-  // behaviors, and ignored by other solvers. Contact or-core-team@ for details.
-  // In particular, SCIP 6.0 is using the hint in the following way:
-  // 1. If the hint is complete (i.e., all variables have assigned values) it is
-  //    used as the first incumbent. Consequently, if the hint is infeasible
-  //    (any linear constraint *or* any integrality constraint is violated),
-  //    the hint is disregarded.
-  // 2. If the hint is partial, SCIP creates a sub-MIP with the variables fixed
-  //    to the values from the hint. Consequently, if the hint results in
-  //    an immediate infeasibility, it is disregarded. Otherwise, SCIP tries
-  //    to solve the sub-MIP by running a restricted "sub-SCIP" (i.e., no
-  //    costly presolve, no cuts, limited heuristics, small time/node limits).
-  //    If the sub-SCIP finds a solution it will be added as an incumbent
-  //    (if not, nothing happens). Finally, SCIP proceeds to solve the entire
-  //    model as usual.
-  // MOE:end_strip
   void SetHint(std::vector<std::pair<const MPVariable*, double> > hint);
 
   /**
