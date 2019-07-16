@@ -47,6 +47,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1MPSolverP
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-static-attribs">Static Public Attributes</a> &#124;
 <a href="classoperations__research_1_1MPSolverParameters-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">operations_research::MPSolverParameters Class Reference</div>  </div>
@@ -66,7 +67,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1MPSolverP
 </ul>
 <p>TODO(user): store the parameter values in a protocol buffer instead. We need to figure out how to deal with the subtleties of the default values. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01406">1406</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01304">1304</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
@@ -134,17 +135,14 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
-<tr><td colspan="2"><div class="groupHeader"></div></td></tr>
 <tr class="memitem:af0e4fbb80499756bc3edf88fd495d7f7"><td class="memItemLeft" align="right" valign="top">static const double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPSolverParameters.html#af0e4fbb80499756bc3edf88fd495d7f7">kDefaultDoubleParamValue</a></td></tr>
 <tr class="separator:af0e4fbb80499756bc3edf88fd495d7f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9bac90a88459ac4dd9629beeada24a66"><td class="memItemLeft" align="right" valign="top">static const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPSolverParameters.html#a9bac90a88459ac4dd9629beeada24a66">kDefaultIntegerParamValue</a></td></tr>
 <tr class="separator:a9bac90a88459ac4dd9629beeada24a66"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr><td colspan="2"><div class="groupHeader"></div></td></tr>
 <tr class="memitem:a561c73d056eef04db4b4703abd972868"><td class="memItemLeft" align="right" valign="top">static const double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPSolverParameters.html#a561c73d056eef04db4b4703abd972868">kUnknownDoubleParamValue</a></td></tr>
 <tr class="separator:a561c73d056eef04db4b4703abd972868"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c81985cecabbd5f054974d362db551a"><td class="memItemLeft" align="right" valign="top">static const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPSolverParameters.html#a6c81985cecabbd5f054974d362db551a">kUnknownIntegerParamValue</a></td></tr>
 <tr class="separator:a6c81985cecabbd5f054974d362db551a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr><td colspan="2"><div class="groupHeader"></div></td></tr>
 <tr class="memitem:ad6b31b12f9e1944b355809efd56fec98"><td class="memItemLeft" align="right" valign="top">static const double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPSolverParameters.html#ad6b31b12f9e1944b355809efd56fec98">kDefaultRelativeMipGap</a></td></tr>
 <tr class="separator:ad6b31b12f9e1944b355809efd56fec98"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3369c0b857cf02ddf742acc5ef1feec5"><td class="memItemLeft" align="right" valign="top">static const double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPSolverParameters.html#a3369c0b857cf02ddf742acc5ef1feec5">kDefaultPrimalTolerance</a></td></tr>
@@ -174,14 +172,13 @@ Static Public Attributes</h2></td></tr>
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a3834b74a8764c1c971e10ce9ba2f265eaca78b129ceb19e286889b3274bb8cab3"></a>RELATIVE_MIP_GAP&#160;</td><td class="fielddoc"><p>Limit for relative MIP gap. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a3834b74a8764c1c971e10ce9ba2f265ea57e959f9c5ede1f3e683169609fb0488"></a>PRIMAL_TOLERANCE&#160;</td><td class="fielddoc"><p>Advanced usage: tolerance for primal feasibility of basic solutions. </p>
-<pre class="fragment">This does not control the integer feasibility tolerance of integer
-solutions for MIP or the tolerance used during presolve.
-</pre> </td></tr>
+<p>This does not control the integer feasibility tolerance of integer solutions for MIP or the tolerance used during presolve. </p>
+</td></tr>
 <tr><td class="fieldname"><a id="a3834b74a8764c1c971e10ce9ba2f265ea313eaed42edf309599e71ca7563cce22"></a>DUAL_TOLERANCE&#160;</td><td class="fielddoc"><p>Advanced usage: tolerance for dual feasibility of basic solutions. </p>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01411">1411</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01307">1307</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -205,7 +202,7 @@ solutions for MIP or the tolerance used during presolve.
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01471">1471</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01353">1353</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -233,7 +230,7 @@ solutions for MIP or the tolerance used during presolve.
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01432">1432</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01323">1323</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -251,12 +248,15 @@ solutions for MIP or the tolerance used during presolve.
 
 <p>LP algorithm to use. </p>
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ab297405e6084c08a9058012361376762a2aca0e0bfd9807b5a938bb3bbc2bea07"></a>DUAL&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="ab297405e6084c08a9058012361376762a9fa228e5a51b8e22346b46d0f866e68d"></a>PRIMAL&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="ab297405e6084c08a9058012361376762af55a23df7a5ec299bb9ca742ef9004ed"></a>BARRIER&#160;</td><td class="fielddoc"></td></tr>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ab297405e6084c08a9058012361376762a2aca0e0bfd9807b5a938bb3bbc2bea07"></a>DUAL&#160;</td><td class="fielddoc"><p>Dual simplex. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="ab297405e6084c08a9058012361376762a9fa228e5a51b8e22346b46d0f866e68d"></a>PRIMAL&#160;</td><td class="fielddoc"><p>Primal simplex. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="ab297405e6084c08a9058012361376762af55a23df7a5ec299bb9ca742ef9004ed"></a>BARRIER&#160;</td><td class="fielddoc"><p>Barrier algorithm. </p>
+</td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01462">1462</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01343">1343</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -274,11 +274,13 @@ solutions for MIP or the tolerance used during presolve.
 
 <p>For each categorical parameter, enumeration of possible values. </p>
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a45d822ac67d10cc80b2f70fe6ec555a4a6e658228fc28195fb00675d3dfec2c85"></a>PRESOLVE_OFF&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a45d822ac67d10cc80b2f70fe6ec555a4ac8e04ac3295af6c505a22757490bb018"></a>PRESOLVE_ON&#160;</td><td class="fielddoc"></td></tr>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a45d822ac67d10cc80b2f70fe6ec555a4a6e658228fc28195fb00675d3dfec2c85"></a>PRESOLVE_OFF&#160;</td><td class="fielddoc"><p>Presolve is off. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a45d822ac67d10cc80b2f70fe6ec555a4ac8e04ac3295af6c505a22757490bb018"></a>PRESOLVE_ON&#160;</td><td class="fielddoc"><p>Presolve is on. </p>
+</td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01454">1454</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01335">1335</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -302,7 +304,7 @@ solutions for MIP or the tolerance used during presolve.
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01487">1487</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01365">1365</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -507,7 +509,7 @@ solutions for MIP or the tolerance used during presolve.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01497">1497</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01374">1374</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -531,7 +533,7 @@ solutions for MIP or the tolerance used during presolve.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01515">1515</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01388">1388</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -555,7 +557,7 @@ solutions for MIP or the tolerance used during presolve.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01517">1517</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01390">1390</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -579,7 +581,7 @@ solutions for MIP or the tolerance used during presolve.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01498">1498</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01375">1375</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -603,7 +605,7 @@ solutions for MIP or the tolerance used during presolve.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01516">1516</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01389">1389</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -627,7 +629,7 @@ solutions for MIP or the tolerance used during presolve.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01514">1514</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01387">1387</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -651,7 +653,7 @@ solutions for MIP or the tolerance used during presolve.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01513">1513</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01386">1386</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -675,7 +677,7 @@ solutions for MIP or the tolerance used during presolve.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01503">1503</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01378">1378</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -699,7 +701,7 @@ solutions for MIP or the tolerance used during presolve.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01504">1504</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01379">1379</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>

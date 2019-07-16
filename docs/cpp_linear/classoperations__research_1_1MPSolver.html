@@ -237,7 +237,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a64bc5e50054e619d3399956df3ed110f"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPSolver.html#a64bc5e50054e619d3399956df3ed110f">GetSolverSpecificParametersAsString</a> () const</td></tr>
 <tr class="separator:a64bc5e50054e619d3399956df3ed110f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abf4255929ea45766c51cf6138758b277"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPSolver.html#abf4255929ea45766c51cf6138758b277">SetHint</a> (std::vector&lt; std::pair&lt; const <a class="el" href="classoperations__research_1_1MPVariable.html">MPVariable</a> *, double &gt; &gt; hint)</td></tr>
-<tr class="memdesc:abf4255929ea45766c51cf6138758b277"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set a hint for solution.  <a href="#abf4255929ea45766c51cf6138758b277">More...</a><br /></td></tr>
+<tr class="memdesc:abf4255929ea45766c51cf6138758b277"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets a hint for solution.  <a href="#abf4255929ea45766c51cf6138758b277">More...</a><br /></td></tr>
 <tr class="separator:abf4255929ea45766c51cf6138758b277"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a11a76240b36c39f04ff64104c482990f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPSolver.html#a11a76240b36c39f04ff64104c482990f">SetStartingLpBasis</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1MPSolver.html#a7e2a34816b22749e70e23d26f49cf743">MPSolver::BasisStatus</a> &gt; &amp;variable_statuses, const std::vector&lt; <a class="el" href="classoperations__research_1_1MPSolver.html#a7e2a34816b22749e70e23d26f49cf743">MPSolver::BasisStatus</a> &gt; &amp;constraint_statuses)</td></tr>
 <tr class="memdesc:a11a76240b36c39f04ff64104c482990f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advanced usage: Incrementality.  <a href="#a11a76240b36c39f04ff64104c482990f">More...</a><br /></td></tr>
@@ -246,7 +246,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:aa90a00b370b9abc4a43bfefd7f6a895b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Controls (or queries) the amount of output produced by the underlying solver.  <a href="#aa90a00b370b9abc4a43bfefd7f6a895b">More...</a><br /></td></tr>
 <tr class="separator:aa90a00b370b9abc4a43bfefd7f6a895b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abc2c48c807107ccfdfa8c1b50ae16c41"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPSolver.html#abc2c48c807107ccfdfa8c1b50ae16c41">EnableOutput</a> ()</td></tr>
-<tr class="memdesc:abc2c48c807107ccfdfa8c1b50ae16c41"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enable output.  <a href="#abc2c48c807107ccfdfa8c1b50ae16c41">More...</a><br /></td></tr>
 <tr class="separator:abc2c48c807107ccfdfa8c1b50ae16c41"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abfaa014d3c3ca883e3c8a17110372801"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPSolver.html#abfaa014d3c3ca883e3c8a17110372801">SuppressOutput</a> ()</td></tr>
 <tr class="memdesc:abfaa014d3c3ca883e3c8a17110372801"><td class="mdescLeft">&#160;</td><td class="mdescRight">Suppress output.  <a href="#abfaa014d3c3ca883e3c8a17110372801">More...</a><br /></td></tr>
@@ -350,7 +349,7 @@ Friends</h2></td></tr>
 <tr><td class="fieldname"><a id="a7e2a34816b22749e70e23d26f49cf743a0185d5946c48b9852d8a02a7493f4dcf"></a>BASIC&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00653">653</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00612">612</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -416,7 +415,7 @@ Friends</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00430">430</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00399">399</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -590,7 +589,7 @@ Friends</h2></td></tr>
 <p>Returns the array of constraints handled by the <a class="el" href="classoperations__research_1_1MPSolver.html" title="This mathematical programming (MP) solver class is the main class though which users build and solve ...">MPSolver</a>. </p>
 <p>They are listed in the order in which they were created. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00362">362</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00340">340</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -617,7 +616,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00703">703</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00663">663</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -635,8 +634,6 @@ Friends</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>Enable output. </p>
 
 </div>
 </div>
@@ -770,7 +767,7 @@ Friends</h2></td></tr>
 
 <p>Returns the number of threads to be used during solve. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00617">617</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00576">576</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -797,7 +794,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00630">630</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00589">589</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -827,7 +824,7 @@ Friends</h2></td></tr>
 <p>Infinity. </p>
 <p>You can use -<a class="el" href="classoperations__research_1_1MPSolver.html#a5b15f7248e2b72d474bae0444a613033" title="Infinity.">MPSolver::infinity()</a> for negative infinity. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00681">681</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00640">640</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1543,7 +1540,7 @@ Friends</h2></td></tr>
 
 <p>Returns the mutable objective object. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00422">422</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00391">391</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1572,7 +1569,7 @@ Friends</h2></td></tr>
 
 <p>Returns the name of the model set at construction. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00255">255</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00251">251</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1643,7 +1640,7 @@ Friends</h2></td></tr>
 
 <p>Returns the number of constraints. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00355">355</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00333">333</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1672,7 +1669,7 @@ Friends</h2></td></tr>
 
 <p>Returns the number of variables. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00276">276</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00268">268</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1702,7 +1699,7 @@ Friends</h2></td></tr>
 <p>Returns the objective object. </p>
 <p>Note that the objective is owned by the solver, and is initialized to its default value (see the <a class="el" href="classoperations__research_1_1MPObjective.html" title="A class to express a linear objective.">MPObjective</a> class below) at construction. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00417">417</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00388">388</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1809,7 +1806,7 @@ Friends</h2></td></tr>
 
 <p>Returns the optimization problem type set at construction. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00262">262</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00256">256</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1857,7 +1854,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00788">788</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00744">744</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1877,7 +1874,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Set a hint for solution. </p>
+<p>Sets a hint for solution. </p>
 <p>If a feasible or almost-feasible solution to the problem is already known, it may be helpful to pass it to the solver so that it can be used. A solver that supports this feature will try to use this information to create its initial feasible solution.</p>
 <p>Note: It may not always be faster to give a hint like this to the solver. There is also no guarantee that the solver will use this hint or try to return a solution "close" to this assignment in case of multiple optimal solutions. </p>
 
@@ -1982,7 +1979,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00698">698</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00658">658</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2153,7 +2150,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00783">783</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00739">739</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2180,7 +2177,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00793">793</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00749">749</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2207,7 +2204,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00697">697</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00657">657</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2257,7 +2254,7 @@ Friends</h2></td></tr>
 <p>Returns the array of variables handled by the <a class="el" href="classoperations__research_1_1MPSolver.html" title="This mathematical programming (MP) solver class is the main class though which users build and solve ...">MPSolver</a>. </p>
 <p>(They are listed in the order in which they were created.) </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00282">282</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00274">274</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2323,7 +2320,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00798">798</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00754">754</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2369,7 +2366,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00811">811</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00767">767</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2393,7 +2390,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00804">804</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00760">760</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2417,7 +2414,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00803">803</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00759">759</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2441,7 +2438,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00807">807</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00763">763</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2465,7 +2462,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00810">810</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00766">766</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2489,7 +2486,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00802">802</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00758">758</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2513,7 +2510,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00806">806</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00762">762</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2537,7 +2534,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00813">813</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00769">769</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2561,7 +2558,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00809">809</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00765">765</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2585,7 +2582,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00812">812</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00768">768</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2609,7 +2606,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00805">805</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00761">761</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2633,7 +2630,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00808">808</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00764">764</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
