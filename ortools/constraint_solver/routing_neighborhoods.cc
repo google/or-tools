@@ -173,30 +173,53 @@ MakePairInactiveOperator::MakePairInactiveOperator(
     const RoutingIndexPairs& index_pairs)
     : PathWithPreviousNodesOperator(vars, secondary_vars, 1,
                                     std::move(start_empty_path_class)) {
-  int64 max_pair_index = -1;
-  for (const auto& index_pair : index_pairs) {
-    max_pair_index = std::max(max_pair_index, index_pair.first[0]);
-    max_pair_index = std::max(max_pair_index, index_pair.second[0]);
+  int size = 0;
+  for (auto& index_pair : index_pairs) {
+    size = size + index_pair.first.size() + index_pair.second.size();
   }
-  pairs_.resize(max_pair_index + 1, -1);
-  // TODO(user): Support pairs with disjunctions.
-  for (const auto& index_pair : index_pairs) {
-    pairs_[index_pair.first[0]] = index_pair.second[0];
-    pairs_[index_pair.second[0]] = index_pair.first[0];
+  pairs_.reserve(size);
+  for (int i = 0; i < index_pairs.size(); ++i) {
+    const RoutingIndexPair* index_pair = &index_pairs[i];
+    for (const auto index : index_pair->first) {
+      pairs_[index] = &(index_pair->second);
+    }
   }
 }
 
 bool MakePairInactiveOperator::MakeNeighbor() {
   const int64 base = BaseNode(0);
+
   if (IsPathEnd(base)) {
     return false;
   }
-  const int64 next = Next(base);
-  if (next < pairs_.size() && pairs_[next] != -1) {
-    return MakeChainInactive(Prev(pairs_[next]), pairs_[next]) &&
-           MakeChainInactive(base, next);
+
+  const int64 first_index = Next(base);
+
+  // Assume first has to happen before second
+  if (IsPathEnd(first_index) || !pairs_.contains(first_index)) {
+    return false;
   }
-  return false;
+
+  const auto second_indicies = *pairs_[first_index];
+  
+  int64 second_index = -1;
+  for (const auto& index : second_indicies) {
+    if (!IsInactive(index)) {
+      second_index = index;
+      break;
+    }
+  }
+
+  if (second_index == -1) {
+    return false;
+  }
+  
+  if (Next(first_index) == second_index) {
+    return MakeChainInactive(base, second_index);
+  }
+
+  return MakeChainInactive(base, first_index) && 
+         MakeChainInactive(Prev(second_index), second_index);  
 }
 
 PairRelocateOperator::PairRelocateOperator(

@@ -146,7 +146,7 @@ class MakePairInactiveOperator : public PathWithPreviousNodesOperator {
   std::string DebugString() const override { return "MakePairInActive"; }
 
  private:
-  std::vector<int> pairs_;
+  absl::flat_hash_map<int64, const std::vector<int64>*> pairs_;
 };
 
 /// Operator which moves a pair of nodes to another position where the first
