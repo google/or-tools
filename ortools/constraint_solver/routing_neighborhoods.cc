@@ -98,17 +98,38 @@ MakePairActiveOperator::MakePairActiveOperator(
     : PathOperator(vars, secondary_vars, 2, false,
                    std::move(start_empty_path_class)),
       inactive_pair_(0),
+      pickup_disjunction_index_(0),
+      delivery_disjunction_index_(0),
       pairs_(pairs) {}
 
-bool MakePairActiveOperator::MakeNextNeighbor(Assignment* delta,
-                                              Assignment* deltadelta) {
-  // TODO(user): Support pairs with disjunctions.
+int MakePairActiveOperator::FindNextPair(int start_pair_index) {
+  bool all_inactive = false;
+  for (;!all_inactive && start_pair_index < pairs_.size(); ++start_pair_index) {
+    all_inactive = true;
+    for (auto index : pairs_[start_pair_index].first) {
+      all_inactive = all_inactive && IsInactive(index);
+    }
+    for (auto index : pairs_[start_pair_index].second) {
+      all_inactive = all_inactive && IsInactive(index);
+    }
+  }
+  return start_pair_index;
+}
+
+bool MakePairActiveOperator::MakeOneNeighbor() {
   while (inactive_pair_ < pairs_.size()) {
-    if (!IsInactive(pairs_[inactive_pair_].first[0]) ||
-        !IsInactive(pairs_[inactive_pair_].second[0]) ||
-        !PathOperator::MakeNextNeighbor(delta, deltadelta)) {
+    if (!PathOperator::MakeOneNeighbor()) {
       ResetPosition();
-      ++inactive_pair_;
+      if (pickup_disjunction_index_ < pairs_[inactive_pair_].first.size() - 1) {
+        ++pickup_disjunction_index_;
+      } else if (delivery_disjunction_index_ < pairs_[inactive_pair_].second.size() - 1) {
+        pickup_disjunction_index_ = 0;
+        ++delivery_disjunction_index_;
+      } else {
+        inactive_pair_ = MakePairActiveOperator::FindNextPair(inactive_pair_ + 1);
+        pickup_disjunction_index_ = 0;
+        delivery_disjunction_index_ = 0;
+      }
     } else {
       return true;
     }
@@ -118,13 +139,16 @@ bool MakePairActiveOperator::MakeNextNeighbor(Assignment* delta,
 
 bool MakePairActiveOperator::MakeNeighbor() {
   DCHECK_EQ(StartNode(0), StartNode(1));
+  if (IsPathEnd(BaseNode(0)) || IsPathEnd(BaseNode(1))) {
+    return false;
+  }
   // Inserting the second node of the pair before the first one which ensures
   // that the only solutions where both nodes are next to each other have the
   // first node before the second (the move is not symmetric and doing it this
   // way ensures that a potential precedence constraint between the nodes of the
   // pair is not violated).
-  return MakeActive(pairs_[inactive_pair_].second[0], BaseNode(1)) &&
-         MakeActive(pairs_[inactive_pair_].first[0], BaseNode(0));
+  return MakeActive(pairs_[inactive_pair_].second[delivery_disjunction_index_], BaseNode(1)) && 
+         MakeActive(pairs_[inactive_pair_].first[pickup_disjunction_index_], BaseNode(0));
 }
 
 int64 MakePairActiveOperator::GetBaseNodeRestartPosition(int base_index) {
@@ -137,13 +161,9 @@ int64 MakePairActiveOperator::GetBaseNodeRestartPosition(int base_index) {
 }
 
 void MakePairActiveOperator::OnNodeInitialization() {
-  for (int i = 0; i < pairs_.size(); ++i) {
-    if (IsInactive(pairs_[i].first[0]) && IsInactive(pairs_[i].second[0])) {
-      inactive_pair_ = i;
-      return;
-    }
-  }
-  inactive_pair_ = pairs_.size();
+  inactive_pair_ = MakePairActiveOperator::FindNextPair(0);
+  pickup_disjunction_index_ = 0;
+  delivery_disjunction_index_ = 0;
 }
 
 MakePairInactiveOperator::MakePairInactiveOperator(

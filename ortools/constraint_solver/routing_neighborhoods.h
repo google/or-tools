@@ -105,11 +105,12 @@ class MakePairActiveOperator : public PathOperator {
                          std::function<int(int64)> start_empty_path_class,
                          const RoutingIndexPairs& pairs);
   ~MakePairActiveOperator() override {}
-  bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
   bool MakeNeighbor() override;
   std::string DebugString() const override { return "MakePairActive"; }
 
  protected:
+  bool MakeOneNeighbor() override;
+
   bool OnSamePathAsPreviousBase(int64 base_index) override {
     /// Both base nodes have to be on the same path since they represent the
     /// nodes after which unactive node pairs will be moved.
@@ -125,7 +126,11 @@ class MakePairActiveOperator : public PathOperator {
  private:
   void OnNodeInitialization() override;
 
+  int FindNextPair(int start_pair_index);
+
   int inactive_pair_;
+  int pickup_disjunction_index_;
+  int delivery_disjunction_index_;
   RoutingIndexPairs pairs_;
 };
 
