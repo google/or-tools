@@ -26,19 +26,23 @@
       <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="hierarchy.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="namespaceoperations__research.html">operations_research</a></li><li class="navelem"><a class="el" href="classoperations__research_1_1PathWithPreviousNodesOperator.html">PathWithPreviousNodesOperator</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classoperations__research_1_1PathWithPreviousNodesOperator.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
@@ -49,34 +53,11 @@
 <div class="title">operations_research::PathWithPreviousNodesOperator Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
 </div><!--header-->
 <div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Simple <a class="el" href="classoperations__research_1_1PathOperator.html" title="Base class of the local search operators dedicated to path modifications (a path is a set of nodes li...">PathOperator</a> wrapper that also stores the current previous nodes, and is thus able to provide the "Prev" and "IsPathStart" functions. </p>
 
-<p>Simple <a class="el" href="classoperations__research_1_1PathOperator.html" title="Base class of the local search operators dedicated to path modifications (a path is a set of nodes li...">PathOperator</a> wrapper that also stores the current previous nodes, and is thus able to provide the "Prev" and "IsPathStart" functions.  
- <a href="classoperations__research_1_1PathWithPreviousNodesOperator.html#details">More...</a></p>
-
-<p><code>#include &lt;<a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>&gt;</code></p>
-<div class="dynheader">
-Inheritance diagram for operations_research::PathWithPreviousNodesOperator:</div>
-<div class="dyncontent">
- <div class="center">
-  <img src="classoperations__research_1_1PathWithPreviousNodesOperator.png" usemap="#operations_5Fresearch::PathWithPreviousNodesOperator_map" alt=""/>
-  <map id="operations_5Fresearch::PathWithPreviousNodesOperator_map" name="operations_5Fresearch::PathWithPreviousNodesOperator_map">
-<area href="classoperations__research_1_1PathOperator.html" title="Base class of the local search operators dedicated to path modifications (a path is a set of nodes li..." alt="operations_research::PathOperator" shape="rect" coords="0,224,533,248"/>
-<area href="classoperations__research_1_1IntVarLocalSearchOperator.html" title="Specialization of LocalSearchOperator built from an array of IntVars which specifies the scope of the..." alt="operations_research::IntVarLocalSearchOperator" shape="rect" coords="0,168,533,192"/>
-<area href="classoperations__research_1_1VarLocalSearchOperator.html" alt="operations_research::VarLocalSearchOperator&lt; IntVar, int64, IntVarLocalSearchHandler &gt;" shape="rect" coords="0,112,533,136"/>
-<area href="classoperations__research_1_1LocalSearchOperator.html" title="The base class for all local search operators." alt="operations_research::LocalSearchOperator" shape="rect" coords="0,56,533,80"/>
-<area href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="operations_research::BaseObject" shape="rect" coords="0,0,533,24"/>
-<area href="classoperations__research_1_1ExchangeSubtrip.html" alt="operations_research::ExchangeSubtrip" shape="rect" coords="543,336,1076,360"/>
-<area href="classoperations__research_1_1IndexPairSwapActiveOperator.html" title="Operator which inserts inactive nodes into a path and makes a pair of active nodes inactive." alt="operations_research::IndexPairSwapActiveOperator" shape="rect" coords="543,392,1076,416"/>
-<area href="classoperations__research_1_1LightPairRelocateOperator.html" alt="operations_research::LightPairRelocateOperator" shape="rect" coords="543,448,1076,472"/>
-<area href="classoperations__research_1_1MakePairInactiveOperator.html" title="Operator which makes pairs of active nodes inactive." alt="operations_research::MakePairInactiveOperator" shape="rect" coords="543,504,1076,528"/>
-<area href="classoperations__research_1_1MakeRelocateNeighborsOperator.html" title="Relocate neighborhood which moves chains of neighbors." alt="operations_research::MakeRelocateNeighborsOperator" shape="rect" coords="543,560,1076,584"/>
-<area href="classoperations__research_1_1PairExchangeOperator.html" title="Operator which exchanges the position of two pairs; for both pairs the first node of the pair must be..." alt="operations_research::PairExchangeOperator" shape="rect" coords="543,616,1076,640"/>
-<area href="classoperations__research_1_1PairExchangeRelocateOperator.html" title="Operator which exchanges the paths of two pairs (path have to be different)." alt="operations_research::PairExchangeRelocateOperator" shape="rect" coords="543,672,1076,696"/>
-<area href="classoperations__research_1_1PairRelocateOperator.html" title="Operator which moves a pair of nodes to another position where the first node of the pair must be bef..." alt="operations_research::PairRelocateOperator" shape="rect" coords="543,728,1076,752"/>
-<area href="classoperations__research_1_1RelocateSubtrip.html" title="Tries to move subtrips after an insertion node." alt="operations_research::RelocateSubtrip" shape="rect" coords="543,784,1076,808"/>
-  </map>
-</div></div>
-<table class="memberdecls">
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01442">1442</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a6adb77fcc1b9b42ec22def88f061aae5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1PathWithPreviousNodesOperator.html#a6adb77fcc1b9b42ec22def88f061aae5">PathWithPreviousNodesOperator</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;vars, const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;secondary_vars, int number_of_base_nodes, std::function&lt; int(int64)&gt; start_empty_path_class)</td></tr>
@@ -243,11 +224,7 @@ Protected Attributes</h2></td></tr>
 <tr class="memitem:a79bf2242dc1962d10e6b04cf09be2c56"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1IntVarLocalSearchHandler.html">IntVarLocalSearchHandler</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1VarLocalSearchOperator.html#a79bf2242dc1962d10e6b04cf09be2c56">var_handler_</a></td></tr>
 <tr class="separator:a79bf2242dc1962d10e6b04cf09be2c56"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Simple <a class="el" href="classoperations__research_1_1PathOperator.html" title="Base class of the local search operators dedicated to path modifications (a path is a set of nodes li...">PathOperator</a> wrapper that also stores the current previous nodes, and is thus able to provide the "Prev" and "IsPathStart" functions. </p>
-
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01442">1442</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a6adb77fcc1b9b42ec22def88f061aae5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6adb77fcc1b9b42ec22def88f061aae5">&#9670;&nbsp;</a></span>PathWithPreviousNodesOperator()</h2>
 
@@ -2202,6 +2179,7 @@ Protected Attributes</h2></td></tr>
 <li><a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

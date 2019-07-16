@@ -1,7 +1,0 @@
-<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classutil_1_1BaseGraph.html" title=" " alt="" coords="5,100,195,139"/>
-<area shape="rect" id="node2" href="$classutil_1_1CompleteBipartiteGraph.html" title="CompleteBipartiteGraph implementation &#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;— Nodes and arcs are implic..." alt="" coords="243,5,468,44"/>
-<area shape="rect" id="node3" href="$classutil_1_1CompleteGraph.html" title="CompleteGraph implementation &#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;— Nodes and arcs are implic..." alt="" coords="243,68,468,107"/>
-<area shape="rect" id="node4" href="$classutil_1_1ListGraph.html" title="Basic graph implementation without reverse arc." alt="" coords="266,131,445,169"/>
-<area shape="rect" id="node5" href="$classutil_1_1StaticGraph.html" title="Most efficient implementation of a graph without reverse arcs:" alt="" coords="246,193,465,232"/>
-</map>

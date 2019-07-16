@@ -1,5 +1,0 @@
-<map id="operations_research::Assignment" name="operations_research::Assignment">
-<area shape="rect" id="node1" title="&#45;&#45;— Assignment &#45;&#45;—" alt="" coords="19,179,162,217"/>
-<area shape="rect" id="node2" href="$classoperations__research_1_1PropagationBaseObject.html" title="The PropagationBaseObject is a subclass of BaseObject that is also friend to the Solver class." alt="" coords="5,92,175,131"/>
-<area shape="rect" id="node3" href="$classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="" coords="19,5,162,44"/>
-</map>

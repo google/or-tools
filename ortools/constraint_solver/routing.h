@@ -364,6 +364,7 @@ class RoutingModel {
 
   /// Registers 'callback' and returns its index.
   int RegisterUnaryTransitCallback(TransitCallback1 callback);
+  int RegisterPositiveUnaryTransitCallback(TransitCallback1 callback);
   int RegisterTransitCallback(TransitCallback2 callback);
   int RegisterPositiveTransitCallback(TransitCallback2 callback);
   int RegisterStateDependentTransitCallback(VariableIndexEvaluator2 callback);
@@ -2062,6 +2063,14 @@ class RoutingDimension {
   /// for a given vehicle.
   const RoutingModel::TransitCallback2& transit_evaluator(int vehicle) const {
     return model_->TransitCallback(
+        class_evaluators_[vehicle_to_class_[vehicle]]);
+  }
+  /// Returns the unary callback evaluating the transit value between two node
+  /// indices for a given vehicle. If the corresponding callback is not unary,
+  /// returns a null callback.
+  const RoutingModel::TransitCallback1& GetUnaryTransitEvaluator(
+      int vehicle) const {
+    return model_->UnaryTransitCallbackOrNull(
         class_evaluators_[vehicle_to_class_[vehicle]]);
   }
   /// Returns true iff the transit evaluator of 'vehicle' is positive for all

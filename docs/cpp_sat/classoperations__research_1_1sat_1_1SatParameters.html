@@ -27,19 +27,23 @@
       <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="inherits.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="namespaceoperations__research.html">operations_research</a></li><li class="navelem"><a class="el" href="namespaceoperations__research_1_1sat.html">sat</a></li><li class="navelem"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html">SatParameters</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classoperations__research_1_1sat_1_1SatParameters.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
@@ -53,27 +57,10 @@
 <div class="title">operations_research::sat::SatParameters Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-
-<p><code>#include &lt;<a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>&gt;</code></p>
-<div class="dynheader">
-Inheritance diagram for operations_research::sat::SatParameters:</div>
-<div class="dyncontent">
-<div class="center"><img src="classoperations__research_1_1sat_1_1SatParameters__inherit__graph.png" border="0" usemap="#operations__research_1_1sat_1_1SatParameters_inherit__map" alt="Inheritance graph"/></div>
-<map name="operations__research_1_1sat_1_1SatParameters_inherit__map" id="operations__research_1_1sat_1_1SatParameters_inherit__map">
-<area shape="rect"  title=" " alt="" coords="5,79,148,117"/>
-<area shape="rect"  title=" " alt="" coords="39,5,114,31"/>
-</map>
-<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
-<div class="dynheader">
-Collaboration diagram for operations_research::sat::SatParameters:</div>
-<div class="dyncontent">
-<div class="center"><img src="classoperations__research_1_1sat_1_1SatParameters__coll__graph.png" border="0" usemap="#operations__research_1_1sat_1_1SatParameters_coll__map" alt="Collaboration graph"/></div>
-<map name="operations__research_1_1sat_1_1SatParameters_coll__map" id="operations__research_1_1sat_1_1SatParameters_coll__map">
-<area shape="rect"  title=" " alt="" coords="5,79,148,117"/>
-<area shape="rect"  title=" " alt="" coords="39,5,114,31"/>
-</map>
-<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
-<table class="memberdecls">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock">
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l00324">324</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
 <tr class="memitem:a57f2442d6b42157926aeacfac88ef7b5"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="namespaceoperations__research_1_1sat.html#a299d9cbf6a19e8aa8294c01b02d59aa7">SatParameters_VariableOrder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a57f2442d6b42157926aeacfac88ef7b5">VariableOrder</a></td></tr>
@@ -435,15 +422,6 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a043ad75614acafc414ffd4947fafaa34"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6d2f4faa402690f8463b8f25657bf5c0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a6d2f4faa402690f8463b8f25657bf5c0">set_min_orthogonality_for_lp_constraints</a> (double value)</td></tr>
 <tr class="separator:a6d2f4faa402690f8463b8f25657bf5c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0fac786be2bdbb5d93781523b3f4ce64"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a0fac786be2bdbb5d93781523b3f4ce64">has_use_combined_no_overlap</a> () const</td></tr>
-<tr class="memdesc:a0fac786be2bdbb5d93781523b3f4ce64"><td class="mdescLeft">&#160;</td><td class="mdescRight">optional bool use_combined_no_overlap = 133 [default = false];  <a href="#a0fac786be2bdbb5d93781523b3f4ce64">More...</a><br /></td></tr>
-<tr class="separator:a0fac786be2bdbb5d93781523b3f4ce64"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ade4963c7a1a6d8c0b7ecc20ce142a94e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#ade4963c7a1a6d8c0b7ecc20ce142a94e">clear_use_combined_no_overlap</a> ()</td></tr>
-<tr class="separator:ade4963c7a1a6d8c0b7ecc20ce142a94e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3fc6d6586318ccabe142e90b27d97507"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a3fc6d6586318ccabe142e90b27d97507">use_combined_no_overlap</a> () const</td></tr>
-<tr class="separator:a3fc6d6586318ccabe142e90b27d97507"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac3327bb59d47a20656eed1666e84d4c1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#ac3327bb59d47a20656eed1666e84d4c1">set_use_combined_no_overlap</a> (bool value)</td></tr>
-<tr class="separator:ac3327bb59d47a20656eed1666e84d4c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab918690648f23e16d9563d91729f8272"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#ab918690648f23e16d9563d91729f8272">has_use_lns_only</a> () const</td></tr>
 <tr class="memdesc:ab918690648f23e16d9563d91729f8272"><td class="mdescLeft">&#160;</td><td class="mdescRight">optional bool use_lns_only = 101 [default = false];  <a href="#ab918690648f23e16d9563d91729f8272">More...</a><br /></td></tr>
 <tr class="separator:ab918690648f23e16d9563d91729f8272"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -462,15 +440,6 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a5b3eedeae3778d2f47b5e658e5894736"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4e65354c4d93976325d953e366718d17"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a4e65354c4d93976325d953e366718d17">set_lns_focus_on_decision_variables</a> (bool value)</td></tr>
 <tr class="separator:a4e65354c4d93976325d953e366718d17"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afe58ed279e3d20a901d37511a3f909e7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#afe58ed279e3d20a901d37511a3f909e7">has_use_rins_lns</a> () const</td></tr>
-<tr class="memdesc:afe58ed279e3d20a901d37511a3f909e7"><td class="mdescLeft">&#160;</td><td class="mdescRight">optional bool use_rins_lns = 129 [default = false];  <a href="#afe58ed279e3d20a901d37511a3f909e7">More...</a><br /></td></tr>
-<tr class="separator:afe58ed279e3d20a901d37511a3f909e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af08e4ab996af1aa521993c004738bf4c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#af08e4ab996af1aa521993c004738bf4c">clear_use_rins_lns</a> ()</td></tr>
-<tr class="separator:af08e4ab996af1aa521993c004738bf4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4ff91e7794cb0ea0407949ddaa4f258d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a4ff91e7794cb0ea0407949ddaa4f258d">use_rins_lns</a> () const</td></tr>
-<tr class="separator:a4ff91e7794cb0ea0407949ddaa4f258d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af476cc00b893ebfeb5ab7e6d69e2ac92"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#af476cc00b893ebfeb5ab7e6d69e2ac92">set_use_rins_lns</a> (bool value)</td></tr>
-<tr class="separator:af476cc00b893ebfeb5ab7e6d69e2ac92"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac10d3776f2e92ffa9fde04a56ae06145"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#ac10d3776f2e92ffa9fde04a56ae06145">has_randomize_search</a> () const</td></tr>
 <tr class="memdesc:ac10d3776f2e92ffa9fde04a56ae06145"><td class="mdescLeft">&#160;</td><td class="mdescRight">optional bool randomize_search = 103 [default = false];  <a href="#ac10d3776f2e92ffa9fde04a56ae06145">More...</a><br /></td></tr>
 <tr class="separator:ac10d3776f2e92ffa9fde04a56ae06145"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -480,6 +449,15 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aaecf2ed3801a14f4ef2aa8fa418eb8c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeec72bea45ed9de54d9fc17cb511b8f7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#aeec72bea45ed9de54d9fc17cb511b8f7">set_randomize_search</a> (bool value)</td></tr>
 <tr class="separator:aeec72bea45ed9de54d9fc17cb511b8f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0fac786be2bdbb5d93781523b3f4ce64"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a0fac786be2bdbb5d93781523b3f4ce64">has_use_combined_no_overlap</a> () const</td></tr>
+<tr class="memdesc:a0fac786be2bdbb5d93781523b3f4ce64"><td class="mdescLeft">&#160;</td><td class="mdescRight">optional bool use_combined_no_overlap = 133 [default = false];  <a href="#a0fac786be2bdbb5d93781523b3f4ce64">More...</a><br /></td></tr>
+<tr class="separator:a0fac786be2bdbb5d93781523b3f4ce64"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade4963c7a1a6d8c0b7ecc20ce142a94e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#ade4963c7a1a6d8c0b7ecc20ce142a94e">clear_use_combined_no_overlap</a> ()</td></tr>
+<tr class="separator:ade4963c7a1a6d8c0b7ecc20ce142a94e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3fc6d6586318ccabe142e90b27d97507"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a3fc6d6586318ccabe142e90b27d97507">use_combined_no_overlap</a> () const</td></tr>
+<tr class="separator:a3fc6d6586318ccabe142e90b27d97507"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac3327bb59d47a20656eed1666e84d4c1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#ac3327bb59d47a20656eed1666e84d4c1">set_use_combined_no_overlap</a> (bool value)</td></tr>
+<tr class="separator:ac3327bb59d47a20656eed1666e84d4c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a358af413cfd511dee33a72a78e05c2d3"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a358af413cfd511dee33a72a78e05c2d3">has_fill_tightened_domains_in_response</a> () const</td></tr>
 <tr class="memdesc:a358af413cfd511dee33a72a78e05c2d3"><td class="mdescLeft">&#160;</td><td class="mdescRight">optional bool fill_tightened_domains_in_response = 132 [default = false];  <a href="#a358af413cfd511dee33a72a78e05c2d3">More...</a><br /></td></tr>
 <tr class="separator:a358af413cfd511dee33a72a78e05c2d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -922,7 +900,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a479d7f837928fb1d3109cda96a5ace3b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a479d7f837928fb1d3109cda96a5ace3b">set_linearization_level</a> (::PROTOBUF_NAMESPACE_ID::int32 value)</td></tr>
 <tr class="separator:a479d7f837928fb1d3109cda96a5ace3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1c3c67c4f76c82ea561567f09cc8c589"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a1c3c67c4f76c82ea561567f09cc8c589">has_max_num_cuts</a> () const</td></tr>
-<tr class="memdesc:a1c3c67c4f76c82ea561567f09cc8c589"><td class="mdescLeft">&#160;</td><td class="mdescRight">optional int32 max_num_cuts = 91 [default = 1000];  <a href="#a1c3c67c4f76c82ea561567f09cc8c589">More...</a><br /></td></tr>
+<tr class="memdesc:a1c3c67c4f76c82ea561567f09cc8c589"><td class="mdescLeft">&#160;</td><td class="mdescRight">optional int32 max_num_cuts = 91 [default = 5000];  <a href="#a1c3c67c4f76c82ea561567f09cc8c589">More...</a><br /></td></tr>
 <tr class="separator:a1c3c67c4f76c82ea561567f09cc8c589"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a331deb162d70ca1793393c9931da0274"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a331deb162d70ca1793393c9931da0274">clear_max_num_cuts</a> ()</td></tr>
 <tr class="separator:a331deb162d70ca1793393c9931da0274"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1092,6 +1070,24 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a7735e6e231740c615486fd50300c4292"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b0175b0d535952628e64fd8a17df1de"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a8b0175b0d535952628e64fd8a17df1de">set_exploit_integer_lp_solution</a> (bool value)</td></tr>
 <tr class="separator:a8b0175b0d535952628e64fd8a17df1de"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7afb62ad9e9d6be5a26d00b383affd49"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a7afb62ad9e9d6be5a26d00b383affd49">has_max_integer_rounding_scaling</a> () const</td></tr>
+<tr class="memdesc:a7afb62ad9e9d6be5a26d00b383affd49"><td class="mdescLeft">&#160;</td><td class="mdescRight">optional int32 max_integer_rounding_scaling = 119 [default = 600];  <a href="#a7afb62ad9e9d6be5a26d00b383affd49">More...</a><br /></td></tr>
+<tr class="separator:a7afb62ad9e9d6be5a26d00b383affd49"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2d19d28ab90f0193d49b6d9dadf3b2da"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a2d19d28ab90f0193d49b6d9dadf3b2da">clear_max_integer_rounding_scaling</a> ()</td></tr>
+<tr class="separator:a2d19d28ab90f0193d49b6d9dadf3b2da"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3aee2d5ca527b9b127fea3bcdc4d7fc7"><td class="memItemLeft" align="right" valign="top">::PROTOBUF_NAMESPACE_ID::int32&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a3aee2d5ca527b9b127fea3bcdc4d7fc7">max_integer_rounding_scaling</a> () const</td></tr>
+<tr class="separator:a3aee2d5ca527b9b127fea3bcdc4d7fc7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a62c7db88ac0975d6ccb2adf297cdc175"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a62c7db88ac0975d6ccb2adf297cdc175">set_max_integer_rounding_scaling</a> (::PROTOBUF_NAMESPACE_ID::int32 value)</td></tr>
+<tr class="separator:a62c7db88ac0975d6ccb2adf297cdc175"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afe58ed279e3d20a901d37511a3f909e7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#afe58ed279e3d20a901d37511a3f909e7">has_use_rins_lns</a> () const</td></tr>
+<tr class="memdesc:afe58ed279e3d20a901d37511a3f909e7"><td class="mdescLeft">&#160;</td><td class="mdescRight">optional bool use_rins_lns = 129 [default = true];  <a href="#afe58ed279e3d20a901d37511a3f909e7">More...</a><br /></td></tr>
+<tr class="separator:afe58ed279e3d20a901d37511a3f909e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af08e4ab996af1aa521993c004738bf4c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#af08e4ab996af1aa521993c004738bf4c">clear_use_rins_lns</a> ()</td></tr>
+<tr class="separator:af08e4ab996af1aa521993c004738bf4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4ff91e7794cb0ea0407949ddaa4f258d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a4ff91e7794cb0ea0407949ddaa4f258d">use_rins_lns</a> () const</td></tr>
+<tr class="separator:a4ff91e7794cb0ea0407949ddaa4f258d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af476cc00b893ebfeb5ab7e6d69e2ac92"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#af476cc00b893ebfeb5ab7e6d69e2ac92">set_use_rins_lns</a> (bool value)</td></tr>
+<tr class="separator:af476cc00b893ebfeb5ab7e6d69e2ac92"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7f895da906479be37a0fa925c65a919e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a7f895da906479be37a0fa925c65a919e">has_use_optional_variables</a> () const</td></tr>
 <tr class="memdesc:a7f895da906479be37a0fa925c65a919e"><td class="mdescLeft">&#160;</td><td class="mdescRight">optional bool use_optional_variables = 108 [default = true];  <a href="#a7f895da906479be37a0fa925c65a919e">More...</a><br /></td></tr>
 <tr class="separator:a7f895da906479be37a0fa925c65a919e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1119,15 +1115,6 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a4ee5ea9c6e259a325c6f58003eb2b36e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a15b841f95072176fb4996916efb06cda"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a15b841f95072176fb4996916efb06cda">set_catch_sigint_signal</a> (bool value)</td></tr>
 <tr class="separator:a15b841f95072176fb4996916efb06cda"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7afb62ad9e9d6be5a26d00b383affd49"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a7afb62ad9e9d6be5a26d00b383affd49">has_max_integer_rounding_scaling</a> () const</td></tr>
-<tr class="memdesc:a7afb62ad9e9d6be5a26d00b383affd49"><td class="mdescLeft">&#160;</td><td class="mdescRight">optional int32 max_integer_rounding_scaling = 119 [default = 600];  <a href="#a7afb62ad9e9d6be5a26d00b383affd49">More...</a><br /></td></tr>
-<tr class="separator:a7afb62ad9e9d6be5a26d00b383affd49"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2d19d28ab90f0193d49b6d9dadf3b2da"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a2d19d28ab90f0193d49b6d9dadf3b2da">clear_max_integer_rounding_scaling</a> ()</td></tr>
-<tr class="separator:a2d19d28ab90f0193d49b6d9dadf3b2da"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3aee2d5ca527b9b127fea3bcdc4d7fc7"><td class="memItemLeft" align="right" valign="top">::PROTOBUF_NAMESPACE_ID::int32&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a3aee2d5ca527b9b127fea3bcdc4d7fc7">max_integer_rounding_scaling</a> () const</td></tr>
-<tr class="separator:a3aee2d5ca527b9b127fea3bcdc4d7fc7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a62c7db88ac0975d6ccb2adf297cdc175"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a62c7db88ac0975d6ccb2adf297cdc175">set_max_integer_rounding_scaling</a> (::PROTOBUF_NAMESPACE_ID::int32 value)</td></tr>
-<tr class="separator:a62c7db88ac0975d6ccb2adf297cdc175"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7e28ac8ff60b0c553bc068f9c97a5833"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a7e28ac8ff60b0c553bc068f9c97a5833">has_max_inactive_count</a> () const</td></tr>
 <tr class="memdesc:a7e28ac8ff60b0c553bc068f9c97a5833"><td class="mdescLeft">&#160;</td><td class="mdescRight">optional int64 max_inactive_count = 121 [default = 1000];  <a href="#a7e28ac8ff60b0c553bc068f9c97a5833">More...</a><br /></td></tr>
 <tr class="separator:a7e28ac8ff60b0c553bc068f9c97a5833"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1506,16 +1493,14 @@ Static Public Attributes</h2></td></tr>
 <tr class="separator:a69a80db1e62d7f5d68c64594af003633"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a82c16fd139d1d22bc3e3e128a0b6367e"><td class="memItemLeft" align="right" valign="top">static const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a82c16fd139d1d22bc3e3e128a0b6367e">kMinOrthogonalityForLpConstraintsFieldNumber</a> = 115</td></tr>
 <tr class="separator:a82c16fd139d1d22bc3e3e128a0b6367e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0fce1691547c5fac1bad1e5247a0ec08"><td class="memItemLeft" align="right" valign="top">static const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a0fce1691547c5fac1bad1e5247a0ec08">kUseCombinedNoOverlapFieldNumber</a> = 133</td></tr>
-<tr class="separator:a0fce1691547c5fac1bad1e5247a0ec08"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b7db13a78d8770898ab371ff1f67147"><td class="memItemLeft" align="right" valign="top">static const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a8b7db13a78d8770898ab371ff1f67147">kUseLnsOnlyFieldNumber</a> = 101</td></tr>
 <tr class="separator:a8b7db13a78d8770898ab371ff1f67147"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a28b7f6e706775e4aca56efa199f24895"><td class="memItemLeft" align="right" valign="top">static const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a28b7f6e706775e4aca56efa199f24895">kLnsFocusOnDecisionVariablesFieldNumber</a> = 105</td></tr>
 <tr class="separator:a28b7f6e706775e4aca56efa199f24895"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a23df77ed9b4c43561c0b77d774186703"><td class="memItemLeft" align="right" valign="top">static const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a23df77ed9b4c43561c0b77d774186703">kUseRinsLnsFieldNumber</a> = 129</td></tr>
-<tr class="separator:a23df77ed9b4c43561c0b77d774186703"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1c5b8a718fe62e6426ee9d44207ed459"><td class="memItemLeft" align="right" valign="top">static const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a1c5b8a718fe62e6426ee9d44207ed459">kRandomizeSearchFieldNumber</a> = 103</td></tr>
 <tr class="separator:a1c5b8a718fe62e6426ee9d44207ed459"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0fce1691547c5fac1bad1e5247a0ec08"><td class="memItemLeft" align="right" valign="top">static const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a0fce1691547c5fac1bad1e5247a0ec08">kUseCombinedNoOverlapFieldNumber</a> = 133</td></tr>
+<tr class="separator:a0fce1691547c5fac1bad1e5247a0ec08"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abfd68ddad1aeee5fb1a9a7998d673067"><td class="memItemLeft" align="right" valign="top">static const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#abfd68ddad1aeee5fb1a9a7998d673067">kFillTightenedDomainsInResponseFieldNumber</a> = 132</td></tr>
 <tr class="separator:abfd68ddad1aeee5fb1a9a7998d673067"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8cfe5215106bf66580e10df762d8df14"><td class="memItemLeft" align="right" valign="top">static const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a8cfe5215106bf66580e10df762d8df14">kStopAfterFirstSolutionFieldNumber</a> = 98</td></tr>
@@ -1652,14 +1637,16 @@ Static Public Attributes</h2></td></tr>
 <tr class="separator:a216226e11c16f5aaf91b743a9498d75d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a890e3e04001aab3224a754f07592ec9f"><td class="memItemLeft" align="right" valign="top">static const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a890e3e04001aab3224a754f07592ec9f">kExploitIntegerLpSolutionFieldNumber</a> = 94</td></tr>
 <tr class="separator:a890e3e04001aab3224a754f07592ec9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2bf7fbe9acaffe79c4300ec8f3ae2162"><td class="memItemLeft" align="right" valign="top">static const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a2bf7fbe9acaffe79c4300ec8f3ae2162">kMaxIntegerRoundingScalingFieldNumber</a> = 119</td></tr>
+<tr class="separator:a2bf7fbe9acaffe79c4300ec8f3ae2162"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a23df77ed9b4c43561c0b77d774186703"><td class="memItemLeft" align="right" valign="top">static const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a23df77ed9b4c43561c0b77d774186703">kUseRinsLnsFieldNumber</a> = 129</td></tr>
+<tr class="separator:a23df77ed9b4c43561c0b77d774186703"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab235b1dadc66cfdcc2028440e484fff4"><td class="memItemLeft" align="right" valign="top">static const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#ab235b1dadc66cfdcc2028440e484fff4">kUseOptionalVariablesFieldNumber</a> = 108</td></tr>
 <tr class="separator:ab235b1dadc66cfdcc2028440e484fff4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac7683b3a2936667b0717e99694dfab20"><td class="memItemLeft" align="right" valign="top">static const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#ac7683b3a2936667b0717e99694dfab20">kUseExactLpReasonFieldNumber</a> = 109</td></tr>
 <tr class="separator:ac7683b3a2936667b0717e99694dfab20"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a970da03f7dabd7898f2e4abbe218e8f4"><td class="memItemLeft" align="right" valign="top">static const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a970da03f7dabd7898f2e4abbe218e8f4">kCatchSigintSignalFieldNumber</a> = 135</td></tr>
 <tr class="separator:a970da03f7dabd7898f2e4abbe218e8f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2bf7fbe9acaffe79c4300ec8f3ae2162"><td class="memItemLeft" align="right" valign="top">static const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a2bf7fbe9acaffe79c4300ec8f3ae2162">kMaxIntegerRoundingScalingFieldNumber</a> = 119</td></tr>
-<tr class="separator:a2bf7fbe9acaffe79c4300ec8f3ae2162"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a32bffbc55e2a874adc8c1280963dff20"><td class="memItemLeft" align="right" valign="top">static const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a32bffbc55e2a874adc8c1280963dff20">kMaxInactiveCountFieldNumber</a> = 121</td></tr>
 <tr class="separator:a32bffbc55e2a874adc8c1280963dff20"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af1ce6e04c2532019f78de4d6d03235a1"><td class="memItemLeft" align="right" valign="top">static const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#af1ce6e04c2532019f78de4d6d03235a1">kConstraintRemovalBatchSizeFieldNumber</a> = 122</td></tr>
@@ -1684,10 +1671,7 @@ Friends</h2></td></tr>
 <tr class="memitem:a0e1f473202adcb674fa3c816fdd7c707"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html#a0e1f473202adcb674fa3c816fdd7c707">swap</a> (<a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html">SatParameters</a> &amp;a, <a class="el" href="classoperations__research_1_1sat_1_1SatParameters.html">SatParameters</a> &amp;b)</td></tr>
 <tr class="separator:a0e1f473202adcb674fa3c816fdd7c707"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l00324">324</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
-</div><h2 class="groupheader">Member Typedef Documentation</h2>
+<h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a3935f8c53db1e05ff6a813d9636b3232"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3935f8c53db1e05ff6a813d9636b3232">&#9670;&nbsp;</a></span>BinaryMinizationAlgorithm</h2>
 
@@ -8214,7 +8198,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>optional int32 max_num_cuts = 91 [default = 1000]; </p>
+<p>optional int32 max_num_cuts = 91 [default = 5000]; </p>
 
 <p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l02995">2995</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
@@ -10014,7 +9998,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>optional bool use_rins_lns = 129 [default = false]; </p>
+<p>optional bool use_rins_lns = 129 [default = true]; </p>
 
 <p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l03626">3626</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
@@ -17813,7 +17797,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01499">1499</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01492">1492</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -17837,7 +17821,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01485">1485</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01478">1478</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -17885,7 +17869,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01457">1457</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01450">1450</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -17909,7 +17893,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01163">1163</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01156">1156</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -17933,7 +17917,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01401">1401</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01394">1394</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -17957,7 +17941,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01310">1310</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01303">1303</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -17981,7 +17965,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01324">1324</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01317">1317</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18005,7 +17989,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01443">1443</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01436">1436</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18029,7 +18013,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01527">1527</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01534">1534</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18053,7 +18037,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01114">1114</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01107">1107</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18077,7 +18061,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01261">1261</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01254">1254</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18125,7 +18109,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01086">1086</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01079">1079</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18173,7 +18157,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01093">1093</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01086">1086</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18221,7 +18205,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01212">1212</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01205">1205</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18245,7 +18229,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01352">1352</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01345">1345</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18269,7 +18253,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01429">1429</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01422">1422</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18293,7 +18277,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01478">1478</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01471">1471</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18317,7 +18301,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01436">1436</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01429">1429</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18365,7 +18349,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01058">1058</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01051">1051</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18413,7 +18397,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01415">1415</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01408">1408</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18461,7 +18445,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01506">1506</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01499">1499</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18485,7 +18469,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01422">1422</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01415">1415</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18509,7 +18493,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01037">1037</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01030">1030</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18533,7 +18517,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01345">1345</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01338">1338</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18557,7 +18541,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01135">1135</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01128">1128</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18581,7 +18565,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01142">1142</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01135">1135</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18605,7 +18589,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01128">1128</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01121">1121</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18653,7 +18637,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01072">1072</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01065">1065</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18701,7 +18685,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01450">1450</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01443">1443</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18725,7 +18709,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01051">1051</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01044">1044</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18749,7 +18733,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01373">1373</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01366">1366</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18773,7 +18757,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01016">1016</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01009">1009</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18821,7 +18805,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01121">1121</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01114">1114</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18845,7 +18829,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01317">1317</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01310">1310</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18893,7 +18877,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01534">1534</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01506">1506</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18917,7 +18901,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01184">1184</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01177">1177</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18941,7 +18925,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01177">1177</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01170">1170</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -18965,7 +18949,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01380">1380</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01373">1373</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -19037,7 +19021,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01233">1233</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01226">1226</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -19061,7 +19045,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01170">1170</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01163">1163</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -19085,7 +19069,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01107">1107</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01100">1100</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -19109,7 +19093,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01079">1079</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01072">1072</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -19133,7 +19117,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01289">1289</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01282">1282</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -19181,7 +19165,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01394">1394</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01387">1387</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -19205,7 +19189,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01387">1387</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01380">1380</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -19277,7 +19261,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01065">1065</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01058">1058</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -19397,7 +19381,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01408">1408</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01401">1401</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -19493,7 +19477,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01219">1219</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01212">1212</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -19517,7 +19501,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01226">1226</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01219">1219</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -19565,7 +19549,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01268">1268</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01261">1261</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -19589,7 +19573,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01331">1331</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01324">1324</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -19613,7 +19597,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01254">1254</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01247">1247</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -19637,7 +19621,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01240">1240</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01233">1233</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -19661,7 +19645,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01247">1247</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01240">1240</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -19685,7 +19669,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01275">1275</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01268">1268</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -19757,7 +19741,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01030">1030</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01016">1016</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -19805,7 +19789,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01156">1156</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01149">1149</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -19853,7 +19837,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01303">1303</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01296">1296</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -19877,7 +19861,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01338">1338</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01331">1331</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -19901,7 +19885,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01149">1149</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01142">1142</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -19925,7 +19909,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01296">1296</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01289">1289</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -19997,7 +19981,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01471">1471</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01464">1464</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -20021,7 +20005,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01464">1464</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01457">1457</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -20045,7 +20029,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01044">1044</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01037">1037</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -20093,7 +20077,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01198">1198</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01191">1191</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -20117,7 +20101,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01205">1205</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01198">1198</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -20165,7 +20149,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01002">1002</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01023">1023</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -20189,7 +20173,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01366">1366</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01359">1359</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -20237,7 +20221,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01520">1520</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01527">1527</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -20261,7 +20245,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01009">1009</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01002">1002</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -20285,7 +20269,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01492">1492</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01485">1485</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -20309,7 +20293,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01282">1282</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01275">1275</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -20333,7 +20317,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01513">1513</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01520">1520</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -20405,7 +20389,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01191">1191</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01184">1184</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -20429,7 +20413,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01359">1359</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01352">1352</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -20453,7 +20437,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01023">1023</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01513">1513</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -20501,7 +20485,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01100">1100</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sat__parameters_8pb_8h_source.html#l01093">1093</a> of file <a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -21517,6 +21501,7 @@ template&lt;typename T &gt; </div>
 <li><a class="el" href="sat__parameters_8pb_8h_source.html">sat_parameters.pb.h</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

@@ -38,7 +38,7 @@ PROJECT_NAME           = "OR-Tools"
 # could be handy for archiving the generated documentation or if some version
 # control system is used.
 
-PROJECT_NUMBER         = 7.1
+PROJECT_NUMBER         = 7.2
 
 # Using the PROJECT_BRIEF tag one can provide an optional one line description
 # for a project that appears at the top of each page and should give viewer a
@@ -703,7 +703,7 @@ FILE_VERSION_FILTER    =
 # DoxygenLayout.xml, doxygen will parse it automatically even if the LAYOUT_FILE
 # tag is left empty.
 
-LAYOUT_FILE            =
+LAYOUT_FILE            = tools/doc/DoxygenLayout.xml
 
 # The CITE_BIB_FILES tag can be used to specify one or more bib files containing
 # the reference definitions. This must be a list of .bib files. The .bib
@@ -863,7 +863,26 @@ EXCLUDE_PATTERNS       =
 # Note that the wildcards are matched against the file with absolute path, so to
 # exclude all test directories use the pattern */test/*
 
-EXCLUDE_SYMBOLS        = *internal*
+EXCLUDE_SYMBOLS        = \
+  *internal* \
+  BaseKnapsackSolver \
+  DenseDoublyLinkedList \
+  DynamicPartition \
+  IterablePart \
+  DynamicPermutation \
+  GraphSymmetryFinder \
+  KnapsackAssignment \
+  KnapsackCapacityPropagator \
+  KnapsackGenericSolver \
+  KnapsackItem \
+  KnapsackItemPtr \
+  KnapsackPropagator \
+  KnapsackSearchNode \
+  KnapsackSearchPath \
+  KnapsackState \
+  MergingPartition \
+  SparsePermutation \
+  Iterator \
 
 # The EXAMPLE_PATH tag can be used to specify one or more files or directories
 # that contain example code fragments that are included (see the \include
@@ -1430,7 +1449,7 @@ DISABLE_INDEX          = NO
 # The default value is: NO.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-GENERATE_TREEVIEW      = NO
+GENERATE_TREEVIEW      = YES
 
 # The ENUM_VALUES_PER_LINE tag can be used to set the number of enum values that
 # doxygen will group on one line in the generated HTML documentation.
@@ -2166,7 +2185,7 @@ HIDE_UNDOC_RELATIONS   = YES
 # set to NO
 # The default value is: NO.
 
-HAVE_DOT               = YES
+HAVE_DOT               = NO
 
 # The DOT_NUM_THREADS specifies the number of dot invocations doxygen is allowed
 # to run in parallel. When set to 0 doxygen will base this on the number of

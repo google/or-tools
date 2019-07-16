@@ -26,19 +26,23 @@
       <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="hierarchy.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="namespaceoperations__research.html">operations_research</a></li><li class="navelem"><a class="el" href="classoperations__research_1_1RelocateSubtrip.html">RelocateSubtrip</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classoperations__research_1_1RelocateSubtrip.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
@@ -49,26 +53,13 @@
 <div class="title">operations_research::RelocateSubtrip Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Tries to move subtrips after an insertion node. </p>
+<p>A subtrip is a subsequence that contains only matched pickup and delivery nodes, or pickup-only nodes, i.e. it cannot contain a pickup without a corresponding delivery or vice-versa.</p>
+<p>For a given subtrip given by path indices i_1 ... i_k, we call 'rejected' the nodes with indices i_1 &lt; j &lt; i_k that are not in the subtrip. If the base_node is a pickup, this operator selects the smallest subtrip starting at base_node such that rejected nodes are only deliveries. If the base_node is a delivery, it selects the smallest subtrip ending at base_node such that rejected nodes are only pickups. </p>
 
-<p>Tries to move subtrips after an insertion node.  
- <a href="classoperations__research_1_1RelocateSubtrip.html#details">More...</a></p>
-
-<p><code>#include &lt;<a class="el" href="routing__neighborhoods_8h_source.html">routing_neighborhoods.h</a>&gt;</code></p>
-<div class="dynheader">
-Inheritance diagram for operations_research::RelocateSubtrip:</div>
-<div class="dyncontent">
- <div class="center">
-  <img src="classoperations__research_1_1RelocateSubtrip.png" usemap="#operations_5Fresearch::RelocateSubtrip_map" alt=""/>
-  <map id="operations_5Fresearch::RelocateSubtrip_map" name="operations_5Fresearch::RelocateSubtrip_map">
-<area href="classoperations__research_1_1PathWithPreviousNodesOperator.html" title="Simple PathOperator wrapper that also stores the current previous nodes, and is thus able to provide ..." alt="operations_research::PathWithPreviousNodesOperator" shape="rect" coords="0,280,533,304"/>
-<area href="classoperations__research_1_1PathOperator.html" title="Base class of the local search operators dedicated to path modifications (a path is a set of nodes li..." alt="operations_research::PathOperator" shape="rect" coords="0,224,533,248"/>
-<area href="classoperations__research_1_1IntVarLocalSearchOperator.html" title="Specialization of LocalSearchOperator built from an array of IntVars which specifies the scope of the..." alt="operations_research::IntVarLocalSearchOperator" shape="rect" coords="0,168,533,192"/>
-<area href="classoperations__research_1_1VarLocalSearchOperator.html" alt="operations_research::VarLocalSearchOperator&lt; IntVar, int64, IntVarLocalSearchHandler &gt;" shape="rect" coords="0,112,533,136"/>
-<area href="classoperations__research_1_1LocalSearchOperator.html" title="The base class for all local search operators." alt="operations_research::LocalSearchOperator" shape="rect" coords="0,56,533,80"/>
-<area href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="operations_research::BaseObject" shape="rect" coords="0,0,533,24"/>
-  </map>
-</div></div>
-<table class="memberdecls">
+<p class="definition">Definition at line <a class="el" href="routing__neighborhoods_8h_source.html#l00518">518</a> of file <a class="el" href="routing__neighborhoods_8h_source.html">routing_neighborhoods.h</a>.</p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a9cf5847433a2b90f585df98199cbc42c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RelocateSubtrip.html#a9cf5847433a2b90f585df98199cbc42c">RelocateSubtrip</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;vars, const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;secondary_vars, std::function&lt; int(int64)&gt; start_empty_path_class, const <a class="el" href="namespaceoperations__research.html#a114ea14886b902c9cf9b988c4ef12672">RoutingIndexPairs</a> &amp;pairs)</td></tr>
@@ -233,13 +224,7 @@ Protected Attributes</h2></td></tr>
 <tr class="memitem:a79bf2242dc1962d10e6b04cf09be2c56"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1IntVarLocalSearchHandler.html">IntVarLocalSearchHandler</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1VarLocalSearchOperator.html#a79bf2242dc1962d10e6b04cf09be2c56">var_handler_</a></td></tr>
 <tr class="separator:a79bf2242dc1962d10e6b04cf09be2c56"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Tries to move subtrips after an insertion node. </p>
-<p>A subtrip is a subsequence that contains only matched pickup and delivery nodes, or pickup-only nodes, i.e. it cannot contain a pickup without a corresponding delivery or vice-versa.</p>
-<p>For a given subtrip given by path indices i_1 ... i_k, we call 'rejected' the nodes with indices i_1 &lt; j &lt; i_k that are not in the subtrip. If the base_node is a pickup, this operator selects the smallest subtrip starting at base_node such that rejected nodes are only deliveries. If the base_node is a delivery, it selects the smallest subtrip ending at base_node such that rejected nodes are only pickups. </p>
-
-<p class="definition">Definition at line <a class="el" href="routing__neighborhoods_8h_source.html#l00518">518</a> of file <a class="el" href="routing__neighborhoods_8h_source.html">routing_neighborhoods.h</a>.</p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a9cf5847433a2b90f585df98199cbc42c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9cf5847433a2b90f585df98199cbc42c">&#9670;&nbsp;</a></span>RelocateSubtrip()</h2>
 
@@ -2165,6 +2150,7 @@ Protected Attributes</h2></td></tr>
 <li><a class="el" href="routing__neighborhoods_8h_source.html">routing_neighborhoods.h</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

@@ -26,19 +26,23 @@
       <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="hierarchy.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="namespaceoperations__research.html">operations_research</a></li><li class="navelem"><a class="el" href="classoperations__research_1_1RoutingModel.html">RoutingModel</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classoperations__research_1_1RoutingModel.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
@@ -52,9 +56,10 @@
 <div class="title">operations_research::RoutingModel Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-
-<p><code>#include &lt;<a class="el" href="routing_8h_source.html">routing.h</a>&gt;</code></p>
-<table class="memberdecls">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock">
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00204">204</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1RoutingModel_1_1CostClass.html">CostClass</a></td></tr>
@@ -118,6 +123,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a82ee9c63870a985cbad7ee8474375a26"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingModel.html#a82ee9c63870a985cbad7ee8474375a26">RegisterUnaryTransitCallback</a> (<a class="el" href="classoperations__research_1_1RoutingModel.html#adbd56cf1cca85c203b23e097f4962079">TransitCallback1</a> callback)</td></tr>
 <tr class="memdesc:a82ee9c63870a985cbad7ee8474375a26"><td class="mdescLeft">&#160;</td><td class="mdescRight">Registers 'callback' and returns its index.  <a href="#a82ee9c63870a985cbad7ee8474375a26">More...</a><br /></td></tr>
 <tr class="separator:a82ee9c63870a985cbad7ee8474375a26"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a14427509278088e0b8b6200fb6ac4142"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingModel.html#a14427509278088e0b8b6200fb6ac4142">RegisterPositiveUnaryTransitCallback</a> (<a class="el" href="classoperations__research_1_1RoutingModel.html#adbd56cf1cca85c203b23e097f4962079">TransitCallback1</a> callback)</td></tr>
+<tr class="separator:a14427509278088e0b8b6200fb6ac4142"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a439d2323fda3bc9c0fed5ea6a26a9959"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingModel.html#a439d2323fda3bc9c0fed5ea6a26a9959">RegisterTransitCallback</a> (<a class="el" href="classoperations__research_1_1RoutingModel.html#a40eca6feb4e3e04786969e3be70e115e">TransitCallback2</a> callback)</td></tr>
 <tr class="separator:a439d2323fda3bc9c0fed5ea6a26a9959"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aec8f72732aa9e71b4f73e3c7c9ca8db8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingModel.html#aec8f72732aa9e71b4f73e3c7c9ca8db8">RegisterPositiveTransitCallback</a> (<a class="el" href="classoperations__research_1_1RoutingModel.html#a40eca6feb4e3e04786969e3be70e115e">TransitCallback2</a> callback)</td></tr>
@@ -586,10 +593,7 @@ Friends</h2></td></tr>
 <tr class="memitem:a00141bd90e555aea59a9e98cfbcda6eb"><td class="memItemLeft" align="right" valign="top">class&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingModel.html#a00141bd90e555aea59a9e98cfbcda6eb">RoutingModelInspector</a></td></tr>
 <tr class="separator:a00141bd90e555aea59a9e98cfbcda6eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00204">204</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
-</div><h2 class="groupheader">Member Typedef Documentation</h2>
+<h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="afe7d1738a6e31d3383b70f93e061ae19"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#afe7d1738a6e31d3383b70f93e061ae19">&#9670;&nbsp;</a></span>CostClassIndex</h2>
 
@@ -652,7 +656,7 @@ Friends</h2></td></tr>
 
 <p>Sets the callback returning the variable to use for the Tabu Search metaheuristic. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01214">1214</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01215">1215</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -911,7 +915,7 @@ Friends</h2></td></tr>
 
 <p>Returns the active variable of the node corresponding to index. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01082">1082</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01083">1083</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -982,7 +986,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00429">429</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00430">430</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1151,7 +1155,7 @@ Friends</h2></td></tr>
 <p>Creates a dimension with transits depending on the cumuls of another dimension. </p>
 <p>'pure_transits' are the per-vehicle fixed transits as above. 'dependent_transits' is a vector containing for each vehicle an index to a registered state dependent transit callback. 'base_dimension' indicates the dimension from which the cumul variable is taken. If 'base_dimension' is nullptr, then the newly created dimension is self-based. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00461">461</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00462">462</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1572,7 +1576,7 @@ Friends</h2></td></tr>
 <p>Adds a custom local search filter to the list of filters used to speed up local search by pruning unfeasible variable assignments. </p>
 <p>Calling this method after the routing model has been closed (<a class="el" href="classoperations__research_1_1RoutingModel.html#ae84602b98050ad382d725e35326aab3d" title="Closes the current routing model; after this method is called, no modification to the model can be do...">CloseModel()</a> or <a class="el" href="classoperations__research_1_1RoutingModel.html#ac1ab76e616858766abd3715a4c721c9a" title="Solves the current routing model; closes the current model.">Solve()</a> has been called) has no effect. The routing model does not take ownership of the filter. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01043">1043</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01044">1044</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2127,7 +2131,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00838">838</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00839">839</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2187,7 +2191,7 @@ Friends</h2></td></tr>
 
 <p>Returns true if the search limit has been crossed. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01181">1181</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01182">1182</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2346,7 +2350,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00833">833</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00834">834</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2375,7 +2379,7 @@ Friends</h2></td></tr>
 
 <p>Whether costs are homogeneous across all vehicles. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01099">1099</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01100">1100</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2404,7 +2408,7 @@ Friends</h2></td></tr>
 
 <p>Returns the global cost variable which is being minimized. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01092">1092</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01093">1093</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2465,7 +2469,7 @@ Friends</h2></td></tr>
 
 <p>Returns the variable index of the ending node of a vehicle route. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01055">1055</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01056">1056</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2495,7 +2499,7 @@ Friends</h2></td></tr>
 <p>Gets/sets the evaluator used during the search. </p>
 <p>Only relevant when <a class="el" href="classoperations__research_1_1RoutingSearchParameters.html#af48e67ba8b79e2ea3623a7c212b9134a">RoutingSearchParameters.first_solution_strategy</a> = EVALUATOR_STRATEGY. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00846">846</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00847">847</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2543,7 +2547,7 @@ template&lt;typename F &gt; </div>
 
 <p>Calls f for each variable index of indices in the same disjunctions as the node corresponding to the variable index 'index'; only disjunctions of cardinality 'cardinality' are considered. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00574">574</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00575">575</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2589,7 +2593,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00826">826</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00827">827</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2616,7 +2620,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00829">829</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00830">830</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2750,7 +2754,7 @@ template&lt;typename F &gt; </div>
 
 <p>Returns the number of different cost classes in the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01133">1133</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01134">1134</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2780,7 +2784,7 @@ template&lt;typename F &gt; </div>
 
 <p>Get the cost class index of the given vehicle. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01119">1119</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01120">1120</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2869,7 +2873,7 @@ template&lt;typename F &gt; </div>
 
 <p>Returns all dimensions of the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00509">509</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00510">510</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2898,7 +2902,7 @@ template&lt;typename F &gt; </div>
 
 <p>Returns dimensions_for_[global|local]_optimizer_ if the model has been closed, and empty vectors otherwise. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00516">516</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00517">517</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2925,7 +2929,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00520">520</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00521">521</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -2974,7 +2978,7 @@ template&lt;typename F &gt; </div>
 
 <p>Returns the indices of the disjunctions to which an index belongs. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00566">566</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00567">567</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3004,7 +3008,7 @@ template&lt;typename F &gt; </div>
 
 <p>Returns the variable indices of the nodes in the disjunction of index 'index'. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00587">587</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00588">588</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3034,7 +3038,7 @@ template&lt;typename F &gt; </div>
 
 <p>Returns the maximum number of possible active nodes of the node disjunction of index 'index'. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00598">598</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00599">599</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3064,7 +3068,7 @@ template&lt;typename F &gt; </div>
 
 <p>Returns the penalty of the node disjunction of index 'index'. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00593">593</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00594">594</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3144,7 +3148,7 @@ template&lt;typename F &gt; </div>
 
 <p>Returns the cost of the segment between two nodes supposing all vehicle costs are the same (returns the cost for the first vehicle otherwise). </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01104">1104</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01105">1105</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3194,7 +3198,7 @@ template&lt;typename F &gt; </div>
 
 <p>Ditto, minus the 'always zero', built-in cost class. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01135">1135</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01136">1136</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3243,7 +3247,7 @@ template&lt;typename F &gt; </div>
 
 <p>Returns the number of node disjunctions in the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00602">602</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00603">603</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3288,7 +3292,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00712">712</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00713">713</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3354,7 +3358,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00685">685</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00686">686</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3383,7 +3387,7 @@ template&lt;typename F &gt; </div>
 
 <p>Returns pickup and delivery pairs currently in the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00681">681</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00682">682</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3450,7 +3454,7 @@ template&lt;typename F &gt; </div>
 
 <p>Get the primary constrained dimension, or an empty std::string if it is unset. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00543">543</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00544">544</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3480,7 +3484,7 @@ template&lt;typename F &gt; </div>
 
 <p>Returns variable indices of nodes constrained to be on the same route. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01145">1145</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01146">1146</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3565,7 +3569,7 @@ template&lt;typename F &gt; </div>
 
 <p>Returns the number of different vehicle classes in the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01143">1143</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01144">1144</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3593,7 +3597,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01138">1138</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01139">1139</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3661,7 +3665,7 @@ template&lt;typename F &gt; </div>
 <p>Returns true iff any hard (resp. </p>
 <p>temporal) type incompatibilities have been added to the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00726">726</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00727">727</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3691,7 +3695,7 @@ template&lt;typename F &gt; </div>
 <p>Returns true iff any same-route (resp. </p>
 <p>temporal) type requirements have been added to the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00759">759</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00760">760</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3718,7 +3722,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00729">729</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00730">730</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3745,7 +3749,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00762">762</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00763">763</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3774,7 +3778,7 @@ template&lt;typename F &gt; </div>
 
 <p>Returns true iff the model has any incompatibilities or requirements set on node types. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00768">768</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00769">769</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3804,7 +3808,7 @@ template&lt;typename F &gt; </div>
 
 <p>Returns true iff the model contains a vehicle with the given cost_class_index. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01125">1125</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01126">1126</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3854,7 +3858,7 @@ template&lt;typename F &gt; </div>
 
 <p>Returns true if 'index' represents the last node of a route. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01059">1059</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01060">1060</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -3933,7 +3937,7 @@ template&lt;typename F &gt; </div>
 
 <p>Returns true if a vehicle is allowed to visit a given node. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00629">629</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00630">630</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -4158,7 +4162,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00950">950</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00951">951</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -4217,7 +4221,7 @@ template&lt;typename F &gt; </div>
 
 <p>Returns all next variables of the model, such that Nexts(i) is the next variable of the node corresponding to i. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01073">1073</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01074">1074</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -4248,7 +4252,7 @@ template&lt;typename F &gt; </div>
 <p>!defined(SWIGPYTHON) </p>
 <p>Returns the next variable of the node corresponding to index. Note that NextVar(index) == index is equivalent to ActiveVar(index) == 0. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01080">1080</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01081">1081</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -4277,7 +4281,7 @@ template&lt;typename F &gt; </div>
 
 <p>Sizes and indices Returns the number of nodes in the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01194">1194</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01195">1195</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -4342,7 +4346,7 @@ template&lt;typename F &gt; </div>
 <p>Returns an assignment used to fix some of the variables of the problem. </p>
 <p>In practice, this assignment locks partial routes of the problem. This can be used in the context of locking the parts of the routes which have already been driven in online routing problems. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00949">949</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00950">950</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -4408,6 +4412,24 @@ template&lt;typename F &gt; </div>
           <td class="memname">int operations_research::RoutingModel::RegisterPositiveTransitCallback </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classoperations__research_1_1RoutingModel.html#a40eca6feb4e3e04786969e3be70e115e">TransitCallback2</a>&#160;</td>
+          <td class="paramname"><em>callback</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a14427509278088e0b8b6200fb6ac4142"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a14427509278088e0b8b6200fb6ac4142">&#9670;&nbsp;</a></span>RegisterPositiveUnaryTransitCallback()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int operations_research::RoutingModel::RegisterPositiveUnaryTransitCallback </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1RoutingModel.html#adbd56cf1cca85c203b23e097f4962079">TransitCallback1</a>&#160;</td>
           <td class="paramname"><em>callback</em></td><td>)</td>
           <td></td>
         </tr>
@@ -4497,7 +4519,7 @@ template&lt;typename F &gt; </div>
 
 <p>Returns the time left in the search limit. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01187">1187</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01188">1188</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -4780,7 +4802,7 @@ template&lt;typename F &gt; </div>
 
 <p>Takes ownership of evaluator. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00851">851</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00852">852</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -4911,7 +4933,7 @@ template&lt;typename F &gt; </div>
 <p>Set the given dimension as "primary constrained". </p>
 <p>As of August 2013, this is only used by <a class="el" href="classoperations__research_1_1RoutingModel.html#a05ecbf2a7e39b8984ebd2ae5167912d8" title="Returns whether the arc from-&gt;to1 is more constrained than from-&gt;to2, taking into account,...">ArcIsMoreConstrainedThanArc()</a>. "dimension" must be the name of an existing dimension, or be empty, in which case there will not be a primary dimension after this call. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00537">537</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00538">538</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -4939,7 +4961,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01032">1032</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01033">1033</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -5019,7 +5041,7 @@ template&lt;typename F &gt; </div>
 
 <p>Returns the number of next variables in the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01198">1198</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01199">1199</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -5104,7 +5126,7 @@ template&lt;typename F &gt; </div>
 <p>Returns the underlying constraint solver. </p>
 <p>Can be used to add extra constraints and/or modify search algoithms. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01178">1178</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01179">1179</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -5166,7 +5188,7 @@ template&lt;typename F &gt; </div>
 <p>Model inspection. </p>
 <p>Returns the variable index of the starting node of a vehicle route. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01053">1053</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01054">1054</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -5194,7 +5216,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00378">378</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00379">379</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -5223,7 +5245,7 @@ template&lt;typename F &gt; </div>
 
 <p>Returns the current status of the routing model. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00925">925</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00926">926</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -5252,7 +5274,7 @@ template&lt;typename F &gt; </div>
 
 <p>Returns the sweep arranger to be used by routing heuristics. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01036">1036</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01037">1037</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -5280,7 +5302,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00370">370</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00371">371</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -5308,7 +5330,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00374">374</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l00375">375</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -5389,7 +5411,7 @@ template&lt;typename F &gt; </div>
 
 <p>Returns the variable specifying whether or not costs are considered for vehicle. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01085">1085</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01086">1086</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -5419,7 +5441,7 @@ template&lt;typename F &gt; </div>
 
 <p>Returns the vehicle of the given start/end index, and -1 if the given index is not a vehicle start/end. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01062">1062</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01063">1063</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -5448,7 +5470,7 @@ template&lt;typename F &gt; </div>
 
 <p>Returns the number of vehicle routes in the model. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01196">1196</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01197">1197</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -5479,7 +5501,7 @@ template&lt;typename F &gt; </div>
 <p>Returns the vehicle variable of the node corresponding to index. </p>
 <p>Note that VehicleVar(index) == -1 is equivalent to ActiveVar(index) == 0. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01090">1090</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01091">1091</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -5508,7 +5530,7 @@ template&lt;typename F &gt; </div>
 
 <p>Returns all vehicle variables of the model, such that VehicleVars(i) is the vehicle variable of the node corresponding to i. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01076">1076</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01077">1077</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -5554,7 +5576,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01666">1666</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01667">1667</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -5578,7 +5600,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01667">1667</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01668">1668</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -5665,6 +5687,7 @@ template&lt;typename F &gt; </div>
 <li><a class="el" href="routing_8h_source.html">routing.h</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

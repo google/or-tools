@@ -27,14 +27,6 @@
       <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="inherits.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
 <div id="nav-path" class="navpath">
   <ul>
 <li class="navelem"><a class="el" href="namespacecom.html">com</a></li><li class="navelem"><a class="el" href="namespacecom_1_1google.html">google</a></li><li class="navelem"><a class="el" href="namespacecom_1_1google_1_1ortools.html">ortools</a></li><li class="navelem"><a class="el" href="namespacecom_1_1google_1_1ortools_1_1constraintsolver.html">constraintsolver</a></li><li class="navelem"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CPFeasibilityFilter.html">CPFeasibilityFilter</a></li>  </ul>
@@ -49,34 +41,12 @@
 <div class="title">com.google.ortools.constraintsolver.CPFeasibilityFilter Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>This filter accepts deltas for which the assignment satisfies the constraints of the <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html" title="Solver Class A solver represents the main computation engine.">Solver</a>. </p>
 <p>This is verified by keeping an internal copy of the assignment with all Next vars and their updated values, and calling RestoreAssignment() on the assignment+delta. exception of Next Vars (woud fail on large instances). WARNING: In the case of mandatory nodes, when all vehicles are currently being used in the solution but uninserted nodes still remain, this filter will reject the solution, even if the node could be inserted on one of these routes, because all Next vars of vehicle starts are already instantiated. </p>
 
 <p class="definition">Definition at line <a class="el" href="CPFeasibilityFilter_8java_source.html#l00014">14</a> of file <a class="el" href="CPFeasibilityFilter_8java_source.html">CPFeasibilityFilter.java</a>.</p>
-</div><div class="dynheader">
-Inheritance diagram for com.google.ortools.constraintsolver.CPFeasibilityFilter:</div>
-<div class="dyncontent">
-<div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CPFeasibilityFilter__inherit__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8CPFeasibilityFilter_inherit__map" alt="Inheritance graph"/></div>
-<map name="com_8google_8ortools_8constraintsolver_8CPFeasibilityFilter_inherit__map" id="com_8google_8ortools_8constraintsolver_8CPFeasibilityFilter_inherit__map">
-<area shape="rect"  title="This filter accepts deltas for which the assignment satisfies the constraints of the Solver." alt="" coords="5,273,237,315"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html" title=" " alt="" coords="5,184,237,225"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html" title="Local Search Filters are used for fast neighbor pruning." alt="" coords="5,95,237,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,5,237,47"/>
-</map>
-<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
-<div class="dynheader">
-Collaboration diagram for com.google.ortools.constraintsolver.CPFeasibilityFilter:</div>
-<div class="dyncontent">
-<div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CPFeasibilityFilter__coll__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8CPFeasibilityFilter_coll__map" alt="Collaboration graph"/></div>
-<map name="com_8google_8ortools_8constraintsolver_8CPFeasibilityFilter_coll__map" id="com_8google_8ortools_8constraintsolver_8CPFeasibilityFilter_coll__map">
-<area shape="rect"  title="This filter accepts deltas for which the assignment satisfies the constraints of the Solver." alt="" coords="5,273,237,315"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchFilter.html" title=" " alt="" coords="5,184,237,225"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html" title="Local Search Filters are used for fast neighbor pruning." alt="" coords="5,95,237,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,5,237,47"/>
-</map>
-<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
-<table class="memberdecls">
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a6295d6b86e37599af26b4ab667dc7ef9"><td class="memItemLeft" align="right" valign="top">synchronized void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CPFeasibilityFilter.html#a6295d6b86e37599af26b4ab667dc7ef9">delete</a> ()</td></tr>

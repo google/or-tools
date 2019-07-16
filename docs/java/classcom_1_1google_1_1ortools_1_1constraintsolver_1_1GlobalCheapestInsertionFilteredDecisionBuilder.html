@@ -27,14 +27,6 @@
       <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="inherits.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
 <div id="nav-path" class="navpath">
   <ul>
 <li class="navelem"><a class="el" href="namespacecom.html">com</a></li><li class="navelem"><a class="el" href="namespacecom_1_1google.html">google</a></li><li class="navelem"><a class="el" href="namespacecom_1_1google_1_1ortools.html">ortools</a></li><li class="navelem"><a class="el" href="namespacecom_1_1google_1_1ortools_1_1constraintsolver.html">constraintsolver</a></li><li class="navelem"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html">GlobalCheapestInsertionFilteredDecisionBuilder</a></li>  </ul>
@@ -49,38 +41,12 @@
 <div class="title">com.google.ortools.constraintsolver.GlobalCheapestInsertionFilteredDecisionBuilder Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Filter-based decision builder which builds a solution by inserting nodes at their cheapest position on any route; potentially several routes can be built in parallel. </p>
 <p>The cost of a position is computed from an arc-based cost callback. The node selected for insertion is the one which minimizes insertion cost. If a non null penalty evaluator is passed, making nodes unperformed is also taken into account with the corresponding penalty cost. </p>
 
 <p class="definition">Definition at line <a class="el" href="GlobalCheapestInsertionFilteredDecisionBuilder_8java_source.html#l00014">14</a> of file <a class="el" href="GlobalCheapestInsertionFilteredDecisionBuilder_8java_source.html">GlobalCheapestInsertionFilteredDecisionBuilder.java</a>.</p>
-</div><div class="dynheader">
-Inheritance diagram for com.google.ortools.constraintsolver.GlobalCheapestInsertionFilteredDecisionBuilder:</div>
-<div class="dyncontent">
-<div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1GlobalCheapestInsertionFilteredDecisionBuilder__inherit__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8GlobalCheapestInsertionFilteredDecisionBuilder_inherit__map" alt="Inheritance graph"/></div>
-<map name="com_8google_8ortools_8constraintsolver_8GlobalCheapestInsertionFilteredDecisionBuilder_inherit__map" id="com_8google_8ortools_8constraintsolver_8GlobalCheapestInsertionFilteredDecisionBuilder_inherit__map">
-<area shape="rect"  title="Filter&#45;based decision builder which builds a solution by inserting nodes at their cheapest position o..." alt="" coords="7,452,266,508"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CheapestInsertionFilteredDecisionBuilder.html" title=" " alt="" coords="5,363,268,404"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html" title="Filter&#45;based decision builder dedicated to routing." alt="" coords="21,273,253,315"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html" title="Decision builders building a solution using local search filters to evaluate its feasibility." alt="" coords="21,184,253,225"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html" title="A DecisionBuilder is responsible for creating the search tree." alt="" coords="21,95,253,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="21,5,253,47"/>
-</map>
-<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
-<div class="dynheader">
-Collaboration diagram for com.google.ortools.constraintsolver.GlobalCheapestInsertionFilteredDecisionBuilder:</div>
-<div class="dyncontent">
-<div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1GlobalCheapestInsertionFilteredDecisionBuilder__coll__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8GlobalCheapestInsertionFilteredDecisionBuilder_coll__map" alt="Collaboration graph"/></div>
-<map name="com_8google_8ortools_8constraintsolver_8GlobalCheapestInsertionFilteredDecisionBuilder_coll__map" id="com_8google_8ortools_8constraintsolver_8GlobalCheapestInsertionFilteredDecisionBuilder_coll__map">
-<area shape="rect"  title="Filter&#45;based decision builder which builds a solution by inserting nodes at their cheapest position o..." alt="" coords="7,452,266,508"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CheapestInsertionFilteredDecisionBuilder.html" title=" " alt="" coords="5,363,268,404"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html" title="Filter&#45;based decision builder dedicated to routing." alt="" coords="21,273,253,315"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html" title="Decision builders building a solution using local search filters to evaluate its feasibility." alt="" coords="21,184,253,225"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html" title="A DecisionBuilder is responsible for creating the search tree." alt="" coords="21,95,253,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="21,5,253,47"/>
-</map>
-<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
-<table class="memberdecls">
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ab7240d0a3e437fdd1c491a3591f8f786"><td class="memItemLeft" align="right" valign="top">synchronized void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html#ab7240d0a3e437fdd1c491a3591f8f786">delete</a> ()</td></tr>

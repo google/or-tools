@@ -27,14 +27,6 @@
       <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="inherits.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
 <div id="nav-path" class="navpath">
   <ul>
 <li class="navelem"><a class="el" href="namespacecom.html">com</a></li><li class="navelem"><a class="el" href="namespacecom_1_1google.html">google</a></li><li class="navelem"><a class="el" href="namespacecom_1_1google_1_1ortools.html">ortools</a></li><li class="navelem"><a class="el" href="namespacecom_1_1google_1_1ortools_1_1constraintsolver.html">constraintsolver</a></li><li class="navelem"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html">RoutingDimension</a></li>  </ul>
@@ -49,7 +41,7 @@
 <div class="title">com.google.ortools.constraintsolver.RoutingDimension Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Dimensions represent quantities accumulated at nodes along the routes. </p>
 <p>They represent quantities such as weights or volumes carried along the route, or distance or times. Quantities at a node are represented by "cumul" variables and the increase or decrease of quantities between nodes are represented by "transit" variables. These variables are linked as follows: if j == next(i), cumuls(j) = cumuls(i) + transits(i) + slacks(i) + state_dependent_transits(i) where slack is a positive slack variable (can represent waiting times for a time dimension), and state_dependent_transits is a non-purely functional version of transits_. Favour transits over state_dependent_transits when possible, because purely functional callbacks allow more optimisations and make the model faster and easier to solve. for a given vehicle, it is passed as an external vector, it would be better to have this information here. </p>
 

@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.6.2" />
+<meta name="generator" content="pdoc 0.6.3" />
 <title>cp_model API documentation</title>
 <meta name="description" content="Methods for building and solving CP-SAT models …" />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
-<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase;cursor:pointer}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase;cursor:pointer}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 <style type="text/css">
@@ -236,8 +236,8 @@ class LinearExpr(object):
         while to_process:  # Flatten to avoid recursion.
             expr, coef = to_process.pop()
             if isinstance(expr, _ProductCst):
-                to_process.append((expr.Expression(),
-                                   coef * expr.Coefficient()))
+                to_process.append(
+                    (expr.Expression(), coef * expr.Coefficient()))
             elif isinstance(expr, _SumArray):
                 for e in expr.Expressions():
                     to_process.append((e, coef))
@@ -424,8 +424,8 @@ class _SumArray(LinearExpr):
                                       self.__constant)
 
     def __repr__(self):
-        return &#39;SumArray({}, {})&#39;.format(&#39;, &#39;.join(
-            map(repr, self.__expressions)), self.__constant)
+        return &#39;SumArray({}, {})&#39;.format(
+            &#39;, &#39;.join(map(repr, self.__expressions)), self.__constant)
 
     def Expressions(self):
         return self.__expressions
@@ -482,9 +482,9 @@ class _ScalProd(LinearExpr):
         return output
 
     def __repr__(self):
-        return &#39;ScalProd([{}], [{}], {})&#39;.format(&#39;, &#39;.join(
-            map(repr, self.__expressions)), &#39;, &#39;.join(
-                map(repr, self.__coefficients)), self.__constant)
+        return &#39;ScalProd([{}], [{}], {})&#39;.format(
+            &#39;, &#39;.join(map(repr, self.__expressions)),
+            &#39;, &#39;.join(map(repr, self.__coefficients)), self.__constant)
 
     def Expressions(self):
         return self.__expressions
@@ -723,14 +723,14 @@ class IntervalVar(object):
         if self.__ct.enforcement_literal:
             return &#39;%s(start = %s, size = %s, end = %s, is_present = %s)&#39; % (
                 self.__ct.name, ShortName(self.__model, interval.start),
-                ShortName(self.__model, interval.size),
-                ShortName(self.__model, interval.end),
+                ShortName(self.__model,
+                          interval.size), ShortName(self.__model, interval.end),
                 ShortName(self.__model, self.__ct.enforcement_literal[0]))
         else:
             return &#39;%s(start = %s, size = %s, end = %s)&#39; % (
                 self.__ct.name, ShortName(self.__model, interval.start),
-                ShortName(self.__model, interval.size),
-                ShortName(self.__model, interval.end))
+                ShortName(self.__model,
+                          interval.size), ShortName(self.__model, interval.end))
 
     def Name(self):
         return self.__ct.name
@@ -836,9 +836,8 @@ class CpModel(object):
       An instance of the `Constraint` class.
     &#34;&#34;&#34;
         if isinstance(ct, BoundedLinearExpression):
-            return self.AddLinearExpressionInDomain(ct.Expression(),
-                                                    Domain.FromFlatIntervals(
-                                                        ct.Bounds()))
+            return self.AddLinearExpressionInDomain(
+                ct.Expression(), Domain.FromFlatIntervals(ct.Bounds()))
         elif ct and isinstance(ct, bool):
             return self.AddBoolOr([True])
         elif not ct and isinstance(ct, bool):
@@ -1047,8 +1046,8 @@ class CpModel(object):
             model_ct.automaton.final_states.append(v)
         for t in transition_triples:
             if len(t) != 3:
-                raise TypeError(
-                    &#39;Tuple &#39; + str(t) + &#39; has the wrong arity (!= 3)&#39;)
+                raise TypeError(&#39;Tuple &#39; + str(t) +
+                                &#39; has the wrong arity (!= 3)&#39;)
             cp_model_helper.AssertIsInt64(t[0])
             cp_model_helper.AssertIsInt64(t[1])
             cp_model_helper.AssertIsInt64(t[2])
@@ -1452,8 +1451,8 @@ class CpModel(object):
             cp_model_helper.AssertIsInt64(arg)
             return self.GetOrMakeIndexFromConstant(arg)
         else:
-            raise TypeError(
-                &#39;NotSupported: model.GetOrMakeIndex(&#39; + str(arg) + &#39;)&#39;)
+            raise TypeError(&#39;NotSupported: model.GetOrMakeIndex(&#39; + str(arg) +
+                            &#39;)&#39;)
 
     def GetOrMakeBooleanIndex(self, arg):
         &#34;&#34;&#34;Returns an index from a boolean expression.&#34;&#34;&#34;
@@ -1467,8 +1466,8 @@ class CpModel(object):
             cp_model_helper.AssertIsBoolean(arg)
             return self.GetOrMakeIndexFromConstant(arg)
         else:
-            raise TypeError(
-                &#39;NotSupported: model.GetOrMakeBooleanIndex(&#39; + str(arg) + &#39;)&#39;)
+            raise TypeError(&#39;NotSupported: model.GetOrMakeBooleanIndex(&#39; +
+                            str(arg) + &#39;)&#39;)
 
     def GetIntervalIndex(self, arg):
         if not isinstance(arg, IntervalVar):
@@ -1521,8 +1520,8 @@ class CpModel(object):
             self.__model.objective.offset = obj
             self.__model.objective.scaling_factor = 1
         else:
-            raise TypeError(
-                &#39;TypeError: &#39; + str(obj) + &#39; is not a valid objective&#39;)
+            raise TypeError(&#39;TypeError: &#39; + str(obj) +
+                            &#39; is not a valid objective&#39;)
 
     def Minimize(self, obj):
         &#34;&#34;&#34;Sets the objective of the model to minimize(obj).&#34;&#34;&#34;
@@ -1565,11 +1564,11 @@ class CpModel(object):
         if isinstance(x, IntVar):
             var = self.__model.variables[x.Index()]
             if len(var.domain) != 2 or var.domain[0] &lt; 0 or var.domain[1] &gt; 1:
-                raise TypeError(
-                    &#39;TypeError: &#39; + str(x) + &#39; is not a boolean variable&#39;)
+                raise TypeError(&#39;TypeError: &#39; + str(x) +
+                                &#39; is not a boolean variable&#39;)
         elif not isinstance(x, _NotBooleanVariable):
-            raise TypeError(
-                &#39;TypeError: &#39; + str(x) + &#39; is not a boolean variable&#39;)
+            raise TypeError(&#39;TypeError: &#39; + str(x) +
+                            &#39; is not a boolean variable&#39;)
 
 
 def EvaluateLinearExpr(expression, solution):
@@ -1609,8 +1608,8 @@ def EvaluateBooleanExpression(literal, solution):
         else:
             return not solution.solution[-index - 1]
     else:
-        raise TypeError(
-            &#39;Cannot interpret %s as a boolean expression.&#39; % literal)
+        raise TypeError(&#39;Cannot interpret %s as a boolean expression.&#39; %
+                        literal)
 
 
 class CpSolver(object):
@@ -1778,8 +1777,8 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
             index = lit.Index()
             return self.SolutionBooleanValue(index)
         else:
-            raise TypeError(
-                &#39;Cannot interpret %s as a boolean expression.&#39; % lit)
+            raise TypeError(&#39;Cannot interpret %s as a boolean expression.&#39; %
+                            lit)
 
     def Value(self, expression):
         &#34;&#34;&#34;Evaluates an linear expression in the current solution.
@@ -1803,8 +1802,8 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
         while to_process:
             expr, coef = to_process.pop()
             if isinstance(expr, _ProductCst):
-                to_process.append((expr.Expression(),
-                                   coef * expr.Coefficient()))
+                to_process.append(
+                    (expr.Expression(), coef * expr.Coefficient()))
             elif isinstance(expr, _SumArray):
                 for e in expr.Expressions():
                     to_process.append((e, coef))
@@ -1816,8 +1815,8 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
             elif isinstance(expr, IntVar):
                 value += coef * self.SolutionIntegerValue(expr.Index())
             elif isinstance(expr, _NotBooleanVariable):
-                value += coef * (
-                    1 - self.SolutionIntegerValue(expr.Not().Index()))
+                value += coef * (1 -
+                                 self.SolutionIntegerValue(expr.Not().Index()))
         return value
 
 
@@ -2245,9 +2244,8 @@ Returns:
       An instance of the `Constraint` class.
     &#34;&#34;&#34;
         if isinstance(ct, BoundedLinearExpression):
-            return self.AddLinearExpressionInDomain(ct.Expression(),
-                                                    Domain.FromFlatIntervals(
-                                                        ct.Bounds()))
+            return self.AddLinearExpressionInDomain(
+                ct.Expression(), Domain.FromFlatIntervals(ct.Bounds()))
         elif ct and isinstance(ct, bool):
             return self.AddBoolOr([True])
         elif not ct and isinstance(ct, bool):
@@ -2456,8 +2454,8 @@ Returns:
             model_ct.automaton.final_states.append(v)
         for t in transition_triples:
             if len(t) != 3:
-                raise TypeError(
-                    &#39;Tuple &#39; + str(t) + &#39; has the wrong arity (!= 3)&#39;)
+                raise TypeError(&#39;Tuple &#39; + str(t) +
+                                &#39; has the wrong arity (!= 3)&#39;)
             cp_model_helper.AssertIsInt64(t[0])
             cp_model_helper.AssertIsInt64(t[1])
             cp_model_helper.AssertIsInt64(t[2])
@@ -2861,8 +2859,8 @@ Returns:
             cp_model_helper.AssertIsInt64(arg)
             return self.GetOrMakeIndexFromConstant(arg)
         else:
-            raise TypeError(
-                &#39;NotSupported: model.GetOrMakeIndex(&#39; + str(arg) + &#39;)&#39;)
+            raise TypeError(&#39;NotSupported: model.GetOrMakeIndex(&#39; + str(arg) +
+                            &#39;)&#39;)
 
     def GetOrMakeBooleanIndex(self, arg):
         &#34;&#34;&#34;Returns an index from a boolean expression.&#34;&#34;&#34;
@@ -2876,8 +2874,8 @@ Returns:
             cp_model_helper.AssertIsBoolean(arg)
             return self.GetOrMakeIndexFromConstant(arg)
         else:
-            raise TypeError(
-                &#39;NotSupported: model.GetOrMakeBooleanIndex(&#39; + str(arg) + &#39;)&#39;)
+            raise TypeError(&#39;NotSupported: model.GetOrMakeBooleanIndex(&#39; +
+                            str(arg) + &#39;)&#39;)
 
     def GetIntervalIndex(self, arg):
         if not isinstance(arg, IntervalVar):
@@ -2930,8 +2928,8 @@ Returns:
             self.__model.objective.offset = obj
             self.__model.objective.scaling_factor = 1
         else:
-            raise TypeError(
-                &#39;TypeError: &#39; + str(obj) + &#39; is not a valid objective&#39;)
+            raise TypeError(&#39;TypeError: &#39; + str(obj) +
+                            &#39; is not a valid objective&#39;)
 
     def Minimize(self, obj):
         &#34;&#34;&#34;Sets the objective of the model to minimize(obj).&#34;&#34;&#34;
@@ -2974,11 +2972,11 @@ Returns:
         if isinstance(x, IntVar):
             var = self.__model.variables[x.Index()]
             if len(var.domain) != 2 or var.domain[0] &lt; 0 or var.domain[1] &gt; 1:
-                raise TypeError(
-                    &#39;TypeError: &#39; + str(x) + &#39; is not a boolean variable&#39;)
+                raise TypeError(&#39;TypeError: &#39; + str(x) +
+                                &#39; is not a boolean variable&#39;)
         elif not isinstance(x, _NotBooleanVariable):
-            raise TypeError(
-                &#39;TypeError: &#39; + str(x) + &#39; is not a boolean variable&#39;)</code></pre>
+            raise TypeError(&#39;TypeError: &#39; + str(x) +
+                            &#39; is not a boolean variable&#39;)</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
@@ -3006,9 +3004,8 @@ Returns:
   An instance of the `Constraint` class.
 &#34;&#34;&#34;
     if isinstance(ct, BoundedLinearExpression):
-        return self.AddLinearExpressionInDomain(ct.Expression(),
-                                                Domain.FromFlatIntervals(
-                                                    ct.Bounds()))
+        return self.AddLinearExpressionInDomain(
+            ct.Expression(), Domain.FromFlatIntervals(ct.Bounds()))
     elif ct and isinstance(ct, bool):
         return self.AddBoolOr([True])
     elif not ct and isinstance(ct, bool):
@@ -3246,8 +3243,8 @@ Raises:
         model_ct.automaton.final_states.append(v)
     for t in transition_triples:
         if len(t) != 3:
-            raise TypeError(
-                &#39;Tuple &#39; + str(t) + &#39; has the wrong arity (!= 3)&#39;)
+            raise TypeError(&#39;Tuple &#39; + str(t) +
+                            &#39; has the wrong arity (!= 3)&#39;)
         cp_model_helper.AssertIsInt64(t[0])
         cp_model_helper.AssertIsInt64(t[1])
         cp_model_helper.AssertIsInt64(t[2])
@@ -4065,11 +4062,11 @@ Raises:
     if isinstance(x, IntVar):
         var = self.__model.variables[x.Index()]
         if len(var.domain) != 2 or var.domain[0] &lt; 0 or var.domain[1] &gt; 1:
-            raise TypeError(
-                &#39;TypeError: &#39; + str(x) + &#39; is not a boolean variable&#39;)
+            raise TypeError(&#39;TypeError: &#39; + str(x) +
+                            &#39; is not a boolean variable&#39;)
     elif not isinstance(x, _NotBooleanVariable):
-        raise TypeError(
-            &#39;TypeError: &#39; + str(x) + &#39; is not a boolean variable&#39;)</code></pre>
+        raise TypeError(&#39;TypeError: &#39; + str(x) +
+                        &#39; is not a boolean variable&#39;)</code></pre>
 </details>
 </dd>
 <dt id="cp_model.CpModel.GetIntervalIndex"><code class="name flex">
@@ -4104,8 +4101,8 @@ Raises:
         cp_model_helper.AssertIsBoolean(arg)
         return self.GetOrMakeIndexFromConstant(arg)
     else:
-        raise TypeError(
-            &#39;NotSupported: model.GetOrMakeBooleanIndex(&#39; + str(arg) + &#39;)&#39;)</code></pre>
+        raise TypeError(&#39;NotSupported: model.GetOrMakeBooleanIndex(&#39; +
+                        str(arg) + &#39;)&#39;)</code></pre>
 </details>
 </dd>
 <dt id="cp_model.CpModel.GetOrMakeIndex"><code class="name flex">
@@ -4126,8 +4123,8 @@ Raises:
         cp_model_helper.AssertIsInt64(arg)
         return self.GetOrMakeIndexFromConstant(arg)
     else:
-        raise TypeError(
-            &#39;NotSupported: model.GetOrMakeIndex(&#39; + str(arg) + &#39;)&#39;)</code></pre>
+        raise TypeError(&#39;NotSupported: model.GetOrMakeIndex(&#39; + str(arg) +
+                        &#39;)&#39;)</code></pre>
 </details>
 </dd>
 <dt id="cp_model.CpModel.GetOrMakeIndexFromConstant"><code class="name flex">
@@ -4901,8 +4898,8 @@ and Value() methods.</p>
             index = lit.Index()
             return self.SolutionBooleanValue(index)
         else:
-            raise TypeError(
-                &#39;Cannot interpret %s as a boolean expression.&#39; % lit)
+            raise TypeError(&#39;Cannot interpret %s as a boolean expression.&#39; %
+                            lit)
 
     def Value(self, expression):
         &#34;&#34;&#34;Evaluates an linear expression in the current solution.
@@ -4926,8 +4923,8 @@ and Value() methods.</p>
         while to_process:
             expr, coef = to_process.pop()
             if isinstance(expr, _ProductCst):
-                to_process.append((expr.Expression(),
-                                   coef * expr.Coefficient()))
+                to_process.append(
+                    (expr.Expression(), coef * expr.Coefficient()))
             elif isinstance(expr, _SumArray):
                 for e in expr.Expressions():
                     to_process.append((e, coef))
@@ -4939,8 +4936,8 @@ and Value() methods.</p>
             elif isinstance(expr, IntVar):
                 value += coef * self.SolutionIntegerValue(expr.Index())
             elif isinstance(expr, _NotBooleanVariable):
-                value += coef * (
-                    1 - self.SolutionIntegerValue(expr.Not().Index()))
+                value += coef * (1 -
+                                 self.SolutionIntegerValue(expr.Not().Index()))
         return value</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -4994,8 +4991,8 @@ Raises:
         index = lit.Index()
         return self.SolutionBooleanValue(index)
     else:
-        raise TypeError(
-            &#39;Cannot interpret %s as a boolean expression.&#39; % lit)</code></pre>
+        raise TypeError(&#39;Cannot interpret %s as a boolean expression.&#39; %
+                        lit)</code></pre>
 </details>
 </dd>
 <dt id="cp_model.CpSolverSolutionCallback.OnSolutionCallback"><code class="name flex">
@@ -5055,8 +5052,8 @@ Raises:
     while to_process:
         expr, coef = to_process.pop()
         if isinstance(expr, _ProductCst):
-            to_process.append((expr.Expression(),
-                               coef * expr.Coefficient()))
+            to_process.append(
+                (expr.Expression(), coef * expr.Coefficient()))
         elif isinstance(expr, _SumArray):
             for e in expr.Expressions():
                 to_process.append((e, coef))
@@ -5068,8 +5065,8 @@ Raises:
         elif isinstance(expr, IntVar):
             value += coef * self.SolutionIntegerValue(expr.Index())
         elif isinstance(expr, _NotBooleanVariable):
-            value += coef * (
-                1 - self.SolutionIntegerValue(expr.Not().Index()))
+            value += coef * (1 -
+                             self.SolutionIntegerValue(expr.Not().Index()))
     return value</code></pre>
 </details>
 </dd>
@@ -5302,14 +5299,14 @@ intervals into the schedule.</p></section>
         if self.__ct.enforcement_literal:
             return &#39;%s(start = %s, size = %s, end = %s, is_present = %s)&#39; % (
                 self.__ct.name, ShortName(self.__model, interval.start),
-                ShortName(self.__model, interval.size),
-                ShortName(self.__model, interval.end),
+                ShortName(self.__model,
+                          interval.size), ShortName(self.__model, interval.end),
                 ShortName(self.__model, self.__ct.enforcement_literal[0]))
         else:
             return &#39;%s(start = %s, size = %s, end = %s)&#39; % (
                 self.__ct.name, ShortName(self.__model, interval.start),
-                ShortName(self.__model, interval.size),
-                ShortName(self.__model, interval.end))
+                ShortName(self.__model,
+                          interval.size), ShortName(self.__model, interval.end))
 
     def Name(self):
         return self.__ct.name</code></pre>
@@ -5422,8 +5419,8 @@ model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) &gt;= 0)
         while to_process:  # Flatten to avoid recursion.
             expr, coef = to_process.pop()
             if isinstance(expr, _ProductCst):
-                to_process.append((expr.Expression(),
-                                   coef * expr.Coefficient()))
+                to_process.append(
+                    (expr.Expression(), coef * expr.Coefficient()))
             elif isinstance(expr, _SumArray):
                 for e in expr.Expressions():
                     to_process.append((e, coef))
@@ -5611,8 +5608,8 @@ def Sum(cls, expressions):
     while to_process:  # Flatten to avoid recursion.
         expr, coef = to_process.pop()
         if isinstance(expr, _ProductCst):
-            to_process.append((expr.Expression(),
-                               coef * expr.Coefficient()))
+            to_process.append(
+                (expr.Expression(), coef * expr.Coefficient()))
         elif isinstance(expr, _SumArray):
             for e in expr.Expressions():
                 to_process.append((e, coef))
@@ -6034,7 +6031,7 @@ def Sum(cls, expressions):
 </main>
 <footer id="footer">
 <p><span style="color:#ddd">&#21328;</span></p>
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.6.2</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.6.3</a>.</p>
 </footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
 <script>hljs.initHighlightingOnLoad()</script>

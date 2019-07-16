@@ -27,14 +27,6 @@
       <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="inherits.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
 <div id="nav-path" class="navpath">
   <ul>
 <li class="navelem"><a class="el" href="namespacecom.html">com</a></li><li class="navelem"><a class="el" href="namespacecom_1_1google.html">google</a></li><li class="navelem"><a class="el" href="namespacecom_1_1google_1_1ortools.html">ortools</a></li><li class="navelem"><a class="el" href="namespacecom_1_1google_1_1ortools_1_1linearsolver.html">linearsolver</a></li><li class="navelem"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html">MPVariable</a></li>  </ul>
@@ -49,35 +41,49 @@
 <div class="title">com.google.ortools.linearsolver.MPVariable Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00013">13</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>The class for variables of a Mathematical Programming (MP) model. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00016">16</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a32bd872268150d8fa38dff7c212a09d5"><td class="memItemLeft" align="right" valign="top">synchronized void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html#a32bd872268150d8fa38dff7c212a09d5">delete</a> ()</td></tr>
 <tr class="separator:a32bd872268150d8fa38dff7c212a09d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae2de472f757d3e124143dfd7cee4f0eb"><td class="memItemLeft" align="right" valign="top">String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html#ae2de472f757d3e124143dfd7cee4f0eb">name</a> ()</td></tr>
+<tr class="memdesc:ae2de472f757d3e124143dfd7cee4f0eb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the name of the variable.  <a href="#ae2de472f757d3e124143dfd7cee4f0eb">More...</a><br /></td></tr>
 <tr class="separator:ae2de472f757d3e124143dfd7cee4f0eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae8cb4fcf1369df1579217adee2da4f4f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html#ae8cb4fcf1369df1579217adee2da4f4f">setInteger</a> (boolean integer)</td></tr>
+<tr class="memdesc:ae8cb4fcf1369df1579217adee2da4f4f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the integrality requirement of the variable.  <a href="#ae8cb4fcf1369df1579217adee2da4f4f">More...</a><br /></td></tr>
 <tr class="separator:ae8cb4fcf1369df1579217adee2da4f4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abd406be5e65f37771effe20d9203e6f8"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html#abd406be5e65f37771effe20d9203e6f8">solutionValue</a> ()</td></tr>
+<tr class="memdesc:abd406be5e65f37771effe20d9203e6f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the value of the variable in the current solution.  <a href="#abd406be5e65f37771effe20d9203e6f8">More...</a><br /></td></tr>
 <tr class="separator:abd406be5e65f37771effe20d9203e6f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa6f8444c479bc98d6693f4f438a11317"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html#aa6f8444c479bc98d6693f4f438a11317">index</a> ()</td></tr>
+<tr class="memdesc:aa6f8444c479bc98d6693f4f438a11317"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the index of the variable in the MPSolver::variables_.  <a href="#aa6f8444c479bc98d6693f4f438a11317">More...</a><br /></td></tr>
 <tr class="separator:aa6f8444c479bc98d6693f4f438a11317"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adc2cf97513e2e664fc5938f5952fc5b2"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html#adc2cf97513e2e664fc5938f5952fc5b2">lb</a> ()</td></tr>
+<tr class="memdesc:adc2cf97513e2e664fc5938f5952fc5b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the lower bound.  <a href="#adc2cf97513e2e664fc5938f5952fc5b2">More...</a><br /></td></tr>
 <tr class="separator:adc2cf97513e2e664fc5938f5952fc5b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2c3a8277b887c85254c93e0b24b8f9ff"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html#a2c3a8277b887c85254c93e0b24b8f9ff">ub</a> ()</td></tr>
+<tr class="memdesc:a2c3a8277b887c85254c93e0b24b8f9ff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the upper bound.  <a href="#a2c3a8277b887c85254c93e0b24b8f9ff">More...</a><br /></td></tr>
 <tr class="separator:a2c3a8277b887c85254c93e0b24b8f9ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab091ee09e26b1628f2836cf5889f1a8f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html#ab091ee09e26b1628f2836cf5889f1a8f">setLb</a> (double <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html#adc2cf97513e2e664fc5938f5952fc5b2">lb</a>)</td></tr>
+<tr class="memdesc:ab091ee09e26b1628f2836cf5889f1a8f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the lower bound.  <a href="#ab091ee09e26b1628f2836cf5889f1a8f">More...</a><br /></td></tr>
 <tr class="separator:ab091ee09e26b1628f2836cf5889f1a8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab0c516392721a19d6b3713adc55a843b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html#ab0c516392721a19d6b3713adc55a843b">setUb</a> (double <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html#a2c3a8277b887c85254c93e0b24b8f9ff">ub</a>)</td></tr>
+<tr class="memdesc:ab0c516392721a19d6b3713adc55a843b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the upper bound.  <a href="#ab0c516392721a19d6b3713adc55a843b">More...</a><br /></td></tr>
 <tr class="separator:ab0c516392721a19d6b3713adc55a843b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad435a3621ef7493b59b507d42f7bae5d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html#ad435a3621ef7493b59b507d42f7bae5d">setBounds</a> (double <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html#adc2cf97513e2e664fc5938f5952fc5b2">lb</a>, double <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html#a2c3a8277b887c85254c93e0b24b8f9ff">ub</a>)</td></tr>
+<tr class="memdesc:ad435a3621ef7493b59b507d42f7bae5d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets both the lower and upper bounds.  <a href="#ad435a3621ef7493b59b507d42f7bae5d">More...</a><br /></td></tr>
 <tr class="separator:ad435a3621ef7493b59b507d42f7bae5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aebc206265b26cf9e84abbef64d404478"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html#aebc206265b26cf9e84abbef64d404478">reducedCost</a> ()</td></tr>
+<tr class="memdesc:aebc206265b26cf9e84abbef64d404478"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advanced usage: returns the reduced cost of the variable in the current<br />
+ solution (only available for continuous problems).  <a href="#aebc206265b26cf9e84abbef64d404478">More...</a><br /></td></tr>
 <tr class="separator:aebc206265b26cf9e84abbef64d404478"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4b4757b272c53389235599422d06bf1e"><td class="memItemLeft" align="right" valign="top">MPSolver.BasisStatus&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html#a4b4757b272c53389235599422d06bf1e">basisStatus</a> ()</td></tr>
+<tr class="memdesc:a4b4757b272c53389235599422d06bf1e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advanced usage: returns the basis status of the variable in the current<br />
+ solution (only available for continuous problems).  <a href="#a4b4757b272c53389235599422d06bf1e">More...</a><br /></td></tr>
 <tr class="separator:a4b4757b272c53389235599422d06bf1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
@@ -120,7 +126,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00017">17</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00020">20</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
 
 </div>
 </div>
@@ -148,7 +154,13 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00081">81</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
+<p>Advanced usage: returns the basis status of the variable in the current<br />
+ solution (only available for continuous problems). </p>
+<p><br />
+ <br />
+ </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1BasisStatus.html" title="Advanced usage: possible basis status values for a variable and the slack  variable of a linear const...">MPSolver::BasisStatus</a>. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00125">125</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
 
 </div>
 </div>
@@ -175,7 +187,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00031">31</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00034">34</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
 
 </div>
 </div>
@@ -202,7 +214,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00053">53</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
+<p>Returns the index of the variable in the MPSolver::variables_. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00072">72</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
 
 </div>
 </div>
@@ -229,7 +243,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00057">57</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
+<p>Returns the lower bound. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00079">79</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
 
 </div>
 </div>
@@ -256,7 +272,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00041">41</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
+<p>Returns the name of the variable. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00047">47</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
 
 </div>
 </div>
@@ -283,7 +301,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00077">77</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
+<p>Advanced usage: returns the reduced cost of the variable in the current<br />
+ solution (only available for continuous problems). </p>
+
+<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00115">115</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
 
 </div>
 </div>
@@ -321,7 +342,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00073">73</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
+<p>Sets both the lower and upper bounds. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00107">107</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
 
 </div>
 </div>
@@ -349,7 +372,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00045">45</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
+<p>Sets the integrality requirement of the variable. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00054">54</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
 
 </div>
 </div>
@@ -377,7 +402,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00065">65</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
+<p>Sets the lower bound. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00093">93</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
 
 </div>
 </div>
@@ -405,7 +432,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00069">69</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
+<p>Sets the upper bound. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00100">100</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
 
 </div>
 </div>
@@ -432,7 +461,14 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00049">49</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
+<p>Returns the value of the variable in the current solution. </p>
+<p><br />
+ <br />
+ If the variable is integer, then the value will always be an integer (the<br />
+ underlying solver handles floating-point values only, but this function<br />
+ automatically rounds it to the nearest integer; see: man 3 round). </p>
+
+<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00065">65</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
 
 </div>
 </div>
@@ -459,7 +495,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00061">61</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
+<p>Returns the upper bound. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPVariable_8java_source.html#l00086">86</a> of file <a class="el" href="MPVariable_8java_source.html">MPVariable.java</a>.</p>
 
 </div>
 </div>

@@ -27,14 +27,6 @@
       <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="inherits.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
 <div id="nav-path" class="navpath">
   <ul>
 <li class="navelem"><a class="el" href="namespacecom.html">com</a></li><li class="navelem"><a class="el" href="namespacecom_1_1google.html">google</a></li><li class="navelem"><a class="el" href="namespacecom_1_1google_1_1ortools.html">ortools</a></li><li class="navelem"><a class="el" href="namespacecom_1_1google_1_1ortools_1_1linearsolver.html">linearsolver</a></li><li class="navelem"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html">MPSolver</a></li><li class="navelem"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1ResultStatus.html">ResultStatus</a></li>  </ul>
@@ -51,9 +43,14 @@
 <div class="title">com.google.ortools.linearsolver.MPSolver.ResultStatus Enum Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00354">354</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>The status of solving the problem. </p>
+<p>The straightforward translation to<br />
+ homonymous enum values of <a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverResponseStatus.html">MPSolverResponseStatus</a> (see<br />
+ ./linear_solver.proto) is guaranteed by ./enum_consistency_test.cc, you may<br />
+ rely on it. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00624">624</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -68,16 +65,22 @@ Static Public Member Functions</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:af4e92a531953e53f3e39733eeb748274"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1ResultStatus.html#af4e92a531953e53f3e39733eeb748274">OPTIMAL</a></td></tr>
+<tr class="memdesc:af4e92a531953e53f3e39733eeb748274"><td class="mdescLeft">&#160;</td><td class="mdescRight">optimal.  <a href="#af4e92a531953e53f3e39733eeb748274">More...</a><br /></td></tr>
 <tr class="separator:af4e92a531953e53f3e39733eeb748274"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aed8a782246c15af9ee28b71c865afc5a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1ResultStatus.html#aed8a782246c15af9ee28b71c865afc5a">FEASIBLE</a></td></tr>
+<tr class="memdesc:aed8a782246c15af9ee28b71c865afc5a"><td class="mdescLeft">&#160;</td><td class="mdescRight">feasible, or stopped by limit.  <a href="#aed8a782246c15af9ee28b71c865afc5a">More...</a><br /></td></tr>
 <tr class="separator:aed8a782246c15af9ee28b71c865afc5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2dc4c033d760683185020f5d73321269"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1ResultStatus.html#a2dc4c033d760683185020f5d73321269">INFEASIBLE</a></td></tr>
+<tr class="memdesc:a2dc4c033d760683185020f5d73321269"><td class="mdescLeft">&#160;</td><td class="mdescRight">proven infeasible.  <a href="#a2dc4c033d760683185020f5d73321269">More...</a><br /></td></tr>
 <tr class="separator:a2dc4c033d760683185020f5d73321269"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5b5bb1370b0e31dc1931cdbf77735df5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1ResultStatus.html#a5b5bb1370b0e31dc1931cdbf77735df5">UNBOUNDED</a></td></tr>
+<tr class="memdesc:a5b5bb1370b0e31dc1931cdbf77735df5"><td class="mdescLeft">&#160;</td><td class="mdescRight">proven unbounded.  <a href="#a5b5bb1370b0e31dc1931cdbf77735df5">More...</a><br /></td></tr>
 <tr class="separator:a5b5bb1370b0e31dc1931cdbf77735df5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0f764919e53695b4ca165384849bb542"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1ResultStatus.html#a0f764919e53695b4ca165384849bb542">ABNORMAL</a></td></tr>
+<tr class="memdesc:a0f764919e53695b4ca165384849bb542"><td class="mdescLeft">&#160;</td><td class="mdescRight">abnormal, i.e., error of some kind.  <a href="#a0f764919e53695b4ca165384849bb542">More...</a><br /></td></tr>
 <tr class="separator:a0f764919e53695b4ca165384849bb542"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8aba1fda695978557f2962e23e787cdd"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1ResultStatus.html#a8aba1fda695978557f2962e23e787cdd">NOT_SOLVED</a> =(<a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html#abba417c546927696857bf6e75d9eaf11">main_research_linear_solverJNI.MPSolver_NOT_SOLVED_get</a>())</td></tr>
+<tr class="memitem:a8aba1fda695978557f2962e23e787cdd"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1ResultStatus.html#a8aba1fda695978557f2962e23e787cdd">NOT_SOLVED</a> =(main_research_linear_solverJNI.MPSolver_NOT_SOLVED_get())</td></tr>
+<tr class="memdesc:a8aba1fda695978557f2962e23e787cdd"><td class="mdescLeft">&#160;</td><td class="mdescRight">not been solved yet.  <a href="#a8aba1fda695978557f2962e23e787cdd">More...</a><br /></td></tr>
 <tr class="separator:a8aba1fda695978557f2962e23e787cdd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
@@ -105,7 +108,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00366">366</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00654">654</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -132,7 +135,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00362">362</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00650">650</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -149,7 +152,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00359">359</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>abnormal, i.e., error of some kind. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00644">644</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -165,7 +170,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00356">356</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>feasible, or stopped by limit. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00632">632</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -181,7 +188,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00357">357</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>proven infeasible. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00636">636</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -192,12 +201,14 @@ Public Attributes</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">com.google.ortools.linearsolver.MPSolver.ResultStatus.NOT_SOLVED =(<a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1main__research__linear__solverJNI.html#abba417c546927696857bf6e75d9eaf11">main_research_linear_solverJNI.MPSolver_NOT_SOLVED_get</a>())</td>
+          <td class="memname">com.google.ortools.linearsolver.MPSolver.ResultStatus.NOT_SOLVED =(main_research_linear_solverJNI.MPSolver_NOT_SOLVED_get())</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00360">360</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>not been solved yet. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00648">648</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -213,7 +224,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00355">355</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>optimal. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00628">628</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -229,7 +242,9 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00358">358</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p>proven unbounded. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00640">640</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>

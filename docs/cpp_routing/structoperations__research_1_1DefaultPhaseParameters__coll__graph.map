@@ -1,5 +1,0 @@
-<map id="operations_research::DefaultPhaseParameters" name="operations_research::DefaultPhaseParameters">
-<area shape="rect" id="node1" title="This struct holds all parameters for the default search." alt="" coords="5,193,183,232"/>
-<area shape="rect" id="node2" href="$classoperations__research_1_1DecisionBuilder.html" title="A DecisionBuilder is responsible for creating the search tree." alt="" coords="23,93,166,132"/>
-<area shape="rect" id="node3" href="$classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="" coords="23,5,166,44"/>
-</map>

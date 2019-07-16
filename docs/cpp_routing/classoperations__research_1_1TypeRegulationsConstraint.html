@@ -26,19 +26,23 @@
       <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="hierarchy.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="namespaceoperations__research.html">operations_research</a></li><li class="navelem"><a class="el" href="classoperations__research_1_1TypeRegulationsConstraint.html">TypeRegulationsConstraint</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classoperations__research_1_1TypeRegulationsConstraint.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
@@ -47,23 +51,17 @@
 <div class="title">operations_research::TypeRegulationsConstraint Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>The following constraint ensures that incompatibilities and requirements between types are respected. </p>
+<p>It verifies both "hard" and "temporal" incompatibilities. Two nodes with hard incompatible types cannot be served by the same vehicle at all, while with a temporal incompatibility they can't be on the same route at the same time.</p>
+<p>For example, for three temporally incompatible types T1 T2 and T3, two pickup/delivery pairs p1/d1 and p2/d2 of type T1 and T2 respectively, and a non-pickup/delivery node n of type T3, the configuration p1 --&gt; d1 --&gt; n --&gt; p2 --&gt; d2 is acceptable, whereas any configurations with p1 --&gt; p2 --&gt; d1 --&gt; ..., or p1 --&gt; n --&gt; d1 --&gt; ... is not feasible.</p>
+<p>It also verifies same-vehicle and temporal type requirements. In the above example, if T1 is a requirement for T2:</p><ul>
+<li>For a same-vehicle requirement, p1/d1 must be on the same vehicle as p2/d2.</li>
+<li>For a temporal requirement, p2 must be visited between p1 and d1. </li>
+</ul>
 
-<p>The following constraint ensures that incompatibilities and requirements between types are respected.  
- <a href="classoperations__research_1_1TypeRegulationsConstraint.html#details">More...</a></p>
-
-<p><code>#include &lt;<a class="el" href="routing_8h_source.html">routing.h</a>&gt;</code></p>
-<div class="dynheader">
-Inheritance diagram for operations_research::TypeRegulationsConstraint:</div>
-<div class="dyncontent">
- <div class="center">
-  <img src="classoperations__research_1_1TypeRegulationsConstraint.png" usemap="#operations_5Fresearch::TypeRegulationsConstraint_map" alt=""/>
-  <map id="operations_5Fresearch::TypeRegulationsConstraint_map" name="operations_5Fresearch::TypeRegulationsConstraint_map">
-<area href="classoperations__research_1_1Constraint.html" title="A constraint is the main modeling object." alt="operations_research::Constraint" shape="rect" coords="0,112,285,136"/>
-<area href="classoperations__research_1_1PropagationBaseObject.html" title="NOLINT." alt="operations_research::PropagationBaseObject" shape="rect" coords="0,56,285,80"/>
-<area href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="operations_research::BaseObject" shape="rect" coords="0,0,285,24"/>
-  </map>
-</div></div>
-<table class="memberdecls">
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01955">1955</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:aeae90eab871a67eb39147218b4771225"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1TypeRegulationsConstraint.html#aeae90eab871a67eb39147218b4771225">TypeRegulationsConstraint</a> (const <a class="el" href="classoperations__research_1_1RoutingModel.html">RoutingModel</a> &amp;model)</td></tr>
@@ -125,17 +123,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:ab34671f68433c582260a443f3d15bfae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a base name for automatic naming.  <a href="#ab34671f68433c582260a443f3d15bfae">More...</a><br /></td></tr>
 <tr class="separator:ab34671f68433c582260a443f3d15bfae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>The following constraint ensures that incompatibilities and requirements between types are respected. </p>
-<p>It verifies both "hard" and "temporal" incompatibilities. Two nodes with hard incompatible types cannot be served by the same vehicle at all, while with a temporal incompatibility they can't be on the same route at the same time.</p>
-<p>For example, for three temporally incompatible types T1 T2 and T3, two pickup/delivery pairs p1/d1 and p2/d2 of type T1 and T2 respectively, and a non-pickup/delivery node n of type T3, the configuration p1 --&gt; d1 --&gt; n --&gt; p2 --&gt; d2 is acceptable, whereas any configurations with p1 --&gt; p2 --&gt; d1 --&gt; ..., or p1 --&gt; n --&gt; d1 --&gt; ... is not feasible.</p>
-<p>It also verifies same-vehicle and temporal type requirements. In the above example, if T1 is a requirement for T2:</p><ul>
-<li>For a same-vehicle requirement, p1/d1 must be on the same vehicle as p2/d2.</li>
-<li>For a temporal requirement, p2 must be visited between p1 and d1. </li>
-</ul>
-
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01954">1954</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="aeae90eab871a67eb39147218b4771225"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aeae90eab871a67eb39147218b4771225">&#9670;&nbsp;</a></span>TypeRegulationsConstraint()</h2>
 
@@ -763,6 +751,7 @@ Public Member Functions</h2></td></tr>
 <li><a class="el" href="routing_8h_source.html">routing.h</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

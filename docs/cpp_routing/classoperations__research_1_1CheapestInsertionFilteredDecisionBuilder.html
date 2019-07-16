@@ -26,19 +26,23 @@
       <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="hierarchy.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="namespaceoperations__research.html">operations_research</a></li><li class="navelem"><a class="el" href="classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html">CheapestInsertionFilteredDecisionBuilder</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
@@ -51,23 +55,10 @@
 <div class="title">operations_research::CheapestInsertionFilteredDecisionBuilder Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
 </div><!--header-->
 <div class="contents">
-
-<p><code>#include &lt;<a class="el" href="routing_8h_source.html">routing.h</a>&gt;</code></p>
-<div class="dynheader">
-Inheritance diagram for operations_research::CheapestInsertionFilteredDecisionBuilder:</div>
-<div class="dyncontent">
- <div class="center">
-  <img src="classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.png" usemap="#operations_5Fresearch::CheapestInsertionFilteredDecisionBuilder_map" alt=""/>
-  <map id="operations_5Fresearch::CheapestInsertionFilteredDecisionBuilder_map" name="operations_5Fresearch::CheapestInsertionFilteredDecisionBuilder_map">
-<area href="classoperations__research_1_1RoutingFilteredDecisionBuilder.html" title="Filter-based decision builder dedicated to routing." alt="operations_research::RoutingFilteredDecisionBuilder" shape="rect" coords="207,168,611,192"/>
-<area href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html" title="Decision builders building a solution using local search filters to evaluate its feasibility." alt="operations_research::IntVarFilteredDecisionBuilder" shape="rect" coords="207,112,611,136"/>
-<area href="classoperations__research_1_1DecisionBuilder.html" title="A DecisionBuilder is responsible for creating the search tree." alt="operations_research::DecisionBuilder" shape="rect" coords="207,56,611,80"/>
-<area href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="operations_research::BaseObject" shape="rect" coords="207,0,611,24"/>
-<area href="classoperations__research_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html" title="Filter-based decision builder which builds a solution by inserting nodes at their cheapest position o..." alt="operations_research::GlobalCheapestInsertionFilteredDecisionBuilder" shape="rect" coords="0,280,404,304"/>
-<area href="classoperations__research_1_1LocalCheapestInsertionFilteredDecisionBuilder.html" title="Filter-base decision builder which builds a solution by inserting nodes at their cheapest position." alt="operations_research::LocalCheapestInsertionFilteredDecisionBuilder" shape="rect" coords="414,280,818,304"/>
-  </map>
-</div></div>
-<table class="memberdecls">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock">
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02595">2595</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoperations__research_1_1CheapestInsertionFilteredDecisionBuilder_1_1StartEndValue.html">StartEndValue</a></td></tr>
@@ -167,10 +158,7 @@ Protected Attributes</h2></td></tr>
 <tr class="memitem:ad9d981960cfd68cb2181e0072039e8fb"><td class="memItemLeft" align="right" valign="top">std::function&lt; int64(int64)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html#ad9d981960cfd68cb2181e0072039e8fb">penalty_evaluator_</a></td></tr>
 <tr class="separator:ad9d981960cfd68cb2181e0072039e8fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02586">2586</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
-</div><h2 class="groupheader">Member Typedef Documentation</h2>
+<h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="aa3d22767523969477c21a15afd777ee4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa3d22767523969477c21a15afd777ee4">&#9670;&nbsp;</a></span>Seed</h2>
 
@@ -191,7 +179,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02607">2607</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02616">2616</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -215,7 +203,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02597">2597</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02606">2606</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -285,7 +273,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02594">2594</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02603">2603</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -523,7 +511,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns true if the variable of index 'index' is in the current solution. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02529">2529</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02538">2538</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -582,7 +570,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the start of the end chain of vehicle,. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02567">2567</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02576">2576</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -612,7 +600,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Returns the end of the start chain of vehicle,. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02565">2565</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02574">2574</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -810,7 +798,7 @@ template&lt;class Queue &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02563">2563</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02572">2572</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -870,7 +858,7 @@ template&lt;class Queue &gt; </div>
 
 <p>Returns statistics on search, number of decisions sent to filters, number of decisions rejected by filters. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02500">2500</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02509">2509</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -897,7 +885,7 @@ template&lt;class Queue &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02501">2501</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02510">2510</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -937,7 +925,7 @@ template&lt;class Queue &gt; </div>
 
 <p>Modifies the current solution by setting the variable of index 'index' to value 'value'. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02514">2514</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02523">2523</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -966,7 +954,7 @@ template&lt;class Queue &gt; </div>
 
 <p>Returns the number of variables the decision builder is trying to instantiate. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02534">2534</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02543">2543</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -997,7 +985,7 @@ template&lt;class Queue &gt; </div>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html#a6ae15b5268df7520ab2a6d756b72e9fb">operations_research::IntVarFilteredDecisionBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02575">2575</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02584">2584</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1027,7 +1015,7 @@ template&lt;class Queue &gt; </div>
 
 <p>Returns the value of the variable of index 'index' in the last committed solution. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02525">2525</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02534">2534</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1057,7 +1045,7 @@ template&lt;class Queue &gt; </div>
 
 <p>Returns the variable of index 'index'. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02536">2536</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02545">2545</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1082,7 +1070,7 @@ template&lt;class Queue &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02644">2644</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02653">2653</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1106,7 +1094,7 @@ template&lt;class Queue &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02645">2645</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02654">2654</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -1114,6 +1102,7 @@ template&lt;class Queue &gt; </div>
 <li><a class="el" href="routing_8h_source.html">routing.h</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

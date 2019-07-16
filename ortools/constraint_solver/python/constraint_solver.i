@@ -45,7 +45,7 @@
 %include "ortools/util/python/vector.i"
 
 // We *do* need to use SWIGTYPE_... type names directly, because the
-// (recommended replacement) $descriptor macro fails, as of 2014-06, with
+// (recommended replacement) $descriptor macro fails, as of 2019-07, with
 // types such as operations_research::Solver.
 // The absence of whitespace before 'swiglint' is mandatory.
 //swiglint: disable swigtype-name

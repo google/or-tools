@@ -1106,9 +1106,7 @@ class PathCumulFilter : public BasePathFilter {
     int num_linear_constraints = 0;
     if (dimension_.GetSpanCostCoefficientForVehicle(vehicle) > 0)
       ++num_linear_constraints;
-    if (dimension_.HasSoftSpanUpperBounds() &&
-        dimension_.GetSoftSpanUpperBoundForVehicle(vehicle).cost > 0)
-      ++num_linear_constraints;
+    if (FilterSoftSpanCost(vehicle)) ++num_linear_constraints;
     if (FilterCumulSoftLowerBounds()) ++num_linear_constraints;
     if (FilterCumulSoftBounds()) ++num_linear_constraints;
     return num_linear_constraints >= 2;
@@ -1121,6 +1119,14 @@ class PathCumulFilter : public BasePathFilter {
   }
 
   bool FilterPrecedences() const { return !node_index_to_precedences_.empty(); }
+
+  bool FilterSoftSpanCost() const {
+    return dimension_.HasSoftSpanUpperBounds();
+  }
+  bool FilterSoftSpanCost(int vehicle) const {
+    return dimension_.HasSoftSpanUpperBounds() &&
+           dimension_.GetSoftSpanUpperBoundForVehicle(vehicle).cost > 0;
+  }
 
   int64 GetCumulSoftLowerBoundCost(int64 node, int64 cumul_value) const;
 
@@ -1387,7 +1393,7 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
   current_cumul_cost_values_.clear();
   if (FilterSpanCost() || FilterCumulSoftBounds() || FilterSlackCost() ||
       FilterCumulSoftLowerBounds() || FilterCumulPiecewiseLinearCosts() ||
-      FilterPrecedences()) {
+      FilterPrecedences() || FilterSoftSpanCost()) {
     InitializeSupportedPathCumul(&current_min_start_, kint64max);
     InitializeSupportedPathCumul(&current_max_end_, kint64min);
     current_path_transits_.Clear();
@@ -1464,13 +1470,26 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
         current_path_transits_.ClearPath(r);
         continue;
       }
-      if (FilterSlackCost() && !filter_with_optimizer) {
+      if (!filter_with_optimizer &&
+          (FilterSlackCost() || FilterSoftSpanCost())) {
         const int64 start =
             ComputePathMaxStartFromEndCumul(current_path_transits_, r, cumul);
-        current_cumul_cost_value =
-            CapAdd(current_cumul_cost_value,
-                   CapProd(vehicle_span_cost_coefficients_[vehicle],
-                           CapSub(CapSub(cumul, start), total_transit)));
+        const int64 span_lower_bound = CapSub(cumul, start);
+        if (FilterSlackCost()) {
+          current_cumul_cost_value =
+              CapAdd(current_cumul_cost_value,
+                     CapProd(vehicle_span_cost_coefficients_[vehicle],
+                             CapSub(span_lower_bound, total_transit)));
+        }
+        if (FilterSoftSpanCost()) {
+          const SimpleBoundCosts::BoundCost bound_cost =
+              dimension_.GetSoftSpanUpperBoundForVehicle(vehicle);
+          if (bound_cost.bound < span_lower_bound) {
+            const int64 violation = CapSub(span_lower_bound, bound_cost.bound);
+            current_cumul_cost_value = CapAdd(
+                current_cumul_cost_value, CapProd(bound_cost.cost, violation));
+          }
+        }
       }
       if (FilterCumulSoftLowerBounds() && !filter_with_optimizer) {
         current_cumul_cost_value =
@@ -1592,7 +1611,8 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
                                        min_path_cumuls)) {
     return false;
   }
-  if (FilterSlackCost() || FilterBreakCost(vehicle)) {
+  if (FilterSlackCost() || FilterBreakCost(vehicle) ||
+      FilterSoftSpanCost(vehicle)) {
     const int64 max_start_from_min_end =
         ComputePathMaxStartFromEndCumul(delta_path_transits_, path, min_end);
     int64 min_total_slack =
@@ -1619,6 +1639,16 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
         cumul_cost_delta = CapAdd(
             cumul_cost_delta,
             CapProd(vehicle_span_cost_coefficients_[vehicle], min_total_slack));
+        const int64 span_lower_bound = CapAdd(total_transit, min_total_slack);
+        if (FilterSoftSpanCost()) {
+          const SimpleBoundCosts::BoundCost bound_cost =
+              dimension_.GetSoftSpanUpperBoundForVehicle(vehicle);
+          if (bound_cost.bound < span_lower_bound) {
+            const int64 violation = CapSub(span_lower_bound, bound_cost.bound);
+            cumul_cost_delta =
+                CapAdd(cumul_cost_delta, CapProd(bound_cost.cost, violation));
+          }
+        }
       }
     }
     if (CapAdd(total_transit, min_total_slack) >
@@ -1648,7 +1678,8 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
     delta_path_transits_.ClearPath(path);
   }
   if (FilterSpanCost() || FilterCumulSoftBounds() || FilterSlackCost() ||
-      FilterCumulSoftLowerBounds() || FilterCumulPiecewiseLinearCosts()) {
+      FilterCumulSoftLowerBounds() || FilterCumulPiecewiseLinearCosts() ||
+      FilterSoftSpanCost(vehicle)) {
     delta_paths_.insert(GetPath(path_start));
     cumul_cost_delta =
         CapSub(cumul_cost_delta, current_cumul_cost_values_[path_start]);
@@ -1663,7 +1694,7 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
 bool PathCumulFilter::FinalizeAcceptPath(Assignment* delta) {
   if ((!FilterSpanCost() && !FilterCumulSoftBounds() && !FilterSlackCost() &&
        !FilterCumulSoftLowerBounds() && !FilterCumulPiecewiseLinearCosts() &&
-       !FilterPrecedences()) ||
+       !FilterPrecedences() && !FilterSoftSpanCost()) ||
       lns_detected_) {
     PropagateObjectiveValue(injected_objective_value_);
     return true;

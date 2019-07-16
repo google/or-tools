@@ -22,6 +22,8 @@ namespace sat {
 
 bool SharedRINSNeighborhoodManager::AddNeighborhood(
     const RINSNeighborhood& rins_neighborhood) {
+  absl::MutexLock lock(&mutex_);
+
   // Don't store this neighborhood if the current storage is already too large.
   // TODO(user): Consider instead removing one of the older neighborhoods.
   const int64 neighborhood_size = rins_neighborhood.fixed_vars.size() +
@@ -29,8 +31,6 @@ bool SharedRINSNeighborhoodManager::AddNeighborhood(
   if (total_stored_vars_ + neighborhood_size > max_stored_vars()) {
     return false;
   }
-
-  absl::MutexLock lock(&mutex_);
   total_stored_vars_ += neighborhood_size;
   neighborhoods_.push_back(std::move(rins_neighborhood));
   VLOG(1) << "total stored vars: " << total_stored_vars_;
@@ -75,6 +75,10 @@ void AddRINSNeighborhood(Model* model) {
     if (solution_details == nullptr || solution_details->solution_count == 0) {
       // The tolerance make sure that if the lp_values is close to an integer,
       // then we fix the variable to this integer value.
+      //
+      // Important: the LP relaxation doesn't know about holes in the variable
+      // domains, so the intersection of [domain_lb, domain_ub] with the initial
+      // variable domain might be empty.
       const int64 domain_lb =
           static_cast<int64>(std::floor(lp_value + tolerance));
       const int64 domain_ub =

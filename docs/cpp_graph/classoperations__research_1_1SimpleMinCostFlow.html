@@ -27,19 +27,23 @@
       <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="inherits.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="namespaceoperations__research.html">operations_research</a></li><li class="navelem"><a class="el" href="classoperations__research_1_1SimpleMinCostFlow.html">SimpleMinCostFlow</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classoperations__research_1_1SimpleMinCostFlow.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
@@ -49,30 +53,13 @@
 <div class="title">operations_research::SimpleMinCostFlow Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>A simple and efficient min-cost flow interface. </p>
+<p>This is as fast as GenericMinCostFlow&lt;ReverseArcStaticGraph&gt;, which is the fastest, but is uses more memory in order to hide the somewhat involved construction of the static graph.</p>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000049">Todo:</a></b></dt><dd>(user): If the need arises, extend this interface to support warm start and incrementality between solves. Note that this is already supported by the GenericMinCostFlow&lt;&gt; interface. </dd></dl>
 
-<p>A simple and efficient min-cost flow interface.  
- <a href="classoperations__research_1_1SimpleMinCostFlow.html#details">More...</a></p>
-
-<p><code>#include &lt;<a class="el" href="min__cost__flow_8h_source.html">min_cost_flow.h</a>&gt;</code></p>
-<div class="dynheader">
-Inheritance diagram for operations_research::SimpleMinCostFlow:</div>
-<div class="dyncontent">
-<div class="center"><img src="classoperations__research_1_1SimpleMinCostFlow__inherit__graph.png" border="0" usemap="#operations__research_1_1SimpleMinCostFlow_inherit__map" alt="Inheritance graph"/></div>
-<map name="operations__research_1_1SimpleMinCostFlow_inherit__map" id="operations__research_1_1SimpleMinCostFlow_inherit__map">
-<area shape="rect"  title="A simple and efficient min&#45;cost flow interface." alt="" coords="5,92,152,131"/>
-<area shape="rect"  href="classoperations__research_1_1MinCostFlowBase.html" title="Different statuses for a solved problem." alt="" coords="7,5,150,44"/>
-</map>
-<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
-<div class="dynheader">
-Collaboration diagram for operations_research::SimpleMinCostFlow:</div>
-<div class="dyncontent">
-<div class="center"><img src="classoperations__research_1_1SimpleMinCostFlow__coll__graph.png" border="0" usemap="#operations__research_1_1SimpleMinCostFlow_coll__map" alt="Collaboration graph"/></div>
-<map name="operations__research_1_1SimpleMinCostFlow_coll__map" id="operations__research_1_1SimpleMinCostFlow_coll__map">
-<area shape="rect"  title="A simple and efficient min&#45;cost flow interface." alt="" coords="5,92,152,131"/>
-<area shape="rect"  href="classoperations__research_1_1MinCostFlowBase.html" title="Different statuses for a solved problem." alt="" coords="7,5,150,44"/>
-</map>
-<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
-<table class="memberdecls">
+<p class="definition">Definition at line <a class="el" href="min__cost__flow_8h_source.html#l00213">213</a> of file <a class="el" href="min__cost__flow_8h_source.html">min_cost_flow.h</a>.</p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
 <tr class="memitem:ae5cad0c7d9c3eddbc7c3aefbee060457"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MinCostFlowBase.html#ae5cad0c7d9c3eddbc7c3aefbee060457">Status</a> { <br />
@@ -130,13 +117,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a98af872df7cb24c5d3074cc44a16f9a7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceoperations__research.html#aa7950685633ee869aa9471b2ec5fbcfa">CostValue</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SimpleMinCostFlow.html#a98af872df7cb24c5d3074cc44a16f9a7">UnitCost</a> (<a class="el" href="namespaceoperations__research.html#a31d858394c5eed1fa21edc3da47047c1">ArcIndex</a> arc) const</td></tr>
 <tr class="separator:a98af872df7cb24c5d3074cc44a16f9a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>A simple and efficient min-cost flow interface. </p>
-<p>This is as fast as GenericMinCostFlow&lt;ReverseArcStaticGraph&gt;, which is the fastest, but is uses more memory in order to hide the somewhat involved construction of the static graph.</p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000048">Todo:</a></b></dt><dd>(user): If the need arises, extend this interface to support warm start and incrementality between solves. Note that this is already supported by the GenericMinCostFlow&lt;&gt; interface. </dd></dl>
-
-<p class="definition">Definition at line <a class="el" href="min__cost__flow_8h_source.html#l00213">213</a> of file <a class="el" href="min__cost__flow_8h_source.html">min_cost_flow.h</a>.</p>
-</div><h2 class="groupheader">Member Enumeration Documentation</h2>
+<h2 class="groupheader">Member Enumeration Documentation</h2>
 <a id="ae5cad0c7d9c3eddbc7c3aefbee060457"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae5cad0c7d9c3eddbc7c3aefbee060457">&#9670;&nbsp;</a></span>Status</h2>
 
@@ -521,6 +502,7 @@ Public Member Functions</h2></td></tr>
 <li><a class="el" href="min__cost__flow_8h_source.html">min_cost_flow.h</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

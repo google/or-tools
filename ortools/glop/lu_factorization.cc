@@ -13,6 +13,8 @@
 
 #include "ortools/glop/lu_factorization.h"
 
+#include <cstddef>
+
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
 
@@ -352,7 +354,7 @@ bool LuFactorization::LeftSolveLWithNonZeros(
     lower_.TransposeHyperSparseSolveWithReversedNonZeros(x, nz);
   }
 
-  if (result_before_permutation == nullptr || !nz->empty()) {
+  if (result_before_permutation == nullptr) {
     // Note(user): For the behavior of the two functions to be exactly the same,
     // we need the positions listed in nz to be the "exact" non-zeros of x. This
     // should be the case because the hyper-sparse functions makes sure of that.
@@ -369,14 +371,14 @@ bool LuFactorization::LeftSolveLWithNonZeros(
       }
     }
     return false;
-  } else {
-    // This computes the same thing as in the other branch but also keeps the
-    // original x in result_before_permutation. Because of this, it is faster to
-    // use a different algorithm.
-    result_before_permutation->non_zeros.clear();
-    x->swap(result_before_permutation->values);
-    x->AssignToZero(inverse_row_perm_.size());
-    y->non_zeros.clear();
+  }
+
+  // This computes the same thing as in the other branch but also keeps the
+  // original x in result_before_permutation. Because of this, it is faster to
+  // use a different algorithm.
+  ClearAndResizeVectorWithNonZeros(x->size(), result_before_permutation);
+  x->swap(result_before_permutation->values);
+  if (nz->empty()) {
     for (RowIndex row(0); row < inverse_row_perm_.size(); ++row) {
       const Fractional value = (*result_before_permutation)[row];
       if (value != 0.0) {
@@ -384,8 +386,18 @@ bool LuFactorization::LeftSolveLWithNonZeros(
         (*x)[permuted_row] = value;
       }
     }
-    return true;
+  } else {
+    nz->swap(result_before_permutation->non_zeros);
+    nz->reserve(result_before_permutation->non_zeros.size());
+    for (const RowIndex row : result_before_permutation->non_zeros) {
+      const Fractional value = (*result_before_permutation)[row];
+      const RowIndex permuted_row = inverse_row_perm_[row];
+      (*x)[permuted_row] = value;
+      nz->push_back(permuted_row);
+    }
+    y->non_zeros_are_sorted = false;
   }
+  return true;
 }
 
 void LuFactorization::LeftSolveLWithNonZeros(ScatteredRow* y) const {

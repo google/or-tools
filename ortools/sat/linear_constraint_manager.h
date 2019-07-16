@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_LINEAR_CONSTRAINT_MANAGER_H_
 #define OR_TOOLS_SAT_LINEAR_CONSTRAINT_MANAGER_H_
 
+#include <cstddef>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -39,6 +40,20 @@ namespace sat {
 // which constraint should go into the current LP.
 class LinearConstraintManager {
  public:
+  struct ConstraintInfo {
+    LinearConstraint constraint;
+    double l2_norm;
+    bool is_cut;
+    int64 inactive_count;
+    double objective_parallelism;
+    bool objective_parallelism_computed;
+    bool is_in_lp;
+    // A constraint might be marked for permanent removal if it is almost
+    // parallel to one of the existing constraints in the LP.
+    bool permanently_removed;
+    size_t hash;
+  };
+
   explicit LinearConstraintManager(Model* model)
       : sat_parameters_(*model->GetOrCreate<SatParameters>()),
         integer_trail_(*model->GetOrCreate<IntegerTrail>()) {}
@@ -71,9 +86,9 @@ class LinearConstraintManager {
   void AddAllConstraintsToLp();
 
   // All the constraints managed by this class.
-  const gtl::ITIVector<ConstraintIndex, LinearConstraint>& AllConstraints()
+  const gtl::ITIVector<ConstraintIndex, ConstraintInfo>& AllConstraints()
       const {
-    return constraints_;
+    return constraint_infos_;
   }
 
   // The set of constraints indices in AllConstraints() that should be part
@@ -110,27 +125,13 @@ class LinearConstraintManager {
   // Optimization to avoid calling SimplifyConstraint() when not needed.
   int64 last_simplification_timestamp_ = 0;
 
-  // TODO(user): Merge all the constraint related info in a struct and store
-  // a vector of struct instead. The global list of constraint.
-  gtl::ITIVector<ConstraintIndex, LinearConstraint> constraints_;
-  gtl::ITIVector<ConstraintIndex, double> constraint_l2_norms_;
-  gtl::ITIVector<ConstraintIndex, bool> constraint_is_cut_;
-  gtl::ITIVector<ConstraintIndex, int64> constraint_inactive_count_;
-  gtl::ITIVector<ConstraintIndex, double> constraint_objective_parallelisms_;
-  gtl::ITIVector<ConstraintIndex, bool>
-      constraint_objective_parallelism_computed_;
+  gtl::ITIVector<ConstraintIndex, ConstraintInfo> constraint_infos_;
 
   // Temporary list of constraints marked for removal. Note that we remove
   // constraints in batch to avoid changing LP too frequently.
   absl::flat_hash_set<ConstraintIndex> constraints_removal_list_;
 
-  // List of permananently removed constraints. A constraint might be marked for
-  // permanent removal if it is almost parallel to one of the existing
-  // constraints in the LP.
-  gtl::ITIVector<ConstraintIndex, bool> constraint_permanently_removed_;
-
   // The subset of constraints currently in the lp.
-  gtl::ITIVector<ConstraintIndex, bool> constraint_is_in_lp_;
   std::vector<ConstraintIndex> lp_constraints_;
 
   // We keep a map from the hash of our constraint terms to their position in
@@ -139,7 +140,6 @@ class LinearConstraintManager {
   // contained in constraints_ and the code is still okay if we do not merge the
   // constraints.
   absl::flat_hash_map<size_t, ConstraintIndex> equiv_constraints_;
-  gtl::ITIVector<ConstraintIndex, size_t> constraint_hashes_;
 
   int64 num_merged_constraints_ = 0;
   int64 num_shortened_constraints_ = 0;

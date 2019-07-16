@@ -27,19 +27,23 @@
       <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="inherits.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="namespaceutil.html">util</a></li><li class="navelem"><a class="el" href="classutil_1_1CompleteGraph.html">CompleteGraph</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classutil_1_1CompleteGraph.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
@@ -52,32 +56,14 @@
 <div class="title">util::CompleteGraph&lt; NodeIndexType, ArcIndexType &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><h3>template&lt;typename NodeIndexType = int32, typename ArcIndexType = int32&gt;<br />
+class util::CompleteGraph&lt; NodeIndexType, ArcIndexType &gt;</h3>
 
-<p><a class="el" href="classutil_1_1CompleteGraph.html" title="CompleteGraph implementation ---------------------------------------------— Nodes and arcs are implic...">CompleteGraph</a> implementation ---------------------------------------------&mdash; Nodes and arcs are implicit and not stored.  
- <a href="classutil_1_1CompleteGraph.html#details">More...</a></p>
+<p><a class="el" href="classutil_1_1CompleteGraph.html" title="CompleteGraph implementation ---------------------------------------------— Nodes and arcs are implic...">CompleteGraph</a> implementation ---------------------------------------------&mdash; Nodes and arcs are implicit and not stored. </p>
 
-<p><code>#include &lt;<a class="el" href="graph_8h_source.html">graph.h</a>&gt;</code></p>
-<div class="dynheader">
-Inheritance diagram for util::CompleteGraph&lt; NodeIndexType, ArcIndexType &gt;:</div>
-<div class="dyncontent">
-<div class="center"><img src="classutil_1_1CompleteGraph__inherit__graph.png" border="0" usemap="#util_1_1CompleteGraph_3_01NodeIndexType_00_01ArcIndexType_01_4_inherit__map" alt="Inheritance graph"/></div>
-<map name="util_1_1CompleteGraph_3_01NodeIndexType_00_01ArcIndexType_01_4_inherit__map" id="util_1_1CompleteGraph_3_01NodeIndexType_00_01ArcIndexType_01_4_inherit__map">
-<area shape="rect"  title="CompleteGraph implementation &#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;â Nodes and arcs are implic..." alt="" coords="5,92,231,131"/>
-<area shape="rect"  href="classutil_1_1BaseGraph.html" title=" " alt="" coords="24,5,213,44"/>
-</map>
-<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
-<div class="dynheader">
-Collaboration diagram for util::CompleteGraph&lt; NodeIndexType, ArcIndexType &gt;:</div>
-<div class="dyncontent">
-<div class="center"><img src="classutil_1_1CompleteGraph__coll__graph.png" border="0" usemap="#util_1_1CompleteGraph_3_01NodeIndexType_00_01ArcIndexType_01_4_coll__map" alt="Collaboration graph"/></div>
-<map name="util_1_1CompleteGraph_3_01NodeIndexType_00_01ArcIndexType_01_4_coll__map" id="util_1_1CompleteGraph_3_01NodeIndexType_00_01ArcIndexType_01_4_coll__map">
-<area shape="rect"  title="CompleteGraph implementation &#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;â Nodes and arcs are implic..." alt="" coords="16,207,242,245"/>
-<area shape="rect"  href="classutil_1_1BaseGraph.html" title=" " alt="" coords="35,119,224,157"/>
-<area shape="rect"  title=" " alt="" coords="5,5,120,31"/>
-<area shape="rect"  title=" " alt="" coords="145,5,247,31"/>
-</map>
-<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
-<table class="memberdecls">
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l02174">2174</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
 <tr class="memitem:adb271cf4bcf2de5b5bbe300d7054af29"><td class="memItemLeft" align="right" valign="top">typedef NodeIndexType&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutil_1_1BaseGraph.html#adb271cf4bcf2de5b5bbe300d7054af29">NodeIndex</a></td></tr>
@@ -171,14 +157,7 @@ Protected Attributes</h2></td></tr>
 <tr class="memitem:aa980e5526b9ded17a83928fc339c71e4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutil_1_1BaseGraph.html#aa980e5526b9ded17a83928fc339c71e4">const_capacities_</a></td></tr>
 <tr class="separator:aa980e5526b9ded17a83928fc339c71e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><h3>template&lt;typename NodeIndexType = int32, typename ArcIndexType = int32&gt;<br />
-class util::CompleteGraph&lt; NodeIndexType, ArcIndexType &gt;</h3>
-
-<p><a class="el" href="classutil_1_1CompleteGraph.html" title="CompleteGraph implementation ---------------------------------------------— Nodes and arcs are implic...">CompleteGraph</a> implementation ---------------------------------------------&mdash; Nodes and arcs are implicit and not stored. </p>
-
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l02174">2174</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
-</div><h2 class="groupheader">Member Typedef Documentation</h2>
+<h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a0eba6e5899924388644dfa2258ae8929"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0eba6e5899924388644dfa2258ae8929">&#9670;&nbsp;</a></span>ArcIndex</h2>
 
@@ -346,7 +325,7 @@ template&lt;typename NodeIndexType = int32, typename ArcIndexType = int32&gt; </
 </div><div class="memdoc">
 
 <p>Capacity reserved for future arcs, always &gt;= num_arcs_. </p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000014">Todo:</a></b></dt><dd>(user): Same questions as the ones in <a class="el" href="classutil_1_1BaseGraph.html#a463d57480c9563a7a707c5d0928c9946" title="Capacity reserved for future nodes, always &gt;= num_nodes_.">node_capacity()</a>. </dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000015">Todo:</a></b></dt><dd>(user): Same questions as the ones in <a class="el" href="classutil_1_1BaseGraph.html#a463d57480c9563a7a707c5d0928c9946" title="Capacity reserved for future nodes, always &gt;= num_nodes_.">node_capacity()</a>. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00959">959</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
@@ -465,7 +444,7 @@ template&lt;typename NodeIndexType = int32, typename ArcIndexType = int32&gt; </
 </div><div class="memdoc">
 
 <p><a class="el" href="classutil_1_1BaseGraph.html#aa3bd051d1e141b09dda17aa9b5f24f69" title="FreezeCapacities() makes any future attempt to change the graph capacities crash in DEBUG mode.">FreezeCapacities()</a> makes any future attempt to change the graph capacities crash in DEBUG mode. </p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000015">Todo:</a></b></dt><dd>(user): Only define this in debug mode at the cost of having a lot of ifndef NDEBUG all over the place? remove the function completely ? </dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000016">Todo:</a></b></dt><dd>(user): Only define this in debug mode at the cost of having a lot of ifndef NDEBUG all over the place? remove the function completely ? </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00966">966</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
@@ -504,7 +483,7 @@ template&lt;typename NodeIndexType = int32, typename ArcIndexType = int32&gt; </
   </tr>
 </table>
 </div><div class="memdoc">
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000017">Todo:</a></b></dt><dd>(user): remove the public functions below.</dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000018">Todo:</a></b></dt><dd>(user): remove the public functions below.</dd></dl>
 <p>They are just here during the transition from the old ebert_graph api to this new graph api. </p>
 
 <p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00264">264</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
@@ -645,7 +624,7 @@ template&lt;typename NodeIndexType , typename ArcIndexType &gt; </div>
 </div><div class="memdoc">
 
 <p>Capacity reserved for future nodes, always &gt;= num_nodes_. </p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000013">Todo:</a></b></dt><dd>(user): Is it needed? remove completely? return the real capacities at the cost of having a different implementation for each graphs? </dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000014">Todo:</a></b></dt><dd>(user): Is it needed? remove completely? return the real capacities at the cost of having a different implementation for each graphs? </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00951">951</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
@@ -1110,6 +1089,7 @@ template&lt;typename NodeIndexType , typename ArcIndexType &gt; </div>
 <li><a class="el" href="graph_8h_source.html">graph.h</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

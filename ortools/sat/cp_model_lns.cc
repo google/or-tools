@@ -584,10 +584,18 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
   // Fix the variables in the local model.
   for (const std::pair<RINSVariable, int64> fixed_var :
        rins_neighborhood_opt.value().fixed_vars) {
-    int var = fixed_var.first.model_var;
-    int64 value = fixed_var.second;
+    const int var = fixed_var.first.model_var;
+    const int64 value = fixed_var.second;
     if (var >= neighborhood.cp_model.variables_size()) continue;
     if (!helper_.IsActive(var)) continue;
+
+    const Domain domain =
+        ReadDomainFromProto(neighborhood.cp_model.variables(var));
+    if (!domain.Contains(value)) {
+      // TODO(user): Instead of aborting, pick the closest point in the domain?
+      return neighborhood;
+    }
+
     neighborhood.cp_model.mutable_variables(var)->clear_domain();
     neighborhood.cp_model.mutable_variables(var)->add_domain(value);
     neighborhood.cp_model.mutable_variables(var)->add_domain(value);
@@ -596,13 +604,17 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
 
   for (const std::pair<RINSVariable, /*domain*/ std::pair<int64, int64>>
            reduced_var : rins_neighborhood_opt.value().reduced_domain_vars) {
-    int var = reduced_var.first.model_var;
-    int64 lb = reduced_var.second.first;
-    int64 ub = reduced_var.second.second;
+    const int var = reduced_var.first.model_var;
+    const int64 lb = reduced_var.second.first;
+    const int64 ub = reduced_var.second.second;
     if (var >= neighborhood.cp_model.variables_size()) continue;
     if (!helper_.IsActive(var)) continue;
     Domain domain = ReadDomainFromProto(neighborhood.cp_model.variables(var));
     domain = domain.IntersectionWith(Domain(lb, ub));
+    if (domain.IsEmpty()) {
+      // TODO(user): Instead of aborting, pick the closest point in the domain?
+      return neighborhood;
+    }
     FillDomainInProto(domain, neighborhood.cp_model.mutable_variables(var));
     neighborhood.is_reduced = true;
   }

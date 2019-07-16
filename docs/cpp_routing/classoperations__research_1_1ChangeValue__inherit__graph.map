@@ -1,7 +1,0 @@
-<map id="operations_research::ChangeValue" name="operations_research::ChangeValue">
-<area shape="rect" id="node1" title="&#45;&#45;— ChangeValue Operators &#45;&#45;—" alt="" coords="905,19,1048,57"/>
-<area shape="rect" id="node2" href="$classoperations__research_1_1IntVarLocalSearchOperator.html" title="Specialization of LocalSearchOperator built from an array of IntVars which specifies the scope of the..." alt="" coords="667,19,857,57"/>
-<area shape="rect" id="node3" href="$classoperations__research_1_1VarLocalSearchOperator.html" title=" " alt="" coords="400,5,619,71"/>
-<area shape="rect" id="node4" href="$classoperations__research_1_1LocalSearchOperator.html" title="&#45;&#45;&#45;&#45;&#45;&#45;&#45;— Local search operators &#45;&#45;&#45;&#45;&#45;&#45;&#45;—" alt="" coords="196,19,352,57"/>
-<area shape="rect" id="node5" href="$classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="" coords="5,19,148,57"/>
-</map>

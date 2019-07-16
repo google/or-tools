@@ -1,6 +1,0 @@
-<map id="operations_research::BaseIntExpr" name="operations_research::BaseIntExpr">
-<area shape="rect" id="node1" title="This is the base class for all expressions that are not variables." alt="" coords="19,265,162,304"/>
-<area shape="rect" id="node2" href="$classoperations__research_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming." alt="" coords="19,179,162,217"/>
-<area shape="rect" id="node3" href="$classoperations__research_1_1PropagationBaseObject.html" title="The PropagationBaseObject is a subclass of BaseObject that is also friend to the Solver class." alt="" coords="5,92,175,131"/>
-<area shape="rect" id="node4" href="$classoperations__research_1_1BaseObject.html" title="Useful Search and Modeling Objects." alt="" coords="19,5,162,44"/>
-</map>

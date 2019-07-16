@@ -332,7 +332,8 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
     }
 
     // Only add this strategy if we have enough worker left for LNS.
-    if (params.num_search_workers() > 8 && --index == 0) {
+    if ((params.num_search_workers() > 8 || params.interleave_search()) &&
+        --index == 0) {
       new_params.set_search_branching(
           SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
       *name = "quick_restart";

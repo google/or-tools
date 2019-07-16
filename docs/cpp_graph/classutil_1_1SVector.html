@@ -27,19 +27,23 @@
       <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="inherits.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="namespaceutil.html">util</a></li><li class="navelem"><a class="el" href="classutil_1_1SVector.html">SVector</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classutil_1_1SVector.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
@@ -48,12 +52,18 @@
 <div class="title">util::SVector&lt; T &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><h3>template&lt;typename T&gt;<br />
+class util::SVector&lt; T &gt;</h3>
 
-<p>Forward declaration.  
- <a href="classutil_1_1SVector.html#details">More...</a></p>
+<p>Forward declaration. </p>
+<p>A vector-like class where valid indices are in [- size_, size_) and reserved indices for future growth are in [- capacity_, capacity_).</p>
+<p>It is used to hold arc related information for graphs with reverse arcs. It supports only up to 2^31-1 elements, for compactness. If you ever need more, consider using templates for the size/capacity integer types.</p>
+<p>Sample usage:</p>
+<p>SVector&lt;int&gt; v; v.grow(left_value, right_value); v.resize(10); v.clear(); v.swap(new_v); std:swap(v[i], v[~i]); </p>
 
-<p><code>#include &lt;<a class="el" href="graph_8h_source.html">graph.h</a>&gt;</code></p>
-<table class="memberdecls">
+<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00174">174</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ac342b96ebd12c4cc505567c0d5342fd6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutil_1_1SVector.html#ac342b96ebd12c4cc505567c0d5342fd6">SVector</a> ()</td></tr>
@@ -96,18 +106,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a36d88784d1f797dcf76845c47d74a4da"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classutil_1_1SVector.html#a36d88784d1f797dcf76845c47d74a4da">clear_and_dealloc</a> ()</td></tr>
 <tr class="separator:a36d88784d1f797dcf76845c47d74a4da"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><h3>template&lt;typename T&gt;<br />
-class util::SVector&lt; T &gt;</h3>
-
-<p>Forward declaration. </p>
-<p>A vector-like class where valid indices are in [- size_, size_) and reserved indices for future growth are in [- capacity_, capacity_).</p>
-<p>It is used to hold arc related information for graphs with reverse arcs. It supports only up to 2^31-1 elements, for compactness. If you ever need more, consider using templates for the size/capacity integer types.</p>
-<p>Sample usage:</p>
-<p>SVector&lt;int&gt; v; v.grow(left_value, right_value); v.resize(10); v.clear(); v.swap(new_v); std:swap(v[i], v[~i]); </p>
-
-<p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00174">174</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ac342b96ebd12c4cc505567c0d5342fd6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac342b96ebd12c4cc505567c0d5342fd6">&#9670;&nbsp;</a></span>SVector() <span class="overload">[1/3]</span></h2>
 
@@ -567,7 +566,7 @@ template&lt;typename T&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000020">Todo:</a></b></dt><dd>(user): in C++17 we could use std::uninitialized_move instead of this loop. </dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000021">Todo:</a></b></dt><dd>(user): in C++17 we could use std::uninitialized_move instead of this loop. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="graph_8h_source.html#l00850">850</a> of file <a class="el" href="graph_8h_source.html">graph.h</a>.</p>
 
@@ -666,6 +665,7 @@ template&lt;typename T&gt; </div>
 <li><a class="el" href="graph_8h_source.html">graph.h</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

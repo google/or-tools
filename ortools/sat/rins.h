@@ -48,10 +48,21 @@ struct RINSVariable {
   }
 };
 
+// This is used to "cache" in the model the set of relevant RINSVariable.
 struct RINSVariables {
   std::vector<RINSVariable> vars;
 };
 
+// A RINS Neighborhood is actually just a generic neighborhood where the domain
+// of some variable have been reduced (fixed or restricted in [lb, ub]).
+//
+// Important: It might be possible that the value of the variables here are
+// outside the domains of these variables! This happens for RENS type of
+// neighborhood in the presence of holes in the domains because the LP
+// relaxation ignore those.
+//
+// TODO(user): Only the model_var inside RINSVariable is ever used in this
+// struct. Simply store directly the model_var instead of a RINSVariable.
 struct RINSNeighborhood {
   // A variable will appear only once and not in both vectors.
   std::vector<std::pair<RINSVariable, /*value*/ int64>> fixed_vars;
@@ -60,6 +71,10 @@ struct RINSNeighborhood {
 };
 
 // Shared object to pass around generated RINS neighborhoods across workers.
+//
+// TODO(user): For the sake of generality, this should just be renamed to
+// SharedNeighborhoodManager as it could store any kind of neighborhood based on
+// restricting the domains of a variable, not just the RENS/RINS ones.
 class SharedRINSNeighborhoodManager {
  public:
   explicit SharedRINSNeighborhoodManager(const int64 num_model_vars)
@@ -89,12 +104,12 @@ class SharedRINSNeighborhoodManager {
   absl::Mutex mutex_;
 
   // TODO(user): Use better data structure (e.g. queue) to store this
-  // collection.
-  std::vector<RINSNeighborhood> neighborhoods_;
+  // collection. In particular, to be deterministic, we need to be FIFO.
+  std::vector<RINSNeighborhood> neighborhoods_ GUARDED_BY(mutex_);
 
   // This is the sum of number of fixed and reduced variables across all the
   // shared neighborhoods. This is used for controlling the size of storage.
-  int64 total_stored_vars_ = 0;
+  int64 total_stored_vars_ GUARDED_BY(mutex_) = 0;
 
   const int64 num_model_vars_;
 };

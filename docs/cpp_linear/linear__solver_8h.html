@@ -26,102 +26,112 @@
       <li class="current"><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="files.html"><span>File&#160;List</span></a></li>
-      <li><a href="globals.html"><span>File&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="dir_a7cc1eeded8f693d0da6c729bc88c45a.html">ortools</a></li><li class="navelem"><a class="el" href="dir_4d3a5a688e4550f3d7725aaa5ab9c27b.html">linear_solver</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('linear__solver_8h.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
+  <div class="summary">
+<a href="#nested-classes">Classes</a> &#124;
+<a href="#namespaces">Namespaces</a> &#124;
+<a href="#func-members">Functions</a> &#124;
+<a href="#var-members">Variables</a>  </div>
   <div class="headertitle">
 <div class="title">linear_solver.h File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &lt;functional&gt;</code><br />
-<code>#include &lt;limits&gt;</code><br />
-<code>#include &lt;map&gt;</code><br />
-<code>#include &lt;memory&gt;</code><br />
-<code>#include &lt;string&gt;</code><br />
-<code>#include &lt;utility&gt;</code><br />
-<code>#include &lt;vector&gt;</code><br />
-<code>#include &quot;absl/container/flat_hash_map.h&quot;</code><br />
-<code>#include &quot;absl/strings/match.h&quot;</code><br />
-<code>#include &quot;absl/strings/str_format.h&quot;</code><br />
-<code>#include &quot;absl/types/optional.h&quot;</code><br />
-<code>#include &quot;ortools/base/commandlineflags.h&quot;</code><br />
-<code>#include &quot;ortools/base/integral_types.h&quot;</code><br />
-<code>#include &quot;ortools/base/logging.h&quot;</code><br />
-<code>#include &quot;ortools/base/status.h&quot;</code><br />
-<code>#include &quot;ortools/base/timer.h&quot;</code><br />
-<code>#include &quot;ortools/glop/parameters.pb.h&quot;</code><br />
-<code>#include &quot;ortools/linear_solver/linear_expr.h&quot;</code><br />
-<code>#include &quot;<a class="el" href="linear__solver_8pb_8h_source.html">ortools/linear_solver/linear_solver.pb.h</a>&quot;</code><br />
-<code>#include &quot;ortools/port/proto_utils.h&quot;</code><br />
-</div><div class="textblock"><div class="dynheader">
-Include dependency graph for linear_solver.h:</div>
-<div class="dyncontent">
-<div class="center"><img src="linear__solver_8h__incl.png" border="0" usemap="#linear__solver_8h" alt=""/></div>
-<map name="linear__solver_8h" id="linear__solver_8h">
-<area shape="rect"  title=" " alt="" coords="3028,5,3136,31"/>
-<area shape="rect"  title=" " alt="" coords="1067,85,1145,111"/>
-<area shape="rect"  title=" " alt="" coords="5,172,57,197"/>
-<area shape="rect"  title=" " alt="" coords="1434,85,1481,111"/>
-<area shape="rect"  title=" " alt="" coords="1506,85,1575,111"/>
-<area shape="rect"  title=" " alt="" coords="82,172,135,197"/>
-<area shape="rect"  title=" " alt="" coords="1599,85,1650,111"/>
-<area shape="rect"  title=" " alt="" coords="1674,85,1732,111"/>
-<area shape="rect"  title=" " alt="" coords="1756,79,1882,117"/>
-<area shape="rect"  title=" " alt="" coords="1907,85,2046,111"/>
-<area shape="rect"  title=" " alt="" coords="2071,85,2234,111"/>
-<area shape="rect"  title=" " alt="" coords="2258,85,2401,111"/>
-<area shape="rect"  title=" " alt="" coords="2426,85,2642,111"/>
-<area shape="rect"  title=" " alt="" coords="2666,85,2773,111"/>
-<area shape="rect"  title=" " alt="" coords="2796,79,2938,117"/>
-<area shape="rect"  title=" " alt="" coords="2961,85,3021,111"/>
-<area shape="rect"  title=" " alt="" coords="3046,85,3118,111"/>
-<area shape="rect"  title=" " alt="" coords="3142,85,3294,111"/>
-<area shape="rect"  title=" " alt="" coords="3318,85,3382,111"/>
-<area shape="rect"  title=" " alt="" coords="3406,85,3510,111"/>
-<area shape="rect"  title=" " alt="" coords="3534,85,3686,111"/>
-<area shape="rect"  title=" " alt="" coords="3710,85,3769,111"/>
-<area shape="rect"  title=" " alt="" coords="3792,85,3937,111"/>
-<area shape="rect"  title=" " alt="" coords="3961,85,4104,111"/>
-<area shape="rect"  title=" " alt="" coords="4128,85,4265,111"/>
-<area shape="rect"  title=" " alt="" coords="4290,85,4410,111"/>
-<area shape="rect"  title=" " alt="" coords="4434,85,4549,111"/>
-<area shape="rect"  title=" " alt="" coords="4572,85,4744,111"/>
-<area shape="rect"  title=" " alt="" coords="4768,85,4959,111"/>
-<area shape="rect"  title=" " alt="" coords="4982,79,5123,117"/>
-<area shape="rect"  href="linear__solver_8pb_8h.html" title=" " alt="" coords="1270,79,1411,117"/>
-<area shape="rect"  title=" " alt="" coords="5147,79,5270,117"/>
-<area shape="rect"  title=" " alt="" coords="5294,85,5481,111"/>
-<area shape="rect"  title=" " alt="" coords="5504,79,5643,117"/>
-<area shape="rect"  title=" " alt="" coords="2104,165,2244,204"/>
-<area shape="rect"  title=" " alt="" coords="2269,165,2410,204"/>
-<area shape="rect"  title=" " alt="" coords="2434,165,2562,204"/>
-<area shape="rect"  title=" " alt="" coords="2586,172,2749,197"/>
-<area shape="rect"  title=" " alt="" coords="2772,172,2968,197"/>
-<area shape="rect"  title=" " alt="" coords="2992,165,3169,204"/>
-<area shape="rect"  title=" " alt="" coords="160,165,337,204"/>
-<area shape="rect"  title=" " alt="" coords="361,165,517,204"/>
-<area shape="rect"  title=" " alt="" coords="542,172,726,197"/>
-<area shape="rect"  title=" " alt="" coords="750,165,928,204"/>
-<area shape="rect"  title=" " alt="" coords="952,172,1135,197"/>
-<area shape="rect"  title=" " alt="" coords="1158,165,1328,204"/>
-<area shape="rect"  title=" " alt="" coords="1352,165,1527,204"/>
-<area shape="rect"  title=" " alt="" coords="1550,165,1728,204"/>
-<area shape="rect"  title=" " alt="" coords="1752,165,1923,204"/>
-<area shape="rect"  title=" " alt="" coords="1948,165,2080,204"/>
-</map>
-</div>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>A C++ wrapper that provides a simple and unified interface to several linear programming and mixed integer programming solvers: GLOP, GLPK, CLP, CBC, and SCIP. </p>
+<p>The wrapper can also be used in Java, C#, and Python via SWIG.</p>
+<p>What is Linear Programming?</p>
+<p>In mathematics, linear programming (LP) is a technique for optimization of a linear objective function, subject to linear equality and linear inequality constraints. Informally, linear programming determines the way to achieve the best outcome (such as maximum profit or lowest cost) in a given mathematical model and given some list of requirements represented as linear equations.</p>
+<p>The most widely used technique for solving a linear program is the Simplex algorithm, devised by George Dantzig in 1947. It performs very well on most instances, for which its running time is polynomial. A lot of effort has been put into improving the algorithm and its implementation. As a byproduct, it has however been shown that one can always construct problems that take exponential time for the Simplex algorithm to solve. Research has thus focused on trying to find a polynomial algorithm for linear programming, or to prove that linear programming is indeed polynomial.</p>
+<p>Leonid Khachiyan first exhibited in 1979 a weakly polynomial algorithm for linear programming. "Weakly polynomial" means that the running time of the algorithm is in O(P(n) * 2^p) where P(n) is a polynomial of the size of the problem, and p is the precision of computations expressed in number of bits. With a fixed-precision, floating-point-based implementation, a weakly polynomial algorithm will thus run in polynomial time. No implementation of Khachiyan's algorithm has proved efficient, but a larger breakthrough in the field came in 1984 when Narendra Karmarkar introduced a new interior point method for solving linear programming problems. Interior point algorithms have proved efficient on very large linear programs.</p>
+<p>Check Wikipedia for more detail: http: *en.wikipedia.org/wiki/Linear_programming</p>
+<hr/>
+<p>Example of a Linear Program</p>
+<p>maximize: 3x + y subject to: 1.5 x + 2 y &lt;= 12 0 &lt;= x &lt;= 3 0 &lt;= y &lt;= 5</p>
+<p>A linear program has: 1) a linear objective function 2) linear constraints that can be equalities or inequalities 3) bounds on variables that can be positive, negative, finite or infinite.</p>
+<hr/>
+<p>What is Mixed Integer Programming?</p>
+<p>Here, the constraints and the objective are still linear but there are additional integrality requirements for variables. If all variables are required to take integer values, then the problem is called an integer program (IP). In most cases, only some variables are required to be integer and the rest of the variables are continuous: this is called a mixed integer program (MIP). IPs and MIPs are generally NP-hard.</p>
+<p>Integer variables can be used to model discrete decisions (build a datacenter in city A or city B), logical relationships (only place machines in datacenter A if we have decided to build datacenter A) and approximate non-linear functions with piecewise linear functions (for example, the cost of machines as a function of how many machines are bought, or the latency of a server as a function of its load).</p>
+<hr/>
+<p>How to use the wrapper</p>
+<p>The user builds the model and solves it through the MPSolver class, then queries the solution through the MPSolver, MPVariable and MPConstraint classes. To be able to query a solution, you need the following:</p><ul>
+<li>A solution exists: MPSolver::Solve has been called and a solution has been found.</li>
+<li>The model has not been modified since the last time MPSolver::Solve was called. Otherwise, the solution obtained before the model modification may not longer be feasible or optimal.</li>
+</ul>
+<dl class="section see"><dt>See also</dt><dd>../examples/linear_programming.cc for a simple LP example.</dd>
+<dd>
+../examples/integer_programming.cc for a simple MIP example.</dd></dl>
+<p>All methods cannot be called successfully in all cases. For example: you cannot query a solution when no solution exists, you cannot query a reduced cost value (which makes sense only on continuous problems) on a discrete problem. When a method is called in an unsuitable context, it aborts with a LOG(FATAL). TODO(user): handle failures gracefully.</p>
+<hr/>
+<p>For developers: How the wrapper works</p>
+<p>MPSolver stores a representation of the model (variables, constraints and objective) in its own data structures and a pointer to a MPSolverInterface that wraps the underlying solver (GLOP, CBC, CLP, GLPK, or SCIP) that does the actual work. The underlying solver also keeps a representation of the model in its own data structures. The model representations in MPSolver and in the underlying solver are kept in sync by the 'extraction' mechanism: synchronously for some changes and asynchronously (when MPSolver::Solve is called) for others. Synchronicity depends on the modification applied and on the underlying solver. </p>
+
+<p class="definition">Definition in file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 </div>
 <p><a href="linear__solver_8h_source.html">Go to the source code of this file.</a></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPSolver.html">operations_research::MPSolver</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This mathematical programming (MP) solver class is the main class though which users build and solve problems.  <a href="classoperations__research_1_1MPSolver.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPObjective.html">operations_research::MPObjective</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A class to express a linear objective.  <a href="classoperations__research_1_1MPObjective.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPVariable.html">operations_research::MPVariable</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">The class for variables of a Mathematical Programming (MP) model.  <a href="classoperations__research_1_1MPVariable.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPConstraint.html">operations_research::MPConstraint</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">The class for constraints of a Mathematical Programming (MP) model.  <a href="classoperations__research_1_1MPConstraint.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPSolverParameters.html">operations_research::MPSolverParameters</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This class stores parameter settings for LP and MIP solvers.  <a href="classoperations__research_1_1MPSolverParameters.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPSolverInterface.html">operations_research::MPSolverInterface</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="namespaces"></a>
+Namespaces</h2></td></tr>
+<tr class="memitem:namespaceoperations__research"><td class="memItemLeft" align="right" valign="top"> &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html">operations_research</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:afc3e3b80841b587c6fbfd9e9f3ec9c59"><td class="memItemLeft" align="right" valign="top">const absl::string_view&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#afc3e3b80841b587c6fbfd9e9f3ec9c59">operations_research::ToString</a> (MPSolver::OptimizationProblemType optimization_problem_type)</td></tr>
+<tr class="separator:afc3e3b80841b587c6fbfd9e9f3ec9c59"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2610f938f233d0adcd3142693f4a2683"><td class="memItemLeft" align="right" valign="top">std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a2610f938f233d0adcd3142693f4a2683">operations_research::operator&lt;&lt;</a> (std::ostream &amp;os, MPSolver::OptimizationProblemType optimization_problem_type)</td></tr>
+<tr class="separator:a2610f938f233d0adcd3142693f4a2683"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6e3ed7b755e2b756ef48c9b3bad4a780"><td class="memItemLeft" align="right" valign="top">std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a6e3ed7b755e2b756ef48c9b3bad4a780">operations_research::operator&lt;&lt;</a> (std::ostream &amp;os, MPSolver::ResultStatus status)</td></tr>
+<tr class="separator:a6e3ed7b755e2b756ef48c9b3bad4a780"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a61dc18a85425d0a7cf6aa3e7ce3199f6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a61dc18a85425d0a7cf6aa3e7ce3199f6">operations_research::AbslParseFlag</a> (absl::string_view text, MPSolver::OptimizationProblemType *solver_type, std::string *error)</td></tr>
+<tr class="separator:a61dc18a85425d0a7cf6aa3e7ce3199f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af04d1dfc591c35038a974202e50e541f"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#af04d1dfc591c35038a974202e50e541f">operations_research::AbslUnparseFlag</a> (MPSolver::OptimizationProblemType solver_type)</td></tr>
+<tr class="separator:af04d1dfc591c35038a974202e50e541f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:a07189276cc680928dad51ed197142077"><td class="memItemLeft" align="right" valign="top">constexpr double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a07189276cc680928dad51ed197142077">operations_research::kDefaultPrimalTolerance</a> = 1e-07</td></tr>
+<tr class="separator:a07189276cc680928dad51ed197142077"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

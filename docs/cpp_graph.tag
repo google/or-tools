@@ -9,6 +9,13 @@
     <includes id="minimum__spanning__tree_8h" name="minimum_spanning_tree.h" local="yes" imported="no">ortools/graph/minimum_spanning_tree.h</includes>
     <class kind="class">operations_research::ChristofidesPathSolver</class>
     <namespace>operations_research</namespace>
+    <member kind="function">
+      <type>std::vector&lt; typename GraphType::ArcIndex &gt;</type>
+      <name>ComputeMinimumWeightMatchingWithMIP</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a3175c0c8e9fc36a30b70b6b9c132474a</anchor>
+      <arglist>(const GraphType &amp;graph, const WeightFunctionType &amp;weight)</arglist>
+    </member>
   </compound>
   <compound kind="file">
     <name>cliques.h</name>
@@ -1721,6 +1728,7 @@
       <anchorfile>classoperations__research_1_1ChristofidesPathSolver.html</anchorfile>
       <anchor>ad44822002f75a6f478a62e107d880018</anchor>
       <arglist></arglist>
+      <enumvalue file="classoperations__research_1_1ChristofidesPathSolver.html" anchor="ad44822002f75a6f478a62e107d880018ab66d0823917c9351a4cb68dff77f445a">MINIMUM_WEIGHT_MATCHING</enumvalue>
       <enumvalue file="classoperations__research_1_1ChristofidesPathSolver.html" anchor="ad44822002f75a6f478a62e107d880018a99c5fe202c37dcd8ed9cc60926a4f525">MINIMAL_WEIGHT_MATCHING</enumvalue>
     </member>
     <member kind="function">
@@ -12933,6 +12941,13 @@
       <arglist></arglist>
       <enumvalue file="namespaceoperations__research.html" anchor="a708cf34b342e7d2ed89a3b73dbec4eaea8f7afecbc8fbc4cd0f50a57d1172482e">COMPLETED</enumvalue>
       <enumvalue file="namespaceoperations__research.html" anchor="a708cf34b342e7d2ed89a3b73dbec4eaea658f2cadfdf09b6046246e9314f7cd43">INTERRUPTED</enumvalue>
+    </member>
+    <member kind="function">
+      <type>std::vector&lt; typename GraphType::ArcIndex &gt;</type>
+      <name>ComputeMinimumWeightMatchingWithMIP</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a3175c0c8e9fc36a30b70b6b9c132474a</anchor>
+      <arglist>(const GraphType &amp;graph, const WeightFunctionType &amp;weight)</arglist>
     </member>
     <member kind="function">
       <type>void</type>

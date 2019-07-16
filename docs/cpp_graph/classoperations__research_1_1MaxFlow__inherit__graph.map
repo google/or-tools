@@ -1,5 +1,0 @@
-<map id="operations_research::MaxFlow" name="operations_research::MaxFlow">
-<area shape="rect" id="node1" title="Default instance MaxFlow that uses StarGraph." alt="" coords="41,179,183,217"/>
-<area shape="rect" id="node2" href="$classoperations__research_1_1GenericMaxFlow.html" title=" " alt="" coords="5,92,219,131"/>
-<area shape="rect" id="node3" href="$classoperations__research_1_1MaxFlowStatusClass.html" title="We want an enum for the Status of a max flow run, and we want this enum to be scoped under GenericMax..." alt="" coords="35,5,189,44"/>
-</map>

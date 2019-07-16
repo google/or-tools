@@ -26,19 +26,23 @@
       <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="hierarchy.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="namespaceoperations__research.html">operations_research</a></li><li class="navelem"><a class="el" href="classoperations__research_1_1RoutingSearchParameters.html">RoutingSearchParameters</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classoperations__research_1_1RoutingSearchParameters.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
@@ -51,15 +55,10 @@
 <div class="title">operations_research::RoutingSearchParameters Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-
-<p><code>#include &lt;<a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>&gt;</code></p>
-<div class="dynheader">
-Inheritance diagram for operations_research::RoutingSearchParameters:</div>
-<div class="dyncontent">
- <div class="center">
-  <img src="classoperations__research_1_1RoutingSearchParameters.png" alt=""/>
- </div></div>
-<table class="memberdecls">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock">
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l00382">382</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
 <tr class="memitem:ae9c2ab5bf48d1fe4cfb7bfc0fc2bebd6"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classoperations__research_1_1RoutingSearchParameters__LocalSearchNeighborhoodOperators.html">RoutingSearchParameters_LocalSearchNeighborhoodOperators</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingSearchParameters.html#ae9c2ab5bf48d1fe4cfb7bfc0fc2bebd6">LocalSearchNeighborhoodOperators</a></td></tr>
@@ -271,6 +270,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ac18551a293ce40ebb3fd9dfd6c702617"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af061e852cc23ec2935da9207314d31b0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingSearchParameters.html#af061e852cc23ec2935da9207314d31b0">set_use_cp</a> (::operations_research::OptionalBoolean value)</td></tr>
 <tr class="separator:af061e852cc23ec2935da9207314d31b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a52682c96f003fe3ab9febed73af4af59"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingSearchParameters.html#a52682c96f003fe3ab9febed73af4af59">clear_log_cost_offset</a> ()</td></tr>
+<tr class="separator:a52682c96f003fe3ab9febed73af4af59"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3b153ed0eca7b2f05066e966053ca7a0"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingSearchParameters.html#a3b153ed0eca7b2f05066e966053ca7a0">log_cost_offset</a> () const</td></tr>
+<tr class="separator:a3b153ed0eca7b2f05066e966053ca7a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aede613e15b53e6167f59223039c71ec6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingSearchParameters.html#aede613e15b53e6167f59223039c71ec6">set_log_cost_offset</a> (double value)</td></tr>
+<tr class="separator:aede613e15b53e6167f59223039c71ec6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -339,6 +344,8 @@ Static Public Attributes</h2></td></tr>
 <tr class="separator:ab6e3f6619d0309ebf05503b76aa06972"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a81c71dac58ad69cb3911fffe65603587"><td class="memItemLeft" align="right" valign="top">static const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingSearchParameters.html#a81c71dac58ad69cb3911fffe65603587">kUseCpFieldNumber</a> = 28</td></tr>
 <tr class="separator:a81c71dac58ad69cb3911fffe65603587"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a98ba3030e12a891406932488e2d5fc57"><td class="memItemLeft" align="right" valign="top">static const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingSearchParameters.html#a98ba3030e12a891406932488e2d5fc57">kLogCostOffsetFieldNumber</a> = 29</td></tr>
+<tr class="separator:a98ba3030e12a891406932488e2d5fc57"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="friends"></a>
 Friends</h2></td></tr>
@@ -349,10 +356,7 @@ Friends</h2></td></tr>
 <tr class="memitem:ae84554ba011e00f7f2b63e8d931d5748"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingSearchParameters.html#ae84554ba011e00f7f2b63e8d931d5748">swap</a> (<a class="el" href="classoperations__research_1_1RoutingSearchParameters.html">RoutingSearchParameters</a> &amp;a, <a class="el" href="classoperations__research_1_1RoutingSearchParameters.html">RoutingSearchParameters</a> &amp;b)</td></tr>
 <tr class="separator:ae84554ba011e00f7f2b63e8d931d5748"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l00382">382</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
-</div><h2 class="groupheader">Member Typedef Documentation</h2>
+<h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="ae9c2ab5bf48d1fe4cfb7bfc0fc2bebd6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae9c2ab5bf48d1fe4cfb7bfc0fc2bebd6">&#9670;&nbsp;</a></span>LocalSearchNeighborhoodOperators</h2>
 
@@ -507,7 +511,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01302">1302</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01309">1309</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -534,7 +538,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01316">1316</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01323">1323</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -586,7 +590,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01299">1299</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01306">1306</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -613,7 +617,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01313">1313</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01320">1320</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -640,7 +644,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01201">1201</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01208">1208</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -667,7 +671,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01406">1406</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01413">1413</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -711,7 +715,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01392">1392</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01399">1399</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -738,7 +742,34 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01330">1330</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01337">1337</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+
+</div>
+</div>
+<a id="a52682c96f003fe3ab9febed73af4af59"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a52682c96f003fe3ab9febed73af4af59">&#9670;&nbsp;</a></span>clear_log_cost_offset()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void operations_research::RoutingSearchParameters::clear_log_cost_offset </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01645">1645</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -765,7 +796,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01624">1624</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01631">1631</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -792,7 +823,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01610">1610</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01617">1617</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -819,7 +850,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01476">1476</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01483">1483</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -846,7 +877,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01462">1462</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01469">1469</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -873,7 +904,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01378">1378</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01385">1385</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -900,7 +931,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01257">1257</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01264">1264</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -927,7 +958,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01271">1271</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01278">1278</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -954,7 +985,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01243">1243</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01250">1250</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -981,7 +1012,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01229">1229</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01236">1236</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1008,7 +1039,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01285">1285</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01292">1292</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1035,7 +1066,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01490">1490</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01497">1497</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1079,7 +1110,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01434">1434</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01441">1441</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1106,7 +1137,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01448">1448</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01455">1455</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1133,7 +1164,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01420">1420</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01427">1427</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1160,7 +1191,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01596">1596</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01603">1603</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1187,7 +1218,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01215">1215</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01222">1222</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1310,7 +1341,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01204">1204</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01211">1211</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1443,7 +1474,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01409">1409</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01416">1416</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1470,7 +1501,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01550">1550</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01557">1557</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1497,7 +1528,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01327">1327</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01334">1334</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1524,7 +1555,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01504">1504</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01511">1511</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1654,7 +1685,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01553">1553</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01560">1560</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1681,7 +1712,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01395">1395</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01402">1402</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1708,7 +1739,34 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01336">1336</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01343">1343</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+
+</div>
+</div>
+<a id="a3b153ed0eca7b2f05066e966053ca7a0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3b153ed0eca7b2f05066e966053ca7a0">&#9670;&nbsp;</a></span>log_cost_offset()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double operations_research::RoutingSearchParameters::log_cost_offset </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01648">1648</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1735,7 +1793,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01627">1627</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01634">1634</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1762,7 +1820,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01613">1613</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01620">1620</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1859,7 +1917,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01566">1566</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01573">1573</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1886,7 +1944,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01349">1349</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01356">1356</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1913,7 +1971,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01520">1520</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01527">1527</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -1995,7 +2053,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01479">1479</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01486">1486</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2078,7 +2136,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01465">1465</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01472">1472</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2105,7 +2163,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01559">1559</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01566">1566</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2132,7 +2190,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01342">1342</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01349">1349</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2159,7 +2217,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01513">1513</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01520">1520</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2186,7 +2244,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01381">1381</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01388">1388</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2213,7 +2271,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01260">1260</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01267">1267</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2240,7 +2298,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01274">1274</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01281">1281</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2267,7 +2325,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01246">1246</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01253">1253</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2294,7 +2352,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01232">1232</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01239">1239</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2321,7 +2379,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01288">1288</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01295">1295</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2375,7 +2433,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01575">1575</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01582">1582</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2403,7 +2461,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01358">1358</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01365">1365</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2431,7 +2489,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01529">1529</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01536">1536</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2459,7 +2517,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01306">1306</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01313">1313</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2487,7 +2545,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01320">1320</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01327">1327</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2515,7 +2573,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01208">1208</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01215">1215</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2543,7 +2601,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01413">1413</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01420">1420</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2571,7 +2629,35 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01399">1399</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01406">1406</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+
+</div>
+</div>
+<a id="aede613e15b53e6167f59223039c71ec6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aede613e15b53e6167f59223039c71ec6">&#9670;&nbsp;</a></span>set_log_cost_offset()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void operations_research::RoutingSearchParameters::set_log_cost_offset </td>
+          <td>(</td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>value</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01652">1652</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2599,7 +2685,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01631">1631</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01638">1638</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2627,7 +2713,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01617">1617</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01624">1624</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2655,7 +2741,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01483">1483</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01490">1490</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2683,7 +2769,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01469">1469</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01476">1476</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2711,7 +2797,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01385">1385</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01392">1392</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2739,7 +2825,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01264">1264</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01271">1271</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2767,7 +2853,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01278">1278</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01285">1285</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2795,7 +2881,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01250">1250</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01257">1257</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2823,7 +2909,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01236">1236</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01243">1243</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2851,7 +2937,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01292">1292</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01299">1299</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2879,7 +2965,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01497">1497</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01504">1504</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2907,7 +2993,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01441">1441</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01448">1448</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2935,7 +3021,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01455">1455</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01462">1462</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2963,7 +3049,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01427">1427</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01434">1434</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -2991,7 +3077,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01603">1603</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01610">1610</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -3019,7 +3105,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01222">1222</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01229">1229</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -3046,7 +3132,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01493">1493</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01500">1500</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -3091,7 +3177,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01507">1507</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01514">1514</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -3118,7 +3204,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01437">1437</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01444">1444</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -3145,7 +3231,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01451">1451</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01458">1458</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -3172,7 +3258,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01423">1423</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01430">1430</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -3199,7 +3285,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01599">1599</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01606">1606</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -3226,7 +3312,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01218">1218</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l01225">1225</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -3275,7 +3361,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l00676">676</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l00683">683</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -3507,6 +3593,30 @@ Friends</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l00496">496</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
+
+</div>
+</div>
+<a id="a98ba3030e12a891406932488e2d5fc57"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a98ba3030e12a891406932488e2d5fc57">&#9670;&nbsp;</a></span>kLogCostOffsetFieldNumber</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const int operations_research::RoutingSearchParameters::kLogCostOffsetFieldNumber = 29</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="routing__parameters_8pb_8h_source.html#l00648">648</a> of file <a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a>.</p>
 
 </div>
 </div>
@@ -3922,6 +4032,7 @@ Friends</h2></td></tr>
 <li><a class="el" href="routing__parameters_8pb_8h_source.html">routing_parameters.pb.h</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

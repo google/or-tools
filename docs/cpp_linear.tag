@@ -1,10 +1,124 @@
 <?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
 <tagfile>
   <compound kind="file">
+    <name>linear_expr.h</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/linear_solver/</path>
+    <filename>linear__expr_8h</filename>
+    <class kind="class">operations_research::LinearExpr</class>
+    <class kind="class">operations_research::LinearRange</class>
+    <namespace>operations_research</namespace>
+    <member kind="function">
+      <type>LinearExpr</type>
+      <name>operator+</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a97f9b83239285f5fdfcac1b8e8b4f162</anchor>
+      <arglist>(LinearExpr lhs, const LinearExpr &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr</type>
+      <name>operator-</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a515cdaf4f9c4000bb3482a0c450e23c3</anchor>
+      <arglist>(LinearExpr lhs, const LinearExpr &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr</type>
+      <name>operator *</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a741104fe08089fe3520676487f7a685d</anchor>
+      <arglist>(LinearExpr lhs, double rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr</type>
+      <name>operator/</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>abebdd7f40e90df8dc7d557b6e26da942</anchor>
+      <arglist>(LinearExpr lhs, double rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr</type>
+      <name>operator *</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a99590470c6ad2d59331b6fcc56609877</anchor>
+      <arglist>(double lhs, LinearExpr rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearRange</type>
+      <name>operator&lt;=</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a6d1fa20f9c9faf7027c0b16f97139e80</anchor>
+      <arglist>(const LinearExpr &amp;lhs, const LinearExpr &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearRange</type>
+      <name>operator==</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a08146f196bd9c3f492ee108732449ced</anchor>
+      <arglist>(const LinearExpr &amp;lhs, const LinearExpr &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearRange</type>
+      <name>operator&gt;=</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>ac4052f92af6a7fbb1d45e17befcb68e0</anchor>
+      <arglist>(const LinearExpr &amp;lhs, const LinearExpr &amp;rhs)</arglist>
+    </member>
+  </compound>
+  <compound kind="file">
     <name>linear_solver.h</name>
     <path>/usr/local/google/home/lperron/Work/or-tools/ortools/linear_solver/</path>
     <filename>linear__solver_8h</filename>
+    <includes id="linear__expr_8h" name="linear_expr.h" local="yes" imported="no">ortools/linear_solver/linear_expr.h</includes>
     <includes id="linear__solver_8pb_8h" name="linear_solver.pb.h" local="yes" imported="no">ortools/linear_solver/linear_solver.pb.h</includes>
+    <class kind="class">operations_research::MPSolver</class>
+    <class kind="class">operations_research::MPObjective</class>
+    <class kind="class">operations_research::MPVariable</class>
+    <class kind="class">operations_research::MPConstraint</class>
+    <class kind="class">operations_research::MPSolverParameters</class>
+    <class kind="class">operations_research::MPSolverInterface</class>
+    <namespace>operations_research</namespace>
+    <member kind="function">
+      <type>const absl::string_view</type>
+      <name>ToString</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>afc3e3b80841b587c6fbfd9e9f3ec9c59</anchor>
+      <arglist>(MPSolver::OptimizationProblemType optimization_problem_type)</arglist>
+    </member>
+    <member kind="function">
+      <type>std::ostream &amp;</type>
+      <name>operator&lt;&lt;</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a2610f938f233d0adcd3142693f4a2683</anchor>
+      <arglist>(std::ostream &amp;os, MPSolver::OptimizationProblemType optimization_problem_type)</arglist>
+    </member>
+    <member kind="function">
+      <type>std::ostream &amp;</type>
+      <name>operator&lt;&lt;</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a6e3ed7b755e2b756ef48c9b3bad4a780</anchor>
+      <arglist>(std::ostream &amp;os, MPSolver::ResultStatus status)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>AbslParseFlag</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a61dc18a85425d0a7cf6aa3e7ce3199f6</anchor>
+      <arglist>(absl::string_view text, MPSolver::OptimizationProblemType *solver_type, std::string *error)</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string</type>
+      <name>AbslUnparseFlag</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>af04d1dfc591c35038a974202e50e541f</anchor>
+      <arglist>(MPSolver::OptimizationProblemType solver_type)</arglist>
+    </member>
+    <member kind="variable">
+      <type>constexpr double</type>
+      <name>kDefaultPrimalTolerance</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a07189276cc680928dad51ed197142077</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="file">
     <name>linear_solver.pb.h</name>
@@ -715,6 +829,361 @@
   <compound kind="struct">
     <name>is_proto_enum&lt; ::operations_research::MPSosConstraint_Type &gt;</name>
     <filename>structis__proto__enum_3_01_1_1operations__research_1_1MPSosConstraint__Type_01_4.html</filename>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::LinearExpr</name>
+    <filename>classoperations__research_1_1LinearExpr.html</filename>
+    <member kind="function">
+      <type></type>
+      <name>LinearExpr</name>
+      <anchorfile>classoperations__research_1_1LinearExpr.html</anchorfile>
+      <anchor>a3245b8350f417872f1f638ecd22a832f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>LinearExpr</name>
+      <anchorfile>classoperations__research_1_1LinearExpr.html</anchorfile>
+      <anchor>a1b0d711ef242dd88399cfee1b2b223f8</anchor>
+      <arglist>(double constant)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>LinearExpr</name>
+      <anchorfile>classoperations__research_1_1LinearExpr.html</anchorfile>
+      <anchor>a475c727fd23f4424031df23655b8412b</anchor>
+      <arglist>(const MPVariable *var)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr &amp;</type>
+      <name>operator+=</name>
+      <anchorfile>classoperations__research_1_1LinearExpr.html</anchorfile>
+      <anchor>a5f501758e469b8718b8410bb87100f51</anchor>
+      <arglist>(const LinearExpr &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr &amp;</type>
+      <name>operator-=</name>
+      <anchorfile>classoperations__research_1_1LinearExpr.html</anchorfile>
+      <anchor>a359bec8d7b3221d7549c98b0825970d4</anchor>
+      <arglist>(const LinearExpr &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr &amp;</type>
+      <name>operator *=</name>
+      <anchorfile>classoperations__research_1_1LinearExpr.html</anchorfile>
+      <anchor>a757085e5b10be1bde2ff049a3dbc51c7</anchor>
+      <arglist>(double rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr &amp;</type>
+      <name>operator/=</name>
+      <anchorfile>classoperations__research_1_1LinearExpr.html</anchorfile>
+      <anchor>a14e5dbbcd5618dc42a8799181490742e</anchor>
+      <arglist>(double rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr</type>
+      <name>operator-</name>
+      <anchorfile>classoperations__research_1_1LinearExpr.html</anchorfile>
+      <anchor>a3f94eb1c0b25852c0ff0910b83d363d9</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>offset</name>
+      <anchorfile>classoperations__research_1_1LinearExpr.html</anchorfile>
+      <anchor>aff2f953067d8d8854273fa973496466e</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const absl::flat_hash_map&lt; const MPVariable *, double &gt; &amp;</type>
+      <name>terms</name>
+      <anchorfile>classoperations__research_1_1LinearExpr.html</anchorfile>
+      <anchor>a37d87e22cd7125839fab636219336df8</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>SolutionValue</name>
+      <anchorfile>classoperations__research_1_1LinearExpr.html</anchorfile>
+      <anchor>a07afbba5788651a38be83e959bbbc92c</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>NotVar</name>
+      <anchorfile>classoperations__research_1_1LinearExpr.html</anchorfile>
+      <anchor>a46b677de8b46c72ffdff9e16bc2e3745</anchor>
+      <arglist>(LinearExpr var)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::LinearRange</name>
+    <filename>classoperations__research_1_1LinearRange.html</filename>
+    <member kind="function">
+      <type></type>
+      <name>LinearRange</name>
+      <anchorfile>classoperations__research_1_1LinearRange.html</anchorfile>
+      <anchor>a9ce7b1b40dc5135ed9ca27cfedeca64e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>LinearRange</name>
+      <anchorfile>classoperations__research_1_1LinearRange.html</anchorfile>
+      <anchor>a754af83faa8744d01ecbf5091d4633a8</anchor>
+      <arglist>(double lower_bound, const LinearExpr &amp;linear_expr, double upper_bound)</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>lower_bound</name>
+      <anchorfile>classoperations__research_1_1LinearRange.html</anchorfile>
+      <anchor>ac9dc29ebeaf4a37d108c0094ca89eb9d</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const LinearExpr &amp;</type>
+      <name>linear_expr</name>
+      <anchorfile>classoperations__research_1_1LinearRange.html</anchorfile>
+      <anchor>aa75204d544c4e4fc91c3ee8a091dd690</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>upper_bound</name>
+      <anchorfile>classoperations__research_1_1LinearRange.html</anchorfile>
+      <anchor>a527995fddd9d1781d996ff6f50e48041</anchor>
+      <arglist>() const</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::MPConstraint</name>
+    <filename>classoperations__research_1_1MPConstraint.html</filename>
+    <member kind="function">
+      <type>const std::string &amp;</type>
+      <name>name</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>a1cc4ca29f46883ebff5bdb2b624318a0</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Clear</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>a2ac836dbebc688c3ac5559fc33c20eb7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetCoefficient</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>a7e9afe55140b2392a99e0e5ad3eab531</anchor>
+      <arglist>(const MPVariable *const var, double coeff)</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>GetCoefficient</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>a7f5fd19dabe1dbb767fc544fd6e95f26</anchor>
+      <arglist>(const MPVariable *const var) const</arglist>
+    </member>
+    <member kind="function">
+      <type>const absl::flat_hash_map&lt; const MPVariable *, double &gt; &amp;</type>
+      <name>terms</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>a2d5d7e32b11a7edb4d810f2f10900b17</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>lb</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>a4d254962fb2fe607c875f2b4e33c26ac</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>ub</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>a7e655031d93cbf4efbe827e3bd662ae7</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetLB</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>a85c6d75f990f000e5863b83bd56e0e98</anchor>
+      <arglist>(double lb)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetUB</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>a84c9d35dde8a2e1c7caccf88e9e86d60</anchor>
+      <arglist>(double ub)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetBounds</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>abf8bbda7b4d608d011f88d2df83db881</anchor>
+      <arglist>(double lb, double ub)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>is_lazy</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>a1341c1b4cf65970cc414b18dfc7b7a52</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_is_lazy</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>aabdeaba6d29ef030605a333cffc20c69</anchor>
+      <arglist>(bool laziness)</arglist>
+    </member>
+    <member kind="function">
+      <type>const MPVariable *</type>
+      <name>indicator_variable</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>a45532e8b56e4b92bb6363fc858d709ff</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>indicator_value</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>ad1b4cc3f73a08cad0716015adffd188f</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>index</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>abdf2c9c953fd4d118e7871a716445600</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>dual_value</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>ad1ee565a0efc50e3a515aeca73553493</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>MPSolver::BasisStatus</type>
+      <name>basis_status</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>a8695f6bddabcff5af750918b919cab7a</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type></type>
+      <name>MPConstraint</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>adac818d5ad3d7e51129ba251491a5f46</anchor>
+      <arglist>(int index, double lb, double ub, const std::string &amp;name, MPSolverInterface *const interface_in)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>set_dual_value</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>a2a521156c4a2eafe918c36fbb386e9e8</anchor>
+      <arglist>(double dual_value)</arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>MPSolver</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>ac2c01b4de8f7670e37daa7d42b804dd4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>MPSolverInterface</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>ac0aea0786e75adbb2d24c41c15e7456c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>CBCInterface</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>af5a7cf0c655f37c0b388a2ddcf32ac3e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>CLPInterface</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>a60944ecdcad88cfb4d4d32feea70c9b5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>GLPKInterface</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>ae1a3e0a695903c8e6effd524a7f92784</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>SCIPInterface</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>a236f9752f4df4c5134617330a040ec8a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>SLMInterface</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>a5c083b37243075a00bf909840dc7c933</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>GurobiInterface</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>ac28a56eeedb62d070578a9231f1875ea</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>CplexInterface</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>ae7cbd08108e1636184f28c1a71c42393</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>GLOPInterface</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>a6c754b527a347994b06eeb49a09ac222</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>BopInterface</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>a7383308e6b9b63b18196798db342ce8a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>SatInterface</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>acbd4413b1370baca9c45aecb0cb8ebd2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>KnapsackInterface</name>
+      <anchorfile>classoperations__research_1_1MPConstraint.html</anchorfile>
+      <anchor>aee1ddf25e86286c16face31551751bda</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>operations_research::MPConstraintProto</name>
@@ -3318,6 +3787,220 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>operations_research::MPObjective</name>
+    <filename>classoperations__research_1_1MPObjective.html</filename>
+    <member kind="function">
+      <type>void</type>
+      <name>Clear</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>a2131c9028ff6d7047c8272c3ea3e62e3</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetCoefficient</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>aad1b0ca33b3a2c45d91e2875feb98c66</anchor>
+      <arglist>(const MPVariable *const var, double coeff)</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>GetCoefficient</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>aba6c839cf1c09f5d48ff6072cd6b28c5</anchor>
+      <arglist>(const MPVariable *const var) const</arglist>
+    </member>
+    <member kind="function">
+      <type>const absl::flat_hash_map&lt; const MPVariable *, double &gt; &amp;</type>
+      <name>terms</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>abb79604f28fb7ddada23f4df67e28e32</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetOffset</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>a24611f7b12b571fe1e73b629a8a6c17b</anchor>
+      <arglist>(double value)</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>offset</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>a8d6bb2249af13a783033763d292763d4</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>OptimizeLinearExpr</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>ab1829576c2533e5de48b38447d9f6823</anchor>
+      <arglist>(const LinearExpr &amp;linear_expr, bool is_maximization)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MaximizeLinearExpr</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>a6927f7e28f694c55d72496c94a9a6b01</anchor>
+      <arglist>(const LinearExpr &amp;linear_expr)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MinimizeLinearExpr</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>a19a354c154bf034196d7a273feeff737</anchor>
+      <arglist>(const LinearExpr &amp;linear_expr)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddLinearExpr</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>a9e03dec6fb0099d48a119dd525879dd7</anchor>
+      <arglist>(const LinearExpr &amp;linear_expr)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetOptimizationDirection</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>add0f9517dc64b1f768952fc490f7be00</anchor>
+      <arglist>(bool maximize)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetMinimization</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>af9eea25e667a52dcad270495025e1202</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetMaximization</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>a7f1396f72628328fd85ac852191fcc70</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>maximization</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>a883fc7ee2a166fc6ff257296f78e9565</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>minimization</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>a700788b8583ef4c69730be08a1a3ac28</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>Value</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>a43fd3a9687cfef2591b22c96cbe02477</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>BestBound</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>a1ab47aaf7b73ae8a2664dd262227e3a9</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="friend" protection="private">
+      <type>friend class</type>
+      <name>MPSolver</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>ac2c01b4de8f7670e37daa7d42b804dd4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="private">
+      <type>friend class</type>
+      <name>MPSolverInterface</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>ac0aea0786e75adbb2d24c41c15e7456c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="private">
+      <type>friend class</type>
+      <name>CBCInterface</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>af5a7cf0c655f37c0b388a2ddcf32ac3e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="private">
+      <type>friend class</type>
+      <name>CLPInterface</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>a60944ecdcad88cfb4d4d32feea70c9b5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="private">
+      <type>friend class</type>
+      <name>GLPKInterface</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>ae1a3e0a695903c8e6effd524a7f92784</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="private">
+      <type>friend class</type>
+      <name>SCIPInterface</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>a236f9752f4df4c5134617330a040ec8a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="private">
+      <type>friend class</type>
+      <name>SLMInterface</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>a5c083b37243075a00bf909840dc7c933</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="private">
+      <type>friend class</type>
+      <name>GurobiInterface</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>ac28a56eeedb62d070578a9231f1875ea</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="private">
+      <type>friend class</type>
+      <name>CplexInterface</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>ae7cbd08108e1636184f28c1a71c42393</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="private">
+      <type>friend class</type>
+      <name>GLOPInterface</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>a6c754b527a347994b06eeb49a09ac222</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="private">
+      <type>friend class</type>
+      <name>BopInterface</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>a7383308e6b9b63b18196798db342ce8a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="private">
+      <type>friend class</type>
+      <name>SatInterface</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>acbd4413b1370baca9c45aecb0cb8ebd2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="private">
+      <type>friend class</type>
+      <name>KnapsackInterface</name>
+      <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
+      <anchor>aee1ddf25e86286c16face31551751bda</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>operations_research::MPSolutionResponse</name>
     <filename>classoperations__research_1_1MPSolutionResponse.html</filename>
     <member kind="function">
@@ -3823,6 +4506,809 @@
       <anchorfile>classoperations__research_1_1MPSolutionResponse.html</anchorfile>
       <anchor>abbb344cf9059573a256d77455a3dfa8c</anchor>
       <arglist>(MPSolutionResponse &amp;a, MPSolutionResponse &amp;b)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::MPSolver</name>
+    <filename>classoperations__research_1_1MPSolver.html</filename>
+    <member kind="enumeration">
+      <type></type>
+      <name>OptimizationProblemType</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a42c406c7e6fba381aa2bb41aae4b44f2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>CLP_LINEAR_PROGRAMMING</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a42c406c7e6fba381aa2bb41aae4b44f2a91bb43cabe6c49465bd7138189f3ea84</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>GLOP_LINEAR_PROGRAMMING</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a42c406c7e6fba381aa2bb41aae4b44f2a32049e26d1ea6f68624fc478b88d98c9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SCIP_MIXED_INTEGER_PROGRAMMING</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a42c406c7e6fba381aa2bb41aae4b44f2a357b78ac84d42c93f2be55c89ed685dc</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>CBC_MIXED_INTEGER_PROGRAMMING</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a42c406c7e6fba381aa2bb41aae4b44f2a6f8b8f9d64ae299e8cfccf4917bf5282</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>BOP_INTEGER_PROGRAMMING</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a42c406c7e6fba381aa2bb41aae4b44f2aaef5b33a2d88606a978524ebc7b1cb7b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>ResultStatus</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a16bca30fdb1b048d987631b757c63192</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>OPTIMAL</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a16bca30fdb1b048d987631b757c63192a7a765c1340de9cc37e22c68a2da7d390</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>FEASIBLE</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a16bca30fdb1b048d987631b757c63192a5930d45ccc1bc78ad06bcd15cbca6a29</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>INFEASIBLE</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a16bca30fdb1b048d987631b757c63192a84e96d7264feeb2b6577400bc379d9db</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>UNBOUNDED</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a16bca30fdb1b048d987631b757c63192a88c7283cc752b51ed05c21c73f8fe100</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>ABNORMAL</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a16bca30fdb1b048d987631b757c63192ae7c84444803ea46da465b68fb6e974fa</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>MODEL_INVALID</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a16bca30fdb1b048d987631b757c63192a0ce4e033c6bca973cb026780cdb7daa2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>NOT_SOLVED</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a16bca30fdb1b048d987631b757c63192a5c14184aabfffdb489347ab0486c8492</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>BasisStatus</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a7e2a34816b22749e70e23d26f49cf743</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>FREE</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a7e2a34816b22749e70e23d26f49cf743a642d0b5abe3faed060b4ec237df381a0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>AT_LOWER_BOUND</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a7e2a34816b22749e70e23d26f49cf743a32b9b4f5f09a5dbdeed585318e8d97f2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>AT_UPPER_BOUND</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a7e2a34816b22749e70e23d26f49cf743a578f080f1d30ca7ce7ba6c5b050ddd56</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>FIXED_VALUE</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a7e2a34816b22749e70e23d26f49cf743aeca9b511e54f58239988d6affd62afa8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>BASIC</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a7e2a34816b22749e70e23d26f49cf743a0185d5946c48b9852d8a02a7493f4dcf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>CLP_LINEAR_PROGRAMMING</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a42c406c7e6fba381aa2bb41aae4b44f2a91bb43cabe6c49465bd7138189f3ea84</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>GLOP_LINEAR_PROGRAMMING</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a42c406c7e6fba381aa2bb41aae4b44f2a32049e26d1ea6f68624fc478b88d98c9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SCIP_MIXED_INTEGER_PROGRAMMING</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a42c406c7e6fba381aa2bb41aae4b44f2a357b78ac84d42c93f2be55c89ed685dc</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>CBC_MIXED_INTEGER_PROGRAMMING</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a42c406c7e6fba381aa2bb41aae4b44f2a6f8b8f9d64ae299e8cfccf4917bf5282</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>BOP_INTEGER_PROGRAMMING</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a42c406c7e6fba381aa2bb41aae4b44f2aaef5b33a2d88606a978524ebc7b1cb7b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>OPTIMAL</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a16bca30fdb1b048d987631b757c63192a7a765c1340de9cc37e22c68a2da7d390</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>FEASIBLE</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a16bca30fdb1b048d987631b757c63192a5930d45ccc1bc78ad06bcd15cbca6a29</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>INFEASIBLE</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a16bca30fdb1b048d987631b757c63192a84e96d7264feeb2b6577400bc379d9db</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>UNBOUNDED</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a16bca30fdb1b048d987631b757c63192a88c7283cc752b51ed05c21c73f8fe100</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>ABNORMAL</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a16bca30fdb1b048d987631b757c63192ae7c84444803ea46da465b68fb6e974fa</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>MODEL_INVALID</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a16bca30fdb1b048d987631b757c63192a0ce4e033c6bca973cb026780cdb7daa2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>NOT_SOLVED</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a16bca30fdb1b048d987631b757c63192a5c14184aabfffdb489347ab0486c8492</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>FREE</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a7e2a34816b22749e70e23d26f49cf743a642d0b5abe3faed060b4ec237df381a0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>AT_LOWER_BOUND</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a7e2a34816b22749e70e23d26f49cf743a32b9b4f5f09a5dbdeed585318e8d97f2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>AT_UPPER_BOUND</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a7e2a34816b22749e70e23d26f49cf743a578f080f1d30ca7ce7ba6c5b050ddd56</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>FIXED_VALUE</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a7e2a34816b22749e70e23d26f49cf743aeca9b511e54f58239988d6affd62afa8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>BASIC</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a7e2a34816b22749e70e23d26f49cf743a0185d5946c48b9852d8a02a7493f4dcf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>MPSolver</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>ab6a8a6c57eefce8c07c8a52e053b035b</anchor>
+      <arglist>(const std::string &amp;name, OptimizationProblemType problem_type)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual</type>
+      <name>~MPSolver</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>aee7aedeeff79cd0645a5c7e8c0200834</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>IsMIP</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a24caaef373d3715d5bce9fb0da2c203d</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::string &amp;</type>
+      <name>Name</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a1d6101b365c33fb1f73a4c953abeb0ed</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual OptimizationProblemType</type>
+      <name>ProblemType</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a54e8b352edd37540f788c3fc473fa875</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Clear</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a4fb5381d2f4a764660365168622e4955</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>NumVariables</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a0ba0685c817d5c5910c80492dd1a7050</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; MPVariable * &gt; &amp;</type>
+      <name>variables</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a1593ede4c9cd1da430f606127dc9a642</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>MPVariable *</type>
+      <name>LookupVariableOrNull</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>ae384aa3d9095f883a93f5e2e830e0077</anchor>
+      <arglist>(const std::string &amp;var_name) const</arglist>
+    </member>
+    <member kind="function">
+      <type>MPVariable *</type>
+      <name>MakeVar</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>ad6bb7605c749ba485b040b02a37f6728</anchor>
+      <arglist>(double lb, double ub, bool integer, const std::string &amp;name)</arglist>
+    </member>
+    <member kind="function">
+      <type>MPVariable *</type>
+      <name>MakeNumVar</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a54d66e99fdc2424e812d910e7c2f225a</anchor>
+      <arglist>(double lb, double ub, const std::string &amp;name)</arglist>
+    </member>
+    <member kind="function">
+      <type>MPVariable *</type>
+      <name>MakeIntVar</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>acf84ccc5151ce164a571d2f31f30960c</anchor>
+      <arglist>(double lb, double ub, const std::string &amp;name)</arglist>
+    </member>
+    <member kind="function">
+      <type>MPVariable *</type>
+      <name>MakeBoolVar</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a7176be8ce0481d880a8d30a2d7a1c09e</anchor>
+      <arglist>(const std::string &amp;name)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeVarArray</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a2c58f52acd6216131582c60aae3625ee</anchor>
+      <arglist>(int nb, double lb, double ub, bool integer, const std::string &amp;name_prefix, std::vector&lt; MPVariable * &gt; *vars)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeNumVarArray</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a7aebea4f022e7a685322e7db70b76e5e</anchor>
+      <arglist>(int nb, double lb, double ub, const std::string &amp;name, std::vector&lt; MPVariable * &gt; *vars)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeIntVarArray</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a5eefc88942fd284ff2962564224d5f8e</anchor>
+      <arglist>(int nb, double lb, double ub, const std::string &amp;name, std::vector&lt; MPVariable * &gt; *vars)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>MakeBoolVarArray</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>af5c55776ce47479f8904480cd815a6d5</anchor>
+      <arglist>(int nb, const std::string &amp;name, std::vector&lt; MPVariable * &gt; *vars)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>NumConstraints</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a16a3cee848c033e365ebb1cf50bb97cd</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const std::vector&lt; MPConstraint * &gt; &amp;</type>
+      <name>constraints</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>aebc45909b1f377ab86295578ec417a17</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>MPConstraint *</type>
+      <name>LookupConstraintOrNull</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a299502e4b0e4e6608330fdbe4fb86c94</anchor>
+      <arglist>(const std::string &amp;constraint_name) const</arglist>
+    </member>
+    <member kind="function">
+      <type>MPConstraint *</type>
+      <name>MakeRowConstraint</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a9afcc9a30bf7c360066d7936c121acd0</anchor>
+      <arglist>(double lb, double ub)</arglist>
+    </member>
+    <member kind="function">
+      <type>MPConstraint *</type>
+      <name>MakeRowConstraint</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a9ef93893d198901ce104d74794dde123</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>MPConstraint *</type>
+      <name>MakeRowConstraint</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>ac7dc5e8edf7f3a96c2faadc738d52c41</anchor>
+      <arglist>(double lb, double ub, const std::string &amp;name)</arglist>
+    </member>
+    <member kind="function">
+      <type>MPConstraint *</type>
+      <name>MakeRowConstraint</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>abad1058684a6996ba3035c0011b4cc41</anchor>
+      <arglist>(const std::string &amp;name)</arglist>
+    </member>
+    <member kind="function">
+      <type>MPConstraint *</type>
+      <name>MakeRowConstraint</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>ae31ac8b47142ee8685a39a608a9190d1</anchor>
+      <arglist>(const LinearRange &amp;range)</arglist>
+    </member>
+    <member kind="function">
+      <type>MPConstraint *</type>
+      <name>MakeRowConstraint</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a4c54bb9041abac99c35b92dc5386b7a7</anchor>
+      <arglist>(const LinearRange &amp;range, const std::string &amp;name)</arglist>
+    </member>
+    <member kind="function">
+      <type>const MPObjective &amp;</type>
+      <name>Objective</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a4834a6747544a7053110a0b20d79dac2</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>MPObjective *</type>
+      <name>MutableObjective</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a467f89af3bae743dc9d628ee4e74f0c9</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>ResultStatus</type>
+      <name>Solve</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a1535b2a46d5cff6f9727c08085cfbb1f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>ResultStatus</type>
+      <name>Solve</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>acfe9e4c330b12131b53d72f41506ddaf</anchor>
+      <arglist>(const MPSolverParameters &amp;param)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Write</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>ad40ba327269cfff827f23ac4d94414d9</anchor>
+      <arglist>(const std::string &amp;file_name)</arglist>
+    </member>
+    <member kind="function">
+      <type>std::vector&lt; double &gt;</type>
+      <name>ComputeConstraintActivities</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>ad07e28e347a4b2d94d53ca96ae201d70</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>VerifySolution</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a2a4a0234b5830d4ea82d549b3b6b5baf</anchor>
+      <arglist>(double tolerance, bool log_errors) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reset</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a0bade4bbf46f4e35513650d38a0a3208</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>InterruptSolve</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a4413905b5839d17823e756cff10d0ffe</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>MPSolverResponseStatus</type>
+      <name>LoadModelFromProto</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>af9eb46d78f04fa12da7ac27c14becb7d</anchor>
+      <arglist>(const MPModelProto &amp;input_model, std::string *error_message)</arglist>
+    </member>
+    <member kind="function">
+      <type>MPSolverResponseStatus</type>
+      <name>LoadModelFromProtoWithUniqueNamesOrDie</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a51b5d57f310db13d800e4440ca3c0d0b</anchor>
+      <arglist>(const MPModelProto &amp;input_model, std::string *error_message)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>FillSolutionResponseProto</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a91c69a1b2e9098f3835b9fe1c4fead59</anchor>
+      <arglist>(MPSolutionResponse *response) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>ExportModelToProto</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a9c8cc8b3c36fe9c08d8e0eefbc98b774</anchor>
+      <arglist>(MPModelProto *output_model) const</arglist>
+    </member>
+    <member kind="function">
+      <type>util::Status</type>
+      <name>LoadSolutionFromProto</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>aa20b60665bd7e137dac446b2b1400838</anchor>
+      <arglist>(const MPSolutionResponse &amp;response, double tolerance=kDefaultPrimalTolerance)</arglist>
+    </member>
+    <member kind="function">
+      <type>util::Status</type>
+      <name>ClampSolutionWithinBounds</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a27312cbf1394d779305d016e2ea2753e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>ExportModelAsLpFormat</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a393a84863fe633baa3c7af4e71c8b147</anchor>
+      <arglist>(bool obfuscate, std::string *model_str) const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>ExportModelAsMpsFormat</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>ae06ddd4e79e6a985b2644eff14747484</anchor>
+      <arglist>(bool fixed_format, bool obfuscate, std::string *model_str) const</arglist>
+    </member>
+    <member kind="function">
+      <type>util::Status</type>
+      <name>SetNumThreads</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a6394f5b0c08af038bfd9610d2bc4be90</anchor>
+      <arglist>(int num_threads)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetNumThreads</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a88ddf26ba2c9524de319f6f307cfde60</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>SetSolverSpecificParametersAsString</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a532d2fb86e5cdc4710e1a168acbbe7f6</anchor>
+      <arglist>(const std::string &amp;parameters)</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string</type>
+      <name>GetSolverSpecificParametersAsString</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a64bc5e50054e619d3399956df3ed110f</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetHint</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>abf4255929ea45766c51cf6138758b277</anchor>
+      <arglist>(std::vector&lt; std::pair&lt; const MPVariable *, double &gt; &gt; hint)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetStartingLpBasis</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a11a76240b36c39f04ff64104c482990f</anchor>
+      <arglist>(const std::vector&lt; MPSolver::BasisStatus &gt; &amp;variable_statuses, const std::vector&lt; MPSolver::BasisStatus &gt; &amp;constraint_statuses)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>OutputIsEnabled</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>aa90a00b370b9abc4a43bfefd7f6a895b</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>EnableOutput</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>abc2c48c807107ccfdfa8c1b50ae16c41</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SuppressOutput</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>abfaa014d3c3ca883e3c8a17110372801</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>absl::Duration</type>
+      <name>TimeLimit</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>aae2fbd44c86451dadfc256f000772394</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetTimeLimit</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a47a5516ca826adbc25bd5bf1d7935fd1</anchor>
+      <arglist>(absl::Duration time_limit)</arglist>
+    </member>
+    <member kind="function">
+      <type>absl::Duration</type>
+      <name>DurationSinceConstruction</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a6a68e7fab8751978c9faa30867f91241</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>iterations</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a15001c5a8f5c0086dddcc4626a5a5ad7</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>nodes</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a6837e7545ac2c5cfe95ca9a1c0f013e3</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string</type>
+      <name>SolverVersion</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>aee22680c23e591329e9ac50ff78f572d</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void *</type>
+      <name>underlying_solver</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a3d3bc5e39b383336fb3ca88b1a0c6cc5</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>ComputeExactConditionNumber</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a6390f93d9c4e88775d98ec8353ef0979</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>ABSL_MUST_USE_RESULT bool</type>
+      <name>NextSolution</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a4b11747bf657bf074d1e710121810d13</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>time_limit</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a258c821fae2869693b58440145125aba</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_time_limit</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>ae99e29fcc045ab27c8fecbdc422e6133</anchor>
+      <arglist>(int64 time_limit_milliseconds)</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>time_limit_in_secs</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a0177cee53f52d09df990920d532b0772</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int64</type>
+      <name>wall_time</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a1ce69ce989942416f35a7d3577b5edd8</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>OwnsVariable</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a78606aaae8d97a0def488e696fdb2d2b</anchor>
+      <arglist>(const MPVariable *var) const</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static bool</type>
+      <name>SupportsProblemType</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>ae96df0f02a46493eba93d2e70709911a</anchor>
+      <arglist>(OptimizationProblemType problem_type)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static bool</type>
+      <name>ParseSolverType</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a650dd472cb06be9f9abcf5bc0833437d</anchor>
+      <arglist>(absl::string_view solver, OptimizationProblemType *type)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>SolveWithProto</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a3aaa8bdb57173a9d933ed5f62bb60f42</anchor>
+      <arglist>(const MPModelRequest &amp;model_request, MPSolutionResponse *response)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static double</type>
+      <name>infinity</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a5b15f7248e2b72d474bae0444a613033</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>GLPKInterface</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>ae1a3e0a695903c8e6effd524a7f92784</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>CLPInterface</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a60944ecdcad88cfb4d4d32feea70c9b5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>CBCInterface</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>af5a7cf0c655f37c0b388a2ddcf32ac3e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>SCIPInterface</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a236f9752f4df4c5134617330a040ec8a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>GurobiInterface</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>ac28a56eeedb62d070578a9231f1875ea</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>CplexInterface</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>ae7cbd08108e1636184f28c1a71c42393</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>SLMInterface</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a5c083b37243075a00bf909840dc7c933</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>MPSolverInterface</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>ac0aea0786e75adbb2d24c41c15e7456c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>GLOPInterface</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a6c754b527a347994b06eeb49a09ac222</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>BopInterface</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>a7383308e6b9b63b18196798db342ce8a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>SatInterface</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>acbd4413b1370baca9c45aecb0cb8ebd2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>KnapsackInterface</name>
+      <anchorfile>classoperations__research_1_1MPSolver.html</anchorfile>
+      <anchor>aee1ddf25e86286c16face31551751bda</anchor>
+      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -4397,6 +5883,1054 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>operations_research::MPSolverInterface</name>
+    <filename>classoperations__research_1_1MPSolverInterface.html</filename>
+    <member kind="enumeration">
+      <type></type>
+      <name>SynchronizationStatus</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a912394f09fe0aee694df2e9c962853a0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>MUST_RELOAD</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a912394f09fe0aee694df2e9c962853a0a5e5dccb6be46f13fd046ebf8dd63fc0b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>MODEL_SYNCHRONIZED</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a912394f09fe0aee694df2e9c962853a0abb904e2bd71f6c8f7612f5bb41a0b8f0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOLUTION_SYNCHRONIZED</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a912394f09fe0aee694df2e9c962853a0a1a93fdf313f6e448af723eb80bbbb7ba</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>MUST_RELOAD</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a912394f09fe0aee694df2e9c962853a0a5e5dccb6be46f13fd046ebf8dd63fc0b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>MODEL_SYNCHRONIZED</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a912394f09fe0aee694df2e9c962853a0abb904e2bd71f6c8f7612f5bb41a0b8f0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOLUTION_SYNCHRONIZED</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a912394f09fe0aee694df2e9c962853a0a1a93fdf313f6e448af723eb80bbbb7ba</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>MPSolverInterface</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a152b3f16428c0a1c58247ba88d95f0a4</anchor>
+      <arglist>(MPSolver *const solver)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual</type>
+      <name>~MPSolverInterface</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>acd4eda4c38c00ed2cf7908c29bb74de3</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual MPSolver::ResultStatus</type>
+      <name>Solve</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a99d3df0f2e02937e56473d9f3df68965</anchor>
+      <arglist>(const MPSolverParameters &amp;param)=0</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>Write</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a075910a059a214af934af08f3cba7db4</anchor>
+      <arglist>(const std::string &amp;filename)</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual void</type>
+      <name>Reset</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>ad4ce4ee159f4c2db5a02923c886c136b</anchor>
+      <arglist>()=0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual void</type>
+      <name>SetOptimizationDirection</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>ac35b40e98fabb8bcd5e62cdd57678ff3</anchor>
+      <arglist>(bool maximize)=0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual void</type>
+      <name>SetVariableBounds</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>af80b8873e1b07fedcac24c5704a889cf</anchor>
+      <arglist>(int index, double lb, double ub)=0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual void</type>
+      <name>SetVariableInteger</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a5e445125231a8febc619d3a81cb8c12f</anchor>
+      <arglist>(int index, bool integer)=0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual void</type>
+      <name>SetConstraintBounds</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>ae63369de591dfd558df4c74c1143d84a</anchor>
+      <arglist>(int index, double lb, double ub)=0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual void</type>
+      <name>AddRowConstraint</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a4c06cfd4d3c34ca0a96ad90f50a1abd8</anchor>
+      <arglist>(MPConstraint *const ct)=0</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>AddIndicatorConstraint</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>aa38ec74a9f9beb650fbb88dece755ebd</anchor>
+      <arglist>(MPConstraint *const ct)</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual void</type>
+      <name>AddVariable</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a94980bb46c791363fe9ce55d57e2a79a</anchor>
+      <arglist>(MPVariable *const var)=0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual void</type>
+      <name>SetCoefficient</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a3ecddb0dba419349214fd4b021d2b9f6</anchor>
+      <arglist>(MPConstraint *const constraint, const MPVariable *const variable, double new_value, double old_value)=0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual void</type>
+      <name>ClearConstraint</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a38ad5df166aef299c76fac71eb785523</anchor>
+      <arglist>(MPConstraint *const constraint)=0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual void</type>
+      <name>SetObjectiveCoefficient</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>ab54c763dfb19f258603711eddfe66bca</anchor>
+      <arglist>(const MPVariable *const variable, double coefficient)=0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual void</type>
+      <name>SetObjectiveOffset</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a6a0b90433ed94679a6065000b384fb64</anchor>
+      <arglist>(double value)=0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual void</type>
+      <name>ClearObjective</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a1d0c4924c375cd234f4a17bf2b8c1a8b</anchor>
+      <arglist>()=0</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>BranchingPriorityChangedForVariable</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a3038e118fcb2ccc9f0e2493cc48a1545</anchor>
+      <arglist>(int var_index)</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual int64</type>
+      <name>iterations</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>aa7ef7e2f076fc9208d13fdfb4ec33c76</anchor>
+      <arglist>() const =0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual int64</type>
+      <name>nodes</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a6ca427f3c6266f86e41f4b5b1905c7d3</anchor>
+      <arglist>() const =0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual double</type>
+      <name>best_objective_bound</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a1e4b520fcd965a7a2b975035e1a906b5</anchor>
+      <arglist>() const =0</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>trivial_worst_objective_bound</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>aec492297c32397c8a82490efb952e137</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>objective_value</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a9a71292f92599d3f96dc96543c24673d</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual MPSolver::BasisStatus</type>
+      <name>row_status</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>aad9285c25e1671edfac7a7748b166770</anchor>
+      <arglist>(int constraint_index) const =0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual MPSolver::BasisStatus</type>
+      <name>column_status</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a5a2299c6d83d21a0917d0661fb704dbe</anchor>
+      <arglist>(int variable_index) const =0</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>CheckSolutionIsSynchronized</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a0fabe855ed7766a6ccddb63cbbfa3bc4</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>CheckSolutionExists</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a8f0df932d3bffc929a8b463fe9697431</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>CheckSolutionIsSynchronizedAndExists</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>ad792f0af5ffa1072f0d6a4d3d872f73a</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>CheckBestObjectiveBoundExists</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a80e389070e3984f5333c4fd96311231b</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual bool</type>
+      <name>IsContinuous</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a77db27f245bbe7fec03763cb0f81210a</anchor>
+      <arglist>() const =0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual bool</type>
+      <name>IsLP</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a8410c2213e0f2faec9a202b5b670ad6c</anchor>
+      <arglist>() const =0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual bool</type>
+      <name>IsMIP</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a3cb924945c7c8ebd6964ba982ffdf276</anchor>
+      <arglist>() const =0</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>last_variable_index</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a4996e4f9b120ab70f4d2382e473dc852</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>variable_is_extracted</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a8245f5863b87aa3f6e9ac19d29531a9a</anchor>
+      <arglist>(int var_index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_variable_as_extracted</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a01fb82c6f72457879c0defb22ae9db47</anchor>
+      <arglist>(int var_index, bool extracted)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>constraint_is_extracted</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a90947e6cbecd6bfff60feefa9ba37847</anchor>
+      <arglist>(int ct_index) const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_constraint_as_extracted</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a3c7ae564168e67c161f5111a060a604e</anchor>
+      <arglist>(int ct_index, bool extracted)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>quiet</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a86ce7eb3c7e1f5ca9822590f489ab708</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>set_quiet</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>adc4579b45ae778e4c61b5c35cffc0eaf</anchor>
+      <arglist>(bool quiet_value)</arglist>
+    </member>
+    <member kind="function">
+      <type>MPSolver::ResultStatus</type>
+      <name>result_status</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a0e34bb4ed1518f8104e6f84592e68dc5</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual std::string</type>
+      <name>SolverVersion</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a5e19196bab184ddaf66a7e34056cab48</anchor>
+      <arglist>() const =0</arglist>
+    </member>
+    <member kind="function" virtualness="pure">
+      <type>virtual void *</type>
+      <name>underlying_solver</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>ad98f058f6721dba0ddeb4f82f7bc98ef</anchor>
+      <arglist>()=0</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual double</type>
+      <name>ComputeExactConditionNumber</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>afae6a55da4ebeb2d9c6eb55eeccbdc8b</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual void</type>
+      <name>SetStartingLpBasis</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>ae60b6e41d8b3077d982e0347c85b802c</anchor>
+      <arglist>(const std::vector&lt; MPSolver::BasisStatus &gt; &amp;variable_statuses, const std::vector&lt; MPSolver::BasisStatus &gt; &amp;constraint_statuses)</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>InterruptSolve</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a5f9dc671c62b54a3940f2691f9953e67</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>NextSolution</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a7f6e6fc6c25a04f49e3b95b7510c8369</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const int64</type>
+      <name>kUnknownNumberOfIterations</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a156255f5e27fd48b7ee43539b52f644f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const int64</type>
+      <name>kUnknownNumberOfNodes</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a25b846bdb22eb75b6c0f3b9922556c46</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>ExtractModel</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a9ae99b901839c7f1e29193d8a619b728</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="pure">
+      <type>virtual void</type>
+      <name>ExtractNewVariables</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a945992529aaaa827d7c9307e996ab2ef</anchor>
+      <arglist>()=0</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="pure">
+      <type>virtual void</type>
+      <name>ExtractNewConstraints</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a1363e1a1c4a1535b0cb92f46a9efd4b5</anchor>
+      <arglist>()=0</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="pure">
+      <type>virtual void</type>
+      <name>ExtractObjective</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a24085346a573695d2f3d224b726c5714</anchor>
+      <arglist>()=0</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>ResetExtractionInformation</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a3fd73560f782eaf5093a435c61783d09</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>InvalidateSolutionSynchronization</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a27ef26272b0444403e683b31605d88f7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>SetCommonParameters</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>ad237855fa79fc36fbf9baedce589384c</anchor>
+      <arglist>(const MPSolverParameters &amp;param)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>SetMIPParameters</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>ab7289f57fd0f768453f2817d59a20c80</anchor>
+      <arglist>(const MPSolverParameters &amp;param)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="pure">
+      <type>virtual void</type>
+      <name>SetParameters</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a6c1c1fc340f3f15e75745d7e6b0fe3df</anchor>
+      <arglist>(const MPSolverParameters &amp;param)=0</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>SetUnsupportedDoubleParam</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a861fc44ad0a6147a79dbcef606d34958</anchor>
+      <arglist>(MPSolverParameters::DoubleParam param)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>SetUnsupportedIntegerParam</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a2b7834a656a48c094c34c13c60bd742c</anchor>
+      <arglist>(MPSolverParameters::IntegerParam param)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>SetDoubleParamToUnsupportedValue</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>aa5b34d05b6fbeb881404d4147b63d401</anchor>
+      <arglist>(MPSolverParameters::DoubleParam param, double value)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual void</type>
+      <name>SetIntegerParamToUnsupportedValue</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a0e21cafe5af05431fa67ec7e9bfbf5ec</anchor>
+      <arglist>(MPSolverParameters::IntegerParam param, int value)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="pure">
+      <type>virtual void</type>
+      <name>SetRelativeMipGap</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a2b6fcec92ec397f38a9657d7d38a9e49</anchor>
+      <arglist>(double value)=0</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="pure">
+      <type>virtual void</type>
+      <name>SetPrimalTolerance</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a119e0274303ed2eb0c80fcef960cfff0</anchor>
+      <arglist>(double value)=0</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="pure">
+      <type>virtual void</type>
+      <name>SetDualTolerance</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>abc5c8df36220fb85bf2c4f69b959ead9</anchor>
+      <arglist>(double value)=0</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="pure">
+      <type>virtual void</type>
+      <name>SetPresolveMode</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a51ae167e111959ecbe3f67e0e12e2f09</anchor>
+      <arglist>(int value)=0</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual util::Status</type>
+      <name>SetNumThreads</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>ae6b5032ab0257e33006c4dee5249ad21</anchor>
+      <arglist>(int num_threads)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>SetSolverSpecificParametersAsString</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a9421cf0896b24513fb63283fac87de44</anchor>
+      <arglist>(const std::string &amp;parameters)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual bool</type>
+      <name>ReadParameterFile</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>af3bee59eacd9c98d6f9240167cf3051f</anchor>
+      <arglist>(const std::string &amp;filename)</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="virtual">
+      <type>virtual std::string</type>
+      <name>ValidFileExtensionForParameterFile</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a5220692ca2d4674d77045a27317bca3e</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="pure">
+      <type>virtual void</type>
+      <name>SetScalingMode</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>aaaa84e64f7c29af15440e02189a362da</anchor>
+      <arglist>(int value)=0</arglist>
+    </member>
+    <member kind="function" protection="protected" virtualness="pure">
+      <type>virtual void</type>
+      <name>SetLpAlgorithm</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a7cde757e7152aa06930afc59709c3c64</anchor>
+      <arglist>(int value)=0</arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>MPSolver *const</type>
+      <name>solver_</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>ae27c5da090750971d680f2bf8f4f706b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>SynchronizationStatus</type>
+      <name>sync_status_</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>af7655248b40e336f843180b9ef37dc3c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>MPSolver::ResultStatus</type>
+      <name>result_status_</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>add7194b3e70938a6bb7fb8e7c6532e56</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>bool</type>
+      <name>maximize_</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>aaabe8c85cd90dd61e4c9de70667b0c16</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>int</type>
+      <name>last_constraint_index_</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a577812bda95732730419025af875deb3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>int</type>
+      <name>last_variable_index_</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a45aa65ea825c85f885b0d8a0064af2f6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>double</type>
+      <name>objective_value_</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a9fbca54e7d25c2bfacfac1e47183e14f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" protection="protected">
+      <type>bool</type>
+      <name>quiet_</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>ac962e5cc7308644424829668241a8fcf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" protection="protected" static="yes">
+      <type>static const int</type>
+      <name>kDummyVariableIndex</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a693c6f125a85b70fe94057be1cfd0819</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>MPSolver</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>ac2c01b4de8f7670e37daa7d42b804dd4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>MPConstraint</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a24102af97b3c7e803861e1d6983b1fea</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend">
+      <type>friend class</type>
+      <name>MPObjective</name>
+      <anchorfile>classoperations__research_1_1MPSolverInterface.html</anchorfile>
+      <anchor>a77dbe3a653f9c5d30e818000d92d8b17</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::MPSolverParameters</name>
+    <filename>classoperations__research_1_1MPSolverParameters.html</filename>
+    <member kind="enumeration">
+      <type></type>
+      <name>DoubleParam</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>a3834b74a8764c1c971e10ce9ba2f265e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>RELATIVE_MIP_GAP</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>a3834b74a8764c1c971e10ce9ba2f265eaca78b129ceb19e286889b3274bb8cab3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>PRIMAL_TOLERANCE</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>a3834b74a8764c1c971e10ce9ba2f265ea57e959f9c5ede1f3e683169609fb0488</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>DUAL_TOLERANCE</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>a3834b74a8764c1c971e10ce9ba2f265ea313eaed42edf309599e71ca7563cce22</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>IntegerParam</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ac8f18a88f586c725cfffc613499926a0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>PRESOLVE</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ac8f18a88f586c725cfffc613499926a0a1f92ab900139fd7649eace59942f1e0f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>LP_ALGORITHM</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ac8f18a88f586c725cfffc613499926a0a28abd1bbac3e861d5a74f841f8263e05</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>INCREMENTALITY</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ac8f18a88f586c725cfffc613499926a0a0ea983a7a805bc98c2cf9a1000c1ef95</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SCALING</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ac8f18a88f586c725cfffc613499926a0ad5871c18d62c5e2e1e48a5420c13942f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>PresolveValues</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>a45d822ac67d10cc80b2f70fe6ec555a4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>PRESOLVE_OFF</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>a45d822ac67d10cc80b2f70fe6ec555a4a6e658228fc28195fb00675d3dfec2c85</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>PRESOLVE_ON</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>a45d822ac67d10cc80b2f70fe6ec555a4ac8e04ac3295af6c505a22757490bb018</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>LpAlgorithmValues</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ab297405e6084c08a9058012361376762</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>DUAL</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ab297405e6084c08a9058012361376762a2aca0e0bfd9807b5a938bb3bbc2bea07</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>PRIMAL</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ab297405e6084c08a9058012361376762a9fa228e5a51b8e22346b46d0f866e68d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>BARRIER</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ab297405e6084c08a9058012361376762af55a23df7a5ec299bb9ca742ef9004ed</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>IncrementalityValues</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ad58cb8cf98c288843ab0d1fd644f6116</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>INCREMENTALITY_OFF</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ad58cb8cf98c288843ab0d1fd644f6116a27013e436bfe1d34ebb6da476c590eee</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>INCREMENTALITY_ON</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ad58cb8cf98c288843ab0d1fd644f6116aef000bbd88ef3ff2715d53a0e1dfbd37</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>ScalingValues</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ae77fef975a893d6118d955ef2eb72ac9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SCALING_OFF</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ae77fef975a893d6118d955ef2eb72ac9a41abc3f52f70490cd997aa8debace24b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SCALING_ON</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ae77fef975a893d6118d955ef2eb72ac9a33cf90a88928c32c5b56c9375d7dfd18</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>RELATIVE_MIP_GAP</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>a3834b74a8764c1c971e10ce9ba2f265eaca78b129ceb19e286889b3274bb8cab3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>PRIMAL_TOLERANCE</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>a3834b74a8764c1c971e10ce9ba2f265ea57e959f9c5ede1f3e683169609fb0488</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>DUAL_TOLERANCE</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>a3834b74a8764c1c971e10ce9ba2f265ea313eaed42edf309599e71ca7563cce22</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>PRESOLVE</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ac8f18a88f586c725cfffc613499926a0a1f92ab900139fd7649eace59942f1e0f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>LP_ALGORITHM</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ac8f18a88f586c725cfffc613499926a0a28abd1bbac3e861d5a74f841f8263e05</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>INCREMENTALITY</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ac8f18a88f586c725cfffc613499926a0a0ea983a7a805bc98c2cf9a1000c1ef95</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SCALING</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ac8f18a88f586c725cfffc613499926a0ad5871c18d62c5e2e1e48a5420c13942f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>PRESOLVE_OFF</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>a45d822ac67d10cc80b2f70fe6ec555a4a6e658228fc28195fb00675d3dfec2c85</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>PRESOLVE_ON</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>a45d822ac67d10cc80b2f70fe6ec555a4ac8e04ac3295af6c505a22757490bb018</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>DUAL</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ab297405e6084c08a9058012361376762a2aca0e0bfd9807b5a938bb3bbc2bea07</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>PRIMAL</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ab297405e6084c08a9058012361376762a9fa228e5a51b8e22346b46d0f866e68d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>BARRIER</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ab297405e6084c08a9058012361376762af55a23df7a5ec299bb9ca742ef9004ed</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>INCREMENTALITY_OFF</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ad58cb8cf98c288843ab0d1fd644f6116a27013e436bfe1d34ebb6da476c590eee</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>INCREMENTALITY_ON</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ad58cb8cf98c288843ab0d1fd644f6116aef000bbd88ef3ff2715d53a0e1dfbd37</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SCALING_OFF</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ae77fef975a893d6118d955ef2eb72ac9a41abc3f52f70490cd997aa8debace24b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SCALING_ON</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ae77fef975a893d6118d955ef2eb72ac9a33cf90a88928c32c5b56c9375d7dfd18</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>MPSolverParameters</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>accb1cea31a73bd0b09bb75882baa9e5f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetDoubleParam</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ab297ed394e3996ebb0cc43d931deaa16</anchor>
+      <arglist>(MPSolverParameters::DoubleParam param, double value)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetIntegerParam</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>afcfb05b6d356807556f65f1b845897a8</anchor>
+      <arglist>(MPSolverParameters::IntegerParam param, int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>ResetDoubleParam</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>a7bc16e5febd0604a3400572c0e35c490</anchor>
+      <arglist>(MPSolverParameters::DoubleParam param)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>ResetIntegerParam</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>a100330795edeb8c1b12c7b8ff74611df</anchor>
+      <arglist>(MPSolverParameters::IntegerParam param)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Reset</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ada3cdf5254959f2807c3d27bb7e18e27</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>GetDoubleParam</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>a4423dd8b21b413522d8b91e4536cfa08</anchor>
+      <arglist>(MPSolverParameters::DoubleParam param) const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>GetIntegerParam</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ae9e67424e09a35840b4fda2942b94c6f</anchor>
+      <arglist>(MPSolverParameters::IntegerParam param) const</arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const double</type>
+      <name>kDefaultDoubleParamValue</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>af0e4fbb80499756bc3edf88fd495d7f7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const int</type>
+      <name>kDefaultIntegerParamValue</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>a9bac90a88459ac4dd9629beeada24a66</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const double</type>
+      <name>kUnknownDoubleParamValue</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>a561c73d056eef04db4b4703abd972868</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const int</type>
+      <name>kUnknownIntegerParamValue</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>a6c81985cecabbd5f054974d362db551a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const double</type>
+      <name>kDefaultRelativeMipGap</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ad6b31b12f9e1944b355809efd56fec98</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const double</type>
+      <name>kDefaultPrimalTolerance</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>a3369c0b857cf02ddf742acc5ef1feec5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const double</type>
+      <name>kDefaultDualTolerance</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>a15fd57d45c522be9c8340ba9d1244e3f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const PresolveValues</type>
+      <name>kDefaultPresolve</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>afc36c21bad2607b8d7bcba63b60d8681</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const IncrementalityValues</type>
+      <name>kDefaultIncrementality</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ac8d266a839e50968c11481a151f80ea9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const double</type>
+      <name>kDefaultDoubleParamValue</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>af0e4fbb80499756bc3edf88fd495d7f7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const int</type>
+      <name>kDefaultIntegerParamValue</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>a9bac90a88459ac4dd9629beeada24a66</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const double</type>
+      <name>kUnknownDoubleParamValue</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>a561c73d056eef04db4b4703abd972868</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const int</type>
+      <name>kUnknownIntegerParamValue</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>a6c81985cecabbd5f054974d362db551a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const double</type>
+      <name>kDefaultRelativeMipGap</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ad6b31b12f9e1944b355809efd56fec98</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const double</type>
+      <name>kDefaultPrimalTolerance</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>a3369c0b857cf02ddf742acc5ef1feec5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const double</type>
+      <name>kDefaultDualTolerance</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>a15fd57d45c522be9c8340ba9d1244e3f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const PresolveValues</type>
+      <name>kDefaultPresolve</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>afc36c21bad2607b8d7bcba63b60d8681</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static const IncrementalityValues</type>
+      <name>kDefaultIncrementality</name>
+      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
+      <anchor>ac8d266a839e50968c11481a151f80ea9</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>operations_research::MPSosConstraint</name>
     <filename>classoperations__research_1_1MPSosConstraint.html</filename>
     <member kind="typedef">
@@ -4846,6 +7380,234 @@
       <anchorfile>classoperations__research_1_1MPSosConstraint.html</anchorfile>
       <anchor>a5dbc5d574b38cde070463680d87e9cdb</anchor>
       <arglist>(MPSosConstraint &amp;a, MPSosConstraint &amp;b)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::MPVariable</name>
+    <filename>classoperations__research_1_1MPVariable.html</filename>
+    <member kind="function">
+      <type>const std::string &amp;</type>
+      <name>name</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>a1d74db2a526fd2d8b4e11a4ed4ebf07d</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetInteger</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>a02131c51847247fc3f620e4ccb439470</anchor>
+      <arglist>(bool integer)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>integer</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>a044841d06c6de76db6f4978bf57898ec</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>solution_value</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>a9c7aabb1c218e733e719ce2966939586</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>index</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>ac9676264a15bac7aae8db95344903b1f</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>lb</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>a0d581a8129e4fc9779ee0b1172967563</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>ub</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>a1eeda5bea30b1e1f354c2919110e2ff9</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetLB</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>a0d23a28f31a3b667f21034551666430e</anchor>
+      <arglist>(double lb)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetUB</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>a42590823a1b3343d0459cc7c564b9d69</anchor>
+      <arglist>(double ub)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetBounds</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>a5608a23aad7a48ea52ba3869b557d036</anchor>
+      <arglist>(double lb, double ub)</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>unrounded_solution_value</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>af25c3940fd37705e63340d9269896dc0</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>reduced_cost</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>a0001ce8a3240bd00b49557594a809cdb</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>MPSolver::BasisStatus</type>
+      <name>basis_status</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>abb491e237ace37cb5240cde3c3ff2958</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>branching_priority</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>a6d0e4798441493244b31f29ee5ac26ad</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SetBranchingPriority</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>a074f5b3c88658b91bd372a372db63627</anchor>
+      <arglist>(int priority)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type></type>
+      <name>MPVariable</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>abba28daa7e558932c40cf1a8ecb30194</anchor>
+      <arglist>(int index, double lb, double ub, bool integer, const std::string &amp;name, MPSolverInterface *const interface_in)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>set_solution_value</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>a8f6294a83ae2d4bb0e6000981f8651a5</anchor>
+      <arglist>(double value)</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>void</type>
+      <name>set_reduced_cost</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>a73eaa62d668195e9d894548d84f75fdb</anchor>
+      <arglist>(double reduced_cost)</arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>MPSolver</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>ac2c01b4de8f7670e37daa7d42b804dd4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>MPSolverInterface</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>ac0aea0786e75adbb2d24c41c15e7456c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>CBCInterface</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>af5a7cf0c655f37c0b388a2ddcf32ac3e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>CLPInterface</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>a60944ecdcad88cfb4d4d32feea70c9b5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>GLPKInterface</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>ae1a3e0a695903c8e6effd524a7f92784</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>SCIPInterface</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>a236f9752f4df4c5134617330a040ec8a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>SLMInterface</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>a5c083b37243075a00bf909840dc7c933</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>GurobiInterface</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>ac28a56eeedb62d070578a9231f1875ea</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>CplexInterface</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>ae7cbd08108e1636184f28c1a71c42393</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>GLOPInterface</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>a6c754b527a347994b06eeb49a09ac222</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>MPVariableSolutionValueTest</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>a8844020cc1376123531cd53c831acdef</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>BopInterface</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>a7383308e6b9b63b18196798db342ce8a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>SatInterface</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>acbd4413b1370baca9c45aecb0cb8ebd2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="friend" protection="protected">
+      <type>friend class</type>
+      <name>KnapsackInterface</name>
+      <anchorfile>classoperations__research_1_1MPVariable.html</anchorfile>
+      <anchor>aee1ddf25e86286c16face31551751bda</anchor>
+      <arglist></arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -6005,15 +8767,23 @@
   <compound kind="namespace">
     <name>operations_research</name>
     <filename>namespaceoperations__research.html</filename>
+    <class kind="class">operations_research::LinearExpr</class>
+    <class kind="class">operations_research::LinearRange</class>
+    <class kind="class">operations_research::MPConstraint</class>
     <class kind="class">operations_research::MPConstraintProto</class>
     <class kind="class">operations_research::MPGeneralConstraintProto</class>
     <class kind="class">operations_research::MPIndicatorConstraint</class>
     <class kind="struct">operations_research::MPModelExportOptions</class>
     <class kind="class">operations_research::MPModelProto</class>
     <class kind="class">operations_research::MPModelRequest</class>
+    <class kind="class">operations_research::MPObjective</class>
     <class kind="class">operations_research::MPSolutionResponse</class>
+    <class kind="class">operations_research::MPSolver</class>
     <class kind="class">operations_research::MPSolverCommonParameters</class>
+    <class kind="class">operations_research::MPSolverInterface</class>
+    <class kind="class">operations_research::MPSolverParameters</class>
     <class kind="class">operations_research::MPSosConstraint</class>
+    <class kind="class">operations_research::MPVariable</class>
     <class kind="class">operations_research::MPVariableProto</class>
     <class kind="class">operations_research::OptionalDouble</class>
     <class kind="class">operations_research::PartialVariableAssignment</class>
@@ -6232,6 +9002,97 @@
       <arglist></arglist>
     </member>
     <member kind="function">
+      <type>LinearExpr</type>
+      <name>operator+</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a97f9b83239285f5fdfcac1b8e8b4f162</anchor>
+      <arglist>(LinearExpr lhs, const LinearExpr &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr</type>
+      <name>operator-</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a515cdaf4f9c4000bb3482a0c450e23c3</anchor>
+      <arglist>(LinearExpr lhs, const LinearExpr &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr</type>
+      <name>operator *</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a741104fe08089fe3520676487f7a685d</anchor>
+      <arglist>(LinearExpr lhs, double rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr</type>
+      <name>operator/</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>abebdd7f40e90df8dc7d557b6e26da942</anchor>
+      <arglist>(LinearExpr lhs, double rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr</type>
+      <name>operator *</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a99590470c6ad2d59331b6fcc56609877</anchor>
+      <arglist>(double lhs, LinearExpr rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearRange</type>
+      <name>operator&lt;=</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a6d1fa20f9c9faf7027c0b16f97139e80</anchor>
+      <arglist>(const LinearExpr &amp;lhs, const LinearExpr &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearRange</type>
+      <name>operator==</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a08146f196bd9c3f492ee108732449ced</anchor>
+      <arglist>(const LinearExpr &amp;lhs, const LinearExpr &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearRange</type>
+      <name>operator&gt;=</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>ac4052f92af6a7fbb1d45e17befcb68e0</anchor>
+      <arglist>(const LinearExpr &amp;lhs, const LinearExpr &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>const absl::string_view</type>
+      <name>ToString</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>afc3e3b80841b587c6fbfd9e9f3ec9c59</anchor>
+      <arglist>(MPSolver::OptimizationProblemType optimization_problem_type)</arglist>
+    </member>
+    <member kind="function">
+      <type>std::ostream &amp;</type>
+      <name>operator&lt;&lt;</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a2610f938f233d0adcd3142693f4a2683</anchor>
+      <arglist>(std::ostream &amp;os, MPSolver::OptimizationProblemType optimization_problem_type)</arglist>
+    </member>
+    <member kind="function">
+      <type>std::ostream &amp;</type>
+      <name>operator&lt;&lt;</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a6e3ed7b755e2b756ef48c9b3bad4a780</anchor>
+      <arglist>(std::ostream &amp;os, MPSolver::ResultStatus status)</arglist>
+    </member>
+    <member kind="function">
+      <type>bool</type>
+      <name>AbslParseFlag</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a61dc18a85425d0a7cf6aa3e7ce3199f6</anchor>
+      <arglist>(absl::string_view text, MPSolver::OptimizationProblemType *solver_type, std::string *error)</arglist>
+    </member>
+    <member kind="function">
+      <type>std::string</type>
+      <name>AbslUnparseFlag</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>af04d1dfc591c35038a974202e50e541f</anchor>
+      <arglist>(MPSolver::OptimizationProblemType solver_type)</arglist>
+    </member>
+    <member kind="function">
       <type>util::StatusOr&lt; std::string &gt;</type>
       <name>ExportModelAsLpFormat</name>
       <anchorfile>namespaceoperations__research.html</anchorfile>
@@ -6384,6 +9245,13 @@
       <anchorfile>namespaceoperations__research.html</anchorfile>
       <anchor>a22b5756cf719f9b2d10dae67820cf885</anchor>
       <arglist>(const std::string &amp;name, MPSolverResponseStatus *value)</arglist>
+    </member>
+    <member kind="variable">
+      <type>constexpr double</type>
+      <name>kDefaultPrimalTolerance</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a07189276cc680928dad51ed197142077</anchor>
+      <arglist></arglist>
     </member>
     <member kind="variable">
       <type>MPConstraintProtoDefaultTypeInternal</type>

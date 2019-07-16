@@ -26,19 +26,23 @@
       <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="hierarchy.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="namespaceoperations__research.html">operations_research</a></li><li class="navelem"><a class="el" href="classoperations__research_1_1DecisionBuilder.html">DecisionBuilder</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classoperations__research_1_1DecisionBuilder.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
@@ -47,33 +51,12 @@
 <div class="title">operations_research::DecisionBuilder Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
 </div><!--header-->
 <div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>A <a class="el" href="classoperations__research_1_1DecisionBuilder.html" title="A DecisionBuilder is responsible for creating the search tree.">DecisionBuilder</a> is responsible for creating the search tree. </p>
+<p>The important method is <a class="el" href="classoperations__research_1_1DecisionBuilder.html#a3bcaa4dd991e8ddb4d0e48cfbca58592" title="This is the main method of the decision builder class.">Next()</a>, which returns the next decision to execute. </p>
 
-<p>A <a class="el" href="classoperations__research_1_1DecisionBuilder.html" title="A DecisionBuilder is responsible for creating the search tree.">DecisionBuilder</a> is responsible for creating the search tree.  
- <a href="classoperations__research_1_1DecisionBuilder.html#details">More...</a></p>
-
-<p><code>#include &lt;<a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>&gt;</code></p>
-<div class="dynheader">
-Inheritance diagram for operations_research::DecisionBuilder:</div>
-<div class="dyncontent">
- <div class="center">
-  <img src="classoperations__research_1_1DecisionBuilder.png" usemap="#operations_5Fresearch::DecisionBuilder_map" alt=""/>
-  <map id="operations_5Fresearch::DecisionBuilder_map" name="operations_5Fresearch::DecisionBuilder_map">
-<area href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="operations_research::BaseObject" shape="rect" coords="1326,0,1758,24"/>
-<area href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html" title="Decision builders building a solution using local search filters to evaluate its feasibility." alt="operations_research::IntVarFilteredDecisionBuilder" shape="rect" coords="1326,112,1758,136"/>
-<area href="classoperations__research_1_1RoutingFilteredDecisionBuilder.html" title="Filter-based decision builder dedicated to routing." alt="operations_research::RoutingFilteredDecisionBuilder" shape="rect" coords="1326,168,1758,192"/>
-<area href="classoperations__research_1_1CheapestAdditionFilteredDecisionBuilder.html" title="Filtered-base decision builder based on the addition heuristic, extending a path from its start node ..." alt="operations_research::CheapestAdditionFilteredDecisionBuilder" shape="rect" coords="221,224,653,248"/>
-<area href="classoperations__research_1_1CheapestInsertionFilteredDecisionBuilder.html" alt="operations_research::CheapestInsertionFilteredDecisionBuilder" shape="rect" coords="1105,224,1537,248"/>
-<area href="classoperations__research_1_1ChristofidesFilteredDecisionBuilder.html" title="Christofides addition heuristic." alt="operations_research::ChristofidesFilteredDecisionBuilder" shape="rect" coords="1547,224,1979,248"/>
-<area href="classoperations__research_1_1SavingsFilteredDecisionBuilder.html" title="Filter-based decision builder which builds a solution by using Clarke &amp; Wright&#39;s Savings heuristic." alt="operations_research::SavingsFilteredDecisionBuilder" shape="rect" coords="1989,224,2421,248"/>
-<area href="classoperations__research_1_1ComparatorCheapestAdditionFilteredDecisionBuilder.html" title="A CheapestAdditionFilteredDecisionBuilder where the notion of &#39;cheapest arc&#39; comes from an arc compar..." alt="operations_research::ComparatorCheapestAdditionFilteredDecisionBuilder" shape="rect" coords="0,280,432,304"/>
-<area href="classoperations__research_1_1EvaluatorCheapestAdditionFilteredDecisionBuilder.html" title="A CheapestAdditionFilteredDecisionBuilder where the notion of &#39;cheapest arc&#39; comes from an arc evalua..." alt="operations_research::EvaluatorCheapestAdditionFilteredDecisionBuilder" shape="rect" coords="442,280,874,304"/>
-<area href="classoperations__research_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html" title="Filter-based decision builder which builds a solution by inserting nodes at their cheapest position o..." alt="operations_research::GlobalCheapestInsertionFilteredDecisionBuilder" shape="rect" coords="884,280,1316,304"/>
-<area href="classoperations__research_1_1LocalCheapestInsertionFilteredDecisionBuilder.html" title="Filter-base decision builder which builds a solution by inserting nodes at their cheapest position." alt="operations_research::LocalCheapestInsertionFilteredDecisionBuilder" shape="rect" coords="1326,280,1758,304"/>
-<area href="classoperations__research_1_1ParallelSavingsFilteredDecisionBuilder.html" alt="operations_research::ParallelSavingsFilteredDecisionBuilder" shape="rect" coords="1768,280,2200,304"/>
-<area href="classoperations__research_1_1SequentialSavingsFilteredDecisionBuilder.html" alt="operations_research::SequentialSavingsFilteredDecisionBuilder" shape="rect" coords="2210,280,2642,304"/>
-  </map>
-</div></div>
-<table class="memberdecls">
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03205">3205</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:adcbdca02b7495a6f2ffcff7f77e32b1c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DecisionBuilder.html#adcbdca02b7495a6f2ffcff7f77e32b1c">DecisionBuilder</a> ()</td></tr>
@@ -91,12 +74,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a62372947c9ce93ba28cb636a635433d7"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1DecisionBuilder.html#a62372947c9ce93ba28cb636a635433d7">Accept</a> (<a class="el" href="classoperations__research_1_1ModelVisitor.html">ModelVisitor</a> *const visitor) const</td></tr>
 <tr class="separator:a62372947c9ce93ba28cb636a635433d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>A <a class="el" href="classoperations__research_1_1DecisionBuilder.html" title="A DecisionBuilder is responsible for creating the search tree.">DecisionBuilder</a> is responsible for creating the search tree. </p>
-<p>The important method is <a class="el" href="classoperations__research_1_1DecisionBuilder.html#a3bcaa4dd991e8ddb4d0e48cfbca58592" title="This is the main method of the decision builder class.">Next()</a>, which returns the next decision to execute. </p>
-
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03205">3205</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="adcbdca02b7495a6f2ffcff7f77e32b1c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adcbdca02b7495a6f2ffcff7f77e32b1c">&#9670;&nbsp;</a></span>DecisionBuilder()</h2>
 
@@ -281,6 +259,7 @@ Public Member Functions</h2></td></tr>
 <li><a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

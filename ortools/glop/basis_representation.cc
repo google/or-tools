@@ -403,14 +403,13 @@ void BasisFactorization::LeftSolveForUnitRow(ColIndex j,
   // We only keep the intermediate result needed for the optimized tau_
   // computation if it was computed after the last time this was called.
   if (tau_is_computed_) {
-    tau_is_computed_ = false;
     tau_computation_can_be_optimized_ =
         lu_factorization_.LeftSolveLWithNonZeros(y, &tau_);
-    tau_.non_zeros.clear();
   } else {
     tau_computation_can_be_optimized_ = false;
     lu_factorization_.LeftSolveLWithNonZeros(y);
   }
+  tau_is_computed_ = false;
   y->SortNonZerosIfNeeded();
 }
 

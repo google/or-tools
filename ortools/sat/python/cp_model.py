@@ -176,8 +176,8 @@ class LinearExpr(object):
         while to_process:  # Flatten to avoid recursion.
             expr, coef = to_process.pop()
             if isinstance(expr, _ProductCst):
-                to_process.append((expr.Expression(),
-                                   coef * expr.Coefficient()))
+                to_process.append(
+                    (expr.Expression(), coef * expr.Coefficient()))
             elif isinstance(expr, _SumArray):
                 for e in expr.Expressions():
                     to_process.append((e, coef))
@@ -364,8 +364,8 @@ class _SumArray(LinearExpr):
                                       self.__constant)
 
     def __repr__(self):
-        return 'SumArray({}, {})'.format(', '.join(
-            map(repr, self.__expressions)), self.__constant)
+        return 'SumArray({}, {})'.format(
+            ', '.join(map(repr, self.__expressions)), self.__constant)
 
     def Expressions(self):
         return self.__expressions
@@ -422,9 +422,9 @@ class _ScalProd(LinearExpr):
         return output
 
     def __repr__(self):
-        return 'ScalProd([{}], [{}], {})'.format(', '.join(
-            map(repr, self.__expressions)), ', '.join(
-                map(repr, self.__coefficients)), self.__constant)
+        return 'ScalProd([{}], [{}], {})'.format(
+            ', '.join(map(repr, self.__expressions)),
+            ', '.join(map(repr, self.__coefficients)), self.__constant)
 
     def Expressions(self):
         return self.__expressions
@@ -663,14 +663,14 @@ class IntervalVar(object):
         if self.__ct.enforcement_literal:
             return '%s(start = %s, size = %s, end = %s, is_present = %s)' % (
                 self.__ct.name, ShortName(self.__model, interval.start),
-                ShortName(self.__model, interval.size),
-                ShortName(self.__model, interval.end),
+                ShortName(self.__model,
+                          interval.size), ShortName(self.__model, interval.end),
                 ShortName(self.__model, self.__ct.enforcement_literal[0]))
         else:
             return '%s(start = %s, size = %s, end = %s)' % (
                 self.__ct.name, ShortName(self.__model, interval.start),
-                ShortName(self.__model, interval.size),
-                ShortName(self.__model, interval.end))
+                ShortName(self.__model,
+                          interval.size), ShortName(self.__model, interval.end))
 
     def Name(self):
         return self.__ct.name
@@ -776,9 +776,8 @@ class CpModel(object):
       An instance of the `Constraint` class.
     """
         if isinstance(ct, BoundedLinearExpression):
-            return self.AddLinearExpressionInDomain(ct.Expression(),
-                                                    Domain.FromFlatIntervals(
-                                                        ct.Bounds()))
+            return self.AddLinearExpressionInDomain(
+                ct.Expression(), Domain.FromFlatIntervals(ct.Bounds()))
         elif ct and isinstance(ct, bool):
             return self.AddBoolOr([True])
         elif not ct and isinstance(ct, bool):
@@ -987,8 +986,8 @@ class CpModel(object):
             model_ct.automaton.final_states.append(v)
         for t in transition_triples:
             if len(t) != 3:
-                raise TypeError(
-                    'Tuple ' + str(t) + ' has the wrong arity (!= 3)')
+                raise TypeError('Tuple ' + str(t) +
+                                ' has the wrong arity (!= 3)')
             cp_model_helper.AssertIsInt64(t[0])
             cp_model_helper.AssertIsInt64(t[1])
             cp_model_helper.AssertIsInt64(t[2])
@@ -1392,8 +1391,8 @@ class CpModel(object):
             cp_model_helper.AssertIsInt64(arg)
             return self.GetOrMakeIndexFromConstant(arg)
         else:
-            raise TypeError(
-                'NotSupported: model.GetOrMakeIndex(' + str(arg) + ')')
+            raise TypeError('NotSupported: model.GetOrMakeIndex(' + str(arg) +
+                            ')')
 
     def GetOrMakeBooleanIndex(self, arg):
         """Returns an index from a boolean expression."""
@@ -1407,8 +1406,8 @@ class CpModel(object):
             cp_model_helper.AssertIsBoolean(arg)
             return self.GetOrMakeIndexFromConstant(arg)
         else:
-            raise TypeError(
-                'NotSupported: model.GetOrMakeBooleanIndex(' + str(arg) + ')')
+            raise TypeError('NotSupported: model.GetOrMakeBooleanIndex(' +
+                            str(arg) + ')')
 
     def GetIntervalIndex(self, arg):
         if not isinstance(arg, IntervalVar):
@@ -1461,8 +1460,8 @@ class CpModel(object):
             self.__model.objective.offset = obj
             self.__model.objective.scaling_factor = 1
         else:
-            raise TypeError(
-                'TypeError: ' + str(obj) + ' is not a valid objective')
+            raise TypeError('TypeError: ' + str(obj) +
+                            ' is not a valid objective')
 
     def Minimize(self, obj):
         """Sets the objective of the model to minimize(obj)."""
@@ -1505,11 +1504,11 @@ class CpModel(object):
         if isinstance(x, IntVar):
             var = self.__model.variables[x.Index()]
             if len(var.domain) != 2 or var.domain[0] < 0 or var.domain[1] > 1:
-                raise TypeError(
-                    'TypeError: ' + str(x) + ' is not a boolean variable')
+                raise TypeError('TypeError: ' + str(x) +
+                                ' is not a boolean variable')
         elif not isinstance(x, _NotBooleanVariable):
-            raise TypeError(
-                'TypeError: ' + str(x) + ' is not a boolean variable')
+            raise TypeError('TypeError: ' + str(x) +
+                            ' is not a boolean variable')
 
 
 def EvaluateLinearExpr(expression, solution):
@@ -1549,8 +1548,8 @@ def EvaluateBooleanExpression(literal, solution):
         else:
             return not solution.solution[-index - 1]
     else:
-        raise TypeError(
-            'Cannot interpret %s as a boolean expression.' % literal)
+        raise TypeError('Cannot interpret %s as a boolean expression.' %
+                        literal)
 
 
 class CpSolver(object):
@@ -1718,8 +1717,8 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
             index = lit.Index()
             return self.SolutionBooleanValue(index)
         else:
-            raise TypeError(
-                'Cannot interpret %s as a boolean expression.' % lit)
+            raise TypeError('Cannot interpret %s as a boolean expression.' %
+                            lit)
 
     def Value(self, expression):
         """Evaluates an linear expression in the current solution.
@@ -1743,8 +1742,8 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
         while to_process:
             expr, coef = to_process.pop()
             if isinstance(expr, _ProductCst):
-                to_process.append((expr.Expression(),
-                                   coef * expr.Coefficient()))
+                to_process.append(
+                    (expr.Expression(), coef * expr.Coefficient()))
             elif isinstance(expr, _SumArray):
                 for e in expr.Expressions():
                     to_process.append((e, coef))
@@ -1756,8 +1755,8 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
             elif isinstance(expr, IntVar):
                 value += coef * self.SolutionIntegerValue(expr.Index())
             elif isinstance(expr, _NotBooleanVariable):
-                value += coef * (
-                    1 - self.SolutionIntegerValue(expr.Not().Index()))
+                value += coef * (1 -
+                                 self.SolutionIntegerValue(expr.Not().Index()))
         return value
 
 

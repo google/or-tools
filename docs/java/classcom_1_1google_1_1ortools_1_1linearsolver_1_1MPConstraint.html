@@ -27,14 +27,6 @@
       <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="inherits.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
 <div id="nav-path" class="navpath">
   <ul>
 <li class="navelem"><a class="el" href="namespacecom.html">com</a></li><li class="navelem"><a class="el" href="namespacecom_1_1google.html">google</a></li><li class="navelem"><a class="el" href="namespacecom_1_1google_1_1ortools.html">ortools</a></li><li class="navelem"><a class="el" href="namespacecom_1_1google_1_1ortools_1_1linearsolver.html">linearsolver</a></li><li class="navelem"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html">MPConstraint</a></li>  </ul>
@@ -49,39 +41,58 @@
 <div class="title">com.google.ortools.linearsolver.MPConstraint Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00013">13</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>The class for constraints of a Mathematical Programming (MP) model. </p>
+<p><br />
+ <br />
+ A constraint is represented as a linear equation or inequality. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00018">18</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ad92fc84c98c559ab3cc14853520476ef"><td class="memItemLeft" align="right" valign="top">synchronized void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html#ad92fc84c98c559ab3cc14853520476ef">delete</a> ()</td></tr>
 <tr class="separator:ad92fc84c98c559ab3cc14853520476ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a01b36f4c5342107ac21d25373ba4099f"><td class="memItemLeft" align="right" valign="top">String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html#a01b36f4c5342107ac21d25373ba4099f">name</a> ()</td></tr>
+<tr class="memdesc:a01b36f4c5342107ac21d25373ba4099f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the name of the constraint.  <a href="#a01b36f4c5342107ac21d25373ba4099f">More...</a><br /></td></tr>
 <tr class="separator:a01b36f4c5342107ac21d25373ba4099f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8ea6d4649734d3344a5a104722710312"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html#a8ea6d4649734d3344a5a104722710312">setCoefficient</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html">MPVariable</a> var, double coeff)</td></tr>
+<tr class="memdesc:a8ea6d4649734d3344a5a104722710312"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the coefficient of the variable on the constraint.  <a href="#a8ea6d4649734d3344a5a104722710312">More...</a><br /></td></tr>
 <tr class="separator:a8ea6d4649734d3344a5a104722710312"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a38b1497981713ee13af81bf6cc18ef7d"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html#a38b1497981713ee13af81bf6cc18ef7d">getCoefficient</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPVariable.html">MPVariable</a> var)</td></tr>
+<tr class="memdesc:a38b1497981713ee13af81bf6cc18ef7d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets the coefficient of a given variable on the constraint (which is 0 if<br />
+ the variable does not appear in the constraint).  <a href="#a38b1497981713ee13af81bf6cc18ef7d">More...</a><br /></td></tr>
 <tr class="separator:a38b1497981713ee13af81bf6cc18ef7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a69e183e06fdbdc0821de660f3711fb88"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html#a69e183e06fdbdc0821de660f3711fb88">lb</a> ()</td></tr>
+<tr class="memdesc:a69e183e06fdbdc0821de660f3711fb88"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the lower bound.  <a href="#a69e183e06fdbdc0821de660f3711fb88">More...</a><br /></td></tr>
 <tr class="separator:a69e183e06fdbdc0821de660f3711fb88"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a71e2a5848b6791b9ffe2948ad9d17e5a"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html#a71e2a5848b6791b9ffe2948ad9d17e5a">ub</a> ()</td></tr>
+<tr class="memdesc:a71e2a5848b6791b9ffe2948ad9d17e5a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the upper bound.  <a href="#a71e2a5848b6791b9ffe2948ad9d17e5a">More...</a><br /></td></tr>
 <tr class="separator:a71e2a5848b6791b9ffe2948ad9d17e5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae2415596e11e86d0a08a68d4207e568e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html#ae2415596e11e86d0a08a68d4207e568e">setLb</a> (double <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html#a69e183e06fdbdc0821de660f3711fb88">lb</a>)</td></tr>
+<tr class="memdesc:ae2415596e11e86d0a08a68d4207e568e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the lower bound.  <a href="#ae2415596e11e86d0a08a68d4207e568e">More...</a><br /></td></tr>
 <tr class="separator:ae2415596e11e86d0a08a68d4207e568e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac2bdf0d37be6b685385192b46a07e04f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html#ac2bdf0d37be6b685385192b46a07e04f">setUb</a> (double <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html#a71e2a5848b6791b9ffe2948ad9d17e5a">ub</a>)</td></tr>
+<tr class="memdesc:ac2bdf0d37be6b685385192b46a07e04f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the upper bound.  <a href="#ac2bdf0d37be6b685385192b46a07e04f">More...</a><br /></td></tr>
 <tr class="separator:ac2bdf0d37be6b685385192b46a07e04f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a74bd970ff663fd82cfd98f8c325ae66a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html#a74bd970ff663fd82cfd98f8c325ae66a">setBounds</a> (double <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html#a69e183e06fdbdc0821de660f3711fb88">lb</a>, double <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html#a71e2a5848b6791b9ffe2948ad9d17e5a">ub</a>)</td></tr>
+<tr class="memdesc:a74bd970ff663fd82cfd98f8c325ae66a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets both the lower and upper bounds.  <a href="#a74bd970ff663fd82cfd98f8c325ae66a">More...</a><br /></td></tr>
 <tr class="separator:a74bd970ff663fd82cfd98f8c325ae66a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a61e46874870357d7331ee973b8762096"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html#a61e46874870357d7331ee973b8762096">isLazy</a> ()</td></tr>
+<tr class="memdesc:a61e46874870357d7331ee973b8762096"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advanced usage: returns true if the constraint is "lazy" (see below).  <a href="#a61e46874870357d7331ee973b8762096">More...</a><br /></td></tr>
 <tr class="separator:a61e46874870357d7331ee973b8762096"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afc81d369d94d405df3c6b63a207b5bed"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html#afc81d369d94d405df3c6b63a207b5bed">setIsLazy</a> (boolean laziness)</td></tr>
+<tr class="memdesc:afc81d369d94d405df3c6b63a207b5bed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advanced usage: sets the constraint "laziness".  <a href="#afc81d369d94d405df3c6b63a207b5bed">More...</a><br /></td></tr>
 <tr class="separator:afc81d369d94d405df3c6b63a207b5bed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a618f2f3ec61372cf3d815474dd4cfe37"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html#a618f2f3ec61372cf3d815474dd4cfe37">index</a> ()</td></tr>
+<tr class="memdesc:a618f2f3ec61372cf3d815474dd4cfe37"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the index of the constraint in the MPSolver::constraints_.  <a href="#a618f2f3ec61372cf3d815474dd4cfe37">More...</a><br /></td></tr>
 <tr class="separator:a618f2f3ec61372cf3d815474dd4cfe37"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad18f39cb6a79397484be63580488d06d"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html#ad18f39cb6a79397484be63580488d06d">dualValue</a> ()</td></tr>
+<tr class="memdesc:ad18f39cb6a79397484be63580488d06d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advanced usage: returns the dual value of the constraint in the current<br />
+ solution (only available for continuous problems).  <a href="#ad18f39cb6a79397484be63580488d06d">More...</a><br /></td></tr>
 <tr class="separator:ad18f39cb6a79397484be63580488d06d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af0a22061a7584adff48a839cd37a4b63"><td class="memItemLeft" align="right" valign="top">MPSolver.BasisStatus&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPConstraint.html#af0a22061a7584adff48a839cd37a4b63">basisStatus</a> ()</td></tr>
+<tr class="memdesc:af0a22061a7584adff48a839cd37a4b63"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advanced usage: returns the basis status of the constraint.  <a href="#af0a22061a7584adff48a839cd37a4b63">More...</a><br /></td></tr>
 <tr class="separator:af0a22061a7584adff48a839cd37a4b63"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
@@ -124,7 +135,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00017">17</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00022">22</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
 
 </div>
 </div>
@@ -152,7 +163,19 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00089">89</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
+<p>Advanced usage: returns the basis status of the constraint. </p>
+<p><br />
+ <br />
+ It is only available for continuous problems).<br />
+ <br />
+ Note that if a constraint "linear_expression in [lb, ub]" is transformed<br />
+ into "linear_expression + slack = 0" with slack in [-ub, -lb], then this<br />
+ status is the same as the status of the slack variable with AT_UPPER_BOUND<br />
+ and AT_LOWER_BOUND swapped.<br />
+ <br />
+ </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1BasisStatus.html" title="Advanced usage: possible basis status values for a variable and the slack  variable of a linear const...">MPSolver::BasisStatus</a>. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00157">157</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
 
 </div>
 </div>
@@ -179,7 +202,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00031">31</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00036">36</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
 
 </div>
 </div>
@@ -206,7 +229,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00085">85</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
+<p>Advanced usage: returns the dual value of the constraint in the current<br />
+ solution (only available for continuous problems). </p>
+
+<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00141">141</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
 
 </div>
 </div>
@@ -234,7 +260,10 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00049">49</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
+<p>Gets the coefficient of a given variable on the constraint (which is 0 if<br />
+ the variable does not appear in the constraint). </p>
+
+<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00067">67</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
 
 </div>
 </div>
@@ -261,7 +290,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00081">81</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
+<p>Returns the index of the constraint in the MPSolver::constraints_. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00133">133</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
 
 </div>
 </div>
@@ -288,7 +319,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00073">73</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
+<p>Advanced usage: returns true if the constraint is "lazy" (see below). </p>
+
+<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00109">109</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
 
 </div>
 </div>
@@ -315,7 +348,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00053">53</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
+<p>Returns the lower bound. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00074">74</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
 
 </div>
 </div>
@@ -342,7 +377,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00041">41</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
+<p>Returns the name of the constraint. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00049">49</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
 
 </div>
 </div>
@@ -380,7 +417,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00069">69</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
+<p>Sets both the lower and upper bounds. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00102">102</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
 
 </div>
 </div>
@@ -418,7 +457,13 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00045">45</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
+<p>Sets the coefficient of the variable on the constraint. </p>
+<p><br />
+ <br />
+ If the variable does not belong to the solver, the function just returns,<br />
+ or crashes in non-opt mode. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00059">59</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
 
 </div>
 </div>
@@ -446,7 +491,20 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00077">77</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
+<p>Advanced usage: sets the constraint "laziness". </p>
+<p><br />
+ <br />
+ <em>This is only supported for SCIP and has no effect on other<br />
+ solvers.</em><br />
+ <br />
+ When <b>laziness</b> is true, the constraint is only considered by the Linear<br />
+ Programming solver if its current solution violates the constraint. In this<br />
+ case, the constraint is definitively added to the problem. This may be<br />
+ useful in some MIP problems, and may have a dramatic impact on performance.<br />
+ <br />
+ For more info see: <a href="http://tinyurl.com/lazy-constraints">http://tinyurl.com/lazy-constraints</a>. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00126">126</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
 
 </div>
 </div>
@@ -474,7 +532,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00061">61</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
+<p>Sets the lower bound. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00088">88</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
 
 </div>
 </div>
@@ -502,7 +562,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00065">65</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
+<p>Sets the upper bound. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00095">95</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
 
 </div>
 </div>
@@ -529,7 +591,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00057">57</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
+<p>Returns the upper bound. </p>
+
+<p class="definition">Definition at line <a class="el" href="MPConstraint_8java_source.html#l00081">81</a> of file <a class="el" href="MPConstraint_8java_source.html">MPConstraint.java</a>.</p>
 
 </div>
 </div>

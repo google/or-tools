@@ -501,9 +501,12 @@ message SatParameters {
   // Integer variables as Boolean.
   optional int32 boolean_encoding_level = 107 [default = 1];
 
-  // For now, we don't have any manager for the LP cuts, so we just add any
-  // generated cuts until this limit is reached.
-  optional int32 max_num_cuts = 91 [default = 1000];
+  // The limit on the number of cuts in our cut pool. When this is reached we do
+  // not generate cuts anymore.
+  //
+  // TODO(user): We should probably remove this parameters, and just always
+  // generate cuts but only keep the best n or something.
+  optional int32 max_num_cuts = 91 [default = 5000];
 
   // For the cut that can be generated at any level, this control if we only
   // try to generate them at the root node.

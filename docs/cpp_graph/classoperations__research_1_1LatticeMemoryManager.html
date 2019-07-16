@@ -27,19 +27,23 @@
       <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="inherits.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="namespaceoperations__research.html">operations_research</a></li><li class="navelem"><a class="el" href="classoperations__research_1_1LatticeMemoryManager.html">LatticeMemoryManager</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classoperations__research_1_1LatticeMemoryManager.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
@@ -48,12 +52,15 @@
 <div class="title">operations_research::LatticeMemoryManager&lt; Set, CostType &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><h3>template&lt;typename Set, typename CostType&gt;<br />
+class operations_research::LatticeMemoryManager&lt; Set, CostType &gt;</h3>
 
-<p>The Dynamic Programming (DP) algorithm memorizes the values f(set, node) for node in set, for all the subsets of cardinality &lt;= max_card_.  
- <a href="classoperations__research_1_1LatticeMemoryManager.html#details">More...</a></p>
+<p>The Dynamic Programming (DP) algorithm memorizes the values f(set, node) for node in set, for all the subsets of cardinality &lt;= max_card_. </p>
+<p><a class="el" href="classoperations__research_1_1LatticeMemoryManager.html" title="The Dynamic Programming (DP) algorithm memorizes the values f(set, node) for node in set,...">LatticeMemoryManager</a> manages the storage of f(set, node) so that the DP iteration access memory in increasing addresses. </p>
 
-<p><code>#include &lt;<a class="el" href="hamiltonian__path_8h_source.html">hamiltonian_path.h</a>&gt;</code></p>
-<table class="memberdecls">
+<p class="definition">Definition at line <a class="el" href="hamiltonian__path_8h_source.html#l00291">291</a> of file <a class="el" href="hamiltonian__path_8h_source.html">hamiltonian_path.h</a>.</p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a4f81eab503a836cab0e35f7cffdf9331"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LatticeMemoryManager.html#a4f81eab503a836cab0e35f7cffdf9331">LatticeMemoryManager</a> ()</td></tr>
@@ -83,15 +90,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:ad91d511dbe7e638fd8a46171f906f7e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the memorized value at 'offset'.  <a href="#ad91d511dbe7e638fd8a46171f906f7e6">More...</a><br /></td></tr>
 <tr class="separator:ad91d511dbe7e638fd8a46171f906f7e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><h3>template&lt;typename Set, typename CostType&gt;<br />
-class operations_research::LatticeMemoryManager&lt; Set, CostType &gt;</h3>
-
-<p>The Dynamic Programming (DP) algorithm memorizes the values f(set, node) for node in set, for all the subsets of cardinality &lt;= max_card_. </p>
-<p><a class="el" href="classoperations__research_1_1LatticeMemoryManager.html" title="The Dynamic Programming (DP) algorithm memorizes the values f(set, node) for node in set,...">LatticeMemoryManager</a> manages the storage of f(set, node) so that the DP iteration access memory in increasing addresses. </p>
-
-<p class="definition">Definition at line <a class="el" href="hamiltonian__path_8h_source.html#l00291">291</a> of file <a class="el" href="hamiltonian__path_8h_source.html">hamiltonian_path.h</a>.</p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a4f81eab503a836cab0e35f7cffdf9331"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4f81eab503a836cab0e35f7cffdf9331">&#9670;&nbsp;</a></span>LatticeMemoryManager()</h2>
 
@@ -159,9 +158,9 @@ template&lt;typename Set, typename CostType &gt; </div>
 </div><div class="memdoc">
 
 <p>Returns the base offset in memory for f(s, node), with node contained in s. </p>
-<p>This is useful in the Dynamic Programming iterations. Note(user): inlining this function gains about 5%. </p><dl class="todo"><dt><b><a class="el" href="todo.html#_todo000031">Todo:</a></b></dt><dd>(user): Investigate how to compute BaseOffset(card - 1, s \ { n }) from BaseOffset(card, n) to speed up the DP iteration. </dd></dl>
+<p>This is useful in the Dynamic Programming iterations. Note(user): inlining this function gains about 5%. </p><dl class="todo"><dt><b><a class="el" href="todo.html#_todo000032">Todo:</a></b></dt><dd>(user): Investigate how to compute BaseOffset(card - 1, s \ { n }) from BaseOffset(card, n) to speed up the DP iteration. </dd></dl>
 <p>There are binomial_coefficients_[node][node_rank + 1] sets which have node at node_rank.</p>
-<p>Note(user): It is possible to get rid of base_offset_[card] by using a 2-D array. It would also make it possible to free all the memory but the layer being constructed and the preceding one, if another lattice of paths is constructed. </p><dl class="todo"><dt><b><a class="el" href="todo.html#_todo000026">Todo:</a></b></dt><dd>(user): Evaluate the interest of the above. There are 'card' f(set, j) to store. That is why we need to multiply local_offset by card before adding it to the corresponding base_offset_. </dd></dl>
+<p>Note(user): It is possible to get rid of base_offset_[card] by using a 2-D array. It would also make it possible to free all the memory but the layer being constructed and the preceding one, if another lattice of paths is constructed. </p><dl class="todo"><dt><b><a class="el" href="todo.html#_todo000027">Todo:</a></b></dt><dd>(user): Evaluate the interest of the above. There are 'card' f(set, j) to store. That is why we need to multiply local_offset by card before adding it to the corresponding base_offset_. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="hamiltonian__path_8h_source.html#l00407">407</a> of file <a class="el" href="hamiltonian__path_8h_source.html">hamiltonian_path.h</a>.</p>
 
@@ -438,6 +437,7 @@ template&lt;typename Set, typename CostType&gt; </div>
 <li><a class="el" href="hamiltonian__path_8h_source.html">hamiltonian_path.h</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

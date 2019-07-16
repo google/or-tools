@@ -1,6 +1,0 @@
-<map id="operations_research::AssignmentElement" name="operations_research::AssignmentElement">
-<area shape="rect" id="node1" title="&#45;&#45;&#45;&#45;&#45;&#45;— Assignments &#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;&#45;—" alt="" coords="5,68,153,107"/>
-<area shape="rect" id="node2" href="$classoperations__research_1_1IntervalVarElement.html" title="&#45;&#45;— IntervalVarElement &#45;&#45;—" alt="" coords="208,5,351,44"/>
-<area shape="rect" id="node3" href="$classoperations__research_1_1IntVarElement.html" title="&#45;&#45;— IntVarElement &#45;&#45;—" alt="" coords="208,68,351,107"/>
-<area shape="rect" id="node4" href="$classoperations__research_1_1SequenceVarElement.html" title="&#45;&#45;— SequenceVarElement &#45;&#45;—" alt="" coords="201,131,358,169"/>
-</map>

@@ -27,19 +27,23 @@
       <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="inherits.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
-<div id="nav-path" class="navpath">
-  <ul>
-<li class="navelem"><a class="el" href="namespaceoperations__research.html">operations_research</a></li><li class="navelem"><a class="el" href="classoperations__research_1_1ConnectedComponents.html">ConnectedComponents</a></li>  </ul>
-</div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('classoperations__research_1_1ConnectedComponents.html','');});
+/* @license-end */
+</script>
+<div id="doc-content">
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
@@ -48,12 +52,17 @@
 <div class="title">operations_research::ConnectedComponents&lt; NodeIndex, ArcIndex &gt; Class Template Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><h3>template&lt;typename NodeIndex, typename ArcIndex&gt;<br />
+class operations_research::ConnectedComponents&lt; NodeIndex, ArcIndex &gt;</h3>
 
-<p>Template class implementing a Union-Find algorithm with path compression for maintaining the connected components of a graph.  
- <a href="classoperations__research_1_1ConnectedComponents.html#details">More...</a></p>
+<p>Template class implementing a Union-Find algorithm with path compression for maintaining the connected components of a graph. </p>
+<p>See Cormen et al. 2nd Edition. MIT Press, 2001. ISBN 0-262-03293-7. Chapter 21: Data structures for Disjoint Sets, pp. 498-524. and Tarjan (1975). Efficiency of a Good But Not Linear <a class="el" href="classoperations__research_1_1Set.html">Set</a> Union Algorithm. Journal of the ACM 22(2):215-225 It is implemented as a template so that the size of NodeIndex can be chosen depending on the size of the graphs considered. The main interest is that arcs do not need to be kept. Thus the memory complexity is O(n) where n is the number of nodes in the graph. The complexity of this algorithm is O(n . alpha(n)) where alpha(n) is the inverse Ackermann function. alpha(n) &lt;= log(log(log(..log(log(n))..) In practice alpha(n) &lt;= 5. See Tarjan and van Leeuwen (1984). Worst-case analysis of set union algorithms. Journal of the ACM 31(2):245-281.</p>
+<p>Usage example: ConnectedComponents&lt;int, int&gt; components; components.Init(num_nodes); for (int arc = 0; arc &lt; num_arcs; ++arc) { components.AddArc(tail[arc], head[arc]); } int num_connected_components = components.GetNumberOfConnectedComponents(); if (num_connected_components == 1) { ///&lt; Graph is completely connected. } ///&lt; Group the nodes in the same connected component together. ///&lt; group[class_number][i] contains the i-th node in group class_number. hash_map&lt;int, std::vector&lt;int&gt; &gt; group(num_connected_components); for (int node = 0; node &lt; num_nodes; ++node) { group[components.GetClassRepresentative(node)].push_back(node); }</p>
+<p>Keywords: graph, connected components. </p>
 
-<p><code>#include &lt;<a class="el" href="connectivity_8h_source.html">connectivity.h</a>&gt;</code></p>
-<table class="memberdecls">
+<p class="definition">Definition at line <a class="el" href="connectivity_8h_source.html#l00067">67</a> of file <a class="el" href="connectivity_8h_source.html">connectivity.h</a>.</p>
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:afcf39280b3d8dad94c80e2977415acac"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1ConnectedComponents.html#afcf39280b3d8dad94c80e2977415acac">ConnectedComponents</a> ()</td></tr>
@@ -81,17 +90,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a8de720dd960dc6e2e831bb27c3500466"><td class="mdescLeft">&#160;</td><td class="mdescRight">Merges the equivalence classes of node1 and node2.  <a href="#a8de720dd960dc6e2e831bb27c3500466">More...</a><br /></td></tr>
 <tr class="separator:a8de720dd960dc6e2e831bb27c3500466"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><h3>template&lt;typename NodeIndex, typename ArcIndex&gt;<br />
-class operations_research::ConnectedComponents&lt; NodeIndex, ArcIndex &gt;</h3>
-
-<p>Template class implementing a Union-Find algorithm with path compression for maintaining the connected components of a graph. </p>
-<p>See Cormen et al. 2nd Edition. MIT Press, 2001. ISBN 0-262-03293-7. Chapter 21: Data structures for Disjoint Sets, pp. 498-524. and Tarjan (1975). Efficiency of a Good But Not Linear <a class="el" href="classoperations__research_1_1Set.html">Set</a> Union Algorithm. Journal of the ACM 22(2):215-225 It is implemented as a template so that the size of NodeIndex can be chosen depending on the size of the graphs considered. The main interest is that arcs do not need to be kept. Thus the memory complexity is O(n) where n is the number of nodes in the graph. The complexity of this algorithm is O(n . alpha(n)) where alpha(n) is the inverse Ackermann function. alpha(n) &lt;= log(log(log(..log(log(n))..) In practice alpha(n) &lt;= 5. See Tarjan and van Leeuwen (1984). Worst-case analysis of set union algorithms. Journal of the ACM 31(2):245-281.</p>
-<p>Usage example: ConnectedComponents&lt;int, int&gt; components; components.Init(num_nodes); for (int arc = 0; arc &lt; num_arcs; ++arc) { components.AddArc(tail[arc], head[arc]); } int num_connected_components = components.GetNumberOfConnectedComponents(); if (num_connected_components == 1) { ///&lt; Graph is completely connected. } ///&lt; Group the nodes in the same connected component together. ///&lt; group[class_number][i] contains the i-th node in group class_number. hash_map&lt;int, std::vector&lt;int&gt; &gt; group(num_connected_components); for (int node = 0; node &lt; num_nodes; ++node) { group[components.GetClassRepresentative(node)].push_back(node); }</p>
-<p>Keywords: graph, connected components. </p>
-
-<p class="definition">Definition at line <a class="el" href="connectivity_8h_source.html#l00067">67</a> of file <a class="el" href="connectivity_8h_source.html">connectivity.h</a>.</p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="afcf39280b3d8dad94c80e2977415acac"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#afcf39280b3d8dad94c80e2977415acac">&#9670;&nbsp;</a></span>ConnectedComponents()</h2>
 
@@ -193,7 +192,7 @@ template&lt;typename Graph &gt; </div>
 </div><div class="memdoc">
 
 <p>Adds a complete StarGraph to the object. </p>
-<p>Note that Depth-First Search is a better algorithm for finding connected components on graphs. </p><dl class="todo"><dt><b><a class="el" href="todo.html#_todo000005">Todo:</a></b></dt><dd>(user): implement Depth-First Search-based connected components finder. </dd></dl>
+<p>Note that Depth-First Search is a better algorithm for finding connected components on graphs. </p><dl class="todo"><dt><b><a class="el" href="todo.html#_todo000006">Todo:</a></b></dt><dd>(user): implement Depth-First Search-based connected components finder. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="connectivity_8h_source.html#l00095">95</a> of file <a class="el" href="connectivity_8h_source.html">connectivity.h</a>.</p>
 
@@ -374,6 +373,7 @@ template&lt;typename NodeIndex, typename ArcIndex&gt; </div>
 <li><a class="el" href="connectivity_8h_source.html">connectivity.h</a></li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
         </div>
         <div id="footer-container">
             <div id="footer">

@@ -27,14 +27,6 @@
       <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
-  <div id="navrow2" class="tabs2">
-    <ul class="tablist">
-      <li><a href="annotated.html"><span>Class&#160;List</span></a></li>
-      <li><a href="classes.html"><span>Class&#160;Index</span></a></li>
-      <li><a href="inherits.html"><span>Class&#160;Hierarchy</span></a></li>
-      <li><a href="functions.html"><span>Class&#160;Members</span></a></li>
-    </ul>
-  </div>
 <div id="nav-path" class="navpath">
   <ul>
 <li class="navelem"><a class="el" href="namespacecom.html">com</a></li><li class="navelem"><a class="el" href="namespacecom_1_1google.html">google</a></li><li class="navelem"><a class="el" href="namespacecom_1_1google_1_1ortools.html">ortools</a></li><li class="navelem"><a class="el" href="namespacecom_1_1google_1_1ortools_1_1constraintsolver.html">constraintsolver</a></li><li class="navelem"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html">Constraint</a></li>  </ul>
@@ -49,37 +41,12 @@
 <div class="title">com.google.ortools.constraintsolver.Constraint Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<a name="details" id="details"></a><h2 class="groupheader">Overview</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>A constraint is the main modeling object. </p>
 <p>It provides two methods: - Post() is responsible for creating the demons and attaching them to immediate demons(). - InitialPropagate() is called once just after Post and performs the initial propagation. The subsequent propagations will be performed by the demons Posted during the <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html#a0483ba947bb049f9f590ee38b65335f2" title="This method is called when the constraint is processed by the solver.">post()</a> method. </p>
 
 <p class="definition">Definition at line <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2Constraint_8java_source.html#l00014">14</a> of file <a class="el" href="gen_2com_2google_2ortools_2constraintsolver_2Constraint_8java_source.html">gen/com/google/ortools/constraintsolver/Constraint.java</a>.</p>
-</div><div class="dynheader">
-Inheritance diagram for com.google.ortools.constraintsolver.Constraint:</div>
-<div class="dyncontent">
-<div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint__inherit__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8Constraint_inherit__map" alt="Inheritance graph"/></div>
-<map name="com_8google_8ortools_8constraintsolver_8Constraint_inherit__map" id="com_8google_8ortools_8constraintsolver_8Constraint_inherit__map">
-<area shape="rect"  title="A constraint is the main modeling object." alt="" coords="565,136,797,177"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CastConstraint.html" title="Cast constraints are special channeling constraints designed to keep a variable in sync with an expre..." alt="" coords="861,5,1093,47"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DisjunctiveConstraint.html" title=" " alt="" coords="861,71,1093,112"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1GlobalVehicleBreaksConstraint.html" title="GlobalVehicleBreaksConstraint ensures breaks constraints are enforced on all vehicles in the dimensio..." alt="" coords="861,136,1093,177"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Pack.html" title=" " alt="" coords="845,202,1108,229"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1TypeRegulationsConstraint.html" title="The following constraint ensures that incompatibilities and requirements between types are respected." alt="" coords="861,253,1093,295"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html" title="NOLINT The PropagationBaseObject is a subclass of BaseObject that is also friend to the Solver class." alt="" coords="285,136,517,177"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,136,237,177"/>
-</map>
-<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
-<div class="dynheader">
-Collaboration diagram for com.google.ortools.constraintsolver.Constraint:</div>
-<div class="dyncontent">
-<div class="center"><img src="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint__coll__graph.png" border="0" usemap="#com_8google_8ortools_8constraintsolver_8Constraint_coll__map" alt="Collaboration graph"/></div>
-<map name="com_8google_8ortools_8constraintsolver_8Constraint_coll__map" id="com_8google_8ortools_8constraintsolver_8Constraint_coll__map">
-<area shape="rect"  title="A constraint is the main modeling object." alt="" coords="5,184,237,225"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html" title="NOLINT The PropagationBaseObject is a subclass of BaseObject that is also friend to the Solver class." alt="" coords="5,95,237,136"/>
-<area shape="rect"  href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,5,237,47"/>
-</map>
-<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
-<table class="memberdecls">
+</div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ade5ef0f5794edfc8d3c076db55eb668a"><td class="memItemLeft" align="right" valign="top">synchronized void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html#ade5ef0f5794edfc8d3c076db55eb668a">delete</a> ()</td></tr>

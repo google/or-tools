@@ -11,127 +11,125 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
-//
-// A C++ wrapper that provides a simple and unified interface to
-// several linear programming and mixed integer programming solvers:
-// GLOP, GLPK, CLP, CBC, and SCIP. The wrapper can also be used in Java, C#,
-// and Python via SWIG.
-//
-//
-// -----------------------------------
-//
-// What is Linear Programming?
-//
-//   In mathematics, linear programming (LP) is a technique for optimization of
-//   a linear objective function, subject to linear equality and linear
-//   inequality constraints. Informally, linear programming determines the way
-//   to achieve the best outcome (such as maximum profit or lowest cost) in a
-//   given mathematical model and given some list of requirements represented
-//   as linear equations.
-//
-//   The most widely used technique for solving a linear program is the Simplex
-//   algorithm, devised by George Dantzig in 1947. It performs very well on
-//   most instances, for which its running time is polynomial. A lot of effort
-//   has been put into improving the algorithm and its implementation. As a
-//   byproduct, it has however been shown that one can always construct
-//   problems that take exponential time for the Simplex algorithm to solve.
-//   Research has thus focused on trying to find a polynomial algorithm for
-//   linear programming, or to prove that linear programming is indeed
-//   polynomial.
-//
-//   Leonid Khachiyan first exhibited in 1979 a weakly polynomial algorithm for
-//   linear programming. "Weakly polynomial" means that the running time of the
-//   algorithm is in O(P(n) * 2^p) where P(n) is a polynomial of the size of the
-//   problem, and p is the precision of computations expressed in number of
-//   bits. With a fixed-precision, floating-point-based implementation, a weakly
-//   polynomial algorithm will  thus run in polynomial time. No implementation
-//   of Khachiyan's algorithm has proved efficient, but a larger breakthrough in
-//   the field came in 1984 when Narendra Karmarkar introduced a new interior
-//   point method for solving linear programming problems. Interior point
-//   algorithms have proved efficient on very large linear programs.
-//
-//   Check Wikipedia for more detail:
-//     http://en.wikipedia.org/wiki/Linear_programming
-//
-// -----------------------------------
-//
-// Example of a Linear Program
-//
-//   maximize:
-//     3x + y
-//   subject to:
-//     1.5 x + 2 y <= 12
-//     0 <= x <= 3
-//     0 <= y <= 5
-//
-//  A linear program has:
-//    1) a linear objective function
-//    2) linear constraints that can be equalities or inequalities
-//    3) bounds on variables that can be positive, negative, finite or
-//       infinite.
-//
-// -----------------------------------
-//
-// What is Mixed Integer Programming?
-//
-//   Here, the constraints and the objective are still linear but
-//   there are additional integrality requirements for variables. If
-//   all variables are required to take integer values, then the
-//   problem is called an integer program (IP). In most cases, only
-//   some variables are required to be integer and the rest of the
-//   variables are continuous: this is called a mixed integer program
-//   (MIP). IPs and MIPs are generally NP-hard.
-//
-//   Integer variables can be used to model discrete decisions (build a
-//   datacenter in city A or city B), logical relationships (only
-//   place machines in datacenter A if we have decided to build
-//   datacenter A) and approximate non-linear functions with piecewise
-//   linear functions (for example, the cost of machines as a function
-//   of how many machines are bought, or the latency of a server as a
-//   function of its load).
-//
-// -----------------------------------
-//
-// How to use the wrapper
-//
-//   The user builds the model and solves it through the MPSolver class,
-//   then queries the solution through the MPSolver, MPVariable and
-//   MPConstraint classes. To be able to query a solution, you need the
-//   following:
-//   - A solution exists: MPSolver::Solve has been called and a solution
-//     has been found.
-//   - The model has not been modified since the last time
-//     MPSolver::Solve was called. Otherwise, the solution obtained
-//     before the model modification may not longer be feasible or
-//     optimal.
-//
-// @see ../examples/linear_programming.cc for a simple LP example.
-//
-// @see ../examples/integer_programming.cc for a simple MIP example.
-//
-//   All methods cannot be called successfully in all cases. For
-//   example: you cannot query a solution when no solution exists, you
-//   cannot query a reduced cost value (which makes sense only on
-//   continuous problems) on a discrete problem. When a method is
-//   called in an unsuitable context, it aborts with a
-//   LOG(FATAL).
-// TODO(user): handle failures gracefully.
-//
-// -----------------------------------
-//
-// For developers: How the wrapper works
-//
-//   MPSolver stores a representation of the model (variables,
-//   constraints and objective) in its own data structures and a
-//   pointer to a MPSolverInterface that wraps the underlying solver
-//   (GLOP, CBC, CLP, GLPK, or SCIP) that does the actual work. The
-//   underlying solver also keeps a representation of the model in its
-//   own data structures. The model representations in MPSolver and in
-//   the underlying solver are kept in sync by the 'extraction'
-//   mechanism: synchronously for some changes and asynchronously
-//   (when MPSolver::Solve is called) for others. Synchronicity
-//   depends on the modification applied and on the underlying solver.
+/**
+ * \file
+ * A C++ wrapper that provides a simple and unified interface to
+ * several linear programming and mixed integer programming solvers:
+ * GLOP, GLPK, CLP, CBC, and SCIP. The wrapper can also be used in Java, C#,
+ * and Python via SWIG.
+ *
+ * What is Linear Programming?
+ *
+ *   In mathematics, linear programming (LP) is a technique for optimization of
+ *   a linear objective function, subject to linear equality and linear
+ *   inequality constraints. Informally, linear programming determines the way
+ *   to achieve the best outcome (such as maximum profit or lowest cost) in a
+ *   given mathematical model and given some list of requirements represented
+ *   as linear equations.
+ *
+ *   The most widely used technique for solving a linear program is the Simplex
+ *   algorithm, devised by George Dantzig in 1947. It performs very well on
+ *   most instances, for which its running time is polynomial. A lot of effort
+ *   has been put into improving the algorithm and its implementation. As a
+ *   byproduct, it has however been shown that one can always construct
+ *   problems that take exponential time for the Simplex algorithm to solve.
+ *   Research has thus focused on trying to find a polynomial algorithm for
+ *   linear programming, or to prove that linear programming is indeed
+ *   polynomial.
+ *
+ *   Leonid Khachiyan first exhibited in 1979 a weakly polynomial algorithm for
+ *   linear programming. "Weakly polynomial" means that the running time of the
+ *   algorithm is in O(P(n) * 2^p) where P(n) is a polynomial of the size of the
+ *   problem, and p is the precision of computations expressed in number of
+ *   bits. With a fixed-precision, floating-point-based implementation, a weakly
+ *   polynomial algorithm will  thus run in polynomial time. No implementation
+ *   of Khachiyan's algorithm has proved efficient, but a larger breakthrough in
+ *   the field came in 1984 when Narendra Karmarkar introduced a new interior
+ *   point method for solving linear programming problems. Interior point
+ *   algorithms have proved efficient on very large linear programs.
+ *
+ *   Check Wikipedia for more detail:
+ *     http: *en.wikipedia.org/wiki/Linear_programming
+ *
+ * -----------------------------------
+ *
+ * Example of a Linear Program
+ *
+ *   maximize:
+ *     3x + y
+ *   subject to:
+ *     1.5 x + 2 y <= 12
+ *     0 <= x <= 3
+ *     0 <= y <= 5
+ *
+ *  A linear program has:
+ *    1) a linear objective function
+ *    2) linear constraints that can be equalities or inequalities
+ *    3) bounds on variables that can be positive, negative, finite or
+ *       infinite.
+ *
+ * -----------------------------------
+ *
+ * What is Mixed Integer Programming?
+ *
+ *   Here, the constraints and the objective are still linear but
+ *   there are additional integrality requirements for variables. If
+ *   all variables are required to take integer values, then the
+ *   problem is called an integer program (IP). In most cases, only
+ *   some variables are required to be integer and the rest of the
+ *   variables are continuous: this is called a mixed integer program
+ *   (MIP). IPs and MIPs are generally NP-hard.
+ *
+ *   Integer variables can be used to model discrete decisions (build a
+ *   datacenter in city A or city B), logical relationships (only
+ *   place machines in datacenter A if we have decided to build
+ *   datacenter A) and approximate non-linear functions with piecewise
+ *   linear functions (for example, the cost of machines as a function
+ *   of how many machines are bought, or the latency of a server as a
+ *   function of its load).
+ *
+ * -----------------------------------
+ *
+ * How to use the wrapper
+ *
+ *   The user builds the model and solves it through the MPSolver class,
+ *   then queries the solution through the MPSolver, MPVariable and
+ *   MPConstraint classes. To be able to query a solution, you need the
+ *   following:
+ *   - A solution exists: MPSolver::Solve has been called and a solution
+ *     has been found.
+ *   - The model has not been modified since the last time
+ *     MPSolver::Solve was called. Otherwise, the solution obtained
+ *     before the model modification may not longer be feasible or
+ *     optimal.
+ *
+ * @see ../examples/linear_programming.cc for a simple LP example.
+ *
+ * @see ../examples/integer_programming.cc for a simple MIP example.
+ *
+ *   All methods cannot be called successfully in all cases. For
+ *   example: you cannot query a solution when no solution exists, you
+ *   cannot query a reduced cost value (which makes sense only on
+ *   continuous problems) on a discrete problem. When a method is
+ *   called in an unsuitable context, it aborts with a
+ *   LOG(FATAL).
+ * TODO(user): handle failures gracefully.
+ *
+ * -----------------------------------
+ *
+ * For developers: How the wrapper works
+ *
+ *   MPSolver stores a representation of the model (variables,
+ *   constraints and objective) in its own data structures and a
+ *   pointer to a MPSolverInterface that wraps the underlying solver
+ *   (GLOP, CBC, CLP, GLPK, or SCIP) that does the actual work. The
+ *   underlying solver also keeps a representation of the model in its
+ *   own data structures. The model representations in MPSolver and in
+ *   the underlying solver are kept in sync by the 'extraction'
+ *   mechanism: synchronously for some changes and asynchronously
+ *   (when MPSolver::Solve is called) for others. Synchronicity
+ *   depends on the modification applied and on the underlying solver.
+ */
 
 #ifndef OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
 #define OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
@@ -169,49 +167,63 @@ class MPSolverInterface;
 class MPSolverParameters;
 class MPVariable;
 
-// This mathematical programming (MP) solver class is the main class
-// though which users build and solve problems.
+/**
+ * This mathematical programming (MP) solver class is the main class
+ * though which users build and solve problems.
+ */
 class MPSolver {
  public:
-  // The type of problems (LP or MIP) that will be solved and the
-  // underlying solver (GLOP, GLPK, CLP, CBC or SCIP) that will solve them.
-  // This must remain consistent with MPModelRequest::OptimizationProblemType
-  // (take particular care of the open-source version).
+  /**
+   * The type of problems (LP or MIP) that will be solved and the underlying
+   *  solver (GLOP, GLPK, CLP, CBC or SCIP) that will solve them. This must
+   * remain consistent with MPModelRequest::OptimizationProblemType
+   *  (take particular care of the open-source version).
+   */
   enum OptimizationProblemType {
-// Linear programming problems.
 #ifdef USE_CLP
-    CLP_LINEAR_PROGRAMMING = 0,  // Recommended default value.
+    /// Linear Programming solver using Coin CBC.
+    CLP_LINEAR_PROGRAMMING = 0,
 #endif
 #ifdef USE_GLPK
+    /// Linear Programming solver using GLPK.
     GLPK_LINEAR_PROGRAMMING = 1,
 #endif
 #ifdef USE_GLOP
+    /// Linear Programming solver using GLOP (Recommended solver).
     GLOP_LINEAR_PROGRAMMING = 2,
 #endif
 #ifdef USE_GUROBI
+    /// Linear Programming solver using GUROBI.
     GUROBI_LINEAR_PROGRAMMING = 6,
 #endif
 #ifdef USE_CPLEX
+    /// Linear Programming solver using CPLEX.
     CPLEX_LINEAR_PROGRAMMING = 10,
 #endif
 
 // Integer programming problems.
 #ifdef USE_SCIP
+    /// Mixed integer Programming Solver using SCIP.
     SCIP_MIXED_INTEGER_PROGRAMMING = 3,  // Recommended default value.
 #endif
 #ifdef USE_GLPK
+    /// Mixed integer Programming Solver using SCIP.
     GLPK_MIXED_INTEGER_PROGRAMMING = 4,
 #endif
 #ifdef USE_CBC
+    /// Mixed integer Programming Solver using Coin CBC.
     CBC_MIXED_INTEGER_PROGRAMMING = 5,
 #endif
 #if defined(USE_GUROBI)
+    /// Mixed integer Programming Solver using GUROBI.
     GUROBI_MIXED_INTEGER_PROGRAMMING = 7,
 #endif
 #if defined(USE_CPLEX)
+    /// Mixed integer Programming Solver using CPLEX.
     CPLEX_MIXED_INTEGER_PROGRAMMING = 11,
 #endif
 #if defined(USE_BOP)
+    /// Linear Boolean Programming Solver.
     BOP_INTEGER_PROGRAMMING = 12,
 #endif
 #if defined(USE_XPRESS)
@@ -220,297 +232,428 @@ class MPSolver {
 #endif
   };
 
+  /**
+   * Create a solver with the given name and underlying solver backend.
+   */
   MPSolver(const std::string& name, OptimizationProblemType problem_type);
   virtual ~MPSolver();
 
-  // Whether the given problem type is supported (this will depend on the
-  // targets that you linked).
+  /**
+   * Whether the given problem type is supported (this will depend on the
+   * targets that you linked).
+   */
   static bool SupportsProblemType(OptimizationProblemType problem_type);
 
-  // Parses the name of the solver. Returns true if the solver type is
-  // successfully parsed as one of the OptimizationProblemType.
+  /**
+   * Parses the name of the solver. Returns true if the solver type is
+   * successfully parsed as one of the OptimizationProblemType.
+   */
   static bool ParseSolverType(absl::string_view solver,
                               OptimizationProblemType* type);
 
   bool IsMIP() const;
 
+  /**
+   * Returns the name of the model set at construction.
+   */
   const std::string& Name() const {
     return name_;  // Set at construction.
   }
 
+  /**
+   * Returns the optimization problem type set at construction
+   */
   virtual OptimizationProblemType ProblemType() const {
     return problem_type_;  // Set at construction.
   }
 
-  // Clears the objective (including the optimization direction), all
-  // variables and constraints. All the other properties of the MPSolver
-  // (like the time limit) are kept untouched.
+  /**
+   * Clears the objective (including the optimization direction), all variables
+   * and constraints. All the other properties of the MPSolver (like the time
+   * limit) are kept untouched.
+   */
   void Clear();
 
-  // ----- Variables ------
-  // Returns the number of variables.
+  /**
+   * Returns the number of variables.
+   */
   int NumVariables() const { return variables_.size(); }
-  // Returns the array of variables handled by the MPSolver.
-  // (They are listed in the order in which they were created.)
+
+  /**
+   * Returns the array of variables handled by the MPSolver. (They are listed in
+   * the order in which they were created.)
+   */
   const std::vector<MPVariable*>& variables() const { return variables_; }
-  // Looks up a variable by name, and returns nullptr if it does not exist.
-  // The first call has a O(n) complexity, as the variable name index is lazily
-  // created upon first use. Will crash if variable names are not unique.
+
+  /**
+   * Looks up a variable by name, and returns nullptr if it does not exist. The
+   * first call has a O(n) complexity, as the variable name index is lazily
+   * created upon first use. Will crash if variable names are not unique.
+   */
   MPVariable* LookupVariableOrNull(const std::string& var_name) const;
 
-  // Creates a variable with the given bounds, integrality requirement
-  // and name. Bounds can be finite or +/- MPSolver::infinity().
-  // The MPSolver owns the variable (i.e. the returned pointer is borrowed).
-  // Variable names are optional. If you give an empty name, name() will
-  // auto-generate one for you upon request.
-
+  /**
+   *  Creates a variable with the given bounds, integrality requirement and
+   * name. Bounds can be finite or +/- MPSolver::infinity(). The MPSolver owns
+   * the variable (i.e. the returned pointer is borrowed). Variable names are
+   * optional. If you give an empty name, name() will auto-generate one for you
+   * upon request.
+   */
   MPVariable* MakeVar(double lb, double ub, bool integer,
                       const std::string& name);
-  // Creates a continuous variable.
+
+  /**
+   * Creates a continuous variable.
+   */
   MPVariable* MakeNumVar(double lb, double ub, const std::string& name);
-  // Creates an integer variable.
+
+  /**
+   * Creates an integer variable.
+   */
   MPVariable* MakeIntVar(double lb, double ub, const std::string& name);
-  // Creates a boolean variable.
+
+  /**
+   * Creates a boolean variable.
+   */
   MPVariable* MakeBoolVar(const std::string& name);
 
-  // Creates an array of variables. All variables created have the
-  // same bounds and integrality requirement. If nb <= 0, no variables are
-  // created, the function crashes in non-opt mode.
-  // @param name the prefix of the variable names. Variables are named
-  // name0, name1, ...
+  /**
+   * Creates an array of variables. All variables created have the same bounds
+   * and integrality requirement. If nb <= 0, no variables are created, the
+   * function crashes in non-opt mode.
+   *
+   * @param nb the number of variables to create.
+   * @param lb the lower bound of created variables
+   * @param ub the upper bound of created variables
+   * @param integer controls whether the created variables are continuous or
+   * integral.
+   * @param name_prefix the prefix of the variable names. Variables are named
+   * name_prefix0, name_prefix1, ...
+   * @param[out] vars the vector of variables to fill with variables.
+   */
   void MakeVarArray(int nb, double lb, double ub, bool integer,
                     const std::string& name_prefix,
                     std::vector<MPVariable*>* vars);
-  // Creates an array of continuous variables.
+
+  /**
+   * Creates an array of continuous variables.
+   */
   void MakeNumVarArray(int nb, double lb, double ub, const std::string& name,
                        std::vector<MPVariable*>* vars);
-  // Creates an array of integer variables.
+
+  /**
+   *  Creates an array of integer variables.
+   */
   void MakeIntVarArray(int nb, double lb, double ub, const std::string& name,
                        std::vector<MPVariable*>* vars);
-  // Creates an array of boolean variables.
+
+  /**
+   * Creates an array of boolean variables.
+   */
   void MakeBoolVarArray(int nb, const std::string& name,
                         std::vector<MPVariable*>* vars);
 
-  // ----- Constraints -----
-  // Returns the number of constraints.
+  /**
+   * Returns the number of constraints.
+   */
   int NumConstraints() const { return constraints_.size(); }
-  // Returns the array of constraints handled by the MPSolver.
-  // (They are listed in the order in which they were created.)
+
+  /**
+   * Returns the array of constraints handled by the MPSolver.
+   *
+   * They are listed in the order in which they were created.
+   */
   const std::vector<MPConstraint*>& constraints() const { return constraints_; }
 
-  // Looks up a constraint by name, and returns nullptr if it does not exist.
-  // The first call has a O(n) complexity, as the constraint name index is
-  // lazily created upon first use. Will crash if constraint names are not
-  // unique.
+  /**
+   *  Looks up a constraint by name, and returns nullptr if it does not exist.
+   *
+   * The first call has a O(n) complexity, as the constraint name index is
+   * lazily created upon first use. Will crash if constraint names are not
+   * unique.
+   */
   MPConstraint* LookupConstraintOrNull(
       const std::string& constraint_name) const;
 
-  // Creates a linear constraint with given bounds. Bounds can be
-  // finite or +/- MPSolver::infinity(). The MPSolver class assumes
-  // ownership of the constraint.
-  // @return a pointer to the newly created constraint.
+  /**
+   * Creates a linear constraint with given bounds.
+   *
+   * Bounds can be finite or +/- MPSolver::infinity(). The MPSolver class
+   * assumes ownership of the constraint.
+   *
+   * @return a pointer to the newly created constraint.
+   */
   MPConstraint* MakeRowConstraint(double lb, double ub);
-  // Creates a constraint with -infinity and +infinity bounds.
+
+  /**
+   * Creates a constraint with -infinity and +infinity bounds.
+   */
   MPConstraint* MakeRowConstraint();
-  // Creates a named constraint with given bounds.
+
+  /**
+   * Creates a named constraint with given bounds.
+   */
   MPConstraint* MakeRowConstraint(double lb, double ub,
                                   const std::string& name);
-  // Creates a named constraint with -infinity and +infinity bounds.
+  /**
+   * Creates a named constraint with -infinity and +infinity bounds.
+   */
   MPConstraint* MakeRowConstraint(const std::string& name);
 
-  // Creates a constraint owned by MPSolver enforcing:
-  // range.lower_bound() <= range.linear_expr() <= range.upper_bound()
+  /**
+   * Creates a constraint owned by MPSolver enforcing:
+   *     range.lower_bound() <= range.linear_expr() <= range.upper_bound()
+   */
   MPConstraint* MakeRowConstraint(const LinearRange& range);
-  // As above, but also names the constraint.
+
+  /**
+   * As above, but also names the constraint.
+   */
   MPConstraint* MakeRowConstraint(const LinearRange& range,
                                   const std::string& name);
 
-  // ----- Objective -----
-  // Note that the objective is owned by the solver, and is initialized to
-  // its default value (see the MPObjective class below) at construction.
+  /**
+   * Returns the objective object.
+   *
+   * Note that the objective is owned by the solver, and is initialized to its
+   * default value (see the MPObjective class below) at construction.
+   */
   const MPObjective& Objective() const { return *objective_; }
+
+  /**
+   * Returns the mutable objective object.
+   */
   MPObjective* MutableObjective() { return objective_.get(); }
 
-  // ----- Solve -----
-
-  // The status of solving the problem. The straightforward translation to
-  // homonymous enum values of MPSolverResponseStatus
-  // (see ./linear_solver.proto) is guaranteed by ./enum_consistency_test.cc,
-  // you may rely on it.
+  /**
+   * The status of solving the problem. The straightforward translation to
+   * homonymous enum values of MPSolverResponseStatus (see
+   * ./linear_solver.proto) is guaranteed by ./enum_consistency_test.cc, you may
+   * rely on it.
+   */
   enum ResultStatus {
-    OPTIMAL,        // optimal.
-    FEASIBLE,       // feasible, or stopped by limit.
-    INFEASIBLE,     // proven infeasible.
-    UNBOUNDED,      // proven unbounded.
-    ABNORMAL,       // abnormal, i.e., error of some kind.
-    MODEL_INVALID,  // the model is trivially invalid (NaN coefficients, etc).
-    NOT_SOLVED = 6  // not been solved yet.
+    /// optimal.
+    OPTIMAL,
+    /// feasible, or stopped by limit.
+    FEASIBLE,
+    /// proven infeasible.
+    INFEASIBLE,
+    /// proven unbounded.
+    UNBOUNDED,
+    /// abnormal, i.e., error of some kind.
+    ABNORMAL,
+    /// the model is trivially invalid (NaN coefficients, etc).
+    MODEL_INVALID,
+    /// not been solved yet.
+    NOT_SOLVED = 6
   };
 
-  // Solves the problem using default parameter values.
+  /**
+   * Solves the problem using default parameter values.
+   */
   ResultStatus Solve();
-  // Solves the problem using the specified parameter values.
+
+  /**
+   * Solves the problem using the specified parameter values.
+   */
   ResultStatus Solve(const MPSolverParameters& param);
 
-  // Writes the model using the solver internal write function.  Currently only
-  // available for Gurobi.
+  /**
+   * Writes the model using the solver internal write function.  Currently only
+   * available for Gurobi.
+   */
   void Write(const std::string& file_name);
 
-  // Advanced usage: compute the "activities" of all constraints, which are the
-  // sums of their linear terms. The activities are returned in the same order
-  // as constraints(), which is the order in which constraints were added; but
-  // you can also use MPConstraint::index() to get a constraint's index.
+  /**
+   * Advanced usage: compute the "activities" of all constraints, which are the
+   * sums of their linear terms. The activities are returned in the same order
+   * as constraints(), which is the order in which constraints were added; but
+   * you can also use MPConstraint::index() to get a constraint's index.
+   */
   std::vector<double> ComputeConstraintActivities() const;
 
-  // Advanced usage:
-  // Verifies the *correctness* of the solution: all variables must be within
-  // their domains, all constraints must be satisfied, and the reported
-  // objective value must be accurate.
-  // Usage:
-  // - This can only be called after Solve() was called.
-  // - "tolerance" is interpreted as an absolute error threshold.
-  // - For the objective value only, if the absolute error is too large,
-  //   the tolerance is interpreted as a relative error threshold instead.
-  // - If "log_errors" is true, every single violation will be logged.
-  // - If "tolerance" is negative, it will be set to infinity().
-  //
-  // Most users should just set the --verify_solution flag and not bother
-  // using this method directly.
+  /**
+   * Advanced usage: Verifies the *correctness* of the solution.
+   *
+   * It verifies that all variables must be within their domains, all
+   * constraints must be satisfied, and the reported objective value must be
+   * accurate.
+   *
+   * Usage:
+   * - This can only be called after Solve() was called.
+   * - "tolerance" is interpreted as an absolute error threshold.
+   * - For the objective value only, if the absolute error is too large,
+   *   the tolerance is interpreted as a relative error threshold instead.
+   * - If "log_errors" is true, every single violation will be logged.
+   * - If "tolerance" is negative, it will be set to infinity().
+   *
+   * Most users should just set the --verify_solution flag and not bother using
+   * this method directly.
+   */
   bool VerifySolution(double tolerance, bool log_errors) const;
 
-  // Advanced usage: resets extracted model to solve from scratch. This won't
-  // reset the parameters that were set with
-  // SetSolverSpecificParametersAsString() or set_time_limit() or even clear the
-  // linear program. It will just make sure that next Solve() will be as if
-  // everything was reconstructed from scratch.
+  /**
+   * Advanced usage: resets extracted model to solve from scratch.
+   *
+   * This won't reset the parameters that were set with
+   * SetSolverSpecificParametersAsString() or set_time_limit() or even clear the
+   * linear program. It will just make sure that next Solve() will be as if
+   * everything was reconstructed from scratch.
+   */
   void Reset();
 
-  // Interrupts the Solve() execution to terminate processing early if possible.
-  // If the underlying interface supports interruption; it does that and returns
-  // true regardless of whether there's an ongoing Solve() or not. The Solve()
-  // call may still linger for a while depending on the conditions.  If
-  // interruption is not supported; returns false and does nothing.
+  /** Interrupts the Solve() execution to terminate processing if possible.
+   *
+   * If the underlying interface supports interruption; it does that and returns
+   * true regardless of whether there's an ongoing Solve() or not. The Solve()
+   * call may still linger for a while depending on the conditions.  If
+   * interruption is not supported; returns false and does nothing.
+   */
   bool InterruptSolve();
 
-  // ----- Methods using protocol buffers -----
-
-  // Loads model from protocol buffer. Returns MPSOLVER_MODEL_IS_VALID if the
-  // model is valid, and another status otherwise (currently only
-  // MPSOLVER_MODEL_INVALID and MPSOLVER_INFEASIBLE). If the model isn't
-  // valid, populates "error_message".
+  /**
+   * Loads model from protocol buffer.
+   *
+   * Returns MPSOLVER_MODEL_IS_VALID if the model is valid, and another status
+   * otherwise (currently only MPSOLVER_MODEL_INVALID and MPSOLVER_INFEASIBLE).
+   * If the model isn't valid, populates "error_message".
+   */
   MPSolverResponseStatus LoadModelFromProto(const MPModelProto& input_model,
                                             std::string* error_message);
-  // The same as above, except that the loading keeps original variable and
-  // constraint names. Caller should make sure that all variable names and
-  // constraint names are unique, respectively.
+  /**
+   * Loads model from protocol buffer.
+   *
+   * The same as above, except that the loading keeps original variable and
+   * constraint names. Caller should make sure that all variable names and
+   * constraint names are unique, respectively.
+   */
   MPSolverResponseStatus LoadModelFromProtoWithUniqueNamesOrDie(
       const MPModelProto& input_model, std::string* error_message);
 
-  // Encodes the current solution in a solution response protocol buffer.
-
+  /**
+   * Encodes the current solution in a solution response protocol buffer.
+   */
   void FillSolutionResponseProto(MPSolutionResponse* response) const;
 
-  // Solves the model encoded by a MPModelRequest protocol buffer and
-  // fills the solution encoded as a MPSolutionResponse.
-  // Note(user): This creates a temporary MPSolver and destroys it at the
-  // end. If you want to keep the MPSolver alive (for debugging, or for
-  // incremental solving), you should write another version of this function
-  // that creates the MPSolver object on the heap and returns it.
-  //
-  // TODO(user): populate an error message in the response.
+  /**
+   * Solves the model encoded by a MPModelRequest protocol buffer and fills the
+   * solution encoded as a MPSolutionResponse.
+   *
+   * Note(user): This creates a temporary MPSolver and destroys it at the end.
+   * If you want to keep the MPSolver alive (for debugging, or for incremental
+   * solving), you should write another version of this function that creates
+   * the MPSolver object on the heap and returns it.
+   */
   static void SolveWithProto(const MPModelRequest& model_request,
                              MPSolutionResponse* response);
 
-  // Exports model to protocol buffer.
+  /**
+   * Exports model to protocol buffer.
+   */
   void ExportModelToProto(MPModelProto* output_model) const;
 
-  // Load a solution encoded in a protocol buffer onto this solver for easy
-  // access via the MPSolver interface.
-  //
-  // IMPORTANT: This may only be used in conjunction with ExportModel(),
-  // following this example:
-  //   MPSolver my_solver;
-  //   ... add variables and constraints ...
-  //   MPModelProto model_proto;
-  //   my_solver.ExportModelToProto(&model_proto);
-  //   MPSolutionResponse solver_response;
-  //   // This can be replaced by a stubby call to the linear solver server.
-  //   MPSolver::SolveWithProto(model_proto, &solver_response);
-  //   if (solver_response.result_status() == MPSolutionResponse::OPTIMAL) {
-  //     CHECK_OK(my_solver.LoadSolutionFromProto(solver_response));
-  //     ... inspect the solution using the usual API: solution_value(), etc...
-  //   }
-  //
-  // This allows users of the pythonic API to conveniently communicate with
-  // a linear solver stubby server, via the MPSolver object as a proxy.
-  // See /.linear_solver_server_integration_test.py.
-  //
-  // The response must be in OPTIMAL or FEASIBLE status.
-  // Returns a non-OK status if a problem arised (typically, if it wasn't used
-  // like it should be):
-  // - loading a solution whose variables don't correspond to the solver's
-  //   current variables
-  // - loading a solution with a status other than OPTIMAL / FEASIBLE.
-  // Note: the objective value isnn't checked. You can use VerifySolution()
-  // for that.
-  // TODO(b/116117536) split this into two separate functions: Load...() without
-  // checking for tolerance and SolutionIsFeasibleWithTolerance().
+  /**
+   * Load a solution encoded in a protocol buffer onto this solver for easy
+  access via the MPSolver interface.
+   *
+   * IMPORTANT: This may only be used in conjunction with ExportModel(),
+  following this example:
+   *
+   \code
+     MPSolver my_solver;
+     ... add variables and constraints ...
+     MPModelProto model_proto;
+     my_solver.ExportModelToProto(&model_proto);
+     MPSolutionResponse solver_response;
+     MPSolver::SolveWithProto(model_proto, &solver_response);
+     if (solver_response.result_status() == MPSolutionResponse::OPTIMAL) {
+       CHECK_OK(my_solver.LoadSolutionFromProto(solver_response));
+       ... inspect the solution using the usual API: solution_value(), etc...
+     }
+  \endcode
+   *
+   * The response must be in OPTIMAL or FEASIBLE status.
+   *
+   * Returns a non-OK status if a problem arised (typically, if it wasn't used
+   *     like it should be):
+   * - loading a solution whose variables don't correspond to the solver's
+   *   current variables
+   * - loading a solution with a status other than OPTIMAL / FEASIBLE.
+   *
+   * Note: the objective value isn't checked. You can use VerifySolution() for
+   *       that.
+   */
   util::Status LoadSolutionFromProto(
       const MPSolutionResponse& response,
       double tolerance = kDefaultPrimalTolerance);
 
-  // Resets values of out of bound variables to the corresponding bound
-  // and returns an error if any of the variables have NaN value.
+  /**
+   * Resets values of out of bound variables to the corresponding bound and
+   * returns an error if any of the variables have NaN value.
+   */
   util::Status ClampSolutionWithinBounds();
 
-  // ----- Export model to files or strings -----
-  // Shortcuts to the homonymous MPModelProtoExporter methods, via
-  // exporting to a MPModelProto with ExportModelToProto() (see above).
-  //
-  // Produces empty std::string on portable platforms (e.g. android, ios).
+  /**
+   * Shortcuts to the homonymous MPModelProtoExporter methods, via exporting to
+   * a MPModelProto with ExportModelToProto() (see above).
+   *
+   * Produces empty std::string on portable platforms (e.g. android, ios).
+   */
   bool ExportModelAsLpFormat(bool obfuscate, std::string* model_str) const;
   bool ExportModelAsMpsFormat(bool fixed_format, bool obfuscate,
                               std::string* model_str) const;
-  // ----- Misc -----
 
-  // Sets the number of threads to use by the underlying solver. Returns
-  // OkStatus if the operation was successful. num_threads must be equal
-  // to or greater than 1. Note that the behaviour of this call depends on
-  // the underlying solver. E.g., it may set the exact number of threads or
-  // the max number of threads (check the solver's interface implementation
-  // for details). Also, some solvers may not (yet) support this function,
-  // but still enable multi-threading via SetSolverSpecificParametersAsString().
+  /**
+   *  Sets the number of threads to use by the underlying solver.
+   *
+   * Returns OkStatus if the operation was successful. num_threads must be equal
+   * to or greater than 1. Note that the behaviour of this call depends on the
+   * underlying solver. E.g., it may set the exact number of threads or the max
+   * number of threads (check the solver's interface implementation for
+   * details). Also, some solvers may not (yet) support this function, but still
+   * enable multi-threading via SetSolverSpecificParametersAsString().
+   */
   util::Status SetNumThreads(int num_threads);
+
+  /**
+   * Returns the number of threads to be used during solve.
+   */
   int GetNumThreads() const { return num_threads_; }
 
-  // Advanced usage: pass solver specific parameters in text format. The format
-  // is solver-specific and is the same as the corresponding solver
-  // configuration file format. Returns true if the operation was successful.
-  //
-  // TODO(user): Currently SCIP will always return true even if the format is
-  // wrong (you can check the log if you suspect an issue there). This seems to
-  // be a bug in SCIP though.
+  /**
+   * Advanced usage: pass solver specific parameters in text format.
+   *
+   * The format is solver-specific and is the same as the corresponding solver
+   * configuration file format. Returns true if the operation was successful.
+   *
+   * TODO(user): Currently SCIP will always return true even if the format is
+   * wrong (you can check the log if you suspect an issue there). This seems to
+   * be a bug in SCIP though.
+   */
   bool SetSolverSpecificParametersAsString(const std::string& parameters);
   std::string GetSolverSpecificParametersAsString() const {
     return solver_specific_parameter_string_;
   }
 
-  // Set a hint for solution.
-  //
-  // If a feasible or almost-feasible solution to the problem is already known,
-  // it may be helpful to pass it to the solver so that it can be used. A solver
-  // that supports this feature will try to use this information to create its
-  // initial feasible solution.
-  //
-  // Note that it may not always be faster to give a hint like this to the
-  // solver. There is also no guarantee that the solver will use this hint or
-  // try to return a solution "close" to this assignment in case of multiple
-  // optimal solutions.
-  //
+  /**
+   * Set a hint for solution.
+   *
+   * If a feasible or almost-feasible solution to the problem is already known,
+   * it may be helpful to pass it to the solver so that it can be used. A solver
+   * that supports this feature will try to use this information to create its
+   * initial feasible solution.
+   *
+   * Note: It may not always be faster to give a hint like this to the
+   * solver. There is also no guarantee that the solver will use this hint or
+   * try to return a solution "close" to this assignment in case of multiple
+   * optimal solutions.
+   */
   void SetHint(std::vector<std::pair<const MPVariable*, double> > hint);
 
-  // Advanced usage: possible basis status values for a variable and the
-  // slack variable of a linear constraint.
+  /**
+   * Advanced usage: possible basis status values for a variable and the slack
+   * variable of a linear constraint.
+   */
   enum BasisStatus {
     FREE = 0,
     AT_LOWER_BOUND,
@@ -519,29 +662,40 @@ class MPSolver {
     BASIC
   };
 
-  // Advanced usage: Incrementality. This function takes a starting basis to be
-  // used in the next LP Solve() call. The statuses of a current solution can be
-  // retrieved via the basis_status() function of a MPVariable or a
-  // MPConstraint.
-  //
-  // WARNING: With Glop, you should disable presolve when using this because
-  // this information will not be modified in sync with the presolve and will
-  // likely not mean much on the presolved problem.
+  /**
+   * Advanced usage: Incrementality.
+   *
+   * This function takes a starting basis to be used in the next LP Solve()
+   * call. The statuses of a current solution can be retrieved via the
+   * basis_status() function of a MPVariable or a MPConstraint.
+   *
+   * WARNING: With Glop, you should disable presolve when using this because
+   * this information will not be modified in sync with the presolve and will
+   * likely not mean much on the presolved problem.
+   */
   void SetStartingLpBasis(
       const std::vector<MPSolver::BasisStatus>& variable_statuses,
       const std::vector<MPSolver::BasisStatus>& constraint_statuses);
 
-  // Infinity. You can use -MPSolver::infinity() for negative infinity.
+  /**
+   * Infinity.
+   *
+   * You can use -MPSolver::infinity() for negative infinity.
+   */
   static double infinity() { return std::numeric_limits<double>::infinity(); }
 
-  // Controls (or queries) the amount of output produced by the underlying
-  // solver. The output can surface to LOGs, or to stdout or stderr, depending
-  // on the implementation. The amount of output will greatly vary with each
-  // implementation and each problem.
-  //
-  // Output is suppressed by default.
+  /**
+   * Controls (or queries) the amount of output produced by the underlying
+   * solver. The output can surface to LOGs, or to stdout or stderr, depending
+   * on the implementation. The amount of output will greatly vary with each
+   * implementation and each problem.
+   *
+   * Output is suppressed by default.
+   */
   bool OutputIsEnabled() const;
+  /** Enable output. */
   void EnableOutput();
+  /** Suppress output. */
   void SuppressOutput();
 
   absl::Duration TimeLimit() const { return time_limit_; }
@@ -554,67 +708,78 @@ class MPSolver {
     return absl::Now() - construction_time_;
   }
 
-  // Returns the number of simplex iterations.
+  /**
+   * Returns the number of simplex iterations.
+   */
   int64 iterations() const;
 
-  // Returns the number of branch-and-bound nodes evaluated during the solve.
-  // Only available for discrete problems.
+  /**
+   * Returns the number of branch-and-bound nodes evaluated during the solve.
+   *
+   * Only available for discrete problems.
+   */
   int64 nodes() const;
 
-  // Returns a std::string describing the underlying solver and its version.
+  /**
+   * Returns a std::string describing the underlying solver and its version.
+   */
   std::string SolverVersion() const;
 
-  // Advanced usage: returns the underlying solver so that the user
-  // can use solver-specific features or features that are not exposed
-  // in the simple API of MPSolver. This method is for advanced users,
-  // use at your own risk! In particular, if you modify the model or
-  // the solution by accessing the underlying solver directly, then
-  // the underlying solver will be out of sync with the information
-  // kept in the wrapper (MPSolver, MPVariable, MPConstraint,
-  // MPObjective). You need to cast the void* returned back to its
-  // original type that depends on the interface (CBC:
-  // OsiClpSolverInterface*, CLP: ClpSimplex*, GLPK: glp_prob*, SCIP:
-  // SCIP*).
+  /**
+   * Advanced usage: returns the underlying solver.
+   *
+   * Returns the underlying solver so that the user can use solver-specific
+   * features or features that are not exposed in the simple API of MPSolver.
+   * This method is for advanced users, use at your own risk! In particular, if
+   * you modify the model or the solution by accessing the underlying solver
+   * directly, then the underlying solver will be out of sync with the
+   * information kept in the wrapper (MPSolver, MPVariable, MPConstraint,
+   * MPObjective). You need to cast the void* returned back to its original type
+   * that depends on the interface (CBC: OsiClpSolverInterface*, CLP:
+   * ClpSimplex*, GLPK: glp_prob*, SCIP: SCIP*).
+   */
   void* underlying_solver();
 
-  // Advanced usage: computes the exact condition number of the
-  // current scaled basis: L1norm(B) * L1norm(inverse(B)), where B is
-  // the scaled basis.
-  // This method requires that a basis exists: it should be called
-  // after Solve. It is only available for continuous problems. It is
-  // implemented for GLPK but not CLP because CLP does not provide the
-  // API for doing it.
-  // The condition number measures how well the constraint matrix is
-  // conditioned and can be used to predict whether numerical issues
-  // will arise during the solve: the model is declared infeasible
-  // whereas it is feasible (or vice-versa), the solution obtained is
-  // not optimal or violates some constraints, the resolution is slow
-  // because of repeated singularities.
-  // The rule of thumb to interpret the condition number kappa is:
-  // o kappa <= 1e7: virtually no chance of numerical issues
-  // o 1e7 < kappa <= 1e10: small chance of numerical issues
-  // o 1e10 < kappa <= 1e13: medium chance of numerical issues
-  // o kappa > 1e13: high chance of numerical issues
-  // The computation of the condition number depends on the quality of
-  // the LU decomposition, so it is not very accurate when the matrix
-  // is ill conditioned.
+  /** Advanced usage: computes the exact condition number of the current scaled
+   * basis: L1norm(B) * L1norm(inverse(B)), where B is the scaled basis.
+   *
+   * This method requires that a basis exists: it should be called after Solve.
+   * It is only available for continuous problems. It is implemented for GLPK
+   * but not CLP because CLP does not provide the API for doing it.
+   *
+   * The condition number measures how well the constraint matrix is conditioned
+   * and can be used to predict whether numerical issues will arise during the
+   * solve: the model is declared infeasible whereas it is feasible (or
+   * vice-versa), the solution obtained is not optimal or violates some
+   * constraints, the resolution is slow because of repeated singularities.
+   *
+   * The rule of thumb to interpret the condition number kappa is:
+   *   - o kappa <= 1e7: virtually no chance of numerical issues
+   *   - o 1e7 < kappa <= 1e10: small chance of numerical issues
+   *   - o 1e10 < kappa <= 1e13: medium chance of numerical issues
+   *   - o kappa > 1e13: high chance of numerical issues
+   *
+   * The computation of the condition number depends on the quality of the LU
+   * decomposition, so it is not very accurate when the matrix is ill
+   * conditioned.
+   */
   double ComputeExactConditionNumber() const;
 
-  // Some solvers (MIP only, not LP) can produce multiple solutions to the
-  // problem. Returns true when another solution is available, and updates the
-  // MPVariable* objects to make the new solution queryable. Call only after
-  // calling solve.
-  //
-  // The optimality properties of the additional solutions found, and whether
-  // or not the solver computes them ahead of time or when NextSolution() is
-  // called is solver specific.
-  //
-  // As of 2018-08-09, only Gurobi supports NextSolution(), see
-  // linear_solver_underlying_gurobi_test for an example of how to configure
-  // Gurobi for this purpose. The other solvers return false unconditionally.
-#if defined(USE_GUROBI)
+  /**
+   * Some solvers (MIP only, not LP) can produce multiple solutions to the
+   * problem. Returns true when another solution is available, and updates the
+   * MPVariable* objects to make the new solution queryable. Call only after
+   * calling solve.
+   *
+   * The optimality properties of the additional solutions found, and whether or
+   * not the solver computes them ahead of time or when NextSolution() is called
+   * is solver specific.
+   *
+   * As of 2018-08-09, only Gurobi supports NextSolution(), see
+   * linear_solver_underlying_gurobi_test for an example of how to configure
+   * Gurobi for this purpose. The other solvers return false unconditionally.
+   */
   ABSL_MUST_USE_RESULT bool NextSolution();
-#endif
 
   // DEPRECATED: Use TimeLimit() and SetTimeLimit(absl::Duration) instead.
   // NOTE: These deprecated functions used the convention time_limit = 0 to mean
@@ -752,69 +917,118 @@ inline std::string AbslUnparseFlag(
   return std::string(ToString(solver_type));
 }
 
-// A class to express a linear objective.
+/**
+ *  A class to express a linear objective.
+ */
 class MPObjective {
  public:
-  // Clears the offset, all variables and coefficients, and the optimization
-  // direction.
+  /**
+   *  Clears the offset, all variables and coefficients, and the optimization
+   * direction.
+   */
   void Clear();
 
-  // Sets the coefficient of the variable in the objective. If the variable
-  // does not belong to the solver, the function just returns, or crashes in
-  // non-opt mode.
+  /**
+   * Sets the coefficient of the variable in the objective.
+   *
+   * If the variable does not belong to the solver, the function just returns,
+   * or crashes in non-opt mode.
+   */
   void SetCoefficient(const MPVariable* const var, double coeff);
-  // Gets the coefficient of a given variable in the objective (which
-  // is 0 if the variable does not appear in the objective).
+
+  /**
+   *  Gets the coefficient of a given variable in the objective
+   *
+   * It returns 0 if the variable does not appear in the objective).
+   */
   double GetCoefficient(const MPVariable* const var) const;
 
-  // Returns a map from variables to their coefficients in the objective. If a
-  // variable is not present in the map, then its coefficient is zero.
+  /**
+   * Returns a map from variables to their coefficients in the objective.
+   *
+   * If a variable is not present in the map, then its coefficient is zero.
+   */
   const absl::flat_hash_map<const MPVariable*, double>& terms() const {
     return coefficients_;
   }
 
-  // Sets the constant term in the objective.
+  /**
+   * Sets the constant term in the objective.
+   */
   void SetOffset(double value);
-  // Gets the constant term in the objective.
+
+  /**
+   * Gets the constant term in the objective.
+   */
   double offset() const { return offset_; }
 
-  // Resets the current objective to take the value of linear_expr, and sets
-  // the objective direction to maximize if "is_maximize", otherwise minimizes.
+  /**
+   * Resets the current objective to take the value of linear_expr, and sets the
+   * objective direction to maximize if "is_maximize", otherwise minimizes.
+   */
   void OptimizeLinearExpr(const LinearExpr& linear_expr, bool is_maximization);
+
+  /**
+   * Resets the current objective to maximize linear_expr.
+   */
   void MaximizeLinearExpr(const LinearExpr& linear_expr) {
     OptimizeLinearExpr(linear_expr, true);
   }
+  /**
+   * Resets the current objective to minimize linear_expr.
+   */
   void MinimizeLinearExpr(const LinearExpr& linear_expr) {
     OptimizeLinearExpr(linear_expr, false);
   }
 
-  // Adds linear_expr to the current objective, does not change the direction.
+  /**
+   * Adds linear_expr to the current objective, does not change the direction.
+   */
   void AddLinearExpr(const LinearExpr& linear_expr);
 
-  // Sets the optimization direction (maximize: true or minimize: false).
+  /**
+   * Sets the optimization direction (maximize: true or minimize: false).
+   */
   void SetOptimizationDirection(bool maximize);
-  // Sets the optimization direction to minimize.
+
+  /**
+   * Sets the optimization direction to minimize.
+   */
   void SetMinimization() { SetOptimizationDirection(false); }
-  // Sets the optimization direction to maximize.
+
+  /**
+   * Sets the optimization direction to maximize.
+   */
   void SetMaximization() { SetOptimizationDirection(true); }
-  // Is the optimization direction set to maximize?
+
+  /**
+   * Is the optimization direction set to maximize?
+   */
   bool maximization() const;
-  // Is the optimization direction set to minimize?
+  /**
+   * Is the optimization direction set to minimize?
+   */
   bool minimization() const;
 
-  // Returns the objective value of the best solution found so far. It
-  // is the optimal objective value if the problem has been solved to
-  // optimality.
-  //
-  // Note: the objective value may be slightly different than what you
-  // could compute yourself using MPVariable::solution_value();
-  // please use the --verify_solution flag to gain confidence about the
-  // numerical stability of your solution.
+  /**
+   * Returns the objective value of the best solution found so far.
+   *
+   * It is the optimal objective value if the problem has been solved to
+   * optimality.
+   *
+   * Note: the objective value may be slightly different than what you could
+   * compute yourself using \c MPVariable::solution_value(); please use the
+   * --verify_solution flag to gain confidence about the numerical stability of
+   * your solution.
+   */
   double Value() const;
 
-  // Returns the best objective bound. In case of minimization, it is
-  // a lower bound on the objective value of the optimal integer
-  // solution. Only available for discrete problems.
+  /**
+   * Returns the best objective bound.
+   *
+   * In case of minimization, it is a lower bound on the objective value of the
+   * optimal integer solution. Only available for discrete problems.
+   */
   double BestBound() const;
 
  private:
@@ -851,55 +1065,96 @@ class MPObjective {
   DISALLOW_COPY_AND_ASSIGN(MPObjective);
 };
 
-// The class for variables of a Mathematical Programming (MP) model.
+/**
+ * The class for variables of a Mathematical Programming (MP) model.
+ */
 class MPVariable {
  public:
-  // Returns the name of the variable.
+  /**
+   * Returns the name of the variable.
+   */
   const std::string& name() const { return name_; }
 
-  // Sets the integrality requirement of the variable.
+  /**
+   * Sets the integrality requirement of the variable.
+   */
   void SetInteger(bool integer);
-  // Returns the integrality requirement of the variable.
+
+  /**
+   * Returns the integrality requirement of the variable.
+   */
   bool integer() const { return integer_; }
 
-  // Returns the value of the variable in the current solution.
-  // If the variable is integer, then the value will always be an integer
-  // (the underlying solver handles floating-point values only, but this
-  // function automatically rounds it to the nearest integer; see: man 3 round).
+  /**
+   * Returns the value of the variable in the current solution.
+   *
+   * If the variable is integer, then the value will always be an integer (the
+   * underlying solver handles floating-point values only, but this function
+   * automatically rounds it to the nearest integer; see: man 3 round).
+   */
   double solution_value() const;
 
-  // Returns the index of the variable in the MPSolver::variables_.
+  /**
+   * Returns the index of the variable in the MPSolver::variables_.
+   */
   int index() const { return index_; }
 
-  // Returns the lower bound.
+  /**
+   * Returns the lower bound.
+   */
   double lb() const { return lb_; }
-  // Returns the upper bound.
+
+  /**
+   * Returns the upper bound.
+   */
   double ub() const { return ub_; }
-  // Sets the lower bound.
+
+  /**
+   * Sets the lower bound.
+   */
   void SetLB(double lb) { SetBounds(lb, ub_); }
-  // Sets the upper bound.
+  /**
+   * Sets the upper bound.
+   */
   void SetUB(double ub) { SetBounds(lb_, ub); }
-  // Sets both the lower and upper bounds.
+
+  /**
+   * Sets both the lower and upper bounds.
+   */
   void SetBounds(double lb, double ub);
 
-  // Advanced usage: unrounded solution value, i.e. it won't be rounded to the
-  // nearest integer even if the variable is integer.
+  /**
+   * Advanced usage: unrounded solution value.
+   *
+   * The returned value won't be rounded to the nearest integer even if the
+   * variable is integer.
+   */
   double unrounded_solution_value() const;
-  // Advanced usage: returns the reduced cost of the variable in the
-  // current solution (only available for continuous problems).
+
+  /**
+   * Advanced usage: returns the reduced cost of the variable in the current
+   * solution (only available for continuous problems).
+   */
   double reduced_cost() const;
-  // Advanced usage: returns the basis status of the variable in the
-  // current solution (only available for continuous problems).
-  // @see MPSolver::BasisStatus.
+
+  /**
+   *  Advanced usage: returns the basis status of the variable in the current
+   * solution (only available for continuous problems).
+   *
+   * @see MPSolver::BasisStatus.
+   */
   MPSolver::BasisStatus basis_status() const;
 
-  // Advanced usage: Certain MIP solvers (e.g. Gurobi or SCIP) allow you to set
-  // a per-variable priority for determining which variable to branch on. A
-  // value of 0 is treated as default, and is equivalent to not setting the
-  // branching priority. The solver looks first to branch on fractional
-  // variables in higher priority levels. As of 2019-05, only Gurobi and SCIP
-  // support setting branching priority; all other solvers will simply ignore
-  // this annotation.
+  /**
+   * Advanced usage: Certain MIP solvers (e.g. Gurobi or SCIP) allow you to set
+   * a per-variable priority for determining which variable to branch on.
+   *
+   * A value of 0 is treated as default, and is equivalent to not setting the
+   * branching priority. The solver looks first to branch on fractional
+   * variables in higher priority levels. As of 2019-05, only Gurobi and SCIP
+   * support setting branching priority; all other solvers will simply ignore
+   * this annotation.
+   */
   int branching_priority() const { return branching_priority_; }
   void SetBranchingPriority(int priority);
 
@@ -950,70 +1205,117 @@ class MPVariable {
   DISALLOW_COPY_AND_ASSIGN(MPVariable);
 };
 
-// The class for constraints of a Mathematical Programming (MP) model.
-// A constraint is represented as a linear equation or inequality.
+/**
+ * The class for constraints of a Mathematical Programming (MP) model.
+ *
+ * A constraint is represented as a linear equation or inequality.
+ */
 class MPConstraint {
  public:
-  // Returns the name of the constraint.
+  /**
+   * Returns the name of the constraint.
+   */
   const std::string& name() const { return name_; }
 
-  // Clears all variables and coefficients. Does not clear the bounds.
+  /**
+   * Clears all variables and coefficients. Does not clear the bounds.
+   */
   void Clear();
 
-  // Sets the coefficient of the variable on the constraint. If the variable
-  // does not belong to the solver, the function just returns, or crashes in
-  // non-opt mode.
+  /**
+   * Sets the coefficient of the variable on the constraint.
+   *
+   * If the variable does not belong to the solver, the function just returns,
+   * or crashes in non-opt mode.
+   */
   void SetCoefficient(const MPVariable* const var, double coeff);
-  // Gets the coefficient of a given variable on the constraint (which
-  // is 0 if the variable does not appear in the constraint).
+
+  /**
+   * Gets the coefficient of a given variable on the constraint (which is 0 if
+   * the variable does not appear in the constraint).
+   */
   double GetCoefficient(const MPVariable* const var) const;
 
-  // Returns a map from variables to their coefficients in the constraint. If a
-  // variable is not present in the map, then its coefficient is zero.
+  /**
+   * Returns a map from variables to their coefficients in the constraint.
+   *
+   * If a variable is not present in the map, then its coefficient is zero.
+   */
   const absl::flat_hash_map<const MPVariable*, double>& terms() const {
     return coefficients_;
   }
 
-  // Returns the lower bound.
+  /**
+   * Returns the lower bound.
+   */
   double lb() const { return lb_; }
-  // Returns the upper bound.
+
+  /**
+   * Returns the upper bound.
+   */
   double ub() const { return ub_; }
-  // Sets the lower bound.
+
+  /**
+   * Sets the lower bound.
+   */
   void SetLB(double lb) { SetBounds(lb, ub_); }
-  // Sets the upper bound.
+
+  /**
+   * Sets the upper bound.
+   */
   void SetUB(double ub) { SetBounds(lb_, ub); }
-  // Sets both the lower and upper bounds.
+
+  /**
+   * Sets both the lower and upper bounds.
+   */
   void SetBounds(double lb, double ub);
 
-  // Advanced usage: returns true if the constraint is "lazy" (see below).
+  /**
+   * Advanced usage: returns true if the constraint is "lazy" (see below).
+   */
   bool is_lazy() const { return is_lazy_; }
-  // Advanced usage: sets the constraint "laziness".
-  // *** This is only supported for SCIP and has no effect on other solvers. ***
-  // When 'laziness' is true, the constraint is only considered by the Linear
-  // Programming solver if its current solution violates the constraint.
-  // In this case, the constraint is definitively added to the problem.
-  // This may be useful in some MIP problems, and may have a dramatic impact
-  // on performance.
-  // For more info see: http://tinyurl.com/lazy-constraints.
+
+  /**
+   * Advanced usage: sets the constraint "laziness".
+   *
+   * <em>This is only supported for SCIP and has no effect on other
+   * solvers.</em>
+   *
+   * When \b laziness is true, the constraint is only considered by the Linear
+   * Programming solver if its current solution violates the constraint. In this
+   * case, the constraint is definitively added to the problem. This may be
+   * useful in some MIP problems, and may have a dramatic impact on performance.
+   *
+   * For more info see: http://tinyurl.com/lazy-constraints.
+   */
   void set_is_lazy(bool laziness) { is_lazy_ = laziness; }
 
   const MPVariable* indicator_variable() const { return indicator_variable_; }
   bool indicator_value() const { return indicator_value_; }
 
-  // Returns the index of the constraint in the MPSolver::constraints_.
+  /**
+   * Returns the index of the constraint in the MPSolver::constraints_.
+   */
   int index() const { return index_; }
 
-  // Advanced usage: returns the dual value of the constraint in the
-  // current solution (only available for continuous problems).
+  /**
+   * Advanced usage: returns the dual value of the constraint in the current
+   * solution (only available for continuous problems).
+   */
   double dual_value() const;
 
-  // Advanced usage: returns the basis status of the constraint (only available
-  // for continuous problems). Note that if a constraint "linear_expression in
-  // [lb, ub]" is transformed into "linear_expression + slack = 0" with slack in
-  // [-ub, -lb], then this status is the same as the status of the slack
-  // variable with AT_UPPER_BOUND and AT_LOWER_BOUND swapped.
-  //
-  // @see MPSolver::BasisStatus.
+  /**
+   * Advanced usage: returns the basis status of the constraint.
+   *
+   * It is only available for continuous problems).
+   *
+   * Note that if a constraint "linear_expression in [lb, ub]" is transformed
+   * into "linear_expression + slack = 0" with slack in [-ub, -lb], then this
+   * status is the same as the status of the slack variable with AT_UPPER_BOUND
+   * and AT_LOWER_BOUND swapped.
+   *
+   * @see MPSolver::BasisStatus.
+   */
   MPSolver::BasisStatus basis_status() const;
 
  protected:
@@ -1083,80 +1385,118 @@ class MPConstraint {
   DISALLOW_COPY_AND_ASSIGN(MPConstraint);
 };
 
-// This class stores parameter settings for LP and MIP solvers.
-// Some parameters are marked as advanced: do not change their values
-// unless you know what you are doing!
-//
-// For developers: how to add a new parameter:
-// - Add the new Foo parameter in the DoubleParam or IntegerParam enum.
-// - If it is a categorical param, add a FooValues enum.
-// - Decide if the wrapper should define a default value for it: yes
-//   if it controls the properties of the solution (example:
-//   tolerances) or if it consistently improves performance, no
-//   otherwise. If yes, define kDefaultFoo.
-// - Add a foo_value_ member and, if no default value is defined, a
-//   foo_is_default_ member.
-// - Add code to handle Foo in Set...Param, Reset...Param,
-//   Get...Param, Reset and the constructor.
-// - In class MPSolverInterface, add a virtual method SetFoo, add it
-//   to SetCommonParameters or SetMIPParameters, and implement it for
-//   each solver. Sometimes, parameters need to be implemented
-//   differently, see for example the INCREMENTALITY implementation.
-// - Add a test in linear_solver_test.cc.
-//
-// TODO(user): store the parameter values in a protocol buffer
-// instead. We need to figure out how to deal with the subtleties of
-// the default values.
+/**
+ * This class stores parameter settings for LP and MIP solvers. Some parameters
+ * are marked as advanced: do not change their values unless you know what you
+ * are doing!
+ *
+ * For developers: how to add a new parameter:
+ * - Add the new Foo parameter in the DoubleParam or IntegerParam enum.
+ * - If it is a categorical param, add a FooValues enum.
+ * - Decide if the wrapper should define a default value for it: yes
+ *   if it controls the properties of the solution (example:
+ *   tolerances) or if it consistently improves performance, no
+ *   otherwise. If yes, define kDefaultFoo.
+ * - Add a foo_value_ member and, if no default value is defined, a
+ *   foo_is_default_ member.
+ * - Add code to handle Foo in Set...Param, Reset...Param,
+ *   Get...Param, Reset and the constructor.
+ * - In class MPSolverInterface, add a virtual method SetFoo, add it
+ *   to SetCommonParameters or SetMIPParameters, and implement it for
+ *   each solver. Sometimes, parameters need to be implemented
+ *   differently, see for example the INCREMENTALITY implementation.
+ * - Add a test in linear_solver_test.cc.
+ *
+ * TODO(user): store the parameter values in a protocol buffer
+ * instead. We need to figure out how to deal with the subtleties of
+ * the default values.
+ */
 class MPSolverParameters {
  public:
-  // Enumeration of parameters that take continuous values.
+  /**
+   * Enumeration of parameters that take continuous values.
+   */
   enum DoubleParam {
-    // Limit for relative MIP gap.
+    /**
+     * Limit for relative MIP gap.
+     */
     RELATIVE_MIP_GAP = 0,
-    // Advanced usage: tolerance for primal feasibility of basic
-    // solutions. This does not control the integer feasibility
-    // tolerance of integer solutions for MIP or the tolerance used
-    // during presolve.
+
+    /**Advanced usage: tolerance for primal feasibility of basic solutions.
+     *
+     * This does not control the integer feasibility tolerance of integer
+     * solutions for MIP or the tolerance used during presolve.
+     */
     PRIMAL_TOLERANCE = 1,
-    // Advanced usage: tolerance for dual feasibility of basic solutions.
+    /**
+     * Advanced usage: tolerance for dual feasibility of basic solutions.
+     */
     DUAL_TOLERANCE = 2
   };
 
-  // Enumeration of parameters that take integer or categorical values.
+  /**
+   * Enumeration of parameters that take integer or categorical values.
+   */
   enum IntegerParam {
-    // Advanced usage: presolve mode.
+    /**
+     * Advanced usage: presolve mode.
+     */
     PRESOLVE = 1000,
-    // Algorithm to solve linear programs.
+    /**
+     * Algorithm to solve linear programs.
+     */
     LP_ALGORITHM = 1001,
-    // Advanced usage: incrementality from one solve to the next.
+    /**
+     * Advanced usage: incrementality from one solve to the next.
+     */
     INCREMENTALITY = 1002,
-    // Advanced usage: enable or disable matrix scaling.
+    /**
+     * Advanced usage: enable or disable matrix scaling.
+     */
     SCALING = 1003
   };
 
-  // For each categorical parameter, enumeration of possible values.
+  /**
+   * For each categorical parameter, enumeration of possible values.
+   */
   enum PresolveValues {
     PRESOLVE_OFF = 0,  // Presolve is off.
     PRESOLVE_ON = 1    // Presolve is on.
   };
 
+  /**
+   * LP algorithm to use.
+   */
   enum LpAlgorithmValues {
     DUAL = 10,    // Dual simplex.
     PRIMAL = 11,  // Primal simplex.
     BARRIER = 12  // Barrier algorithm.
   };
 
+  /**
+   * Advanced usage: Incrementality options.
+   */
   enum IncrementalityValues {
-    // Start solve from scratch.
+    /**
+     * Start solve from scratch.
+     */
     INCREMENTALITY_OFF = 0,
-    // Reuse results from previous solve as much as the underlying
-    // solver allows.
+
+    /**
+     * Reuse results from previous solve as much as the underlying solver
+     * allows.
+     */
     INCREMENTALITY_ON = 1
   };
 
+  /**
+   * Advanced usage: Scaling options.
+   */
   enum ScalingValues {
-    SCALING_OFF = 0,  // Scaling is off.
-    SCALING_ON = 1    // Scaling is on.
+    /// Scaling is off.
+    SCALING_OFF = 0,
+    /// Scaling is on.
+    SCALING_ON = 1
   };
 
   // @{
@@ -1185,33 +1525,49 @@ class MPSolverParameters {
   static const IncrementalityValues kDefaultIncrementality;
   // @}
 
-  // The constructor sets all parameters to their default value.
+  /**
+   * The constructor sets all parameters to their default value.
+   */
   MPSolverParameters();
 
-  // @{
-  // Sets a parameter to a specific value.
+  /**
+   * Sets a double parameter to a specific value.
+   */
   void SetDoubleParam(MPSolverParameters::DoubleParam param, double value);
+  /**
+   * Sets a integer parameter to a specific value.
+   */
   void SetIntegerParam(MPSolverParameters::IntegerParam param, int value);
-  // @}
 
-  // @{
-  // Sets a parameter to its default value (default value defined
-  // in MPSolverParameters if it exists, otherwise the default value
-  // defined in the underlying solver).
+  /**
+   * Sets a double parameter to its default value (default value defined in
+   * MPSolverParameters if it exists, otherwise the default value defined in
+   * the underlying solver).
+   */
+
   void ResetDoubleParam(MPSolverParameters::DoubleParam param);
+  /**
+   * Sets an integer parameter to its default value (default value defined in
+   * MPSolverParameters if it exists, otherwise the default value defined in
+   * the underlying solver).
+   */
   void ResetIntegerParam(MPSolverParameters::IntegerParam param);
-  // Sets all parameters to their default value.
+  /**
+   * Sets all parameters to their default value.
+   */
   void Reset();
-  // @}
 
-  // @{
-  // Returns the value of a parameter.
+  /**
+   * Returns the value of a double parameter.
+   */
   double GetDoubleParam(MPSolverParameters::DoubleParam param) const;
+
+  /**
+   * Returns the value of an integer parameter.
+   */
   int GetIntegerParam(MPSolverParameters::IntegerParam param) const;
-  // @}
 
  private:
-  // @{
   // Parameter value for each parameter.
   // @see DoubleParam
   // @see IntegerParam
@@ -1222,7 +1578,6 @@ class MPSolverParameters {
   int scaling_value_;
   int lp_algorithm_value_;
   int incrementality_value_;
-  // @}
 
   // Boolean value indicating whether each parameter is set to the
   // solver's default value. Only parameters for which the wrapper
