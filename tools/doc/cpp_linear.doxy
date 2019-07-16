@@ -791,6 +791,7 @@ WARN_LOGFILE           =
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  = \
+  ortools/linear_solver/linear_expr.h \
   ortools/linear_solver/linear_solver.h \
   ortools/linear_solver/model_exporter.h \
   ortools/linear_solver/model_exporter_swig_helper.h \

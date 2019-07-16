@@ -1,22 +1,5 @@
 var NAVTREEINDEX0 =
 {
-"dense__doubly__linked__list_8h.html":[2,0],
-"dense__doubly__linked__list_8h_source.html":[2,0],
-"dynamic__partition_8h.html":[2,1],
-"dynamic__partition_8h_source.html":[2,1],
-"dynamic__permutation_8h.html":[2,2],
-"dynamic__permutation_8h_source.html":[2,2],
-"files.html":[2],
-"find__graph__symmetries_8h.html":[2,3],
-"find__graph__symmetries_8h_source.html":[2,3],
-"hungarian_8h.html":[2,4],
-"hungarian_8h.html#a9c61bb2d6de0894f19675e2110458877":[2,4,1],
-"hungarian_8h.html#ada8ccc36ef736b10ce389fbd347c4282":[2,4,0],
-"hungarian_8h_source.html":[2,4],
 "index.html":[],
-"knapsack__solver_8h.html":[2,5],
-"knapsack__solver_8h_source.html":[2,5],
-"pages.html":[],
-"sparse__permutation_8h.html":[2,6],
-"sparse__permutation_8h_source.html":[2,6]
+"pages.html":[]
 };

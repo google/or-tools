@@ -1,5 +1,6 @@
 var files =
 [
+    [ "linear_expr.h", "linear__expr_8h.html", "linear__expr_8h" ],
     [ "linear_solver.h", "linear__solver_8h.html", "linear__solver_8h" ],
     [ "linear_solver.pb.h", "linear__solver_8pb_8h.html", "linear__solver_8pb_8h" ],
     [ "model_exporter.h", "model__exporter_8h.html", "model__exporter_8h" ],

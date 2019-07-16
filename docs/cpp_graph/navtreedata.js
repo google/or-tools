@@ -28,20 +28,13 @@ var NAVTREE =
     [ "Deprecated List", "deprecated.html", null ],
     [ "Namespaces", "namespaces.html", null ],
     [ "Classes", "annotated.html", null ],
-    [ "File List", "files.html", "files" ],
-    [ "File Members", "globals.html", [
-      [ "All", "globals.html", null ],
-      [ "Functions", "globals_func.html", null ],
-      [ "Variables", "globals_vars.html", null ],
-      [ "Typedefs", "globals_type.html", null ],
-      [ "Macros", "globals_defs.html", null ]
-    ] ]
+    [ "Files", "files.html", null ]
   ] ]
 ];
 
 var NAVTREEINDEX =
 [
-"christofides_8h.html"
+"deprecated.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

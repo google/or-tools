@@ -15,7 +15,7 @@ var classoperations__research_1_1MPObjective =
     [ "SetMinimization", "classoperations__research_1_1MPObjective.html#af9eea25e667a52dcad270495025e1202", null ],
     [ "SetOffset", "classoperations__research_1_1MPObjective.html#a24611f7b12b571fe1e73b629a8a6c17b", null ],
     [ "SetOptimizationDirection", "classoperations__research_1_1MPObjective.html#add0f9517dc64b1f768952fc490f7be00", null ],
-    [ "terms", "classoperations__research_1_1MPObjective.html#ae1f99be84ce9efa28b4c1050af954835", null ],
+    [ "terms", "classoperations__research_1_1MPObjective.html#abb79604f28fb7ddada23f4df67e28e32", null ],
     [ "Value", "classoperations__research_1_1MPObjective.html#a43fd3a9687cfef2591b22c96cbe02477", null ],
     [ "BopInterface", "classoperations__research_1_1MPObjective.html#a7383308e6b9b63b18196798db342ce8a", null ],
     [ "CBCInterface", "classoperations__research_1_1MPObjective.html#af5a7cf0c655f37c0b388a2ddcf32ac3e", null ],

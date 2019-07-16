@@ -28,20 +28,13 @@ var NAVTREE =
     [ "Deprecated List", "deprecated.html", null ],
     [ "Namespaces", "namespaces.html", null ],
     [ "Classes", "annotated.html", null ],
-    [ "File List", "files.html", "files" ],
-    [ "File Members", "globals.html", [
-      [ "All", "globals.html", null ],
-      [ "Functions", "globals_func.html", null ],
-      [ "Variables", "globals_vars.html", null ],
-      [ "Macros", "globals_defs.html", null ]
-    ] ]
+    [ "Files", "files.html", null ]
   ] ]
 ];
 
 var NAVTREEINDEX =
 [
-"cp__model_8h.html",
-"sat__parameters_8pb_8h.html#af02bc4bd103928ea008623a1da38a12caa7de36c91e9668bd4d3429170a3a915a"
+"deprecated.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

@@ -166,8 +166,8 @@
       <type>void</type>
       <name>Init</name>
       <anchorfile>classoperations__research_1_1KnapsackSolver.html</anchorfile>
-      <anchor>aca019151f60942f2e7245874bb89cd62</anchor>
-      <arglist>(const std::vector&lt; int64 &gt; &amp;profits, const std::vector&lt; std::vector&lt; int64 &gt;&gt; &amp;weights, const std::vector&lt; int64 &gt; &amp;capacities)</arglist>
+      <anchor>ad2a0397c061a1cf0bfc759b35f23e463</anchor>
+      <arglist>(const std::vector&lt; int64 &gt; &amp;profits, const std::vector&lt; std::vector&lt; int64 &gt; &gt; &amp;weights, const std::vector&lt; int64 &gt; &amp;capacities)</arglist>
     </member>
     <member kind="function">
       <type>int64</type>

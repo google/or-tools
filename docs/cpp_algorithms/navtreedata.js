@@ -26,13 +26,13 @@ var NAVTREE =
   [ "OR-Tools", "index.html", [
     [ "Namespaces", "namespaces.html", null ],
     [ "Classes", "annotated.html", null ],
-    [ "File List", "files.html", "files" ]
+    [ "Files", "files.html", null ]
   ] ]
 ];
 
 var NAVTREEINDEX =
 [
-"dense__doubly__linked__list_8h.html"
+"index.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

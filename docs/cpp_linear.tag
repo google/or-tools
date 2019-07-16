@@ -1,9 +1,74 @@
 <?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
 <tagfile>
   <compound kind="file">
+    <name>linear_expr.h</name>
+    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/linear_solver/</path>
+    <filename>linear__expr_8h</filename>
+    <class kind="class">operations_research::LinearExpr</class>
+    <class kind="class">operations_research::LinearRange</class>
+    <namespace>operations_research</namespace>
+    <member kind="function">
+      <type>LinearExpr</type>
+      <name>operator+</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a97f9b83239285f5fdfcac1b8e8b4f162</anchor>
+      <arglist>(LinearExpr lhs, const LinearExpr &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr</type>
+      <name>operator-</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a515cdaf4f9c4000bb3482a0c450e23c3</anchor>
+      <arglist>(LinearExpr lhs, const LinearExpr &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr</type>
+      <name>operator *</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a741104fe08089fe3520676487f7a685d</anchor>
+      <arglist>(LinearExpr lhs, double rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr</type>
+      <name>operator/</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>abebdd7f40e90df8dc7d557b6e26da942</anchor>
+      <arglist>(LinearExpr lhs, double rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr</type>
+      <name>operator *</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a99590470c6ad2d59331b6fcc56609877</anchor>
+      <arglist>(double lhs, LinearExpr rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearRange</type>
+      <name>operator&lt;=</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a6d1fa20f9c9faf7027c0b16f97139e80</anchor>
+      <arglist>(const LinearExpr &amp;lhs, const LinearExpr &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearRange</type>
+      <name>operator==</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a08146f196bd9c3f492ee108732449ced</anchor>
+      <arglist>(const LinearExpr &amp;lhs, const LinearExpr &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearRange</type>
+      <name>operator&gt;=</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>ac4052f92af6a7fbb1d45e17befcb68e0</anchor>
+      <arglist>(const LinearExpr &amp;lhs, const LinearExpr &amp;rhs)</arglist>
+    </member>
+  </compound>
+  <compound kind="file">
     <name>linear_solver.h</name>
     <path>/usr/local/google/home/lperron/Work/or-tools/ortools/linear_solver/</path>
     <filename>linear__solver_8h</filename>
+    <includes id="linear__expr_8h" name="linear_expr.h" local="yes" imported="no">ortools/linear_solver/linear_expr.h</includes>
     <includes id="linear__solver_8pb_8h" name="linear_solver.pb.h" local="yes" imported="no">ortools/linear_solver/linear_solver.pb.h</includes>
     <class kind="class">operations_research::MPSolver</class>
     <class kind="class">operations_research::MPObjective</class>
@@ -764,6 +829,133 @@
   <compound kind="struct">
     <name>is_proto_enum&lt; ::operations_research::MPSosConstraint_Type &gt;</name>
     <filename>structis__proto__enum_3_01_1_1operations__research_1_1MPSosConstraint__Type_01_4.html</filename>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::LinearExpr</name>
+    <filename>classoperations__research_1_1LinearExpr.html</filename>
+    <member kind="function">
+      <type></type>
+      <name>LinearExpr</name>
+      <anchorfile>classoperations__research_1_1LinearExpr.html</anchorfile>
+      <anchor>a3245b8350f417872f1f638ecd22a832f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>LinearExpr</name>
+      <anchorfile>classoperations__research_1_1LinearExpr.html</anchorfile>
+      <anchor>a1b0d711ef242dd88399cfee1b2b223f8</anchor>
+      <arglist>(double constant)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>LinearExpr</name>
+      <anchorfile>classoperations__research_1_1LinearExpr.html</anchorfile>
+      <anchor>a475c727fd23f4424031df23655b8412b</anchor>
+      <arglist>(const MPVariable *var)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr &amp;</type>
+      <name>operator+=</name>
+      <anchorfile>classoperations__research_1_1LinearExpr.html</anchorfile>
+      <anchor>a5f501758e469b8718b8410bb87100f51</anchor>
+      <arglist>(const LinearExpr &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr &amp;</type>
+      <name>operator-=</name>
+      <anchorfile>classoperations__research_1_1LinearExpr.html</anchorfile>
+      <anchor>a359bec8d7b3221d7549c98b0825970d4</anchor>
+      <arglist>(const LinearExpr &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr &amp;</type>
+      <name>operator *=</name>
+      <anchorfile>classoperations__research_1_1LinearExpr.html</anchorfile>
+      <anchor>a757085e5b10be1bde2ff049a3dbc51c7</anchor>
+      <arglist>(double rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr &amp;</type>
+      <name>operator/=</name>
+      <anchorfile>classoperations__research_1_1LinearExpr.html</anchorfile>
+      <anchor>a14e5dbbcd5618dc42a8799181490742e</anchor>
+      <arglist>(double rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr</type>
+      <name>operator-</name>
+      <anchorfile>classoperations__research_1_1LinearExpr.html</anchorfile>
+      <anchor>a3f94eb1c0b25852c0ff0910b83d363d9</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>offset</name>
+      <anchorfile>classoperations__research_1_1LinearExpr.html</anchorfile>
+      <anchor>aff2f953067d8d8854273fa973496466e</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const absl::flat_hash_map&lt; const MPVariable *, double &gt; &amp;</type>
+      <name>terms</name>
+      <anchorfile>classoperations__research_1_1LinearExpr.html</anchorfile>
+      <anchor>a37d87e22cd7125839fab636219336df8</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>SolutionValue</name>
+      <anchorfile>classoperations__research_1_1LinearExpr.html</anchorfile>
+      <anchor>a07afbba5788651a38be83e959bbbc92c</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>NotVar</name>
+      <anchorfile>classoperations__research_1_1LinearExpr.html</anchorfile>
+      <anchor>a46b677de8b46c72ffdff9e16bc2e3745</anchor>
+      <arglist>(LinearExpr var)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>operations_research::LinearRange</name>
+    <filename>classoperations__research_1_1LinearRange.html</filename>
+    <member kind="function">
+      <type></type>
+      <name>LinearRange</name>
+      <anchorfile>classoperations__research_1_1LinearRange.html</anchorfile>
+      <anchor>a9ce7b1b40dc5135ed9ca27cfedeca64e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>LinearRange</name>
+      <anchorfile>classoperations__research_1_1LinearRange.html</anchorfile>
+      <anchor>a754af83faa8744d01ecbf5091d4633a8</anchor>
+      <arglist>(double lower_bound, const LinearExpr &amp;linear_expr, double upper_bound)</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>lower_bound</name>
+      <anchorfile>classoperations__research_1_1LinearRange.html</anchorfile>
+      <anchor>ac9dc29ebeaf4a37d108c0094ca89eb9d</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>const LinearExpr &amp;</type>
+      <name>linear_expr</name>
+      <anchorfile>classoperations__research_1_1LinearRange.html</anchorfile>
+      <anchor>aa75204d544c4e4fc91c3ee8a091dd690</anchor>
+      <arglist>() const</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>upper_bound</name>
+      <anchorfile>classoperations__research_1_1LinearRange.html</anchorfile>
+      <anchor>a527995fddd9d1781d996ff6f50e48041</anchor>
+      <arglist>() const</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>operations_research::MPConstraint</name>
@@ -3622,7 +3814,7 @@
       <type>const absl::flat_hash_map&lt; const MPVariable *, double &gt; &amp;</type>
       <name>terms</name>
       <anchorfile>classoperations__research_1_1MPObjective.html</anchorfile>
-      <anchor>ae1f99be84ce9efa28b4c1050af954835</anchor>
+      <anchor>abb79604f28fb7ddada23f4df67e28e32</anchor>
       <arglist>() const</arglist>
     </member>
     <member kind="function">
@@ -8575,6 +8767,8 @@
   <compound kind="namespace">
     <name>operations_research</name>
     <filename>namespaceoperations__research.html</filename>
+    <class kind="class">operations_research::LinearExpr</class>
+    <class kind="class">operations_research::LinearRange</class>
     <class kind="class">operations_research::MPConstraint</class>
     <class kind="class">operations_research::MPConstraintProto</class>
     <class kind="class">operations_research::MPGeneralConstraintProto</class>
@@ -8806,6 +9000,62 @@
       <anchorfile>namespaceoperations__research.html</anchorfile>
       <anchor>a8cc975b7db5017319901da0f63a114aaafa008125099beaab382c42682be6bbf9</anchor>
       <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr</type>
+      <name>operator+</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a97f9b83239285f5fdfcac1b8e8b4f162</anchor>
+      <arglist>(LinearExpr lhs, const LinearExpr &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr</type>
+      <name>operator-</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a515cdaf4f9c4000bb3482a0c450e23c3</anchor>
+      <arglist>(LinearExpr lhs, const LinearExpr &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr</type>
+      <name>operator *</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a741104fe08089fe3520676487f7a685d</anchor>
+      <arglist>(LinearExpr lhs, double rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr</type>
+      <name>operator/</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>abebdd7f40e90df8dc7d557b6e26da942</anchor>
+      <arglist>(LinearExpr lhs, double rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearExpr</type>
+      <name>operator *</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a99590470c6ad2d59331b6fcc56609877</anchor>
+      <arglist>(double lhs, LinearExpr rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearRange</type>
+      <name>operator&lt;=</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a6d1fa20f9c9faf7027c0b16f97139e80</anchor>
+      <arglist>(const LinearExpr &amp;lhs, const LinearExpr &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearRange</type>
+      <name>operator==</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>a08146f196bd9c3f492ee108732449ced</anchor>
+      <arglist>(const LinearExpr &amp;lhs, const LinearExpr &amp;rhs)</arglist>
+    </member>
+    <member kind="function">
+      <type>LinearRange</type>
+      <name>operator&gt;=</name>
+      <anchorfile>namespaceoperations__research.html</anchorfile>
+      <anchor>ac4052f92af6a7fbb1d45e17befcb68e0</anchor>
+      <arglist>(const LinearExpr &amp;lhs, const LinearExpr &amp;rhs)</arglist>
     </member>
     <member kind="function">
       <type>const absl::string_view</type>
