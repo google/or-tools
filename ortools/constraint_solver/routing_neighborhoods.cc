@@ -102,18 +102,22 @@ MakePairActiveOperator::MakePairActiveOperator(
       delivery_disjunction_index_(0),
       pairs_(pairs) {}
 
-int MakePairActiveOperator::FindNextPair(int start_pair_index) {
+int MakePairActiveOperator::FindNextPair(int pair_index) {
   bool all_inactive = false;
-  for (;!all_inactive && start_pair_index < pairs_.size(); ++start_pair_index) {
+  for (;pair_index < pairs_.size(); ++pair_index) {
     all_inactive = true;
-    for (auto index : pairs_[start_pair_index].first) {
+    for (auto index : pairs_[pair_index].first) {
       all_inactive = all_inactive && IsInactive(index);
     }
-    for (auto index : pairs_[start_pair_index].second) {
+    for (auto index : pairs_[pair_index].second) {
       all_inactive = all_inactive && IsInactive(index);
+    }
+    if (all_inactive) {
+      return pair_index;
     }
   }
-  return start_pair_index;
+
+  return pairs_.size();
 }
 
 bool MakePairActiveOperator::MakeOneNeighbor() {
