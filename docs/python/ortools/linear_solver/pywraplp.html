@@ -33,25 +33,6 @@ a:link { color: #46641e; text-decoration: none}
 # Do not make changes to this file unless you know what you are doing--modify
 # the SWIG interface file instead.
 
-
-# Remove the documentation of some functions.
-# See https://pdoc3.github.io/pdoc/doc/pdoc/#overriding-docstrings-with-
-__pdoc__ = {}
-__pdoc__[&#39;Solver_infinity&#39;] = False
-__pdoc__[&#39;Solver_Infinity&#39;] = False
-__pdoc__[&#39;Solver_SolveWithProto&#39;] = False
-__pdoc__[&#39;Solver_SupportsProblemType&#39;] = False
-__pdoc__[&#39;setup_variable_operator&#39;] = False
-__pdoc__[&#39;Constraint.thisown&#39;] = False
-__pdoc__[&#39;Constraint.thisown&#39;] = False
-__pdoc__[&#39;MPSolverParameters.thisown&#39;] = False
-__pdoc__[&#39;ModelExportOptions.thisown&#39;] = False
-__pdoc__[&#39;Objective.thisown&#39;] = False
-__pdoc__[&#39;Solver.thisown&#39;] = False
-__pdoc__[&#39;Variable.thisown&#39;] = False
-
-
-
 from sys import version_info as _swig_python_version_info
 if _swig_python_version_info &lt; (2, 7, 0):
     raise RuntimeError(&#39;Python 2.7 or later required&#39;)
@@ -149,6 +130,22 @@ from ortools.linear_solver.linear_solver_natural_api import SumArray
 from ortools.linear_solver.linear_solver_natural_api import SumCst
 from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
 from ortools.linear_solver.linear_solver_natural_api import VariableExpr
+
+# Remove the documentation of some functions.
+# See https://pdoc3.github.io/pdoc/doc/pdoc/#overriding-docstrings-with-
+__pdoc__ = {}
+__pdoc__[&#39;Solver_infinity&#39;] = False
+__pdoc__[&#39;Solver_Infinity&#39;] = False
+__pdoc__[&#39;Solver_SolveWithProto&#39;] = False
+__pdoc__[&#39;Solver_SupportsProblemType&#39;] = False
+__pdoc__[&#39;setup_variable_operator&#39;] = False
+__pdoc__[&#39;Constraint.thisown&#39;] = False
+__pdoc__[&#39;Constraint.thisown&#39;] = False
+__pdoc__[&#39;MPSolverParameters.thisown&#39;] = False
+__pdoc__[&#39;ModelExportOptions.thisown&#39;] = False
+__pdoc__[&#39;Objective.thisown&#39;] = False
+__pdoc__[&#39;Solver.thisown&#39;] = False
+__pdoc__[&#39;Variable.thisown&#39;] = False
 
 class Solver(object):
     r&#34;&#34;&#34;
@@ -449,10 +446,11 @@ class Solver(object):
         return _pywraplp.Solver_infinity()
 
     def EnableOutput(self) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Enables solver logging.&#34;&#34;&#34;
         return _pywraplp.Solver_EnableOutput(self)
 
     def SuppressOutput(self) -&gt; &#34;void&#34;:
-        r&#34;&#34;&#34; Suppress output.&#34;&#34;&#34;
+        r&#34;&#34;&#34; Suppresses solver logging.&#34;&#34;&#34;
         return _pywraplp.Solver_SuppressOutput(self)
 
     def iterations(self) -&gt; &#34;int64&#34;:
@@ -1038,6 +1036,8 @@ MPSolverParameters.kDefaultPresolve = _pywraplp.cvar.MPSolverParameters_kDefault
 MPSolverParameters.kDefaultIncrementality = _pywraplp.cvar.MPSolverParameters_kDefaultIncrementality
 
 class ModelExportOptions(object):
+    r&#34;&#34;&#34; Export options.&#34;&#34;&#34;
+
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
     __repr__ = _swig_repr
 
@@ -1719,10 +1719,12 @@ solutions for MIP or the tolerance used during presolve.</p></section>
 <span>class <span class="ident">ModelExportOptions</span></span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Export options.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">class ModelExportOptions(object):
+    r&#34;&#34;&#34; Export options.&#34;&#34;&#34;
+
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
     __repr__ = _swig_repr
 
@@ -2344,10 +2346,11 @@ though which users build and solve problems.</p>
         return _pywraplp.Solver_infinity()
 
     def EnableOutput(self) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Enables solver logging.&#34;&#34;&#34;
         return _pywraplp.Solver_EnableOutput(self)
 
     def SuppressOutput(self) -&gt; &#34;void&#34;:
-        r&#34;&#34;&#34; Suppress output.&#34;&#34;&#34;
+        r&#34;&#34;&#34; Suppresses solver logging.&#34;&#34;&#34;
         return _pywraplp.Solver_SuppressOutput(self)
 
     def iterations(self) -&gt; &#34;int64&#34;:
@@ -2805,10 +2808,11 @@ Creates a named constraint with -infinity and +infinity bounds.</p></section>
 <span>def <span class="ident">EnableOutput</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Enables solver logging.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def EnableOutput(self) -&gt; &#34;void&#34;:
+    r&#34;&#34;&#34; Enables solver logging.&#34;&#34;&#34;
     return _pywraplp.Solver_EnableOutput(self)</code></pre>
 </details>
 </dd>
@@ -3262,11 +3266,11 @@ Solves the problem using the specified parameter values.</p></section>
 <span>def <span class="ident">SuppressOutput</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Suppress output.</p></section>
+<section class="desc"><p>Suppresses solver logging.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def SuppressOutput(self) -&gt; &#34;void&#34;:
-    r&#34;&#34;&#34; Suppress output.&#34;&#34;&#34;
+    r&#34;&#34;&#34; Suppresses solver logging.&#34;&#34;&#34;
     return _pywraplp.Solver_SuppressOutput(self)</code></pre>
 </details>
 </dd>

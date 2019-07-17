@@ -152,7 +152,6 @@
 #include "ortools/base/macros.h"
 #include "ortools/base/status.h"
 #include "ortools/base/timer.h"
-#include "ortools/glop/parameters.pb.h"
 #include "ortools/linear_solver/linear_expr.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/port/proto_utils.h"

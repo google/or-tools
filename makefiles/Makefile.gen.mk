@@ -1053,7 +1053,6 @@ objs/algorithms/knapsack_solver.$O: ortools/algorithms/knapsack_solver.cc \
  ortools/base/commandlineflags.h ortools/base/timer.h \
  ortools/util/running_stat.h ortools/base/stl_util.h \
  ortools/linear_solver/linear_solver.h ortools/base/status.h \
- ortools/gen/ortools/glop/parameters.pb.h \
  ortools/linear_solver/linear_expr.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
@@ -1917,7 +1916,6 @@ objs/sat/optimization.$O: ortools/sat/optimization.cc \
  ortools/sat/integer_search.h ortools/base/cleanup.h \
  ortools/base/random.h ortools/base/stl_util.h \
  ortools/linear_solver/linear_solver.h \
- ortools/gen/ortools/glop/parameters.pb.h \
  ortools/linear_solver/linear_expr.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
@@ -2689,7 +2687,6 @@ objs/linear_solver/cbc_interface.$O: \
  ortools/base/integral_types.h ortools/base/logging.h \
  ortools/base/macros.h ortools/base/timer.h \
  ortools/linear_solver/linear_solver.h ortools/base/status.h \
- ortools/gen/ortools/glop/parameters.pb.h \
  ortools/linear_solver/linear_expr.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
@@ -2702,7 +2699,6 @@ objs/linear_solver/clp_interface.$O: \
  ortools/base/integral_types.h ortools/base/logging.h \
  ortools/base/macros.h ortools/base/timer.h \
  ortools/linear_solver/linear_solver.h ortools/base/status.h \
- ortools/gen/ortools/glop/parameters.pb.h \
  ortools/linear_solver/linear_expr.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
@@ -2714,7 +2710,6 @@ objs/linear_solver/cplex_interface.$O: \
  ortools/base/logging.h ortools/base/macros.h ortools/base/timer.h \
  ortools/base/basictypes.h ortools/linear_solver/linear_solver.h \
  ortools/base/commandlineflags.h ortools/base/status.h \
- ortools/gen/ortools/glop/parameters.pb.h \
  ortools/linear_solver/linear_expr.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
@@ -2756,7 +2751,6 @@ objs/linear_solver/glop_utils.$O: ortools/linear_solver/glop_utils.cc \
  ortools/base/commandlineflags.h ortools/base/integral_types.h \
  ortools/base/logging.h ortools/base/macros.h ortools/base/status.h \
  ortools/base/timer.h ortools/base/basictypes.h \
- ortools/gen/ortools/glop/parameters.pb.h \
  ortools/linear_solver/linear_expr.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
@@ -2778,7 +2772,6 @@ objs/linear_solver/linear_expr.$O: ortools/linear_solver/linear_expr.cc \
  ortools/base/integral_types.h ortools/base/macros.h \
  ortools/linear_solver/linear_solver.h ortools/base/commandlineflags.h \
  ortools/base/status.h ortools/base/timer.h ortools/base/basictypes.h \
- ortools/gen/ortools/glop/parameters.pb.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
  ortools/port/proto_utils.h | $(OBJ_DIR)/linear_solver
@@ -2789,8 +2782,7 @@ objs/linear_solver/linear_solver.$O: \
  ortools/linear_solver/linear_solver.h ortools/base/commandlineflags.h \
  ortools/base/integral_types.h ortools/base/logging.h \
  ortools/base/macros.h ortools/base/status.h ortools/base/timer.h \
- ortools/base/basictypes.h ortools/gen/ortools/glop/parameters.pb.h \
- ortools/linear_solver/linear_expr.h \
+ ortools/base/basictypes.h ortools/linear_solver/linear_expr.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
  ortools/port/proto_utils.h ortools/base/accurate_sum.h \
@@ -2829,7 +2821,6 @@ objs/linear_solver/scip_interface.$O: \
  ortools/base/integral_types.h ortools/base/logging.h \
  ortools/base/macros.h ortools/base/timer.h \
  ortools/linear_solver/linear_solver.h ortools/base/status.h \
- ortools/gen/ortools/glop/parameters.pb.h \
  ortools/linear_solver/linear_expr.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
