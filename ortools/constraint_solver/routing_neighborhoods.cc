@@ -172,19 +172,8 @@ MakePairInactiveOperator::MakePairInactiveOperator(
     std::function<int(int64)> start_empty_path_class,
     const RoutingIndexPairs& index_pairs)
     : PathWithPreviousNodesOperator(vars, secondary_vars, 1,
-                                    std::move(start_empty_path_class)) {
-  int size = 0;
-  for (auto& index_pair : index_pairs) {
-    size = size + index_pair.first.size() + index_pair.second.size();
-  }
-  pairs_.reserve(size);
-  for (int i = 0; i < index_pairs.size(); ++i) {
-    const RoutingIndexPair* index_pair = &index_pairs[i];
-    for (const auto index : index_pair->first) {
-      pairs_[index] = &(index_pair->second);
-    }
-  }
-}
+                                    std::move(start_empty_path_class)),
+      pairs_(index_pairs) {}
 
 bool MakePairInactiveOperator::MakeNeighbor() {
   const int64 base = BaseNode(0);
@@ -196,23 +185,11 @@ bool MakePairInactiveOperator::MakeNeighbor() {
   const int64 first_index = Next(base);
 
   // Assume first has to happen before second
-  if (IsPathEnd(first_index) || !pairs_.contains(first_index)) {
+  if (IsPathEnd(first_index) || !active_pair_nodes_.contains(first_index)) {
     return false;
   }
 
-  const auto second_indicies = *pairs_[first_index];
-  
-  int64 second_index = -1;
-  for (const auto& index : second_indicies) {
-    if (!IsInactive(index)) {
-      second_index = index;
-      break;
-    }
-  }
-
-  if (second_index == -1) {
-    return false;
-  }
+  const int64 second_index = active_pair_nodes_[first_index];
   
   if (Next(first_index) == second_index) {
     return MakeChainInactive(base, second_index);
@@ -220,6 +197,36 @@ bool MakePairInactiveOperator::MakeNeighbor() {
 
   return MakeChainInactive(base, first_index) && 
          MakeChainInactive(Prev(second_index), second_index);  
+}
+
+void MakePairInactiveOperator::OnNodeInitialization() {
+  PathWithPreviousNodesOperator::OnNodeInitialization();
+  active_pair_nodes_.clear();
+  for (int i = 0; i < pairs_.size(); ++i) {
+
+    int64 first_active_node = -1;
+    for (const auto index : pairs_[i].first) {
+      if (!IsInactive(index)) {
+        first_active_node = index;
+        break;
+      }
+    }
+    if (first_active_node == -1) {
+      continue;
+    }
+
+    int64 second_active_node = -1;
+    for (const auto index : pairs_[i].second) {
+      if (!IsInactive(index)) {
+        second_active_node = index;
+        break;
+      }
+    }
+
+    if (second_active_node != -1) {
+      active_pair_nodes_[first_active_node] = second_active_node;
+    }
+  }
 }
 
 PairRelocateOperator::PairRelocateOperator(
