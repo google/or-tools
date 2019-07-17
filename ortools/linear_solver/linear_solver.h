@@ -49,7 +49,7 @@
  *   algorithms have proved efficient on very large linear programs.
  *
  *   Check Wikipedia for more detail:
- *     http: *en.wikipedia.org/wiki/Linear_programming
+ *     http://en.wikipedia.org/wiki/Linear_programming
  *
  * -----------------------------------
  *
@@ -649,9 +649,10 @@ class MPSolver {
    */
   bool OutputIsEnabled() const;
 
+  /// Enables solver logging.
   void EnableOutput();
 
-  /// Suppress output.
+  /// Suppresses solver logging.
   void SuppressOutput();
 
   absl::Duration TimeLimit() const { return time_limit_; }

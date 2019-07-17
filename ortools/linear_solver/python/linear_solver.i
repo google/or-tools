@@ -52,7 +52,18 @@ class MPSolutionResponse;
 #include "ortools/linear_solver/model_exporter_swig_helper.h"
 %}
 
-%pythonbegin %{
+%pythoncode %{
+import numbers
+from ortools.linear_solver.linear_solver_natural_api import OFFSET_KEY
+from ortools.linear_solver.linear_solver_natural_api import inf
+from ortools.linear_solver.linear_solver_natural_api import LinearExpr
+from ortools.linear_solver.linear_solver_natural_api import ProductCst
+from ortools.linear_solver.linear_solver_natural_api import Sum
+from ortools.linear_solver.linear_solver_natural_api import SumArray
+from ortools.linear_solver.linear_solver_natural_api import SumCst
+from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
+from ortools.linear_solver.linear_solver_natural_api import VariableExpr
+
 # Remove the documentation of some functions.
 # See https://pdoc3.github.io/pdoc/doc/pdoc/#overriding-docstrings-with-
 __pdoc__ = {}
@@ -68,20 +79,7 @@ __pdoc__['ModelExportOptions.thisown'] = False
 __pdoc__['Objective.thisown'] = False
 __pdoc__['Solver.thisown'] = False
 __pdoc__['Variable.thisown'] = False
-%}
-
-%pythoncode {
-import numbers
-from ortools.linear_solver.linear_solver_natural_api import OFFSET_KEY
-from ortools.linear_solver.linear_solver_natural_api import inf
-from ortools.linear_solver.linear_solver_natural_api import LinearExpr
-from ortools.linear_solver.linear_solver_natural_api import ProductCst
-from ortools.linear_solver.linear_solver_natural_api import Sum
-from ortools.linear_solver.linear_solver_natural_api import SumArray
-from ortools.linear_solver.linear_solver_natural_api import SumCst
-from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
-from ortools.linear_solver.linear_solver_natural_api import VariableExpr
-}  // %pythoncode
+%}  // %pythoncode
 
 %extend operations_research::MPVariable {
   std::string __str__() {
