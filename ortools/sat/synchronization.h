@@ -66,6 +66,16 @@ class SharedTimeLimit {
     local_limit->MergeWithGlobalTimeLimit(time_limit_);
   }
 
+  void AdvanceDeterministicTime(double deterministic_duration) {
+    absl::MutexLock mutex_lock(&mutex_);
+    time_limit_->AdvanceDeterministicTime(deterministic_duration);
+  }
+
+  double GetElapsedDeterministicTime() {
+    absl::MutexLock mutex_lock(&mutex_);
+    return time_limit_->GetElapsedDeterministicTime();
+  }
+
  private:
   mutable absl::Mutex mutex_;
   TimeLimit* time_limit_ GUARDED_BY(mutex_);

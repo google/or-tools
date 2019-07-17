@@ -1789,17 +1789,24 @@ class FullProblemSolver : public SubSolver {
         }
       }
 
+      auto* time_limit = local_model_->GetOrCreate<TimeLimit>();
       if (split_in_chunks_) {
         // Configure time limit for chunk solving. Note that we do not want
         // to do that for the hint search for now.
         auto* params = local_model_->GetOrCreate<SatParameters>();
-        auto* time_limit = local_model_->GetOrCreate<TimeLimit>();
         params->set_max_deterministic_time(1);
         time_limit->ResetLimitFromParameters(*params);
         shared_->time_limit->UpdateLocalLimit(time_limit);
       }
+
+      const double saved_dtime = time_limit->GetElapsedDeterministicTime();
       SolveLoadedCpModel(*shared_->model_proto, shared_->response,
                          local_model_.get());
+      {
+        absl::MutexLock mutex_lock(&mutex_);
+        deterministic_time_since_last_synchronize_ +=
+            time_limit->GetElapsedDeterministicTime() - saved_dtime;
+      }
 
       // Abort if the problem is solved.
       if (SearchIsDone()) {
@@ -1822,9 +1829,16 @@ class FullProblemSolver : public SubSolver {
     };
   }
 
-  // This is currently doing nothing and the synchronization is not
-  // deterministic. TODO(user): fix.
-  void Synchronize() override {}
+  // TODO(user): A few of the information sharing we do between threads does not
+  // happen here (bound sharing, RINS neighborhood, objective). Fix that so we
+  // can have a deterministic parallel mode.
+  void Synchronize() override {
+    absl::MutexLock mutex_lock(&mutex_);
+    deterministic_time_ += deterministic_time_since_last_synchronize_;
+    shared_->time_limit->AdvanceDeterministicTime(
+        deterministic_time_since_last_synchronize_);
+    deterministic_time_since_last_synchronize_ = 0.0;
+  }
 
  private:
   SharedClasses* shared_;
@@ -1836,6 +1850,7 @@ class FullProblemSolver : public SubSolver {
   bool solving_first_chunk_ = true;
 
   absl::Mutex mutex_;
+  double deterministic_time_since_last_synchronize_ GUARDED_BY(mutex_) = 0.0;
   bool previous_task_is_completed_ GUARDED_BY(mutex_) = true;
 };
 
@@ -1843,10 +1858,12 @@ class FullProblemSolver : public SubSolver {
 class LnsSolver : public SubSolver {
  public:
   LnsSolver(int id, std::unique_ptr<NeighborhoodGenerator> generator,
+            const SatParameters& parameters,
             NeighborhoodGeneratorHelper* helper, SharedClasses* shared)
       : SubSolver(id, generator->name()),
         generator_(std::move(generator)),
         helper_(helper),
+        parameters_(parameters),
         shared_(shared) {}
 
   bool SearchIsDone() const {
@@ -1903,8 +1920,7 @@ class LnsSolver : public SubSolver {
           "%s(d=%0.2f s=%i t=%0.2f p=%0.2f)", name(), saved_difficulty, task_id,
           saved_limit, fully_solved_proportion);
 
-      SatParameters local_params;
-      local_params = helper_->Parameters();
+      SatParameters local_params(parameters_);
       local_params.set_max_deterministic_time(saved_limit);
       local_params.set_stop_after_first_solution(false);
 
@@ -2000,12 +2016,15 @@ class LnsSolver : public SubSolver {
 
   void Synchronize() override {
     generator_->Synchronize();
-    deterministic_time_ += generator_->deterministic_time();
+    const double old = deterministic_time_;
+    deterministic_time_ = generator_->deterministic_time();
+    shared_->time_limit->AdvanceDeterministicTime(deterministic_time_ - old);
   }
 
  private:
   std::unique_ptr<NeighborhoodGenerator> generator_;
   NeighborhoodGeneratorHelper* helper_;
+  const SatParameters parameters_;
   SharedClasses* shared_;
 };
 
@@ -2091,41 +2110,52 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     NeighborhoodGeneratorHelper* helper = unique_helper.get();
     subsolvers.push_back(std::move(unique_helper));
 
-    // Enqueue all the possible LNS neighborhood subsolvers.
-    // Each will have their own metrics.
-    subsolvers.push_back(absl::make_unique<LnsSolver>(
-        /*id=*/subsolvers.size(),
-        absl::make_unique<SimpleNeighborhoodGenerator>(helper, "rnd_lns"),
-        helper, &shared));
-    subsolvers.push_back(absl::make_unique<LnsSolver>(
-        /*id=*/subsolvers.size(),
-        absl::make_unique<VariableGraphNeighborhoodGenerator>(helper,
-                                                              "var_lns"),
-        helper, &shared));
-    subsolvers.push_back(absl::make_unique<LnsSolver>(
-        /*id=*/subsolvers.size(),
-        absl::make_unique<ConstraintGraphNeighborhoodGenerator>(helper,
-                                                                "cst_lns"),
-        helper, &shared));
+    const int num_lns_strategies = parameters.diversify_lns_params() ? 6 : 1;
+    for (int i = 0; i < num_lns_strategies; ++i) {
+      std::string strategy_name;
+      const SatParameters local_params =
+          DiversifySearchParameters(parameters, model_proto, i, &strategy_name);
+      if (local_params.use_lns_only()) continue;
 
-    if (!helper->TypeToConstraints(ConstraintProto::kNoOverlap).empty()) {
+      // Enqueue all the possible LNS neighborhood subsolvers.
+      // Each will have their own metrics.
       subsolvers.push_back(absl::make_unique<LnsSolver>(
           /*id=*/subsolvers.size(),
-          absl::make_unique<SchedulingTimeWindowNeighborhoodGenerator>(
-              helper, "scheduling_tim_window_lns"),
-          helper, &shared));
+          absl::make_unique<SimpleNeighborhoodGenerator>(
+              helper, absl::StrCat("rnd_lns_", strategy_name)),
+          local_params, helper, &shared));
       subsolvers.push_back(absl::make_unique<LnsSolver>(
           /*id=*/subsolvers.size(),
-          absl::make_unique<SchedulingNeighborhoodGenerator>(
-              helper, "scheduling_random_lns"),
-          helper, &shared));
-    }
-    if (parameters.use_rins_lns()) {
+          absl::make_unique<VariableGraphNeighborhoodGenerator>(
+              helper, absl::StrCat("var_lns_", strategy_name)),
+          local_params, helper, &shared));
       subsolvers.push_back(absl::make_unique<LnsSolver>(
           /*id=*/subsolvers.size(),
-          absl::make_unique<RelaxationInducedNeighborhoodGenerator>(
-              helper, global_model, "rins"),
-          helper, &shared));
+          absl::make_unique<ConstraintGraphNeighborhoodGenerator>(
+              helper, absl::StrCat("cst_lns_", strategy_name)),
+          local_params, helper, &shared));
+
+      if (!helper->TypeToConstraints(ConstraintProto::kNoOverlap).empty()) {
+        subsolvers.push_back(absl::make_unique<LnsSolver>(
+            /*id=*/subsolvers.size(),
+            absl::make_unique<SchedulingTimeWindowNeighborhoodGenerator>(
+                helper,
+                absl::StrCat("scheduling_time_window_lns_", strategy_name)),
+            local_params, helper, &shared));
+        subsolvers.push_back(absl::make_unique<LnsSolver>(
+            /*id=*/subsolvers.size(),
+            absl::make_unique<SchedulingNeighborhoodGenerator>(
+                helper, absl::StrCat("scheduling_random_lns_", strategy_name)),
+            local_params, helper, &shared));
+      }
+      if (parameters.use_rins_lns()) {
+        subsolvers.push_back(absl::make_unique<LnsSolver>(
+            /*id=*/subsolvers.size(),
+            absl::make_unique<RelaxationInducedNeighborhoodGenerator>(
+                helper, global_model,
+                absl::StrCat("rins/rens_lns_", strategy_name)),
+            local_params, helper, &shared));
+      }
     }
   }
 
@@ -2235,6 +2265,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
           SolvePureSatModel(model_proto, &wall_timer, model);
       response.set_wall_time(wall_timer.Get());
       response.set_user_time(user_timer.Get());
+      response.set_deterministic_time(
+          shared_time_limit.GetElapsedDeterministicTime());
       const SatParameters& params = *model->GetOrCreate<SatParameters>();
       if (params.fill_tightened_domains_in_response()) {
         *response.mutable_tightened_variables() = model_proto.variables();
@@ -2278,7 +2310,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     }
     LOG_IF(INFO, log_search) << CpModelStats(new_cp_model_proto);
     postprocess_solution = [&model_proto, &params, mapping_proto,
-                            postsolve_mapping, &wall_timer,
+                            &shared_time_limit, postsolve_mapping, &wall_timer,
                             &user_timer](CpSolverResponse* response) {
       // Note that it is okay to use the initial model_proto in the postsolve
       // even though we called PresolveCpModel() on the expanded proto. This is
@@ -2295,9 +2327,12 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       }
       response->set_wall_time(wall_timer.Get());
       response->set_user_time(user_timer.Get());
+      response->set_deterministic_time(
+          shared_time_limit.GetElapsedDeterministicTime());
     };
   } else {
     postprocess_solution = [&model_proto, &params, &wall_timer,
+                            &shared_time_limit,
                             &user_timer](CpSolverResponse* response) {
       // Truncate the solution in case model expansion added more variables.
       const int initial_size = model_proto.variables_size();
@@ -2312,6 +2347,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       }
       response->set_wall_time(wall_timer.Get());
       response->set_user_time(user_timer.Get());
+      response->set_deterministic_time(
+          shared_time_limit.GetElapsedDeterministicTime());
     };
   }
 

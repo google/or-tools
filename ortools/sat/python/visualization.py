@@ -71,10 +71,11 @@ def DisplayJobshop(starts, durations, machines, name):
     for i in all_jobs:
         for j in all_machines:
             df.append(
-                dict(Task='Resource%i' % machines[i][j],
-                     Start=ToDate(starts[i][j]),
-                     Finish=ToDate(starts[i][j] + durations[i][j]),
-                     Resource='Job%i' % i))
+                dict(
+                    Task='Resource%i' % machines[i][j],
+                    Start=ToDate(starts[i][j]),
+                    Finish=ToDate(starts[i][j] + durations[i][j]),
+                    Resource='Job%i' % i))
 
     sorted_df = sorted(df, key=lambda k: k['Task'])
 
@@ -86,14 +87,15 @@ def DisplayJobshop(starts, durations, machines, name):
     for i in all_jobs:
         colors['Job%i' % i] = cm.RandomColor()
 
-    fig = ff.create_gantt(sorted_df,
-                          colors=colors,
-                          index_col='Resource',
-                          title=name,
-                          show_colorbar=False,
-                          showgrid_x=True,
-                          showgrid_y=True,
-                          group_tasks=True)
+    fig = ff.create_gantt(
+        sorted_df,
+        colors=colors,
+        index_col='Resource',
+        title=name,
+        show_colorbar=False,
+        showgrid_x=True,
+        showgrid_y=True,
+        group_tasks=True)
     pyo.iplot(fig)
 
 
@@ -142,8 +144,8 @@ class SvgWrapper(object):
             self.__dwg.line((o, y), (self.__sizex * s + o, y), stroke='black'))
         for i in range(0, int(self.__sizex) + 1, step):
             self.__dwg.add(
-                self.__dwg.line((o + i * s, y - dy), (o + i * s, y + dy),
-                                stroke='black'))
+                self.__dwg.line(
+                    (o + i * s, y - dy), (o + i * s, y + dy), stroke='black'))
 
     def AddYScale(self, step=1):
         """Add an scale on the y axis."""
@@ -155,8 +157,8 @@ class SvgWrapper(object):
             self.__dwg.line((x, o), (x, self.__sizey * s + o), stroke='black'))
         for i in range(0, int(self.__sizey) + 1, step):
             self.__dwg.add(
-                self.__dwg.line((x - dx, i * s + o), (x + dx, i * s + o),
-                                stroke='black'))
+                self.__dwg.line(
+                    (x - dx, i * s + o), (x + dx, i * s + o), stroke='black'))
 
     def AddTitle(self, title):
         """Add a title to the drawing."""

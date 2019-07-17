@@ -74,13 +74,11 @@ class SubSolver {
   // SubSolver with the highest score.
   //
   // TODO(user): This is unused for now.
-  double Score() const { return score_; }
+  double score() const { return score_; }
 
   // Returns the total deterministic time spend by the completed tasks before
   // the last Synchronize() call.
-  //
-  // TODO(user): This is unused for now.
-  double DeterminisitcTime() const { return deterministic_time_; }
+  double deterministic_time() const { return deterministic_time_; }
 
   // Returns the name of this SubSolver. Used in logs.
   std::string name() const { return name_; }

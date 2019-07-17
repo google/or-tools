@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 137
+// NEXT TAG: 138
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -711,6 +711,9 @@ message SatParameters {
 
   // Turns on relaxation induced neighborhood generator.
   optional bool use_rins_lns = 129 [default = true];
+
+  // If true, registers more lns subsolvers with different parameters.
+  optional bool diversify_lns_params = 137 [default = false];
 
   // Randomize fixed search.
   optional bool randomize_search = 103 [default = false];
