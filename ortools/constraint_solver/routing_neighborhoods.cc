@@ -177,7 +177,7 @@ MakePairInactiveOperator::MakePairInactiveOperator(
     const RoutingIndexPairs& index_pairs)
     : PathWithPreviousNodesOperator(vars, secondary_vars, 1,
                                     std::move(start_empty_path_class)),
-      pairs_(index_pairs) {}
+      index_pairs_(index_pairs) {}
 
 bool MakePairInactiveOperator::MakeNeighbor() {
   const int64 base = BaseNode(0);
@@ -188,12 +188,11 @@ bool MakePairInactiveOperator::MakeNeighbor() {
 
   const int64 first_index = Next(base);
 
-  // Assume first has to happen before second
-  if (IsPathEnd(first_index) || !active_pair_nodes_.contains(first_index)) {
+  const int64 second_index = 
+    first_index < pairs_.size() ? pairs_[first_index] : -1;
+  if (second_index < 0) {
     return false;
   }
-
-  const int64 second_index = active_pair_nodes_[first_index];
   
   if (Next(first_index) == second_index) {
     return MakeChainInactive(base, second_index);
@@ -205,30 +204,30 @@ bool MakePairInactiveOperator::MakeNeighbor() {
 
 void MakePairInactiveOperator::OnNodeInitialization() {
   PathWithPreviousNodesOperator::OnNodeInitialization();
-  active_pair_nodes_.clear();
-  for (int i = 0; i < pairs_.size(); ++i) {
-
-    int64 first_active_node = -1;
-    for (const auto index : pairs_[i].first) {
+  
+  std::vector<int64> active_firsts(index_pairs_.size(), -1);
+  std::vector<int64> active_seconds(index_pairs_.size(), -1);
+  for (int i = 0; i < index_pairs_.size(); ++i) {
+    for (const auto index : index_pairs_[i].first) {
       if (!IsInactive(index)) {
-        first_active_node = index;
+        active_firsts[i] = index;
         break;
       }
     }
-    if (first_active_node == -1) {
-      continue;
-    }
-
-    int64 second_active_node = -1;
-    for (const auto index : pairs_[i].second) {
+    for (const auto index : index_pairs_[i].second) {
       if (!IsInactive(index)) {
-        second_active_node = index;
+        active_seconds[i] = index;
         break;
       }
-    }
+    }  
+  }
 
-    if (second_active_node != -1) {
-      active_pair_nodes_[first_active_node] = second_active_node;
+  const int64 max_pair_index = *std::max_element(active_firsts.begin(), active_firsts.end());
+  pairs_.clear();
+  pairs_.resize(max_pair_index + 1, -1);
+  for (int i = 0; i < index_pairs_.size(); ++i) {
+    if (active_firsts[i] != -1 && active_seconds[i] != -1) {
+      pairs_[active_firsts[i]] = active_seconds[i];
     }
   }
 }

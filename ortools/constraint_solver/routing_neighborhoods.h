@@ -148,8 +148,8 @@ class MakePairInactiveOperator : public PathWithPreviousNodesOperator {
  private:
   void OnNodeInitialization() override;
 
-  absl::flat_hash_map<int64, int64> active_pair_nodes_;
-  RoutingIndexPairs pairs_;
+  std::vector<int> pairs_;
+  RoutingIndexPairs index_pairs_;
 };
 
 /// Operator which moves a pair of nodes to another position where the first
