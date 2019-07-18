@@ -400,7 +400,7 @@ class CompactSparseMatrix {
 
   // Same as ColumnAddMultipleToDenseColumn() but also adds the new non-zeros to
   // the non_zeros vector. A non-zero is "new" if is_non_zero[row] was false,
-  // and we update dense_column[row]. This functions also updates is_non_zero.
+  // and we update dense_column[row]. This function also updates is_non_zero.
   void ColumnAddMultipleToSparseScatteredColumn(ColIndex col,
                                                 Fractional multiplier,
                                                 ScatteredColumn* column) const {

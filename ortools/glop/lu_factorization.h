@@ -17,6 +17,7 @@
 #include "ortools/glop/markowitz.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/status.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/sparse.h"
 #include "ortools/util/stats.h"
 
@@ -220,6 +221,10 @@ class LuFactorization {
 
   // Internal function used in the left solve functions.
   void LeftSolveScratchpad() const;
+
+  // Internal function used in the right solve functions
+  template <typename Column>
+  void RightSolveLInternal(const Column& b, ScatteredColumn* x) const;
 
   // Fills transpose_upper_ from upper_.
   void ComputeTransposeUpper();

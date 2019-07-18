@@ -117,8 +117,9 @@ Fractional PreciseScalarProduct(const DenseRowOrColumn& u,
     return PreciseScalarProduct(u, v.values);
   }
   KahanSum sum;
-  for (const RowIndex row : v.non_zeros) {
-    sum.Add(u[typename DenseRowOrColumn::IndexType(row.value())] * v[row]);
+  for (const auto e : v) {
+    sum.Add(u[typename DenseRowOrColumn::IndexType(e.row().value())] *
+            e.coefficient());
   }
   return sum.Value();
 }

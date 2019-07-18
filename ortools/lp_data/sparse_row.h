@@ -32,7 +32,7 @@ class SparseRowEntry : public SparseVectorEntry<ColIndex> {
                  EntryIndex i)
       : SparseVectorEntry<ColIndex>(indices, coefficients, i) {}
 };
-using SparseRowIterator = SparseVectorIterator<SparseRowEntry>;
+using SparseRowIterator = VectorIterator<SparseRowEntry>;
 
 // TODO(user): Use this class where appropriate, i.e. when a SparseColumn is
 // used to store a row vector (by means of RowIndex to ColIndex casting).

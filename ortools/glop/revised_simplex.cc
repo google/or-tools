@@ -1424,9 +1424,9 @@ void RevisedSimplex::ComputeDirection(ColIndex col) {
       }
     }
   } else {
-    for (const RowIndex row : direction_.non_zeros) {
+    for (const auto e : direction_) {
       direction_infinity_norm_ =
-          std::max(direction_infinity_norm_, std::abs(direction_[row]));
+          std::max(direction_infinity_norm_, std::abs(e.coefficient()));
     }
   }
   IF_STATS_ENABLED(ratio_test_stats_.direction_density.Add(
@@ -1438,8 +1438,8 @@ void RevisedSimplex::ComputeDirection(ColIndex col) {
 Fractional RevisedSimplex::ComputeDirectionError(ColIndex col) {
   SCOPED_TIME_STAT(&function_stats_);
   compact_matrix_.ColumnCopyToDenseColumn(col, &error_);
-  for (const RowIndex row : direction_.non_zeros) {
-    compact_matrix_.ColumnAddMultipleToDenseColumn(col, -direction_[row],
+  for (const auto e : direction_) {
+    compact_matrix_.ColumnAddMultipleToDenseColumn(col, -e.coefficient(),
                                                    &error_);
   }
   return InfinityNorm(error_);
@@ -1477,7 +1477,7 @@ Fractional RevisedSimplex::ComputeHarrisRatioAndLeavingCandidates(
   const Fractional minimum_delta = parameters_.degenerate_ministep_factor() *
                                    parameters_.primal_feasibility_tolerance();
 
-  // Initialy, we can skip any variable with a ratio greater than
+  // Initially, we can skip any variable with a ratio greater than
   // bound_flip_ratio since it seems to be always better to choose the
   // bound-flip over such leaving variable.
   Fractional harris_ratio = bound_flip_ratio;
@@ -1491,19 +1491,19 @@ Fractional RevisedSimplex::ComputeHarrisRatioAndLeavingCandidates(
                                    ? parameters_.minimum_acceptable_pivot()
                                    : parameters_.ratio_test_zero_threshold();
 
-  for (const RowIndex row : direction_.non_zeros) {
-    const Fractional magnitude = std::abs(direction_[row]);
+  for (const auto e : direction_) {
+    const Fractional magnitude = std::abs(e.coefficient());
     if (magnitude <= threshold) continue;
-    Fractional ratio = GetRatio<is_entering_reduced_cost_positive>(row);
+    Fractional ratio = GetRatio<is_entering_reduced_cost_positive>(e.row());
     // TODO(user): The perturbation is currently disabled, so no need to test
     // anything here.
     if (false && ratio < 0.0) {
       // If the variable is already pass its bound, we use the perturbed version
       // of the bound (if bound_perturbation_[basis_[row]] is not zero).
-      ratio += std::abs(bound_perturbation_[basis_[row]] / direction_[row]);
+      ratio += std::abs(bound_perturbation_[basis_[e.row()]] / e.coefficient());
     }
     if (ratio <= harris_ratio) {
-      leaving_candidates->SetCoefficient(row, ratio);
+      leaving_candidates->SetCoefficient(e.row(), ratio);
 
       // The second max() makes sure harris_ratio is lower bounded by a small
       // positive value. The more classical approach is to bound it by 0.0 but
@@ -1773,9 +1773,9 @@ void RevisedSimplex::PrimalPhaseIChooseLeavingVariableRow(
 
   std::vector<BreakPoint> breakpoints;
   const Fractional tolerance = parameters_.primal_feasibility_tolerance();
-  for (RowIndex row : direction_.non_zeros) {
+  for (const auto e : direction_) {
     const Fractional direction =
-        reduced_cost > 0.0 ? direction_[row] : -direction_[row];
+        reduced_cost > 0.0 ? e.coefficient() : -e.coefficient();
     const Fractional magnitude = std::abs(direction);
     if (magnitude < tolerance) continue;
 
@@ -1792,7 +1792,7 @@ void RevisedSimplex::PrimalPhaseIChooseLeavingVariableRow(
     // account all the variables with an infeasibility smaller than the
     // tolerance, and here we will at least improve the one of the leaving
     // variable.
-    const ColIndex col = basis_[row];
+    const ColIndex col = basis_[e.row()];
     DCHECK(variables_info_.GetIsBasicBitRow().IsSet(col));
 
     const Fractional value = variable_values_.Get(col);
@@ -1804,10 +1804,12 @@ void RevisedSimplex::PrimalPhaseIChooseLeavingVariableRow(
     // Enqueue the possible transitions. Note that the second tests exclude the
     // case where to_lower or to_upper are infinite.
     if (to_lower >= 0.0 && to_lower < current_ratio) {
-      breakpoints.push_back(BreakPoint(row, to_lower, magnitude, lower_bound));
+      breakpoints.push_back(
+          BreakPoint(e.row(), to_lower, magnitude, lower_bound));
     }
     if (to_upper >= 0.0 && to_upper < current_ratio) {
-      breakpoints.push_back(BreakPoint(row, to_upper, magnitude, upper_bound));
+      breakpoints.push_back(
+          BreakPoint(e.row(), to_upper, magnitude, upper_bound));
     }
   }
 
@@ -1940,12 +1942,12 @@ void RevisedSimplex::DualPhaseIUpdatePrice(RowIndex leaving_row,
   // direction).
   const Fractional step =
       dual_pricing_vector_[leaving_row] / direction_[leaving_row];
-  for (const RowIndex row : direction_.non_zeros) {
-    dual_pricing_vector_[row] -= direction_[row] * step;
+  for (const auto e : direction_) {
+    dual_pricing_vector_[e.row()] -= e.coefficient() * step;
     is_dual_entering_candidate_.Set(
-        row,
-        IsDualPhaseILeavingCandidate(dual_pricing_vector_[row],
-                                     variable_type[basis_[row]], threshold));
+        e.row(), IsDualPhaseILeavingCandidate(dual_pricing_vector_[e.row()],
+                                              variable_type[basis_[e.row()]],
+                                              threshold));
   }
   dual_pricing_vector_[leaving_row] = step;
 
@@ -2027,13 +2029,13 @@ void RevisedSimplex::DualPhaseIUpdatePriceOnReducedCostChange(
       }
       initially_all_zero_scratchpad_.values.AssignToZero(num_rows_);
     } else {
-      for (const RowIndex row : initially_all_zero_scratchpad_.non_zeros) {
-        dual_pricing_vector_[row] += initially_all_zero_scratchpad_[row];
-        initially_all_zero_scratchpad_[row] = 0.0;
+      for (const auto e : initially_all_zero_scratchpad_) {
+        dual_pricing_vector_[e.row()] += e.coefficient();
+        initially_all_zero_scratchpad_[e.row()] = 0.0;
         is_dual_entering_candidate_.Set(
-            row, IsDualPhaseILeavingCandidate(dual_pricing_vector_[row],
-                                              variable_type[basis_[row]],
-                                              threshold));
+            e.row(), IsDualPhaseILeavingCandidate(
+                         dual_pricing_vector_[e.row()],
+                         variable_type[basis_[e.row()]], threshold));
       }
     }
     initially_all_zero_scratchpad_.non_zeros.clear();
@@ -3010,18 +3012,18 @@ gtl::ITIVector<RowIndex, SparseRow> RevisedSimplex::ComputeDictionary(
   gtl::ITIVector<RowIndex, SparseRow> dictionary(num_rows_.value());
   for (ColIndex col(0); col < num_cols_; ++col) {
     ComputeDirection(col);
-    for (const RowIndex row : direction_.non_zeros) {
+    for (const auto e : direction_) {
       if (column_scales == nullptr) {
-        dictionary[row].SetCoefficient(col, direction_[row]);
+        dictionary[e.row()].SetCoefficient(col, e.coefficient());
         continue;
       }
       const Fractional numerator =
           col < column_scales->size() ? (*column_scales)[col] : 1.0;
-      const Fractional denominator = GetBasis(row) < column_scales->size()
-                                         ? (*column_scales)[GetBasis(row)]
+      const Fractional denominator = GetBasis(e.row()) < column_scales->size()
+                                         ? (*column_scales)[GetBasis(e.row())]
                                          : 1.0;
-      dictionary[row].SetCoefficient(
-          col, direction_[row] * (numerator / denominator));
+      dictionary[e.row()].SetCoefficient(
+          col, direction_[e.row()] * (numerator / denominator));
     }
   }
   return dictionary;
