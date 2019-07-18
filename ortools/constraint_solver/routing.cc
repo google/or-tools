@@ -4086,6 +4086,10 @@ void RoutingModel::CreateNeighborhoodOperators(
       CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
       vehicle_start_class_callback_,
       [this](int64 from, int64 to) { return GetHomogeneousCost(from, to); });
+  local_search_operators_[SWAP_INDEX_PAIR] = SwapIndexPair(
+      solver_.get(), nexts_,
+      CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
+      pickup_delivery_pairs_);
   local_search_operators_[NODE_PAIR_SWAP] = solver_->ConcatenateOperators(
       {IndexPairSwapActive(
            solver_.get(), nexts_,
@@ -4163,6 +4167,7 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
     }
     CP_ROUTING_PUSH_OPERATOR(EXCHANGE_PAIR, exchange_pair, operators);
     CP_ROUTING_PUSH_OPERATOR(NODE_PAIR_SWAP, node_pair_swap_active, operators);
+    CP_ROUTING_PUSH_OPERATOR(SWAP_INDEX_PAIR, swap_index_pair, operators);
     CP_ROUTING_PUSH_OPERATOR(RELOCATE_SUBTRIP, relocate_subtrip, operators);
     CP_ROUTING_PUSH_OPERATOR(EXCHANGE_SUBTRIP, exchange_subtrip, operators);
   }

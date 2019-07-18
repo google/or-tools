@@ -1282,6 +1282,7 @@ class RoutingModel {
     SWAP_ACTIVE,
     EXTENDED_SWAP_ACTIVE,
     NODE_PAIR_SWAP,
+    SWAP_INDEX_PAIR,
     PATH_LNS,
     FULL_PATH_LNS,
     TSP_LNS,

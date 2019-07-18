@@ -284,6 +284,17 @@ message RoutingSearchParameters {
     // of nodes) are:
     //   1 -> [4] -> [5] -> 3 with 2 inactive
     OptionalBoolean use_node_pair_swap_active = 20;
+    // Operator which iterates through each alternative of a set of pairs. If a
+    // pair has n and m alternatives, n.m alternatives will be explored.
+    // Possible neighbors for the path 1 -> A -> a -> 2 (where (1, 2) are first and
+    // last nodes of a path and A has B, C as alternatives and a has b as
+    // alternative):
+    // 1 -> A -> [b] -> 2
+    // 1 -> [B] -> a -> 2
+    // 1 -> [B] -> [b] -> 2
+    // 1 -> [C] -> a -> 2
+    // 1 -> [C] -> [b] -> 2
+    OptionalBoolean use_swap_index_pair = 27;
     // --- Large neighborhood search operators ---
     // Operator which relaxes two sub-chains of three consecutive arcs each.
     // Each sub-chain is defined by a start node and the next three arcs. Those
