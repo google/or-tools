@@ -180,9 +180,10 @@ class PairRelocateOperator : public PathWithPreviousNodesOperator {
 
  private:
   bool RestartAtPathStartOnSynchronize() override { return true; }
+  void OnNodeInitialization() override;
 
   std::vector<int> pairs_;
-  std::vector<bool> is_first_;
+  RoutingIndexPairs index_pairs_;
   static const int kPairFirstNode = 0;
   static const int kPairFirstNodeDestination = 1;
   static const int kPairSecondNodeDestination = 2;
@@ -202,7 +203,10 @@ class LightPairRelocateOperator : public PathWithPreviousNodesOperator {
   }
 
  private:
+  void OnNodeInitialization() override;
+
   std::vector<int> pairs_;
+  RoutingIndexPairs index_pairs_;
 };
 
 /// Operator which exchanges the position of two pairs; for both pairs the first
@@ -226,9 +230,10 @@ class PairExchangeOperator : public PathWithPreviousNodesOperator {
   bool RestartAtPathStartOnSynchronize() override { return true; }
   bool GetPreviousAndSibling(int64 node, int64* previous, int64* sibling,
                              int64* sibling_previous) const;
+  void OnNodeInitialization() override;
 
   std::vector<int> pairs_;
-  std::vector<bool> is_first_;
+  RoutingIndexPairs index_pairs_;
 };
 
 /// Operator which exchanges the paths of two pairs (path have to be different).
@@ -269,9 +274,10 @@ class PairExchangeRelocateOperator : public PathWithPreviousNodesOperator {
                 int64 prev[2][2]);
   bool LoadAndCheckDest(int pair, int node, int64 base_node, int64 nodes[2][2],
                         int64 dest[2][2]) const;
+  void OnNodeInitialization() override;
 
   std::vector<int> pairs_;
-  std::vector<bool> is_first_;
+  RoutingIndexPairs index_pairs_;
   static const int kFirstPairFirstNode = 0;
   static const int kSecondPairFirstNode = 1;
   static const int kFirstPairFirstNodeDestination = 2;
@@ -347,6 +353,7 @@ class IndexPairSwapActiveOperator : public PathWithPreviousNodesOperator {
 
   int inactive_node_;
   std::vector<int> pairs_;
+  RoutingIndexPairs index_pairs_;
 };
 
 /// RelocateExpensiveChain

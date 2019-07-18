@@ -238,25 +238,8 @@ PairRelocateOperator::PairRelocateOperator(
     std::function<int(int64)> start_empty_path_class,
     const RoutingIndexPairs& index_pairs)
     : PathWithPreviousNodesOperator(vars, secondary_vars, 3,
-                                    std::move(start_empty_path_class)) {
-  int64 index_max = 0;
-  for (const IntVar* const var : vars) {
-    index_max = std::max(index_max, var->Max());
-  }
-  is_first_.resize(index_max + 1, false);
-  int64 max_pair_index = -1;
-  // TODO(user): Support pairs with disjunctions.
-  for (const auto& index_pair : index_pairs) {
-    max_pair_index = std::max(max_pair_index, index_pair.first[0]);
-    max_pair_index = std::max(max_pair_index, index_pair.second[0]);
-  }
-  pairs_.resize(max_pair_index + 1, -1);
-  for (const auto& index_pair : index_pairs) {
-    pairs_[index_pair.first[0]] = index_pair.second[0];
-    pairs_[index_pair.second[0]] = index_pair.first[0];
-    is_first_[index_pair.first[0]] = true;
-  }
-}
+                                    std::move(start_empty_path_class)),
+      index_pairs_(index_pairs) {}
 
 bool PairRelocateOperator::MakeNeighbor() {
   DCHECK_EQ(StartNode(1), StartNode(2));
@@ -268,9 +251,6 @@ bool PairRelocateOperator::MakeNeighbor() {
   const int second_pair_node =
       first_pair_node < pairs_.size() ? pairs_[first_pair_node] : -1;
   if (second_pair_node < 0) {
-    return false;
-  }
-  if (!is_first_[first_pair_node]) {
     return false;
   }
   if (IsPathStart(second_pair_node)) {
@@ -331,25 +311,44 @@ int64 PairRelocateOperator::GetBaseNodeRestartPosition(int base_index) {
   }
 }
 
+void PairRelocateOperator::OnNodeInitialization() {
+  PathWithPreviousNodesOperator::OnNodeInitialization();
+  
+  std::vector<int64> active_firsts(index_pairs_.size(), -1);
+  std::vector<int64> active_seconds(index_pairs_.size(), -1);
+  for (int i = 0; i < index_pairs_.size(); ++i) {
+    for (const auto index : index_pairs_[i].first) {
+      if (!IsInactive(index)) {
+        active_firsts[i] = index;
+        break;
+      }
+    }
+    for (const auto index : index_pairs_[i].second) {
+      if (!IsInactive(index)) {
+        active_seconds[i] = index;
+        break;
+      }
+    }  
+  }
+
+  const int64 max_pair_index = *std::max_element(active_firsts.begin(), active_firsts.end());
+  pairs_.clear();
+  pairs_.resize(max_pair_index + 1, -1);
+  for (int i = 0; i < index_pairs_.size(); ++i) {
+    if (active_firsts[i] != -1 && active_seconds[i] != -1) {
+      pairs_[active_firsts[i]] = active_seconds[i];
+    }
+  }
+}
+
 LightPairRelocateOperator::LightPairRelocateOperator(
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64)> start_empty_path_class,
     const RoutingIndexPairs& index_pairs)
     : PathWithPreviousNodesOperator(vars, secondary_vars, 2,
-                                    std::move(start_empty_path_class)) {
-  int64 max_pair_index = -1;
-  // TODO(user): Support pairs with disjunctions.
-  for (const auto& index_pair : index_pairs) {
-    max_pair_index = std::max(max_pair_index, index_pair.first[0]);
-    max_pair_index = std::max(max_pair_index, index_pair.second[0]);
-  }
-  pairs_.resize(max_pair_index + 1, -1);
-  for (const auto& index_pair : index_pairs) {
-    pairs_[index_pair.first[0]] = index_pair.second[0];
-    pairs_[index_pair.second[0]] = index_pair.first[0];
-  }
-}
+                                    std::move(start_empty_path_class)),
+      index_pairs_(index_pairs) {}
 
 bool LightPairRelocateOperator::MakeNeighbor() {
   const int64 prev1 = BaseNode(0);
@@ -375,31 +374,44 @@ bool LightPairRelocateOperator::MakeNeighbor() {
           MoveChain(prev_sibling1, sibling1, sibling2));
 }
 
+void LightPairRelocateOperator::OnNodeInitialization() {
+  PathWithPreviousNodesOperator::OnNodeInitialization();
+  
+  std::vector<int64> active_firsts(index_pairs_.size(), -1);
+  std::vector<int64> active_seconds(index_pairs_.size(), -1);
+  for (int i = 0; i < index_pairs_.size(); ++i) {
+    for (const auto index : index_pairs_[i].first) {
+      if (!IsInactive(index)) {
+        active_firsts[i] = index;
+        break;
+      }
+    }
+    for (const auto index : index_pairs_[i].second) {
+      if (!IsInactive(index)) {
+        active_seconds[i] = index;
+        break;
+      }
+    }  
+  }
+
+  const int64 max_pair_index = *std::max_element(active_firsts.begin(), active_firsts.end());
+  pairs_.clear();
+  pairs_.resize(max_pair_index + 1, -1);
+  for (int i = 0; i < index_pairs_.size(); ++i) {
+    if (active_firsts[i] != -1 && active_seconds[i] != -1) {
+      pairs_[active_firsts[i]] = active_seconds[i];
+    }
+  }
+}
+
 PairExchangeOperator::PairExchangeOperator(
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64)> start_empty_path_class,
     const RoutingIndexPairs& index_pairs)
     : PathWithPreviousNodesOperator(vars, secondary_vars, 2,
-                                    std::move(start_empty_path_class)) {
-  int64 index_max = 0;
-  for (const IntVar* const var : vars) {
-    index_max = std::max(index_max, var->Max());
-  }
-  is_first_.resize(index_max + 1, false);
-  int64 max_pair_index = -1;
-  // TODO(user): Support pairs with disjunctions.
-  for (const auto& index_pair : index_pairs) {
-    max_pair_index = std::max(max_pair_index, index_pair.first[0]);
-    max_pair_index = std::max(max_pair_index, index_pair.second[0]);
-  }
-  pairs_.resize(max_pair_index + 1, -1);
-  for (const auto& index_pair : index_pairs) {
-    pairs_[index_pair.first[0]] = index_pair.second[0];
-    pairs_[index_pair.second[0]] = index_pair.first[0];
-    is_first_[index_pair.first[0]] = true;
-  }
-}
+                                    std::move(start_empty_path_class)),
+      index_pairs_(index_pairs) {}
 
 bool PairExchangeOperator::MakeNeighbor() {
   const int64 node1 = BaseNode(0);
@@ -455,7 +467,37 @@ bool PairExchangeOperator::GetPreviousAndSibling(
   *previous = Prev(node);
   *sibling = node < pairs_.size() ? pairs_[node] : -1;
   *sibling_previous = *sibling >= 0 ? Prev(*sibling) : -1;
-  return *sibling_previous >= 0 && is_first_[node];
+  return *sibling_previous >= 0;
+}
+
+void PairExchangeOperator::OnNodeInitialization() {
+  PathWithPreviousNodesOperator::OnNodeInitialization();
+  
+  std::vector<int64> active_firsts(index_pairs_.size(), -1);
+  std::vector<int64> active_seconds(index_pairs_.size(), -1);
+  for (int i = 0; i < index_pairs_.size(); ++i) {
+    for (const auto index : index_pairs_[i].first) {
+      if (!IsInactive(index)) {
+        active_firsts[i] = index;
+        break;
+      }
+    }
+    for (const auto index : index_pairs_[i].second) {
+      if (!IsInactive(index)) {
+        active_seconds[i] = index;
+        break;
+      }
+    }  
+  }
+
+  const int64 max_pair_index = *std::max_element(active_firsts.begin(), active_firsts.end());
+  pairs_.clear();
+  pairs_.resize(max_pair_index + 1, -1);
+  for (int i = 0; i < index_pairs_.size(); ++i) {
+    if (active_firsts[i] != -1 && active_seconds[i] != -1) {
+      pairs_[active_firsts[i]] = active_seconds[i];
+    }
+  }
 }
 
 PairExchangeRelocateOperator::PairExchangeRelocateOperator(
@@ -464,25 +506,8 @@ PairExchangeRelocateOperator::PairExchangeRelocateOperator(
     std::function<int(int64)> start_empty_path_class,
     const RoutingIndexPairs& index_pairs)
     : PathWithPreviousNodesOperator(vars, secondary_vars, 6,
-                                    std::move(start_empty_path_class)) {
-  int64 index_max = 0;
-  for (const IntVar* const var : vars) {
-    index_max = std::max(index_max, var->Max());
-  }
-  is_first_.resize(index_max + 1, false);
-  int64 max_pair_index = -1;
-  // TODO(user): Support pairs with disjunctions.
-  for (const auto& index_pair : index_pairs) {
-    max_pair_index = std::max(max_pair_index, index_pair.first[0]);
-    max_pair_index = std::max(max_pair_index, index_pair.second[0]);
-  }
-  pairs_.resize(max_pair_index + 1, -1);
-  for (const auto& index_pair : index_pairs) {
-    pairs_[index_pair.first[0]] = index_pair.second[0];
-    pairs_[index_pair.second[0]] = index_pair.first[0];
-    is_first_[index_pair.first[0]] = true;
-  }
-}
+                                    std::move(start_empty_path_class)),
+      index_pairs_(index_pairs) {}
 
 bool PairExchangeRelocateOperator::MakeNeighbor() {
   DCHECK_EQ(StartNode(kSecondPairFirstNodeDestination),
@@ -606,7 +631,37 @@ bool PairExchangeRelocateOperator::GetPreviousAndSibling(
   *previous = Prev(node);
   *sibling = node < pairs_.size() ? pairs_[node] : -1;
   *sibling_previous = *sibling >= 0 ? Prev(*sibling) : -1;
-  return *sibling_previous >= 0 && is_first_[node];
+  return *sibling_previous >= 0;
+}
+
+void PairExchangeRelocateOperator::OnNodeInitialization() {
+  PathWithPreviousNodesOperator::OnNodeInitialization();
+  
+  std::vector<int64> active_firsts(index_pairs_.size(), -1);
+  std::vector<int64> active_seconds(index_pairs_.size(), -1);
+  for (int i = 0; i < index_pairs_.size(); ++i) {
+    for (const auto index : index_pairs_[i].first) {
+      if (!IsInactive(index)) {
+        active_firsts[i] = index;
+        break;
+      }
+    }
+    for (const auto index : index_pairs_[i].second) {
+      if (!IsInactive(index)) {
+        active_seconds[i] = index;
+        break;
+      }
+    }  
+  }
+
+  const int64 max_pair_index = *std::max_element(active_firsts.begin(), active_firsts.end());
+  pairs_.clear();
+  pairs_.resize(max_pair_index + 1, -1);
+  for (int i = 0; i < index_pairs_.size(); ++i) {
+    if (active_firsts[i] != -1 && active_seconds[i] != -1) {
+      pairs_[active_firsts[i]] = active_seconds[i];
+    }
+  }
 }
 
 SwapIndexPairOperator::SwapIndexPairOperator(
@@ -727,19 +782,8 @@ IndexPairSwapActiveOperator::IndexPairSwapActiveOperator(
     const RoutingIndexPairs& index_pairs)
     : PathWithPreviousNodesOperator(vars, secondary_vars, 1,
                                     std::move(start_empty_path_class)),
-      inactive_node_(0) {
-  int64 max_pair_index = -1;
-  // TODO(user): Support pairs with disjunctions.
-  for (const auto& index_pair : index_pairs) {
-    max_pair_index = std::max(max_pair_index, index_pair.first[0]);
-    max_pair_index = std::max(max_pair_index, index_pair.second[0]);
-  }
-  pairs_.resize(max_pair_index + 1, -1);
-  for (const auto& index_pair : index_pairs) {
-    pairs_[index_pair.first[0]] = index_pair.second[0];
-    pairs_[index_pair.second[0]] = index_pair.first[0];
-  }
-}
+      inactive_node_(0),
+      index_pairs_(index_pairs) {}
 
 bool IndexPairSwapActiveOperator::MakeNextNeighbor(Assignment* delta,
                                                    Assignment* deltadelta) {
@@ -777,6 +821,32 @@ void IndexPairSwapActiveOperator::OnNodeInitialization() {
     }
   }
   inactive_node_ = Size();
+
+  std::vector<int64> active_firsts(index_pairs_.size(), -1);
+  std::vector<int64> active_seconds(index_pairs_.size(), -1);
+  for (int i = 0; i < index_pairs_.size(); ++i) {
+    for (const auto index : index_pairs_[i].first) {
+      if (!IsInactive(index)) {
+        active_firsts[i] = index;
+        break;
+      }
+    }
+    for (const auto index : index_pairs_[i].second) {
+      if (!IsInactive(index)) {
+        active_seconds[i] = index;
+        break;
+      }
+    }  
+  }
+
+  const int64 max_pair_index = *std::max_element(active_firsts.begin(), active_firsts.end());
+  pairs_.clear();
+  pairs_.resize(max_pair_index + 1, -1);
+  for (int i = 0; i < index_pairs_.size(); ++i) {
+    if (active_firsts[i] != -1 && active_seconds[i] != -1) {
+      pairs_[active_firsts[i]] = active_seconds[i];
+    }
+  }
 }
 
 RelocateExpensiveChain::RelocateExpensiveChain(
