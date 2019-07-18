@@ -128,8 +128,8 @@ ifeq ($(PLATFORM),LINUX)
   endif
   ifdef UNIX_SCIP_DIR
     SCIP_LNK = \
- $(UNIX_SCIP_DIR)/lib/libscip.a \
- $(UNIX_SCIP_DIR)/lib/libsoplex-pic.a
+ $(UNIX_SCIP_DIR)/lib/libscipopt.a \
+ $(UNIX_SCIP_DIR)/lib/libsoplex.a
   endif
   ifdef UNIX_GUROBI_DIR
     ifeq ($(PTRLENGTH),64)
