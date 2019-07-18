@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if defined(SCIP)
+#if defined(USE_SCIP)
 
 #include "ortools/linear_solver/scip_proto_solver.h"
 
