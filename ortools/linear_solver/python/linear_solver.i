@@ -324,8 +324,8 @@ PY_CONVERT(MPVariable);
 %rename (LookupVariable) operations_research::MPSolver::LookupVariableOrNull;
 %unignore operations_research::MPSolver::SetSolverSpecificParametersAsString;
 %unignore operations_research::MPSolver::NextSolution;
-%unignore operations_research::MPSolver::ExportModelAsLpFormat;
-%unignore operations_research::MPSolver::ExportModelAsMpsFormat;
+// %unignore operations_research::MPSolver::ExportModelAsLpFormat;
+// %unignore operations_research::MPSolver::ExportModelAsMpsFormat;
 
 // Expose very advanced parts of the MPSolver API. For expert users only.
 %unignore operations_research::MPSolver::ComputeConstraintActivities;
