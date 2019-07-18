@@ -175,10 +175,8 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo $(SELECTED_PATH_TO_JDK)>> Makefile.local
 	@echo $(SELECTED_PATH_TO_PYTHON)>> Makefile.local
 	@echo # >> Makefile.local
-	@echo # Define WINDOWS_SCIP_DIR to point to a compiled version of SCIP to use it >> Makefile.local
-	@echo #   e.g.: WINDOWS_SCIP_DIR = "relative_path/to/scip-4.0.0" >> Makefile.local
-	@echo # See instructions here: >> Makefile.local
-	@echo #   http://or-tools.blogspot.com/2017/03/changing-way-we-link-with-scip.html >> Makefile.local
+	@echo # Define WINDOWS_SCIP_DIR to point to a installation directory of the scip binary packaged to use it >> Makefile.local
+	@echo #   e.g.: WINDOWS_SCIP_DIR = "relative_path/to/scip-6.0.2" >> Makefile.local
 	@echo # Define WINDOWS_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi >> Makefile.local
 	@echo # >> Makefile.local
 	@echo # Define WINDOWS_ZLIB_DIR, WINDOWS_ZLIB_NAME, WINDOWS_GFLAGS_DIR, >> Makefile.local
