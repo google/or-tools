@@ -19,18 +19,93 @@ namespace sat {
 namespace {
 
 // For now only TSPs are supported.
+// TODO(user): Support multi-route models and any type of constraints.
 bool RoutingModelCanBeSolvedBySat(const RoutingModel& model) {
   return model.vehicles() == 1;
 }
 
-// Converts a RoutingModel to CpModelProto. The mapping back to RoutingModel
-// next variables can be obtained from the circuit constraint.
-// TODO(user): Support multi-route models and any type of constraints.
-CircuitConstraintProto* PopulateBuilderWithRoutingModel(
-    const RoutingModel& model, CpModelBuilder* builder) {
+// Adds an integer variable to a CpModelProto, returning its index in the proto.
+int AddVariable(CpModelProto* cp_model, int64 lb, int64 ub) {
+  const int index = cp_model->variables_size();
+  IntegerVariableProto* const var = cp_model->add_variables();
+  var->add_domain(lb);
+  var->add_domain(ub);
+  return index;
+}
+
+// Structure to keep track of arcs created.
+struct Arc {
+  int tail;
+  int head;
+
+  friend bool operator==(const Arc& a, const Arc& b) {
+    return a.tail == b.tail && a.head == b.head;
+  }
+  friend bool operator!=(const Arc& a, const Arc& b) { return !(a == b); }
+  friend std::ostream& operator<<(std::ostream& strm, const Arc& arc) {
+    return strm << "{" << arc.tail << ", " << arc.head << "}";
+  }
+  template <typename H>
+  friend H AbslHashValue(H h, const Arc& a) {
+    return H::combine(std::move(h), a.tail, a.head);
+  }
+};
+
+using ArcVarMap = absl::flat_hash_map<Arc, int>;
+
+// Adds all dimensions to a CpModelProto. Only adds path cumul constraints and
+// cumul bounds.
+void AddDimensions(const RoutingModel& model, const ArcVarMap& arc_vars,
+                   CpModelProto* cp_model) {
+  for (const RoutingDimension* dimension : model.GetDimensions()) {
+    // Only a single vehicle class.
+    const RoutingModel::TransitCallback2& transit =
+        dimension->transit_evaluator(0);
+    std::vector<int> cumuls(dimension->cumuls().size(), -1);
+    const int64 min_start = dimension->cumuls()[model.Start(0)]->Min();
+    const int64 max_end = std::min(dimension->cumuls()[model.End(0)]->Max(),
+                                   dimension->vehicle_capacities()[0]);
+    for (int i = 0; i < cumuls.size(); ++i) {
+      if (model.IsStart(i) || model.IsEnd(i)) continue;
+      // Reducing bounds supposing the triangular inequality.
+      const int64 cumul_min =
+          std::max(sat::kMinIntegerValue.value(),
+                   std::max(dimension->cumuls()[i]->Min(),
+                            CapAdd(transit(model.Start(0), i), min_start)));
+      const int64 cumul_max =
+          std::min(sat::kMaxIntegerValue.value(),
+                   std::min(dimension->cumuls()[i]->Max(),
+                            CapSub(max_end, transit(i, model.End(0)))));
+      cumuls[i] = AddVariable(cp_model, cumul_min, cumul_max);
+    }
+    for (const auto arc_var : arc_vars) {
+      const int tail = arc_var.first.tail;
+      const int head = arc_var.first.head;
+      if (tail == head || model.IsStart(tail) || model.IsStart(head)) continue;
+      // arc[tail][head] -> cumuls[head] >= cumuls[tail] + transit.
+      // This is a relaxation of the model as it does not consider slack max.
+      ConstraintProto* ct = cp_model->add_constraints();
+      ct->add_enforcement_literal(arc_var.second);
+      LinearConstraintProto* arg = ct->mutable_linear();
+      arg->add_domain(transit(tail, head));
+      arg->add_domain(kint64max);
+      arg->add_vars(cumuls[tail]);
+      arg->add_coeffs(-1);
+      arg->add_vars(cumuls[head]);
+      arg->add_coeffs(1);
+    }
+  }
+}
+
+// Converts a RoutingModel with a single vehicle to a CpModelProto.
+// The mapping between CPModelProto arcs and their corresponding arc variables
+// is returned.
+ArcVarMap PopulateSingleRouteModelFromRoutingModel(const RoutingModel& model,
+                                                   CpModelProto* cp_model) {
+  ArcVarMap arc_vars;
   const int num_nodes = model.Nexts().size();
-  LinearExpr objective;
-  CircuitConstraint circuit = builder->AddCircuitConstraint();
+  CircuitConstraintProto* circuit =
+      cp_model->add_constraints()->mutable_circuit();
   for (int tail = 0; tail < num_nodes; ++tail) {
     std::unique_ptr<IntVarIterator> iter(
         model.NextVar(tail)->MakeDomainIterator(false));
@@ -44,52 +119,81 @@ CircuitConstraintProto* PopulateBuilderWithRoutingModel(
       const int64 cost = tail != head ? model.GetHomogeneousCost(tail, head)
                                       : model.UnperformedPenalty(tail);
       if (cost == kint64max) continue;
-      const BoolVar arc = builder->NewBoolVar();
-      circuit.AddArc(tail, head, arc);
-      objective.AddTerm(arc, cost);
+      const int index = AddVariable(cp_model, 0, 1);
+      circuit->add_literals(index);
+      circuit->add_tails(tail);
+      circuit->add_heads(head);
+      cp_model->mutable_objective()->add_vars(index);
+      cp_model->mutable_objective()->add_coeffs(cost);
+      gtl::InsertOrDie(&arc_vars, {tail, head}, index);
     }
   }
-  builder->Minimize(objective);
-  return circuit.MutableProto()->mutable_circuit();
+  AddDimensions(model, arc_vars, cp_model);
+  return arc_vars;
 }
 
-// Converts a CpSolverResponse to an Assignment containing next variables,
-// using the circuit data to map arcs back to Next variables.
+// Converts a RoutingModel to a CpModelProto.
+// The mapping between CPModelProto arcs and their corresponding arc variables
+// is returned.
+ArcVarMap PopulateModelFromRoutingModel(const RoutingModel& model,
+                                        CpModelProto* cp_model) {
+  if (model.vehicles() == 1) {
+    return PopulateSingleRouteModelFromRoutingModel(model, cp_model);
+  }
+  // TODO(user): Add support for multi-vehicle models.
+  return {};
+}
+
+// Converts a CpSolverResponse to an Assignment containing next variables.
+// Note: supports multiple routes.
 bool ConvertToSolution(const CpSolverResponse& response,
-                       const RoutingModel& model,
-                       const CircuitConstraintProto& circuit,
+                       const RoutingModel& model, const ArcVarMap& arc_vars,
                        Assignment* solution) {
   if (response.status() != CpSolverStatus::OPTIMAL &&
       response.status() != CpSolverStatus::FEASIBLE)
     return false;
-  const int size = circuit.literals_size();
-  for (int i = 0; i < size; ++i) {
-    if (response.solution(circuit.literals(i)) != 0) {
-      const int tail = circuit.tails(i);
-      const int head = circuit.heads(i);
-      if (!model.IsStart(head)) {
+  const int depot = model.Start(0);
+  int vehicle = 0;
+  for (const auto& arc_var : arc_vars) {
+    if (response.solution(arc_var.second) != 0) {
+      const int tail = arc_var.first.tail;
+      const int head = arc_var.first.head;
+      if (head == depot) continue;
+      if (tail != depot) {
         solution->Add(model.NextVar(tail))->SetValue(head);
       } else {
-        solution->Add(model.NextVar(tail))->SetValue(model.End(0));
+        solution->Add(model.NextVar(model.Start(vehicle)))->SetValue(head);
+        ++vehicle;
       }
     }
+  }
+  // Close open routes.
+  for (int v = 0; v < model.vehicles(); ++v) {
+    int current = model.Start(v);
+    while (solution->Contains(model.NextVar(current))) {
+      current = solution->Value(model.NextVar(current));
+    }
+    solution->Add(model.NextVar(current))->SetValue(model.End(v));
   }
   return true;
 }
 
 void AddSolutionAsHintToModel(const Assignment* solution,
                               const RoutingModel& model,
-                              const CircuitConstraintProto& circuit,
+                              const ArcVarMap& arc_vars,
                               CpModelProto* cp_model) {
   if (solution == nullptr) return;
   PartialVariableAssignment* const hint = cp_model->mutable_solution_hint();
   hint->Clear();
-  const int size = circuit.literals_size();
-  for (int i = 0; i < size; ++i) {
-    hint->add_vars(circuit.literals(i));
-    const int tail = circuit.tails(i);
-    const int head = circuit.heads(i);
-    hint->add_values(solution->Value(model.NextVar(tail)) == head);
+  const int depot = model.Start(0);
+  const int num_nodes = model.Nexts().size();
+  for (int tail = 0; tail < num_nodes; ++tail) {
+    const int tail_index = model.IsStart(tail) ? depot : tail;
+    const int head = solution->Value(model.NextVar(tail));
+    const int head_index = model.IsEnd(head) ? depot : head;
+    if (tail_index == depot && head_index == depot) continue;
+    hint->add_vars(gtl::FindOrDie(arc_vars, {tail_index, head_index}));
+    hint->add_values(1);
   }
 }
 
@@ -119,17 +223,22 @@ CpSolverResponse SolveRoutingModel(
 // Solves a RoutingModel using the CP-SAT solver. Returns false if no solution
 // was found.
 bool SolveModelWithSat(const RoutingModel& model,
+                       const RoutingSearchParameters& search_parameters,
                        const Assignment* initial_solution,
                        Assignment* solution) {
   if (!sat::RoutingModelCanBeSolvedBySat(model)) return false;
-  sat::CpModelBuilder builder;
-  const sat::CircuitConstraintProto* const circuit =
-      sat::PopulateBuilderWithRoutingModel(model, &builder);
-  sat::AddSolutionAsHintToModel(initial_solution, model, *circuit,
-                                builder.MutableProto());
+  sat::CpModelProto cp_model;
+  cp_model.mutable_objective()->set_scaling_factor(
+      1.0 / search_parameters.log_cost_scaling_factor());
+  cp_model.mutable_objective()->set_offset(
+      -search_parameters.log_cost_offset() *
+      search_parameters.log_cost_scaling_factor());
+  const sat::ArcVarMap arc_vars =
+      sat::PopulateModelFromRoutingModel(model, &cp_model);
+  sat::AddSolutionAsHintToModel(initial_solution, model, arc_vars, &cp_model);
   return sat::ConvertToSolution(
-      sat::SolveRoutingModel(builder.Proto(), model.RemainingTime(), nullptr),
-      model, *circuit, solution);
+      sat::SolveRoutingModel(cp_model, model.RemainingTime(), nullptr), model,
+      arc_vars, solution);
 }
 
 }  // namespace operations_research

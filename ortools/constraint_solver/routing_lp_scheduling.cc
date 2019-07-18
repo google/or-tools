@@ -547,6 +547,82 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
       *route_transit_cost = 0;
     }
   }
+  // For every break that must be inside the route, the duration of that break
+  // must be flowed in the slacks of arcs that can intersect the break.
+  // This LP modelization is correct but not complete:
+  // can miss some cases where the breaks cannot fit.
+  const int num_breaks =
+      dimension_->HasBreakConstraints()
+          ? dimension_->GetBreakIntervalsOfVehicle(vehicle).size()
+          : 0;
+  if (num_breaks == 0) return true;
+  std::vector<glop::RowIndex> break_constraints(num_breaks, glop::kInvalidRow);
+  std::vector<glop::RowIndex> slack_constraints(path_size - 1,
+                                                glop::kInvalidRow);
+  const std::vector<IntervalVar*>& breaks =
+      dimension_->GetBreakIntervalsOfVehicle(vehicle);
+  // Gather visit information: the visit of node i has [start, end) =
+  // [cumul[i] - post_travel[i-1], cumul[i] + pre_travel[i]).
+  std::vector<int64> pre_travel(path_size - 1, 0);
+  std::vector<int64> post_travel(path_size - 1, 0);
+  {
+    const int pre_travel_index =
+        dimension_->GetPreTravelEvaluatorOfVehicle(vehicle);
+    if (pre_travel_index != -1) {
+      FillPathEvaluation(path, model->TransitCallback(pre_travel_index),
+                         &pre_travel);
+    }
+    const int post_travel_index =
+        dimension_->GetPostTravelEvaluatorOfVehicle(vehicle);
+    if (post_travel_index != -1) {
+      FillPathEvaluation(path, model->TransitCallback(post_travel_index),
+                         &post_travel);
+    }
+  }
+  const int64 vehicle_start_max = cumul_max.front();
+  const int64 vehicle_end_min = cumul_min.back();
+  for (int br = 0; br < num_breaks; ++br) {
+    // Create a constraint for every break that must be in the path:
+    // sum_i break_to_slack_i  == breaks[br].DurationMin().
+    if (!breaks[br]->MustBePerformed()) continue;
+    const int64 break_end_min = CapSub(breaks[br]->EndMin(), cumul_offset);
+    if (break_end_min <= vehicle_start_max) continue;
+    const int64 break_start_max = CapSub(breaks[br]->StartMax(), cumul_offset);
+    if (vehicle_end_min <= break_start_max) continue;
+    break_constraints[br] = linear_program->CreateNewConstraint();
+    linear_program->SetConstraintBounds(break_constraints[br],
+                                        breaks[br]->DurationMin(),
+                                        breaks[br]->DurationMin());
+    for (int pos = 0; pos < path_size - 1; ++pos) {
+      // Pass on slacks that cannot start before, cannot end after,
+      // or are not long enough to contain the break.
+      const int64 slack_start_min = CapAdd(cumul_min[pos], pre_travel[pos]);
+      if (slack_start_min > break_start_max) continue;
+      const int64 slack_end_max = CapSub(cumul_max[pos + 1], post_travel[pos]);
+      if (break_end_min > slack_end_max) continue;
+      const int64 slack_duration_max =
+          std::min(CapSub(CapSub(cumul_max[pos + 1], cumul_min[pos]),
+                          fixed_transit[pos]),
+                   dimension_->SlackVar(path[pos])->Max());
+      if (slack_duration_max < breaks[br]->DurationMin()) continue;
+      // Break can fit into slack: make LP variable, add to break and slack
+      // constraints.
+      glop::ColIndex break_to_slack = linear_program->CreateNewVariable();
+      linear_program->SetVariableBounds(break_to_slack, 0,
+                                        breaks[br]->DurationMin());
+      linear_program->SetCoefficient(break_constraints[br], break_to_slack, 1);
+      // Make a slack constraint (lazily), that will represent
+      // sum_break break_to_slack_i <= lp_slacks[i].
+      if (slack_constraints[pos] == glop::kInvalidRow) {
+        slack_constraints[pos] = linear_program->CreateNewConstraint();
+        linear_program->SetConstraintBounds(slack_constraints[pos],
+                                            -glop::kInfinity, 0);
+        linear_program->SetCoefficient(slack_constraints[pos], lp_slacks[pos],
+                                       -1);
+      }
+      linear_program->SetCoefficient(slack_constraints[pos], break_to_slack, 1);
+    }
+  }
   return true;
 }
 
