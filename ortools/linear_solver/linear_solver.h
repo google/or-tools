@@ -1482,6 +1482,14 @@ class MPSolverInterface {
   // solution is optimal.
   virtual MPSolver::ResultStatus Solve(const MPSolverParameters& param) = 0;
 
+  // Directly solves a MPModelRequest, bypassing the MPSolver data structures
+  // entirely. Returns {} (eg. absl::nullopt) if the feature is not supported by
+  // the underlying solver.
+  virtual absl::optional<MPSolutionResponse> DirectlySolveProto(
+      const MPModelRequest& request) {
+    return absl::nullopt;
+  }
+
   // Writes the model using the solver internal write function.  Currently only
   // available for GurobiInterface.
   virtual void Write(const std::string& filename);

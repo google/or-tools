@@ -2637,11 +2637,14 @@ $(OBJ_DIR)/bop/bop_parameters.pb.$O: \
 
 LP_DEPS = \
  $(SRC_DIR)/ortools/linear_solver/glop_utils.h \
+ $(SRC_DIR)/ortools/linear_solver/gurobi_proto_solver.h \
  $(SRC_DIR)/ortools/linear_solver/linear_expr.h \
  $(SRC_DIR)/ortools/linear_solver/linear_solver.h \
  $(SRC_DIR)/ortools/linear_solver/model_exporter.h \
  $(SRC_DIR)/ortools/linear_solver/model_exporter_swig_helper.h \
  $(SRC_DIR)/ortools/linear_solver/model_validator.h \
+ $(SRC_DIR)/ortools/linear_solver/scip_helper_macros.h \
+ $(SRC_DIR)/ortools/linear_solver/scip_proto_solver.h \
  $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h
 
 LP_LIB_OBJS = \
@@ -2653,6 +2656,7 @@ LP_LIB_OBJS = \
  $(OBJ_DIR)/linear_solver/glop_utils.$O \
  $(OBJ_DIR)/linear_solver/glpk_interface.$O \
  $(OBJ_DIR)/linear_solver/gurobi_interface.$O \
+ $(OBJ_DIR)/linear_solver/gurobi_proto_solver.$O \
  $(OBJ_DIR)/linear_solver/linear_expr.$O \
  $(OBJ_DIR)/linear_solver/linear_solver.$O \
  $(OBJ_DIR)/linear_solver/model_exporter.$O \
@@ -2766,6 +2770,10 @@ objs/linear_solver/glpk_interface.$O: \
 objs/linear_solver/gurobi_interface.$O: \
  ortools/linear_solver/gurobi_interface.cc | $(OBJ_DIR)/linear_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Sgurobi_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sgurobi_interface.$O
+
+objs/linear_solver/gurobi_proto_solver.$O: \
+ ortools/linear_solver/gurobi_proto_solver.cc | $(OBJ_DIR)/linear_solver
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Sgurobi_proto_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sgurobi_proto_solver.$O
 
 objs/linear_solver/linear_expr.$O: ortools/linear_solver/linear_expr.cc \
  ortools/linear_solver/linear_expr.h ortools/base/logging.h \

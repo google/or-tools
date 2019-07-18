@@ -598,6 +598,14 @@ MPSolverResponseStatus MPSolver::LoadModelFromProtoInternal(
     }
   }
 
+  if (input_model.has_quadratic_objective()) {
+    *error_message =
+        "Optimizing a quadratic objective is only supported through direct "
+        "proto solves. Please use MPSolver::SolveWithProto, or the solver's "
+        "direct proto solve function.";
+    return MPSOLVER_MODEL_INVALID;
+  }
+
   MPObjective* const objective = MutableObjective();
   // Passing empty names makes the MPSolver generate unique names.
   const std::string empty;
@@ -631,41 +639,49 @@ MPSolverResponseStatus MPSolver::LoadModelFromProtoInternal(
 
   for (const MPGeneralConstraintProto& general_constraint :
        input_model.general_constraint()) {
-    if (general_constraint.has_indicator_constraint()) {
-      const auto& proto =
-          general_constraint.indicator_constraint().constraint();
-      if (proto.lower_bound() == -infinity() &&
-          proto.upper_bound() == infinity()) {
-        continue;
+    switch (general_constraint.general_constraint_case()) {
+      case MPGeneralConstraintProto::kIndicatorConstraint: {
+        const auto& proto =
+            general_constraint.indicator_constraint().constraint();
+        if (proto.lower_bound() == -infinity() &&
+            proto.upper_bound() == infinity()) {
+          continue;
+        }
+
+        const int constraint_index = NumConstraints();
+        MPConstraint* const constraint = new MPConstraint(
+            constraint_index, proto.lower_bound(), proto.upper_bound(),
+            clear_names ? "" : proto.name(), interface_.get());
+        if (constraint_name_to_index_) {
+          gtl::InsertOrDie(&*constraint_name_to_index_, constraint->name(),
+                           constraint_index);
+        }
+        constraints_.push_back(constraint);
+        constraint_is_extracted_.push_back(false);
+
+        constraint->set_is_lazy(proto.is_lazy());
+        for (int j = 0; j < proto.var_index_size(); ++j) {
+          constraint->SetCoefficient(variables_[proto.var_index(j)],
+                                     proto.coefficient(j));
+        }
+
+        MPVariable* const variable =
+            variables_[general_constraint.indicator_constraint().var_index()];
+        constraint->indicator_variable_ = variable;
+        constraint->indicator_value_ =
+            general_constraint.indicator_constraint().var_value();
+
+        if (!interface_->AddIndicatorConstraint(constraint)) {
+          *error_message = "Solver doesn't support indicator constraints";
+          return MPSOLVER_MODEL_INVALID;
+        }
+        break;
       }
-
-      const int constraint_index = NumConstraints();
-      MPConstraint* const constraint = new MPConstraint(
-          constraint_index, proto.lower_bound(), proto.upper_bound(),
-          clear_names ? "" : proto.name(), interface_.get());
-      if (constraint_name_to_index_) {
-        gtl::InsertOrDie(&*constraint_name_to_index_, constraint->name(),
-                         constraint_index);
-      }
-      constraints_.push_back(constraint);
-      constraint_is_extracted_.push_back(false);
-
-      constraint->set_is_lazy(proto.is_lazy());
-      for (int j = 0; j < proto.var_index_size(); ++j) {
-        constraint->SetCoefficient(variables_[proto.var_index(j)],
-                                   proto.coefficient(j));
-      }
-
-      MPVariable* const variable =
-          variables_[general_constraint.indicator_constraint().var_index()];
-      constraint->indicator_variable_ = variable;
-      constraint->indicator_value_ =
-          general_constraint.indicator_constraint().var_value();
-
-      if (!interface_->AddIndicatorConstraint(constraint)) {
-        *error_message = "Solver doesn't support indicator constraints.";
+      default:
+        *error_message =
+            absl::StrCat("Solver doesn't support general constraints of type ",
+                         general_constraint.general_constraint_case());
         return MPSOLVER_MODEL_INVALID;
-      }
     }
   }
 
@@ -744,14 +760,21 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
   if (model_request.enable_internal_solver_output()) {
     solver.EnableOutput();
   }
+
+  auto optional_response = solver.interface_->DirectlySolveProto(model_request);
+  if (optional_response) {
+    *response = std::move(optional_response).value();
+    return;
+  }
+
   std::string error_message;
   response->set_status(solver.LoadModelFromProto(model, &error_message));
   if (response->status() != MPSOLVER_MODEL_IS_VALID) {
-    LOG(WARNING) << "Loading model from protocol buffer failed, load status = "
-                 << ProtoEnumToString<MPSolverResponseStatus>(
-                        response->status())
-                 << " (" << response->status() << "); Error: " << error_message;
-
+    response->set_status_str(error_message);
+    LOG_IF(WARNING, model_request.enable_internal_solver_output())
+        << "Loading model from protocol buffer failed, load status = "
+        << ProtoEnumToString<MPSolverResponseStatus>(response->status()) << " ("
+        << response->status() << "); Error: " << error_message;
     return;
   }
   if (model_request.has_solver_time_limit_seconds()) {
