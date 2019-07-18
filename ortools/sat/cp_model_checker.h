@@ -28,7 +28,10 @@ namespace sat {
 // fails at the first error and returns a human-readable description of the
 // issue.
 //
-// TODO(user): Add any needed overflow validation.
+// TODO(user): Add any needed overflow validation because we are far from
+// exhaustive. We could also run a small presolve that tighten variable bounds
+// before the overflow check to facilitate the lives of our users, but it is a
+// some work to put in place.
 std::string ValidateCpModel(const CpModelProto& model);
 
 // Verifies that the given variable assignment is a feasible solution of the

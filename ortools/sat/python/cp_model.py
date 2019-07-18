@@ -176,8 +176,8 @@ class LinearExpr(object):
         while to_process:  # Flatten to avoid recursion.
             expr, coef = to_process.pop()
             if isinstance(expr, _ProductCst):
-                to_process.append((expr.Expression(),
-                                   coef * expr.Coefficient()))
+                to_process.append(
+                    (expr.Expression(), coef * expr.Coefficient()))
             elif isinstance(expr, _SumArray):
                 for e in expr.Expressions():
                     to_process.append((e, coef))
@@ -423,8 +423,8 @@ class _ScalProd(LinearExpr):
 
     def __repr__(self):
         return 'ScalProd([{}], [{}], {})'.format(
-            ', '.join(map(repr, self.__expressions)), ', '.join(
-                map(repr, self.__coefficients)), self.__constant)
+            ', '.join(map(repr, self.__expressions)),
+            ', '.join(map(repr, self.__coefficients)), self.__constant)
 
     def Expressions(self):
         return self.__expressions
@@ -663,14 +663,14 @@ class IntervalVar(object):
         if self.__ct.enforcement_literal:
             return '%s(start = %s, size = %s, end = %s, is_present = %s)' % (
                 self.__ct.name, ShortName(self.__model, interval.start),
-                ShortName(self.__model, interval.size),
-                ShortName(self.__model, interval.end),
+                ShortName(self.__model,
+                          interval.size), ShortName(self.__model, interval.end),
                 ShortName(self.__model, self.__ct.enforcement_literal[0]))
         else:
             return '%s(start = %s, size = %s, end = %s)' % (
                 self.__ct.name, ShortName(self.__model, interval.start),
-                ShortName(self.__model, interval.size),
-                ShortName(self.__model, interval.end))
+                ShortName(self.__model,
+                          interval.size), ShortName(self.__model, interval.end))
 
     def Name(self):
         return self.__ct.name
@@ -1548,8 +1548,8 @@ def EvaluateBooleanExpression(literal, solution):
         else:
             return not solution.solution[-index - 1]
     else:
-        raise TypeError(
-            'Cannot interpret %s as a boolean expression.' % literal)
+        raise TypeError('Cannot interpret %s as a boolean expression.' %
+                        literal)
 
 
 class CpSolver(object):
@@ -1717,8 +1717,8 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
             index = lit.Index()
             return self.SolutionBooleanValue(index)
         else:
-            raise TypeError(
-                'Cannot interpret %s as a boolean expression.' % lit)
+            raise TypeError('Cannot interpret %s as a boolean expression.' %
+                            lit)
 
     def Value(self, expression):
         """Evaluates an linear expression in the current solution.
@@ -1742,8 +1742,8 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
         while to_process:
             expr, coef = to_process.pop()
             if isinstance(expr, _ProductCst):
-                to_process.append((expr.Expression(),
-                                   coef * expr.Coefficient()))
+                to_process.append(
+                    (expr.Expression(), coef * expr.Coefficient()))
             elif isinstance(expr, _SumArray):
                 for e in expr.Expressions():
                     to_process.append((e, coef))
@@ -1755,8 +1755,8 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
             elif isinstance(expr, IntVar):
                 value += coef * self.SolutionIntegerValue(expr.Index())
             elif isinstance(expr, _NotBooleanVariable):
-                value += coef * (
-                    1 - self.SolutionIntegerValue(expr.Not().Index()))
+                value += coef * (1 -
+                                 self.SolutionIntegerValue(expr.Not().Index()))
         return value
 
 

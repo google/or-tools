@@ -430,43 +430,33 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
     std::vector<Literal> literals = mapping->Literals(ct.circuit().literals());
     const int num_nodes = ReindexArcs(&tails, &heads, &literals);
 
-    std::vector<IntegerVariable> vars;
-    vars.reserve(literals.size());
-    for (const Literal& literal : literals) {
-      vars.push_back(m->Add(NewIntegerVariableFromLiteral(literal)));
-    }
-
     relaxation->cut_generators.push_back(
         CreateStronglyConnectedGraphCutGenerator(num_nodes, tails, heads,
-                                                 vars));
+                                                 literals, m));
   }
   if (ct.constraint_case() == ConstraintProto::ConstraintCase::kRoutes &&
       linearization_level > 1) {
-    std::vector<int> tails;
-    std::vector<int> heads;
-    std::vector<IntegerVariable> vars;
-    int num_nodes = 0;
-    auto* encoder = m->GetOrCreate<IntegerEncoder>();
-    for (int i = 0; i < ct.routes().tails_size(); ++i) {
-      const IntegerVariable var =
-          encoder->GetLiteralView(mapping->Literal(ct.routes().literals(i)));
-      if (var == kNoIntegerVariable) return;
+    std::vector<int> tails(ct.routes().tails().begin(),
+                           ct.routes().tails().end());
+    std::vector<int> heads(ct.routes().heads().begin(),
+                           ct.routes().heads().end());
+    std::vector<Literal> literals = mapping->Literals(ct.routes().literals());
 
-      vars.push_back(var);
-      tails.push_back(ct.routes().tails(i));
-      heads.push_back(ct.routes().heads(i));
+    int num_nodes = 0;
+    for (int i = 0; i < ct.routes().tails_size(); ++i) {
       num_nodes = std::max(num_nodes, 1 + ct.routes().tails(i));
       num_nodes = std::max(num_nodes, 1 + ct.routes().heads(i));
     }
     if (ct.routes().demands().empty() || ct.routes().capacity() == 0) {
       relaxation->cut_generators.push_back(
           CreateStronglyConnectedGraphCutGenerator(num_nodes, tails, heads,
-                                                   vars));
+                                                   literals, m));
     } else {
       const std::vector<int64> demands(ct.routes().demands().begin(),
                                        ct.routes().demands().end());
-      relaxation->cut_generators.push_back(CreateCVRPCutGenerator(
-          num_nodes, tails, heads, vars, demands, ct.routes().capacity()));
+      relaxation->cut_generators.push_back(
+          CreateCVRPCutGenerator(num_nodes, tails, heads, literals, demands,
+                                 ct.routes().capacity(), m));
     }
   }
   if (ct.constraint_case() == ConstraintProto::ConstraintCase::kIntProd) {
@@ -529,11 +519,16 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
 
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   auto* encoder = m->GetOrCreate<IntegerEncoder>();
+  auto* trail = m->GetOrCreate<Trail>();
   for (const auto& ct : model_proto.constraints()) {
-    // Make sure the literal from a circuit constraint always have a view.
+    // Make sure the literals from a circuit constraint always have a view.
     if (ct.constraint_case() == ConstraintProto::ConstraintCase::kCircuit) {
       for (const int ref : ct.circuit().literals()) {
-        m->Add(NewIntegerVariableFromLiteral(mapping->Literal(ref)));
+        const Literal l = mapping->Literal(ref);
+        if (encoder->GetLiteralView(l) == kNoIntegerVariable &&
+            encoder->GetLiteralView(l.Negated()) == kNoIntegerVariable) {
+          m->Add(NewIntegerVariableFromLiteral(l));
+        }
       }
     }
 
@@ -546,8 +541,12 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
     bool ok = true;
     for (const int literal_ref : refs.literals) {
       const Literal literal = mapping->Literal(literal_ref);
-      if (encoder->GetLiteralView(literal) == kNoIntegerVariable &&
-          encoder->GetLiteralView(literal.Negated()) == kNoIntegerVariable) {
+      if (trail->Assignment().LiteralIsAssigned(literal)) {
+        // Create a view to the constant 0 or 1.
+        m->Add(NewIntegerVariableFromLiteral(literal));
+      } else if (encoder->GetLiteralView(literal) == kNoIntegerVariable &&
+                 encoder->GetLiteralView(literal.Negated()) ==
+                     kNoIntegerVariable) {
         ok = false;
         break;
       }
@@ -556,7 +555,6 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
 
     TryToLinearizeConstraint(model_proto, ct, m, linearization_level,
                              &relaxation);
-
     TryToAddCutGenerators(model_proto, ct, m, &relaxation);
   }
 
