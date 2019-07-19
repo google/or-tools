@@ -127,7 +127,7 @@ ifeq ($(PLATFORM),LINUX)
   GLPK_LNK = $(UNIX_GLPK_DIR)/lib/libglpk.a
   endif
   ifdef UNIX_SCIP_DIR
-    SCIP_LNK = $(UNIX_SCIP_DIR)/lib/libscipopt.a $(UNIX_SCIP_DIR)/lib/libsoplex-pic.a
+    SCIP_LNK = -Wl,-rpath,$(UNIX_SCIP_DIR)/lib -L$(UNIX_SCIP_DIR)/lib -lscip
   endif
   ifdef UNIX_GUROBI_DIR
     ifeq ($(PTRLENGTH),64)
