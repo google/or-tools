@@ -233,6 +233,11 @@ void NeighborhoodGenerator::Synchronize() {
   int num_not_fully_solved_in_batch = 0;
 
   for (const SolveData& data : solve_data_) {
+    ++num_calls_;
+
+    // INFEASIBLE or OPTIMAL means that we "fully solved" the local problem.
+    // If we didn't, then we cannot be sure that there is no improving solution
+    // in that neighborhood.
     if (data.status == CpSolverStatus::INFEASIBLE ||
         data.status == CpSolverStatus::OPTIMAL) {
       ++num_fully_solved_calls_;
@@ -241,20 +246,24 @@ void NeighborhoodGenerator::Synchronize() {
       ++num_not_fully_solved_in_batch;
     }
 
-    num_calls_++;
-    if (data.objective_improvement > 0) {
-      // Note(user): For this to work properly, the objective diff should be
-      // computed with respect to the best solution at the time of the
-      // neighborhood generation.
+    // It seems to make more sense to compare the new objective to the base
+    // solution objective, not the best one. However this causes issue in the
+    // logic below because on some problems the neighborhood can always lead
+    // to a better "new objective" if the base solution wasn't the best one.
+    //
+    // This might not be a final solution, but it does work ok for now.
+    const IntegerValue best_objective_improvement =
+        data.initial_best_objective - data.new_objective;
+    if (best_objective_improvement > 0) {
       num_consecutive_non_improving_calls_ = 0;
     } else {
-      num_consecutive_non_improving_calls_++;
+      ++num_consecutive_non_improving_calls_;
     }
 
     // TODO(user): Weight more recent data.
     // degrade the current average to forget old learnings.
     const double gain_per_time_unit =
-        std::max(0.0, static_cast<double>(data.objective_improvement.value())) /
+        std::max(0.0, static_cast<double>(best_objective_improvement.value())) /
         (1.0 + data.deterministic_time);
     if (num_calls_ <= 100) {
       current_average_ += (gain_per_time_unit - current_average_) / num_calls_;
@@ -278,6 +287,10 @@ void NeighborhoodGenerator::Synchronize() {
   if (num_consecutive_non_improving_calls_ > 20) {
     num_consecutive_non_improving_calls_ = 0;
     deterministic_limit_ *= 1.1;
+
+    // We do not want the limit to go to high. Intuitively, the goal is to try
+    // out a lot of neighborhoods, not just spend a lot of time on a few.
+    deterministic_limit_ = std::min(60.0, deterministic_limit_);
   }
 
   solve_data_.clear();

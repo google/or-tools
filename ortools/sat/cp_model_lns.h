@@ -193,41 +193,40 @@ class NeighborhoodGenerator {
   double GetUCBScore(int64 total_num_calls) const;
 
   // Adds solve data about one "solved" neighborhood.
-  //
-  // TODO(user): Add more data.
   struct SolveData {
     // The status of the sub-solve.
     CpSolverStatus status = CpSolverStatus::UNKNOWN;
 
-    // The difficulty when this neighborhood was solved.
+    // The difficulty when this neighborhood was generated.
     double difficulty = 0.0;
+
+    // The determinitic time limit given to the solver for this neighborhood.
+    double deterministic_limit = 0.0;
 
     // The time it took to solve this neighborhood.
     double deterministic_time = 0.0;
 
-    // The objective improvement compared to the BEST solution at the time of
-    // generation. Positive if better, negative if worse. Note that we use
-    // the inner objective (without scaling or offset) so we are exact and it is
-    // always in the minimization direction.
-    //
-    // Note(user): It seems to make more sense to compare to the base solution
-    // objective, not the best one. However this causes issue in our adaptive
-    // parameter logic and selection because on some problems, its seems that
-    // the neighbhorhood is always improving. For example if you have two
-    // solutions, one worse, and it is super easy to find the better one from
-    // the worse one. This might not be a final solution, but it does work ok
-    // for now.
-    //
-    // TODO(user): Probably clearer to have 3 fields base_objective,
-    // best_objective and new_objective here. So we can easily change the logic.
-    IntegerValue objective_improvement = IntegerValue(0);
+    // Objective information. These only refer to the "internal" objective
+    // without scaling or offset so we are exact and it is always in the
+    // minimization direction.
+    // - The initial best objective is the one of the best known solution at the
+    //   time the neighborhood was generated.
+    // - The base objective is the one of the base solution from which this
+    //   neighborhood was generated.
+    // - The new objective is the objective of the best solution found by
+    //   solving the neighborhood.
+    IntegerValue initial_best_objective = IntegerValue(0);
+    IntegerValue base_objective = IntegerValue(0);
+    IntegerValue new_objective = IntegerValue(0);
 
     // This is just used to construct a deterministic order for the updates.
     bool operator<(const SolveData& o) const {
-      return std::tie(status, difficulty, deterministic_time,
-                      objective_improvement) <
-             std::tie(o.status, o.difficulty, o.deterministic_time,
-                      o.objective_improvement);
+      return std::tie(status, difficulty, deterministic_limit,
+                      deterministic_time, initial_best_objective,
+                      base_objective, new_objective) <
+             std::tie(o.status, o.difficulty, o.deterministic_limit,
+                      o.deterministic_time, o.initial_best_objective,
+                      base_objective, new_objective);
     }
   };
   void AddSolveData(SolveData data) {

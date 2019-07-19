@@ -1877,11 +1877,14 @@ class LnsSolver : public SubSolver {
   std::function<void()> GenerateTask(int64 task_id) override {
     return [task_id, this]() {
       if (SearchIsDone()) return;
+
+      NeighborhoodGenerator::SolveData data;
+      data.difficulty = generator_->difficulty();
+      data.deterministic_limit = generator_->deterministic_limit();
+
+      // Choose a base solution for this neighborhood.
       const int num_solutions =
           shared_->response->SolutionsRepository().NumSolutions();
-
-      const IntegerValue initial_best_inner_objective =
-          shared_->response->BestSolutionInnerObjectiveValue();
       CpSolverResponse base_response;
       if (num_solutions > 0) {
         random_engine_t random;
@@ -1895,31 +1898,38 @@ class LnsSolver : public SubSolver {
         for (const int64 value : solution.variable_values) {
           base_response.add_solution(value);
         }
+
+        data.initial_best_objective =
+            shared_->response->BestSolutionInnerObjectiveValue();
+        data.base_objective = solution.internal_objective;
       } else {
         base_response.set_status(CpSolverStatus::UNKNOWN);
+
+        // If we do not have a solution, we use the current objective upper
+        // bound so that our code that compute an "objective" improvement works.
+        data.initial_best_objective =
+            shared_->response->GetInnerObjectiveUpperBound();
+        data.base_objective = data.initial_best_objective;
       }
 
-      const double saved_difficulty = generator_->difficulty();
-      const double saved_limit = generator_->deterministic_limit();
       Neighborhood neighborhood;
       {
         absl::MutexLock mutex_lock(helper_->MutableMutex());
         neighborhood =
-            generator_->Generate(base_response, task_id, saved_difficulty);
+            generator_->Generate(base_response, task_id, data.difficulty);
       }
       neighborhood.cp_model.set_name(absl::StrCat("lns_", task_id));
       if (!neighborhood.is_generated) return;
 
-      CHECK_NE(saved_limit, 0);
       const double fully_solved_proportion =
           static_cast<double>(generator_->num_fully_solved_calls()) /
           std::max(int64{1}, generator_->num_calls());
       const std::string solution_info = absl::StrFormat(
-          "%s(d=%0.2f s=%i t=%0.2f p=%0.2f)", name(), saved_difficulty, task_id,
-          saved_limit, fully_solved_proportion);
+          "%s(d=%0.2f s=%i t=%0.2f p=%0.2f)", name(), data.difficulty, task_id,
+          data.deterministic_limit, fully_solved_proportion);
 
       SatParameters local_params(parameters_);
-      local_params.set_max_deterministic_time(saved_limit);
+      local_params.set_max_deterministic_time(data.deterministic_limit);
       local_params.set_stop_after_first_solution(false);
 
       if (FLAGS_cp_model_dump_lns_problems) {
@@ -1971,27 +1981,22 @@ class LnsSolver : public SubSolver {
             absl::StrCat(local_response.solution_info(), " ", solution_info));
       }
 
-      NeighborhoodGenerator::SolveData data;
+      // Finish to fill the SolveData now that the local solve is done.
       data.status = local_response.status();
-      data.difficulty = saved_difficulty;
       data.deterministic_time = local_response.deterministic_time();
-      data.objective_improvement = 0.0;
+      data.new_objective = data.base_objective;
       if (local_response.status() == CpSolverStatus::OPTIMAL ||
           local_response.status() == CpSolverStatus::FEASIBLE) {
-        const IntegerValue local_response_inner_objective =
-            IntegerValue(ComputeInnerObjective(
-                shared_->model_proto->objective(), local_response));
-        data.objective_improvement =
-            initial_best_inner_objective - local_response_inner_objective;
+        data.new_objective = IntegerValue(ComputeInnerObjective(
+            shared_->model_proto->objective(), local_response));
       }
       generator_->AddSolveData(data);
 
       // The total number of call when this was called is the same as task_id.
       const int total_num_calls = task_id;
-      VLOG(2) << name() << ": [difficulty: " << saved_difficulty
-              << ", deterministic time: " << local_response.deterministic_time()
-              << ", status: "
-              << ProtoEnumToString<CpSolverStatus>(local_response.status())
+      VLOG(2) << name() << ": [difficulty: " << data.difficulty
+              << ", deterministic time: " << data.deterministic_time
+              << ", status: " << ProtoEnumToString<CpSolverStatus>(data.status)
               << ", num calls: " << generator_->num_calls()
               << ", UCB1 Score: " << generator_->GetUCBScore(total_num_calls)
               << ", p: " << fully_solved_proportion << "]";

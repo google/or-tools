@@ -254,6 +254,7 @@ class CpModelPresolver {
   // TODO(user,user): Make these public and unit test.
   bool PresolveAutomaton(ConstraintProto* ct);
   bool PresolveCircuit(ConstraintProto* ct);
+  bool PresolveRoutes(ConstraintProto* ct);
   bool PresolveCumulative(ConstraintProto* ct);
   bool PresolveNoOverlap(ConstraintProto* ct);
   bool PresolveAllDiff(ConstraintProto* ct);

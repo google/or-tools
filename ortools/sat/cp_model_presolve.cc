@@ -2687,6 +2687,35 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
   return changed;
 }
 
+bool CpModelPresolver::PresolveRoutes(ConstraintProto* ct) {
+  if (context_.ModelIsUnsat()) return false;
+  if (HasEnforcementLiteral(*ct)) return false;
+  RoutesConstraintProto& proto = *ct->mutable_routes();
+
+  int new_size = 0;
+  const int num_arcs = proto.literals_size();
+  for (int i = 0; i < num_arcs; ++i) {
+    const int ref = proto.literals(i);
+    const int tail = proto.tails(i);
+    const int head = proto.heads(i);
+    if (context_.LiteralIsFalse(ref)) {
+      context_.UpdateRuleStats("routes: removed false arcs");
+      continue;
+    }
+    proto.set_literals(new_size, ref);
+    proto.set_tails(new_size, tail);
+    proto.set_heads(new_size, head);
+    ++new_size;
+  }
+  if (new_size < num_arcs) {
+    proto.mutable_literals()->Truncate(new_size);
+    proto.mutable_tails()->Truncate(new_size);
+    proto.mutable_heads()->Truncate(new_size);
+    return true;
+  }
+  return false;
+}
+
 bool CpModelPresolver::PresolveCircuit(ConstraintProto* ct) {
   if (context_.ModelIsUnsat()) return false;
   if (HasEnforcementLiteral(*ct)) return false;
@@ -3787,6 +3816,8 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
       return PresolveCumulative(ct);
     case ConstraintProto::ConstraintCase::kCircuit:
       return PresolveCircuit(ct);
+    case ConstraintProto::ConstraintCase::kRoutes:
+      return PresolveRoutes(ct);
     case ConstraintProto::ConstraintCase::kAutomaton:
       return PresolveAutomaton(ct);
     default:
