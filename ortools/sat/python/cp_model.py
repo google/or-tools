@@ -1510,6 +1510,10 @@ class CpModel(object):
             raise TypeError('TypeError: ' + str(x) +
                             ' is not a boolean variable')
 
+    def AddHint(self, var, value):
+        self.__model.solution_hint.vars.append(self.GetOrMakeIndex(var))
+        self.__model.solution_hint.values.append(value)
+
 
 def EvaluateLinearExpr(expression, solution):
     """Evaluate a linear expression against a solution."""
