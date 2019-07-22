@@ -474,31 +474,31 @@ const
 #else
 constexpr
 #endif
-NamedOptimizationProblemType kOptimizationProblemTypeNames[] = {
-    {MPSolver::GLOP_LINEAR_PROGRAMMING, "glop"},
+    NamedOptimizationProblemType kOptimizationProblemTypeNames[] = {
+        {MPSolver::GLOP_LINEAR_PROGRAMMING, "glop"},
 #if defined(USE_GLPK)
-    {MPSolver::GLPK_LINEAR_PROGRAMMING, "glpk_lp"},
+        {MPSolver::GLPK_LINEAR_PROGRAMMING, "glpk_lp"},
 #endif
 #if defined(USE_CLP)
-    {MPSolver::CLP_LINEAR_PROGRAMMING, "clp"},
+        {MPSolver::CLP_LINEAR_PROGRAMMING, "clp"},
 #endif
 #if defined(USE_GUROBI)
-    {MPSolver::GUROBI_LINEAR_PROGRAMMING, "gurobi_lp"},
+        {MPSolver::GUROBI_LINEAR_PROGRAMMING, "gurobi_lp"},
 #endif
 #if defined(USE_SCIP)
-    {MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING, "scip"},
+        {MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING, "scip"},
 #endif
 #if defined(USE_CBC)
-    {MPSolver::CBC_MIXED_INTEGER_PROGRAMMING, "cbc"},
+        {MPSolver::CBC_MIXED_INTEGER_PROGRAMMING, "cbc"},
 #endif
 #if defined(USE_GLPK)
-    {MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING, "glpk_mip"},
+        {MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING, "glpk_mip"},
 #endif
 #if defined(USE_BOP)
-    {MPSolver::BOP_INTEGER_PROGRAMMING, "bop"},
+        {MPSolver::BOP_INTEGER_PROGRAMMING, "bop"},
 #endif
 #if defined(USE_GUROBI)
-    {MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING, "gurobi_mip"},
+        {MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING, "gurobi_mip"},
 #endif
 };
 

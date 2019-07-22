@@ -75,6 +75,10 @@
  *    * \code LinearExpr e1 = LinearExpr(x) + (y + 5); \endcode
  *    * \code LinearExpr e1 = y + 5 + LinearExpr(x); \endcode
  */
+
+#include <ostream>
+#include <string>
+
 #include "absl/container/flat_hash_map.h"
 
 namespace operations_research {
@@ -147,10 +151,18 @@ class LinearExpr {
    */
   double SolutionValue() const;
 
+  /**
+   * A human readable representation of this. Variables will be printed in order
+   * of lowest index first.
+   */
+  std::string ToString() const;
+
  private:
   double offset_;
   absl::flat_hash_map<const MPVariable*, double> terms_;
 };
+
+std::ostream& operator<<(std::ostream& stream, const LinearExpr& linear_expr);
 
 // NOTE(user): in the ops below, the non-"const LinearExpr&" are intentional.
 // We need to create a new LinearExpr for the result, so we lose nothing by

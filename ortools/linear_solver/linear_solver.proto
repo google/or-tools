@@ -150,7 +150,8 @@ message MPSosConstraint {
   repeated int32 var_index = 2;
 
   // Optional: SOS weights. If non-empty, must be of the same size as
-  // "var_index", and strictly increasing.
+  // "var_index", and strictly increasing. If empty and required by the
+  // underlying solver, the 1..n sequence will be given as weights.
   // SUBTLE: The weights can help the solver make branch-and-bound decisions
   // that fit the underlying optimization model: after each LP relaxation, it
   // will compute the "average weight" of the SOS variables, weighted by value

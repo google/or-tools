@@ -17,6 +17,7 @@
 
 #include <limits>
 #include <memory>
+#include <numeric>
 #include <string>
 #include <vector>
 
@@ -63,6 +64,39 @@ util::Status CreateEnvironment(GRBenv** gurobi) {
   }
   return util::OkStatus();
 }
+
+int AddSosConstraint(const MPSosConstraint& sos_cst, GRBmodel* gurobi_model,
+                     std::vector<int>* tmp_variables,
+                     std::vector<double>* tmp_weights) {
+  CHECK(gurobi_model != nullptr);
+  CHECK(tmp_variables != nullptr);
+  CHECK(tmp_weights != nullptr);
+
+  tmp_variables->resize(sos_cst.var_index_size(), 0);
+  for (int v = 0; v < sos_cst.var_index_size(); ++v) {
+    (*tmp_variables)[v] = sos_cst.var_index(v);
+  }
+  tmp_weights->resize(sos_cst.var_index_size(), 0);
+  if (sos_cst.weight_size() == sos_cst.var_index_size()) {
+    for (int w = 0; w < sos_cst.weight_size(); ++w) {
+      (*tmp_weights)[w] = sos_cst.weight(w);
+    }
+  } else {
+    DCHECK_EQ(sos_cst.weight_size(), 0);
+    // Gurobi requires variable weights in their SOS constraints.
+    std::iota(tmp_weights->begin(), tmp_weights->end(), 1);
+  }
+
+  std::vector<int> types = {sos_cst.type() == MPSosConstraint::SOS1_DEFAULT
+                                ? GRB_SOS_TYPE1
+                                : GRB_SOS_TYPE2};
+  std::vector<int> begins = {0};
+  return GRBaddsos(gurobi_model, /*numsos=*/1,
+                   /*nummembers=*/sos_cst.var_index_size(),
+                   /*types=*/types.data(),
+                   /*beg=*/begins.data(), /*ind=*/tmp_variables->data(),
+                   /*weight*/ tmp_weights->data());
+}
 }  // namespace
 
 util::StatusOr<MPSolutionResponse> GurobiSolveProto(
@@ -78,11 +112,6 @@ util::StatusOr<MPSolutionResponse> GurobiSolveProto(
     // all of the write file / read file code in linear_solver.cc.
     return util::UnimplementedError(
         "Solver-specific parameters not supported.");
-  }
-  if (model.general_constraint_size() > 0) {
-    // TODO(user): Move indicator constraint logic from linear_solver.cc to
-    // this file.
-    return util::UnimplementedError("General constraints not supported.");
   }
   if (model.has_solution_hint()) {
     // TODO(user): Support solution hints.
@@ -169,6 +198,23 @@ util::StatusOr<MPSolutionResponse> GurobiSolveProto(
           /*upper=*/constraint.upper_bound(),
           /*constrname=*/constraint.name().c_str()));
     }
+
+    for (const auto& gen_cst : model.general_constraint()) {
+      switch (gen_cst.general_constraint_case()) {
+        // TODO(user): Move indicator constraint logic from
+        // linear_solver.cc to this file.
+        case MPGeneralConstraintProto::kSosConstraint: {
+          RETURN_IF_GUROBI_ERROR(AddSosConstraint(gen_cst.sos_constraint(),
+                                                  gurobi_model, &ct_variables,
+                                                  &ct_coefficients));
+          break;
+        }
+        default:
+          return util::UnimplementedError(
+              absl::StrFormat("General constraints of type %i not supported.",
+                              gen_cst.general_constraint_case()));
+      }
+    }
   }
 
   RETURN_IF_GUROBI_ERROR(GRBsetintattr(gurobi_model, GRB_INT_ATTR_MODELSENSE,
@@ -230,25 +276,23 @@ util::StatusOr<MPSolutionResponse> GurobiSolveProto(
     RETURN_IF_GUROBI_ERROR(
         GRBgetdblattr(gurobi_model, GRB_DBL_ATTR_OBJVAL, &objective_value));
     response.set_objective_value(objective_value);
-    if (has_integer_variables) {
-      double best_objective_bound = 0;
-      const int error = GRBgetdblattr(gurobi_model, GRB_DBL_ATTR_OBJBOUND,
-                                      &best_objective_bound);
-      if (response.status() == MPSOLVER_OPTIMAL &&
-          error == GRB_ERROR_DATA_NOT_AVAILABLE) {
-        // If the presolve deletes all variables, there's no best bound.
-        response.set_best_objective_bound(objective_value);
-      } else {
-        RETURN_IF_GUROBI_ERROR(error);
-        response.set_best_objective_bound(best_objective_bound);
-      }
+    double best_objective_bound = 0;
+    const int error = GRBgetdblattr(gurobi_model, GRB_DBL_ATTR_OBJBOUND,
+                                    &best_objective_bound);
+    if (response.status() == MPSOLVER_OPTIMAL &&
+        error == GRB_ERROR_DATA_NOT_AVAILABLE) {
+      // If the presolve deletes all variables, there's no best bound.
+      response.set_best_objective_bound(objective_value);
+    } else {
+      RETURN_IF_GUROBI_ERROR(error);
+      response.set_best_objective_bound(best_objective_bound);
     }
 
     response.mutable_variable_value()->Resize(variable_size, 0);
     RETURN_IF_GUROBI_ERROR(
         GRBgetdblattrarray(gurobi_model, GRB_DBL_ATTR_X, 0, variable_size,
                            response.mutable_variable_value()->mutable_data()));
-    if (!has_integer_variables) {
+    if (!has_integer_variables && model.general_constraint_size() == 0) {
       response.mutable_dual_value()->Resize(model.constraint_size(), 0);
       RETURN_IF_GUROBI_ERROR(GRBgetdblattrarray(
           gurobi_model, GRB_DBL_ATTR_PI, 0, model.constraint_size(),
