@@ -1472,7 +1472,8 @@ void QuickSolveWithHint(const CpModelProto& model_proto,
 // TODO(user): If this ever shows up in the profile, we could avoid copying
 // the mapping_proto if we are careful about how we modify the variable domain
 // before postsolving it.
-void PostsolveResponse(const CpModelProto& model_proto,
+void PostsolveResponse(const std::string& debug_info,
+                       const CpModelProto& model_proto,
                        CpModelProto mapping_proto,
                        const std::vector<int>& postsolve_mapping,
                        WallTimer* wall_timer, CpSolverResponse* response) {
@@ -1526,7 +1527,8 @@ void PostsolveResponse(const CpModelProto& model_proto,
     }
     CHECK(SolutionIsFeasible(model_proto,
                              std::vector<int64>(response->solution().begin(),
-                                                response->solution().end())));
+                                                response->solution().end())))
+        << debug_info;
   } else {
     for (int i = 0; i < model_proto.variables_size(); ++i) {
       response->add_solution_lower_bounds(
@@ -1969,8 +1971,9 @@ class LnsSolver : public SubSolver {
 
       // TODO(user): we actually do not need to postsolve if the solution is
       // not going to be used...
-      PostsolveResponse(*shared_->model_proto, mapping_proto, postsolve_mapping,
-                        shared_->wall_timer, &local_response);
+      PostsolveResponse(solution_info, *shared_->model_proto, mapping_proto,
+                        postsolve_mapping, shared_->wall_timer,
+                        &local_response);
 
       local_response_manager.BestSolutionInnerObjectiveValue();
 
@@ -2320,8 +2323,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       // because PostsolveResponse() only use the proto to known the number of
       // variables to fill in the response and to check the solution feasibility
       // of these variables.
-      PostsolveResponse(model_proto, mapping_proto, postsolve_mapping,
-                        &wall_timer, response);
+      PostsolveResponse("main solver", model_proto, mapping_proto,
+                        postsolve_mapping, &wall_timer, response);
       if (params.fill_tightened_domains_in_response()) {
         // TODO(user): for now, we just use the domain infered during presolve.
         for (int i = 0; i < model_proto.variables().size(); ++i) {

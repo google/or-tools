@@ -397,20 +397,20 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(const int base_index) {
     // Process a new at most one.
     // It will be copied into buffer[local_start, local_end].
     const int local_start = local_end;
-    bool all_false = false;
+    bool set_all_left_to_false = false;
     for (;; ++i) {
       const Literal l = at_most_one_buffer_[i];
       if (l.Index() == kNoLiteralIndex) break;
       if (assignment.LiteralIsFalse(l)) continue;
-      if (!all_false && assignment.LiteralIsTrue(l)) {
-        all_false = true;
+      if (!set_all_left_to_false && assignment.LiteralIsTrue(l)) {
+        set_all_left_to_false = true;
         continue;
       }
       at_most_one_buffer_[local_end++] = RepresentativeOf(l);
     }
 
     // Deal with all false.
-    if (all_false) {
+    if (set_all_left_to_false) {
       for (int j = local_start; j < local_end; ++j) {
         const Literal l = at_most_one_buffer_[j];
         if (assignment.LiteralIsFalse(l)) continue;
@@ -441,7 +441,7 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(const int base_index) {
       local_end = new_local_end;
     }
 
-    // Create a Span<> to spimplify the code below.
+    // Create a Span<> to simplify the code below.
     const absl::Span<const Literal> at_most_one(
         &at_most_one_buffer_[local_start], local_end - local_start);
 
@@ -910,26 +910,26 @@ bool BinaryImplicationGraph::DetectEquivalences() {
   is_dag_ = true;
   if (num_equivalences == 0) return true;
 
+  // Remap all at most ones. Remove fixed variables, process duplicates.
+  // Note that this might result in more implications when we expand small at
+  // most one, so we do that before cleaning up the implication list below.
+  at_most_ones_.clear();
+  CleanUpAndAddAtMostOnes(/*base_index=*/0);
+
   // Remap all the implications to only use representative. Remove duplicates.
   num_implications_ = 0;
   for (LiteralIndex i(0); i < size; ++i) {
-    if (is_redundant_[i]) {
-      num_implications_ += implications_[i].size();
-      continue;
+    if (!is_redundant_[i]) {
+      for (Literal& ref : implications_[i]) {
+        const LiteralIndex rep = representative_of_[ref.Index()];
+        if (rep == i) continue;
+        if (rep == kNoLiteralIndex) continue;
+        ref = Literal(rep);
+      }
+      gtl::STLSortAndRemoveDuplicates(&implications_[i]);
     }
-    for (Literal& ref : implications_[i]) {
-      const LiteralIndex rep = representative_of_[ref.Index()];
-      if (rep == i) continue;
-      if (rep == kNoLiteralIndex) continue;
-      ref = Literal(rep);
-    }
-    gtl::STLSortAndRemoveDuplicates(&implications_[i]);
     num_implications_ += implications_[i].size();
   }
-
-  // Remap all at most ones. Remove fixed variables, process duplicates.
-  at_most_ones_.clear();
-  CleanUpAndAddAtMostOnes(/*base_index=*/0);
 
   VLOG(1) << num_equivalences << " redundant equivalent literals. "
           << num_implications_ << " implications left. " << implications_.size()
@@ -940,7 +940,10 @@ bool BinaryImplicationGraph::DetectEquivalences() {
 }
 
 bool BinaryImplicationGraph::ComputeTransitiveReduction() {
+  CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   if (!DetectEquivalences()) return false;
+
+  int64 num_fixed = 0;
   work_done_in_mark_descendants_ = 0;
 
   // For each node we do a graph traversal and only keep the literals
@@ -950,24 +953,50 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction() {
   for (const LiteralIndex i : reverse_topological_order_) {
     CHECK(!is_redundant_[i]);
     auto& direct_implications = implications_[i];
+    if (direct_implications.empty()) continue;
 
     is_marked_.ClearAndResize(size);
     for (const Literal root : direct_implications) {
       if (is_redundant_[root.Index()]) continue;
       if (is_marked_[root.Index()]) continue;
 
+      // This is a corner case where because of equivalent literal, i appear
+      // in implications_[i], we will remove it below.
+      if (root.Index() == i) continue;
+
+      // When this happens, then i must be false, we handle this just after the
+      // loop.
+      if (root.NegatedIndex() == i) break;
+
       MarkDescendants(root);
 
       // We have a DAG, so root could only be marked first.
       is_marked_.Clear(root.Index());
     }
+    CHECK(!is_marked_[i]) << "DetectEquivalences() should have removed cycles!";
+
+    // If this is the case, then i => not(i), so i must be false.
+    if (is_marked_[Literal(i).NegatedIndex()]) {
+      ++num_fixed;
+      if (!trail_->Assignment().LiteralIsFalse(Literal(i))) {
+        trail_->EnqueueWithUnitReason(Literal(i).Negated());
+      }
+      num_implications_ -= direct_implications.size();
+      num_redundant_implications_ += direct_implications.size();
+      direct_implications.clear();
+      direct_implications.shrink_to_fit();
+      continue;
+    }
 
     // Only keep the non-marked literal (and the redundant one which are never
-    // marked).
+    // marked). We mark i to remove it in the corner case where it was there.
     int new_size = 0;
+    is_marked_.Set(i);
     for (const Literal l : direct_implications) {
       if (!is_marked_[l.Index()]) {
         direct_implications[new_size++] = l;
+      } else {
+        CHECK(!is_redundant_[l.Index()]);
       }
     }
     const int diff = direct_implications.size() - new_size;
@@ -980,6 +1009,10 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction() {
     if (work_done_in_mark_descendants_ > 1e8) break;
   }
 
+  if (num_fixed > 0) {
+    VLOG(1) << num_fixed
+            << " literals where fixed during ComputeTransitiveReduction().";
+  }
   if (num_redundant_implications_ > 0) {
     VLOG(1) << "Transitive reduction removed " << num_redundant_implications_
             << " literals. " << num_implications_ << " implications left. "
