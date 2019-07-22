@@ -2399,6 +2399,7 @@ Presolver::RuleStatus Presolver::StoreAbs(Constraint* ct, std::string* log) {
     // Stores abs() map.
     log->append("Store abs map");
     abs_map_[ct->arguments[1].Var()] = ct->arguments[0].Var();
+    abs_ct_[ct->arguments[1].Var()] = ct;
     MarkChangedVariable(ct->arguments[1].Var());
     return CONTEXT_CHANGED;
   }
@@ -2425,6 +2426,37 @@ Presolver::RuleStatus Presolver::RemoveAbsFromIntLeReif(Constraint* ct,
       ct->RemoveTargetVariable();
       return CONSTRAINT_REWRITTEN;
     }
+  }
+  return NOT_CHANGED;
+}
+
+// Remove abs from int_lin_le.
+// Input : int_lin_le([x, a],[1, b], 0) with x == abs(y)
+// Output: int_lin_le([y, a],[1, b], 0) and int_lin_le([y, a],[1, -b], 0)
+Presolver::RuleStatus Presolver::RemoveAbsFromIntLinLe(Constraint* ct,
+                                                       std::string* log) {
+  if (ct->arguments[1].variables.size() == 2 &&
+      ct->arguments[0].values[0] == 1 && ct->arguments[2].HasOneValue() &&
+      ct->arguments[2].Value() == 0 &&
+      gtl::ContainsKey(abs_map_, ct->arguments[1].variables[0])) {
+    LOG(INFO) << "Parse " << ct->DebugString();
+    IntegerVariable* const abs_var = ct->arguments[1].variables[0];
+    IntegerVariable* const other_var = ct->arguments[1].variables[1];
+    int64 other_coeff = ct->arguments[0].values[1];
+
+    IntegerVariable* const var = abs_map_[abs_var];
+    ct->arguments[1].variables[0] = var;
+    LOG(INFO) << "  write " << ct->DebugString();
+
+    Constraint* const abs_ct = abs_ct_[abs_var];
+    abs_ct->type = "int_lin_ge";
+    abs_ct->arguments[0] = Argument::IntegerList({1, -other_coeff});
+    abs_ct->arguments[1] = Argument::IntVarRefArray({var, other_var});
+    abs_ct->arguments.push_back(Argument::IntegerValue(0));
+    abs_ct->RemoveTargetVariable();
+    LOG(INFO) << "  write " << abs_ct->DebugString();
+
+    return CONSTRAINT_REWRITTEN;
   }
   return NOT_CHANGED;
 }
@@ -3025,13 +3057,14 @@ void Presolver::PresolveOneConstraint(int index, Constraint* ct) {
     CALL_TYPE(index, ct, "bool_gt", PresolveInequalities);
   }
 
-  CALL_TYPE(index, ct, "int_abs", StoreAbs);
   CALL_TYPE(index, ct, "int_eq_reif", StoreIntEqReif);
   CALL_TYPE(index, ct, "int_ne_reif", SimplifyIntNeReif);
+  CALL_TYPE(index, ct, "int_abs", StoreAbs);
+  CALL_TYPE(index, ct, "int_abs", PropagateAbsBounds);
   CALL_TYPE(index, ct, "int_eq_reif", RemoveAbsFromIntEqNeReif);
   CALL_TYPE(index, ct, "int_ne", RemoveAbsFromIntEqNeReif);
   CALL_TYPE(index, ct, "int_ne_reif", RemoveAbsFromIntEqNeReif);
-  CALL_TYPE(index, ct, "int_abs", PropagateAbsBounds);
+  CALL_TYPE(index, ct, "int_lin_le", RemoveAbsFromIntLinLe);
   CALL_TYPE(index, ct, "set_in", PresolveSetIn);
   CALL_TYPE(index, ct, "set_not_in", PresolveSetNotIn);
   CALL_TYPE(index, ct, "set_in_reif", PresolveSetInReif);

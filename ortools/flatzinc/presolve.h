@@ -156,9 +156,10 @@ class Presolver {
   RuleStatus PresolveSimplifyExprElement(Constraint* ct, std::string* log);
   RuleStatus PropagateReifiedComparisons(Constraint* ct, std::string* log);
   RuleStatus StoreAbs(Constraint* ct, std::string* log);
+  RuleStatus PropagateAbsBounds(Constraint* ct, std::string* log);
   RuleStatus RemoveAbsFromIntLeReif(Constraint* ct, std::string* log);
   RuleStatus RemoveAbsFromIntEqNeReif(Constraint* ct, std::string* log);
-  RuleStatus PropagateAbsBounds(Constraint* ct, std::string* log);
+  RuleStatus RemoveAbsFromIntLinLe(Constraint* ct, std::string* log);
   RuleStatus SimplifyUnaryLinear(Constraint* ct, std::string* log);
   RuleStatus SimplifyBinaryLinear(Constraint* ct, std::string* log);
   RuleStatus CheckIntLinReifBounds(Constraint* ct, std::string* log);
@@ -204,6 +205,7 @@ class Presolver {
 
   // Stores abs_map_[x] = y if x = abs(y).
   absl::flat_hash_map<const IntegerVariable*, IntegerVariable*> abs_map_;
+  absl::flat_hash_map<const IntegerVariable*, Constraint*> abs_ct_;
 
   // Stores affine_map_[x] = a * y + b.
   absl::flat_hash_map<const IntegerVariable*, AffineMapping> affine_map_;
