@@ -708,11 +708,12 @@ namespace operations_research {
 // No custom wrapping for this method, we simply ignore it.
 %ignore SearchLog::SearchLog(
     Solver* const s, OptimizeVar* const obj, IntVar* const var,
-    double scaling_factor,
+    double scaling_factor, double offset,
     std::function<std::string()> display_callback, int period);
 // Methods:
 %unignore SearchLog::Maintain;
 %unignore SearchLog::OutputDecision;
+
 
 // IntVarLocalSearchHandler
 %ignore IntVarLocalSearchHandler;
