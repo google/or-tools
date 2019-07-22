@@ -2897,10 +2897,11 @@ void RoutingModel::LogSolution(const RoutingSearchParameters& parameters,
   const double cost_scaling_factor = parameters.log_cost_scaling_factor();
   const double cost_offset = parameters.log_cost_offset();
   const std::string cost_string =
-      cost_scaling_factor == 1.0 && cost_offset == 0
+      cost_scaling_factor == 1.0 && cost_offset == 0.0
           ? absl::StrCat(solution_cost)
-          : absl::StrFormat("%d (%.8lf)", solution_cost,
-                            solution_cost / cost_scaling_factor - cost_offset);
+          : absl::StrFormat(
+                "%d (%.8lf)", solution_cost,
+                cost_scaling_factor * (solution_cost + cost_offset));
   LOG(INFO) << absl::StrFormat(
       "%s (%s, time = %d ms, memory used = %s)", description, cost_string,
       solver_->wall_time() - start_time_ms, memory_str);
@@ -3924,12 +3925,15 @@ std::string RoutingModel::DebugOutputAssignment(
     }
   }
   output.append("Unperformed nodes: ");
+  bool has_unperformed = false;
   for (int i = 0; i < Size(); ++i) {
     if (!IsEnd(i) && !IsStart(i) &&
         solution_assignment.Value(NextVar(i)) == i) {
       absl::StrAppendFormat(&output, "%d ", i);
+      has_unperformed = true;
     }
   }
+  if (!has_unperformed) output.append("None");
   output.append("\n");
   return output;
 }
@@ -4991,6 +4995,7 @@ void RoutingModel::SetupTrace(
     search_log_parameters.variable = cost_;
     search_log_parameters.scaling_factor =
         search_parameters.log_cost_scaling_factor();
+    search_log_parameters.offset = search_parameters.log_cost_offset();
     search_log_parameters.display_callback = nullptr;
     monitors_.push_back(solver_->MakeSearchLog(search_log_parameters));
   }

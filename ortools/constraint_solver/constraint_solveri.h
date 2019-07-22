@@ -1787,7 +1787,7 @@ class SymmetryBreaker : public DecisionVisitor {
 class SearchLog : public SearchMonitor {
  public:
   SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
-            double scaling_factor,
+            double scaling_factor, double offset,
             std::function<std::string()> display_callback, int period);
   ~SearchLog() override;
   void EnterSearch() override;
@@ -1816,6 +1816,7 @@ class SearchLog : public SearchMonitor {
   IntVar* const var_;
   OptimizeVar* const obj_;
   const double scaling_factor_;
+  const double offset_;
   std::function<std::string()> display_callback_;
   int nsol_;
   int64 tick_;

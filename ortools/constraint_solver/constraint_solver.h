@@ -2264,8 +2264,11 @@ class Solver {
     /// be used together).
     OptimizeVar* objective = nullptr;
     IntVar* variable = nullptr;
-    /// Objective or var values are unscaled by this factor when displayed.
+    /// When displayed, objective or var values will be scaled and offset by
+    /// the given values in the following way:
+    /// scaling_factor * (value + offset).
     double scaling_factor = 1.0;
+    double offset = 0;
     /// SearchMonitors will display the result of display_callback at each new
     /// solution found.
     std::function<std::string()> display_callback;

@@ -229,10 +229,8 @@ bool SolveModelWithSat(const RoutingModel& model,
   if (!sat::RoutingModelCanBeSolvedBySat(model)) return false;
   sat::CpModelProto cp_model;
   cp_model.mutable_objective()->set_scaling_factor(
-      1.0 / search_parameters.log_cost_scaling_factor());
-  cp_model.mutable_objective()->set_offset(
-      -search_parameters.log_cost_offset() *
       search_parameters.log_cost_scaling_factor());
+  cp_model.mutable_objective()->set_offset(search_parameters.log_cost_offset());
   const sat::ArcVarMap arc_vars =
       sat::PopulateModelFromRoutingModel(model, &cp_model);
   sat::AddSolutionAsHintToModel(initial_solution, model, arc_vars, &cp_model);

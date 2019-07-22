@@ -340,10 +340,14 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     cumul_min[pos] = cumul->Min();
     cumul_min[pos] = std::max<int64>(0, CapSub(cumul_min[pos], cumul_offset));
     cumul_max[pos] = cumul->Max();
-    cumul_max[pos] =
-        (cumul_max[pos] == kint64max)
-            ? kint64max
-            : std::max<int64>(0, CapSub(cumul_max[pos], cumul_offset));
+    cumul_max[pos] = (cumul_max[pos] == kint64max)
+                         ? kint64max
+                         : CapSub(cumul_max[pos], cumul_offset);
+    if (cumul_max[pos] < 0) {
+      // The node's cumul must be less than the cumul_offset, which is
+      // impossible.
+      return false;
+    }
   }
   std::vector<int64> fixed_transit(path_size - 1);
   {
