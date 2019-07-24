@@ -24,6 +24,7 @@
 #include "ortools/sat/subsolver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/util/adaptative_parameter_value.h"
+#include "ortools/util/random_engine.h"
 
 namespace operations_research {
 namespace sat {
@@ -177,7 +178,8 @@ class NeighborhoodGenerator {
   //
   // This function should be thread-safe.
   virtual Neighborhood Generate(const CpSolverResponse& initial_solution,
-                                int64 seed, double difficulty) const = 0;
+                                double difficulty,
+                                random_engine_t* random) const = 0;
 
   // Returns true if a neighborhood generator can generate a neighborhood.
   virtual bool ReadyToGenerate() const;
@@ -299,8 +301,8 @@ class SimpleNeighborhoodGenerator : public NeighborhoodGenerator {
   explicit SimpleNeighborhoodGenerator(
       NeighborhoodGeneratorHelper const* helper, const std::string& name)
       : NeighborhoodGenerator(name, helper) {}
-  Neighborhood Generate(const CpSolverResponse& initial_solution, int64 seed,
-                        double difficulty) const final;
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        double difficulty, random_engine_t* random) const final;
 };
 
 // Pick a random subset of variables that are constructed by a BFS in the
@@ -312,8 +314,8 @@ class VariableGraphNeighborhoodGenerator : public NeighborhoodGenerator {
   explicit VariableGraphNeighborhoodGenerator(
       NeighborhoodGeneratorHelper const* helper, const std::string& name)
       : NeighborhoodGenerator(name, helper) {}
-  Neighborhood Generate(const CpSolverResponse& initial_solution, int64 seed,
-                        double difficulty) const final;
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        double difficulty, random_engine_t* random) const final;
 };
 
 // Pick a random subset of constraint and relax all of their variables. We are a
@@ -325,8 +327,8 @@ class ConstraintGraphNeighborhoodGenerator : public NeighborhoodGenerator {
   explicit ConstraintGraphNeighborhoodGenerator(
       NeighborhoodGeneratorHelper const* helper, const std::string& name)
       : NeighborhoodGenerator(name, helper) {}
-  Neighborhood Generate(const CpSolverResponse& initial_solution, int64 seed,
-                        double difficulty) const final;
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        double difficulty, random_engine_t* random) const final;
 };
 
 // Helper method for the scheduling neighborhood generators. Returns the model
@@ -348,8 +350,8 @@ class SchedulingNeighborhoodGenerator : public NeighborhoodGenerator {
       NeighborhoodGeneratorHelper const* helper, const std::string& name)
       : NeighborhoodGenerator(name, helper) {}
 
-  Neighborhood Generate(const CpSolverResponse& initial_solution, int64 seed,
-                        double difficulty) const final;
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        double difficulty, random_engine_t* random) const final;
 };
 
 // Similar to SchedulingNeighborhoodGenerator except the set of intervals that
@@ -360,8 +362,8 @@ class SchedulingTimeWindowNeighborhoodGenerator : public NeighborhoodGenerator {
       NeighborhoodGeneratorHelper const* helper, const std::string& name)
       : NeighborhoodGenerator(name, helper) {}
 
-  Neighborhood Generate(const CpSolverResponse& initial_solution, int64 seed,
-                        double difficulty) const final;
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        double difficulty, random_engine_t* random) const final;
 };
 
 // Generates a neighborhood by fixing the variables who have same solution value
@@ -381,8 +383,8 @@ class RelaxationInducedNeighborhoodGenerator : public NeighborhoodGenerator {
       const std::string& name)
       : NeighborhoodGenerator(name, helper), model_(model) {}
 
-  Neighborhood Generate(const CpSolverResponse& initial_solution, int64 seed,
-                        double difficulty) const final;
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        double difficulty, random_engine_t* random) const final;
 
   // Returns true if SharedRINSNeighborhoodManager has unexplored neighborhoods.
   bool ReadyToGenerate() const override;

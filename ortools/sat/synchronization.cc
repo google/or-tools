@@ -36,12 +36,23 @@ SharedSolutionRepository::Solution SharedSolutionRepository::GetSolution(
   return solutions_[i];
 }
 
+// TODO(user): Experiments on the best distribution.
+SharedSolutionRepository::Solution
+SharedSolutionRepository::GetRandomBiasedSolution(
+    random_engine_t* random) const {
+  absl::MutexLock mutex_lock(&mutex_);
+  weights_.resize(solutions_.size());
+  const int64 best_objective = solutions_[0].internal_objective;
+  for (int i = 0; i < solutions_.size(); ++i) {
+    weights_[i] =
+        solutions_[i].internal_objective == best_objective ? 1.0 : 0.1;
+  }
+  std::discrete_distribution<> dist(weights_.begin(), weights_.end());
+  return solutions_[dist(*random)];
+}
+
 void SharedSolutionRepository::Add(const Solution& solution) {
   absl::MutexLock mutex_lock(&mutex_);
-  if (new_solutions_.size() < num_solutions_to_keep_) {
-    new_solutions_.push_back(solution);
-    return;
-  }
   int worse_solution_index = 0;
   for (int i = 0; i < new_solutions_.size(); ++i) {
     // Do not add identical solution.
@@ -50,7 +61,9 @@ void SharedSolutionRepository::Add(const Solution& solution) {
       worse_solution_index = i;
     }
   }
-  if (solution < new_solutions_[worse_solution_index]) {
+  if (new_solutions_.size() < num_solutions_to_keep_) {
+    new_solutions_.push_back(solution);
+  } else if (solution < new_solutions_[worse_solution_index]) {
     new_solutions_[worse_solution_index] = solution;
   }
 }

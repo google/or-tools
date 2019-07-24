@@ -89,7 +89,7 @@ DEFINE_string(cp_model_dump_file, "",
 DEFINE_string(cp_model_params, "",
               "This is interpreted as a text SatParameters proto. The "
               "specified fields will override the normal ones for all solves.");
-DEFINE_bool(cp_model_dump_lns_problems, false,
+DEFINE_bool(cp_model_dump_lns, false,
             "Useful to debug presolve issues on LNS fragments");
 
 DEFINE_string(
@@ -1880,45 +1880,51 @@ class LnsSolver : public SubSolver {
     return [task_id, this]() {
       if (SearchIsDone()) return;
 
+      // Create a random number generator whose seed depends both on the task_id
+      // and on the parameters_.random_seed() so that changing the later will
+      // change the LNS behavior.
+      const int32 low = static_cast<int32>(task_id);
+      const int32 high = task_id >> 32;
+      std::seed_seq seed{low, high, parameters_.random_seed()};
+      random_engine_t random(seed);
+
       NeighborhoodGenerator::SolveData data;
       data.difficulty = generator_->difficulty();
       data.deterministic_limit = generator_->deterministic_limit();
 
       // Choose a base solution for this neighborhood.
-      const int num_solutions =
-          shared_->response->SolutionsRepository().NumSolutions();
       CpSolverResponse base_response;
-      if (num_solutions > 0) {
-        random_engine_t random;
-        random.seed(task_id);
-        std::uniform_int_distribution<int> random_var(0, num_solutions - 1);
+      {
+        const SharedSolutionRepository& repo =
+            shared_->response->SolutionsRepository();
+        if (repo.NumSolutions() > 0) {
+          base_response.set_status(CpSolverStatus::FEASIBLE);
+          const SharedSolutionRepository::Solution solution =
+              repo.GetRandomBiasedSolution(&random);
+          for (const int64 value : solution.variable_values) {
+            base_response.add_solution(value);
+          }
+          data.initial_best_objective = repo.GetSolution(0).internal_objective;
+          data.base_objective = solution.internal_objective;
+        } else {
+          base_response.set_status(CpSolverStatus::UNKNOWN);
 
-        base_response.set_status(CpSolverStatus::FEASIBLE);
-        const SharedSolutionRepository::Solution solution =
-            shared_->response->SolutionsRepository().GetSolution(
-                random_var(random));
-        for (const int64 value : solution.variable_values) {
-          base_response.add_solution(value);
+          // If we do not have a solution, we use the current objective upper
+          // bound so that our code that compute an "objective" improvement
+          // works.
+          //
+          // TODO(user): this is non-deterministic. Fix.
+          data.initial_best_objective =
+              shared_->response->GetInnerObjectiveUpperBound();
+          data.base_objective = data.initial_best_objective;
         }
-
-        data.initial_best_objective =
-            shared_->response->BestSolutionInnerObjectiveValue();
-        data.base_objective = solution.internal_objective;
-      } else {
-        base_response.set_status(CpSolverStatus::UNKNOWN);
-
-        // If we do not have a solution, we use the current objective upper
-        // bound so that our code that compute an "objective" improvement works.
-        data.initial_best_objective =
-            shared_->response->GetInnerObjectiveUpperBound();
-        data.base_objective = data.initial_best_objective;
       }
 
       Neighborhood neighborhood;
       {
         absl::MutexLock mutex_lock(helper_->MutableMutex());
         neighborhood =
-            generator_->Generate(base_response, task_id, data.difficulty);
+            generator_->Generate(base_response, data.difficulty, &random);
       }
       neighborhood.cp_model.set_name(absl::StrCat("lns_", task_id));
       if (!neighborhood.is_generated) return;
@@ -1934,7 +1940,7 @@ class LnsSolver : public SubSolver {
       local_params.set_max_deterministic_time(data.deterministic_limit);
       local_params.set_stop_after_first_solution(false);
 
-      if (FLAGS_cp_model_dump_lns_problems) {
+      if (FLAGS_cp_model_dump_lns) {
         const std::string name =
             absl::StrCat("/tmp/", neighborhood.cp_model.name(), ".pb.txt");
         LOG(INFO) << "Dumping LNS model to '" << name << "'.";
@@ -1998,7 +2004,9 @@ class LnsSolver : public SubSolver {
       // The total number of call when this was called is the same as task_id.
       const int total_num_calls = task_id;
       VLOG(2) << name() << ": [difficulty: " << data.difficulty
-              << ", deterministic time: " << data.deterministic_time
+              << ", id: " << task_id
+              << ", deterministic_time: " << data.deterministic_time << " / "
+              << data.deterministic_limit
               << ", status: " << ProtoEnumToString<CpSolverStatus>(data.status)
               << ", num calls: " << generator_->num_calls()
               << ", UCB1 Score: " << generator_->GetUCBScore(total_num_calls)

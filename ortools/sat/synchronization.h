@@ -25,6 +25,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/random_engine.h"
 
 namespace operations_research {
 namespace sat {
@@ -119,6 +120,9 @@ class SharedSolutionRepository {
   // Returns the solution #i where i must be smaller than NumSolutions().
   Solution GetSolution(int index) const;
 
+  // Returns a random solution biased towards good solutions.
+  Solution GetRandomBiasedSolution(random_engine_t* random) const;
+
   // Add a new solution. Note that it will not be added to the pool of solution
   // right away. One must call Synchronize for this to happen.
   //
@@ -139,6 +143,7 @@ class SharedSolutionRepository {
 
   // Our two solutions pools, the current one and the new one that will be
   // merged into the current one on each Synchronize() calls.
+  mutable std::vector<double> weights_ GUARDED_BY(mutex_);
   std::vector<Solution> solutions_ GUARDED_BY(mutex_);
   std::vector<Solution> new_solutions_ GUARDED_BY(mutex_);
 };
