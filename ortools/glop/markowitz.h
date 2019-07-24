@@ -80,7 +80,9 @@
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/status.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/permutation.h"
 #include "ortools/lp_data/sparse.h"
+#include "ortools/lp_data/sparse_column.h"
 #include "ortools/util/stats.h"
 
 namespace operations_research {

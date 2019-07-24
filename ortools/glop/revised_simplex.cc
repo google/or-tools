@@ -32,6 +32,7 @@
 #include "ortools/lp_data/lp_print_utils.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/matrix_utils.h"
+#include "ortools/lp_data/permutation.h"
 #include "ortools/util/fp_utils.h"
 
 DEFINE_bool(simplex_display_numbers_as_fractions, false,
@@ -2006,7 +2007,7 @@ void RevisedSimplex::DualPhaseIUpdatePriceOnReducedCostChange(
   if (something_to_do) {
     // TODO(user): This code is duplicated with UpdateGivenNonBasicVariables()
     // and more generally with the one in RankOneUpdateFactorization. Fix.
-    if (ShouldUseDenseIteration(initially_all_zero_scratchpad_)) {
+    if (initially_all_zero_scratchpad_.ShouldUseDenseIteration()) {
       initially_all_zero_scratchpad_.non_zeros.clear();
       initially_all_zero_scratchpad_.is_non_zero.assign(num_rows_, false);
     } else {

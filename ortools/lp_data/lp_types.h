@@ -344,42 +344,6 @@ typedef StrictITIVector<RowIndex, ColIndex> RowToColMapping;
 // Column of constraints (slack variables) statuses.
 typedef StrictITIVector<RowIndex, ConstraintStatus> ConstraintStatusColumn;
 
-// Returns true if it is more advantageous to use a dense iteration rather than
-// using the non-zeros positions.
-//
-// TODO(user): The constant should depend on what algorithm is used. Clearing a
-// dense vector is a lot more efficient than doing more complex stuff. Clean
-// this up by extracting all the currently used constants in one place with
-// meaningful names.
-template <typename ScatteredRowOrCol>
-bool ShouldUseDenseIteration(const ScatteredRowOrCol& v) {
-  if (v.non_zeros.empty()) return true;
-  const double kThresholdForUsingDenseRepresentation = 0.8;
-  return static_cast<double>(v.non_zeros.size()) >
-         kThresholdForUsingDenseRepresentation *
-             static_cast<double>(v.values.size().value());
-}
-
-template <typename IndexType>
-class ScatteredVectorEntry {
- public:
-  using Index = IndexType;
-
-  Index index() const { return index_[i_.value()]; }
-  Fractional coefficient() const {
-    return coefficient_[index_[i_.value()].value()];
-  }
-
- protected:
-  ScatteredVectorEntry(const Index* indices, const Fractional* coefficients,
-                       EntryIndex i)
-      : i_(i), index_(indices), coefficient_(coefficients) {}
-
-  EntryIndex i_;
-  const Index* index_;
-  const Fractional* coefficient_;
-};
-
 // --------------------------------------------------------
 // VectorIterator
 // --------------------------------------------------------
@@ -387,9 +351,7 @@ class ScatteredVectorEntry {
 // An iterator over the elements of a sparse data structure that stores the
 // elements in arrays for indices and coefficients. The iterator is
 // built as a wrapper over a sparse vector entry class; the concrete entry class
-// is provided through the template argument EntryType and it must either be
-// derived from ScatteredVectorEntry or it must provide the same public and
-// protected interface.
+// is provided through the template argument EntryType.
 template <typename EntryType>
 class VectorIterator : EntryType {
  public:
@@ -410,87 +372,6 @@ class VectorIterator : EntryType {
   }
   const Entry& operator*() const { return *this; }
 };
-
-// A simple struct that contains a DenseVector and its non-zeros indices.
-//
-// TODO(user): Move ScatteredVector and related types to new file.
-template <typename Index,
-          typename Iterator = VectorIterator<ScatteredVectorEntry<Index>>>
-struct ScatteredVector {
-  StrictITIVector<Index, Fractional> values;
-
-  // This can be left empty in which case we just have the dense representation
-  // above. Otherwise, it should always be a superset of the actual non-zeros.
-  bool non_zeros_are_sorted = false;
-  std::vector<Index> non_zeros;
-
-  // Temporary vector used in some sparse computation on the ScatteredColumn.
-  // True indicate a possible non-zero value. Note that its state is not always
-  // consistent.
-  StrictITIVector<Index, bool> is_non_zero;
-
-  Fractional operator[](Index index) const { return values[index]; }
-  Fractional& operator[](Index index) { return values[index]; }
-
-  // The iterator syntax for (auto entry : v) where v is a ScatteredVector only
-  // works when non_zeros is populated (i.e., when the vector is treated as
-  // sparse).
-  Iterator begin() const {
-    DCHECK(!non_zeros.empty() || IsAllZero(values));
-    return Iterator(this->non_zeros.data(), this->values.data(), EntryIndex(0));
-  }
-  Iterator end() const {
-    return Iterator(this->non_zeros.data(), this->values.data(),
-                    EntryIndex(non_zeros.size()));
-  }
-
-  // Sorting the non-zeros is not always needed, but it allows us to have
-  // exactly the same behavior while using a sparse iteration or a dense one. So
-  // we always do it after a Solve().
-  void SortNonZerosIfNeeded() {
-    if (!non_zeros_are_sorted) {
-      std::sort(non_zeros.begin(), non_zeros.end());
-      non_zeros_are_sorted = true;
-    }
-  }
-};
-
-// Specializations used in the code.
-class ScatteredColumnEntry : public ScatteredVectorEntry<RowIndex> {
- public:
-  // Returns the row of the current entry.
-  RowIndex row() const { return index(); }
-
- protected:
-  ScatteredColumnEntry(const RowIndex* indices, const Fractional* coefficients,
-                       EntryIndex i)
-      : ScatteredVectorEntry<RowIndex>(indices, coefficients, i) {}
-};
-
-class ScatteredRowEntry : public ScatteredVectorEntry<ColIndex> {
- public:
-  // Returns the column of the current entry.
-  ColIndex column() const { return index(); }
-
- protected:
-  ScatteredRowEntry(const ColIndex* indices, const Fractional* coefficients,
-                    EntryIndex i)
-      : ScatteredVectorEntry<ColIndex>(indices, coefficients, i) {}
-};
-
-using ScatteredColumnIterator = VectorIterator<ScatteredColumnEntry>;
-using ScatteredRowIterator = VectorIterator<ScatteredRowEntry>;
-
-struct ScatteredColumn
-    : public ScatteredVector<RowIndex, ScatteredColumnIterator> {};
-struct ScatteredRow : public ScatteredVector<ColIndex, ScatteredRowIterator> {};
-
-inline const ScatteredRow& TransposedView(const ScatteredColumn& c) {
-  return reinterpret_cast<const ScatteredRow&>(c);
-}
-inline const ScatteredColumn& TransposedView(const ScatteredRow& r) {
-  return reinterpret_cast<const ScatteredColumn&>(r);
-}
 
 // This is used during the deterministic time computation to convert a given
 // number of floating-point operations to something in the same order of

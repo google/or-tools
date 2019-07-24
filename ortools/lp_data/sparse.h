@@ -34,6 +34,7 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/permutation.h"
+#include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse_column.h"
 #include "ortools/util/return_macros.h"
 
