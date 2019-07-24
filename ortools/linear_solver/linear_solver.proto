@@ -109,6 +109,7 @@ message MPGeneralConstraintProto {
   oneof general_constraint {
     MPIndicatorConstraint indicator_constraint = 2;
     MPSosConstraint sos_constraint = 3;
+    MPQuadraticConstraint quadratic_constraint = 4;
   }
 }
 
@@ -160,6 +161,37 @@ message MPSosConstraint {
   // (weights are strictly monotonous, so the "cutoff" average weight
   // corresponds to a "cutoff" index in the var_index sequence).
   repeated double weight = 3;
+}
+
+// Quadratic constraints of the form lb <= sum a_i x_i + sum b_ij x_i x_j <= ub,
+// where a, b, lb and ub are constants, and x are the model's variables.
+// Quadratic matrices that are Positive Semi-Definite, Second-Order Cones or
+// rotated Second-Order Cones are always accepted. Other forms may or may not be
+// accepted depending on the underlying solver used.
+// See https://scip.zib.de/doc/html/cons__quadratic_8h.php and
+// https://www.gurobi.com/documentation/8.1/refman/constraints.html#subsubsection:QuadraticConstraints
+message MPQuadraticConstraint {
+  // Sparse representation of linear terms in the quadratic constraint, where
+  // term i is var_index[i] * coefficient[i].
+  // `var_index` are variable indices w.r.t the "variable" field in
+  // MPModelProto.
+  repeated int32 var_index = 1;
+  repeated double coefficient = 2;  // Must be finite.
+
+  // Sparse representation of quadratic terms in the quadratic constraint, where
+  // term i is qvar1_index[i] * qvar2_index[i] * qcoefficient[i].
+  // `qvar1_index` and `qvar2_index` are variable indices w.r.t the "variable"
+  // field in MPModelProto.
+  // `qvar1_index`, `qvar2_index` and `coefficients` must have the same size.
+  // If the same unordered pair (qvar1_index, qvar2_index) appears several
+  // times, the sum of all of the associated coefficients will be applied.
+  repeated int32 qvar1_index = 3;
+  repeated int32 qvar2_index = 4;
+  repeated double qcoefficient = 5;  // Must be finite.
+
+  // lower_bound must be <= upper_bound.
+  optional double lower_bound = 6 [default = -inf];
+  optional double upper_bound = 7 [default = inf];
 }
 
 // Quadratic part of a model's objective. Added with other objectives (such as

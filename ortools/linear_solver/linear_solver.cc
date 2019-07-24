@@ -1640,8 +1640,8 @@ bool MPSolverInterface::SetSolverSpecificParametersAsString(
   // Note(user): this method needs to return a success/failure boolean
   // immediately, so we also perform the actual parameter parsing right away.
   // Some implementations will keep them forever and won't need to re-parse
-  // them; some (eg. SCIP, Gurobi) need to re-parse the parameters every time
-  // they do Solve(). We just store the parameters std::string anyway.
+  // them; some (eg. Gurobi) need to re-parse the parameters every time they do
+  // Solve(). We just store the parameters std::string anyway.
   //
   // Note(user): This is not implemented on Android because there is no
   // temporary directory to write files to without a pointer to the Java

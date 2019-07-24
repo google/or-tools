@@ -28,14 +28,9 @@
 #include "ortools/base/cleanup.h"
 #include "ortools/base/status.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/linear_solver/gurobi_environment.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
-
-extern "C" {
-#include "gurobi_c.h"
-int __stdcall GRBisqp(GRBenv**, const char*, const char*, const char*, int,
-                      const char*);
-}
 
 namespace operations_research {
 
@@ -51,18 +46,6 @@ inline util::Status GurobiCodeToUtilStatus(int error_code,
   return util::InvalidArgumentError(absl::StrFormat(
       "Gurobi error code %d (file '%s', line %d) on '%s': %s", error_code,
       source_file, source_line, statement, GRBgeterrormsg(env)));
-}
-
-util::Status CreateEnvironment(GRBenv** gurobi) {
-  const char kGurobiEnvErrorMsg[] =
-      "Could not load Gurobi environment. Is gurobi correctly installed and "
-      "licensed on this machine?";
-
-  if (GRBloadenv(gurobi, nullptr) != 0 || *gurobi == nullptr) {
-    return util::FailedPreconditionError(
-        absl::StrFormat("%s %s", kGurobiEnvErrorMsg, GRBgeterrormsg(*gurobi)));
-  }
-  return util::OkStatus();
 }
 
 int AddSosConstraint(const MPSosConstraint& sos_cst, GRBmodel* gurobi_model,
@@ -136,7 +119,7 @@ util::StatusOr<MPSolutionResponse> GurobiSolveProto(
     LOG_IF(DFATAL, !deleter_status.ok()) << deleter_status;
   });
 
-  RETURN_IF_ERROR(CreateEnvironment(&gurobi));
+  RETURN_IF_ERROR(LoadGurobiEnvironment(&gurobi));
   RETURN_IF_GUROBI_ERROR(GRBnewmodel(gurobi, &gurobi_model,
                                      model.name().c_str(),
                                      /*numvars=*/0,

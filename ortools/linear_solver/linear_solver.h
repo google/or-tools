@@ -579,10 +579,6 @@ class MPSolver {
    *
    * The format is solver-specific and is the same as the corresponding solver
    * configuration file format. Returns true if the operation was successful.
-   *
-   * TODO(user): Currently SCIP will always return true even if the format is
-   * wrong (you can check the log if you suspect an issue there). This seems to
-   * be a bug in SCIP though.
    */
   bool SetSolverSpecificParametersAsString(const std::string& parameters);
   std::string GetSolverSpecificParametersAsString() const {
