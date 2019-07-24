@@ -22,6 +22,8 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/ascii.h"
+#include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
@@ -33,10 +35,98 @@
 #include "ortools/linear_solver/model_validator.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
 #include "scip/scip.h"
+#include "scip/scip_param.h"
 #include "scip/scipdefplugins.h"
+#include "scip/set.h"
+#include "scip/struct_paramset.h"
+#include "scip/struct_scip.h"
 #include "scip/type_cons.h"
+#include "scip/type_paramset.h"
 
 namespace operations_research {
+
+util::Status ScipSetSolverSpecificParameters(const std::string& parameters,
+                                             SCIP* scip) {
+  for (const auto parameter :
+       absl::StrSplit(parameters, '\n', absl::SkipWhitespace())) {
+    std::vector<std::string> key_value =
+        absl::StrSplit(parameter, '=', absl::SkipWhitespace());
+    if (key_value.size() != 2) {
+      return util::InvalidArgumentError(
+          absl::StrFormat("Cannot parse parameter '%s'. Expected format is "
+                          "'parameter/name = value'",
+                          parameter));
+    }
+
+    std::string name = key_value[0];
+    absl::RemoveExtraAsciiWhitespace(&name);
+    std::string value = key_value[1];
+    absl::RemoveExtraAsciiWhitespace(&value);
+
+    SCIP_PARAM* param = SCIPgetParam(scip, name.c_str());
+    if (param == nullptr) {
+      return util::InvalidArgumentError(
+          absl::StrFormat("Invalid parameter name '%s'", name));
+    }
+    switch (param->paramtype) {
+      case SCIP_PARAMTYPE_BOOL: {
+        bool parsed_value;
+        if (absl::SimpleAtob(value, &parsed_value)) {
+          RETURN_IF_SCIP_ERROR(
+              SCIPsetBoolParam(scip, name.c_str(), parsed_value));
+          continue;
+        }
+        break;
+      }
+      case SCIP_PARAMTYPE_INT: {
+        int parsed_value;
+        if (absl::SimpleAtoi(value, &parsed_value)) {
+          RETURN_IF_SCIP_ERROR(
+              SCIPsetIntParam(scip, name.c_str(), parsed_value));
+          continue;
+        }
+        break;
+      }
+      case SCIP_PARAMTYPE_LONGINT: {
+        int64 parsed_value;
+        if (absl::SimpleAtoi(value, &parsed_value)) {
+          RETURN_IF_SCIP_ERROR(
+              SCIPsetLongintParam(scip, name.c_str(), parsed_value));
+          continue;
+        }
+        break;
+      }
+      case SCIP_PARAMTYPE_REAL: {
+        double parsed_value;
+        if (absl::SimpleAtod(value, &parsed_value)) {
+          RETURN_IF_SCIP_ERROR(
+              SCIPsetRealParam(scip, name.c_str(), parsed_value));
+          continue;
+        }
+        break;
+      }
+      case SCIP_PARAMTYPE_CHAR: {
+        if (value.size() == 1) {
+          RETURN_IF_SCIP_ERROR(SCIPsetCharParam(scip, name.c_str(), value[0]));
+          continue;
+        }
+        break;
+      }
+      case SCIP_PARAMTYPE_STRING: {
+        if (value.front() == '"' && value.back() == '"') {
+          value.erase(value.begin());
+          value.erase(value.end() - 1);
+        }
+        RETURN_IF_SCIP_ERROR(
+            SCIPsetStringParam(scip, name.c_str(), value.c_str()));
+        continue;
+      }
+    }
+    return util::InvalidArgumentError(
+        absl::StrFormat("Invalid parameter value '%s'", parameter));
+  }
+  return util::OkStatus();
+}
 
 namespace {
 util::Status AddSosConstraint(const MPGeneralConstraintProto& gen_cst,
@@ -153,12 +243,6 @@ util::StatusOr<MPSolutionResponse> ScipSolveProto(
   }
 
   const MPModelProto& model = request.model();
-  if (request.has_solver_specific_parameters()) {
-    // TODO(user): Support solver-specific parameters without duplicating
-    // all of the write file / read file code in linear_solver.cc.
-    return util::UnimplementedError(
-        "Solver-specific parameters not supported.");
-  }
   if (model.has_solution_hint()) {
     // TODO(user): Support solution hints.
     return util::UnimplementedError("Solution hint not supported.");
@@ -194,6 +278,13 @@ util::StatusOr<MPSolutionResponse> ScipSolveProto(
   RETURN_IF_SCIP_ERROR(SCIPcreate(&scip));
   RETURN_IF_SCIP_ERROR(SCIPincludeDefaultPlugins(scip));
 
+  const auto parameters_status = ScipSetSolverSpecificParameters(
+      request.solver_specific_parameters(), scip);
+  if (!parameters_status.ok()) {
+    response.set_status(MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS);
+    response.set_status_str(parameters_status.error_message());
+    return response;
+  }
   if (request.solver_time_limit_seconds() > 0 &&
       request.solver_time_limit_seconds() < 1e20) {
     RETURN_IF_SCIP_ERROR(SCIPsetRealParam(scip, "limits/time",

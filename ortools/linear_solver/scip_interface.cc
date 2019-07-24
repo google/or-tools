@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/str_format.h"
 #include "absl/types/optional.h"
 #include "ortools/base/canonical_errors.h"
 #include "ortools/base/commandlineflags.h"
@@ -36,6 +37,7 @@
 #include "ortools/linear_solver/scip_proto_solver.h"
 #include "scip/cons_indicator.h"
 #include "scip/scip.h"
+#include "scip/scip_prob.h"
 #include "scip/scipdefplugins.h"
 
 DEFINE_bool(scip_feasibility_emphasis, false,
@@ -123,8 +125,8 @@ class SCIPInterface : public MPSolverInterface {
   // necessery to enable multi-threading.
   util::Status SetNumThreads(int num_threads) override;
 
-  bool ReadParameterFile(const std::string& filename) override;
-  std::string ValidFileExtensionForParameterFile() const override;
+  bool SetSolverSpecificParametersAsString(
+      const std::string& parameters) override;
 
   void SetUnsupportedIntegerParam(
       MPSolverParameters::IntegerParam param) override;
@@ -722,6 +724,9 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
 
 absl::optional<MPSolutionResponse> SCIPInterface::DirectlySolveProto(
     const MPModelRequest& request) {
+  // ScipSolveProto doesn't solve concurrently.
+  if (solver_->GetNumThreads() > 1) return absl::nullopt;
+
   const auto status_or = ScipSolveProto(request);
   if (status_or.ok()) return status_or.ValueOrDie();
   // Special case: if something is not implemented yet, fall back to solving
@@ -900,12 +905,10 @@ util::Status SCIPInterface::SetNumThreads(int num_threads) {
       "indicate that SCIP API has changed.");
 }
 
-bool SCIPInterface::ReadParameterFile(const std::string& filename) {
-  return SCIPreadParams(scip_, filename.c_str()) == SCIP_OKAY;
-}
-
-std::string SCIPInterface::ValidFileExtensionForParameterFile() const {
-  return ".set";
+bool SCIPInterface::SetSolverSpecificParametersAsString(
+    const std::string& parameters) {
+  return operations_research::ScipSetSolverSpecificParameters(parameters, scip_)
+      .ok();
 }
 
 MPSolverInterface* BuildSCIPInterface(MPSolver* const solver) {

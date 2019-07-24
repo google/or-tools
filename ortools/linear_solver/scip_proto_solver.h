@@ -16,8 +16,12 @@
 
 #include "ortools/base/statusor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "scip/type_scip.h"
 
 namespace operations_research {
+
+util::Status ScipSetSolverSpecificParameters(const std::string& parameters,
+                                             SCIP* scip);
 
 util::StatusOr<MPSolutionResponse> ScipSolveProto(
     const MPModelRequest& request);
