@@ -46,8 +46,7 @@
     $1->reserve(size);
     j ## JavaType *values = jenv->Get ## JavaTypeName ## ArrayElements((j ## JavaType ## Array)$input, NULL);
     for (int i = 0; i < size; ++i) {
-      JavaType value = values[i];
-      $1->emplace_back(value);
+      $1->emplace_back(values[i]);
     }
     jenv->Release ## JavaTypeName ## ArrayElements((j ## JavaType ## Array)$input, values, JNI_ABORT);
   }
@@ -79,8 +78,7 @@
     $1.reserve(size);
     j ## JavaType *values = jenv->Get ## JavaTypeName ## ArrayElements((j ## JavaType ## Array)$input, NULL);
     for (int i = 0; i < size; ++i) {
-      JavaType value = values[i];
-      $1.emplace_back(value);
+      $1.emplace_back(values[i]);
     }
     jenv->Release ## JavaTypeName ## ArrayElements((j ## JavaType ## Array)$input, values, JNI_ABORT);
   }
