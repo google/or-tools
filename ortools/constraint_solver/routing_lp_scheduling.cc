@@ -15,7 +15,10 @@
 
 #include <numeric>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/time/time.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/map_util.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/lp_data/lp_types.h"
@@ -55,6 +58,22 @@ bool SetVariableBounds(glop::LinearProgram* linear_program,
   // The linear_program would not be feasible, and it cannot handle the
   // lp_min > lp_max case, so we must detect infeasibility here.
   return false;
+}
+
+bool GetCumulBoundsWithOffset(const IntVar& cumul_var, int64 cumul_offset,
+                              int64* lower_bound, int64* upper_bound) {
+  DCHECK(lower_bound != nullptr);
+  DCHECK(upper_bound != nullptr);
+  *lower_bound = std::max<int64>(0, CapSub(cumul_var.Min(), cumul_offset));
+  *upper_bound = cumul_var.Max();
+  if (*upper_bound < kint64max) {
+    *upper_bound = CapSub(*upper_bound, cumul_offset);
+    if (*upper_bound < 0) {
+      // The cumul must be less than the cumul_offset, which is impossible.
+      return false;
+    }
+  }
+  return true;
 }
 
 }  // namespace
@@ -113,6 +132,177 @@ bool LocalDimensionCumulOptimizer::ComputePackedRouteCumuls(
   return optimizer_core_.OptimizeAndPackSingleRoute(
       vehicle, next_accessor, linear_program_[vehicle].get(),
       lp_solver_[vehicle].get(), packed_cumuls);
+}
+
+CumulBoundsPropagator::CumulBoundsPropagator(const RoutingDimension* dimension)
+    : dimension_(*dimension), num_nodes_(2 * dimension->cumuls().size()) {
+  outgoing_arcs_.resize(num_nodes_);
+  node_in_queue_.resize(num_nodes_, false);
+  tree_parent_node_of_.resize(num_nodes_, kNoParent);
+}
+
+void CumulBoundsPropagator::AddArcs(int first_index, int second_index,
+                                    int64 offset) {
+  // Add arc first_index + offset <= second_index
+  outgoing_arcs_[PositiveNode(first_index)].push_back(
+      {PositiveNode(second_index), offset});
+  AddNodeToQueue(PositiveNode(first_index));
+  // Add arc -second_index + transit <= -first_index
+  outgoing_arcs_[NegativeNode(second_index)].push_back(
+      {NegativeNode(first_index), offset});
+  AddNodeToQueue(NegativeNode(second_index));
+}
+
+bool CumulBoundsPropagator::InitializeArcsAndBounds(
+    const std::function<int64(int64)>& next_accessor, int64 cumul_offset,
+    std::vector<int64>* initial_lower_bounds) {
+  DCHECK(initial_lower_bounds != nullptr);
+  // For each cumul var V in [l, u], we use one variable for V with lower bound
+  // l, and one other for -V with lower bound -u.
+  initial_lower_bounds->assign(num_nodes_, kint64min);
+
+  for (std::vector<ArcInfo>& arcs : outgoing_arcs_) {
+    arcs.clear();
+  }
+
+  RoutingModel* const model = dimension_.model();
+  std::vector<int64>& lower_bounds = *initial_lower_bounds;
+
+  for (int vehicle = 0; vehicle < model->vehicles(); vehicle++) {
+    const std::function<int64(int64, int64)>& transit_accessor =
+        dimension_.transit_evaluator(vehicle);
+
+    int node = model->Start(vehicle);
+    while (true) {
+      int64 cumul_lb, cumul_ub;
+      if (!GetCumulBoundsWithOffset(*dimension_.CumulVar(node), cumul_offset,
+                                    &cumul_lb, &cumul_ub)) {
+        return false;
+      }
+      lower_bounds[PositiveNode(node)] = cumul_lb;
+      if (cumul_ub < kint64max) {
+        lower_bounds[NegativeNode(node)] = -cumul_ub;
+      }
+
+      if (model->IsEnd(node)) {
+        break;
+      }
+
+      const int next = next_accessor(node);
+      const int64 transit = transit_accessor(node, next);
+      // TODO(user): Also consider slack variables' bounds. The real
+      // relation is node + transit + slack_var == next, which is equivalent to
+      // node + transit + slack_min <= next, and
+      // node + transit + slack_max >= next.
+      AddArcs(node, next, transit);
+
+      node = next;
+    }
+  }
+
+  for (const RoutingDimension::NodePrecedence& precedence :
+       dimension_.GetNodePrecedences()) {
+    const int first_index = precedence.first_node;
+    const int second_index = precedence.second_node;
+    if (lower_bounds[PositiveNode(first_index)] == kint64min ||
+        lower_bounds[PositiveNode(second_index)] == kint64min) {
+      // One of the nodes is unperformed, so the precedence rule doesn't apply.
+      continue;
+    }
+    AddArcs(first_index, second_index, precedence.offset);
+  }
+
+  return true;
+}
+
+bool CumulBoundsPropagator::UpdateCurrentLowerBoundOfNode(
+    int node, int64 new_lb, std::vector<int64>* current_lower_bounds) {
+  (*current_lower_bounds)[node] = new_lb;
+
+  // Test that the lower/upper bounds do not cross each other.
+  const int cumul_var_index = node / 2;
+  const int64 cumul_lower_bound =
+      (*current_lower_bounds)[PositiveNode(cumul_var_index)];
+
+  const int64 negated_cumul_upper_bound =
+      (*current_lower_bounds)[NegativeNode(cumul_var_index)];
+
+  // We do the test this way to avoid integer overflow.
+  DCHECK_NE(cumul_lower_bound, kint64min);
+  return -cumul_lower_bound >= negated_cumul_upper_bound;
+}
+
+bool CumulBoundsPropagator::DisassembleSubtree(int source, int target) {
+  tmp_dfs_stack_.clear();
+  tmp_dfs_stack_.push_back(source);
+  while (!tmp_dfs_stack_.empty()) {
+    const int tail = tmp_dfs_stack_.back();
+    tmp_dfs_stack_.pop_back();
+    for (const ArcInfo& arc : outgoing_arcs_[tail]) {
+      const int child_node = arc.head;
+      if (tree_parent_node_of_[child_node] != tail) continue;
+      if (child_node == target) return false;
+      tree_parent_node_of_[child_node] = kParentToBePropagated;
+      tmp_dfs_stack_.push_back(child_node);
+    }
+  }
+  return true;
+}
+
+bool CumulBoundsPropagator::PropagateCumulBounds(
+    const std::function<int64(int64)>& next_accessor, int64 cumul_offset,
+    std::vector<int64>* propagated_bounds) {
+  tree_parent_node_of_.assign(num_nodes_, kNoParent);
+  DCHECK(std::none_of(node_in_queue_.begin(), node_in_queue_.end(),
+                      [](bool b) { return b; }));
+  DCHECK(bf_queue_.empty());
+
+  if (!InitializeArcsAndBounds(next_accessor, cumul_offset,
+                               propagated_bounds)) {
+    return CleanupAndReturnFalse();
+  }
+
+  std::vector<int64>& current_lb = *propagated_bounds;
+
+  // Bellman-Ford-Tarjan algorithm.
+  while (!bf_queue_.empty()) {
+    const int node = bf_queue_.front();
+    bf_queue_.pop_front();
+    node_in_queue_[node] = false;
+
+    if (tree_parent_node_of_[node] == kParentToBePropagated) {
+      // The parent of this node is still in the queue, so no need to process
+      // node now, since it will be re-enqued when its parent is processed.
+      continue;
+    }
+
+    const int64 lower_bound = current_lb[node];
+    for (const ArcInfo& arc : outgoing_arcs_[node]) {
+      // NOTE: kint64min as a lower bound means no lower bound at all, so we
+      // don't use this value to propagate.
+      const int64 induced_lb = (lower_bound == kint64min)
+                                   ? kint64min
+                                   : CapAdd(lower_bound, arc.offset);
+
+      const int head_node = arc.head;
+      if (induced_lb <= current_lb[head_node]) {
+        // No update necessary for the head_node, continue to next children of
+        // node.
+        continue;
+      }
+      if (!UpdateCurrentLowerBoundOfNode(head_node, induced_lb,
+                                         propagated_bounds) ||
+          !DisassembleSubtree(head_node, node)) {
+        // The new lower bound is infeasible, or a positive cycle was detected
+        // in the precedence graph by DisassembleSubtree().
+        return CleanupAndReturnFalse();
+      }
+
+      tree_parent_node_of_[head_node] = node;
+      AddNodeToQueue(head_node);
+    }
+  }
+  return true;
 }
 
 bool DimensionCumulOptimizerCore::OptimizeSingleRoute(

@@ -42,6 +42,9 @@ struct Arc {
     return a.tail == b.tail && a.head == b.head;
   }
   friend bool operator!=(const Arc& a, const Arc& b) { return !(a == b); }
+  friend bool operator<(const Arc& a, const Arc& b) {
+    return a.tail == b.tail ? a.head < b.head : a.tail < b.tail;
+  }
   friend std::ostream& operator<<(std::ostream& strm, const Arc& arc) {
     return strm << "{" << arc.tail << ", " << arc.head << "}";
   }
@@ -51,7 +54,7 @@ struct Arc {
   }
 };
 
-using ArcVarMap = absl::flat_hash_map<Arc, int>;
+using ArcVarMap = std::map<Arc, int>;  // needs to be stable when iterating
 
 // Adds all dimensions to a CpModelProto. Only adds path cumul constraints and
 // cumul bounds.
