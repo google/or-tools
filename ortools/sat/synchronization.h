@@ -154,7 +154,8 @@ class SharedResponseManager {
  public:
   // If log_updates is true, then all updates to the global "state" will be
   // logged. This class is responsible for our solver log progress.
-  SharedResponseManager(bool log_updates_, const CpModelProto* proto,
+  SharedResponseManager(bool log_updates, bool enumerate_all_solutions,
+                        int solution_limit, const CpModelProto* proto,
                         const WallTimer* wall_timer);
 
   // Returns the current solver response. That is the best known response at the
@@ -230,6 +231,8 @@ class SharedResponseManager {
   void SetStatsFromModelInternal(Model* model) EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   const bool log_updates_;
+  const bool enumerate_all_solutions_;
+  const int solution_limit_;
   const CpModelProto& model_proto_;
   const WallTimer& wall_timer_;
 

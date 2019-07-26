@@ -81,9 +81,13 @@ void SharedSolutionRepository::Synchronize() {
 
 // TODO(user): Experiments and play with the num_solutions_to_keep parameter.
 SharedResponseManager::SharedResponseManager(bool log_updates,
+                                             bool enumerate_all_solutions,
+                                             int solution_limit,
                                              const CpModelProto* proto,
                                              const WallTimer* wall_timer)
     : log_updates_(log_updates),
+      enumerate_all_solutions_(enumerate_all_solutions),
+      solution_limit_(solution_limit),
       model_proto_(*proto),
       wall_timer_(*wall_timer),
       solutions_(/*num_solutions_to_keep=*/10) {}
@@ -252,6 +256,8 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
   absl::MutexLock mutex_lock(&mutex_);
   CHECK_NE(best_response_.status(), CpSolverStatus::INFEASIBLE);
 
+  if (solution_limit_ > 0 && num_solutions_ >= solution_limit_) return;
+
   if (model_proto_.has_objective()) {
     const int64 objective_value =
         ComputeInnerObjective(model_proto_.objective(), response);
@@ -355,10 +361,16 @@ void SharedResponseManager::SetStatsFromModelInternal(Model* model) {
 bool SharedResponseManager::ProblemIsSolved() const {
   absl::MutexLock mutex_lock(&mutex_);
 
+  if (solution_limit_ > 0 && num_solutions_ >= solution_limit_) {
+    return true;
+  }
+
   // TODO(user): Currently this work because we do not allow enumerate all
   // solution in multithread.
   if (!model_proto_.has_objective() &&
-      best_response_.status() == CpSolverStatus::FEASIBLE) {
+      ((best_response_.status() == CpSolverStatus::FEASIBLE &&
+        !enumerate_all_solutions_) ||
+       best_response_.status() == CpSolverStatus::OPTIMAL)) {
     return true;
   }
 
