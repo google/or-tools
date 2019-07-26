@@ -1170,6 +1170,9 @@ void CpModelPresolver::DivideLinearByGcd(ConstraintProto* ct) {
     }
     const Domain rhs = ReadDomainFromProto(ct->linear());
     FillDomainInProto(rhs.InverseMultiplicationBy(gcd), ct->mutable_linear());
+    if (ct->linear().domain_size() == 0) {
+      return (void)MarkConstraintAsFalse(ct);
+    }
   }
 }
 
@@ -3775,11 +3778,15 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
       if (CanonicalizeLinear(ct)) {
         context_.UpdateConstraintVariableUsage(c);
       }
-      if (RemoveSingletonInLinear(ct)) {
-        context_.UpdateConstraintVariableUsage(c);
+      if (ct->constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
+        if (RemoveSingletonInLinear(ct)) {
+          context_.UpdateConstraintVariableUsage(c);
+        }
       }
-      if (PresolveLinear(ct)) {
-        context_.UpdateConstraintVariableUsage(c);
+      if (ct->constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
+        if (PresolveLinear(ct)) {
+          context_.UpdateConstraintVariableUsage(c);
+        }
       }
       if (ct->constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
         if (PresolveLinearOnBooleans(ct)) {
