@@ -134,6 +134,9 @@ bool LocalDimensionCumulOptimizer::ComputePackedRouteCumuls(
       lp_solver_[vehicle].get(), packed_cumuls);
 }
 
+const int CumulBoundsPropagator::kNoParent = -2;
+const int CumulBoundsPropagator::kParentToBePropagated = -1;
+
 CumulBoundsPropagator::CumulBoundsPropagator(const RoutingDimension* dimension)
     : dimension_(*dimension), num_nodes_(2 * dimension->cumuls().size()) {
   outgoing_arcs_.resize(num_nodes_);

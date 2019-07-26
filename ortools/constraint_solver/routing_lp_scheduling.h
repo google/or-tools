@@ -47,8 +47,8 @@ class CumulBoundsPropagator {
     int head;
     int64 offset;
   };
-  static constexpr int kNoParent = -2;
-  static constexpr int kParentToBePropagated = -1;
+  static const int kNoParent;
+  static const int kParentToBePropagated;
 
   // Return the node corresponding to the lower bound of the cumul of index and
   // -index respectively.
