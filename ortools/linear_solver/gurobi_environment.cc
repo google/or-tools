@@ -19,7 +19,6 @@
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/canonical_errors.h"
-// #include "ortools/base/hostname.h"
 #include "ortools/base/logging.h"
 
 namespace operations_research {

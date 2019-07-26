@@ -12,7 +12,6 @@
 // limitations under the License.
 
 #if defined(USE_GUROBI)
-
 #ifndef OR_TOOLS_LINEAR_SOLVER_GUROBI_ENVIRONMENT_H_
 #define OR_TOOLS_LINEAR_SOLVER_GUROBI_ENVIRONMENT_H_
 
