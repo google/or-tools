@@ -307,7 +307,7 @@ distclean_python: clean_python
 ##########################
 ##  MINIZINC CHALLENGE  ##
 ##########################
-MZN_TAG=or-tools-minizinc-challenge:2018v3
+MZN_TAG=or-tools-minizinc-challenge:2019v2
 
 minizinc-challenge-image:
 	docker build -f minizinc-challenge.Dockerfile -t $(MZN_TAG) .
