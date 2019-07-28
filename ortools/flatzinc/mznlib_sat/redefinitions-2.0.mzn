@@ -28,5 +28,17 @@ predicate int_pow( var int: x, var int: y, var int: r ) =
       r == x2y[ x, y ]
   endif;
 
+% Non shifted elements
+predicate array_var_bool_element_nonshifted(var int: idx,
+                                            array [int] of var bool: x,
+                                            var bool: c);
+
+predicate array_var_int_element_nonshifted(var int: idx,
+                                           array [int] of var int: x,
+                                           var int: c);
+
 % Include set redefinitions.
 include "nosets.mzn";
+
+% Include strings redefinitions
+include "nostrings.mzn"

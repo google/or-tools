@@ -158,7 +158,7 @@ bool CheckArrayIntElement(
   return element == target;
 }
 
-bool CheckArrayIntElementNoOffset(
+bool CheckArrayIntElementNonShifted(
     const Constraint& ct,
     const std::function<int64(IntegerVariable*)>& evaluator) {
   CHECK_EQ(ct.arguments[0].variables.size(), 1);
@@ -1045,7 +1045,7 @@ CallMap CreateCallMap() {
   m["array_bool_or"] = CheckArrayBoolOr;
   m["array_bool_xor"] = CheckArrayBoolXor;
   m["array_int_element"] = CheckArrayIntElement;
-  m["array_int_element_no_offset"] = CheckArrayIntElementNoOffset;
+  m["array_int_element_nonshifted"] = CheckArrayIntElementNonShifted;
   m["array_var_bool_element"] = CheckArrayVarIntElement;
   m["array_var_int_element"] = CheckArrayVarIntElement;
   m["at_most_int"] = CheckAtMostInt;

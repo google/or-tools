@@ -3524,7 +3524,7 @@ bool Presolver::Run(Model* model) {
         const AffineMapping& mapping = affine_map_[index_var];
         if (mapping.coefficient == 1 && mapping.offset == 1) {
           FZVLOG << "remove offset by one from " << ct->DebugString();
-          ct->type += "_no_offset";
+          ct->type += "_nonshifted";
           ct->arguments[0].variables[0] = mapping.variable;
           FZVLOG << "  -> " << ct->DebugString() << FZENDL;
           successful_rules_["RemoveOffsetFromElement"]++;
