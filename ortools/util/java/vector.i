@@ -192,8 +192,7 @@ VECTOR_AS_JAVA_ARRAY(double, double, Double);
       j ## JavaType * const values =
         jenv->Get ## JavaTypeName ## ArrayElements((j ## JavaType ## Array)inner_array, NULL);
       for (int index2 = 0; index2 < inner_size; ++index2) {
-        const CType value = values[index2];
-        result[index1].emplace_back(value);
+        result[index1].emplace_back(values[index2]);
       }
       jenv->Release ## JavaTypeName ## ArrayElements((j ## JavaType ## Array)inner_array, values, JNI_ABORT);
       jenv->DeleteLocalRef(inner_array);
