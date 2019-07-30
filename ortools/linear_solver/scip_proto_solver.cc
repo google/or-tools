@@ -39,7 +39,6 @@
 #include "scip/scipdefplugins.h"
 #include "scip/set.h"
 #include "scip/struct_paramset.h"
-#include "scip/struct_scip.h"
 #include "scip/type_cons.h"
 #include "scip/type_paramset.h"
 
