@@ -193,11 +193,14 @@ bool CumulBoundsPropagator::InitializeArcsAndBounds(
 
       const int next = next_accessor(node);
       const int64 transit = transit_accessor(node, next);
-      // TODO(user): Also consider slack variables' bounds. The real
-      // relation is node + transit + slack_var == next, which is equivalent to
-      // node + transit + slack_min <= next, and
-      // node + transit + slack_max >= next.
-      AddArcs(node, next, transit);
+      const IntVar& slack_var = *dimension_.SlackVar(node);
+      // node + transit + slack_var == next
+      // Add arcs for node + transit + slack_min <= next
+      AddArcs(node, next, CapAdd(transit, slack_var.Min()));
+      if (slack_var.Max() < kint64max) {
+        // Add arcs for node + transit + slack_max >= next.
+        AddArcs(next, node, CapSub(-slack_var.Max(), transit));
+      }
 
       node = next;
     }
