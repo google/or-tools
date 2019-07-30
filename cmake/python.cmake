@@ -55,6 +55,10 @@ endif()
 #get_target_property(FLAGS ortools::ortools COMPILE_DEFINITIONS)
 set(FLAGS -DUSE_BOP -DUSE_GLOP -DUSE_CBC -DUSE_CLP -DMUST_USE_RESULT)
 
+if(USE_SIRIUS)
+	set(FLAGS ${FLAGS} -DUSE_SIRIUS)
+endif(USE_SIRIUS)
+
 if(USE_XPRESS)
 	set(FLAGS ${FLAGS} -DUSE_XPRESS)
 endif(USE_XPRESS)

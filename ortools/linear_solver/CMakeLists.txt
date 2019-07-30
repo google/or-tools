@@ -68,6 +68,24 @@ if (USE_XPRESS)
 	endif()
 endif(USE_XPRESS)
 
+if (USE_SIRIUS)
+	target_include_directories(${NAME} PUBLIC
+		${SIRIUSDIR}/src/ALLOCATEUR
+		${SIRIUSDIR}/src/BRANCH_AND_BOUND
+		${SIRIUSDIR}/src/POINT_INTERIEUR
+		${SIRIUSDIR}/src/PRESOLVE
+		${SIRIUSDIR}/src/SIMPLEXE
+		${SIRIUSDIR}/src/SIMPLEXE/LU
+		${SIRIUSDIR}/src/PNE
+		${SIRIUSDIR}/src/SRS
+	)
+	if(UNIX)
+		target_link_libraries(${NAME} PUBLIC ${SIRIUSDIR}/buildLinux/libbib_solveur.so)
+	elseif(MSVC)
+		target_link_libraries(${NAME} PUBLIC ${SIRIUSDIR}/build/Release/bib_solveur.lib)
+	endif()
+endif(USE_SIRIUS)
+
 if (USE_CPLEX)
 	target_include_directories(${NAME} PUBLIC
 		${CPLEXDIR}/include

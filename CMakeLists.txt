@@ -41,12 +41,14 @@ option(BUILD_PYTHON "Build Python Library" OFF)
 option(BUILD_JAVA "Build Java Library" OFF)
 option(BUILD_DOTNET "Build .NET Library" OFF)
 option(USE_XPRESS "Build and use XPRESS interface" OFF)
+option(USE_SIRIUS "Build and use SIRIUS interface" OFF)
 option(USE_CPLEX "Build and use CPLEX interface" OFF)
 message(STATUS "Build C++ library: ${BUILD_CXX}")
 message(STATUS "Build Python: ${BUILD_PYTHON}")
 message(STATUS "Build Java: ${BUILD_JAVA}")
 message(STATUS "Build .Net: ${BUILD_DOTNET}")
 message(STATUS "USE_XPRESS: ${USE_XPRESS}")
+message(STATUS "USE_SIRIUS: ${USE_SIRIUS}")
 message(STATUS "USE_CPLEX: ${USE_CPLEX}")
 
 #option(BUILD_DOC "Build doxygen" OFF)
@@ -111,6 +113,25 @@ if (USE_XPRESS)
 	add_compile_definitions(USE_XPRESS)
 endif(USE_XPRESS)
 
+if (USE_SIRIUS)
+
+	if (APPLE)
+		message(FATAL_ERROR "SIRIUS not yet supported on MACOS")
+	endif()
+	
+	message(STATUS "SIRIUS: configuring makefiles")
+	if (NOT SIRIUSDIR)
+		set(SIRIUSDIR $ENV{SIRIUSDIR})
+	endif(NOT SIRIUSDIR)
+
+	message(STATUS "SIRIUSDIR: ${SIRIUSDIR}")
+
+	if (NOT SIRIUSDIR)
+		message(FATAL_ERROR "SIRIUSDIR: not found")
+	endif()
+
+	add_compile_definitions(USE_SIRIUS)
+endif(USE_SIRIUS)
 
 if (USE_CPLEX)
 
@@ -157,6 +178,16 @@ if (USE_XPRESS)
 	endif()
 endif(USE_XPRESS)
 
+if (USE_SIRIUS)
+	if (APPLE)
+		message(FATAL_ERROR "SIRIUS not yet supported on MACOS")
+		#target_link_libraries(ortools PUBLIC ${SIRIUSDIR}/buildLinux/libbib_solveur.dylib)
+	elseif(UNIX)
+		target_link_libraries(ortools PUBLIC ${SIRIUSDIR}/buildLinux/libbib_solveur.so)
+	elseif(MSVC)
+		target_link_libraries(ortools PUBLIC ${SIRIUSDIR}/build/Release/bib_solveur.lib)
+	endif()
+endif(USE_SIRIUS)
 
 if (USE_CPLEX)
 	if (APPLE)

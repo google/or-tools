@@ -352,6 +352,9 @@ extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
 #if defined(USE_XPRESS)
 extern MPSolverInterface* BuildXpressInterface(bool mip, MPSolver* const solver);
 #endif
+#if defined(USE_SIRIUS)
+extern MPSolverInterface* BuildSiriusInterface(bool mip, MPSolver* const solver);
+#endif
 
 namespace {
 MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
@@ -400,6 +403,12 @@ MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
 		return BuildXpressInterface(true, solver);
 	case MPSolver::XPRESS_LINEAR_PROGRAMMING:
 		return BuildXpressInterface(false, solver);
+#endif
+#if defined(USE_SIRIUS)
+	case MPSolver::SIRIUS_LINEAR_PROGRAMMING:
+		return BuildSiriusInterface(false, solver);
+	case MPSolver::SIRIUS_MIXED_INTEGER_PROGRAMMING:
+		return BuildSiriusInterface(true, solver);
 #endif
     default:
       // TODO(user): Revert to the best *available* interface.
@@ -468,6 +477,10 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
 #ifdef USE_XPRESS
   if (problem_type == XPRESS_MIXED_INTEGER_PROGRAMMING) return true;
   if (problem_type == XPRESS_LINEAR_PROGRAMMING) return true;
+#endif
+#ifdef USE_SIRIUS
+  if (problem_type == SIRIUS_MIXED_INTEGER_PROGRAMMING) return true;
+  if (problem_type == SIRIUS_LINEAR_PROGRAMMING) return true;
 #endif
 #ifdef USE_CPLEX
   if (problem_type == CPLEX_LINEAR_PROGRAMMING) return true;

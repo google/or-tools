@@ -282,6 +282,7 @@ message MPModelRequest {
   enum SolverType {
     GLOP_LINEAR_PROGRAMMING = 2;  // Recommended default for LP models.
 	XPRESS_LINEAR_PROGRAMMING = 101;
+	SIRIUS_LINEAR_PROGRAMMING = 103;
     CLP_LINEAR_PROGRAMMING = 0;
     GLPK_LINEAR_PROGRAMMING = 1;
     GUROBI_LINEAR_PROGRAMMING = 6;  // Commercial, needs a valid license.
@@ -292,6 +293,7 @@ message MPModelRequest {
     GLPK_MIXED_INTEGER_PROGRAMMING = 4;
     CBC_MIXED_INTEGER_PROGRAMMING = 5;
 	XPRESS_MIXED_INTEGER_PROGRAMMING = 102;
+	SIRIUS_MIXED_INTEGER_PROGRAMMING = 104;
     GUROBI_MIXED_INTEGER_PROGRAMMING = 7;  // Commercial, needs a valid license.
     CPLEX_MIXED_INTEGER_PROGRAMMING = 11;  // Commercial, needs a
     // valid license.

@@ -243,6 +243,7 @@ PY_CONVERT(MPVariable);
 // Expose the MPSolver::OptimizationProblemType enum.
 %unignore operations_research::MPSolver::OptimizationProblemType;
 %unignore operations_research::MPSolver::GLOP_LINEAR_PROGRAMMING;
+%unignore operations_research::MPSolver::SIRIUS_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::XPRESS_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::CLP_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::GLPK_LINEAR_PROGRAMMING;
@@ -257,6 +258,7 @@ PY_CONVERT(MPVariable);
 %unignore operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING;
+%unignore operations_research::MPSolver::SIRIUS_MIXED_INTEGER_PROGRAMMING;
 
 
 // Expose the MPSolver::ResultStatus enum.

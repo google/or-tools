@@ -631,6 +631,12 @@ int main(int argc, char** argv) {
 	  found = true;
   }
 #endif
+#if defined(USE_SIRIUS)
+  if (FLAGS_colgen_solver == "sirius") {
+	  solver_type = operations_research::MPSolver::SIRIUS_LINEAR_PROGRAMMING;
+	  found = true;
+  }
+#endif
   if (!found) {
     LOG(ERROR) << "Unknown solver " << FLAGS_colgen_solver;
     return 1;

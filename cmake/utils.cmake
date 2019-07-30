@@ -109,7 +109,7 @@ function(build_git_dependency)
   if(MSVC)
     if (${BUILD_DEP_MP})
       set(MSVCSpecific -DCMAKE_CXX_FLAGS_RELEASE="/MP ${CMAKE_CXX_FLAGS_RELEASE}")
-	endif(MSVC)
+	endif()
   endif(MSVC)
   
   execute_process(

@@ -230,6 +230,10 @@ class MPSolver {
 	XPRESS_LINEAR_PROGRAMMING = 101,
 	XPRESS_MIXED_INTEGER_PROGRAMMING = 102,
 #endif
+#if defined(USE_SIRIUS)
+	SIRIUS_LINEAR_PROGRAMMING = 103,
+	SIRIUS_MIXED_INTEGER_PROGRAMMING = 104,
+#endif
   };
 
   /**
@@ -810,6 +814,7 @@ class MPSolver {
   friend class GurobiInterface;
   friend class CplexInterface;
   friend class XpressInterface;
+  friend class SiriusInterface;
   friend class SLMInterface;
   friend class MPSolverInterface;
   friend class GLOPInterface;
@@ -1042,6 +1047,7 @@ class MPObjective {
   friend class GurobiInterface;
   friend class CplexInterface;
   friend class XpressInterface;
+  friend class SiriusInterface;
   friend class GLOPInterface;
   friend class BopInterface;
   friend class SatInterface;
@@ -1169,6 +1175,7 @@ class MPVariable {
   friend class GurobiInterface;
   friend class CplexInterface;
   friend class XpressInterface;
+  friend class SiriusInterface;
   friend class GLOPInterface;
   friend class MPVariableSolutionValueTest;
   friend class BopInterface;
@@ -1329,6 +1336,7 @@ class MPConstraint {
   friend class GurobiInterface;
   friend class CplexInterface;
   friend class XpressInterface;
+  friend class SiriusInterface;
   friend class GLOPInterface;
   friend class BopInterface;
   friend class SatInterface;

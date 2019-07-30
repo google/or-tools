@@ -31,3 +31,7 @@ foreach(TEST
     )
   add_test(NAME py_${TEST} COMMAND ${VENV_BIN_DIR}/python ${PROJECT_SOURCE_DIR}/${TEST}.py)
 endforeach()
+
+if (USE_SIRIUS)
+	add_test(NAME "py_linear_programming_sirius" COMMAND ${VENV_BIN_DIR}/python ${PROJECT_SOURCE_DIR}/linear_programming_sirius.py)
+endif()
