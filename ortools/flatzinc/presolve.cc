@@ -572,9 +572,8 @@ Presolver::RuleStatus Presolver::Unreify(Constraint* ct, std::string* log) {
   return CONSTRAINT_REWRITTEN;
 }
 
-// A reified constraint is a constraint that has been casted into a boolean
-// variable that represents its status.
-// Thus x == 3 can be reified into b == (x == 3).
+// A implied constraint is a constraint that has an enforcement literal that
+// states whether the constraint is active or not.
 //
 // Rule 1:
 // Input : int_xx_imp(arg1, arg2, true) or
@@ -1501,6 +1500,10 @@ Presolver::RuleStatus Presolver::PresolveLinear(Constraint* ct,
     ct->type = "int_lin_ge_reif";
   } else if (ct->type == "int_lin_ge_reif") {
     ct->type = "int_lin_le_reif";
+  } else if (ct->type == "int_lin_le_imp") {
+    ct->type = "int_lin_ge_imp";
+  } else if (ct->type == "int_lin_ge_imp") {
+    ct->type = "int_lin_le_imp";
   }
   return CONSTRAINT_REWRITTEN;
 }
@@ -1636,56 +1639,57 @@ Presolver::RuleStatus Presolver::SimplifyLinear(Constraint* ct,
       break;  // Early exit the loop.
     }
   }
-  if (ct->type == "int_lin_ge") {
+
+  // 0 = always false. 1 = always true, 2 = unknown.
+  int state = 2;
+  if (absl::StartsWith(ct->type, "int_lin_ge")) {
     if (rhs_min >= rhs) {
-      return CONSTRAINT_ALWAYS_TRUE;
+      state = 1;
     } else if (rhs_max < rhs) {
-      return CONSTRAINT_ALWAYS_FALSE;
+      state = 0;
+    }
+  } else if (absl::StartsWith(ct->type, "int_lin_le")) {
+    if (rhs_min > rhs) {
+      state = 0;
+    } else if (rhs_max <= rhs) {
+      state = 1;
+    }
+  } else if (rhs < rhs_min || rhs > rhs_max) {
+    if (absl::StartsWith(ct->type, "int_lin_eq")) {
+      state = 0;
+    } else if (absl::StartsWith(ct->type, "int_lin_ne")) {
+      state = 1;
     }
   }
-  if (ct->type == "int_lin_ge_reif") {
-    if (rhs_min >= rhs) {
-      SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 1);
-      return CONSTRAINT_REWRITTEN;
-    } else if (rhs_max < rhs) {
+
+  if (state == 0) {
+    if (absl::EndsWith(ct->type, "_reif") || absl::EndsWith(ct->type, "_imp")) {
+      // Always false. Propagates to enforcement literal.
       SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 0);
       return CONSTRAINT_REWRITTEN;
-    }
-  }
-  if (ct->type == "int_lin_le") {
-    if (rhs_min > rhs) {
+    } else {
       return CONSTRAINT_ALWAYS_FALSE;
-    } else if (rhs_max <= rhs) {
+    }
+  } else if (state == 1) {
+    if (absl::EndsWith(ct->type, "_reif")) {
+      // Always true, protagate to reified literal.
+      SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 1);
+      return CONSTRAINT_REWRITTEN;
+    } else {
       return CONSTRAINT_ALWAYS_TRUE;
     }
   }
-  if (ct->type == "int_lin_le_reif") {
-    if (rhs_min > rhs) {
-      SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 0);
-      return CONSTRAINT_REWRITTEN;
-    } else if (rhs_max <= rhs) {
-      SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 1);
-      return CONSTRAINT_REWRITTEN;
-    }
-  }
-  if (rhs < rhs_min || rhs > rhs_max) {
-    if (ct->type == "int_lin_eq") {
-      return CONSTRAINT_ALWAYS_FALSE;
-    } else if (ct->type == "int_lin_eq_reif") {
-      SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 0);
-      return CONSTRAINT_REWRITTEN;
-    } else if (ct->type == "int_lin_ne") {
-      return CONSTRAINT_ALWAYS_TRUE;
-    } else if (ct->type == "int_lin_ne_reif") {
-      SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 1);
-      return CONSTRAINT_REWRITTEN;
-    }
-  } else if (rhs == rhs_min) {
+
+  // In case the test in on a bounds, change test for value into comparison.
+  if (rhs == rhs_min) {
     if (ct->type == "int_lin_eq") {
       ct->type = "int_lin_le";
       return CONSTRAINT_REWRITTEN;
     } else if (ct->type == "int_lin_eq_reif") {
       ct->type = "int_lin_le_reif";
+      return CONSTRAINT_REWRITTEN;
+    } else if (ct->type == "int_lin_eq_imp") {
+      ct->type = "int_lin_le_imp";
       return CONSTRAINT_REWRITTEN;
     } else if (ct->type == "int_lin_ne") {
       ct->type = "int_lin_ge";
@@ -1693,6 +1697,10 @@ Presolver::RuleStatus Presolver::SimplifyLinear(Constraint* ct,
       return CONSTRAINT_REWRITTEN;
     } else if (ct->type == "int_lin_ne_reif") {
       ct->type = "int_lin_ge_reif";
+      ct->arguments[2] = Argument::IntegerValue(rhs + 1);
+      return CONSTRAINT_REWRITTEN;
+    } else if (ct->type == "int_lin_ne_imp") {
+      ct->type = "int_lin_ge_imp";
       ct->arguments[2] = Argument::IntegerValue(rhs + 1);
       return CONSTRAINT_REWRITTEN;
     }
@@ -1703,12 +1711,19 @@ Presolver::RuleStatus Presolver::SimplifyLinear(Constraint* ct,
     } else if (ct->type == "int_lin_eq_reif") {
       ct->type = "int_lin_ge_reif";
       return CONSTRAINT_REWRITTEN;
+    } else if (ct->type == "int_lin_eq_imp") {
+      ct->type = "int_lin_ge_imp";
+      return CONSTRAINT_REWRITTEN;
     } else if (ct->type == "int_lin_ne") {
       ct->type = "int_lin_le";
       ct->arguments[2] = Argument::IntegerValue(rhs - 1);
       return CONSTRAINT_REWRITTEN;
     } else if (ct->type == "int_lin_ne_reif") {
       ct->type = "int_lin_le_reif";
+      ct->arguments[2] = Argument::IntegerValue(rhs - 1);
+      return CONSTRAINT_REWRITTEN;
+    } else if (ct->type == "int_lin_ne_imp") {
+      ct->type = "int_lin_le_imp";
       ct->arguments[2] = Argument::IntegerValue(rhs - 1);
       return CONSTRAINT_REWRITTEN;
     }
@@ -2386,7 +2401,7 @@ Presolver::RuleStatus Presolver::PropagateReifiedComparisons(Constraint* ct,
   return NOT_CHANGED;
 }
 
-// Propagate implied comparison: int_eq_imp, int_ge_imp, int_le_imp:
+// Propagate implied comparisons: int_eq_imp, int_ge_imp, int_le_imp:
 //
 // Rule1:
 // Input : int_xx_imp(x, x, b) or bool_eq_imp(b1, b1, b)
@@ -2682,14 +2697,12 @@ Presolver::RuleStatus Presolver::RemoveAbsFromIntLinLe(Constraint* ct,
       ct->arguments[0].values[0] == 1 && ct->arguments[2].HasOneValue() &&
       ct->arguments[2].Value() == 0 &&
       gtl::ContainsKey(abs_map_, ct->arguments[1].variables[0])) {
-    LOG(INFO) << "Parse " << ct->DebugString();
     IntegerVariable* const abs_var = ct->arguments[1].variables[0];
     IntegerVariable* const other_var = ct->arguments[1].variables[1];
     int64 other_coeff = ct->arguments[0].values[1];
 
     IntegerVariable* const var = abs_map_[abs_var];
     ct->arguments[1].variables[0] = var;
-    LOG(INFO) << "  write " << ct->DebugString();
 
     Constraint* const abs_ct = abs_ct_[abs_var];
     abs_ct->type = "int_lin_ge";
@@ -2697,7 +2710,6 @@ Presolver::RuleStatus Presolver::RemoveAbsFromIntLinLe(Constraint* ct,
     abs_ct->arguments[1] = Argument::IntVarRefArray({var, other_var});
     abs_ct->arguments.push_back(Argument::IntegerValue(0));
     abs_ct->RemoveTargetVariable();
-    LOG(INFO) << "  write " << abs_ct->DebugString();
 
     return CONSTRAINT_REWRITTEN;
   }
@@ -3354,7 +3366,6 @@ void Presolver::PresolveOneConstraint(int index, Constraint* ct) {
     CALL_TYPE(index, ct, "int_gt_reif", PropagateReifiedComparisons);
     CALL_TYPE(index, ct, "int_eq_imp", PropagateImpliedComparisons);
     CALL_TYPE(index, ct, "int_ne_imp", PropagateImpliedComparisons);
-    // CALL_TYPE(index, ct, "int_le_imp", RemoveAbsFromIntLeReif);
     CALL_TYPE(index, ct, "int_le_imp", PropagateImpliedComparisons);
     CALL_TYPE(index, ct, "int_lt_imp", PropagateImpliedComparisons);
     CALL_TYPE(index, ct, "int_ge_imp", PropagateImpliedComparisons);
