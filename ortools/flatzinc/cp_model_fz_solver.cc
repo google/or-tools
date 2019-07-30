@@ -90,7 +90,8 @@ struct CpModelProtoWithMapping {
                                            const fz::Constraint& fz_ct,
                                            ConstraintProto* ct);
   void FillConstraint(const fz::Constraint& fz_ct, ConstraintProto* ct);
-  void FillReifConstraint(const fz::Constraint& fz_ct, ConstraintProto* ct);
+  void FillReifOrImpliedConstraint(const fz::Constraint& fz_ct,
+                                   ConstraintProto* ct);
 
   // Translates the flatzinc search annotations into the CpModelProto
   // search_order field.
@@ -687,72 +688,93 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
   }
 }
 
-void CpModelProtoWithMapping::FillReifConstraint(const fz::Constraint& fz_ct,
-                                                 ConstraintProto* ct) {
+void CpModelProtoWithMapping::FillReifOrImpliedConstraint(
+    const fz::Constraint& fz_ct, ConstraintProto* ct) {
   // Start by adding a non-reified version of the same constraint.
-  fz::Constraint copy = fz_ct;
+  const bool is_implication = absl::EndsWith(fz_ct.type, "_imp");
+
+  std::string simplified_type;
   if (absl::EndsWith(fz_ct.type, "_reif")) {
-    copy.type = fz_ct.type.substr(0, fz_ct.type.size() - 5);  // Remove _reif.
+    // Remove _reif.
+    simplified_type = fz_ct.type.substr(0, fz_ct.type.size() - 5);
+  } else if (absl::EndsWith(fz_ct.type, "_imp")) {
+    // Remove _imp.
+    simplified_type = fz_ct.type.substr(0, fz_ct.type.size() - 4);
   } else {
-    copy.type = fz_ct.type;
+    // Keep name as it is an implicit reified constraint.
+    simplified_type = fz_ct.type;
   }
+
+  // We need a copy to be able to change the type of the constraint.
+  fz::Constraint copy = fz_ct;
+  copy.type = simplified_type;
+
+  // Create the CP-SAT constraint.
   FillConstraint(copy, ct);
 
+  // In case of reified constraints, the type of the opposite constraint.
+  std::string negated_type;
+
   // Fill enforcement_literal and set copy.type to the negated constraint.
-  if (fz_ct.type == "array_bool_or") {
+  if (simplified_type == "array_bool_or") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[1])));
-    copy.type = "array_bool_or_negated";
-  } else if (fz_ct.type == "array_bool_and") {
+    negated_type = "array_bool_or_negated";
+  } else if (simplified_type == "array_bool_and") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[1])));
-    copy.type = "array_bool_and_negated";
-  } else if (fz_ct.type == "set_in_reif") {
+    negated_type = "array_bool_and_negated";
+  } else if (simplified_type == "set_in") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[2])));
-    copy.type = "set_in_negated";
-  } else if (fz_ct.type == "bool_eq_reif" || fz_ct.type == "int_eq_reif") {
+    negated_type = "set_in_negated";
+  } else if (simplified_type == "bool_eq" || simplified_type == "int_eq") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[2])));
-    copy.type = "int_ne";
-  } else if (fz_ct.type == "bool_ne_reif" || fz_ct.type == "int_ne_reif") {
+    negated_type = "int_ne";
+  } else if (simplified_type == "bool_ne" || simplified_type == "int_ne") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[2])));
-    copy.type = "int_eq";
-  } else if (fz_ct.type == "bool_le_reif" || fz_ct.type == "int_le_reif") {
+    negated_type = "int_eq";
+  } else if (simplified_type == "bool_le" || simplified_type == "int_le") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[2])));
-    copy.type = "int_gt";
-  } else if (fz_ct.type == "bool_lt_reif" || fz_ct.type == "int_lt_reif") {
+    negated_type = "int_gt";
+  } else if (simplified_type == "bool_lt" || simplified_type == "int_lt") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[2])));
-    copy.type = "int_ge";
-  } else if (fz_ct.type == "bool_ge_reif" || fz_ct.type == "int_ge_reif") {
+    negated_type = "int_ge";
+  } else if (simplified_type == "bool_ge" || simplified_type == "int_ge") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[2])));
-    copy.type = "int_lt";
-  } else if (fz_ct.type == "bool_gt_reif" || fz_ct.type == "int_gt_reif") {
+    negated_type = "int_lt";
+  } else if (simplified_type == "bool_gt" || simplified_type == "int_gt") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[2])));
-    copy.type = "int_le";
-  } else if (fz_ct.type == "int_lin_eq_reif") {
+    negated_type = "int_le";
+  } else if (simplified_type == "int_lin_eq") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[3])));
-    copy.type = "int_lin_ne";
-  } else if (fz_ct.type == "int_lin_ne_reif") {
+    negated_type = "int_lin_ne";
+  } else if (simplified_type == "int_lin_ne") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[3])));
-    copy.type = "int_lin_eq";
-  } else if (fz_ct.type == "int_lin_le_reif") {
+    negated_type = "int_lin_eq";
+  } else if (simplified_type == "int_lin_le") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[3])));
-    copy.type = "int_lin_gt";
-  } else if (fz_ct.type == "int_lin_ge_reif") {
+    negated_type = "int_lin_gt";
+  } else if (simplified_type == "int_lin_ge") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[3])));
-    copy.type = "int_lin_lt";
-  } else if (fz_ct.type == "int_lin_lt_reif") {
+    negated_type = "int_lin_lt";
+  } else if (simplified_type == "int_lin_lt") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[3])));
-    copy.type = "int_lin_ge";
-  } else if (fz_ct.type == "int_lin_gt_reif") {
+    negated_type = "int_lin_ge";
+  } else if (simplified_type == "int_lin_gt") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[3])));
-    copy.type = "int_lin_le";
+    negated_type = "int_lin_le";
   } else {
-    LOG(FATAL) << "Unsupported " << fz_ct.type;
+    LOG(FATAL) << "Unsupported " << simplified_type;
   }
+
+  // One way implication. We can stop here.
+  if (is_implication) return;
 
   // Add the other side of the reification because CpModelProto only support
   // half reification.
   ConstraintProto* negated_ct = proto.add_constraints();
   negated_ct->set_name(fz_ct.type + " (negated)");
-  negated_ct->add_enforcement_literal(-ct->enforcement_literal(0) - 1);
+  negated_ct->add_enforcement_literal(
+      sat::NegatedRef(ct->enforcement_literal(0)));
+  copy.type = negated_type;
   FillConstraint(copy, negated_ct);
 }
 
@@ -943,8 +965,9 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     ConstraintProto* ct = m.proto.add_constraints();
     ct->set_name(fz_ct->type);
     if (absl::EndsWith(fz_ct->type, "_reif") ||
-        fz_ct->type == "array_bool_or" || fz_ct->type == "array_bool_and") {
-      m.FillReifConstraint(*fz_ct, ct);
+        absl::EndsWith(fz_ct->type, "_imp") || fz_ct->type == "array_bool_or" ||
+        fz_ct->type == "array_bool_and") {
+      m.FillReifOrImpliedConstraint(*fz_ct, ct);
     } else {
       m.FillConstraint(*fz_ct, ct);
     }

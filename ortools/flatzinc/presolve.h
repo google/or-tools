@@ -134,6 +134,7 @@ class Presolver {
   RuleStatus PresolveBool2Int(Constraint* ct, std::string* log);
   RuleStatus PresolveIntEq(Constraint* ct, std::string* log);
   RuleStatus Unreify(Constraint* ct, std::string* log);
+  RuleStatus RemoveFixedEnforcementLiteral(Constraint* ct, std::string* log);
   RuleStatus PresolveInequalities(Constraint* ct, std::string* log);
   RuleStatus PresolveIntNe(Constraint* ct, std::string* log);
   RuleStatus PresolveSetNotIn(Constraint* ct, std::string* log);
@@ -155,6 +156,7 @@ class Presolver {
   RuleStatus PresolveSimplifyElement(Constraint* ct, std::string* log);
   RuleStatus PresolveSimplifyExprElement(Constraint* ct, std::string* log);
   RuleStatus PropagateReifiedComparisons(Constraint* ct, std::string* log);
+  RuleStatus PropagateImpliedComparisons(Constraint* ct, std::string* log);
   RuleStatus StoreAbs(Constraint* ct, std::string* log);
   RuleStatus PropagateAbsBounds(Constraint* ct, std::string* log);
   RuleStatus RemoveAbsFromIntLeReif(Constraint* ct, std::string* log);

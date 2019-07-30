@@ -518,11 +518,19 @@ bool CheckIntEq(const Constraint& ct,
   return left == right;
 }
 
+bool CheckIntEqImp(const Constraint& ct,
+                   const std::function<int64(IntegerVariable*)>& evaluator) {
+  const int64 left = Eval(ct.arguments[0], evaluator);
+  const int64 right = Eval(ct.arguments[1], evaluator);
+  const bool status = Eval(ct.arguments[2], evaluator) != 0;
+  return (status && (left == right)) || !status;
+}
+
 bool CheckIntEqReif(const Constraint& ct,
                     const std::function<int64(IntegerVariable*)>& evaluator) {
   const int64 left = Eval(ct.arguments[0], evaluator);
   const int64 right = Eval(ct.arguments[1], evaluator);
-  const int64 status = Eval(ct.arguments[2], evaluator);
+  const bool status = Eval(ct.arguments[2], evaluator) != 0;
   return status == (left == right);
 }
 
@@ -533,11 +541,19 @@ bool CheckIntGe(const Constraint& ct,
   return left >= right;
 }
 
+bool CheckIntGeImp(const Constraint& ct,
+                   const std::function<int64(IntegerVariable*)>& evaluator) {
+  const int64 left = Eval(ct.arguments[0], evaluator);
+  const int64 right = Eval(ct.arguments[1], evaluator);
+  const bool status = Eval(ct.arguments[2], evaluator) != 0;
+  return (status && (left >= right)) || !status;
+}
+
 bool CheckIntGeReif(const Constraint& ct,
                     const std::function<int64(IntegerVariable*)>& evaluator) {
   const int64 left = Eval(ct.arguments[0], evaluator);
   const int64 right = Eval(ct.arguments[1], evaluator);
-  const int64 status = Eval(ct.arguments[2], evaluator);
+  const bool status = Eval(ct.arguments[2], evaluator) != 0;
   return status == (left >= right);
 }
 
@@ -548,11 +564,19 @@ bool CheckIntGt(const Constraint& ct,
   return left > right;
 }
 
+bool CheckIntGtImp(const Constraint& ct,
+                   const std::function<int64(IntegerVariable*)>& evaluator) {
+  const int64 left = Eval(ct.arguments[0], evaluator);
+  const int64 right = Eval(ct.arguments[1], evaluator);
+  const bool status = Eval(ct.arguments[2], evaluator) != 0;
+  return (status && (left > right)) || !status;
+}
+
 bool CheckIntGtReif(const Constraint& ct,
                     const std::function<int64(IntegerVariable*)>& evaluator) {
   const int64 left = Eval(ct.arguments[0], evaluator);
   const int64 right = Eval(ct.arguments[1], evaluator);
-  const int64 status = Eval(ct.arguments[2], evaluator);
+  const bool status = Eval(ct.arguments[2], evaluator) != 0;
   return status == (left > right);
 }
 
@@ -563,11 +587,19 @@ bool CheckIntLe(const Constraint& ct,
   return left <= right;
 }
 
+bool CheckIntLeImp(const Constraint& ct,
+                   const std::function<int64(IntegerVariable*)>& evaluator) {
+  const int64 left = Eval(ct.arguments[0], evaluator);
+  const int64 right = Eval(ct.arguments[1], evaluator);
+  const bool status = Eval(ct.arguments[2], evaluator) != 0;
+  return (status && (left <= right)) || !status;
+}
+
 bool CheckIntLeReif(const Constraint& ct,
                     const std::function<int64(IntegerVariable*)>& evaluator) {
   const int64 left = Eval(ct.arguments[0], evaluator);
   const int64 right = Eval(ct.arguments[1], evaluator);
-  const int64 status = Eval(ct.arguments[2], evaluator);
+  const bool status = Eval(ct.arguments[2], evaluator) != 0;
   return status == (left <= right);
 }
 
@@ -578,11 +610,19 @@ bool CheckIntLt(const Constraint& ct,
   return left < right;
 }
 
+bool CheckIntLtImp(const Constraint& ct,
+                   const std::function<int64(IntegerVariable*)>& evaluator) {
+  const int64 left = Eval(ct.arguments[0], evaluator);
+  const int64 right = Eval(ct.arguments[1], evaluator);
+  const bool status = Eval(ct.arguments[2], evaluator) != 0;
+  return (status && (left < right)) || status;
+}
+
 bool CheckIntLtReif(const Constraint& ct,
                     const std::function<int64(IntegerVariable*)>& evaluator) {
   const int64 left = Eval(ct.arguments[0], evaluator);
   const int64 right = Eval(ct.arguments[1], evaluator);
-  const int64 status = Eval(ct.arguments[2], evaluator);
+  const bool status = Eval(ct.arguments[2], evaluator) != 0;
   return status == (left < right);
 }
 
@@ -603,12 +643,20 @@ bool CheckIntLinEq(const Constraint& ct,
   return left == right;
 }
 
+bool CheckIntLinEqImp(const Constraint& ct,
+                      const std::function<int64(IntegerVariable*)>& evaluator) {
+  const int64 left = ComputeIntLin(ct, evaluator);
+  const int64 right = Eval(ct.arguments[2], evaluator);
+  const bool status = Eval(ct.arguments[3], evaluator) != 0;
+  return (status && (left == right)) || !status;
+}
+
 bool CheckIntLinEqReif(
     const Constraint& ct,
     const std::function<int64(IntegerVariable*)>& evaluator) {
   const int64 left = ComputeIntLin(ct, evaluator);
   const int64 right = Eval(ct.arguments[2], evaluator);
-  const int64 status = Eval(ct.arguments[3], evaluator);
+  const bool status = Eval(ct.arguments[3], evaluator) != 0;
   return status == (left == right);
 }
 
@@ -619,12 +667,20 @@ bool CheckIntLinGe(const Constraint& ct,
   return left >= right;
 }
 
+bool CheckIntLinGeImp(const Constraint& ct,
+                      const std::function<int64(IntegerVariable*)>& evaluator) {
+  const int64 left = ComputeIntLin(ct, evaluator);
+  const int64 right = Eval(ct.arguments[2], evaluator);
+  const bool status = Eval(ct.arguments[3], evaluator) != 0;
+  return (status && (left >= right)) || !status;
+}
+
 bool CheckIntLinGeReif(
     const Constraint& ct,
     const std::function<int64(IntegerVariable*)>& evaluator) {
   const int64 left = ComputeIntLin(ct, evaluator);
   const int64 right = Eval(ct.arguments[2], evaluator);
-  const int64 status = Eval(ct.arguments[3], evaluator);
+  const bool status = Eval(ct.arguments[3], evaluator) != 0;
   return status == (left >= right);
 }
 
@@ -635,12 +691,20 @@ bool CheckIntLinLe(const Constraint& ct,
   return left <= right;
 }
 
+bool CheckIntLinLeImp(const Constraint& ct,
+                      const std::function<int64(IntegerVariable*)>& evaluator) {
+  const int64 left = ComputeIntLin(ct, evaluator);
+  const int64 right = Eval(ct.arguments[2], evaluator);
+  const bool status = Eval(ct.arguments[3], evaluator) != 0;
+  return (status && (left <= right)) || !status;
+}
+
 bool CheckIntLinLeReif(
     const Constraint& ct,
     const std::function<int64(IntegerVariable*)>& evaluator) {
   const int64 left = ComputeIntLin(ct, evaluator);
   const int64 right = Eval(ct.arguments[2], evaluator);
-  const int64 status = Eval(ct.arguments[3], evaluator);
+  const bool status = Eval(ct.arguments[3], evaluator) != 0;
   return status == (left <= right);
 }
 
@@ -651,12 +715,20 @@ bool CheckIntLinNe(const Constraint& ct,
   return left != right;
 }
 
+bool CheckIntLinNeImp(const Constraint& ct,
+                      const std::function<int64(IntegerVariable*)>& evaluator) {
+  const int64 left = ComputeIntLin(ct, evaluator);
+  const int64 right = Eval(ct.arguments[2], evaluator);
+  const bool status = Eval(ct.arguments[3], evaluator) != 0;
+  return (status && (left != right)) || !status;
+}
+
 bool CheckIntLinNeReif(
     const Constraint& ct,
     const std::function<int64(IntegerVariable*)>& evaluator) {
   const int64 left = ComputeIntLin(ct, evaluator);
   const int64 right = Eval(ct.arguments[2], evaluator);
-  const int64 status = Eval(ct.arguments[3], evaluator);
+  const bool status = Eval(ct.arguments[3], evaluator) != 0;
   return status == (left != right);
 }
 
@@ -699,11 +771,19 @@ bool CheckIntNe(const Constraint& ct,
   return left != right;
 }
 
+bool CheckIntNeImp(const Constraint& ct,
+                   const std::function<int64(IntegerVariable*)>& evaluator) {
+  const int64 left = Eval(ct.arguments[0], evaluator);
+  const int64 right = Eval(ct.arguments[1], evaluator);
+  const bool status = Eval(ct.arguments[2], evaluator) != 0;
+  return (status && (left != right)) || !status;
+}
+
 bool CheckIntNeReif(const Constraint& ct,
                     const std::function<int64(IntegerVariable*)>& evaluator) {
   const int64 left = Eval(ct.arguments[0], evaluator);
   const int64 right = Eval(ct.arguments[1], evaluator);
-  const int64 status = Eval(ct.arguments[2], evaluator);
+  const bool status = Eval(ct.arguments[2], evaluator) != 0;
   return status == (left != right);
 }
 
@@ -1053,19 +1133,25 @@ CallMap CreateCallMap() {
   m["bool_clause"] = CheckBoolClause;
   m["bool_eq"] = CheckIntEq;
   m["bool2int"] = CheckIntEq;
+  m["bool_eq_imp"] = CheckIntEqImp;
   m["bool_eq_reif"] = CheckIntEqReif;
   m["bool_ge"] = CheckIntGe;
+  m["bool_ge_imp"] = CheckIntGeImp;
   m["bool_ge_reif"] = CheckIntGeReif;
   m["bool_gt"] = CheckIntGt;
+  m["bool_gt_imp"] = CheckIntGtImp;
   m["bool_gt_reif"] = CheckIntGtReif;
   m["bool_le"] = CheckIntLe;
+  m["bool_le_imp"] = CheckIntLeImp;
   m["bool_le_reif"] = CheckIntLeReif;
   m["bool_left_imp"] = CheckIntLe;
   m["bool_lin_eq"] = CheckIntLinEq;
   m["bool_lin_le"] = CheckIntLinLe;
   m["bool_lt"] = CheckIntLt;
+  m["bool_lt_imp"] = CheckIntLtImp;
   m["bool_lt_reif"] = CheckIntLtReif;
   m["bool_ne"] = CheckIntNe;
+  m["bool_ne_imp"] = CheckIntNeImp;
   m["bool_ne_reif"] = CheckIntNeReif;
   m["bool_not"] = CheckBoolNot;
   m["bool_or"] = CheckBoolOr;
@@ -1099,28 +1185,38 @@ CallMap CreateCallMap() {
   m["int_abs"] = CheckIntAbs;
   m["int_div"] = CheckIntDiv;
   m["int_eq"] = CheckIntEq;
+  m["int_eq_imp"] = CheckIntEqImp;
   m["int_eq_reif"] = CheckIntEqReif;
   m["int_ge"] = CheckIntGe;
+  m["int_ge_imp"] = CheckIntGeImp;
   m["int_ge_reif"] = CheckIntGeReif;
   m["int_gt"] = CheckIntGt;
+  m["int_gt_imp"] = CheckIntGtImp;
   m["int_gt_reif"] = CheckIntGtReif;
   m["int_le"] = CheckIntLe;
+  m["int_le_imp"] = CheckIntLeImp;
   m["int_le_reif"] = CheckIntLeReif;
   m["int_lin_eq"] = CheckIntLinEq;
+  m["int_lin_eq_imp"] = CheckIntLinEqImp;
   m["int_lin_eq_reif"] = CheckIntLinEqReif;
   m["int_lin_ge"] = CheckIntLinGe;
+  m["int_lin_ge_imp"] = CheckIntLinGeImp;
   m["int_lin_ge_reif"] = CheckIntLinGeReif;
   m["int_lin_le"] = CheckIntLinLe;
+  m["int_lin_le_imp"] = CheckIntLinLeImp;
   m["int_lin_le_reif"] = CheckIntLinLeReif;
   m["int_lin_ne"] = CheckIntLinNe;
+  m["int_lin_ne_imp"] = CheckIntLinNeImp;
   m["int_lin_ne_reif"] = CheckIntLinNeReif;
   m["int_lt"] = CheckIntLt;
+  m["int_lt_imp"] = CheckIntLtImp;
   m["int_lt_reif"] = CheckIntLtReif;
   m["int_max"] = CheckIntMax;
   m["int_min"] = CheckIntMin;
   m["int_minus"] = CheckIntMinus;
   m["int_mod"] = CheckIntMod;
   m["int_ne"] = CheckIntNe;
+  m["int_ne_imp"] = CheckIntNeImp;
   m["int_ne_reif"] = CheckIntNeReif;
   m["int_negate"] = CheckIntNegate;
   m["int_plus"] = CheckIntPlus;

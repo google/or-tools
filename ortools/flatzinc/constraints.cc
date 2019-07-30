@@ -437,7 +437,8 @@ void ExtractArrayIntElement(fz::SolverData* data, fz::Constraint* ct) {
   }
 }
 
-void ExtractArrayIntElementNonShifted(fz::SolverData* data, fz::Constraint* ct) {
+void ExtractArrayIntElementNonShifted(fz::SolverData* data,
+                                      fz::Constraint* ct) {
   CHECK_EQ(1, ct->arguments[0].variables.size());
   Solver* const solver = data->solver();
   if (ct->arguments[0].type == fz::Argument::INT_VAR_REF) {
