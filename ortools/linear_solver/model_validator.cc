@@ -194,6 +194,50 @@ std::string FindErrorInMPSosConstraint(const MPModelProto& model,
   return "";
 }
 
+std::string FindErrorInMPQuadraticConstraint(const MPModelProto& model,
+                                             const MPQuadraticConstraint& qcst,
+                                             std::vector<bool>* var_mask) {
+  const int num_vars = model.variable_size();
+
+  if (qcst.var_index_size() != qcst.coefficient_size()) {
+    return "var_index_size() != coefficient_size()";
+  }
+  for (int i = 0; i < qcst.var_index_size(); ++i) {
+    if (qcst.var_index(i) < 0 || qcst.var_index(i) >= model.variable_size()) {
+      return absl::StrCat("var_index(", i, ")=", qcst.var_index(i),
+                          " is invalid.", " It must be in [0, ", num_vars, ")");
+    }
+
+    if (!std::isfinite(qcst.coefficient(i))) {
+      return absl::StrCat("coefficient(", i, ")=", qcst.coefficient(i),
+                          " is invalid");
+    }
+  }
+
+  if (qcst.qvar1_index_size() != qcst.qvar2_index_size() ||
+      qcst.qvar1_index_size() != qcst.qcoefficient_size()) {
+    return "quadratic indices and coefficients must have the same size";
+  }
+  for (int i = 0; i < qcst.qvar1_index_size(); ++i) {
+    if (qcst.qvar1_index(i) >= num_vars || qcst.qvar1_index(i) < 0) {
+      return absl::StrCat("qvar1_index(", i, ")=", qcst.qvar1_index(i),
+                          " is invalid.", " It must be in [0, ", num_vars, ")");
+    }
+
+    if (qcst.qvar2_index(i) >= num_vars || qcst.qvar2_index(i) < 0) {
+      return absl::StrCat("qvar2_index(", i, ")=", qcst.qvar2_index(i),
+                          " is invalid.", " It must be in [0, ", num_vars, ")");
+    }
+
+    if (!std::isfinite(qcst.qcoefficient(i))) {
+      return absl::StrCat("qcoefficient(", i, ")=", qcst.qcoefficient(i),
+                          " is invalid");
+    }
+  }
+
+  return "";
+}
+
 std::string FindErrorInQuadraticObjective(const MPQuadraticObjective& qobj,
                                           int num_vars) {
   if (qobj.qvar1_index_size() != qobj.qvar2_index_size() ||
@@ -297,6 +341,11 @@ std::string FindErrorInMPModelProto(const MPModelProto& model) {
             model, gen_constraint.sos_constraint(), &variable_appears);
         break;
 
+      case MPGeneralConstraintProto::kQuadraticConstraint:
+        error = FindErrorInMPQuadraticConstraint(
+            model, gen_constraint.quadratic_constraint(), &variable_appears);
+        break;
+
       default:
         return absl::StrCat("Unknown general constraint type ",
                             gen_constraint.general_constraint_case());
@@ -332,7 +381,8 @@ bool MPRequestIsEmptyOrInvalid(const MPModelRequest& request,
     return true;
   }
   const MPModelProto& model = request.model();
-  if (model.variable_size() == 0 && model.constraint_size() == 0) {
+  if (model.variable_size() == 0 && model.constraint_size() == 0 &&
+      model.general_constraint_size() == 0) {
     response->set_status(MPSOLVER_OPTIMAL);
     response->set_objective_value(request.model().objective_offset());
     response->set_best_objective_bound(request.model().objective_offset());

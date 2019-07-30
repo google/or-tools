@@ -80,6 +80,48 @@ int AddSosConstraint(const MPSosConstraint& sos_cst, GRBmodel* gurobi_model,
                    /*beg=*/begins.data(), /*ind=*/tmp_variables->data(),
                    /*weight*/ tmp_weights->data());
 }
+
+int AddQuadraticConstraint(const MPGeneralConstraintProto& gen_cst,
+                           GRBmodel* gurobi_model) {
+  CHECK(gurobi_model != nullptr);
+  constexpr double kInfinity = std::numeric_limits<double>::infinity();
+
+  CHECK(gen_cst.has_quadratic_constraint());
+  const MPQuadraticConstraint& quad_cst = gen_cst.quadratic_constraint();
+
+  auto addqconstr = [](GRBmodel* gurobi_model, MPQuadraticConstraint quad_cst,
+                       char sense, double rhs, const std::string& name) {
+    return GRBaddqconstr(
+        gurobi_model,
+        /*numlnz=*/quad_cst.var_index_size(),
+        /*lind=*/quad_cst.mutable_var_index()->mutable_data(),
+        /*lval=*/quad_cst.mutable_coefficient()->mutable_data(),
+        /*numqnz=*/quad_cst.qvar1_index_size(),
+        /*qrow=*/quad_cst.mutable_qvar1_index()->mutable_data(),
+        /*qcol=*/quad_cst.mutable_qvar2_index()->mutable_data(),
+        /*qval=*/quad_cst.mutable_qcoefficient()->mutable_data(),
+        /*sense=*/sense,
+        /*rhs=*/rhs,
+        /*QCname=*/name.c_str());
+  };
+
+  if (quad_cst.has_lower_bound() && quad_cst.lower_bound() > -kInfinity) {
+    const int grb_status =
+        addqconstr(gurobi_model, gen_cst.quadratic_constraint(),
+                   GRB_GREATER_EQUAL, quad_cst.lower_bound(),
+                   gen_cst.has_name() ? gen_cst.name() + "_lb" : "");
+    if (grb_status != GRB_OK) return grb_status;
+  }
+  if (quad_cst.has_upper_bound() && quad_cst.upper_bound() < kInfinity) {
+    const int grb_status =
+        addqconstr(gurobi_model, gen_cst.quadratic_constraint(), GRB_LESS_EQUAL,
+                   quad_cst.upper_bound(),
+                   gen_cst.has_name() ? gen_cst.name() + "_ub" : "");
+    if (grb_status != GRB_OK) return grb_status;
+  }
+
+  return GRB_OK;
+}
 }  // namespace
 
 util::StatusOr<MPSolutionResponse> GurobiSolveProto(
@@ -190,6 +232,10 @@ util::StatusOr<MPSolutionResponse> GurobiSolveProto(
           RETURN_IF_GUROBI_ERROR(AddSosConstraint(gen_cst.sos_constraint(),
                                                   gurobi_model, &ct_variables,
                                                   &ct_coefficients));
+          break;
+        }
+        case MPGeneralConstraintProto::kQuadraticConstraint: {
+          RETURN_IF_GUROBI_ERROR(AddQuadraticConstraint(gen_cst, gurobi_model));
           break;
         }
         default:

@@ -188,6 +188,65 @@ util::Status AddSosConstraint(const MPGeneralConstraintProto& gen_cst,
   return util::OkStatus();
 }
 
+util::Status AddQuadraticConstraint(
+    const MPGeneralConstraintProto& gen_cst,
+    const std::vector<SCIP_VAR*>& scip_variables, SCIP* scip,
+    SCIP_CONS** scip_cst, std::vector<SCIP_VAR*>* tmp_variables,
+    std::vector<double>* tmp_coefficients,
+    std::vector<SCIP_VAR*>* tmp_qvariables1,
+    std::vector<SCIP_VAR*>* tmp_qvariables2,
+    std::vector<double>* tmp_qcoefficients) {
+  CHECK(scip != nullptr);
+  CHECK(scip_cst != nullptr);
+  CHECK(tmp_variables != nullptr);
+  CHECK(tmp_coefficients != nullptr);
+  CHECK(tmp_qvariables1 != nullptr);
+  CHECK(tmp_qvariables2 != nullptr);
+  CHECK(tmp_qcoefficients != nullptr);
+
+  CHECK(gen_cst.has_quadratic_constraint());
+  const MPQuadraticConstraint& quad_cst = gen_cst.quadratic_constraint();
+
+  // Process linear part of the constraint.
+  const int lsize = quad_cst.var_index_size();
+  CHECK_EQ(quad_cst.coefficient_size(), lsize);
+  tmp_variables->resize(lsize, nullptr);
+  tmp_coefficients->resize(lsize, 0.0);
+  for (int i = 0; i < lsize; ++i) {
+    (*tmp_variables)[i] = scip_variables[quad_cst.var_index(i)];
+    (*tmp_coefficients)[i] = quad_cst.coefficient(i);
+  }
+
+  // Process quadratic part of the constraint.
+  const int qsize = quad_cst.qvar1_index_size();
+  CHECK_EQ(quad_cst.qvar2_index_size(), qsize);
+  CHECK_EQ(quad_cst.qcoefficient_size(), qsize);
+  tmp_qvariables1->resize(qsize, nullptr);
+  tmp_qvariables2->resize(qsize, nullptr);
+  tmp_qcoefficients->resize(qsize, 0.0);
+  for (int i = 0; i < qsize; ++i) {
+    (*tmp_qvariables1)[i] = scip_variables[quad_cst.qvar1_index(i)];
+    (*tmp_qvariables2)[i] = scip_variables[quad_cst.qvar2_index(i)];
+    (*tmp_qcoefficients)[i] = quad_cst.qcoefficient(i);
+  }
+
+  RETURN_IF_SCIP_ERROR(
+      SCIPcreateConsBasicQuadratic(scip,
+                                   /*cons=*/scip_cst,
+                                   /*name=*/gen_cst.name().c_str(),
+                                   /*nlinvars=*/lsize,
+                                   /*linvars=*/tmp_variables->data(),
+                                   /*lincoefs=*/tmp_coefficients->data(),
+                                   /*nquadterms=*/qsize,
+                                   /*quadvars1=*/tmp_qvariables1->data(),
+                                   /*quadvars2=*/tmp_qvariables2->data(),
+                                   /*quadcoefs=*/tmp_qcoefficients->data(),
+                                   /*lhs=*/quad_cst.lower_bound(),
+                                   /*rhs=*/quad_cst.upper_bound()));
+  RETURN_IF_SCIP_ERROR(SCIPaddCons(scip, *scip_cst));
+  return util::OkStatus();
+}
+
 util::Status AddQuadraticObjective(const MPQuadraticObjective& quadobj,
                                    SCIP* scip,
                                    std::vector<SCIP_VAR*>* scip_variables,
@@ -338,6 +397,10 @@ util::StatusOr<MPSolutionResponse> ScipSolveProto(
       RETURN_IF_SCIP_ERROR(SCIPaddCons(scip, scip_constraints[c]));
     }
 
+    // These extra arrays are used by quadratic constraints.
+    std::vector<SCIP_VAR*> ct_qvariables1;
+    std::vector<SCIP_VAR*> ct_qvariables2;
+    std::vector<double> ct_qcoefficients;
     const int lincst_size = model.constraint_size();
     for (int c = 0; c < model.general_constraint_size(); ++c) {
       const MPGeneralConstraintProto& gen_cst = model.general_constraint(c);
@@ -348,6 +411,13 @@ util::StatusOr<MPSolutionResponse> ScipSolveProto(
           RETURN_IF_ERROR(AddSosConstraint(gen_cst, scip_variables, scip,
                                            &scip_constraints[lincst_size + c],
                                            &ct_variables, &ct_coefficients));
+          break;
+        }
+        case MPGeneralConstraintProto::kQuadraticConstraint: {
+          RETURN_IF_ERROR(AddQuadraticConstraint(
+              gen_cst, scip_variables, scip, &scip_constraints[lincst_size + c],
+              &ct_variables, &ct_coefficients, &ct_qvariables1, &ct_qvariables2,
+              &ct_qcoefficients));
           break;
         }
         default:
