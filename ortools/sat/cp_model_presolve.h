@@ -168,6 +168,13 @@ struct PresolveContext {
   // Just used to display statistics on the presolve rules that were used.
   absl::flat_hash_map<std::string, int> stats_by_rule_name;
 
+  // Number of "rules" applied. This should be equal to the sum of all numbers
+  // in stats_by_rule_name. This is used to decide if we should do one more pass
+  // of the presolve or not. Note that depending on the presolve transformation,
+  // a rule can correspond to a tiny change or a big change. Because of that,
+  // this isn't a perfect proxy for the efficacy of the presolve.
+  int64 num_presolve_operations = 0;
+
   // Temporary storage.
   std::vector<int> tmp_literals;
   std::vector<Domain> tmp_term_domains;

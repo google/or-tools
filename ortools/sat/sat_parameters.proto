@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 138
+// NEXT TAG: 139
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -390,6 +390,11 @@ message SatParameters {
   // uses 0, but quick experiments showed that 1 is a good value. It may not be
   // worth it to add a new variable just to remove one clause.
   optional int32 presolve_bva_threshold = 73 [default = 1];
+
+  // In case of large reduction in a presolve iteration, we perform multiple
+  // presolve iterations. This parameter controls the maximum number of such
+  // presolve iterations.
+  optional int32 max_presolve_iterations = 138 [default = 3];
 
   // ==========================================================================
   // Max-sat parameters
