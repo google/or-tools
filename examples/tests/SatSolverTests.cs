@@ -210,7 +210,6 @@ namespace Google.OrTools.Tests {
           {1, 1}, {2, 4}, {3, 9}, {4, 16}, {5, 25} };
         model.AddAllowedAssignments(new IntVar[] {delta, squaredDelta}, tuples);
         model.Minimize(squaredDelta);
-        Console.WriteLine("model = " + model.Model.ToString());
 
         CpSolver solver = new CpSolver();
         CpSolverStatus status = solver.Solve(model);
