@@ -110,6 +110,9 @@ message MPGeneralConstraintProto {
     MPIndicatorConstraint indicator_constraint = 2;
     MPSosConstraint sos_constraint = 3;
     MPQuadraticConstraint quadratic_constraint = 4;
+    MPAbsConstraint abs_constraint = 5;
+    MPAndConstraint and_constraint = 6;
+    MPOrConstraint or_constraint = 7;
   }
 }
 
@@ -192,6 +195,32 @@ message MPQuadraticConstraint {
   // lower_bound must be <= upper_bound.
   optional double lower_bound = 6 [default = -inf];
   optional double upper_bound = 7 [default = inf];
+}
+
+// Sets a variable's value to the absolute value of another variable.
+message MPAbsConstraint {
+  // Variable indices are relative to the "variable" field in MPModelProto.
+  // resultant_var = abs(var)
+  optional int32 var_index = 1;
+  optional int32 resultant_var_index = 2;
+}
+
+// Sets a binary variable's value equal to one if and only if all variables in a
+// set of binary variables are true.
+message MPAndConstraint {
+  // Variable indices are relative to the "variable" field in MPModelProto.
+  // resultant_var = and(var_1, var_2... var_n)
+  repeated int32 var_index = 1;
+  optional int32 resultant_var_index = 2;
+}
+
+// Sets a binary variable's value equal to one if and only if at least one
+// variable in a set of binary variables is true.
+message MPOrConstraint {
+  // Variable indices are relative to the "variable" field in MPModelProto.
+  // resultant_var = or(var_1, var_2... var_n)
+  repeated int32 var_index = 1;
+  optional int32 resultant_var_index = 2;
 }
 
 // Quadratic part of a model's objective. Added with other objectives (such as

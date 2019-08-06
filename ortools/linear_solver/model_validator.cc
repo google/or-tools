@@ -137,6 +137,12 @@ std::string CroppedConstraintDebugString(const MPConstraintProto& constraint) {
                       ProtobufShortDebugString(constraint_light), suffix_str);
 }
 
+bool IsBoolean(const MPVariableProto& variable) {
+  if (variable.lower_bound() < 0) return false;
+  if (variable.upper_bound() > 1) return false;
+  return variable.is_integer();
+}
+
 std::string FindErrorInMPIndicatorConstraint(
     const MPModelProto& model, const MPIndicatorConstraint& indicator,
     std::vector<bool>* var_mask) {
@@ -147,9 +153,7 @@ std::string FindErrorInMPIndicatorConstraint(
   if (var_index < 0 || var_index >= model.variable_size()) {
     return absl::StrCat("var_index=", var_index, " is out of bounds.");
   }
-  if (!model.variable(var_index).is_integer() ||
-      model.variable(var_index).lower_bound() < 0 ||
-      model.variable(var_index).upper_bound() > 1) {
+  if (!IsBoolean(model.variable(var_index))) {
     return absl::StrCat("var_index=", var_index, " is not Boolean.");
   }
   const int var_value = indicator.var_value();
@@ -203,7 +207,7 @@ std::string FindErrorInMPQuadraticConstraint(const MPModelProto& model,
     return "var_index_size() != coefficient_size()";
   }
   for (int i = 0; i < qcst.var_index_size(); ++i) {
-    if (qcst.var_index(i) < 0 || qcst.var_index(i) >= model.variable_size()) {
+    if (qcst.var_index(i) < 0 || qcst.var_index(i) >= num_vars) {
       return absl::StrCat("var_index(", i, ")=", qcst.var_index(i),
                           " is invalid.", " It must be in [0, ", num_vars, ")");
     }
@@ -235,6 +239,58 @@ std::string FindErrorInMPQuadraticConstraint(const MPModelProto& model,
     }
   }
 
+  return "";
+}
+
+std::string FindErrorInMPAbsConstraint(const MPModelProto& model,
+                                       const MPAbsConstraint& abs) {
+  if (!abs.has_var_index()) {
+    return "var_index is required.";
+  }
+  if (!abs.has_resultant_var_index()) {
+    return "resultant_var_index is required.";
+  }
+
+  const int num_vars = model.variable_size();
+  if (abs.var_index() < 0 || abs.var_index() >= num_vars) {
+    return absl::StrCat("var_index=", abs.var_index(), " is invalid.",
+                        " It must be in [0, ", num_vars, ")");
+  }
+  if (abs.resultant_var_index() < 0 || abs.resultant_var_index() >= num_vars) {
+    return absl::StrCat("var_index=", abs.resultant_var_index(), " is invalid.",
+                        " It must be in [0, ", num_vars, ")");
+  }
+  return "";
+}
+
+template <typename MPAndOrConstraint>
+std::string FindErrorInMPAndOrConstraint(const MPModelProto& model,
+                                         const MPAndOrConstraint& and_or) {
+  if (and_or.var_index_size() == 0) {
+    return "var_index cannot be empty.";
+  }
+  if (!and_or.has_resultant_var_index()) {
+    return "resultant_var_index is required.";
+  }
+
+  const int num_vars = model.variable_size();
+  for (int i = 0; i < and_or.var_index_size(); ++i) {
+    if (and_or.var_index(i) < 0 || and_or.var_index(i) >= num_vars) {
+      return absl::StrCat("var_index(", i, ")=", and_or.var_index(i),
+                          " is invalid.", " It must be in [0, ", num_vars, ")");
+    }
+    if (!IsBoolean(model.variable(and_or.var_index(i)))) {
+      return absl::StrCat("var_index=", i, " is not Boolean.");
+    }
+  }
+  if (and_or.resultant_var_index() < 0 ||
+      and_or.resultant_var_index() >= num_vars) {
+    return absl::StrCat("resultant_var_index=", and_or.resultant_var_index(),
+                        " is invalid.", " It must be in [0, ", num_vars, ")");
+  }
+  if (!IsBoolean(model.variable(and_or.resultant_var_index()))) {
+    return absl::StrCat("resultant_var_index is not Boolean.");
+  }
   return "";
 }
 
@@ -344,6 +400,21 @@ std::string FindErrorInMPModelProto(const MPModelProto& model) {
       case MPGeneralConstraintProto::kQuadraticConstraint:
         error = FindErrorInMPQuadraticConstraint(
             model, gen_constraint.quadratic_constraint(), &variable_appears);
+        break;
+
+      case MPGeneralConstraintProto::kAbsConstraint:
+        error =
+            FindErrorInMPAbsConstraint(model, gen_constraint.abs_constraint());
+        break;
+
+      case MPGeneralConstraintProto::kAndConstraint:
+        error = FindErrorInMPAndOrConstraint(model,
+                                             gen_constraint.and_constraint());
+        break;
+
+      case MPGeneralConstraintProto::kOrConstraint:
+        error =
+            FindErrorInMPAndOrConstraint(model, gen_constraint.or_constraint());
         break;
 
       default:
