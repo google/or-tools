@@ -225,6 +225,10 @@ class MPSolver {
     /// Linear Boolean Programming Solver.
     BOP_INTEGER_PROGRAMMING = 12,
 #endif
+#if defined(USE_XPRESS)
+	XPRESS_LINEAR_PROGRAMMING = 101,
+	XPRESS_MIXED_INTEGER_PROGRAMMING = 102,
+#endif
   };
 
   /// Create a solver with the given name and underlying solver backend.
@@ -726,8 +730,10 @@ class MPSolver {
    * As of 2018-08-09, only Gurobi supports NextSolution(), see
    * linear_solver_underlying_gurobi_test for an example of how to configure
    * Gurobi for this purpose. The other solvers return false unconditionally.
+#if defined(USE_GUROBI)
    */
   ABSL_MUST_USE_RESULT bool NextSolution();
+#endif
 
   // DEPRECATED: Use TimeLimit() and SetTimeLimit(absl::Duration) instead.
   // NOTE: These deprecated functions used the convention time_limit = 0 to mean
@@ -757,6 +763,7 @@ class MPSolver {
   friend class SCIPInterface;
   friend class GurobiInterface;
   friend class CplexInterface;
+  friend class XpressInterface;
   friend class SLMInterface;
   friend class MPSolverInterface;
   friend class GLOPInterface;
@@ -967,6 +974,7 @@ class MPObjective {
   friend class SLMInterface;
   friend class GurobiInterface;
   friend class CplexInterface;
+  friend class XpressInterface;
   friend class GLOPInterface;
   friend class BopInterface;
   friend class SatInterface;
@@ -1074,6 +1082,7 @@ class MPVariable {
   friend class SLMInterface;
   friend class GurobiInterface;
   friend class CplexInterface;
+  friend class XpressInterface;
   friend class GLOPInterface;
   friend class MPVariableSolutionValueTest;
   friend class BopInterface;
@@ -1215,6 +1224,7 @@ class MPConstraint {
   friend class SLMInterface;
   friend class GurobiInterface;
   friend class CplexInterface;
+  friend class XpressInterface;
   friend class GLOPInterface;
   friend class BopInterface;
   friend class SatInterface;
