@@ -277,8 +277,8 @@ int Run() {
     }
   }
   auto strtoint64 = [](const std::string& word) {
-    int64 value;
-    CHECK(absl::SimpleAtoi(word, &value));
+    int64 value = 0;
+    if (!word.empty()) CHECK(absl::SimpleAtoi(word, &value));
     return value;
   };
   if (!AddObjectiveConstraint(problem, !FLAGS_lower_bound.empty(),
