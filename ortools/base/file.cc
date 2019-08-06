@@ -285,7 +285,7 @@ util::Status SetBinaryProto(const absl::string_view& filename,
 
 util::Status Delete(const absl::string_view& path, int flags) {
   if (flags == Defaults()) {
-    if (remove(path.data())) return util::Status::OK;
+    if (remove(path.data()) == 0) return util::Status::OK;
   }
   return util::Status(util::error::INVALID_ARGUMENT,
                       absl::StrCat("Could not delete '", path, "'."));

@@ -18,6 +18,7 @@
 
 #include "ortools/base/accurate_sum.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse_column.h"
 
 namespace operations_research {
@@ -113,12 +114,13 @@ template <class DenseRowOrColumn>
 Fractional PreciseScalarProduct(const DenseRowOrColumn& u,
                                 const ScatteredColumn& v) {
   DCHECK_EQ(u.size().value(), v.values.size().value());
-  if (ShouldUseDenseIteration(v)) {
+  if (v.ShouldUseDenseIteration()) {
     return PreciseScalarProduct(u, v.values);
   }
   KahanSum sum;
-  for (const RowIndex row : v.non_zeros) {
-    sum.Add(u[typename DenseRowOrColumn::IndexType(row.value())] * v[row]);
+  for (const auto e : v) {
+    sum.Add(u[typename DenseRowOrColumn::IndexType(e.row().value())] *
+            e.coefficient());
   }
   return sum.Value();
 }

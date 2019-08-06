@@ -107,10 +107,11 @@ void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {
         }
       }
     } else {
-      for (const ColIndex col : unit_row_left_inverse_.non_zeros) {
-        if (std::abs(unit_row_left_inverse_.values[col]) > drop_tolerance) {
-          unit_row_left_inverse_filtered_non_zeros_.push_back(col);
-          num_row_wise_entries += transposed_matrix_.ColumnNumEntries(col);
+      for (const auto e : unit_row_left_inverse_) {
+        if (std::abs(e.coefficient()) > drop_tolerance) {
+          unit_row_left_inverse_filtered_non_zeros_.push_back(e.column());
+          num_row_wise_entries +=
+              transposed_matrix_.ColumnNumEntries(e.column());
         }
       }
     }

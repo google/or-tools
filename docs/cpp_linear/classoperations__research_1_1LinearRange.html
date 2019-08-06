@@ -54,8 +54,7 @@ $(document).ready(function(){initNavTree('classoperations__research_1_1LinearRan
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>An expression of the form: </p>
 <div class="fragment"><div class="line"><a class="code" href="classoperations__research_1_1LinearRange.html#ac9dc29ebeaf4a37d108c0094ca89eb9d">lower_bound</a> &lt;= sum_{i in S} a_i*x_i &lt;= <a class="code" href="classoperations__research_1_1LinearRange.html#a527995fddd9d1781d996ff6f50e48041">upper_bound</a>. </div></div><!-- fragment --><p> The sum is represented as a <a class="el" href="classoperations__research_1_1LinearExpr.html" title="LinearExpr models a quantity that is linear in the decision variables (MPVariable) of an optimization...">LinearExpr</a> with offset 0.</p>
-<p>Must be added to model with MPSolver::AddRowConstraint(const <a class="el" href="classoperations__research_1_1LinearRange.html" title="An expression of the form:">LinearRange</a>&amp; range, const std::string&amp; name); </p>
-
+<p>Must be added to model with </p><div class="fragment"><div class="line">MPSolver::AddRowConstraint(<span class="keyword">const</span> <a class="code" href="classoperations__research_1_1LinearRange.html#a9ce7b1b40dc5135ed9ca27cfedeca64e">LinearRange</a>&amp; range,</div><div class="line">                           <span class="keyword">const</span> std::string&amp; name);</div></div><!-- fragment --> 
 <p class="definition">Definition at line <a class="el" href="linear__expr_8h_source.html#l00180">180</a> of file <a class="el" href="linear__expr_8h_source.html">linear_expr.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
@@ -63,6 +62,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a9ce7b1b40dc5135ed9ca27cfedeca64e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LinearRange.html#a9ce7b1b40dc5135ed9ca27cfedeca64e">LinearRange</a> ()</td></tr>
 <tr class="separator:a9ce7b1b40dc5135ed9ca27cfedeca64e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a754af83faa8744d01ecbf5091d4633a8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LinearRange.html#a754af83faa8744d01ecbf5091d4633a8">LinearRange</a> (double <a class="el" href="classoperations__research_1_1LinearRange.html#ac9dc29ebeaf4a37d108c0094ca89eb9d">lower_bound</a>, const <a class="el" href="classoperations__research_1_1LinearExpr.html">LinearExpr</a> &amp;<a class="el" href="classoperations__research_1_1LinearRange.html#aa75204d544c4e4fc91c3ee8a091dd690">linear_expr</a>, double <a class="el" href="classoperations__research_1_1LinearRange.html#a527995fddd9d1781d996ff6f50e48041">upper_bound</a>)</td></tr>
+<tr class="memdesc:a754af83faa8744d01ecbf5091d4633a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">The bounds of the linear range are updated so that they include the offset from "linear_expr", i.e., we form the range:  <a href="#a754af83faa8744d01ecbf5091d4633a8">More...</a><br /></td></tr>
 <tr class="separator:a754af83faa8744d01ecbf5091d4633a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac9dc29ebeaf4a37d108c0094ca89eb9d"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LinearRange.html#ac9dc29ebeaf4a37d108c0094ca89eb9d">lower_bound</a> () const</td></tr>
 <tr class="separator:ac9dc29ebeaf4a37d108c0094ca89eb9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -131,6 +131,8 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>The bounds of the linear range are updated so that they include the offset from "linear_expr", i.e., we form the range: </p>
+<div class="fragment"><div class="line"><a class="code" href="classoperations__research_1_1LinearRange.html#ac9dc29ebeaf4a37d108c0094ca89eb9d">lower_bound</a> - offset &lt;= <a class="code" href="classoperations__research_1_1LinearRange.html#aa75204d544c4e4fc91c3ee8a091dd690">linear_expr</a> - offset &lt;= <a class="code" href="classoperations__research_1_1LinearRange.html#a527995fddd9d1781d996ff6f50e48041">upper_bound</a> - offset.</div></div><!-- fragment --> 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
@@ -157,7 +159,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__expr_8h_source.html#l00190">190</a> of file <a class="el" href="linear__expr_8h_source.html">linear_expr.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__expr_8h_source.html#l00194">194</a> of file <a class="el" href="linear__expr_8h_source.html">linear_expr.h</a>.</p>
 
 </div>
 </div>
@@ -184,7 +186,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__expr_8h_source.html#l00189">189</a> of file <a class="el" href="linear__expr_8h_source.html">linear_expr.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__expr_8h_source.html#l00193">193</a> of file <a class="el" href="linear__expr_8h_source.html">linear_expr.h</a>.</p>
 
 </div>
 </div>
@@ -211,7 +213,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__expr_8h_source.html#l00191">191</a> of file <a class="el" href="linear__expr_8h_source.html">linear_expr.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__expr_8h_source.html#l00195">195</a> of file <a class="el" href="linear__expr_8h_source.html">linear_expr.h</a>.</p>
 
 </div>
 </div>

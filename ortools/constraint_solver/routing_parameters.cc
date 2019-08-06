@@ -94,7 +94,8 @@ RoutingSearchParameters DefaultRoutingSearchParameters() {
       "lns_time_limit: { seconds:0 nanos:100000000 } "  // 0.1s
       "use_full_propagation: false "
       "log_search: false "
-      "log_cost_scaling_factor: 1.0";
+      "log_cost_scaling_factor: 1.0 "
+      "log_cost_offset: 0.0";
   RoutingSearchParameters parameters;
   if (!google::protobuf::TextFormat::ParseFromString(kSearchParameters,
                                                      &parameters)) {
@@ -230,8 +231,15 @@ std::string FindErrorInRoutingSearchParameters(
                   search_parameters.local_search_metaheuristic());
   }
 
-  if (search_parameters.log_cost_scaling_factor() == 0) {
-    return "log_cost_scaling_factor must be non-null";
+  const double scaling_factor = search_parameters.log_cost_scaling_factor();
+  if (scaling_factor == 0 || std::isnan(scaling_factor) ||
+      std::isinf(scaling_factor)) {
+    return StrCat("Invalid value for log_cost_scaling_factor: ",
+                  scaling_factor);
+  }
+  const double offset = search_parameters.log_cost_offset();
+  if (std::isnan(offset) || std::isinf(offset)) {
+    return StrCat("Invalid value for log_cost_offset: ", offset);
   }
 
   return "";  // = Valid (No error).

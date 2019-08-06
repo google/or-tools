@@ -428,7 +428,7 @@ class LinearProgrammingConstraintCollection
 // we do not add any cuts for components of size 1.
 CutGenerator CreateStronglyConnectedGraphCutGenerator(
     int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
-    const std::vector<IntegerVariable>& vars);
+    const std::vector<Literal>& literals, Model* model);
 
 // Almost the same as CreateStronglyConnectedGraphCutGenerator() but for each
 // components, computes the demand needed to serves it, and depending on whether
@@ -437,9 +437,9 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
 CutGenerator CreateCVRPCutGenerator(int num_nodes,
                                     const std::vector<int>& tails,
                                     const std::vector<int>& heads,
-                                    const std::vector<IntegerVariable>& vars,
+                                    const std::vector<Literal>& literals,
                                     const std::vector<int64>& demands,
-                                    int64 capacity);
+                                    int64 capacity, Model* model);
 }  // namespace sat
 }  // namespace operations_research
 

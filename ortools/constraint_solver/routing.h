@@ -3179,6 +3179,7 @@ class ChristofidesFilteredDecisionBuilder
 /// Therefore the resulting solution might not actually be feasible. Will return
 /// false if a solution could not be found.
 bool SolveModelWithSat(const RoutingModel& model,
+                       const RoutingSearchParameters& search_parameters,
                        const Assignment* initial_solution,
                        Assignment* solution);
 

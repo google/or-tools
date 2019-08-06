@@ -31,15 +31,6 @@ void LinearConstraintBuilder::AddTerm(IntegerVariable var, IntegerValue coeff) {
 
 ABSL_MUST_USE_RESULT bool LinearConstraintBuilder::AddLiteralTerm(
     Literal lit, IntegerValue coeff) {
-  if (assignment_.LiteralIsTrue(lit)) {
-    if (lb_ > kMinIntegerValue) lb_ -= coeff;
-    if (ub_ < kMaxIntegerValue) ub_ -= coeff;
-    return true;
-  }
-  if (assignment_.LiteralIsFalse(lit)) {
-    return true;
-  }
-
   bool has_direct_view = encoder_.GetLiteralView(lit) != kNoIntegerVariable;
   bool has_opposite_view =
       encoder_.GetLiteralView(lit.Negated()) != kNoIntegerVariable;

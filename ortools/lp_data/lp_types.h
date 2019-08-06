@@ -22,6 +22,7 @@
 #include "ortools/base/basictypes.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
+#include "ortools/base/logging.h"
 #include "ortools/util/bitset.h"
 
 // We use typedefs as much as possible to later permit the usage of
@@ -343,61 +344,34 @@ typedef StrictITIVector<RowIndex, ColIndex> RowToColMapping;
 // Column of constraints (slack variables) statuses.
 typedef StrictITIVector<RowIndex, ConstraintStatus> ConstraintStatusColumn;
 
-// Returns true if it is more advantageous to use a dense iteration rather than
-// using the non-zeros positions.
-//
-// TODO(user): The constant should depend on what algorithm is used. Clearing a
-// dense vector is a lot more efficient than doing more complex stuff. Clean
-// this up by extracting all the currently used constants in one place with
-// meaningful names.
-template <typename ScatteredRowOrCol>
-bool ShouldUseDenseIteration(const ScatteredRowOrCol& v) {
-  if (v.non_zeros.empty()) return true;
-  const double kThresholdForUsingDenseRepresentation = 0.8;
-  return static_cast<double>(v.non_zeros.size()) >
-         kThresholdForUsingDenseRepresentation *
-             static_cast<double>(v.values.size().value());
-}
+// --------------------------------------------------------
+// VectorIterator
+// --------------------------------------------------------
 
-// A simple struct that contains a DenseVector and its non-zeros indices.
-template <typename Index>
-struct ScatteredVector {
-  StrictITIVector<Index, Fractional> values;
+// An iterator over the elements of a sparse data structure that stores the
+// elements in arrays for indices and coefficients. The iterator is
+// built as a wrapper over a sparse vector entry class; the concrete entry class
+// is provided through the template argument EntryType.
+template <typename EntryType>
+class VectorIterator : EntryType {
+ public:
+  using Index = typename EntryType::Index;
+  using Entry = EntryType;
 
-  // This can be left empty in which case we just have the dense representation
-  // above. Otherwise, it should always be a subset of the actual non-zeros.
-  bool non_zeros_are_sorted = false;
-  std::vector<Index> non_zeros;
+  VectorIterator(const Index* indices, const Fractional* coefficients,
+                 EntryIndex i)
+      : EntryType(indices, coefficients, i) {}
 
-  // Temporary vector used in some sparse computation on the ScatteredColumn.
-  // True indicate a possible non-zero value. Note that its state is not always
-  // consistent.
-  StrictITIVector<Index, bool> is_non_zero;
-
-  Fractional operator[](Index index) const { return values[index]; }
-  Fractional& operator[](Index index) { return values[index]; }
-
-  // Sorting the non-zeros is not always needed, but it allows us to have
-  // exactly the same behavior while using a sparse iteration or a dense one. So
-  // we always do it after a Solve().
-  void SortNonZerosIfNeeded() {
-    if (!non_zeros_are_sorted) {
-      std::sort(non_zeros.begin(), non_zeros.end());
-      non_zeros_are_sorted = true;
-    }
+  void operator++() { ++this->i_; }
+  bool operator!=(const VectorIterator& other) const {
+    // This operator is intended for use in natural range iteration ONLY.
+    // Therefore, we prefer to use '<' so that a buggy range iteration which
+    // start point is *after* its end point stops immediately, instead of
+    // iterating 2^(number of bits of EntryIndex) times.
+    return this->i_ < other.i_;
   }
+  const Entry& operator*() const { return *this; }
 };
-
-// Specialization used in the code.
-struct ScatteredColumn : public ScatteredVector<RowIndex> {};
-struct ScatteredRow : public ScatteredVector<ColIndex> {};
-
-inline const ScatteredRow& TransposedView(const ScatteredColumn& c) {
-  return reinterpret_cast<const ScatteredRow&>(c);
-}
-inline const ScatteredColumn& TransposedView(const ScatteredRow& r) {
-  return reinterpret_cast<const ScatteredColumn&>(r);
-}
 
 // This is used during the deterministic time computation to convert a given
 // number of floating-point operations to something in the same order of

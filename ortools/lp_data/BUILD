@@ -33,6 +33,19 @@ cc_library(
     ],
 )
 
+# Vectors that offer a sparse interface to dense storage.
+cc_library(
+    name = "scattered_vector",
+    hdrs = ["scattered_vector.h"],
+    deps = [
+        ":base",
+        "//ortools/base",
+        "//ortools/base:int_type",
+        "//ortools/base:int_type_indexed_vector",
+        "//ortools/util:bitset",
+    ],
+)
+
 cc_library(
     name = "sparse_vector",
     hdrs = ["sparse_vector.h"],
@@ -83,6 +96,7 @@ cc_library(
         ":base",
         ":matrix_scaler_hdr",
         ":permutation",
+        ":scattered_vector",
         ":sparse_column",
         "//ortools/base",
         "//ortools/base:hash",
@@ -167,6 +181,7 @@ cc_library(
     copts = SAFE_FP_CODE,
     deps = [
         ":base",
+        ":scattered_vector",
         ":sparse_column",
         "//ortools/base",
         "//ortools/base:accurate_sum",

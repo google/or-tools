@@ -17,7 +17,9 @@
 #include <cmath>
 #include <limits>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/str_format.h"
 #include "ortools/base/accurate_sum.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/port/proto_utils.h"
@@ -192,6 +194,76 @@ std::string FindErrorInMPSosConstraint(const MPModelProto& model,
   return "";
 }
 
+std::string FindErrorInMPQuadraticConstraint(const MPModelProto& model,
+                                             const MPQuadraticConstraint& qcst,
+                                             std::vector<bool>* var_mask) {
+  const int num_vars = model.variable_size();
+
+  if (qcst.var_index_size() != qcst.coefficient_size()) {
+    return "var_index_size() != coefficient_size()";
+  }
+  for (int i = 0; i < qcst.var_index_size(); ++i) {
+    if (qcst.var_index(i) < 0 || qcst.var_index(i) >= model.variable_size()) {
+      return absl::StrCat("var_index(", i, ")=", qcst.var_index(i),
+                          " is invalid.", " It must be in [0, ", num_vars, ")");
+    }
+
+    if (!std::isfinite(qcst.coefficient(i))) {
+      return absl::StrCat("coefficient(", i, ")=", qcst.coefficient(i),
+                          " is invalid");
+    }
+  }
+
+  if (qcst.qvar1_index_size() != qcst.qvar2_index_size() ||
+      qcst.qvar1_index_size() != qcst.qcoefficient_size()) {
+    return "quadratic indices and coefficients must have the same size";
+  }
+  for (int i = 0; i < qcst.qvar1_index_size(); ++i) {
+    if (qcst.qvar1_index(i) >= num_vars || qcst.qvar1_index(i) < 0) {
+      return absl::StrCat("qvar1_index(", i, ")=", qcst.qvar1_index(i),
+                          " is invalid.", " It must be in [0, ", num_vars, ")");
+    }
+
+    if (qcst.qvar2_index(i) >= num_vars || qcst.qvar2_index(i) < 0) {
+      return absl::StrCat("qvar2_index(", i, ")=", qcst.qvar2_index(i),
+                          " is invalid.", " It must be in [0, ", num_vars, ")");
+    }
+
+    if (!std::isfinite(qcst.qcoefficient(i))) {
+      return absl::StrCat("qcoefficient(", i, ")=", qcst.qcoefficient(i),
+                          " is invalid");
+    }
+  }
+
+  return "";
+}
+
+std::string FindErrorInQuadraticObjective(const MPQuadraticObjective& qobj,
+                                          int num_vars) {
+  if (qobj.qvar1_index_size() != qobj.qvar2_index_size() ||
+      qobj.qvar1_index_size() != qobj.coefficient_size()) {
+    return "indices and coefficients must have the same size";
+  }
+
+  for (int i = 0; i < qobj.qvar1_index_size(); ++i) {
+    if (qobj.qvar1_index(i) >= num_vars || qobj.qvar1_index(i) < 0) {
+      return absl::StrCat("qvar1_index(", i, ")=", qobj.qvar1_index(i),
+                          " is invalid.", " It must be in [0, ", num_vars, ")");
+    }
+
+    if (qobj.qvar2_index(i) >= num_vars || qobj.qvar2_index(i) < 0) {
+      return absl::StrCat("qvar2_index(", i, ")=", qobj.qvar2_index(i),
+                          " is invalid.", " It must be in [0, ", num_vars, ")");
+    }
+
+    if (!std::isfinite(qobj.coefficient(i))) {
+      return absl::StrCat("coefficient(", i, ")=", (qobj.coefficient(i)),
+                          " is invalid");
+    }
+  }
+  return "";
+}
+
 std::string FindErrorInSolutionHint(
     const PartialVariableAssignment& solution_hint, int num_vars) {
   if (solution_hint.var_index_size() != solution_hint.var_value_size()) {
@@ -220,11 +292,9 @@ std::string FindErrorInSolutionHint(
 }  // namespace
 
 std::string FindErrorInMPModelProto(const MPModelProto& model) {
-  // TODO(user): enhance the error reporting: report several errors instead of
-  // stopping at the first one.
-
-  // TODO(user): clarify explicitly, at least in a comment, whether we
-  // accept models without variables and/or constraints.
+  // NOTE(user): Empty models are considered fine by this function, although
+  // it is not clear whether MPSolver::Solve() will always respond in the same
+  // way, depending on the solvers.
 
   if (!std::isfinite(model.objective_offset())) {
     return absl::StrCat("Invalid objective_offset: ",
@@ -271,6 +341,11 @@ std::string FindErrorInMPModelProto(const MPModelProto& model) {
             model, gen_constraint.sos_constraint(), &variable_appears);
         break;
 
+      case MPGeneralConstraintProto::kQuadraticConstraint:
+        error = FindErrorInMPQuadraticConstraint(
+            model, gen_constraint.quadratic_constraint(), &variable_appears);
+        break;
+
       default:
         return absl::StrCat("Unknown general constraint type ",
                             gen_constraint.general_constraint_case());
@@ -280,6 +355,13 @@ std::string FindErrorInMPModelProto(const MPModelProto& model) {
     }
   }
 
+  // Validate objectives.
+  if (model.has_quadratic_objective()) {
+    error =
+        FindErrorInQuadraticObjective(model.quadratic_objective(), num_vars);
+    if (!error.empty()) return absl::StrCat("In quadratic_objective: ", error);
+  }
+
   // Validate the solution hint.
   error = FindErrorInSolutionHint(model.solution_hint(), num_vars);
   if (!error.empty()) {
@@ -287,6 +369,40 @@ std::string FindErrorInMPModelProto(const MPModelProto& model) {
   }
 
   return std::string();
+}
+
+bool MPRequestIsEmptyOrInvalid(const MPModelRequest& request,
+                               MPSolutionResponse* response) {
+  CHECK(response != nullptr);
+
+  if (!request.has_model()) {
+    response->set_status(MPSOLVER_OPTIMAL);
+    response->set_status_str("Requests without model are considered OPTIMAL");
+    return true;
+  }
+  const MPModelProto& model = request.model();
+  if (model.variable_size() == 0 && model.constraint_size() == 0 &&
+      model.general_constraint_size() == 0) {
+    response->set_status(MPSOLVER_OPTIMAL);
+    response->set_objective_value(request.model().objective_offset());
+    response->set_best_objective_bound(request.model().objective_offset());
+    response->set_status_str(
+        "Requests without variables and constraints are considered OPTIMAL");
+    return true;
+  }
+
+  const std::string error = FindErrorInMPModelProto(model);
+  if (!error.empty()) {
+    if (request.enable_internal_solver_output()) {
+      LOG(ERROR) << absl::StrCat("Invalid model: ", error);
+    }
+    response->set_status(error.find("Infeasible") == std::string::npos
+                             ? MPSOLVER_MODEL_INVALID
+                             : MPSOLVER_INFEASIBLE);
+    response->set_status_str(error);
+    return true;
+  }
+  return false;
 }
 
 // TODO(user): Add a general FindFeasibilityErrorInSolution() and factor out the
@@ -348,6 +464,106 @@ std::string FindFeasibilityErrorInSolutionHint(const MPModelProto& model,
   }
 
   return "";
+}
+
+std::string FindErrorInMPModelDeltaProto(const MPModelDeltaProto& delta,
+                                         const MPModelProto& model) {
+  int num_vars = model.variable_size();
+  // Validate delta variables.
+  std::string error;
+  absl::flat_hash_set<int> new_var_indices;
+  int max_var_index = num_vars - 1;
+  MPVariableProto tmp_var_proto;
+  for (const auto& pair : delta.variable_overrides()) {
+    const int var_index = pair.first;
+    const MPVariableProto& var_override_proto = pair.second;
+    if (var_index < 0) {
+      error = "Invalid key";
+    } else if (var_index >= num_vars) {
+      max_var_index = std::max(max_var_index, var_index);
+      new_var_indices.insert(var_index);
+      error = FindErrorInMPVariable(var_override_proto);
+    } else {
+      tmp_var_proto = model.variable(var_index);
+      // NOTE(user): It is OK for the override proto to be empty, i.e. be a
+      // non-override.
+      tmp_var_proto.MergeFrom(var_override_proto);
+      error = FindErrorInMPVariable(tmp_var_proto);
+    }
+    if (!error.empty()) {
+      return absl::StrFormat(
+          "variable_overrides with key (eg. var index) = %d: %s", var_index,
+          error);
+    }
+  }
+  if (max_var_index != num_vars + new_var_indices.size() - 1) {
+    return absl::StrFormat(
+        "The added and existing variable indices do not form a dense integer "
+        "interval: oldmax=%d, max=%d, num added=%d",
+        num_vars - 1, max_var_index, new_var_indices.size());
+  }
+  // Now we "officially" add the new variables to "num_vars".
+  num_vars += new_var_indices.size();
+
+  // Validate delta constraints. We can avoid going over the full
+  // var_index/coefficient of the original constraint, since the overrides are
+  // self-sufficient (i.e. the override var_index/coefficients are valid iff
+  // they would be valid in a standalone, new constraint). So we use a partial
+  // proto merger to avoid those in the baseline constraint.
+  std::vector<bool> variable_appears(num_vars, false);
+  MPConstraintProto tmp_constraint_proto;
+  const int num_constraints = model.constraint_size();
+  absl::flat_hash_set<int> new_ct_indices;
+  int max_ct_index = num_constraints - 1;
+  for (const auto& pair : delta.constraint_overrides()) {
+    const int ct_index = pair.first;
+    const MPConstraintProto& constraint_override_proto = pair.second;
+    if (ct_index < 0) {
+      error = "Invalid constraint index";
+    } else if (ct_index >= num_constraints) {
+      max_ct_index = std::max(max_ct_index, ct_index);
+      new_ct_indices.insert(ct_index);
+      error =
+          FindErrorInMPConstraint(constraint_override_proto, &variable_appears);
+    } else {
+      // NOTE(user): We don't need to do the merging of var_index/coefficient:
+      // that part of the merged constraint will be valid iff the override is
+      // valid as a standalone var_index/coefficient map.
+      // So we simply validate a reduced version of the actual "merged"
+      // constraint, by removing the var_index/coefficient of the baseline.
+      // Benefit: the complexity is O(|constraint override|) even if the
+      // baseline constraint was huge.
+      tmp_constraint_proto.Clear();
+      MergeMPConstraintProtoExceptTerms(model.constraint(ct_index),
+                                        &tmp_constraint_proto);
+      tmp_constraint_proto.MergeFrom(constraint_override_proto);
+      error = FindErrorInMPConstraint(tmp_constraint_proto, &variable_appears);
+    }
+    if (!error.empty()) {
+      return absl::StrFormat(
+          "constraint_overrides with key (eg. constraint index) = %d: %s",
+          ct_index, error);
+    }
+  }
+  if (max_ct_index != num_constraints + new_ct_indices.size() - 1) {
+    return absl::StrFormat(
+        "The added and existing constraint indices do not form a dense integer "
+        "interval: oldmax=%d, max=%d, num added=%d",
+        num_constraints - 1, max_ct_index, new_ct_indices.size());
+  }
+
+  return "";
+}
+
+void MergeMPConstraintProtoExceptTerms(const MPConstraintProto& from,
+                                       MPConstraintProto* to) {
+#define COPY_FIELD_IF_PRESENT(field) \
+  if (from.has_##field()) to->set_##field(from.field())
+  COPY_FIELD_IF_PRESENT(lower_bound);
+  COPY_FIELD_IF_PRESENT(upper_bound);
+  COPY_FIELD_IF_PRESENT(name);
+  COPY_FIELD_IF_PRESENT(is_lazy);
+#undef COPY_FIELD_IF_PRESENT
 }
 
 }  // namespace operations_research

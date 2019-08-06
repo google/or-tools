@@ -25,6 +25,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/random_engine.h"
 
 namespace operations_research {
 namespace sat {
@@ -64,6 +65,16 @@ class SharedTimeLimit {
   void UpdateLocalLimit(TimeLimit* local_limit) {
     absl::MutexLock mutex_lock(&mutex_);
     local_limit->MergeWithGlobalTimeLimit(time_limit_);
+  }
+
+  void AdvanceDeterministicTime(double deterministic_duration) {
+    absl::MutexLock mutex_lock(&mutex_);
+    time_limit_->AdvanceDeterministicTime(deterministic_duration);
+  }
+
+  double GetElapsedDeterministicTime() {
+    absl::MutexLock mutex_lock(&mutex_);
+    return time_limit_->GetElapsedDeterministicTime();
   }
 
  private:
@@ -109,6 +120,9 @@ class SharedSolutionRepository {
   // Returns the solution #i where i must be smaller than NumSolutions().
   Solution GetSolution(int index) const;
 
+  // Returns a random solution biased towards good solutions.
+  Solution GetRandomBiasedSolution(random_engine_t* random) const;
+
   // Add a new solution. Note that it will not be added to the pool of solution
   // right away. One must call Synchronize for this to happen.
   //
@@ -129,6 +143,7 @@ class SharedSolutionRepository {
 
   // Our two solutions pools, the current one and the new one that will be
   // merged into the current one on each Synchronize() calls.
+  mutable std::vector<double> weights_ GUARDED_BY(mutex_);
   std::vector<Solution> solutions_ GUARDED_BY(mutex_);
   std::vector<Solution> new_solutions_ GUARDED_BY(mutex_);
 };
@@ -139,7 +154,8 @@ class SharedResponseManager {
  public:
   // If log_updates is true, then all updates to the global "state" will be
   // logged. This class is responsible for our solver log progress.
-  SharedResponseManager(bool log_updates_, const CpModelProto* proto,
+  SharedResponseManager(bool log_updates, bool enumerate_all_solutions,
+                        int solution_limit, const CpModelProto* proto,
                         const WallTimer* wall_timer);
 
   // Returns the current solver response. That is the best known response at the
@@ -215,6 +231,8 @@ class SharedResponseManager {
   void SetStatsFromModelInternal(Model* model) EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   const bool log_updates_;
+  const bool enumerate_all_solutions_;
+  const int solution_limit_;
   const CpModelProto& model_proto_;
   const WallTimer& wall_timer_;
 

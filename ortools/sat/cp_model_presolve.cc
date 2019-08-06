@@ -188,6 +188,7 @@ ABSL_MUST_USE_RESULT bool PresolveContext::SetLiteralToTrue(int lit) {
 
 void PresolveContext::UpdateRuleStats(const std::string& name) {
   stats_by_rule_name[name]++;
+  num_presolve_operations++;
 }
 
 void PresolveContext::AddVariableUsage(int c) {
@@ -431,8 +432,9 @@ void CpModelPresolver::SyncDomainAndRemoveEmptyConstraints() {
   std::vector<int> interval_mapping(context_.working_model->constraints_size(),
                                     -1);
   int new_num_constraints = 0;
-  const int old_num_constraints = context_.working_model->constraints_size();
-  for (int c = 0; c < old_num_constraints; ++c) {
+  const int old_num_non_empty_constraints =
+      context_.working_model->constraints_size();
+  for (int c = 0; c < old_num_non_empty_constraints; ++c) {
     const auto type = context_.working_model->constraints(c).constraint_case();
     if (type == ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET) continue;
     if (type == ConstraintProto::ConstraintCase::kInterval) {
@@ -442,7 +444,7 @@ void CpModelPresolver::SyncDomainAndRemoveEmptyConstraints() {
         ->Swap(context_.working_model->mutable_constraints(c));
   }
   context_.working_model->mutable_constraints()->DeleteSubrange(
-      new_num_constraints, old_num_constraints - new_num_constraints);
+      new_num_constraints, old_num_non_empty_constraints - new_num_constraints);
   for (ConstraintProto& ct_ref :
        *context_.working_model->mutable_constraints()) {
     ApplyToAllIntervalIndices(
@@ -1170,6 +1172,9 @@ void CpModelPresolver::DivideLinearByGcd(ConstraintProto* ct) {
     }
     const Domain rhs = ReadDomainFromProto(ct->linear());
     FillDomainInProto(rhs.InverseMultiplicationBy(gcd), ct->mutable_linear());
+    if (ct->linear().domain_size() == 0) {
+      return (void)MarkConstraintAsFalse(ct);
+    }
   }
 }
 
@@ -2687,6 +2692,35 @@ bool CpModelPresolver::PresolveCumulative(ConstraintProto* ct) {
   return changed;
 }
 
+bool CpModelPresolver::PresolveRoutes(ConstraintProto* ct) {
+  if (context_.ModelIsUnsat()) return false;
+  if (HasEnforcementLiteral(*ct)) return false;
+  RoutesConstraintProto& proto = *ct->mutable_routes();
+
+  int new_size = 0;
+  const int num_arcs = proto.literals_size();
+  for (int i = 0; i < num_arcs; ++i) {
+    const int ref = proto.literals(i);
+    const int tail = proto.tails(i);
+    const int head = proto.heads(i);
+    if (context_.LiteralIsFalse(ref)) {
+      context_.UpdateRuleStats("routes: removed false arcs");
+      continue;
+    }
+    proto.set_literals(new_size, ref);
+    proto.set_tails(new_size, tail);
+    proto.set_heads(new_size, head);
+    ++new_size;
+  }
+  if (new_size < num_arcs) {
+    proto.mutable_literals()->Truncate(new_size);
+    proto.mutable_tails()->Truncate(new_size);
+    proto.mutable_heads()->Truncate(new_size);
+    return true;
+  }
+  return false;
+}
+
 bool CpModelPresolver::PresolveCircuit(ConstraintProto* ct) {
   if (context_.ModelIsUnsat()) return false;
   if (HasEnforcementLiteral(*ct)) return false;
@@ -3746,11 +3780,15 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
       if (CanonicalizeLinear(ct)) {
         context_.UpdateConstraintVariableUsage(c);
       }
-      if (RemoveSingletonInLinear(ct)) {
-        context_.UpdateConstraintVariableUsage(c);
+      if (ct->constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
+        if (RemoveSingletonInLinear(ct)) {
+          context_.UpdateConstraintVariableUsage(c);
+        }
       }
-      if (PresolveLinear(ct)) {
-        context_.UpdateConstraintVariableUsage(c);
+      if (ct->constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
+        if (PresolveLinear(ct)) {
+          context_.UpdateConstraintVariableUsage(c);
+        }
       }
       if (ct->constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
         if (PresolveLinearOnBooleans(ct)) {
@@ -3787,6 +3825,8 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
       return PresolveCumulative(ct);
     case ConstraintProto::ConstraintCase::kCircuit:
       return PresolveCircuit(ct);
+    case ConstraintProto::ConstraintCase::kRoutes:
+      return PresolveRoutes(ct);
     case ConstraintProto::ConstraintCase::kAutomaton:
       return PresolveAutomaton(ct);
     default:
@@ -4336,66 +4376,88 @@ CpModelPresolver::CpModelPresolver(const PresolveOptions& options,
 //   constraints will be kept and their index will be in [0, num_new_variables).
 bool CpModelPresolver::Presolve() {
   // Main propagation loop.
-  //
-  // TODO(user): The presolve transformations we do after this is called might
-  // result in even more presolve if we were to call this again! improve the
-  // code. See for instance plusexample_6_sat.fzn were represolving the
-  // presolved problem reduces it even more. This is probably due to
-  // RemoveUnusedEquivalentVariables(). We should really improve the handling of
-  // equivalence.
-  PresolveToFixPoint();
+  for (int iter = 0; iter < options_.parameters.max_presolve_iterations();
+       ++iter) {
+    context_.UpdateRuleStats("presolve: iteration");
+    // Save some quantities to decide if we abort early the iteration loop.
+    const int64 old_num_presolve_op = context_.num_presolve_operations;
+    int old_num_non_empty_constraints = 0;
+    for (int c = 0; c < context_.working_model->constraints_size(); ++c) {
+      const auto type =
+          context_.working_model->constraints(c).constraint_case();
+      if (type == ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET) continue;
+      old_num_non_empty_constraints++;
+    }
 
-  // TODO(user): do that and the pure-SAT part below more than once.
-  if (options_.parameters.cp_model_probing_level() > 0) {
+    // TODO(user): The presolve transformations we do after this is called might
+    // result in even more presolve if we were to call this again! improve the
+    // code. See for instance plusexample_6_sat.fzn were represolving the
+    // presolved problem reduces it even more. This is probably due to
+    // RemoveUnusedEquivalentVariables(). We should really improve the handling
+    // of equivalence.
+    PresolveToFixPoint();
+
+    // TODO(user): do that and the pure-SAT part below more than once.
+    if (options_.parameters.cp_model_probing_level() > 0) {
+      if (options_.time_limit == nullptr ||
+          !options_.time_limit->LimitReached()) {
+        Probe();
+        PresolveToFixPoint();
+      }
+    }
+    // Runs SAT specific presolve on the pure-SAT part of the problem.
+    // Note that because this can only remove/fix variable not used in the other
+    // part of the problem, there is no need to redo more presolve afterwards.
+    //
+    // TODO(user): expose the parameters here so we can use
+    // cp_model_use_sat_presolve().
     if (options_.time_limit == nullptr ||
         !options_.time_limit->LimitReached()) {
-      Probe();
+      PresolvePureSatPart();
+    }
+
+    // Extract redundant at most one constraint form the linear ones.
+    //
+    // TODO(user): more generally if we do some probing, the same relation will
+    // be detected (and more). Also add an option to turn this off?
+    //
+    // TODO(user): instead of extracting at most one, extract pairwise conflicts
+    // and add them to bool_and clauses? this is some sort of small scale
+    // probing, but good for sat presolve and clique later?
+    if (!context_.ModelIsUnsat() && iter == 0) {
+      const int old_size = context_.working_model->constraints_size();
+      for (int c = 0; c < old_size; ++c) {
+        ConstraintProto* ct = context_.working_model->mutable_constraints(c);
+        if (ct->constraint_case() != ConstraintProto::ConstraintCase::kLinear) {
+          continue;
+        }
+        if (gtl::ContainsKey(context_.affine_constraints, ct)) {
+          continue;
+        }
+        ExtractAtMostOneFromLinear(ct);
+      }
+      context_.UpdateNewConstraintsVariableUsage();
+    }
+
+    if (iter == 0) TransformIntoMaxCliques();
+
+    // Process set packing, partitioning and covering constraint.
+    if (options_.time_limit == nullptr ||
+        !options_.time_limit->LimitReached()) {
+      ProcessSetPPC();
+      ExtractBoolAnd();
+
+      // Call the main presolve to remove the fixed variables and do more
+      // deductions.
       PresolveToFixPoint();
     }
-  }
-  // Runs SAT specific presolve on the pure-SAT part of the problem.
-  // Note that because this can only remove/fix variable not used in the other
-  // part of the problem, there is no need to redo more presolve afterwards.
-  //
-  // TODO(user): expose the parameters here so we can use
-  // cp_model_use_sat_presolve().
-  if (options_.time_limit == nullptr || !options_.time_limit->LimitReached()) {
-    PresolvePureSatPart();
-  }
 
-  // Extract redundant at most one constraint form the linear ones.
-  //
-  // TODO(user): more generally if we do some probing, the same relation will
-  // be detected (and more). Also add an option to turn this off?
-  //
-  // TODO(user): instead of extracting at most one, extract pairwise conflicts
-  // and add them to bool_and clauses? this is some sort of small scale probing,
-  // but good for sat presolve and clique later?
-  if (!context_.ModelIsUnsat()) {
-    const int old_size = context_.working_model->constraints_size();
-    for (int c = 0; c < old_size; ++c) {
-      ConstraintProto* ct = context_.working_model->mutable_constraints(c);
-      if (ct->constraint_case() != ConstraintProto::ConstraintCase::kLinear) {
-        continue;
-      }
-      if (gtl::ContainsKey(context_.affine_constraints, ct)) {
-        continue;
-      }
-      ExtractAtMostOneFromLinear(ct);
+    // Exit the loop if the reduction is not so large.
+    if (context_.num_presolve_operations - old_num_presolve_op <
+        0.8 * (context_.working_model->variables_size() +
+               old_num_non_empty_constraints)) {
+      break;
     }
-    context_.UpdateNewConstraintsVariableUsage();
-  }
-
-  TransformIntoMaxCliques();
-
-  // Process set packing, partitioning and covering constraint.
-  if (options_.time_limit == nullptr || !options_.time_limit->LimitReached()) {
-    ProcessSetPPC();
-    ExtractBoolAnd();
-
-    // Call the main presolve to remove the fixed variables and do more
-    // deductions.
-    PresolveToFixPoint();
   }
 
   // Regroup no-overlaps into max-cliques.

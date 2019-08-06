@@ -60,7 +60,7 @@ $(document).ready(function(){initNavTree('linear__expr_8h.html','');});
 <li>LinearRange: models lb &lt;= sum_{i in S} a_i*x_i &lt;= ub, and it provides various operator overloads to build up "LinearExpr"s and then convert them to "LinearRange"s.</li>
 </ol>
 <p>Recommended use (avoids dangerous code):</p>
-<div class="fragment"><div class="line">MPSolver solver = ...;</div><div class="line"><span class="keyword">const</span> LinearExpr x = solver.MakeVar(...);   * Note: implicit conversion</div><div class="line"><span class="keyword">const</span> LinearExpr y = solver.MakeVar(...);</div><div class="line"><span class="keyword">const</span> LinearExpr z = solver.MakeVar(...);</div><div class="line"><span class="keyword">const</span> LinearExpr e1 = x + y;</div><div class="line"><span class="keyword">const</span> LinearExpr e2 = (e1 + 7.0 + z)/3.0;</div><div class="line"><span class="keyword">const</span> LinearRange r = e1 &lt;= e2;</div><div class="line">solver.MakeRowConstraint(r);</div></div><!-- fragment --><p>WARNING, AVOID THIS TRAP:</p>
+<div class="fragment"><div class="line">MPSolver solver = ...;</div><div class="line"><span class="keyword">const</span> LinearExpr x = solver.MakeVar(...);   * Note: implicit conversion</div><div class="line"><span class="keyword">const</span> LinearExpr y = solver.MakeVar(...);</div><div class="line"><span class="keyword">const</span> LinearExpr z = solver.MakeVar(...);</div><div class="line"><span class="keyword">const</span> LinearExpr e1 = x + y;</div><div class="line"><span class="keyword">const</span> LinearExpr e2 = (e1 + 7.0 + z)/3.0;</div><div class="line"><span class="keyword">const</span> LinearRange r = e1 &lt;= e2;</div><div class="line">solver.MakeRowConstraint(r);</div></div><!-- fragment --><p><b>WARNING</b>, AVOID THIS TRAP:</p>
 <div class="fragment"><div class="line">MPSolver solver = ...;</div><div class="line">MPVariable* x = solver.MakeVar(...);</div><div class="line">LinearExpr y = x + 5;</div></div><!-- fragment --><p>In evaluating "x+5" above, x is NOT converted to a LinearExpr before the addition, but rather is treated as a pointer, so x+5 gives a new pointer to garbage memory.</p>
 <p>For this reason, when using LinearExpr, it is best practice to:</p><ol type="1">
 <li>use double literals instead of ints (e.g. "x + 5.0", not "x + 5"),</li>
@@ -68,8 +68,8 @@ $(document).ready(function(){initNavTree('linear__expr_8h.html','');});
 </ol>
 <p>Likewise, the following code is NOT recommended: </p><div class="fragment"><div class="line">MPSolver solver = ...;</div><div class="line">MPVariable* x = solver.MakeVar(...);</div><div class="line">MPVariable* y = solver.MakeVar(...);</div><div class="line">LinearExpr e1 = LinearExpr(x) + y + 5;</div></div><!-- fragment --><p>While it is correct, it violates the natural assumption that the + operator is associative. Thus you are setting a trap for future modifications of the code, as any of the following changes would lead to the above failure mode:</p>
 <ul>
-<li><code>LinearExpr</code> e1 = LinearExpr(x) + (y + 5);</li>
-<li><code>LinearExpr</code> e1 = y + 5 + LinearExpr(x); </li>
+<li><div class="fragment"><div class="line">LinearExpr e1 = LinearExpr(x) + (y + 5); </div></div><!-- fragment --></li>
+<li><div class="fragment"><div class="line">LinearExpr e1 = y + 5 + LinearExpr(x); </div></div><!-- fragment --> </li>
 </ul>
 
 <p class="definition">Definition in file <a class="el" href="linear__expr_8h_source.html">linear_expr.h</a>.</p>

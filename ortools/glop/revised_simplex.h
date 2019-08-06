@@ -109,6 +109,7 @@
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_print_utils.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse_row.h"
 #include "ortools/util/random_engine.h"
 #include "ortools/util/time_limit.h"

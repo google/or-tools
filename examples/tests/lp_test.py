@@ -169,6 +169,8 @@ class PyWrapLpTest(unittest.TestCase):
         for name, problem_type in all_names_and_problem_types:
             if not pywraplp.Solver.SupportsProblemType(problem_type):
                 continue
+            if name.startswith('GUROBI'):
+                continue
             if name.endswith('LINEAR_PROGRAMMING'):
                 print(('\n------ Linear programming example with %s ------' %
                        name))
@@ -213,6 +215,17 @@ class PyWrapLpTest(unittest.TestCase):
         solver.SetHint([x1, x2], [1.0, 0.0])
         self.assertEqual(2, len(solver.variables()))
         self.assertEqual(1, len(solver.constraints()))
+
+    def testBopInfeasible(self):
+        print('testBopInfeasible')
+        solver = pywraplp.Solver('test', pywraplp.Solver.BOP_INTEGER_PROGRAMMING)
+        solver.EnableOutput()
+
+        x = solver.IntVar(0, 10, "")
+        solver.Add(x >= 20)
+
+        result_status = solver.Solve()
+        print(result_status) # outputs: 0        
 
 
 if __name__ == '__main__':

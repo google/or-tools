@@ -157,9 +157,9 @@ void VariableValues::UpdateOnPivoting(const ScatteredColumn& direction,
   // Note that there is no need to call variables_info_.Update() on basic
   // variables when they change values. Note also that the status of
   // entering_col will be updated later.
-  for (const RowIndex row : direction.non_zeros) {
-    const ColIndex col = basis_[row];
-    variable_values_[col] -= direction[row] * step;
+  for (const auto e : direction) {
+    const ColIndex col = basis_[e.row()];
+    variable_values_[col] -= e.coefficient() * step;
   }
   variable_values_[entering_col] += step;
 }
@@ -182,7 +182,7 @@ void VariableValues::UpdateGivenNonBasicVariables(
           col, variable_values_[col] - old_value,
           &initially_all_zero_scratchpad_);
     }
-    if (ShouldUseDenseIteration(initially_all_zero_scratchpad_)) {
+    if (initially_all_zero_scratchpad_.ShouldUseDenseIteration()) {
       initially_all_zero_scratchpad_.non_zeros.clear();
       initially_all_zero_scratchpad_.is_non_zero.assign(num_rows, false);
     } else {
@@ -199,9 +199,9 @@ void VariableValues::UpdateGivenNonBasicVariables(
       initially_all_zero_scratchpad_.values.AssignToZero(num_rows);
       ResetPrimalInfeasibilityInformation();
     } else {
-      for (const RowIndex row : initially_all_zero_scratchpad_.non_zeros) {
-        variable_values_[basis_[row]] -= initially_all_zero_scratchpad_[row];
-        initially_all_zero_scratchpad_[row] = 0.0;
+      for (const auto e : initially_all_zero_scratchpad_) {
+        variable_values_[basis_[e.row()]] -= e.coefficient();
+        initially_all_zero_scratchpad_[e.row()] = 0.0;
       }
       UpdatePrimalInfeasibilityInformation(
           initially_all_zero_scratchpad_.non_zeros);

@@ -1109,6 +1109,7 @@ class PathCumulFilter : public BasePathFilter {
     if (FilterSoftSpanCost(vehicle)) ++num_linear_constraints;
     if (FilterCumulSoftLowerBounds()) ++num_linear_constraints;
     if (FilterCumulSoftBounds()) ++num_linear_constraints;
+    if (FilterBreakCost(vehicle)) ++num_linear_constraints;
     return num_linear_constraints >= 2;
   }
 

@@ -190,15 +190,10 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
     bool should_fail = false;
     for (LocalDimensionCumulOptimizer& optimizer : local_optimizers_) {
       const RoutingDimension* const dimension = optimizer.dimension();
-      const bool dimension_has_breaks = dimension->HasBreakConstraints();
       RoutingModel* const model = dimension->model();
       const auto next = [model](int64 i) { return model->NextVar(i)->Value(); };
       for (int vehicle = 0; vehicle < model->vehicles(); ++vehicle) {
         // TODO(user): Investigate if we should skip unused vehicles.
-        if (dimension_has_breaks &&
-            !dimension->GetBreakIntervalsOfVehicle(vehicle).empty())
-          continue;
-
         DCHECK(DimensionFixedTransitsEqualTransitEvaluatorForVehicle(*dimension,
                                                                      vehicle));
         std::vector<int64> cumul_values;
@@ -2900,11 +2895,13 @@ void RoutingModel::LogSolution(const RoutingSearchParameters& parameters,
                                int64 solution_cost, int64 start_time_ms) {
   const std::string memory_str = MemoryUsage();
   const double cost_scaling_factor = parameters.log_cost_scaling_factor();
+  const double cost_offset = parameters.log_cost_offset();
   const std::string cost_string =
-      cost_scaling_factor == 1.0
+      cost_scaling_factor == 1.0 && cost_offset == 0.0
           ? absl::StrCat(solution_cost)
-          : absl::StrFormat("%d (%.8lf)", solution_cost,
-                            solution_cost / cost_scaling_factor);
+          : absl::StrFormat(
+                "%d (%.8lf)", solution_cost,
+                cost_scaling_factor * (solution_cost + cost_offset));
   LOG(INFO) << absl::StrFormat(
       "%s (%s, time = %d ms, memory used = %s)", description, cost_string,
       solver_->wall_time() - start_time_ms, memory_str);
@@ -2985,7 +2982,7 @@ const Assignment* RoutingModel::SolveFromAssignmentWithParameters(
         solution_count >= 1 ? collect_assignments_->solution(solution_count - 1)
                             : nullptr;
     Assignment sat_solution(solver_.get());
-    if (SolveModelWithSat(*this, cp_solution, &sat_solution) &&
+    if (SolveModelWithSat(*this, parameters, cp_solution, &sat_solution) &&
         AppendAssignmentIfFeasible(sat_solution, &solution_pool) &&
         parameters.log_search()) {
       LogSolution(parameters, "SAT", solution_pool.back()->ObjectiveValue(),
@@ -3928,12 +3925,15 @@ std::string RoutingModel::DebugOutputAssignment(
     }
   }
   output.append("Unperformed nodes: ");
+  bool has_unperformed = false;
   for (int i = 0; i < Size(); ++i) {
     if (!IsEnd(i) && !IsStart(i) &&
         solution_assignment.Value(NextVar(i)) == i) {
       absl::StrAppendFormat(&output, "%d ", i);
+      has_unperformed = true;
     }
   }
+  if (!has_unperformed) output.append("None");
   output.append("\n");
   return output;
 }
@@ -4479,8 +4479,13 @@ void RoutingModel::StoreDimensionsForDimensionCumulOptimizers() {
           has_soft_upper_bound = true;
         }
       }
-      if (has_span_cost ^ has_soft_lower_bound ? has_soft_upper_bound
-                                               : has_span_cost) {
+      int num_linear_constraints = 0;
+      if (has_span_cost) ++num_linear_constraints;
+      if (dimension->HasSoftSpanUpperBounds()) ++num_linear_constraints;
+      if (has_soft_lower_bound) ++num_linear_constraints;
+      if (has_soft_upper_bound) ++num_linear_constraints;
+      if (dimension->HasBreakConstraints()) ++num_linear_constraints;
+      if (num_linear_constraints >= 2) {
         dimension->SetVehicleOffsetsForLocalOptimizer(
             std::move(vehicle_offsets));
         dimensions_for_local_optimizer_.push_back(dimension);
@@ -4990,6 +4995,7 @@ void RoutingModel::SetupTrace(
     search_log_parameters.variable = cost_;
     search_log_parameters.scaling_factor =
         search_parameters.log_cost_scaling_factor();
+    search_log_parameters.offset = search_parameters.log_cost_offset();
     search_log_parameters.display_callback = nullptr;
     monitors_.push_back(solver_->MakeSearchLog(search_log_parameters));
   }

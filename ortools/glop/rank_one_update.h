@@ -17,6 +17,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
+#include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse.h"
 
 namespace operations_research {
@@ -159,7 +160,7 @@ class RankOneUpdateFactorization {
   }
 
   // Same as LeftSolve(), but if the given non_zeros are not empty, then all
-  // the new non-zeros in the result are happended to it.
+  // the new non-zeros in the result are appended to it.
   void LeftSolveWithNonZeros(ScatteredRow* y) const {
     RETURN_IF_NULL(y);
     if (y->non_zeros.empty()) {
@@ -167,7 +168,7 @@ class RankOneUpdateFactorization {
       return;
     }
 
-    // tmp_row_is_non_zero_ is always all false before and after this code.
+    // y->is_non_zero is always all false before and after this code.
     y->is_non_zero.resize(y->values.size(), false);
     DCHECK(IsAllFalse(y->is_non_zero));
     for (const ColIndex col : y->non_zeros) y->is_non_zero[col] = true;

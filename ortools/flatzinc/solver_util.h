@@ -27,7 +27,7 @@ namespace fz {
 class Log : public SearchLog {
  public:
   Log(operations_research::Solver* s, OptimizeVar* obj, int period)
-      : SearchLog(s, obj, nullptr, 1.0, nullptr, period) {}
+      : SearchLog(s, obj, nullptr, 1.0, 0.0, nullptr, period) {}
   ~Log() override {}
 
  protected:

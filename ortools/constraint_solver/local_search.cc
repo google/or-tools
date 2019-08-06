@@ -1453,6 +1453,7 @@ TSPLns::TSPLns(const std::vector<IntVar*>& vars,
       evaluator_(std::move(evaluator)),
       tsp_size_(tsp_size),
       rand_(ACMRandom::HostnamePidTimeSeed()) {
+  CHECK_GE(tsp_size_, 0);
   cost_.resize(tsp_size_);
   for (int i = 0; i < tsp_size_; ++i) {
     cost_[i].resize(tsp_size_);

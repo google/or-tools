@@ -6866,69 +6866,6 @@
       <anchor>ac8d266a839e50968c11481a151f80ea9</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable" static="yes">
-      <type>static const double</type>
-      <name>kDefaultDoubleParamValue</name>
-      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
-      <anchor>af0e4fbb80499756bc3edf88fd495d7f7</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>static const int</type>
-      <name>kDefaultIntegerParamValue</name>
-      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
-      <anchor>a9bac90a88459ac4dd9629beeada24a66</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>static const double</type>
-      <name>kUnknownDoubleParamValue</name>
-      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
-      <anchor>a561c73d056eef04db4b4703abd972868</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>static const int</type>
-      <name>kUnknownIntegerParamValue</name>
-      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
-      <anchor>a6c81985cecabbd5f054974d362db551a</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>static const double</type>
-      <name>kDefaultRelativeMipGap</name>
-      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
-      <anchor>ad6b31b12f9e1944b355809efd56fec98</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>static const double</type>
-      <name>kDefaultPrimalTolerance</name>
-      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
-      <anchor>a3369c0b857cf02ddf742acc5ef1feec5</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>static const double</type>
-      <name>kDefaultDualTolerance</name>
-      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
-      <anchor>a15fd57d45c522be9c8340ba9d1244e3f</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>static const PresolveValues</type>
-      <name>kDefaultPresolve</name>
-      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
-      <anchor>afc36c21bad2607b8d7bcba63b60d8681</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable" static="yes">
-      <type>static const IncrementalityValues</type>
-      <name>kDefaultIncrementality</name>
-      <anchorfile>classoperations__research_1_1MPSolverParameters.html</anchorfile>
-      <anchor>ac8d266a839e50968c11481a151f80ea9</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="class">
     <name>operations_research::MPSosConstraint</name>

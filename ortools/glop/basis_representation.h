@@ -20,6 +20,8 @@
 #include "ortools/glop/rank_one_update.h"
 #include "ortools/glop/status.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/permutation.h"
+#include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse.h"
 #include "ortools/util/stats.h"
 

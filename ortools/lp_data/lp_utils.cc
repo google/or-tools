@@ -44,7 +44,7 @@ Fractional PreciseSquaredNorm(const SparseColumn& v) {
 }
 
 Fractional PreciseSquaredNorm(const ScatteredColumn& v) {
-  if (ShouldUseDenseIteration(v)) {
+  if (v.ShouldUseDenseIteration()) {
     return PreciseSquaredNorm(v.values);
   }
   KahanSum sum;

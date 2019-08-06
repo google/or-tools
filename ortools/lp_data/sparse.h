@@ -34,6 +34,7 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/permutation.h"
+#include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse_column.h"
 #include "ortools/util/return_macros.h"
 
@@ -400,7 +401,7 @@ class CompactSparseMatrix {
 
   // Same as ColumnAddMultipleToDenseColumn() but also adds the new non-zeros to
   // the non_zeros vector. A non-zero is "new" if is_non_zero[row] was false,
-  // and we update dense_column[row]. This functions also updates is_non_zero.
+  // and we update dense_column[row]. This function also updates is_non_zero.
   void ColumnAddMultipleToSparseScatteredColumn(ColIndex col,
                                                 Fractional multiplier,
                                                 ScatteredColumn* column) const {

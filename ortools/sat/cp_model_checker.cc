@@ -81,16 +81,26 @@ std::string ValidateIntegerVariable(const CpModelProto& model, int v) {
                         ProtobufShortDebugString(proto));
   }
 
-  // We do compute ub - lb in some place in the code and do not want to deal
-  // with overflow everywhere. This seems like a reasonable precondition anyway.
+  // Internally, we often take the negation of a domain, and we also want to
+  // have sentinel values greater than the min/max of a variable domain, so
+  // the domain must fall in [kint64min + 2, kint64max - 1].
   const int64 lb = proto.domain(0);
   const int64 ub = proto.domain(proto.domain_size() - 1);
+  if (lb < kint64min + 2 || ub > kint64max - 1) {
+    return absl::StrCat(
+        "var #", v, " domain do not fall in [kint64min + 2, kint64max - 1]. ",
+        ProtobufShortDebugString(proto));
+  }
+
+  // We do compute ub - lb in some place in the code and do not want to deal
+  // with overflow everywhere. This seems like a reasonable precondition anyway.
   if (lb < 0 && lb + kint64max < ub) {
     return absl::StrCat(
         "var #", v,
         " has a domain that is too large, i.e. |UB - LB| overflow an int64: ",
         ProtobufShortDebugString(proto));
   }
+
   return "";
 }
 

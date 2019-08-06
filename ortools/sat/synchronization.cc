@@ -36,12 +36,23 @@ SharedSolutionRepository::Solution SharedSolutionRepository::GetSolution(
   return solutions_[i];
 }
 
+// TODO(user): Experiments on the best distribution.
+SharedSolutionRepository::Solution
+SharedSolutionRepository::GetRandomBiasedSolution(
+    random_engine_t* random) const {
+  absl::MutexLock mutex_lock(&mutex_);
+  weights_.resize(solutions_.size());
+  const int64 best_objective = solutions_[0].internal_objective;
+  for (int i = 0; i < solutions_.size(); ++i) {
+    weights_[i] =
+        solutions_[i].internal_objective == best_objective ? 1.0 : 0.1;
+  }
+  std::discrete_distribution<> dist(weights_.begin(), weights_.end());
+  return solutions_[dist(*random)];
+}
+
 void SharedSolutionRepository::Add(const Solution& solution) {
   absl::MutexLock mutex_lock(&mutex_);
-  if (new_solutions_.size() < num_solutions_to_keep_) {
-    new_solutions_.push_back(solution);
-    return;
-  }
   int worse_solution_index = 0;
   for (int i = 0; i < new_solutions_.size(); ++i) {
     // Do not add identical solution.
@@ -50,7 +61,9 @@ void SharedSolutionRepository::Add(const Solution& solution) {
       worse_solution_index = i;
     }
   }
-  if (solution < new_solutions_[worse_solution_index]) {
+  if (new_solutions_.size() < num_solutions_to_keep_) {
+    new_solutions_.push_back(solution);
+  } else if (solution < new_solutions_[worse_solution_index]) {
     new_solutions_[worse_solution_index] = solution;
   }
 }
@@ -68,9 +81,13 @@ void SharedSolutionRepository::Synchronize() {
 
 // TODO(user): Experiments and play with the num_solutions_to_keep parameter.
 SharedResponseManager::SharedResponseManager(bool log_updates,
+                                             bool enumerate_all_solutions,
+                                             int solution_limit,
                                              const CpModelProto* proto,
                                              const WallTimer* wall_timer)
     : log_updates_(log_updates),
+      enumerate_all_solutions_(enumerate_all_solutions),
+      solution_limit_(solution_limit),
       model_proto_(*proto),
       wall_timer_(*wall_timer),
       solutions_(/*num_solutions_to_keep=*/10) {}
@@ -239,6 +256,8 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
   absl::MutexLock mutex_lock(&mutex_);
   CHECK_NE(best_response_.status(), CpSolverStatus::INFEASIBLE);
 
+  if (solution_limit_ > 0 && num_solutions_ >= solution_limit_) return;
+
   if (model_proto_.has_objective()) {
     const int64 objective_value =
         ComputeInnerObjective(model_proto_.objective(), response);
@@ -342,10 +361,16 @@ void SharedResponseManager::SetStatsFromModelInternal(Model* model) {
 bool SharedResponseManager::ProblemIsSolved() const {
   absl::MutexLock mutex_lock(&mutex_);
 
+  if (solution_limit_ > 0 && num_solutions_ >= solution_limit_) {
+    return true;
+  }
+
   // TODO(user): Currently this work because we do not allow enumerate all
   // solution in multithread.
   if (!model_proto_.has_objective() &&
-      best_response_.status() == CpSolverStatus::FEASIBLE) {
+      ((best_response_.status() == CpSolverStatus::FEASIBLE &&
+        !enumerate_all_solutions_) ||
+       best_response_.status() == CpSolverStatus::OPTIMAL)) {
     return true;
   }
 

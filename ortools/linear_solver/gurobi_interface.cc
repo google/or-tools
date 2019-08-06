@@ -22,19 +22,18 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
+#include "ortools/base/canonical_errors.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/status.h"
 #include "ortools/base/timer.h"
+#include "ortools/linear_solver/gurobi_environment.h"
+#include "ortools/linear_solver/gurobi_proto_solver.h"
 #include "ortools/linear_solver/linear_solver.h"
-
-extern "C" {
-#include "gurobi_c.h"
-int __stdcall GRBisqp(GRBenv**, const char*, const char*, const char*, int,
-                      const char*);
-}
 
 DEFINE_int32(num_gurobi_threads, 4, "Number of threads available for Gurobi.");
 
@@ -52,6 +51,8 @@ class GurobiInterface : public MPSolverInterface {
   // ----- Solve -----
   // Solves the problem using the parameter values specified.
   MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
+  absl::optional<MPSolutionResponse> DirectlySolveProto(
+      const MPModelRequest& request) override;
 
   // Writes the model.
   void Write(const std::string& filename) override;
@@ -199,12 +200,7 @@ GurobiInterface::GurobiInterface(MPSolver* const solver, bool mip)
       env_(nullptr),
       mip_(mip),
       current_solution_index_(0) {
-  const int ret = GRBloadenv(&env_, nullptr);
-  if (ret != 0 || env_ == nullptr) {
-    std::string err_msg = GRBgeterrormsg(env_);
-    LOG(DFATAL) << "Error: could not create environment: " << err_msg;
-    throw std::runtime_error(std::to_string(ret) + ", " + err_msg);
-  }
+  CHECK_OK(LoadGurobiEnvironment(&env_));
   CheckedGurobiCall(GRBnewmodel(env_, &model_, solver_->name_.c_str(),
                                 0,          // numvars
                                 nullptr,    // obj
@@ -832,6 +828,23 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
   sync_status_ = SOLUTION_SYNCHRONIZED;
   GRBresetparams(GRBgetenv(model_));
   return result_status_;
+}
+
+absl::optional<MPSolutionResponse> GurobiInterface::DirectlySolveProto(
+    const MPModelRequest& request) {
+  const auto status_or = GurobiSolveProto(request);
+  if (status_or.ok()) return status_or.ValueOrDie();
+  // Special case: if something is not implemented yet, fall back to solving
+  // through MPSolver.
+  if (util::IsUnimplemented(status_or.status())) return absl::nullopt;
+
+  if (request.enable_internal_solver_output()) {
+    LOG(INFO) << "Invalid Gurobi status: " << status_or.status();
+  }
+  MPSolutionResponse response;
+  response.set_status(MPSOLVER_NOT_SOLVED);
+  response.set_status_str(status_or.status().ToString());
+  return std::move(response);
 }
 
 bool GurobiInterface::NextSolution() {
