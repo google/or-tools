@@ -2683,6 +2683,7 @@ LP_LIB_OBJS = \
  $(OBJ_DIR)/linear_solver/model_validator.$O \
  $(OBJ_DIR)/linear_solver/scip_interface.$O \
  $(OBJ_DIR)/linear_solver/scip_proto_solver.$O \
+ $(OBJ_DIR)/linear_solver/xpress_interface.$O \
  $(OBJ_DIR)/linear_solver/linear_solver.pb.$O
 
 objs/linear_solver/bop_interface.$O: \
@@ -2874,6 +2875,17 @@ objs/linear_solver/scip_proto_solver.$O: \
  ortools/base/status_macros.h ortools/linear_solver/model_validator.h \
  ortools/linear_solver/scip_helper_macros.h | $(OBJ_DIR)/linear_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Sscip_proto_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sscip_proto_solver.$O
+
+objs/linear_solver/xpress_interface.$O: \
+ ortools/linear_solver/xpress_interface.cc ortools/base/integral_types.h \
+ ortools/base/logging.h ortools/base/macros.h ortools/base/timer.h \
+ ortools/base/basictypes.h ortools/linear_solver/linear_solver.h \
+ ortools/base/commandlineflags.h ortools/base/status.h \
+ ortools/linear_solver/linear_expr.h \
+ ortools/gen/ortools/linear_solver/linear_solver.pb.h \
+ ortools/gen/ortools/util/optional_boolean.pb.h \
+ ortools/port/proto_utils.h | $(OBJ_DIR)/linear_solver
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Sxpress_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sxpress_interface.$O
 
 ortools/linear_solver/linear_solver.proto: ;
 
