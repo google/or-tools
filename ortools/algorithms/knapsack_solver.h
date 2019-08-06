@@ -157,7 +157,6 @@ class KnapsackSolver {
      */
     KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER = 3,
 #endif  // USE_CBC
-
     /** Generic Solver.
      *
      * This solver can deal with both large number of items and several
@@ -173,6 +172,12 @@ class KnapsackSolver {
      */
     KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER = 6,
 #endif  // USE_SCIP
+#if defined(USE_XPRESS)
+	KNAPSACK_MULTIDIMENSION_XPRESS_MIP_SOLVER = 7,
+#endif
+#if defined(USE_CPLEX)
+	KNAPSACK_MULTIDIMENSION_CPLEX_MIP_SOLVER = 8,
+#endif
   };
 
   explicit KnapsackSolver(const std::string& solver_name);

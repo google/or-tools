@@ -1153,6 +1153,18 @@ KnapsackSolver::KnapsackSolver(SolverType solver_type,
           MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING, solver_name);
       break;
 #endif  // USE_SCIP
+#if defined(USE_XPRESS)
+	case KNAPSACK_MULTIDIMENSION_XPRESS_MIP_SOLVER:
+		solver_ = absl::make_unique<KnapsackMIPSolver>(
+			MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING, solver_name);
+		break;
+#endif
+#if defined(USE_CPLEX)
+	case KNAPSACK_MULTIDIMENSION_CPLEX_MIP_SOLVER:
+		solver_ = absl::make_unique<KnapsackMIPSolver>(
+			MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING, solver_name);
+		break;
+#endif
     default:
       LOG(FATAL) << "Unknown knapsack solver type.";
   }

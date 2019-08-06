@@ -104,6 +104,7 @@ if(BUILD_Protobuf)
     TAG
       "v3.8.0"
     CMAKE_ARGS
+	  -Dprotobuf_MSVC_STATIC_RUNTIME:BOOL=OFF
       "SOURCE_SUBDIR cmake"
   )
 endif()
