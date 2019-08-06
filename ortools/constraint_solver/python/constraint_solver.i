@@ -337,11 +337,9 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
   LocalSearchFilter* SumObjectiveFilter(
       const std::vector<IntVar*>& vars,
       Solver::IndexEvaluator2 values,
-      IntVar* const objective,
       Solver::LocalSearchFilterBound filter_enum) {
     return $self->MakeSumObjectiveFilter(vars,
                                          values,
-                                         objective,
                                          filter_enum);
   }
 }

@@ -95,8 +95,8 @@ void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
       route << manager.IndexToNode(index).value() << " -> ";
       int64 previous_index = index;
       index = solution.Value(routing.NextVar(index));
-      route_distance += const_cast<RoutingModel&>(routing).GetArcCostForVehicle(
-          previous_index, index, int64{vehicle_id});
+      route_distance += routing.GetArcCostForVehicle(previous_index, index,
+                                                     int64{vehicle_id});
     }
     LOG(INFO) << route.str() << manager.IndexToNode(index).value();
     LOG(INFO) << "Distance of the route: " << route_distance << "m";
@@ -145,10 +145,7 @@ void VrpStartsEnds() {
   // [START distance_constraint]
   routing.AddDimension(transit_callback_index, 0, 2000,
                        /*fix_start_cumul_to_zero=*/true, "Distance");
-  const RoutingDimension& distance_dimension =
-      routing.GetDimensionOrDie("Distance");
-  const_cast<RoutingDimension&>(distance_dimension)
-      .SetGlobalSpanCostCoefficient(100);
+  routing.GetMutableDimension("Distance")->SetGlobalSpanCostCoefficient(100);
   // [END distance_constraint]
 
   // Setting first solution heuristic.

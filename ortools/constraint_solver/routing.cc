@@ -4326,14 +4326,14 @@ RoutingModel::GetOrCreateLocalSearchFilters() {
     if (CostsAreHomogeneousAcrossVehicles()) {
       local_search_objective_filter = solver_->MakeSumObjectiveFilter(
           nexts_, [this](int64 i, int64 j) { return GetHomogeneousCost(i, j); },
-          objective_callback, cost_, Solver::LE);
+          objective_callback, Solver::LE);
     } else {
       local_search_objective_filter = solver_->MakeSumObjectiveFilter(
           nexts_, vehicle_vars_,
           [this](int64 i, int64 j, int64 k) {
             return GetArcCostForVehicle(i, j, k);
           },
-          objective_callback, cost_, Solver::LE);
+          objective_callback, Solver::LE);
     }
 
     if (vehicle_amortized_cost_factors_set_) {
@@ -4660,9 +4660,9 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
   DecisionBuilder* const finalize = solver_->MakeSolveOnce(
       finalize_solution, GetOrCreateLargeNeighborhoodSearchLimit());
   LocalSearchPhaseParameters* const insertion_parameters =
-      solver_->MakeLocalSearchPhaseParameters(CreateInsertionOperator(),
-                                              finalize, ls_limit,
-                                              GetOrCreateLocalSearchFilters());
+      solver_->MakeLocalSearchPhaseParameters(
+          nullptr, CreateInsertionOperator(), finalize, ls_limit,
+          GetOrCreateLocalSearchFilters());
   std::vector<IntVar*> decision_vars = nexts_;
   if (!CostsAreHomogeneousAcrossVehicles()) {
     decision_vars.insert(decision_vars.end(), vehicle_vars_.begin(),
@@ -4830,11 +4830,11 @@ LocalSearchPhaseParameters* RoutingModel::CreateLocalSearchParameters(
     const RoutingSearchParameters& search_parameters) {
   SearchLimit* lns_limit = GetOrCreateLargeNeighborhoodSearchLimit();
   return solver_->MakeLocalSearchPhaseParameters(
-      GetNeighborhoodOperators(search_parameters),
+      CostVar(), GetNeighborhoodOperators(search_parameters),
       solver_->MakeSolveOnce(CreateSolutionFinalizer(lns_limit), lns_limit),
       GetOrCreateLocalSearchLimit(),
       {solver_->RevAlloc(new LocalSearchFilterManager(
-          solver_.get(), GetOrCreateLocalSearchFilters(), CostVar()))});
+          solver_.get(), GetOrCreateLocalSearchFilters()))});
 }
 
 DecisionBuilder* RoutingModel::CreateLocalSearchDecisionBuilder(

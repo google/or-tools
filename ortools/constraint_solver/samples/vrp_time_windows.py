@@ -83,9 +83,9 @@ def print_solution(data, manager, routing, assignment):
                 assignment.Max(time_var))
             index = assignment.Value(routing.NextVar(index))
         time_var = time_dimension.CumulVar(index)
-        plan_output += '{0} Time({1},{2})\n'.format(
-            manager.IndexToNode(index), assignment.Min(time_var),
-            assignment.Max(time_var))
+        plan_output += '{0} Time({1},{2})\n'.format(manager.IndexToNode(index),
+                                                    assignment.Min(time_var),
+                                                    assignment.Max(time_var))
         plan_output += 'Time of the route: {}min\n'.format(
             assignment.Min(time_var))
         print(plan_output)
@@ -103,8 +103,8 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywrapcp.RoutingIndexManager(
-        len(data['time_matrix']), data['num_vehicles'], data['depot'])
+    manager = pywrapcp.RoutingIndexManager(len(data['time_matrix']),
+                                           data['num_vehicles'], data['depot'])
     # [END index_manager]
 
     # Create Routing Model.

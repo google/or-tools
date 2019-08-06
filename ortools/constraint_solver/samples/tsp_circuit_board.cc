@@ -113,8 +113,7 @@ void PrintSolution(const RoutingIndexManager& manager,
     route << manager.IndexToNode(index).value() << " -> ";
     int64 previous_index = index;
     index = solution.Value(routing.NextVar(index));
-    distance += const_cast<RoutingModel&>(routing).GetArcCostForVehicle(
-        previous_index, index, int64{0});
+    distance += routing.GetArcCostForVehicle(previous_index, index, int64{0});
   }
   LOG(INFO) << route.str() << manager.IndexToNode(index).value();
   LOG(INFO) << "Route distance: " << distance << "miles";

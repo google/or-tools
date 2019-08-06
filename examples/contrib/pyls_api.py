@@ -56,7 +56,8 @@ class SumFilter(pywrapcp.IntVarLocalSearchFilter):
   def OnSynchronize(self, delta):
     self.__sum = sum(self.Value(index) for index in range(self.Size()))
 
-  def Accept(self, delta, _):
+  def Accept(self, delta, unused_delta_delta, unused_objective_min,
+             unused_objective_max):
     solution_delta = delta.IntVarContainer()
     solution_delta_size = solution_delta.Size()
     for i in range(solution_delta_size):
@@ -81,7 +82,7 @@ class SumFilter(pywrapcp.IntVarLocalSearchFilter):
 def Solve(type):
   solver = pywrapcp.Solver('Solve')
   vars = [solver.IntVar(0, 4) for _ in range(4)]
-  sum_var = solver.Sum(vars)
+  sum_var = solver.Sum(vars).Var()
   obj = solver.Minimize(sum_var, 1)
   db = solver.Phase(vars, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MAX_VALUE)
   ls = None
@@ -89,18 +90,18 @@ def Solve(type):
   if type == 0:  # LNS
     print('Large Neighborhood Search')
     one_var_lns = OneVarLns(vars)
-    ls_params = solver.LocalSearchPhaseParameters(one_var_lns, db)
+    ls_params = solver.LocalSearchPhaseParameters(sum_var, one_var_lns, db)
     ls = solver.LocalSearchPhase(vars, db, ls_params)
   elif type == 1:  # LS
     print('Local Search')
     move_one_var = MoveOneVar(vars)
-    ls_params = solver.LocalSearchPhaseParameters(move_one_var, db)
+    ls_params = solver.LocalSearchPhaseParameters(sum_var, move_one_var, db)
     ls = solver.LocalSearchPhase(vars, db, ls_params)
   else:
     print('Local Search with Filter')
     move_one_var = MoveOneVar(vars)
     sum_filter = SumFilter(vars)
-    ls_params = solver.LocalSearchPhaseParameters(move_one_var, db, None,
+    ls_params = solver.LocalSearchPhaseParameters(sum_var, move_one_var, db, None,
                                                   [sum_filter])
     ls = solver.LocalSearchPhase(vars, db, ls_params)
 

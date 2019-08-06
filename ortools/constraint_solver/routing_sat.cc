@@ -18,10 +18,12 @@ namespace operations_research {
 namespace sat {
 namespace {
 
-// For now only TSPs are supported.
-// TODO(user): Support multi-route models and any type of constraints.
+// As of 07/2019, TSPs and VRPs with homogeneous fleets of vehicles are
+// supported.
+// TODO(user): Support any type of constraints.
+// TODO(user): Make VRPs properly support optional nodes.
 bool RoutingModelCanBeSolvedBySat(const RoutingModel& model) {
-  return model.vehicles() == 1;
+  return model.GetVehicleClassesCount() == 1;
 }
 
 // Adds an integer variable to a CpModelProto, returning its index in the proto.
@@ -100,6 +102,150 @@ void AddDimensions(const RoutingModel& model, const ArcVarMap& arc_vars,
   }
 }
 
+// Converts a RoutingModel to CpModelProto for models with multiple vehicles.
+// All non-start/end nodes have the same index in both models. Start/end nodes
+// map to a single depot index; its value is arbitrarly the index of the start
+// node of the first vehicle in the RoutingModel.
+// The map between CPModelProto arcs and their corresponding arc variable is
+// returned.
+ArcVarMap PopulateMultiRouteModelFromRoutingModel(const RoutingModel& model,
+                                                  CpModelProto* cp_model) {
+  ArcVarMap arc_vars;
+  const int num_nodes = model.Nexts().size();
+  const int depot = model.Start(0);
+
+  // Create "arc" variables and set their cost.
+  for (int tail = 0; tail < num_nodes; ++tail) {
+    const int tail_index = model.IsStart(tail) ? depot : tail;
+    std::unique_ptr<IntVarIterator> iter(
+        model.NextVar(tail)->MakeDomainIterator(false));
+    for (int head : InitAndGetValues(iter.get())) {
+      // Vehicle start and end nodes are represented as a single node in the
+      // CP-SAT model. We choose the start index of the first vehicle to
+      // represent both. We can also skip any head representing a vehicle start
+      // as the CP solver will reject those.
+      if (model.IsStart(head)) continue;
+      const int head_index = model.IsEnd(head) ? depot : head;
+      if (head_index == tail_index) continue;
+      const int64 cost = tail != head ? model.GetHomogeneousCost(tail, head)
+                                      : model.UnperformedPenalty(tail);
+      if (cost == kint64max) continue;
+      const Arc arc = {tail_index, head_index};
+      if (gtl::ContainsKey(arc_vars, arc)) continue;
+      const int index = AddVariable(cp_model, 0, 1);
+      gtl::InsertOrDie(&arc_vars, arc, index);
+      cp_model->mutable_objective()->add_vars(index);
+      cp_model->mutable_objective()->add_coeffs(cost);
+    }
+  }
+
+  // The following flow constraints seem to be necessary with the Route
+  // constraint, greatly improving preformance due to stronger LP relaxation
+  // (supposedly).
+  // TODO(user): Remove these constraints when the Route constraint handles
+  // LP relaxations properly.
+  {
+    LinearConstraintProto* ct = cp_model->add_constraints()->mutable_linear();
+    ct->add_domain(0);
+    ct->add_domain(0);
+    for (int node = 0; node < num_nodes; ++node) {
+      if (model.IsStart(node) || model.IsEnd(node)) continue;
+      ct->add_vars(gtl::FindOrDie(arc_vars, {depot, node}));
+      ct->add_coeffs(1);
+      ct->add_vars(gtl::FindOrDie(arc_vars, {node, depot}));
+      ct->add_coeffs(-1);
+    }
+  }
+
+  {
+    LinearConstraintProto* ct = cp_model->add_constraints()->mutable_linear();
+    ct->add_domain(0);
+    ct->add_domain(model.vehicles());
+    for (int node = 0; node < num_nodes; ++node) {
+      if (model.IsStart(node) || model.IsEnd(node)) continue;
+      ct->add_vars(gtl::FindOrDie(arc_vars, {depot, node}));
+      ct->add_coeffs(1);
+    }
+  }
+
+  for (int tail = 0; tail < num_nodes; ++tail) {
+    if (model.IsStart(tail) || model.IsEnd(tail)) continue;
+    LinearConstraintProto* ct = cp_model->add_constraints()->mutable_linear();
+    ct->add_domain(1);
+    ct->add_domain(1);
+    std::unique_ptr<IntVarIterator> iter(
+        model.NextVar(tail)->MakeDomainIterator(false));
+    bool depot_added = false;
+    for (int head : InitAndGetValues(iter.get())) {
+      if (model.IsStart(head)) continue;
+      if (tail == head) continue;
+      if (model.IsEnd(head)) {
+        if (depot_added) continue;
+        head = depot;
+        depot_added = true;
+      }
+      ct->add_vars(gtl::FindOrDie(arc_vars, {tail, head}));
+      ct->add_coeffs(1);
+    }
+  }
+
+  for (int head = 0; head < num_nodes; ++head) {
+    if (model.IsStart(head) || model.IsEnd(head)) continue;
+    LinearConstraintProto* ct = cp_model->add_constraints()->mutable_linear();
+    ct->add_domain(1);
+    ct->add_domain(1);
+    for (int tail = 0; tail < num_nodes; ++tail) {
+      if (model.IsEnd(head)) continue;
+      if (tail == head) continue;
+      if (model.IsStart(tail) && tail != depot) continue;
+      ct->add_vars(gtl::FindOrDie(arc_vars, {tail, head}));
+      ct->add_coeffs(1);
+    }
+  }
+
+  AddDimensions(model, arc_vars, cp_model);
+
+  // Create Routes constraint, ensuring circuits from and to the depot.
+  // This one is a bit tricky, because we need to remap the depot to zero.
+  // TODO(user): Make Routes constraints support optional nodes.
+  RoutesConstraintProto* routes_ct =
+      cp_model->add_constraints()->mutable_routes();
+  for (const auto arc_var : arc_vars) {
+    const int tail = arc_var.first.tail;
+    const int head = arc_var.first.head;
+    routes_ct->add_tails(tail == 0 ? depot : tail == depot ? 0 : tail);
+    routes_ct->add_heads(head == 0 ? depot : head == depot ? 0 : head);
+    routes_ct->add_literals(arc_var.second);
+  }
+
+  // Add demands and capacities to improve the LP relaxation and cuts. These are
+  // based on the first "unary" dimension in the model if it exists.
+  // TODO(user): We might want to try to get demand lower bounds from
+  // non-unary dimensions if no unary exist.
+  const RoutingDimension* master_dimension = nullptr;
+  for (const RoutingDimension* dimension : model.GetDimensions()) {
+    // Only a single vehicle class is supported.
+    if (dimension->GetUnaryTransitEvaluator(0) != nullptr) {
+      master_dimension = dimension;
+      break;
+    }
+  }
+  if (master_dimension != nullptr) {
+    const RoutingModel::TransitCallback1& transit =
+        master_dimension->GetUnaryTransitEvaluator(0);
+    for (int node = 0; node < num_nodes; ++node) {
+      // Tricky: demand is added for all nodes in the sat model; this means
+      // start/end nodes other than the one used for the depot must be ignored.
+      if (!model.IsEnd(node) && (!model.IsStart(node) || node == depot)) {
+        routes_ct->add_demands(transit(node));
+      }
+    }
+    DCHECK_EQ(routes_ct->demands_size(), num_nodes + 1 - model.vehicles());
+    routes_ct->set_capacity(master_dimension->vehicle_capacities()[0]);
+  }
+  return arc_vars;
+}
+
 // Converts a RoutingModel with a single vehicle to a CpModelProto.
 // The mapping between CPModelProto arcs and their corresponding arc variables
 // is returned.
@@ -143,12 +289,10 @@ ArcVarMap PopulateModelFromRoutingModel(const RoutingModel& model,
   if (model.vehicles() == 1) {
     return PopulateSingleRouteModelFromRoutingModel(model, cp_model);
   }
-  // TODO(user): Add support for multi-vehicle models.
-  return {};
+  return PopulateMultiRouteModelFromRoutingModel(model, cp_model);
 }
 
 // Converts a CpSolverResponse to an Assignment containing next variables.
-// Note: supports multiple routes.
 bool ConvertToSolution(const CpSolverResponse& response,
                        const RoutingModel& model, const ArcVarMap& arc_vars,
                        Assignment* solution) {
