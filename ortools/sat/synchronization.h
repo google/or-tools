@@ -26,6 +26,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/random_engine.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -72,7 +73,7 @@ class SharedTimeLimit {
     time_limit_->AdvanceDeterministicTime(deterministic_duration);
   }
 
-  double GetElapsedDeterministicTime() {
+  double GetElapsedDeterministicTime() const {
     absl::MutexLock mutex_lock(&mutex_);
     return time_limit_->GetElapsedDeterministicTime();
   }
@@ -156,7 +157,8 @@ class SharedResponseManager {
   // logged. This class is responsible for our solver log progress.
   SharedResponseManager(bool log_updates, bool enumerate_all_solutions,
                         int solution_limit, const CpModelProto* proto,
-                        const WallTimer* wall_timer);
+                        const WallTimer* wall_timer,
+                        const SharedTimeLimit* shared_time_limit);
 
   // Returns the current solver response. That is the best known response at the
   // time of the call with the best feasible solution and objective bounds.
@@ -185,6 +187,8 @@ class SharedResponseManager {
   // Returns the current best solution inner objective value or kInt64Max if
   // there is no solution.
   IntegerValue BestSolutionInnerObjectiveValue();
+
+  double PrimalIntegral() const;
 
   // Updates the inner objective bounds.
   void UpdateInnerObjectiveBounds(const std::string& worker_info,
@@ -230,11 +234,17 @@ class SharedResponseManager {
   void FillObjectiveValuesInBestResponse() EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void SetStatsFromModelInternal(Model* model) EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
+  // Updates the primal integral using the old bounds on the objective. If the
+  // old bounds are not finite, it uses the 'max_integral' value instead of gap.
+  void UpdatePrimalIntegral(int64 max_integral)
+      EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+
   const bool log_updates_;
   const bool enumerate_all_solutions_;
   const int solution_limit_;
   const CpModelProto& model_proto_;
   const WallTimer& wall_timer_;
+  const SharedTimeLimit& shared_time_limit_;
 
   mutable absl::Mutex mutex_;
 
@@ -245,6 +255,8 @@ class SharedResponseManager {
   int64 inner_objective_lower_bound_ GUARDED_BY(mutex_) = kint64min;
   int64 inner_objective_upper_bound_ GUARDED_BY(mutex_) = kint64max;
   int64 best_solution_objective_value_ GUARDED_BY(mutex_) = kint64max;
+  double primal_integral_ GUARDED_BY(mutex_) = 0.0;
+  double last_primal_integral_time_stamp_ GUARDED_BY(mutex_) = 0.0;
 
   int next_callback_id_ GUARDED_BY(mutex_) = 0;
   std::vector<std::pair<int, std::function<void(const CpSolverResponse&)>>>
