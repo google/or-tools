@@ -290,6 +290,7 @@ std::string CpSolverResponseStats(const CpSolverResponse& response) {
   absl::StrAppend(&result, "\nusertime: ", response.user_time());
   absl::StrAppend(&result,
                   "\ndeterministic_time: ", response.deterministic_time());
+  absl::StrAppend(&result, "\nprimal_integral: ", response.primal_integral());
   absl::StrAppend(&result, "\n");
   return result;
 }
@@ -1508,9 +1509,11 @@ void PostsolveResponse(const std::string& debug_info,
     postsolve_model.Add(operations_research::sat::NewSatParameters(params));
   }
 
+  std::unique_ptr<TimeLimit> time_limit(TimeLimit::Infinite());
+  SharedTimeLimit shared_time_limit(time_limit.get());
   SharedResponseManager local_response_manager(
       /*log_updates=*/false, /*enumerate_all_solutions=*/false,
-      /*solution_limit=*/-1, &mapping_proto, wall_timer);
+      /*solution_limit=*/-1, &mapping_proto, wall_timer, &shared_time_limit);
   LoadCpModel(mapping_proto, &local_response_manager, &postsolve_model);
   SolveLoadedCpModel(mapping_proto, &local_response_manager, &postsolve_model);
   const CpSolverResponse postsolve_response =
@@ -1969,7 +1972,8 @@ class LnsSolver : public SubSolver {
       // maybe we can just randomize them like for the base solution used.
       SharedResponseManager local_response_manager(
           /*log_updates=*/false, /*enumerate_all_solutions=*/false,
-          /*solution_limit=*/-1, &neighborhood.cp_model, shared_->wall_timer);
+          /*solution_limit=*/-1, &neighborhood.cp_model, shared_->wall_timer,
+          shared_->time_limit);
       LoadCpModel(neighborhood.cp_model, &local_response_manager, &local_model);
       QuickSolveWithHint(neighborhood.cp_model, &local_response_manager,
                          &local_model);
@@ -2371,7 +2375,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   SharedResponseManager shared_response_manager(
       log_search, params.enumerate_all_solutions(),
       params.stop_after_first_solution() ? 1 : -1, &new_cp_model_proto,
-      &wall_timer);
+      &wall_timer, &shared_time_limit);
   const auto& observers = model->GetOrCreate<SolutionObservers>()->observers;
   if (!observers.empty()) {
     shared_response_manager.AddSolutionCallback(
