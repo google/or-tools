@@ -800,9 +800,6 @@ bool FullEncodingFixedPointComputer::ProcessLinear(ConstraintIndex ct_index) {
     for (const int v : ct.linear().vars()) {
       if (!IsSmallEnoughToAlwaysEncode(v, mapping_, integer_trail_) &&
           !IsFullyEncoded(v)) {
-<<<<<<< HEAD
-        return true;
-=======
         // Register on remaining variables if not already done.
         if (!constraint_is_registered_[ct_index]) {
           for (const int var : ct.linear().vars()) {
@@ -811,46 +808,12 @@ bool FullEncodingFixedPointComputer::ProcessLinear(ConstraintIndex ct_index) {
         }
         // Can continue looking at the constraint.
         return false;
->>>>>>> 72ae26505ed8cf5c09b1888a2cbfb6b201f72463
       }
     }
     FullyEncode(ct.linear().vars(0));
     FullyEncode(ct.linear().vars(1));
     return true;
   }
-
-<<<<<<< HEAD
-  // Skip any other form of half-reified linear constraint for now.
-  if (HasEnforcementLiteral(ct)) return true;
-
-  // If all variables but one are fully encoded,
-  // force the last one to be fully encoded.
-  //   int variable_not_fully_encoded;
-  //   int num_fully_encoded = 0;
-  //   for (const int var : ct.linear().vars()) {
-  //     if (IsFullyEncoded(var)) {
-  //       num_fully_encoded++;
-  //     } else {
-  //       variable_not_fully_encoded = var;
-  //     }
-  //   }
-  //   if (num_fully_encoded == num_vars - 1) {
-  //     FullyEncode(variable_not_fully_encoded);
-  //     return true;
-  //   }
-  //   if (num_fully_encoded == num_vars) return true;
-  //
-  //   // Register on remaining variables if not already done.
-  //   if (!constraint_is_registered_[ct_index]) {
-  //     for (const int var : ct.linear().vars()) {
-  //       if (!IsFullyEncoded(var)) Register(ct_index, var);
-  //     }
-  //   }
-
-  return false;
-=======
-  return true;
->>>>>>> 72ae26505ed8cf5c09b1888a2cbfb6b201f72463
 }
 
 void MaybeFullyEncodeMoreVariables(const CpModelProto& model_proto, Model* m) {
