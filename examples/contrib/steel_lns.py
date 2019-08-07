@@ -242,7 +242,7 @@ def main(args):
   #                                                  args.lns_fragment_size,
   #                                                  args.lns_random_seed)
   local_search_parameters = solver.LocalSearchPhaseParameters(
-      local_search_operator, continuation_db)
+      objective_var, local_search_operator, continuation_db)
   local_search_db = solver.LocalSearchPhase(first_solution,
                                             local_search_parameters)
   global_limit = solver.TimeLimit(args.time_limit)

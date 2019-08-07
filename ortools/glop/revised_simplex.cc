@@ -1994,8 +1994,9 @@ void RevisedSimplex::DualPhaseIUpdatePriceOnReducedCostChange(
         ++num_dual_infeasible_positions_;
       }
       if (!something_to_do) {
-        initially_all_zero_scratchpad_.is_non_zero.resize(num_rows_, false);
         initially_all_zero_scratchpad_.values.resize(num_rows_, 0.0);
+        initially_all_zero_scratchpad_.ClearSparseMask();
+        initially_all_zero_scratchpad_.non_zeros.clear();
         something_to_do = true;
       }
       compact_matrix_.ColumnAddMultipleToSparseScatteredColumn(
@@ -2005,16 +2006,8 @@ void RevisedSimplex::DualPhaseIUpdatePriceOnReducedCostChange(
     }
   }
   if (something_to_do) {
-    // TODO(user): This code is duplicated with UpdateGivenNonBasicVariables()
-    // and more generally with the one in RankOneUpdateFactorization. Fix.
-    if (initially_all_zero_scratchpad_.ShouldUseDenseIteration()) {
-      initially_all_zero_scratchpad_.non_zeros.clear();
-      initially_all_zero_scratchpad_.is_non_zero.assign(num_rows_, false);
-    } else {
-      for (const RowIndex row : initially_all_zero_scratchpad_.non_zeros) {
-        initially_all_zero_scratchpad_.is_non_zero[row] = false;
-      }
-    }
+    initially_all_zero_scratchpad_.ClearNonZerosIfTooDense();
+    initially_all_zero_scratchpad_.ClearSparseMask();
 
     const VariableTypeRow& variable_type = variables_info_.GetTypeRow();
     const Fractional threshold = parameters_.ratio_test_zero_threshold();

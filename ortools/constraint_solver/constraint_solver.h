@@ -2685,24 +2685,27 @@ class Solver {
 
   /// Local Search Phase Parameters
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      LocalSearchOperator* const ls_operator,
+      IntVar* objective, LocalSearchOperator* const ls_operator,
       DecisionBuilder* const sub_decision_builder);
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      LocalSearchOperator* const ls_operator,
+      IntVar* objective, LocalSearchOperator* const ls_operator,
       DecisionBuilder* const sub_decision_builder, RegularLimit* const limit);
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      LocalSearchOperator* const ls_operator,
+      IntVar* objective, LocalSearchOperator* const ls_operator,
       DecisionBuilder* const sub_decision_builder, RegularLimit* const limit,
       const std::vector<LocalSearchFilter*>& filters);
 
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      SolutionPool* const pool, LocalSearchOperator* const ls_operator,
+      IntVar* objective, SolutionPool* const pool,
+      LocalSearchOperator* const ls_operator,
       DecisionBuilder* const sub_decision_builder);
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      SolutionPool* const pool, LocalSearchOperator* const ls_operator,
+      IntVar* objective, SolutionPool* const pool,
+      LocalSearchOperator* const ls_operator,
       DecisionBuilder* const sub_decision_builder, RegularLimit* const limit);
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      SolutionPool* const pool, LocalSearchOperator* const ls_operator,
+      IntVar* objective, SolutionPool* const pool,
+      LocalSearchOperator* const ls_operator,
       DecisionBuilder* const sub_decision_builder, RegularLimit* const limit,
       const std::vector<LocalSearchFilter*>& filters);
 
@@ -2710,21 +2713,21 @@ class Solver {
   LocalSearchFilter* MakeVariableDomainFilter();
   IntVarLocalSearchFilter* MakeSumObjectiveFilter(
       const std::vector<IntVar*>& vars, IndexEvaluator2 values,
-      IntVar* const objective, Solver::LocalSearchFilterBound filter_enum);
+      Solver::LocalSearchFilterBound filter_enum);
   IntVarLocalSearchFilter* MakeSumObjectiveFilter(
       const std::vector<IntVar*>& vars, IndexEvaluator2 values,
-      ObjectiveWatcher delta_objective_callback, IntVar* const objective,
+      ObjectiveWatcher delta_objective_callback,
       Solver::LocalSearchFilterBound filter_enum);
   IntVarLocalSearchFilter* MakeSumObjectiveFilter(
       const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars,
-      Solver::IndexEvaluator3 values, IntVar* const objective,
+      Solver::IndexEvaluator3 values,
       Solver::LocalSearchFilterBound filter_enum);
   IntVarLocalSearchFilter* MakeSumObjectiveFilter(
       const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars,
       Solver::IndexEvaluator3 values, ObjectiveWatcher delta_objective_callback,
-      IntVar* const objective, Solver::LocalSearchFilterBound filter_enum);
+      Solver::LocalSearchFilterBound filter_enum);
 
   /// Performs PeriodicCheck on the top-level search; for instance, can be
   /// called from a nested solve to check top-level limits.

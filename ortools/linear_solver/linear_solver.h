@@ -225,6 +225,10 @@ class MPSolver {
     /// Linear Boolean Programming Solver.
     BOP_INTEGER_PROGRAMMING = 12,
 #endif
+#if defined(USE_XPRESS)
+	XPRESS_LINEAR_PROGRAMMING = 101,
+	XPRESS_MIXED_INTEGER_PROGRAMMING = 102,
+#endif
   };
 
   /// Create a solver with the given name and underlying solver backend.
@@ -757,6 +761,7 @@ class MPSolver {
   friend class SCIPInterface;
   friend class GurobiInterface;
   friend class CplexInterface;
+  friend class XpressInterface;
   friend class SLMInterface;
   friend class MPSolverInterface;
   friend class GLOPInterface;
@@ -967,6 +972,7 @@ class MPObjective {
   friend class SLMInterface;
   friend class GurobiInterface;
   friend class CplexInterface;
+  friend class XpressInterface;
   friend class GLOPInterface;
   friend class BopInterface;
   friend class SatInterface;
@@ -1074,6 +1080,7 @@ class MPVariable {
   friend class SLMInterface;
   friend class GurobiInterface;
   friend class CplexInterface;
+  friend class XpressInterface;
   friend class GLOPInterface;
   friend class MPVariableSolutionValueTest;
   friend class BopInterface;
@@ -1215,6 +1222,7 @@ class MPConstraint {
   friend class SLMInterface;
   friend class GurobiInterface;
   friend class CplexInterface;
+  friend class XpressInterface;
   friend class GLOPInterface;
   friend class BopInterface;
   friend class SatInterface;

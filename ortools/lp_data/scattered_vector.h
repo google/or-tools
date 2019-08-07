@@ -51,6 +51,7 @@ class ScatteredVectorEntry {
 };
 
 // A simple struct that contains a DenseVector and its non-zero indices.
+// TODO(user): This should be changed from struct to class.
 template <typename Index,
           typename Iterator = VectorIterator<ScatteredVectorEntry<Index>>>
 struct ScatteredVector {
@@ -65,6 +66,17 @@ struct ScatteredVector {
   // True indicates a possible non-zero value. Note that its state is not always
   // consistent.
   StrictITIVector<Index, bool> is_non_zero;
+
+  // In many cases there is a choice between treating the ScatteredVector as
+  // dense or as sparse.  By default, dense algorithms are used when the
+  // proportion of non-zero entries is greater than
+  // kDefaultRatioForUsingDenseIteration.
+  //
+  // TODO(user): The constant should depend on what algorithm is used. Clearing
+  // a dense vector is a lot more efficient than doing more complex stuff. Clean
+  // this up by extracting all the currently used constants in one place with
+  // meaningful names.
+  constexpr static const double kDefaultRatioForUsingDenseIteration = 0.8;
 
   Fractional operator[](Index index) const { return values[index]; }
   Fractional& operator[](Index index) { return values[index]; }
@@ -81,6 +93,18 @@ struct ScatteredVector {
                     EntryIndex(non_zeros.size()));
   }
 
+  // Add the given value to the vector at position index.  This interface
+  // encapsulates usage of the "is_non_zero" array, which should not be
+  // explicitly referenced outside of this struct.
+  void Add(Index index, Fractional value) {
+    values[index] += value;
+    if (!is_non_zero[index] && value != 0.0) {
+      is_non_zero[index] = true;
+      non_zeros.push_back(index);
+      non_zeros_are_sorted = false;
+    }
+  }
+
   // Sorting the non-zeros is not always needed, but it allows us to have
   // exactly the same behavior while using a sparse iteration or a dense one. So
   // we always do it after a Solve().
@@ -93,17 +117,48 @@ struct ScatteredVector {
 
   // Returns true if it is more advantageous to use a dense iteration rather
   // than using the non-zeros positions.
-  //
-  // TODO(user): The constant should depend on what algorithm is used. Clearing
-  // a dense vector is a lot more efficient than doing more complex stuff. Clean
-  // this up by extracting all the currently used constants in one place with
-  // meaningful names.
-  bool ShouldUseDenseIteration() const {
+  bool ShouldUseDenseIteration(
+      double ratio_for_using_dense_representation) const {
     if (non_zeros.empty()) return true;
-    const double kThresholdForUsingDenseRepresentation = 0.8;
     return static_cast<double>(non_zeros.size()) >
-           kThresholdForUsingDenseRepresentation *
+           ratio_for_using_dense_representation *
                static_cast<double>(values.size().value());
+  }
+
+  bool ShouldUseDenseIteration() const {
+    return ShouldUseDenseIteration(kDefaultRatioForUsingDenseIteration);
+  }
+
+  // Efficiently clears the is_non_zero vector.
+  void ClearSparseMask() {
+    if (ShouldUseDenseIteration()) {
+      is_non_zero.assign(values.size(), false);
+    } else {
+      is_non_zero.resize(values.size(), false);
+      for (const Index index : non_zeros) {
+        is_non_zero[index] = false;
+      }
+      DCHECK(IsAllFalse(is_non_zero));
+    }
+  }
+
+  // Update the is_non_zero vector to be consistent with the non_zeros vector.
+  void RepopulateSparseMask() {
+    ClearSparseMask();
+    for (const Index index : non_zeros) is_non_zero[index] = true;
+  }
+
+  // If the proportion of non-zero entries is too large, clears the vector of
+  // non-zeros.
+  void ClearNonZerosIfTooDense(double ratio_for_using_dense_representation) {
+    if (ShouldUseDenseIteration(ratio_for_using_dense_representation)) {
+      ClearSparseMask();
+      non_zeros.clear();
+    }
+  }
+
+  void ClearNonZerosIfTooDense() {
+    ClearNonZerosIfTooDense(kDefaultRatioForUsingDenseIteration);
   }
 };
 

@@ -618,10 +618,25 @@ int main(int argc, char** argv) {
     found = true;
   }
 #endif  // USE_GLOP
+#if defined(USE_XPRESS)
+  if (FLAGS_colgen_solver == "xpress") {
+	  solver_type = operations_research::MPSolver::XPRESS_LINEAR_PROGRAMMING;
+	  //solver_type = operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
+	  found = true;
+  }
+#endif
+#if defined(USE_CPLEX)
+  if (FLAGS_colgen_solver == "cplex") {
+	  solver_type = operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
+	  found = true;
+  }
+#endif
   if (!found) {
     LOG(ERROR) << "Unknown solver " << FLAGS_colgen_solver;
     return 1;
   }
+
+  LOG(INFO) << "Chosen solver: " << FLAGS_colgen_solver << std::endl;
 
   if (FLAGS_colgen_instance == -1) {
     for (int i = 0; i < operations_research::kInstanceCount; ++i) {

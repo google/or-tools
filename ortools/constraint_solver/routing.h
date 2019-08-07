@@ -3190,7 +3190,8 @@ class BasePathFilter : public IntVarLocalSearchFilter {
   BasePathFilter(const std::vector<IntVar*>& nexts, int next_domain_size,
                  std::function<void(int64)> objective_callback);
   ~BasePathFilter() override {}
-  bool Accept(Assignment* delta, Assignment* deltadelta) override;
+  bool Accept(const Assignment* delta, const Assignment* deltadelta,
+              int64 objective_min, int64 objective_max) override;
   void OnSynchronize(const Assignment* delta) override;
 
  protected:
@@ -3220,7 +3221,10 @@ class BasePathFilter : public IntVarLocalSearchFilter {
   virtual void InitializeAcceptPath() {}
   virtual bool AcceptPath(int64 path_start, int64 chain_start,
                           int64 chain_end) = 0;
-  virtual bool FinalizeAcceptPath(Assignment* delta) { return true; }
+  virtual bool FinalizeAcceptPath(const Assignment* delta, int64 objective_min,
+                                  int64 objective_max) {
+    return true;
+  }
   /// Detects path starts, used to track which node belongs to which path.
   void ComputePathStarts(std::vector<int64>* path_starts,
                          std::vector<int>* index_to_path);
@@ -3258,7 +3262,8 @@ class CPFeasibilityFilter : public IntVarLocalSearchFilter {
   explicit CPFeasibilityFilter(const RoutingModel* routing_model);
   ~CPFeasibilityFilter() override {}
   std::string DebugString() const override { return "CPFeasibilityFilter"; }
-  bool Accept(Assignment* delta, Assignment* deltadelta) override;
+  bool Accept(const Assignment* delta, const Assignment* deltadelta,
+              int64 objective_min, int64 objective_max) override;
   void OnSynchronize(const Assignment* delta) override;
 
  private:

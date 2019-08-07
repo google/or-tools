@@ -409,13 +409,8 @@ class CompactSparseMatrix {
     RETURN_IF_NULL(column);
     for (const EntryIndex i : Column(col)) {
       const RowIndex row = EntryRow(i);
-      (*column)[row] += multiplier * EntryCoefficient(i);
-      if (!column->is_non_zero[row]) {
-        column->is_non_zero[row] = true;
-        column->non_zeros.push_back(row);
-      }
+      column->Add(row, multiplier * EntryCoefficient(i));
     }
-    column->non_zeros_are_sorted = false;
   }
 
   // Copies the given column of this matrix into the given dense_column.
