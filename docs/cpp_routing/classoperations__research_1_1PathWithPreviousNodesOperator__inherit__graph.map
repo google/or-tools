@@ -1,0 +1,17 @@
+<map id="PathWithPreviousNodesOperator" name="PathWithPreviousNodesOperator">
+<area shape="rect" id="node1" title="Simple PathOperator wrapper that also stores the current previous nodes, and is thus able to provide ..." alt="" coords="945,203,1163,228"/>
+<area shape="rect" id="node7" href="$classoperations__research_1_1ExchangeSubtrip.html" title=" " alt="" coords="1260,5,1382,31"/>
+<area shape="rect" id="node8" href="$classoperations__research_1_1IndexPairSwapActiveOperator.html" title="Operator which inserts inactive nodes into a path and makes a pair of active nodes inactive." alt="" coords="1221,55,1421,80"/>
+<area shape="rect" id="node9" href="$classoperations__research_1_1LightPairRelocateOperator.html" title=" " alt="" coords="1231,104,1411,129"/>
+<area shape="rect" id="node10" href="$classoperations__research_1_1MakePairInactiveOperator.html" title="Operator which makes pairs of active nodes inactive." alt="" coords="1233,153,1409,179"/>
+<area shape="rect" id="node11" href="$classoperations__research_1_1MakeRelocateNeighborsOperator.html" title="Relocate neighborhood which moves chains of neighbors." alt="" coords="1211,203,1431,228"/>
+<area shape="rect" id="node12" href="$classoperations__research_1_1PairExchangeOperator.html" title="Operator which exchanges the position of two pairs; for both pairs the first node of the pair must be..." alt="" coords="1243,252,1400,277"/>
+<area shape="rect" id="node13" href="$classoperations__research_1_1PairExchangeRelocateOperator.html" title="Operator which exchanges the paths of two pairs (path have to be different)." alt="" coords="1216,301,1426,327"/>
+<area shape="rect" id="node14" href="$classoperations__research_1_1PairRelocateOperator.html" title="Operator which moves a pair of nodes to another position where the first node of the pair must be bef..." alt="" coords="1246,351,1396,376"/>
+<area shape="rect" id="node15" href="$classoperations__research_1_1RelocateSubtrip.html" title="Tries to move subtrips after an insertion node." alt="" coords="1263,400,1379,425"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1PathOperator.html" title="Base class of the local search operators dedicated to path modifications (a path is a set of nodes li..." alt="" coords="795,203,897,228"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1IntVarLocalSearchOperator.html" title="Specialization of LocalSearchOperator built from an array of IntVars which specifies the scope of the..." alt="" coords="565,203,747,228"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1VarLocalSearchOperator.html" title=" " alt="" coords="340,189,517,241"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1LocalSearchOperator.html" title="The base class for all local search operators." alt="" coords="144,203,292,228"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,203,96,228"/>
+</map>

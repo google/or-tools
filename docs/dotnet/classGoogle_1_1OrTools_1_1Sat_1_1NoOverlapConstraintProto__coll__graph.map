@@ -1,4 +1,4 @@
-<map id="Google.OrTools.Sat.NoOverlapConstraintProto" name="Google.OrTools.Sat.NoOverlapConstraintProto">
-<area shape="rect" id="node1" title="All the intervals (index of IntervalConstraintProto) must be disjoint." alt="" coords="21,92,227,131"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,243,44"/>
+<map id="NoOverlapConstraintProto" name="NoOverlapConstraintProto">
+<area shape="rect" id="node1" title="All the intervals (index of IntervalConstraintProto) must be disjoint." alt="" coords="24,92,202,117"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,220,44"/>
 </map>

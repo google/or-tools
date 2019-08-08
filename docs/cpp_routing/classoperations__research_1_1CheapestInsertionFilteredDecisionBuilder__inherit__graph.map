@@ -1,0 +1,9 @@
+<map id="CheapestInsertionFilteredDecisionBuilder" name="CheapestInsertionFilteredDecisionBuilder">
+<area shape="rect" id="node1" title=" " alt="" coords="799,37,973,76"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html" title="Filter&#45;based decision builder which builds a solution by inserting nodes at their cheapest position o..." alt="" coords="1021,5,1234,44"/>
+<area shape="rect" id="node7" href="$classoperations__research_1_1LocalCheapestInsertionFilteredDecisionBuilder.html" title="Filter&#45;base decision builder which builds a solution by inserting nodes at their cheapest position." alt="" coords="1024,68,1230,107"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1RoutingFilteredDecisionBuilder.html" title="Filter&#45;based decision builder dedicated to routing." alt="" coords="547,44,751,69"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1IntVarFilteredDecisionBuilder.html" title="Decision builders building a solution using local search filters to evaluate its feasibility." alt="" coords="306,44,499,69"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1DecisionBuilder.html" title="A DecisionBuilder is responsible for creating the search tree." alt="" coords="144,44,258,69"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,44,96,69"/>
+</map>

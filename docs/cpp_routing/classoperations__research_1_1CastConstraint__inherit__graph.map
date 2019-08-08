@@ -1,0 +1,6 @@
+<map id="CastConstraint" name="CastConstraint">
+<area shape="rect" id="node1" title="Cast constraints are special channeling constraints designed to keep a variable in sync with an expre..." alt="" coords="32,225,141,251"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1Constraint.html" title="A constraint is the main modeling object." alt="" coords="45,152,127,177"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1PropagationBaseObject.html" title="NOLINT." alt="" coords="5,79,168,104"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="41,5,132,31"/>
+</map>

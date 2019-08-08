@@ -1,0 +1,5 @@
+<map id="SymmetryBreaker" name="SymmetryBreaker">
+<area shape="rect" id="node1" title="A symmetry breaker is an object that will visit a decision and create the &#39;symmetrical&#39; decision in r..." alt="" coords="5,152,133,177"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1DecisionVisitor.html" title="A DecisionVisitor is used to inspect a decision." alt="" coords="15,79,124,104"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="24,5,114,31"/>
+</map>

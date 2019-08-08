@@ -1,4 +1,4 @@
-<map id="Google.OrTools.ConstraintSolver.RegularLimitParameters" name="Google.OrTools.ConstraintSolver.RegularLimitParameters">
-<area shape="rect" id="node1" title="A search limit The default values for int64 fields is the maxima value, i.e., 2^63&#45;1" alt="" coords="5,92,211,131"/>
-<area shape="rect" id="node2" title=" " alt="" coords="14,5,202,44"/>
+<map id="RegularLimitParameters" name="RegularLimitParameters">
+<area shape="rect" id="node1" title="A search limit The default values for int64 fields is the maxima value, i.e., 2^63&#45;1" alt="" coords="46,79,211,104"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,251,31"/>
 </map>

@@ -1,0 +1,8 @@
+<map id="CastConstraint" name="CastConstraint">
+<area shape="rect" id="node1" title="Cast constraints are special channeling constraints designed to keep a variable in sync with an expre..." alt="" coords="40,340,149,365"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1Constraint.html" title="A constraint is the main modeling object." alt="" coords="31,204,113,229"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1PropagationBaseObject.html" title="NOLINT." alt="" coords="5,80,168,105"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming." alt="" coords="108,155,172,180"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="41,5,132,31"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr." alt="" coords="110,253,166,279"/>
+</map>

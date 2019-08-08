@@ -1,0 +1,10 @@
+<map id="Constraint" name="Constraint">
+<area shape="rect" id="node1" title="A constraint is the main modeling object." alt="" coords="354,104,436,129"/>
+<area shape="rect" id="node4" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CastConstraint.html" title="Cast constraints are special channeling constraints designed to keep a variable in sync with an expre..." alt="" coords="532,5,641,31"/>
+<area shape="rect" id="node5" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DisjunctiveConstraint.html" title=" " alt="" coords="513,55,660,80"/>
+<area shape="rect" id="node6" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1GlobalVehicleBreaksConstraint.html" title="GlobalVehicleBreaksConstraint ensures breaks constraints are enforced on all vehicles in the dimensio..." alt="" coords="484,104,689,129"/>
+<area shape="rect" id="node7" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Pack.html" title=" " alt="" coords="561,153,612,179"/>
+<area shape="rect" id="node8" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1TypeRegulationsConstraint.html" title="The following constraint ensures that incompatibilities and requirements between types are respected." alt="" coords="496,203,677,228"/>
+<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html" title="NOLINT The PropagationBaseObject is a subclass of BaseObject that is also friend to the Solver class." alt="" coords="144,104,306,129"/>
+<area shape="rect" id="node3" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,104,96,129"/>
+</map>

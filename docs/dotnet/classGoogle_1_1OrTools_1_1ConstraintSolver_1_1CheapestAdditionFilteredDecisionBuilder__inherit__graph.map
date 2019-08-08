@@ -1,10 +1,10 @@
-<map id="Google.OrTools.ConstraintSolver.CheapestAdditionFilteredDecisionBuilder" name="Google.OrTools.ConstraintSolver.CheapestAdditionFilteredDecisionBuilder">
-<area shape="rect" id="node1" title=" " alt="" coords="1025,44,1237,96"/>
-<area shape="rect" id="node7" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ComparatorCheapestAdditionFilteredDecisionBuilder.html" title=" " alt="" coords="1285,5,1523,57"/>
-<area shape="rect" id="node8" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1EvaluatorCheapestAdditionFilteredDecisionBuilder.html" title=" " alt="" coords="1292,81,1516,133"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingFilteredDecisionBuilder.html" title=" " alt="" coords="773,57,977,83"/>
-<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarFilteredDecisionBuilder.html" title=" " alt="" coords="532,57,725,83"/>
-<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html" title=" " alt="" coords="370,57,484,83"/>
-<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="232,57,322,83"/>
-<area shape="rect" id="node6" title=" " alt="" coords="5,57,184,83"/>
+<map id="CheapestAdditionFilteredDecisionBuilder" name="CheapestAdditionFilteredDecisionBuilder">
+<area shape="rect" id="node1" title=" " alt="" coords="982,37,1153,76"/>
+<area shape="rect" id="node7" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ComparatorCheapestAdditionFilteredDecisionBuilder.html" title=" " alt="" coords="1201,5,1398,44"/>
+<area shape="rect" id="node8" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1EvaluatorCheapestAdditionFilteredDecisionBuilder.html" title=" " alt="" coords="1209,68,1391,107"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingFilteredDecisionBuilder.html" title=" " alt="" coords="730,44,934,69"/>
+<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarFilteredDecisionBuilder.html" title=" " alt="" coords="489,44,682,69"/>
+<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html" title=" " alt="" coords="327,44,441,69"/>
+<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="189,44,279,69"/>
+<area shape="rect" id="node6" title=" " alt="" coords="5,44,141,69"/>
 </map>

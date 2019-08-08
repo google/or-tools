@@ -1,4 +1,4 @@
-<map id="Google.OrTools.ConstraintSolver.LocalSearchMetaheuristic" name="Google.OrTools.ConstraintSolver.LocalSearchMetaheuristic">
-<area shape="rect" id="node1" title="Local search metaheuristics used to guide the search." alt="" coords="5,92,221,131"/>
-<area shape="rect" id="node2" title=" " alt="" coords="20,5,207,44"/>
+<map id="LocalSearchMetaheuristic" name="LocalSearchMetaheuristic">
+<area shape="rect" id="node1" title="Local search metaheuristics used to guide the search." alt="" coords="46,79,220,104"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,261,31"/>
 </map>

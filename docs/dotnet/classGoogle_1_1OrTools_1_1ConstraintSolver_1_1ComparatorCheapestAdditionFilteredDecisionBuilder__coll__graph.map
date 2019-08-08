@@ -1,9 +1,9 @@
-<map id="Google.OrTools.ConstraintSolver.ComparatorCheapestAdditionFilteredDecisionBuilder" name="Google.OrTools.ConstraintSolver.ComparatorCheapestAdditionFilteredDecisionBuilder">
-<area shape="rect" id="node1" title=" " alt="" coords="5,459,243,511"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CheapestAdditionFilteredDecisionBuilder.html" title=" " alt="" coords="39,372,210,411"/>
-<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingFilteredDecisionBuilder.html" title=" " alt="" coords="22,299,226,324"/>
-<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarFilteredDecisionBuilder.html" title=" " alt="" coords="28,225,221,251"/>
-<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html" title=" " alt="" coords="67,152,181,177"/>
-<area shape="rect" id="node6" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="79,79,169,104"/>
-<area shape="rect" id="node7" title=" " alt="" coords="35,5,213,31"/>
+<map id="ComparatorCheapestAdditionFilteredDecisionBuilder" name="ComparatorCheapestAdditionFilteredDecisionBuilder">
+<area shape="rect" id="node1" title=" " alt="" coords="9,459,206,497"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CheapestAdditionFilteredDecisionBuilder.html" title=" " alt="" coords="22,372,193,411"/>
+<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingFilteredDecisionBuilder.html" title=" " alt="" coords="5,299,210,324"/>
+<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarFilteredDecisionBuilder.html" title=" " alt="" coords="11,225,204,251"/>
+<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html" title=" " alt="" coords="51,152,165,177"/>
+<area shape="rect" id="node6" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="62,79,153,104"/>
+<area shape="rect" id="node7" title=" " alt="" coords="40,5,175,31"/>
 </map>

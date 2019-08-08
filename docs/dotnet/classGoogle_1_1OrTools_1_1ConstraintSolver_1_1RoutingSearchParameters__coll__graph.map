@@ -1,4 +1,4 @@
-<map id="Google.OrTools.ConstraintSolver.RoutingSearchParameters" name="Google.OrTools.ConstraintSolver.RoutingSearchParameters">
-<area shape="rect" id="node1" title="Parameters defining the search used to solve vehicle routing problems." alt="" coords="5,92,225,131"/>
-<area shape="rect" id="node2" title=" " alt="" coords="14,5,215,44"/>
+<map id="RoutingSearchParameters" name="RoutingSearchParameters">
+<area shape="rect" id="node1" title="Parameters defining the search used to solve vehicle routing problems." alt="" coords="46,79,224,104"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,265,31"/>
 </map>

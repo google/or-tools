@@ -1341,8 +1341,8 @@ class Solver(object):
     def GuidedLocalSearch(self, *args) -&gt; &#34;operations_research::SearchMonitor *&#34;:
         return _pywrapcp.Solver_GuidedLocalSearch(self, *args)
 
-    def SumObjectiveFilter(self, vars: &#39;std::vector&lt; operations_research::IntVar * &gt; const &amp;&#39;, values: &#39;operations_research::Solver::IndexEvaluator2&#39;, objective: &#39;IntVar&#39;, filter_enum: &#39;operations_research::Solver::LocalSearchFilterBound&#39;) -&gt; &#34;operations_research::LocalSearchFilter *&#34;:
-        return _pywrapcp.Solver_SumObjectiveFilter(self, vars, values, objective, filter_enum)
+    def SumObjectiveFilter(self, vars: &#39;std::vector&lt; operations_research::IntVar * &gt; const &amp;&#39;, values: &#39;operations_research::Solver::IndexEvaluator2&#39;, filter_enum: &#39;operations_research::Solver::LocalSearchFilterBound&#39;) -&gt; &#34;operations_research::LocalSearchFilter *&#34;:
+        return _pywrapcp.Solver_SumObjectiveFilter(self, vars, values, filter_enum)
 
 # Register Solver in _pywrapcp:
 _pywrapcp.Solver_swigregister(Solver)
@@ -3366,9 +3366,9 @@ class LocalSearchFilter(BaseObject):
         raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
     __repr__ = _swig_repr
 
-    def Accept(self, delta: &#39;Assignment&#39;, deltadelta: &#39;Assignment&#39;) -&gt; &#34;bool&#34;:
-        r&#34;&#34;&#34; Accepts a &#34;delta&#34; given the assignment with which the filter has been synchronized; the delta holds the variables which have been modified and their new value. Sample: supposing one wants to maintain a[0,1] + b[0,1] &lt;= 1, for the assignment (a,1), (b,0), the delta (b,1) will be rejected but the delta (a,0) will be accepted.&#34;&#34;&#34;
-        return _pywrapcp.LocalSearchFilter_Accept(self, delta, deltadelta)
+    def Accept(self, delta: &#39;Assignment&#39;, deltadelta: &#39;Assignment&#39;, objective_min: &#39;int64&#39;, objective_max: &#39;int64&#39;) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34; Accepts a &#34;delta&#34; given the assignment with which the filter has been synchronized; the delta holds the variables which have been modified and their new value. If the filter represents a part of the global objective, its contribution must be between objective_min and objective_max. Sample: supposing one wants to maintain a[0,1] + b[0,1] &lt;= 1, for the assignment (a,1), (b,0), the delta (b,1) will be rejected but the delta (a,0) will be accepted.&#34;&#34;&#34;
+        return _pywrapcp.LocalSearchFilter_Accept(self, delta, deltadelta, objective_min, objective_max)
 
     def Synchronize(self, assignment: &#39;Assignment&#39;, delta: &#39;Assignment&#39;) -&gt; &#34;void&#34;:
         r&#34;&#34;&#34; Synchronizes the filter with the current solution, delta being the difference with the solution passed to the previous call to Synchronize() or IncrementalSynchronize(). &#39;delta&#39; can be used to incrementally synchronizing the filter with the new solution by only considering the changes in delta.&#34;&#34;&#34;
@@ -4666,9 +4666,9 @@ class ChristofidesFilteredDecisionBuilder(RoutingFilteredDecisionBuilder):
 _pywrapcp.ChristofidesFilteredDecisionBuilder_swigregister(ChristofidesFilteredDecisionBuilder)
 
 
-def SolveModelWithSat(model: &#39;RoutingModel&#39;, initial_solution: &#39;Assignment&#39;, solution: &#39;Assignment&#39;) -&gt; &#34;bool&#34;:
+def SolveModelWithSat(model: &#39;RoutingModel&#39;, search_parameters: &#39;operations_research::RoutingSearchParameters const &amp;&#39;, initial_solution: &#39;Assignment&#39;, solution: &#39;Assignment&#39;) -&gt; &#34;bool&#34;:
     r&#34;&#34;&#34; Attempts to solve the model using the cp-sat solver. As of 5/2019, will solve the TSP corresponding to the model if it has a single vehicle. Therefore the resulting solution might not actually be feasible. Will return false if a solution could not be found.&#34;&#34;&#34;
-    return _pywrapcp.SolveModelWithSat(model, initial_solution, solution)
+    return _pywrapcp.SolveModelWithSat(model, search_parameters, initial_solution, solution)
 class BasePathFilter(IntVarLocalSearchFilter):
     r&#34;&#34;&#34; Generic path-based filter class.&#34;&#34;&#34;
 
@@ -4679,8 +4679,8 @@ class BasePathFilter(IntVarLocalSearchFilter):
     __repr__ = _swig_repr
     __swig_destroy__ = _pywrapcp.delete_BasePathFilter
 
-    def Accept(self, delta: &#39;Assignment&#39;, deltadelta: &#39;Assignment&#39;) -&gt; &#34;bool&#34;:
-        return _pywrapcp.BasePathFilter_Accept(self, delta, deltadelta)
+    def Accept(self, delta: &#39;Assignment&#39;, deltadelta: &#39;Assignment&#39;, objective_min: &#39;int64&#39;, objective_max: &#39;int64&#39;) -&gt; &#34;bool&#34;:
+        return _pywrapcp.BasePathFilter_Accept(self, delta, deltadelta, objective_min, objective_max)
 
     def OnSynchronize(self, delta: &#39;Assignment&#39;) -&gt; &#34;void&#34;:
         return _pywrapcp.BasePathFilter_OnSynchronize(self, delta)
@@ -4701,8 +4701,8 @@ class CPFeasibilityFilter(IntVarLocalSearchFilter):
     def DebugString(self) -&gt; &#34;std::string&#34;:
         return _pywrapcp.CPFeasibilityFilter_DebugString(self)
 
-    def Accept(self, delta: &#39;Assignment&#39;, deltadelta: &#39;Assignment&#39;) -&gt; &#34;bool&#34;:
-        return _pywrapcp.CPFeasibilityFilter_Accept(self, delta, deltadelta)
+    def Accept(self, delta: &#39;Assignment&#39;, deltadelta: &#39;Assignment&#39;, objective_min: &#39;int64&#39;, objective_max: &#39;int64&#39;) -&gt; &#34;bool&#34;:
+        return _pywrapcp.CPFeasibilityFilter_Accept(self, delta, deltadelta, objective_min, objective_max)
 
     def OnSynchronize(self, delta: &#39;Assignment&#39;) -&gt; &#34;void&#34;:
         return _pywrapcp.CPFeasibilityFilter_OnSynchronize(self, delta)
@@ -4765,15 +4765,15 @@ _pywrapcp.CPFeasibilityFilter_swigregister(CPFeasibilityFilter)</code></pre>
 </details>
 </dd>
 <dt id="pywrapcp.SolveModelWithSat"><code class="name flex">
-<span>def <span class="ident">SolveModelWithSat</span></span>(<span>model, initial_solution, solution)</span>
+<span>def <span class="ident">SolveModelWithSat</span></span>(<span>model, search_parameters, initial_solution, solution)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>Attempts to solve the model using the cp-sat solver. As of 5/2019, will solve the TSP corresponding to the model if it has a single vehicle. Therefore the resulting solution might not actually be feasible. Will return false if a solution could not be found.</p></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def SolveModelWithSat(model: &#39;RoutingModel&#39;, initial_solution: &#39;Assignment&#39;, solution: &#39;Assignment&#39;) -&gt; &#34;bool&#34;:
+<pre><code class="python">def SolveModelWithSat(model: &#39;RoutingModel&#39;, search_parameters: &#39;operations_research::RoutingSearchParameters const &amp;&#39;, initial_solution: &#39;Assignment&#39;, solution: &#39;Assignment&#39;) -&gt; &#34;bool&#34;:
     r&#34;&#34;&#34; Attempts to solve the model using the cp-sat solver. As of 5/2019, will solve the TSP corresponding to the model if it has a single vehicle. Therefore the resulting solution might not actually be feasible. Will return false if a solution could not be found.&#34;&#34;&#34;
-    return _pywrapcp.SolveModelWithSat(model, initial_solution, solution)</code></pre>
+    return _pywrapcp.SolveModelWithSat(model, search_parameters, initial_solution, solution)</code></pre>
 </details>
 </dd>
 <dt id="pywrapcp.Solver_DefaultSolverParameters"><code class="name flex">
@@ -6192,8 +6192,8 @@ int index_; };</p></section>
     __repr__ = _swig_repr
     __swig_destroy__ = _pywrapcp.delete_BasePathFilter
 
-    def Accept(self, delta: &#39;Assignment&#39;, deltadelta: &#39;Assignment&#39;) -&gt; &#34;bool&#34;:
-        return _pywrapcp.BasePathFilter_Accept(self, delta, deltadelta)
+    def Accept(self, delta: &#39;Assignment&#39;, deltadelta: &#39;Assignment&#39;, objective_min: &#39;int64&#39;, objective_max: &#39;int64&#39;) -&gt; &#34;bool&#34;:
+        return _pywrapcp.BasePathFilter_Accept(self, delta, deltadelta, objective_min, objective_max)
 
     def OnSynchronize(self, delta: &#39;Assignment&#39;) -&gt; &#34;void&#34;:
         return _pywrapcp.BasePathFilter_OnSynchronize(self, delta)</code></pre>
@@ -6411,8 +6411,8 @@ int index_; };</p></section>
     def DebugString(self) -&gt; &#34;std::string&#34;:
         return _pywrapcp.CPFeasibilityFilter_DebugString(self)
 
-    def Accept(self, delta: &#39;Assignment&#39;, deltadelta: &#39;Assignment&#39;) -&gt; &#34;bool&#34;:
-        return _pywrapcp.CPFeasibilityFilter_Accept(self, delta, deltadelta)
+    def Accept(self, delta: &#39;Assignment&#39;, deltadelta: &#39;Assignment&#39;, objective_min: &#39;int64&#39;, objective_max: &#39;int64&#39;) -&gt; &#34;bool&#34;:
+        return _pywrapcp.CPFeasibilityFilter_Accept(self, delta, deltadelta, objective_min, objective_max)
 
     def OnSynchronize(self, delta: &#39;Assignment&#39;) -&gt; &#34;void&#34;:
         return _pywrapcp.CPFeasibilityFilter_OnSynchronize(self, delta)</code></pre>
@@ -10841,9 +10841,9 @@ Attaches a closure awakened when anything about this interval changes.</p></sect
         raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
     __repr__ = _swig_repr
 
-    def Accept(self, delta: &#39;Assignment&#39;, deltadelta: &#39;Assignment&#39;) -&gt; &#34;bool&#34;:
-        r&#34;&#34;&#34; Accepts a &#34;delta&#34; given the assignment with which the filter has been synchronized; the delta holds the variables which have been modified and their new value. Sample: supposing one wants to maintain a[0,1] + b[0,1] &lt;= 1, for the assignment (a,1), (b,0), the delta (b,1) will be rejected but the delta (a,0) will be accepted.&#34;&#34;&#34;
-        return _pywrapcp.LocalSearchFilter_Accept(self, delta, deltadelta)
+    def Accept(self, delta: &#39;Assignment&#39;, deltadelta: &#39;Assignment&#39;, objective_min: &#39;int64&#39;, objective_max: &#39;int64&#39;) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34; Accepts a &#34;delta&#34; given the assignment with which the filter has been synchronized; the delta holds the variables which have been modified and their new value. If the filter represents a part of the global objective, its contribution must be between objective_min and objective_max. Sample: supposing one wants to maintain a[0,1] + b[0,1] &lt;= 1, for the assignment (a,1), (b,0), the delta (b,1) will be rejected but the delta (a,0) will be accepted.&#34;&#34;&#34;
+        return _pywrapcp.LocalSearchFilter_Accept(self, delta, deltadelta, objective_min, objective_max)
 
     def Synchronize(self, assignment: &#39;Assignment&#39;, delta: &#39;Assignment&#39;) -&gt; &#34;void&#34;:
         r&#34;&#34;&#34; Synchronizes the filter with the current solution, delta being the difference with the solution passed to the previous call to Synchronize() or IncrementalSynchronize(). &#39;delta&#39; can be used to incrementally synchronizing the filter with the new solution by only considering the changes in delta.&#34;&#34;&#34;
@@ -10864,15 +10864,15 @@ Attaches a closure awakened when anything about this interval changes.</p></sect
 <h3>Methods</h3>
 <dl>
 <dt id="pywrapcp.LocalSearchFilter.Accept"><code class="name flex">
-<span>def <span class="ident">Accept</span></span>(<span>self, delta, deltadelta)</span>
+<span>def <span class="ident">Accept</span></span>(<span>self, delta, deltadelta, objective_min, objective_max)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Accepts a "delta" given the assignment with which the filter has been synchronized; the delta holds the variables which have been modified and their new value. Sample: supposing one wants to maintain a[0,1] + b[0,1] &lt;= 1, for the assignment (a,1), (b,0), the delta (b,1) will be rejected but the delta (a,0) will be accepted.</p></section>
+<section class="desc"><p>Accepts a "delta" given the assignment with which the filter has been synchronized; the delta holds the variables which have been modified and their new value. If the filter represents a part of the global objective, its contribution must be between objective_min and objective_max. Sample: supposing one wants to maintain a[0,1] + b[0,1] &lt;= 1, for the assignment (a,1), (b,0), the delta (b,1) will be rejected but the delta (a,0) will be accepted.</p></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def Accept(self, delta: &#39;Assignment&#39;, deltadelta: &#39;Assignment&#39;) -&gt; &#34;bool&#34;:
-    r&#34;&#34;&#34; Accepts a &#34;delta&#34; given the assignment with which the filter has been synchronized; the delta holds the variables which have been modified and their new value. Sample: supposing one wants to maintain a[0,1] + b[0,1] &lt;= 1, for the assignment (a,1), (b,0), the delta (b,1) will be rejected but the delta (a,0) will be accepted.&#34;&#34;&#34;
-    return _pywrapcp.LocalSearchFilter_Accept(self, delta, deltadelta)</code></pre>
+<pre><code class="python">def Accept(self, delta: &#39;Assignment&#39;, deltadelta: &#39;Assignment&#39;, objective_min: &#39;int64&#39;, objective_max: &#39;int64&#39;) -&gt; &#34;bool&#34;:
+    r&#34;&#34;&#34; Accepts a &#34;delta&#34; given the assignment with which the filter has been synchronized; the delta holds the variables which have been modified and their new value. If the filter represents a part of the global objective, its contribution must be between objective_min and objective_max. Sample: supposing one wants to maintain a[0,1] + b[0,1] &lt;= 1, for the assignment (a,1), (b,0), the delta (b,1) will be rejected but the delta (a,0) will be accepted.&#34;&#34;&#34;
+    return _pywrapcp.LocalSearchFilter_Accept(self, delta, deltadelta, objective_min, objective_max)</code></pre>
 </details>
 </dd>
 <dt id="pywrapcp.LocalSearchFilter.IsIncremental"><code class="name flex">
@@ -18075,8 +18075,8 @@ solver() through the AddConstraint() method,
     def GuidedLocalSearch(self, *args) -&gt; &#34;operations_research::SearchMonitor *&#34;:
         return _pywrapcp.Solver_GuidedLocalSearch(self, *args)
 
-    def SumObjectiveFilter(self, vars: &#39;std::vector&lt; operations_research::IntVar * &gt; const &amp;&#39;, values: &#39;operations_research::Solver::IndexEvaluator2&#39;, objective: &#39;IntVar&#39;, filter_enum: &#39;operations_research::Solver::LocalSearchFilterBound&#39;) -&gt; &#34;operations_research::LocalSearchFilter *&#34;:
-        return _pywrapcp.Solver_SumObjectiveFilter(self, vars, values, objective, filter_enum)</code></pre>
+    def SumObjectiveFilter(self, vars: &#39;std::vector&lt; operations_research::IntVar * &gt; const &amp;&#39;, values: &#39;operations_research::Solver::IndexEvaluator2&#39;, filter_enum: &#39;operations_research::Solver::LocalSearchFilterBound&#39;) -&gt; &#34;operations_research::LocalSearchFilter *&#34;:
+        return _pywrapcp.Solver_SumObjectiveFilter(self, vars, values, filter_enum)</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
@@ -20936,14 +20936,14 @@ injects its values into the sorted variables. For more info, please have a look 
 </details>
 </dd>
 <dt id="pywrapcp.Solver.SumObjectiveFilter"><code class="name flex">
-<span>def <span class="ident">SumObjectiveFilter</span></span>(<span>self, vars, values, objective, filter_enum)</span>
+<span>def <span class="ident">SumObjectiveFilter</span></span>(<span>self, vars, values, filter_enum)</span>
 </code></dt>
 <dd>
 <section class="desc"></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def SumObjectiveFilter(self, vars: &#39;std::vector&lt; operations_research::IntVar * &gt; const &amp;&#39;, values: &#39;operations_research::Solver::IndexEvaluator2&#39;, objective: &#39;IntVar&#39;, filter_enum: &#39;operations_research::Solver::LocalSearchFilterBound&#39;) -&gt; &#34;operations_research::LocalSearchFilter *&#34;:
-    return _pywrapcp.Solver_SumObjectiveFilter(self, vars, values, objective, filter_enum)</code></pre>
+<pre><code class="python">def SumObjectiveFilter(self, vars: &#39;std::vector&lt; operations_research::IntVar * &gt; const &amp;&#39;, values: &#39;operations_research::Solver::IndexEvaluator2&#39;, filter_enum: &#39;operations_research::Solver::LocalSearchFilterBound&#39;) -&gt; &#34;operations_research::LocalSearchFilter *&#34;:
+    return _pywrapcp.Solver_SumObjectiveFilter(self, vars, values, filter_enum)</code></pre>
 </details>
 </dd>
 <dt id="pywrapcp.Solver.TabuSearch"><code class="name flex">

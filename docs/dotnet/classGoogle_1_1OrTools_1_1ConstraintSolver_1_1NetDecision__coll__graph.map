@@ -1,6 +1,6 @@
-<map id="Google.OrTools.ConstraintSolver.NetDecision" name="Google.OrTools.ConstraintSolver.NetDecision">
-<area shape="rect" id="node1" title="This class acts as a intermediate step between a c++ decision and a .Net one." alt="" coords="5,225,184,264"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Decision.html" title=" " alt="" coords="58,152,131,177"/>
-<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="49,79,140,104"/>
-<area shape="rect" id="node4" title=" " alt="" coords="5,5,184,31"/>
+<map id="NetDecision" name="NetDecision">
+<area shape="rect" id="node1" title="This class acts as a intermediate step between a c++ decision and a .Net one." alt="" coords="26,225,120,251"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Decision.html" title=" " alt="" coords="37,152,109,177"/>
+<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="28,79,118,104"/>
+<area shape="rect" id="node4" title=" " alt="" coords="5,5,141,31"/>
 </map>

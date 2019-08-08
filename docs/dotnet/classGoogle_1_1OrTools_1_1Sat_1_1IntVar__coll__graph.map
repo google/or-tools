@@ -1,5 +1,5 @@
-<map id="Google.OrTools.Sat.IntVar" name="Google.OrTools.Sat.IntVar">
-<area shape="rect" id="node1" title=" " alt="" coords="8,79,184,104"/>
+<map id="IntVar" name="IntVar">
+<area shape="rect" id="node1" title=" " alt="" coords="68,79,124,104"/>
 <area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html" title=" " alt="" coords="5,5,91,31"/>
 <area shape="rect" id="node3" href="$interfaceGoogle_1_1OrTools_1_1Sat_1_1ILiteral.html" title=" " alt="" coords="115,5,176,31"/>
 </map>

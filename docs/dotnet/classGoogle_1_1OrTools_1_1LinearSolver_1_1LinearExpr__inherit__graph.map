@@ -1,9 +1,9 @@
-<map id="Google.OrTools.LinearSolver.LinearExpr" name="Google.OrTools.LinearSolver.LinearExpr">
-<area shape="rect" id="node1" title=" " alt="" coords="5,149,201,188"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1ProductCst.html" title=" " alt="" coords="263,5,458,44"/>
-<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1Sum.html" title=" " alt="" coords="249,68,472,93"/>
-<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1SumArray.html" title=" " alt="" coords="263,117,458,156"/>
-<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1SumCst.html" title=" " alt="" coords="263,180,458,219"/>
-<area shape="rect" id="node6" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1SumVarArray.html" title=" " alt="" coords="263,243,458,281"/>
-<area shape="rect" id="node7" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1VarWrapper.html" title=" " alt="" coords="263,305,458,344"/>
+<map id="LinearExpr" name="LinearExpr">
+<area shape="rect" id="node1" title=" " alt="" coords="237,5,323,31"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1ProductCst.html" title=" " alt="" coords="5,79,93,104"/>
+<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1Sum.html" title=" " alt="" coords="117,79,165,104"/>
+<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1SumArray.html" title=" " alt="" coords="190,79,271,104"/>
+<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1SumCst.html" title=" " alt="" coords="295,79,363,104"/>
+<area shape="rect" id="node6" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1SumVarArray.html" title=" " alt="" coords="387,79,487,104"/>
+<area shape="rect" id="node7" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1VarWrapper.html" title=" " alt="" coords="511,79,603,104"/>
 </map>

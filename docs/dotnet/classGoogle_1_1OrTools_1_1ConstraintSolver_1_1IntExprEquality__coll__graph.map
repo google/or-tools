@@ -1,5 +1,5 @@
-<map id="Google.OrTools.ConstraintSolver.IntExprEquality" name="Google.OrTools.ConstraintSolver.IntExprEquality">
-<area shape="rect" id="node1" title=" " alt="" coords="5,152,184,191"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html" title=" " alt="" coords="45,79,144,104"/>
-<area shape="rect" id="node3" href="$interfaceGoogle_1_1OrTools_1_1ConstraintSolver_1_1IConstraintWithStatus.html" title=" " alt="" coords="19,5,170,31"/>
+<map id="IntExprEquality" name="IntExprEquality">
+<area shape="rect" id="node1" title=" " alt="" coords="25,152,136,177"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseEquality.html" title=" " alt="" coords="31,79,130,104"/>
+<area shape="rect" id="node3" href="$interfaceGoogle_1_1OrTools_1_1ConstraintSolver_1_1IConstraintWithStatus.html" title=" " alt="" coords="5,5,156,31"/>
 </map>

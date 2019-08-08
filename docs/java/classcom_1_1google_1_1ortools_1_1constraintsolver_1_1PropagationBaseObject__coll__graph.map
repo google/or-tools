@@ -1,0 +1,4 @@
+<map id="PropagationBaseObject" name="PropagationBaseObject">
+<area shape="rect" id="node1" title="NOLINT The PropagationBaseObject is a subclass of BaseObject that is also friend to the Solver class." alt="" coords="5,79,168,104"/>
+<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="41,5,132,31"/>
+</map>

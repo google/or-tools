@@ -1,4 +1,4 @@
-<map id="Google.OrTools.Sat.AllDifferentConstraintProto" name="Google.OrTools.Sat.AllDifferentConstraintProto">
-<area shape="rect" id="node1" title="All variables must take different values." alt="" coords="5,92,212,131"/>
-<area shape="rect" id="node2" title=" " alt="" coords="20,5,197,44"/>
+<map id="AllDifferentConstraintProto" name="AllDifferentConstraintProto">
+<area shape="rect" id="node1" title="All variables must take different values." alt="" coords="24,92,203,117"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,221,44"/>
 </map>

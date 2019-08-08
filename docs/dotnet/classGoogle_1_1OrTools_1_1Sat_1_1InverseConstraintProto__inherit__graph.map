@@ -1,4 +1,4 @@
-<map id="Google.OrTools.Sat.InverseConstraintProto" name="Google.OrTools.Sat.InverseConstraintProto">
-<area shape="rect" id="node1" title="The two arrays of variable each represent a function, the second is the inverse of the first: f_direc..." alt="" coords="21,92,207,131"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,223,44"/>
+<map id="InverseConstraintProto" name="InverseConstraintProto">
+<area shape="rect" id="node1" title="The two arrays of variable each represent a function, the second is the inverse of the first: f_direc..." alt="" coords="24,92,182,117"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,200,44"/>
 </map>

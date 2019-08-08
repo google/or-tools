@@ -1,0 +1,4 @@
+<map id="Decision" name="Decision">
+<area shape="rect" id="node1" title="A Decision represents a choice point in the search tree." alt="" coords="14,79,87,104"/>
+<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,5,96,31"/>
+</map>

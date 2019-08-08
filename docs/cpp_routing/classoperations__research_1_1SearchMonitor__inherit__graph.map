@@ -1,0 +1,11 @@
+<map id="SearchMonitor" name="SearchMonitor">
+<area shape="rect" id="node1" title="A search monitor is a simple set of callbacks to monitor all search events." alt="" coords="144,129,252,155"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1LocalSearchMonitor.html" title=" " alt="" coords="300,5,440,31"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1OptimizeVar.html" title="This class encapsulates an objective." alt="" coords="323,55,416,80"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1PropagationMonitor.html" title=" " alt="" coords="301,104,438,129"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1SearchLimit.html" title="Base class of all search limits." alt="" coords="324,153,415,179"/>
+<area shape="rect" id="node8" href="$classoperations__research_1_1SearchLog.html" title="The base class of all search logs that periodically outputs information when the search is running." alt="" coords="327,203,413,228"/>
+<area shape="rect" id="node9" href="$classoperations__research_1_1SolutionCollector.html" title="This class is the root class of all solution collectors." alt="" coords="309,252,431,277"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,129,96,155"/>
+<area shape="rect" id="node7" href="$classoperations__research_1_1RegularLimit.html" title="Usual limit based on wall_time, number of explored branches and number of failures in the search tree..." alt="" coords="488,153,584,179"/>
+</map>
