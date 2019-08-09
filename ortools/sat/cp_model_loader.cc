@@ -72,12 +72,32 @@ bool IsSmallEnoughToAlwaysEncode(int var, CpModelMapping* mapping,
   return ub - lb <= 64;  // Arbitrary limit value.
 }
 
-bool IsEqCst(const LinearConstraintProto& proto) {
-  if (proto.domain_size() == 2 && proto.domain(0) == proto.domain(1)) {
-    return true;
+bool IsEqCst(const LinearConstraintProto& proto, CpModelMapping* mapping,
+             IntegerTrail* integer_trail) {
+  if (proto.domain_size() != 2 || proto.domain(0) != proto.domain(1)) {
+    return false;
   }
 
-  return false;
+  int64 sum_min = 0;
+  int64 sum_max = 0;
+
+  for (int i = 0; i < proto.vars_size(); ++i) {
+    const int var = proto.vars(i);
+    const int64 coeff = proto.coeffs(i);
+    const IntegerVariable sat_var = mapping->Integer(var);
+    const int64 lb = integer_trail->LowerBound(sat_var).value();
+    const int64 ub = integer_trail->UpperBound(sat_var).value();
+    if (coeff >= 0) {
+      sum_min += coeff * lb;
+      sum_max += coeff * ub;
+    } else {
+      sum_min += coeff * ub;
+      sum_max += coeff * lb;
+    }
+  }
+
+  const int64 value = proto.domain(0);
+  return value > sum_min && value < sum_max;
 }
 
 bool IsNeqCst(const LinearConstraintProto& proto, CpModelMapping* mapping,
@@ -104,22 +124,6 @@ bool IsNeqCst(const LinearConstraintProto& proto, CpModelMapping* mapping,
       proto.domain(1) + 2 == proto.domain(2) && proto.domain(3) >= sum_max) {
     if (single_value != nullptr) {
       *single_value = proto.domain(1) + 1;
-    }
-    return true;
-  }
-
-  if (proto.domain_size() == 2 && proto.domain(0) <= sum_min &&
-      proto.domain(1) == sum_max - 1) {
-    if (single_value != nullptr) {
-      *single_value = sum_max;
-    }
-    return true;
-  }
-
-  if (proto.domain_size() == 2 && proto.domain(0) == sum_min + 1 &&
-      proto.domain(1) >= sum_max) {
-    if (single_value != nullptr) {
-      *single_value = sum_min;
     }
     return true;
   }
@@ -818,7 +822,7 @@ bool FullEncodingFixedPointComputer::ProcessLinear(ConstraintIndex ct_index) {
   if (ct.name() == "MAPPING") return true;
 
   // Only act when the constraint is an equality, or non-equality.
-  if (!IsEqCst(ct.linear()) &&
+  if (!IsEqCst(ct.linear(), mapping_, integer_trail_) &&
       !IsNeqCst(ct.linear(), mapping_, integer_trail_, nullptr)) {
     return true;
   }
@@ -835,8 +839,15 @@ bool FullEncodingFixedPointComputer::ProcessLinear(ConstraintIndex ct_index) {
   const int num_vars = ct.linear().vars_size();
   if (HasEnforcementLiteral(ct) && num_vars == 1 &&
       !IsFullyEncoded(ct.linear().vars(0))) {
-    // Fully encode x in half-reified equality b => x == constant.
-    FullyEncode(ct_index, ct.linear().vars(0));
+    const int64 cst = ct.linear().vars(0);
+    const IntegerVariable sat_var = mapping_->Integer(ct.linear().vars(0));
+    const int64 lb = integer_trail_->LowerBound(sat_var).value();
+    const int64 ub = integer_trail_->UpperBound(sat_var).value();
+    if (cst > lb && cst < ub) {
+      // Fully encode x in half-reified equality b => x == constant.
+      FullyEncode(ct_index, ct.linear().vars(0));
+    }
+
     return true;
   } else if (num_vars == 2) {
     // Fully encode x and y in [b =>] ax + by == cst or [b =>] ax + by != cst.
@@ -857,6 +868,8 @@ bool FullEncodingFixedPointComputer::ProcessLinear(ConstraintIndex ct_index) {
     FullyEncode(ct_index, ct.linear().vars(1));
     return true;
   }
+
+  return true;
 }
 
 void MaybeFullyEncodeMoreVariables(const CpModelProto& model_proto, Model* m) {
@@ -986,7 +999,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
   const SatParameters& params = *m->GetOrCreate<SatParameters>();
   int64 single_value = 0;
   if (params.boolean_encoding_level() > 0 && ct.linear().vars_size() == 2 &&
-      IsEqCst(ct.linear())) {
+      IsEqCst(ct.linear(), mapping, integer_trail)) {
     auto* encoder = m->GetOrCreate<IntegerEncoder>();
     if (encoder->VariableIsFullyEncoded(vars[0]) &&
         encoder->VariableIsFullyEncoded(vars[1])) {
