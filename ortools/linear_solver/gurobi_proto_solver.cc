@@ -122,6 +122,67 @@ int AddQuadraticConstraint(const MPGeneralConstraintProto& gen_cst,
 
   return GRB_OK;
 }
+
+int AddAndConstraint(const MPGeneralConstraintProto& gen_cst,
+                     GRBmodel* gurobi_model, std::vector<int>* tmp_variables) {
+  CHECK(gurobi_model != nullptr);
+  CHECK(tmp_variables != nullptr);
+
+  auto and_cst = gen_cst.and_constraint();
+  return GRBaddgenconstrAnd(
+      gurobi_model,
+      /*name=*/gen_cst.name().c_str(),
+      /*resvar=*/and_cst.resultant_var_index(),
+      /*nvars=*/and_cst.var_index_size(),
+      /*vars=*/and_cst.mutable_var_index()->mutable_data());
+}
+
+int AddOrConstraint(const MPGeneralConstraintProto& gen_cst,
+                    GRBmodel* gurobi_model, std::vector<int>* tmp_variables) {
+  CHECK(gurobi_model != nullptr);
+  CHECK(tmp_variables != nullptr);
+
+  auto or_cst = gen_cst.or_constraint();
+  return GRBaddgenconstrOr(gurobi_model,
+                           /*name=*/gen_cst.name().c_str(),
+                           /*resvar=*/or_cst.resultant_var_index(),
+                           /*nvars=*/or_cst.var_index_size(),
+                           /*vars=*/or_cst.mutable_var_index()->mutable_data());
+}
+
+int AddMinConstraint(const MPGeneralConstraintProto& gen_cst,
+                     GRBmodel* gurobi_model, std::vector<int>* tmp_variables) {
+  CHECK(gurobi_model != nullptr);
+  CHECK(tmp_variables != nullptr);
+
+  auto min_cst = gen_cst.min_constraint();
+  return GRBaddgenconstrMin(
+      gurobi_model,
+      /*name=*/gen_cst.name().c_str(),
+      /*resvar=*/min_cst.resultant_var_index(),
+      /*nvars=*/min_cst.var_index_size(),
+      /*vars=*/min_cst.mutable_var_index()->mutable_data(),
+      /*constant=*/min_cst.has_constant()
+          ? min_cst.constant()
+          : std::numeric_limits<double>::infinity());
+}
+
+int AddMaxConstraint(const MPGeneralConstraintProto& gen_cst,
+                     GRBmodel* gurobi_model, std::vector<int>* tmp_variables) {
+  CHECK(gurobi_model != nullptr);
+  CHECK(tmp_variables != nullptr);
+
+  auto max_cst = gen_cst.max_constraint();
+  return GRBaddgenconstrMax(
+      gurobi_model,
+      /*name=*/gen_cst.name().c_str(),
+      /*resvar=*/max_cst.resultant_var_index(),
+      /*nvars=*/max_cst.var_index_size(),
+      /*vars=*/max_cst.mutable_var_index()->mutable_data(),
+      /*constant=*/max_cst.has_constant()
+          ? max_cst.constant()
+          : -std::numeric_limits<double>::infinity());
+}
 }  // namespace
 
 util::StatusOr<MPSolutionResponse> GurobiSolveProto(
@@ -236,6 +297,34 @@ util::StatusOr<MPSolutionResponse> GurobiSolveProto(
         }
         case MPGeneralConstraintProto::kQuadraticConstraint: {
           RETURN_IF_GUROBI_ERROR(AddQuadraticConstraint(gen_cst, gurobi_model));
+          break;
+        }
+        case MPGeneralConstraintProto::kAbsConstraint: {
+          RETURN_IF_GUROBI_ERROR(GRBaddgenconstrAbs(
+              gurobi_model,
+              /*name=*/gen_cst.name().c_str(),
+              /*resvar=*/gen_cst.abs_constraint().resultant_var_index(),
+              /*argvar=*/gen_cst.abs_constraint().var_index()));
+          break;
+        }
+        case MPGeneralConstraintProto::kAndConstraint: {
+          RETURN_IF_GUROBI_ERROR(
+              AddAndConstraint(gen_cst, gurobi_model, &ct_variables));
+          break;
+        }
+        case MPGeneralConstraintProto::kOrConstraint: {
+          RETURN_IF_GUROBI_ERROR(
+              AddOrConstraint(gen_cst, gurobi_model, &ct_variables));
+          break;
+        }
+        case MPGeneralConstraintProto::kMinConstraint: {
+          RETURN_IF_GUROBI_ERROR(
+              AddMinConstraint(gen_cst, gurobi_model, &ct_variables));
+          break;
+        }
+        case MPGeneralConstraintProto::kMaxConstraint: {
+          RETURN_IF_GUROBI_ERROR(
+              AddMaxConstraint(gen_cst, gurobi_model, &ct_variables));
           break;
         }
         default:

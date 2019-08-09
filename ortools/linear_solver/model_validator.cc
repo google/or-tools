@@ -263,9 +263,8 @@ std::string FindErrorInMPAbsConstraint(const MPModelProto& model,
   return "";
 }
 
-template <typename MPAndOrConstraint>
 std::string FindErrorInMPAndOrConstraint(const MPModelProto& model,
-                                         const MPAndOrConstraint& and_or) {
+                                         const MPArrayConstraint& and_or) {
   if (and_or.var_index_size() == 0) {
     return "var_index cannot be empty.";
   }
@@ -290,6 +289,34 @@ std::string FindErrorInMPAndOrConstraint(const MPModelProto& model,
   }
   if (!IsBoolean(model.variable(and_or.resultant_var_index()))) {
     return absl::StrCat("resultant_var_index is not Boolean.");
+  }
+  return "";
+}
+
+std::string FindErrorInMPMinMaxConstraint(
+    const MPModelProto& model, const MPArrayWithConstantConstraint& min_max) {
+  if (min_max.var_index_size() == 0) {
+    return "var_index cannot be empty.";
+  }
+  if (!min_max.has_resultant_var_index()) {
+    return "resultant_var_index is required.";
+  }
+
+  if (!std::isfinite(min_max.constant())) {
+    return absl::StrCat("Invalid constant: ", (min_max.constant()));
+  }
+
+  const int num_vars = model.variable_size();
+  for (int i = 0; i < min_max.var_index_size(); ++i) {
+    if (min_max.var_index(i) < 0 || min_max.var_index(i) >= num_vars) {
+      return absl::StrCat("var_index(", i, ")=", min_max.var_index(i),
+                          " is invalid.", " It must be in [0, ", num_vars, ")");
+    }
+  }
+  if (min_max.resultant_var_index() < 0 ||
+      min_max.resultant_var_index() >= num_vars) {
+    return absl::StrCat("resultant_var_index=", min_max.resultant_var_index(),
+                        " is invalid.", " It must be in [0, ", num_vars, ")");
   }
   return "";
 }
@@ -417,6 +444,15 @@ std::string FindErrorInMPModelProto(const MPModelProto& model) {
             FindErrorInMPAndOrConstraint(model, gen_constraint.or_constraint());
         break;
 
+      case MPGeneralConstraintProto::kMinConstraint:
+        error = FindErrorInMPMinMaxConstraint(model,
+                                              gen_constraint.min_constraint());
+        break;
+
+      case MPGeneralConstraintProto::kMaxConstraint:
+        error = FindErrorInMPMinMaxConstraint(model,
+                                              gen_constraint.max_constraint());
+        break;
       default:
         return absl::StrCat("Unknown general constraint type ",
                             gen_constraint.general_constraint_case());

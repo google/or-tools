@@ -332,10 +332,9 @@ util::Status AddQuadraticConstraint(
 //   y = x OR y = -x
 util::Status AddAbsConstraint(const MPGeneralConstraintProto& gen_cst,
                               const std::vector<SCIP_VAR*>& scip_variables,
-                              SCIP* scip,
-                              std::vector<SCIP_CONS*>* scip_constraints) {
+                              SCIP* scip, SCIP_CONS** scip_cst) {
   CHECK(scip != nullptr);
-  CHECK(scip_constraints != nullptr);
+  CHECK(scip_cst != nullptr);
   CHECK(gen_cst.has_abs_constraint());
   const auto& abs = gen_cst.abs_constraint();
   SCIP_VAR* scip_var = scip_variables[abs.var_index()];
@@ -351,15 +350,16 @@ util::Status AddAbsConstraint(const MPGeneralConstraintProto& gen_cst,
   std::vector<SCIP_CONS*> cons;
   auto add_abs_constraint =
       [&](const std::string& name_prefix) -> util::Status {
-    scip_constraints->push_back(nullptr);
+    SCIP_CONS* scip_cons;
     const std::string name =
         gen_cst.has_name() ? absl::StrCat(gen_cst.name(), name_prefix) : "";
     RETURN_IF_SCIP_ERROR(SCIPcreateConsBasicLinear(
-        scip, /*cons=*/&scip_constraints->back(),
+        scip, /*cons=*/&scip_cons,
         /*name=*/name.c_str(), /*nvars=*/2, /*vars=*/vars.data(),
         /*vals=*/vals.data(), /*lhs=*/0.0, /*rhs=*/0.0));
     // Note that the constraints are, by design, not added into the model using
     // SCIPaddCons.
+    cons.push_back(scip_cons);
     return util::OkStatus();
   };
 
@@ -367,20 +367,18 @@ util::Status AddAbsConstraint(const MPGeneralConstraintProto& gen_cst,
   vars = {scip_resultant_var, scip_var};
   vals = {1, 1};
   RETURN_IF_ERROR(add_abs_constraint("_neg"));
-  cons.push_back(scip_constraints->back());
 
   // Create an intermediary constraint such that y = x
   vals = {1, -1};
   RETURN_IF_ERROR(add_abs_constraint("_pos"));
-  cons.push_back(scip_constraints->back());
 
   // Activate at least one of the two above constraints.
   const std::string name =
       gen_cst.has_name() ? absl::StrCat(gen_cst.name(), "_disj") : "";
   RETURN_IF_SCIP_ERROR(SCIPcreateConsBasicDisjunction(
-      scip, /*cons=*/&scip_constraints->back(), /*name=*/name.c_str(),
+      scip, /*cons=*/scip_cst, /*name=*/name.c_str(),
       /*nconss=*/2, /*conss=*/cons.data(), /*relaxcons=*/nullptr));
-  RETURN_IF_SCIP_ERROR(SCIPaddCons(scip, scip_constraints->back()));
+  RETURN_IF_SCIP_ERROR(SCIPaddCons(scip, *scip_cst));
 
   return util::OkStatus();
 }
@@ -430,6 +428,96 @@ util::Status AddOrConstraint(const MPGeneralConstraintProto& gen_cst,
       /*nvars=*/orcst.var_index_size(),
       /*vars=*/tmp_variables->data()));
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip, *scip_cst));
+  return util::OkStatus();
+}
+
+// Models the constraint y = min(x1, x2, ... xn, c) with c being a constant with
+//  - n + 1 constraints to ensure y <= min(x1, x2, ... xn, c)
+//  - one disjunction constraint among all of the possible y = x1, y = x2, ...
+//    y = xn, y = c constraints
+// Does the equivalent thing for max (with y >= max(...) instead).
+util::Status AddMinMaxConstraint(const MPGeneralConstraintProto& gen_cst,
+                                 const std::vector<SCIP_VAR*>& scip_variables,
+                                 SCIP* scip, SCIP_CONS** scip_cst,
+                                 std::vector<SCIP_CONS*>* scip_constraints,
+                                 std::vector<SCIP_VAR*>* tmp_variables) {
+  CHECK(scip != nullptr);
+  CHECK(scip_cst != nullptr);
+  CHECK(tmp_variables != nullptr);
+  CHECK(gen_cst.has_min_constraint() || gen_cst.has_max_constraint());
+  const auto& minmax = gen_cst.has_min_constraint() ? gen_cst.min_constraint()
+                                                    : gen_cst.max_constraint();
+  SCIP_VAR* scip_resultant_var = scip_variables[minmax.resultant_var_index()];
+
+  std::vector<SCIP_VAR*> vars;
+  std::vector<double> vals;
+  std::vector<SCIP_CONS*> cons;
+  auto add_lin_constraint = [&](const std::string& name_prefix,
+                                double lower_bound = 0.0,
+                                double upper_bound = 0.0) -> util::Status {
+    SCIP_CONS* scip_cons;
+    const std::string name =
+        gen_cst.has_name() ? absl::StrCat(gen_cst.name(), name_prefix) : "";
+    RETURN_IF_SCIP_ERROR(SCIPcreateConsBasicLinear(
+        scip, /*cons=*/&scip_cons,
+        /*name=*/name.c_str(), /*nvars=*/2, /*vars=*/vars.data(),
+        /*vals=*/vals.data(), /*lhs=*/lower_bound, /*rhs=*/upper_bound));
+    // Note that the constraints are, by design, not added into the model using
+    // SCIPaddCons.
+    cons.push_back(scip_cons);
+    return util::OkStatus();
+  };
+
+  // Create intermediary constraints such that y = xi
+  for (const int var_index : minmax.var_index()) {
+    vars = {scip_resultant_var, scip_variables[var_index]};
+    vals = {1, -1};
+    RETURN_IF_ERROR(add_lin_constraint(absl::StrCat("_", var_index)));
+  }
+
+  // Create an intermediary constraint such that y = c
+  if (minmax.has_constant()) {
+    vars = {scip_resultant_var};
+    vals = {1};
+    RETURN_IF_ERROR(
+        add_lin_constraint("_constant", minmax.constant(), minmax.constant()));
+  }
+
+  // Activate at least one of the above constraints.
+  const std::string name =
+      gen_cst.has_name() ? absl::StrCat(gen_cst.name(), "_disj") : "";
+  RETURN_IF_SCIP_ERROR(SCIPcreateConsBasicDisjunction(
+      scip, /*cons=*/scip_cst, /*name=*/name.c_str(),
+      /*nconss=*/2, /*conss=*/cons.data(), /*relaxcons=*/nullptr));
+  RETURN_IF_SCIP_ERROR(SCIPaddCons(scip, *scip_cst));
+
+  // Add all of the inequality constraints.
+  constexpr double kInfinity = std::numeric_limits<double>::infinity();
+  cons.clear();
+  for (const int var_index : minmax.var_index()) {
+    vars = {scip_resultant_var, scip_variables[var_index]};
+    vals = {1, -1};
+    if (gen_cst.has_min_constraint()) {
+      RETURN_IF_ERROR(add_lin_constraint(absl::StrCat("_ineq_", var_index),
+                                         -kInfinity, 0.0));
+    } else {
+      RETURN_IF_ERROR(add_lin_constraint(absl::StrCat("_ineq_", var_index), 0.0,
+                                         kInfinity));
+    }
+  }
+  vars = {scip_resultant_var};
+  vals = {1};
+  if (gen_cst.has_min_constraint()) {
+    RETURN_IF_ERROR(add_lin_constraint(absl::StrCat("_ineq_constant"),
+                                       -kInfinity, minmax.constant()));
+  } else {
+    RETURN_IF_ERROR(add_lin_constraint(absl::StrCat("_ineq_constant"),
+                                       minmax.constant(), kInfinity));
+  }
+  for (SCIP_CONS* scip_cons : cons) {
+    scip_constraints->push_back(scip_cons);
+    RETURN_IF_SCIP_ERROR(SCIPaddCons(scip, scip_cons));
+  }
   return util::OkStatus();
 }
 
@@ -689,7 +777,7 @@ util::StatusOr<MPSolutionResponse> ScipSolveProto(
         }
         case MPGeneralConstraintProto::kAbsConstraint: {
           RETURN_IF_ERROR(AddAbsConstraint(gen_cst, scip_variables, scip,
-                                           &scip_constraints));
+                                           &scip_constraints[lincst_size + c]));
           break;
         }
         case MPGeneralConstraintProto::kAndConstraint: {
@@ -702,6 +790,13 @@ util::StatusOr<MPSolutionResponse> ScipSolveProto(
           RETURN_IF_ERROR(AddOrConstraint(gen_cst, scip_variables, scip,
                                           &scip_constraints[lincst_size + c],
                                           &ct_variables));
+          break;
+        }
+        case MPGeneralConstraintProto::kMinConstraint:
+        case MPGeneralConstraintProto::kMaxConstraint: {
+          RETURN_IF_ERROR(AddMinMaxConstraint(
+              gen_cst, scip_variables, scip, &scip_constraints[lincst_size + c],
+              &scip_constraints, &ct_variables));
           break;
         }
         default:

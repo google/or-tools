@@ -695,9 +695,11 @@ MPSolverResponseStatus MPSolver::LoadModelFromProtoInternal(
         break;
       }
       default:
-        *error_message =
-            absl::StrCat("Solver doesn't support general constraints of type ",
-                         general_constraint.general_constraint_case());
+        *error_message = absl::StrFormat(
+            "Optimizing general constraints of type %i is only supported "
+            "through direct proto solves. Please use MPSolver::SolveWithProto, "
+            "or the solver's direct proto solve function.",
+            general_constraint.general_constraint_case());
         return MPSOLVER_MODEL_INVALID;
     }
   }
