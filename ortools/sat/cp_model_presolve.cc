@@ -1991,8 +1991,8 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
     const int64 v0 = context_.MinOf(ct->element().vars(0));
     const int64 v1 = context_.MinOf(ct->element().vars(1));
 
-    LinearConstraintProto* const lin =
-        context_.working_model->add_constraints()->mutable_linear();
+    ConstraintProto* new_ct = context_.working_model->add_constraints();
+    LinearConstraintProto* const lin = new_ct->mutable_linear();
     lin->add_vars(target_ref);
     lin->add_coeffs(1);
     lin->add_vars(index_ref);
@@ -4285,6 +4285,7 @@ void CpModelPresolver::RemoveUnusedEquivalentVariables() {
     }
 
     ConstraintProto* ct = proto->add_constraints();
+    ct->set_name("MAPPING");
     auto* arg = ct->mutable_linear();
     arg->add_vars(var);
     arg->add_coeffs(1);

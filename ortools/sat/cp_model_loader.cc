@@ -244,6 +244,42 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
     m->GetOrCreate<IntegerEncoder>()->FullyEncodeVariable(integers_[i]);
   }
 
+  for (const ConstraintProto& ct : model_proto.constraints()) {
+    if (ct.enforcement_literal_size() > 0 ||
+        ct.constraint_case() != ConstraintProto::ConstraintCase::kLinear ||
+        ct.linear().vars_size() != 2 || ct.linear().coeffs(0) != 1 ||
+        booleans_[ct.linear().vars(1)] == kNoBooleanVariable ||
+        integers_[ct.linear().vars(0)] == kNoIntegerVariable ||
+        booleans_[ct.linear().vars(0)] != kNoBooleanVariable) {
+      continue;
+    }
+    if (ct.linear().domain_size() != 2 && ct.linear().domain_size() != 4) {
+      continue;
+    }
+    if (ct.linear().domain_size() == 2 &&
+        ct.linear().domain(0) != ct.linear().domain(1)) {
+      continue;
+    }
+    if (ct.linear().domain_size() == 4 &&
+        ((ct.linear().domain(0) != ct.linear().domain(1)) ||
+         (ct.linear().domain(2) != ct.linear().domain(3)))) {
+      continue;
+    }
+    const int int_var = ct.linear().vars(0);
+    const int bool_var = ct.linear().vars(1);
+    const IntegerVariableProto& int_var_proto = model_proto.variables(int_var);
+    const IntegerVariableProto& bool_var_proto =
+        model_proto.variables(bool_var);
+    if (bool_var_proto.domain_size() != 2 || bool_var_proto.domain(0) != 0 ||
+        bool_var_proto.domain(1) != 1) {
+      continue;
+    }
+
+    VLOG(2) << "Mapping " << ct.DebugString() << ", int_var " << int_var << ": "
+            << int_var_proto.DebugString() << ", bool_var " << bool_var << ": "
+            << bool_var_proto.DebugString();
+  }
+
   // Create the interval variables.
   intervals_.resize(model_proto.constraints_size(), kNoIntervalVariable);
   for (int c = 0; c < model_proto.constraints_size(); ++c) {
@@ -621,11 +657,15 @@ class FullEncodingFixedPointComputer {
            integer_encoder_->VariableIsFullyEncoded(variable);
   }
 
-  void FullyEncode(int v) {
+  void FullyEncode(ConstraintIndex ct, int v) {
     v = PositiveRef(v);
     const IntegerVariable variable = mapping_->Integer(v);
     if (v == kNoIntegerVariable) return;
     if (!model_->Get(IsFixed(variable))) {
+      VLOG(2) << "Constraint "
+              << model_proto_.constraints(ct.value()).ShortDebugString()
+              << " fully encode "
+              << model_proto_.variables(v).ShortDebugString();
       model_->Add(FullyEncodeVariable(variable));
     }
     AddVariableToPropagationQueue(v);
@@ -708,12 +748,12 @@ bool FullEncodingFixedPointComputer::ProcessElement(ConstraintIndex ct_index) {
   const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
 
   // Index must always be full encoded.
-  FullyEncode(ct.element().index());
+  FullyEncode(ct_index, ct.element().index());
 
   // If target is a constant or fully encoded, variables must be fully encoded.
   const int target = ct.element().target();
   if (IsFullyEncoded(target)) {
-    for (const int v : ct.element().vars()) FullyEncode(v);
+    for (const int v : ct.element().vars()) FullyEncode(ct_index, v);
   }
 
   // If all non-target variables are fully encoded, target must be too.
@@ -726,7 +766,7 @@ bool FullEncodingFixedPointComputer::ProcessElement(ConstraintIndex ct_index) {
     }
   }
   if (all_variables_are_fully_encoded) {
-    if (!IsFullyEncoded(target)) FullyEncode(target);
+    if (!IsFullyEncoded(target)) FullyEncode(ct_index, target);
     return true;
   }
 
@@ -746,7 +786,7 @@ bool FullEncodingFixedPointComputer::ProcessTable(ConstraintIndex ct_index) {
   if (ct.table().negated()) return true;
 
   for (const int variable : ct.table().vars()) {
-    FullyEncode(variable);
+    FullyEncode(ct_index, variable);
   }
   return true;
 }
@@ -755,7 +795,7 @@ bool FullEncodingFixedPointComputer::ProcessAutomaton(
     ConstraintIndex ct_index) {
   const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
   for (const int variable : ct.automaton().vars()) {
-    FullyEncode(variable);
+    FullyEncode(ct_index, variable);
   }
   return true;
 }
@@ -763,10 +803,10 @@ bool FullEncodingFixedPointComputer::ProcessAutomaton(
 bool FullEncodingFixedPointComputer::ProcessInverse(ConstraintIndex ct_index) {
   const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
   for (const int variable : ct.inverse().f_direct()) {
-    FullyEncode(variable);
+    FullyEncode(ct_index, variable);
   }
   for (const int variable : ct.inverse().f_inverse()) {
-    FullyEncode(variable);
+    FullyEncode(ct_index, variable);
   }
   return true;
 }
@@ -774,6 +814,8 @@ bool FullEncodingFixedPointComputer::ProcessInverse(ConstraintIndex ct_index) {
 bool FullEncodingFixedPointComputer::ProcessLinear(ConstraintIndex ct_index) {
   const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
   if (parameters_.boolean_encoding_level() == 0) return true;
+
+  if (ct.name() == "MAPPING") return true;
 
   // Only act when the constraint is an equality, or non-equality.
   if (!IsEqCst(ct.linear()) &&
@@ -791,9 +833,10 @@ bool FullEncodingFixedPointComputer::ProcessLinear(ConstraintIndex ct_index) {
   }
 
   const int num_vars = ct.linear().vars_size();
-  if (HasEnforcementLiteral(ct) && num_vars == 1) {
+  if (HasEnforcementLiteral(ct) && num_vars == 1 &&
+      !IsFullyEncoded(ct.linear().vars(0))) {
     // Fully encode x in half-reified equality b => x == constant.
-    FullyEncode(ct.linear().vars(0));
+    FullyEncode(ct_index, ct.linear().vars(0));
     return true;
   } else if (num_vars == 2) {
     // Fully encode x and y in [b =>] ax + by == cst or [b =>] ax + by != cst.
@@ -810,8 +853,8 @@ bool FullEncodingFixedPointComputer::ProcessLinear(ConstraintIndex ct_index) {
         return false;
       }
     }
-    FullyEncode(ct.linear().vars(0));
-    FullyEncode(ct.linear().vars(1));
+    FullyEncode(ct_index, ct.linear().vars(0));
+    FullyEncode(ct_index, ct.linear().vars(1));
     return true;
   }
 
