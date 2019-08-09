@@ -558,7 +558,7 @@ class VehicleBreaksFilter : public BasePathFilter {
 VehicleBreaksFilter::VehicleBreaksFilter(const RoutingModel& routing_model,
                                          const RoutingDimension& dimension)
     : BasePathFilter(routing_model.Nexts(),
-                     routing_model.Size() + routing_model.vehicles(), nullptr),
+                     routing_model.Size() + routing_model.vehicles()),
       model_(routing_model),
       dimension_(dimension) {
   DCHECK(dimension_.HasBreakConstraints());

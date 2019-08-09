@@ -732,7 +732,6 @@ class Solver {
 
   typedef std::function<int64(const IntVar* v, int64 id)> VariableValueSelector;
   typedef std::function<bool(int64, int64, int64)> VariableValueComparator;
-  typedef std::function<void(int64)> ObjectiveWatcher;
   typedef std::function<DecisionModification()> BranchSelector;
   // TODO(user): wrap in swig.
   typedef std::function<void(Solver*)> Action;
@@ -2715,18 +2714,8 @@ class Solver {
       const std::vector<IntVar*>& vars, IndexEvaluator2 values,
       Solver::LocalSearchFilterBound filter_enum);
   IntVarLocalSearchFilter* MakeSumObjectiveFilter(
-      const std::vector<IntVar*>& vars, IndexEvaluator2 values,
-      ObjectiveWatcher delta_objective_callback,
-      Solver::LocalSearchFilterBound filter_enum);
-  IntVarLocalSearchFilter* MakeSumObjectiveFilter(
       const std::vector<IntVar*>& vars,
-      const std::vector<IntVar*>& secondary_vars,
-      Solver::IndexEvaluator3 values,
-      Solver::LocalSearchFilterBound filter_enum);
-  IntVarLocalSearchFilter* MakeSumObjectiveFilter(
-      const std::vector<IntVar*>& vars,
-      const std::vector<IntVar*>& secondary_vars,
-      Solver::IndexEvaluator3 values, ObjectiveWatcher delta_objective_callback,
+      const std::vector<IntVar*>& secondary_vars, IndexEvaluator3 values,
       Solver::LocalSearchFilterBound filter_enum);
 
   /// Performs PeriodicCheck on the top-level search; for instance, can be

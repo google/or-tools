@@ -4240,7 +4240,6 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
 
 const std::vector<LocalSearchFilter*>&
 RoutingModel::GetOrCreateLocalSearchFilters() {
-  // Note on objective injection from one filter to another.
   // As of 2013/01, three filters evaluate sub-parts of the objective
   // function:
   // - NodeDisjunctionFilter: takes disjunction penalty costs into account,
@@ -4250,177 +4249,114 @@ RoutingModel::GetOrCreateLocalSearchFilters() {
   //       related to amortized linear and quadratic vehicle cost factors.
   //     - LocalSearchObjectiveFilter, which takes dimension "arc" costs into
   //       account.
-  // To be able to filter cost values properly, a filter needs to be aware of
-  // cost bounds computed by other filters before it (for the same delta).
-  // Communication of cost between filters is done through callbacks,
-  // VehicleAmortizedCostFilter sending the total "vehicle cost" to
-  // LocalSearchObjectiveFilter, itself sending this vehicle cost + total arc
-  // costs to NodeDisjunctionFilter, in turn sending this cost + total penalty
-  // cost to PathCumulFilters (if you have several of these, they send updated
-  // costs to each other too).
-  // Note that since the VehicleAmortizedCostFilter is the only filter with a
-  // possible negative contribution to the objective, it has to be the first
-  // filter called so it propagates this value to all other filters.
-  // Callbacks are called on OnSynchronize to send the cost of the current
-  // solution and on Accept to send the cost of solution deltas.
-  if (filters_.empty()) {
-    // NOTE: We first sort the dimensions by decreasing complexity of filtering:
-    // Dimensions with a global span cost coefficient and/or precedences will
-    // have a global LP created to filter feasibility and costs.
-    // We want these filters to be called last, hence putting them in the
-    // beginning of the vector, since it will be reversed.
-    std::vector<RoutingDimension*> sorted_dimensions = dimensions_.get();
-    std::sort(sorted_dimensions.begin(), sorted_dimensions.end(),
-              [](const RoutingDimension* d1, const RoutingDimension* d2) {
-                return (d1->global_span_cost_coefficient() >
-                        d2->global_span_cost_coefficient()) ||
-                       (d1->GetNodePrecedences().size() >
-                        d2->GetNodePrecedences().size());
-              });
+  if (!filters_.empty()) return filters_;
 
-    std::vector<IntVarLocalSearchFilter*> cumul_filters;
-    IntVarLocalSearchFilter* path_cumul_filter = nullptr;
-    for (const RoutingDimension* dimension : sorted_dimensions) {
-      Solver::ObjectiveWatcher objective_callback = nullptr;
-      if (path_cumul_filter != nullptr) {
-        objective_callback = [path_cumul_filter](int64 value) {
-          return path_cumul_filter->InjectObjectiveValue(value);
-        };
-      }
-      const std::vector<IntVarLocalSearchFilter*> dimension_cumul_filters =
-          MakeCumulFilters(*dimension, objective_callback,
-                           /*filtering_objective*/ true);
-      cumul_filters.insert(cumul_filters.end(), dimension_cumul_filters.begin(),
-                           dimension_cumul_filters.end());
-      // NOTE: We use the last element of cumul_filters to inject later costs
-      // because MakeCumulFilter() sets the internal injections between the
-      // LPCumulFilter and PathCumulFilter when necessary.
-      path_cumul_filter = cumul_filters.back();
-    }
-    // Due to the way cost injection is setup, path filters have to be
-    // called in reverse order.
-    std::reverse(cumul_filters.begin(), cumul_filters.end());
-    IntVarLocalSearchFilter* node_disjunction_filter = nullptr;
-    if (!disjunctions_.empty()) {
-      Solver::ObjectiveWatcher objective_callback = nullptr;
-      if (path_cumul_filter != nullptr) {
-        objective_callback = [path_cumul_filter](int64 value) {
-          return path_cumul_filter->InjectObjectiveValue(value);
-        };
-      }
-      node_disjunction_filter =
-          MakeNodeDisjunctionFilter(*this, objective_callback);
-    }
-    Solver::ObjectiveWatcher objective_callback = nullptr;
-    if (node_disjunction_filter != nullptr) {
-      objective_callback = [node_disjunction_filter](int64 value) {
-        return node_disjunction_filter->InjectObjectiveValue(value);
-      };
-    } else if (path_cumul_filter != nullptr) {
-      objective_callback = [path_cumul_filter](int64 value) {
-        return path_cumul_filter->InjectObjectiveValue(value);
-      };
-    }
-
-    IntVarLocalSearchFilter* local_search_objective_filter = nullptr;
-    if (CostsAreHomogeneousAcrossVehicles()) {
-      local_search_objective_filter = solver_->MakeSumObjectiveFilter(
-          nexts_, [this](int64 i, int64 j) { return GetHomogeneousCost(i, j); },
-          objective_callback, Solver::LE);
-    } else {
-      local_search_objective_filter = solver_->MakeSumObjectiveFilter(
-          nexts_, vehicle_vars_,
-          [this](int64 i, int64 j, int64 k) {
-            return GetArcCostForVehicle(i, j, k);
-          },
-          objective_callback, Solver::LE);
-    }
-
-    if (vehicle_amortized_cost_factors_set_) {
-      objective_callback = [local_search_objective_filter](int64 value) {
-        return local_search_objective_filter->InjectObjectiveValue(value);
-      };
-      filters_.push_back(
-          MakeVehicleAmortizedCostFilter(*this, objective_callback));
-    }
-
-    // Must be added after VehicleAmortizedCostFilter.
-    filters_.push_back(local_search_objective_filter);
-
-    filters_.push_back(solver_->MakeVariableDomainFilter());
-    if (node_disjunction_filter != nullptr) {
-      // Must be added after ObjectiveFilter.
-      filters_.push_back(node_disjunction_filter);
-    }
-    if (!pickup_delivery_pairs_.empty()) {
-      filters_.push_back(MakePickupDeliveryFilter(
-          *this, pickup_delivery_pairs_, vehicle_pickup_delivery_policy_));
-    }
-    if (HasTypeRegulations()) {
-      filters_.push_back(MakeTypeRegulationsFilter(*this));
-    }
-    filters_.push_back(MakeVehicleVarFilter(*this));
-
-    // Must be added after NodeDisjunctionFilter and ObjectiveFilter.
-    filters_.insert(filters_.end(), cumul_filters.begin(), cumul_filters.end());
-
-    for (const RoutingDimension* dimension : dimensions_) {
-      if (dimension->HasBreakConstraints()) {
-        IntVarLocalSearchFilter* breaks_filter =
-            MakeVehicleBreaksFilter(*this, *dimension);
-        filters_.push_back(breaks_filter);
-      }
-    }
-    filters_.insert(filters_.end(), extra_filters_.begin(),
-                    extra_filters_.end());
+  // VehicleAmortizedCostFilter can have a negative value, so it must be first.
+  if (vehicle_amortized_cost_factors_set_) {
+    filters_.push_back(MakeVehicleAmortizedCostFilter(*this));
   }
+
+  // The SumObjectiveFilter has the best reject/second ratio in practice,
+  // so it is the earliest.
+  if (CostsAreHomogeneousAcrossVehicles()) {
+    filters_.push_back(solver_->MakeSumObjectiveFilter(
+        nexts_, [this](int64 i, int64 j) { return GetHomogeneousCost(i, j); },
+        Solver::LE));
+  } else {
+    filters_.push_back(solver_->MakeSumObjectiveFilter(
+        nexts_, vehicle_vars_,
+        [this](int64 i, int64 j, int64 k) {
+          return GetArcCostForVehicle(i, j, k);
+        },
+        Solver::LE));
+  }
+
+  filters_.push_back(solver_->MakeVariableDomainFilter());
+
+  if (!disjunctions_.empty()) {
+    filters_.push_back(MakeNodeDisjunctionFilter(*this));
+  }
+
+  if (!pickup_delivery_pairs_.empty()) {
+    filters_.push_back(MakePickupDeliveryFilter(
+        *this, pickup_delivery_pairs_, vehicle_pickup_delivery_policy_));
+  }
+
+  if (HasTypeRegulations()) {
+    filters_.push_back(MakeTypeRegulationsFilter(*this));
+  }
+
+  filters_.push_back(MakeVehicleVarFilter(*this));
+
+  // NOTE: We first sort the dimensions by increasing complexity of filtering:
+  // Dimensions with a global span cost coefficient and/or precedences will
+  // have a global LP created to filter feasibility and costs.
+  std::vector<RoutingDimension*> sorted_dimensions = dimensions_.get();
+  std::sort(sorted_dimensions.begin(), sorted_dimensions.end(),
+            [](const RoutingDimension* d1, const RoutingDimension* d2) {
+              return (d1->global_span_cost_coefficient() <=
+                      d2->global_span_cost_coefficient()) &&
+                     (d1->GetNodePrecedences().size() <=
+                      d2->GetNodePrecedences().size());
+            });
+  for (const RoutingDimension* dimension : sorted_dimensions) {
+    const std::vector<IntVarLocalSearchFilter*> cumul_filters =
+        MakeCumulFilters(*dimension, /*filtering_objective*/ true);
+    filters_.insert(filters_.end(), cumul_filters.begin(), cumul_filters.end());
+  }
+
+  for (const RoutingDimension* dimension : dimensions_) {
+    if (!dimension->HasBreakConstraints()) continue;
+    filters_.push_back(MakeVehicleBreaksFilter(*this, *dimension));
+  }
+  filters_.insert(filters_.end(), extra_filters_.begin(), extra_filters_.end());
   return filters_;
 }
 
 const std::vector<LocalSearchFilter*>&
 RoutingModel::GetOrCreateFeasibilityFilters() {
-  if (feasibility_filters_.empty()) {
-    if (!disjunctions_.empty()) {
-      feasibility_filters_.push_back(MakeNodeDisjunctionFilter(*this, nullptr));
-    }
-    feasibility_filters_.push_back(solver_->MakeVariableDomainFilter());
-    if (!pickup_delivery_pairs_.empty()) {
-      feasibility_filters_.push_back(MakePickupDeliveryFilter(
-          *this, pickup_delivery_pairs_, vehicle_pickup_delivery_policy_));
-    }
-    if (HasTypeRegulations()) {
-      feasibility_filters_.push_back(MakeTypeRegulationsFilter(*this));
-    }
-    feasibility_filters_.push_back(MakeVehicleVarFilter(*this));
+  if (!feasibility_filters_.empty()) return feasibility_filters_;
 
-    // NOTE: We sort the dimensions by decreasing complexity of filtering:
-    // Dimensions with precedences will have a global LP created to filter
-    // feasibility, so we want these filters to be called last.
-    std::vector<RoutingDimension*> sorted_dimensions = dimensions_.get();
-    std::sort(sorted_dimensions.begin(), sorted_dimensions.end(),
-              [](const RoutingDimension* d1, const RoutingDimension* d2) {
-                return (d1->GetNodePrecedences().size() <
-                        d2->GetNodePrecedences().size());
-              });
-    for (const RoutingDimension* const dimension : sorted_dimensions) {
-      const std::vector<IntVarLocalSearchFilter*> dimension_cumul_filters =
-          MakeCumulFilters(*dimension, nullptr, /*filtering_objective*/ false);
-      feasibility_filters_.insert(feasibility_filters_.end(),
-                                  dimension_cumul_filters.begin(),
-                                  dimension_cumul_filters.end());
-    }
-
-    for (const RoutingDimension* dimension : dimensions_) {
-      if (dimension->HasBreakConstraints()) {
-        IntVarLocalSearchFilter* breaks_filter =
-            MakeVehicleBreaksFilter(*this, *dimension);
-        feasibility_filters_.push_back(breaks_filter);
-      }
-    }
-
-    feasibility_filters_.insert(feasibility_filters_.end(),
-                                extra_filters_.begin(), extra_filters_.end());
+  if (!disjunctions_.empty()) {
+    feasibility_filters_.push_back(MakeNodeDisjunctionFilter(*this));
   }
+  feasibility_filters_.push_back(solver_->MakeVariableDomainFilter());
+  if (!pickup_delivery_pairs_.empty()) {
+    feasibility_filters_.push_back(MakePickupDeliveryFilter(
+        *this, pickup_delivery_pairs_, vehicle_pickup_delivery_policy_));
+  }
+  if (HasTypeRegulations()) {
+    feasibility_filters_.push_back(MakeTypeRegulationsFilter(*this));
+  }
+  feasibility_filters_.push_back(MakeVehicleVarFilter(*this));
+
+  // NOTE: We sort the dimensions by decreasing complexity of filtering:
+  // Dimensions with precedences will have a global LP created to filter
+  // feasibility, so we want these filters to be called last.
+  std::vector<RoutingDimension*> sorted_dimensions = dimensions_.get();
+  std::sort(sorted_dimensions.begin(), sorted_dimensions.end(),
+            [](const RoutingDimension* d1, const RoutingDimension* d2) {
+              return (d1->GetNodePrecedences().size() <
+                      d2->GetNodePrecedences().size());
+            });
+  for (const RoutingDimension* const dimension : sorted_dimensions) {
+    const std::vector<IntVarLocalSearchFilter*> dimension_cumul_filters =
+        MakeCumulFilters(*dimension, /*filtering_objective*/ false);
+    feasibility_filters_.insert(feasibility_filters_.end(),
+                                dimension_cumul_filters.begin(),
+                                dimension_cumul_filters.end());
+  }
+
+  for (const RoutingDimension* dimension : dimensions_) {
+    if (dimension->HasBreakConstraints()) {
+      IntVarLocalSearchFilter* breaks_filter =
+          MakeVehicleBreaksFilter(*this, *dimension);
+      feasibility_filters_.push_back(breaks_filter);
+    }
+  }
+
+  feasibility_filters_.insert(feasibility_filters_.end(),
+                              extra_filters_.begin(), extra_filters_.end());
   return feasibility_filters_;
 }
 

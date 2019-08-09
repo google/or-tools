@@ -539,24 +539,27 @@ bool DimensionCumulOptimizerCore::ComputeRouteCumulBounds(
     }
   }
 
-  // Refine cumul bounds using cumul[i] + fixed_transit[i] <= cumul[i+1].
-  // TODO(user): Refine further using
-  // cumul[i] + fixed_transit[i] + slack[i].min() <= cumul[i+1].
+  // Refine cumul bounds using
+  // cumul[i+1] >= cumul[i] + fixed_transit[i] + slack[i].
   for (int pos = 1; pos < route_size; ++pos) {
+    const int64 slack_min = dimension_->SlackVar(route[pos - 1])->Min();
     current_route_min_cumuls_[pos] = std::max(
         current_route_min_cumuls_[pos],
-        CapAdd(current_route_min_cumuls_[pos - 1], fixed_transits[pos - 1]));
+        CapAdd(
+            CapAdd(current_route_min_cumuls_[pos - 1], fixed_transits[pos - 1]),
+            slack_min));
   }
 
-  // TODO(user): Refine further using
-  // cumul[i+1] <= cumul[i] + fixed_transit[i] + slack[i].max().
   for (int pos = route_size - 2; pos >= 0; --pos) {
     // If cumul_max[pos+1] is kint64max, it will be translated to
     // double +infinity, so it must not constrain cumul_max[pos].
     if (current_route_max_cumuls_[pos + 1] < kint64max) {
+      const int64 slack_min = dimension_->SlackVar(route[pos])->Min();
       current_route_max_cumuls_[pos] = std::min(
           current_route_max_cumuls_[pos],
-          CapSub(current_route_max_cumuls_[pos + 1], fixed_transits[pos]));
+          CapSub(
+              CapSub(current_route_max_cumuls_[pos + 1], fixed_transits[pos]),
+              slack_min));
     }
   }
   return true;

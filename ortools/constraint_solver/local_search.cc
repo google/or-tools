@@ -840,6 +840,9 @@ class TwoOpt : public PathOperator {
     // Both base nodes have to be on the same path.
     return true;
   }
+  int64 GetBaseNodeRestartPosition(int base_index) override {
+    return (base_index == 0) ? StartNode(0) : BaseNode(0);
+  }
 
  private:
   void OnNodeInitialization() override { last_ = -1; }
@@ -2391,16 +2394,9 @@ LocalSearchFilter* Solver::MakeVariableDomainFilter() {
 const int IntVarLocalSearchFilter::kUnassigned = -1;
 
 IntVarLocalSearchFilter::IntVarLocalSearchFilter(
-    const std::vector<IntVar*>& vars,
-    Solver::ObjectiveWatcher objective_callback)
-    : injected_objective_value_(0),
-      objective_callback_(std::move(objective_callback)) {
+    const std::vector<IntVar*>& vars) {
   AddVars(vars);
 }
-
-IntVarLocalSearchFilter::IntVarLocalSearchFilter(
-    const std::vector<IntVar*>& vars)
-    : IntVarLocalSearchFilter(vars, nullptr) {}
 
 void IntVarLocalSearchFilter::AddVars(const std::vector<IntVar*>& vars) {
   if (!vars.empty()) {
@@ -2466,9 +2462,8 @@ namespace {
 class SumObjectiveFilter : public IntVarLocalSearchFilter {
  public:
   SumObjectiveFilter(const std::vector<IntVar*>& vars,
-                     Solver::ObjectiveWatcher delta_objective_callback,
                      Solver::LocalSearchFilterBound filter_enum)
-      : IntVarLocalSearchFilter(vars, std::move(delta_objective_callback)),
+      : IntVarLocalSearchFilter(vars),
         primary_vars_size_(vars.size()),
         synchronized_costs_(new int64[vars.size()]),
         delta_costs_(new int64[vars.size()]),
@@ -2510,8 +2505,6 @@ class SumObjectiveFilter : public IntVarLocalSearchFilter {
       }
       incremental_ = true;
     }
-
-    PropagateObjectiveValue(CapAdd(delta_sum_, injected_objective_value_));
     switch (filter_enum_) {
       case Solver::LE: {
         return delta_sum_ <= objective_max;
@@ -2566,8 +2559,6 @@ class SumObjectiveFilter : public IntVarLocalSearchFilter {
     }
     delta_sum_ = synchronized_sum_;
     incremental_ = false;
-    PropagateObjectiveValue(
-        CapAdd(synchronized_sum_, injected_objective_value_));
   }
   int64 CostOfChanges(const Assignment* changes, const int64* const old_costs,
                       bool cache_delta_values) {
@@ -2597,10 +2588,8 @@ class BinaryObjectiveFilter : public SumObjectiveFilter {
  public:
   BinaryObjectiveFilter(const std::vector<IntVar*>& vars,
                         Solver::IndexEvaluator2 value_evaluator,
-                        Solver::ObjectiveWatcher delta_objective_callback,
                         Solver::LocalSearchFilterBound filter_enum)
-      : SumObjectiveFilter(vars, std::move(delta_objective_callback),
-                           filter_enum),
+      : SumObjectiveFilter(vars, filter_enum),
         value_evaluator_(std::move(value_evaluator)) {}
   ~BinaryObjectiveFilter() override {}
   int64 CostOfSynchronizedVariable(int64 index) override {
@@ -2635,10 +2624,8 @@ class TernaryObjectiveFilter : public SumObjectiveFilter {
   TernaryObjectiveFilter(const std::vector<IntVar*>& vars,
                          const std::vector<IntVar*>& secondary_vars,
                          Solver::IndexEvaluator3 value_evaluator,
-                         Solver::ObjectiveWatcher delta_objective_callback,
                          Solver::LocalSearchFilterBound filter_enum)
-      : SumObjectiveFilter(vars, std::move(delta_objective_callback),
-                           filter_enum),
+      : SumObjectiveFilter(vars, filter_enum),
         secondary_vars_offset_(vars.size()),
         value_evaluator_(std::move(value_evaluator)) {
     IntVarLocalSearchFilter::AddVars(secondary_vars);
@@ -2695,34 +2682,15 @@ IntVarLocalSearchFilter* Solver::MakeSumObjectiveFilter(
     const std::vector<IntVar*>& vars, Solver::IndexEvaluator2 values,
     Solver::LocalSearchFilterBound filter_enum) {
   return RevAlloc(
-      new BinaryObjectiveFilter(vars, std::move(values), nullptr, filter_enum));
-}
-
-IntVarLocalSearchFilter* Solver::MakeSumObjectiveFilter(
-    const std::vector<IntVar*>& vars, Solver::IndexEvaluator2 values,
-    ObjectiveWatcher delta_objective_callback,
-    Solver::LocalSearchFilterBound filter_enum) {
-  return RevAlloc(new BinaryObjectiveFilter(vars, std::move(values),
-                                            std::move(delta_objective_callback),
-                                            filter_enum));
+      new BinaryObjectiveFilter(vars, std::move(values), filter_enum));
 }
 
 IntVarLocalSearchFilter* Solver::MakeSumObjectiveFilter(
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars, Solver::IndexEvaluator3 values,
     Solver::LocalSearchFilterBound filter_enum) {
-  return RevAlloc(new TernaryObjectiveFilter(
-      vars, secondary_vars, std::move(values), nullptr, filter_enum));
-}
-
-IntVarLocalSearchFilter* Solver::MakeSumObjectiveFilter(
-    const std::vector<IntVar*>& vars,
-    const std::vector<IntVar*>& secondary_vars, Solver::IndexEvaluator3 values,
-    ObjectiveWatcher delta_objective_callback,
-    Solver::LocalSearchFilterBound filter_enum) {
-  return RevAlloc(new TernaryObjectiveFilter(
-      vars, secondary_vars, std::move(values),
-      std::move(delta_objective_callback), filter_enum));
+  return RevAlloc(new TernaryObjectiveFilter(vars, secondary_vars,
+                                             std::move(values), filter_enum));
 }
 
 // ----- LocalSearchProfiler -----

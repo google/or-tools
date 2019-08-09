@@ -1552,8 +1552,6 @@ class LocalSearchFilterManager : public LocalSearchFilter {
 
 class IntVarLocalSearchFilter : public LocalSearchFilter {
  public:
-  IntVarLocalSearchFilter(const std::vector<IntVar*>& vars,
-                          Solver::ObjectiveWatcher objective_callback);
   explicit IntVarLocalSearchFilter(const std::vector<IntVar*>& vars);
   ~IntVarLocalSearchFilter() override;
   /// This method should not be overridden. Override OnSynchronize() instead
@@ -1570,10 +1568,6 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
     return *index != kUnassigned;
   }
 
-  virtual void InjectObjectiveValue(int64 objective_value) {
-    injected_objective_value_ = objective_value;
-  }
-
   /// Add variables to "track" to the filter.
   void AddVars(const std::vector<IntVar*>& vars);
   int Size() const { return vars_.size(); }
@@ -1588,23 +1582,12 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
   virtual void OnSynchronize(const Assignment* delta) {}
   void SynchronizeOnAssignment(const Assignment* assignment);
 
-  bool CanPropagateObjectiveValue() const {
-    return objective_callback_ != nullptr;
-  }
-  void PropagateObjectiveValue(int64 objective_value) {
-    if (objective_callback_ != nullptr) {
-      objective_callback_(objective_value);
-    }
-  }
-  int64 injected_objective_value_;
-
  private:
   std::vector<IntVar*> vars_;
   std::vector<int64> values_;
   std::vector<bool> var_synced_;
   std::vector<int> var_index_to_index_;
   static const int kUnassigned;
-  Solver::ObjectiveWatcher objective_callback_;
 };
 
 class PropagationMonitor : public SearchMonitor {
