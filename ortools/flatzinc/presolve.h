@@ -207,6 +207,7 @@ class Presolver {
 
   // Stores abs_map_[x] = y if x = abs(y).
   absl::flat_hash_map<const IntegerVariable*, IntegerVariable*> abs_map_;
+  // Link the abs_var with its constraint.
   absl::flat_hash_map<const IntegerVariable*, Constraint*> abs_ct_;
 
   // Stores affine_map_[x] = a * y + b.

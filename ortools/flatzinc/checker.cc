@@ -615,7 +615,7 @@ bool CheckIntLtImp(const Constraint& ct,
   const int64 left = Eval(ct.arguments[0], evaluator);
   const int64 right = Eval(ct.arguments[1], evaluator);
   const bool status = Eval(ct.arguments[2], evaluator) != 0;
-  return (status && (left < right)) || status;
+  return (status && (left < right)) || !status;
 }
 
 bool CheckIntLtReif(const Constraint& ct,

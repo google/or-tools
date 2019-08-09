@@ -691,8 +691,6 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
 void CpModelProtoWithMapping::FillReifOrImpliedConstraint(
     const fz::Constraint& fz_ct, ConstraintProto* ct) {
   // Start by adding a non-reified version of the same constraint.
-  const bool is_implication = absl::EndsWith(fz_ct.type, "_imp");
-
   std::string simplified_type;
   if (absl::EndsWith(fz_ct.type, "_reif")) {
     // Remove _reif.
@@ -766,7 +764,7 @@ void CpModelProtoWithMapping::FillReifOrImpliedConstraint(
   }
 
   // One way implication. We can stop here.
-  if (is_implication) return;
+  if (absl::EndsWith(fz_ct.type, "_imp")) return;
 
   // Add the other side of the reification because CpModelProto only support
   // half reification.
