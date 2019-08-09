@@ -1,4 +1,4 @@
-<map id="Google.OrTools.ConstraintSolver.RoutingModelParameters" name="Google.OrTools.ConstraintSolver.RoutingModelParameters">
-<area shape="rect" id="node1" title="Parameters which have to be set when creating a RoutingModel." alt="" coords="5,92,219,131"/>
-<area shape="rect" id="node2" title=" " alt="" coords="14,5,210,44"/>
+<map id="RoutingModelParameters" name="RoutingModelParameters">
+<area shape="rect" id="node1" title="Parameters which have to be set when creating a RoutingModel." alt="" coords="46,79,218,104"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,259,31"/>
 </map>

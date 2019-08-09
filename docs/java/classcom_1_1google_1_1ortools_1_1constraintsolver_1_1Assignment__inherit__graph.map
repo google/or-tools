@@ -1,0 +1,5 @@
+<map id="Assignment" name="Assignment">
+<area shape="rect" id="node1" title="An Assignment is a variable &#45;&gt; domains mapping, used to report solutions to the user." alt="" coords="41,152,132,177"/>
+<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html" title="NOLINT The PropagationBaseObject is a subclass of BaseObject that is also friend to the Solver class." alt="" coords="5,79,168,104"/>
+<area shape="rect" id="node3" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="41,5,132,31"/>
+</map>

@@ -857,8 +857,6 @@ bool FullEncodingFixedPointComputer::ProcessLinear(ConstraintIndex ct_index) {
     FullyEncode(ct_index, ct.linear().vars(1));
     return true;
   }
-
-  return true;
 }
 
 void MaybeFullyEncodeMoreVariables(const CpModelProto& model_proto, Model* m) {

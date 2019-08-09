@@ -1,4 +1,4 @@
-<map id="Google.OrTools.ConstraintSolver.RoutingSearchParameters.Types.LocalSearchNeighborhoodOperators" name="Google.OrTools.ConstraintSolver.RoutingSearchParameters.Types.LocalSearchNeighborhoodOperators">
-<area shape="rect" id="node1" title="Local search neighborhood operators used to build a solutions neighborhood." alt="" coords="5,92,283,144"/>
-<area shape="rect" id="node2" title=" " alt="" coords="51,5,238,44"/>
+<map id="RoutingSearchParameters.Types.LocalSearchNeighborhoodOperators" name="RoutingSearchParameters.Types.LocalSearchNeighborhoodOperators">
+<area shape="rect" id="node1" title="Local search neighborhood operators used to build a solutions neighborhood." alt="" coords="20,92,239,144"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,254,44"/>
 </map>

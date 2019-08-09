@@ -1,4 +1,4 @@
-<map id="Google.OrTools.Sat.TableConstraintProto" name="Google.OrTools.Sat.TableConstraintProto">
-<area shape="rect" id="node1" title="The values of the n&#45;tuple formed by the given variables can only be one of the listed n&#45;tuples in val..." alt="" coords="21,92,195,131"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,211,44"/>
+<map id="TableConstraintProto" name="TableConstraintProto">
+<area shape="rect" id="node1" title="The values of the n&#45;tuple formed by the given variables can only be one of the listed n&#45;tuples in val..." alt="" coords="24,92,170,117"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,188,44"/>
 </map>

@@ -1,4 +1,4 @@
-<map id="Google.OrTools.Sat.CpObjectiveProto" name="Google.OrTools.Sat.CpObjectiveProto">
-<area shape="rect" id="node1" title="Optimization objective." alt="" coords="5,92,219,131"/>
-<area shape="rect" id="node2" title=" " alt="" coords="20,5,205,44"/>
+<map id="CpObjectiveProto" name="CpObjectiveProto">
+<area shape="rect" id="node1" title="Optimization objective." alt="" coords="46,79,172,104"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,212,31"/>
 </map>

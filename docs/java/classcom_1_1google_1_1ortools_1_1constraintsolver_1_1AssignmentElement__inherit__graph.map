@@ -1,0 +1,6 @@
+<map id="AssignmentElement" name="AssignmentElement">
+<area shape="rect" id="node1" title=" " alt="" coords="145,5,285,31"/>
+<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVarElement.html" title=" " alt="" coords="5,79,139,104"/>
+<area shape="rect" id="node3" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarElement.html" title=" " alt="" coords="162,79,267,104"/>
+<area shape="rect" id="node4" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarElement.html" title="The SequenceVarElement stores a partial representation of ranked interval variables in the underlying..." alt="" coords="292,79,442,104"/>
+</map>

@@ -1,7 +1,7 @@
-<map id="Google.OrTools.ConstraintSolver.IntVarLocalSearchOperator" name="Google.OrTools.ConstraintSolver.IntVarLocalSearchOperator">
-<area shape="rect" id="node1" title=" " alt="" coords="5,312,229,351"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarLocalSearchOperatorTemplate.html" title=" " alt="" coords="26,225,208,264"/>
-<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchOperator.html" title=" " alt="" coords="43,152,191,177"/>
-<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="72,79,162,104"/>
-<area shape="rect" id="node5" title=" " alt="" coords="28,5,206,31"/>
+<map id="IntVarLocalSearchOperator" name="IntVarLocalSearchOperator">
+<area shape="rect" id="node1" title=" " alt="" coords="5,312,188,337"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarLocalSearchOperatorTemplate.html" title=" " alt="" coords="5,225,188,264"/>
+<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchOperator.html" title=" " alt="" coords="23,152,171,177"/>
+<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="52,79,142,104"/>
+<area shape="rect" id="node5" title=" " alt="" coords="29,5,164,31"/>
 </map>

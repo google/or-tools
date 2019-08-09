@@ -1,0 +1,6 @@
+<map id="TypeRegulationsConstraint" name="TypeRegulationsConstraint">
+<area shape="rect" id="node1" title="The following constraint ensures that incompatibilities and requirements between types are respected." alt="" coords="5,225,187,251"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1Constraint.html" title="A constraint is the main modeling object." alt="" coords="55,152,137,177"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1PropagationBaseObject.html" title="NOLINT." alt="" coords="15,79,177,104"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="51,5,141,31"/>
+</map>

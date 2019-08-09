@@ -1,9 +1,9 @@
-<map id="Google.OrTools.ConstraintSolver.ParallelSavingsFilteredDecisionBuilder" name="Google.OrTools.ConstraintSolver.ParallelSavingsFilteredDecisionBuilder">
-<area shape="rect" id="node1" title=" " alt="" coords="9,445,207,497"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SavingsFilteredDecisionBuilder.html" title=" " alt="" coords="5,372,211,397"/>
-<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingFilteredDecisionBuilder.html" title=" " alt="" coords="6,299,210,324"/>
-<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarFilteredDecisionBuilder.html" title=" " alt="" coords="12,225,205,251"/>
-<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html" title=" " alt="" coords="51,152,165,177"/>
-<area shape="rect" id="node6" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="63,79,153,104"/>
-<area shape="rect" id="node7" title=" " alt="" coords="19,5,197,31"/>
+<map id="ParallelSavingsFilteredDecisionBuilder" name="ParallelSavingsFilteredDecisionBuilder">
+<area shape="rect" id="node1" title=" " alt="" coords="5,445,214,484"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SavingsFilteredDecisionBuilder.html" title=" " alt="" coords="7,372,213,397"/>
+<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingFilteredDecisionBuilder.html" title=" " alt="" coords="8,299,212,324"/>
+<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarFilteredDecisionBuilder.html" title=" " alt="" coords="13,225,206,251"/>
+<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html" title=" " alt="" coords="53,152,167,177"/>
+<area shape="rect" id="node6" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="65,79,155,104"/>
+<area shape="rect" id="node7" title=" " alt="" coords="42,5,177,31"/>
 </map>

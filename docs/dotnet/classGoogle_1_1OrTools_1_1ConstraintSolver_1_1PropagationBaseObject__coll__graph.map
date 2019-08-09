@@ -1,5 +1,5 @@
-<map id="Google.OrTools.ConstraintSolver.PropagationBaseObject" name="Google.OrTools.ConstraintSolver.PropagationBaseObject">
-<area shape="rect" id="node1" title=" " alt="" coords="5,152,208,191"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="62,79,152,104"/>
-<area shape="rect" id="node3" title=" " alt="" coords="18,5,196,31"/>
+<map id="PropagationBaseObject" name="PropagationBaseObject">
+<area shape="rect" id="node1" title=" " alt="" coords="5,152,168,177"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="41,79,132,104"/>
+<area shape="rect" id="node3" title=" " alt="" coords="19,5,154,31"/>
 </map>

@@ -1,5 +1,5 @@
-<map id="Google.OrTools.Sat.NotBooleanVariable" name="Google.OrTools.Sat.NotBooleanVariable">
-<area shape="rect" id="node1" title=" " alt="" coords="5,79,216,117"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html" title=" " alt="" coords="20,5,106,31"/>
-<area shape="rect" id="node3" href="$interfaceGoogle_1_1OrTools_1_1Sat_1_1ILiteral.html" title=" " alt="" coords="130,5,191,31"/>
+<map id="NotBooleanVariable" name="NotBooleanVariable">
+<area shape="rect" id="node1" title=" " alt="" coords="27,79,166,104"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1Sat_1_1LinearExpr.html" title=" " alt="" coords="5,5,91,31"/>
+<area shape="rect" id="node3" href="$interfaceGoogle_1_1OrTools_1_1Sat_1_1ILiteral.html" title=" " alt="" coords="115,5,176,31"/>
 </map>

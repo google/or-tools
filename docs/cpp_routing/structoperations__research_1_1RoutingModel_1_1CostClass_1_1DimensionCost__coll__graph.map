@@ -1,0 +1,4 @@
+<map id="RoutingModel::CostClass::DimensionCost" name="RoutingModel::CostClass::DimensionCost">
+<area shape="rect" id="node1" title="SUBTLE: The vehicle&#39;s fixed cost is skipped on purpose here, because we can afford to do so:" alt="" coords="5,92,177,131"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1RoutingDimension.html" title="Dimensions represent quantities accumulated at nodes along the routes." alt="" coords="26,5,156,31"/>
+</map>

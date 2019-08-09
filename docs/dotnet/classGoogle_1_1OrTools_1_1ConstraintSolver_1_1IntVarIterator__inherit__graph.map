@@ -1,6 +1,6 @@
-<map id="Google.OrTools.ConstraintSolver.IntVarIterator" name="Google.OrTools.ConstraintSolver.IntVarIterator">
-<area shape="rect" id="node1" title=" " alt="" coords="64,152,242,191"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="49,79,140,104"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,5,184,31"/>
-<area shape="rect" id="node4" title=" " alt="" coords="163,79,260,104"/>
+<map id="IntVarIterator" name="IntVarIterator">
+<area shape="rect" id="node1" title=" " alt="" coords="83,152,181,177"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="28,79,118,104"/>
+<area shape="rect" id="node3" title=" " alt="" coords="5,5,141,31"/>
+<area shape="rect" id="node4" title=" " alt="" coords="142,79,239,104"/>
 </map>

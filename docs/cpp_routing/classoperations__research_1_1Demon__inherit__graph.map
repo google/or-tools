@@ -1,0 +1,11 @@
+<map id="Demon" name="Demon">
+<area shape="rect" id="node1" title="A Demon is the base element of a propagation queue." alt="" coords="144,160,208,185"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1CallMethod0.html" title="Demon proxy to a method on the constraint with no arguments." alt="" coords="280,5,407,31"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1CallMethod1.html" title="Demon proxy to a method on the constraint with one argument." alt="" coords="273,55,415,80"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1CallMethod2.html" title="Demon proxy to a method on the constraint with two arguments." alt="" coords="265,104,423,129"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1CallMethod3.html" title="Demon proxy to a method on the constraint with three arguments." alt="" coords="278,153,410,192"/>
+<area shape="rect" id="node7" href="$classoperations__research_1_1DelayedCallMethod0.html" title="Low&#45;priority demon proxy to a method on the constraint with no arguments." alt="" coords="256,216,432,241"/>
+<area shape="rect" id="node8" href="$classoperations__research_1_1DelayedCallMethod1.html" title="Low&#45;priority demon proxy to a method on the constraint with one argument." alt="" coords="271,265,416,304"/>
+<area shape="rect" id="node9" href="$classoperations__research_1_1DelayedCallMethod2.html" title="Low&#45;priority demon proxy to a method on the constraint with two arguments." alt="" coords="271,328,416,367"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,160,96,185"/>
+</map>

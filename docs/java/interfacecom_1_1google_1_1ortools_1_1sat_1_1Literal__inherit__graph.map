@@ -1,0 +1,4 @@
+<map id="Literal" name="Literal">
+<area shape="rect" id="node1" title="Interface to describe a boolean variable or its negation." alt="" coords="5,5,63,31"/>
+<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html" title="An integer variable." alt="" coords="6,79,62,104"/>
+</map>

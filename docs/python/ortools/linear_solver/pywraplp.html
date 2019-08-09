@@ -423,10 +423,6 @@ class Solver(object):
 
         The format is solver-specific and is the same as the corresponding solver
         configuration file format. Returns true if the operation was successful.
-
-        TODO(user): Currently SCIP will always return true even if the format is
-        wrong (you can check the log if you suspect an issue there). This seems to
-        be a bug in SCIP though.
         &#34;&#34;&#34;
         return _pywraplp.Solver_SetSolverSpecificParametersAsString(self, parameters)
     FREE = _pywraplp.Solver_FREE
@@ -520,11 +516,11 @@ class Solver(object):
     def LoadModelFromProto(self, input_model: &#39;operations_research::MPModelProto const &amp;&#39;) -&gt; &#34;std::string&#34;:
         return _pywraplp.Solver_LoadModelFromProto(self, input_model)
 
-    def ExportModelAsLpFormat(self, *args) -&gt; &#34;std::string&#34;:
-        return _pywraplp.Solver_ExportModelAsLpFormat(self, *args)
+    def ExportModelAsLpFormat(self, obfuscated: &#39;bool&#39;) -&gt; &#34;std::string&#34;:
+        return _pywraplp.Solver_ExportModelAsLpFormat(self, obfuscated)
 
-    def ExportModelAsMpsFormat(self, *args) -&gt; &#34;std::string&#34;:
-        return _pywraplp.Solver_ExportModelAsMpsFormat(self, *args)
+    def ExportModelAsMpsFormat(self, fixed_format: &#39;bool&#39;, obfuscated: &#39;bool&#39;) -&gt; &#34;std::string&#34;:
+        return _pywraplp.Solver_ExportModelAsMpsFormat(self, fixed_format, obfuscated)
 
     def SetHint(self, variables: &#39;std::vector&lt; operations_research::MPVariable * &gt; const &amp;&#39;, values: &#39;std::vector&lt; double &gt; const &amp;&#39;) -&gt; &#34;void&#34;:
         r&#34;&#34;&#34; Set a hint for solution. If a feasible or almost-feasible solution to the problem is already known, it may be helpful to pass it to the solver so that it can be used. A solver that supports this feature will try to use this information to create its initial feasible solution. Note that it may not always be faster to give a hint like this to the solver. There is also no guarantee that the solver will use this hint or try to return a solution &#34;close&#34; to this assignment in case of multiple optimal solutions.&#34;&#34;&#34;
@@ -2323,10 +2319,6 @@ though which users build and solve problems.</p>
 
         The format is solver-specific and is the same as the corresponding solver
         configuration file format. Returns true if the operation was successful.
-
-        TODO(user): Currently SCIP will always return true even if the format is
-        wrong (you can check the log if you suspect an issue there). This seems to
-        be a bug in SCIP though.
         &#34;&#34;&#34;
         return _pywraplp.Solver_SetSolverSpecificParametersAsString(self, parameters)
     FREE = _pywraplp.Solver_FREE
@@ -2420,11 +2412,11 @@ though which users build and solve problems.</p>
     def LoadModelFromProto(self, input_model: &#39;operations_research::MPModelProto const &amp;&#39;) -&gt; &#34;std::string&#34;:
         return _pywraplp.Solver_LoadModelFromProto(self, input_model)
 
-    def ExportModelAsLpFormat(self, *args) -&gt; &#34;std::string&#34;:
-        return _pywraplp.Solver_ExportModelAsLpFormat(self, *args)
+    def ExportModelAsLpFormat(self, obfuscated: &#39;bool&#39;) -&gt; &#34;std::string&#34;:
+        return _pywraplp.Solver_ExportModelAsLpFormat(self, obfuscated)
 
-    def ExportModelAsMpsFormat(self, *args) -&gt; &#34;std::string&#34;:
-        return _pywraplp.Solver_ExportModelAsMpsFormat(self, *args)
+    def ExportModelAsMpsFormat(self, fixed_format: &#39;bool&#39;, obfuscated: &#39;bool&#39;) -&gt; &#34;std::string&#34;:
+        return _pywraplp.Solver_ExportModelAsMpsFormat(self, fixed_format, obfuscated)
 
     def SetHint(self, variables: &#39;std::vector&lt; operations_research::MPVariable * &gt; const &amp;&#39;, values: &#39;std::vector&lt; double &gt; const &amp;&#39;) -&gt; &#34;void&#34;:
         r&#34;&#34;&#34; Set a hint for solution. If a feasible or almost-feasible solution to the problem is already known, it may be helpful to pass it to the solver so that it can be used. A solver that supports this feature will try to use this information to create its initial feasible solution. Note that it may not always be faster to give a hint like this to the solver. There is also no guarantee that the solver will use this hint or try to return a solution &#34;close&#34; to this assignment in case of multiple optimal solutions.&#34;&#34;&#34;
@@ -2817,25 +2809,25 @@ Creates a named constraint with -infinity and +infinity bounds.</p></section>
 </details>
 </dd>
 <dt id="pywraplp.Solver.ExportModelAsLpFormat"><code class="name flex">
-<span>def <span class="ident">ExportModelAsLpFormat</span></span>(<span>self, *args)</span>
+<span>def <span class="ident">ExportModelAsLpFormat</span></span>(<span>self, obfuscated)</span>
 </code></dt>
 <dd>
 <section class="desc"></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def ExportModelAsLpFormat(self, *args) -&gt; &#34;std::string&#34;:
-    return _pywraplp.Solver_ExportModelAsLpFormat(self, *args)</code></pre>
+<pre><code class="python">def ExportModelAsLpFormat(self, obfuscated: &#39;bool&#39;) -&gt; &#34;std::string&#34;:
+    return _pywraplp.Solver_ExportModelAsLpFormat(self, obfuscated)</code></pre>
 </details>
 </dd>
 <dt id="pywraplp.Solver.ExportModelAsMpsFormat"><code class="name flex">
-<span>def <span class="ident">ExportModelAsMpsFormat</span></span>(<span>self, *args)</span>
+<span>def <span class="ident">ExportModelAsMpsFormat</span></span>(<span>self, fixed_format, obfuscated)</span>
 </code></dt>
 <dd>
 <section class="desc"></section>
 <details class="source">
 <summary>Source code</summary>
-<pre><code class="python">def ExportModelAsMpsFormat(self, *args) -&gt; &#34;std::string&#34;:
-    return _pywraplp.Solver_ExportModelAsMpsFormat(self, *args)</code></pre>
+<pre><code class="python">def ExportModelAsMpsFormat(self, fixed_format: &#39;bool&#39;, obfuscated: &#39;bool&#39;) -&gt; &#34;std::string&#34;:
+    return _pywraplp.Solver_ExportModelAsMpsFormat(self, fixed_format, obfuscated)</code></pre>
 </details>
 </dd>
 <dt id="pywraplp.Solver.ExportModelToProto"><code class="name flex">
@@ -3194,10 +3186,7 @@ Gurobi for this purpose. The other solvers return false unconditionally.</p></se
 <dd>
 <section class="desc"><p>Advanced usage: pass solver specific parameters in text format.</p>
 <p>The format is solver-specific and is the same as the corresponding solver
-configuration file format. Returns true if the operation was successful.</p>
-<p>TODO(user): Currently SCIP will always return true even if the format is
-wrong (you can check the log if you suspect an issue there). This seems to
-be a bug in SCIP though.</p></section>
+configuration file format. Returns true if the operation was successful.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def SetSolverSpecificParametersAsString(self, parameters: &#39;std::string const &amp;&#39;) -&gt; &#34;bool&#34;:
@@ -3207,10 +3196,6 @@ be a bug in SCIP though.</p></section>
 
     The format is solver-specific and is the same as the corresponding solver
     configuration file format. Returns true if the operation was successful.
-
-    TODO(user): Currently SCIP will always return true even if the format is
-    wrong (you can check the log if you suspect an issue there). This seems to
-    be a bug in SCIP though.
     &#34;&#34;&#34;
     return _pywraplp.Solver_SetSolverSpecificParametersAsString(self, parameters)</code></pre>
 </details>

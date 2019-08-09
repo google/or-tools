@@ -1,4 +1,4 @@
-<map id="Google.OrTools.Sat.LinearConstraintProto" name="Google.OrTools.Sat.LinearConstraintProto">
-<area shape="rect" id="node1" title="The linear sum vars[i] * coeffs[i] must fall in the given domain." alt="" coords="21,92,200,131"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,216,44"/>
+<map id="LinearConstraintProto" name="LinearConstraintProto">
+<area shape="rect" id="node1" title="The linear sum vars[i] * coeffs[i] must fall in the given domain." alt="" coords="24,92,175,117"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,194,44"/>
 </map>

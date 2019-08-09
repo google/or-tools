@@ -1,9 +1,9 @@
-<map id="Google.OrTools.LinearSolver.MPConstraintVector" name="Google.OrTools.LinearSolver.MPConstraintVector">
-<area shape="rect" id="node1" title=" " alt="" coords="245,151,439,193"/>
-<area shape="rect" id="node2" title=" " alt="" coords="56,5,147,32"/>
-<area shape="rect" id="node3" title=" " alt="" coords="31,57,171,98"/>
-<area shape="rect" id="node4" title=" " alt="" coords="5,122,197,163"/>
-<area shape="rect" id="node5" title=" " alt="" coords="12,188,191,215"/>
-<area shape="rect" id="node6" title=" " alt="" coords="14,239,189,281"/>
-<area shape="rect" id="node7" title=" " alt="" coords="5,305,197,346"/>
+<map id="MPConstraintVector" name="MPConstraintVector">
+<area shape="rect" id="node1" title=" " alt="" coords="189,129,329,155"/>
+<area shape="rect" id="node2" title=" " alt="" coords="28,5,119,31"/>
+<area shape="rect" id="node3" title=" " alt="" coords="25,55,122,80"/>
+<area shape="rect" id="node4" title=" " alt="" coords="8,104,138,129"/>
+<area shape="rect" id="node5" title=" " alt="" coords="5,153,141,179"/>
+<area shape="rect" id="node6" title=" " alt="" coords="25,203,122,228"/>
+<area shape="rect" id="node7" title=" " alt="" coords="8,252,138,277"/>
 </map>

@@ -1,5 +1,5 @@
-<map id="Google.OrTools.Graph.MinCostFlowBase" name="Google.OrTools.Graph.MinCostFlowBase">
-<area shape="rect" id="node1" title=" " alt="" coords="5,79,185,117"/>
-<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1Graph_1_1MinCostFlow.html" title=" " alt="" coords="5,165,185,204"/>
-<area shape="rect" id="node2" title=" " alt="" coords="6,5,185,31"/>
+<map id="MinCostFlowBase" name="MinCostFlowBase">
+<area shape="rect" id="node1" title=" " alt="" coords="9,79,137,104"/>
+<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1Graph_1_1MinCostFlow.html" title=" " alt="" coords="24,152,122,177"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,141,31"/>
 </map>

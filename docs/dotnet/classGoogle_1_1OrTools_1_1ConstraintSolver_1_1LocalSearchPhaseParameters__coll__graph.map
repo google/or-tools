@@ -1,4 +1,4 @@
-<map id="Google.OrTools.ConstraintSolver.LocalSearchPhaseParameters" name="Google.OrTools.ConstraintSolver.LocalSearchPhaseParameters">
-<area shape="rect" id="node1" title=" " alt="" coords="5,79,248,117"/>
-<area shape="rect" id="node2" title=" " alt="" coords="38,5,216,31"/>
+<map id="LocalSearchPhaseParameters" name="LocalSearchPhaseParameters">
+<area shape="rect" id="node1" title=" " alt="" coords="5,79,208,104"/>
+<area shape="rect" id="node2" title=" " alt="" coords="39,5,174,31"/>
 </map>
