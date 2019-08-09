@@ -100,21 +100,22 @@
 //
 //    DEFINE_INT_TYPE(GlobalDocID, int64);
 //    GlobalDocID global = 3;
-//    cout << global;                      <-- Prints 3 to stdout.
+//    std::cout << global;                      <-- Prints 3 to stdout.
 //
 //    for (GlobalDocID i(0); i < global; ++i) {
-//      cout << i;
+//      std::cout << i;
 //    }                                    <-- Print(ln)s 0 1 2 to stdout
 //
 //    DEFINE_INT_TYPE(LocalDocID, int64);
 //    LocalDocID local;
-//    cout << local;                       <-- Prints 0 to stdout it default
+//    std::cout << local;                       <-- Prints 0 to stdout it
+//    default
 //                                             initializes the value to 0.
 //
 //    local = 5;
 //    local *= 2;
 //    LocalDocID l(local);
-//    cout << l + local;                   <-- Prints 20 to stdout.
+//    std::cout << l + local;                   <-- Prints 20 to stdout.
 //
 //    GenericSearchRequest request;
 //    request.set_doc_id(global.value());  <-- Uses value() to extract the value
