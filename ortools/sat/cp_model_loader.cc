@@ -661,19 +661,24 @@ class FullEncodingFixedPointComputer {
            integer_encoder_->VariableIsFullyEncoded(variable);
   }
 
-  void FullyEncode(ConstraintIndex ct, int v) {
+  void FullyEncode(int v) {
     v = PositiveRef(v);
     const IntegerVariable variable = mapping_->Integer(v);
     if (v == kNoIntegerVariable) return;
     if (!model_->Get(IsFixed(variable))) {
-      VLOG(2) << "Constraint "
-              << model_proto_.constraints(ct.value()).ShortDebugString()
-              << " fully encode "
-              << model_proto_.variables(v).ShortDebugString();
       model_->Add(FullyEncodeVariable(variable));
     }
     AddVariableToPropagationQueue(v);
   }
+
+  const int64 DomainSize(int v) const {
+    const IntegerVariableProto& proto = model_proto_.variables(v);
+    int64 result = 0;
+    for (int i = 0; i < proto.domain_size(); i += 2) {
+      result += proto.domain(i + 1) - proto.domain(i) + 1;
+    }
+    return result;
+  }  
 
   bool ProcessConstraint(ConstraintIndex ct_index);
   bool ProcessElement(ConstraintIndex ct_index);
@@ -696,6 +701,10 @@ class FullEncodingFixedPointComputer {
 
   gtl::ITIVector<ConstraintIndex, bool> constraint_is_finished_;
   gtl::ITIVector<ConstraintIndex, bool> constraint_is_registered_;
+
+
+  absl::flat_hash_map<int, absl::flat_hash_set<int64>> is_eq_cst_;
+  absl::flat_hash_map<int, absl::flat_hash_set<int>> is_eq_var_;
 };
 
 // We only add to the propagation queue variable that are fully encoded.
@@ -709,6 +718,28 @@ void FullEncodingFixedPointComputer::ComputeFixedPoint() {
   for (ConstraintIndex ct_index(0); ct_index < num_constraints; ++ct_index) {
     ProcessConstraint(ct_index);
   }
+
+  // is_eq_cst and is_eq_var are filled with target variables. Let's scan those.
+  std::map<int, int64> to_process;
+  for (const auto& var_values : is_eq_cst_) {
+    to_process[var_values.first] += var_values.second.size();
+  }
+  for (const auto& var_vars : is_eq_var_) {
+    to_process[var_vars.first] += var_vars.second.size();
+  }
+
+  for (const auto& var_size : to_process) {
+    const int var = var_size.first;
+    const int64 num_accesses = var_size.second;
+    const int64 domain_size_without_bounds = DomainSize(var) - 2;
+    VLOG(2) << model_proto_.variables(var).ShortDebugString()
+            << " is encoded with " << num_accesses
+            << "access constraints on a domain of size " << DomainSize(var);
+    if (num_accesses >= domain_size_without_bounds / 4) {
+      VLOG(2) << "  - encode";
+      FullyEncode(var);
+    }
+  }  
 
   // Make sure all fully encoded variables of interest are in the queue.
   for (int v = 0; v < variable_watchers_.size(); v++) {
@@ -817,58 +848,33 @@ bool FullEncodingFixedPointComputer::ProcessInverse(ConstraintIndex ct_index) {
 
 bool FullEncodingFixedPointComputer::ProcessLinear(ConstraintIndex ct_index) {
   const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
-  if (parameters_.boolean_encoding_level() == 0) return true;
+  if (parameters_.boolean_encoding_level() == 0) {
+    return true;
+  }
 
   if (ct.name() == "MAPPING") return true;
 
-  // Only act when the constraint is an equality, or non-equality.
+  int64 value = ct.linear().domain(0);
   if (!IsEqCst(ct.linear(), mapping_, integer_trail_) &&
-      !IsNeqCst(ct.linear(), mapping_, integer_trail_, nullptr)) {
+      IsNeqCst(ct.linear(), mapping_, integer_trail_, &value)) {
     return true;
   }
 
-  // If some domain is too large, abort.
-  if (!constraint_is_registered_[ct_index]) {
-    for (const int v : ct.linear().vars()) {
-      if (IsTooLargeToEncode(v, mapping_, integer_trail_)) {
-        return true;
-      }
+  if (ct.linear().vars_size() == 1 && ct.enforcement_literal_size() == 1) {
+    const int var = ct.linear().vars(0);
+    if (!IsFullyEncoded(var)) {
+      is_eq_cst_[var].insert(value);
+    }
+  } else if (ct.linear().vars_size() == 2) {
+    const int var0 = ct.linear().vars(0);
+    const int var1 = ct.linear().vars(1);
+    if (!IsFullyEncoded(var0)) {
+      is_eq_var_[var0].insert(var1);
+    }
+    if (!IsFullyEncoded(var1)) {
+      is_eq_var_[var1].insert(var0);
     }
   }
-
-  const int num_vars = ct.linear().vars_size();
-  if (HasEnforcementLiteral(ct) && num_vars == 1 &&
-      !IsFullyEncoded(ct.linear().vars(0))) {
-    const int64 cst = ct.linear().vars(0);
-    const IntegerVariable sat_var = mapping_->Integer(ct.linear().vars(0));
-    const int64 lb = integer_trail_->LowerBound(sat_var).value();
-    const int64 ub = integer_trail_->UpperBound(sat_var).value();
-    if (cst > lb && cst < ub) {
-      // Fully encode x in half-reified equality b => x == constant.
-      FullyEncode(ct_index, ct.linear().vars(0));
-    }
-
-    return true;
-  } else if (num_vars == 2) {
-    // Fully encode x and y in [b =>] ax + by == cst or [b =>] ax + by != cst.
-    for (const int v : ct.linear().vars()) {
-      if (!IsSmallEnoughToAlwaysEncode(v, mapping_, integer_trail_) &&
-          !IsFullyEncoded(v)) {
-        // Register on remaining variables if not already done.
-        if (!constraint_is_registered_[ct_index]) {
-          for (const int var : ct.linear().vars()) {
-            if (!IsFullyEncoded(var)) Register(ct_index, var);
-          }
-        }
-        // Can continue looking at the constraint.
-        return false;
-      }
-    }
-    FullyEncode(ct_index, ct.linear().vars(0));
-    FullyEncode(ct_index, ct.linear().vars(1));
-    return true;
-  }
-
   return true;
 }
 
