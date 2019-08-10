@@ -783,12 +783,12 @@ bool FullEncodingFixedPointComputer::ProcessElement(ConstraintIndex ct_index) {
   const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
 
   // Index must always be full encoded.
-  FullyEncode(ct_index, ct.element().index());
+  FullyEncode(ct.element().index());
 
   // If target is a constant or fully encoded, variables must be fully encoded.
   const int target = ct.element().target();
   if (IsFullyEncoded(target)) {
-    for (const int v : ct.element().vars()) FullyEncode(ct_index, v);
+    for (const int v : ct.element().vars()) FullyEncode(v);
   }
 
   // If all non-target variables are fully encoded, target must be too.
@@ -801,7 +801,7 @@ bool FullEncodingFixedPointComputer::ProcessElement(ConstraintIndex ct_index) {
     }
   }
   if (all_variables_are_fully_encoded) {
-    if (!IsFullyEncoded(target)) FullyEncode(ct_index, target);
+    if (!IsFullyEncoded(target)) FullyEncode(target);
     return true;
   }
 
@@ -821,7 +821,7 @@ bool FullEncodingFixedPointComputer::ProcessTable(ConstraintIndex ct_index) {
   if (ct.table().negated()) return true;
 
   for (const int variable : ct.table().vars()) {
-    FullyEncode(ct_index, variable);
+    FullyEncode(variable);
   }
   return true;
 }
@@ -830,7 +830,7 @@ bool FullEncodingFixedPointComputer::ProcessAutomaton(
     ConstraintIndex ct_index) {
   const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
   for (const int variable : ct.automaton().vars()) {
-    FullyEncode(ct_index, variable);
+    FullyEncode(variable);
   }
   return true;
 }
@@ -838,10 +838,10 @@ bool FullEncodingFixedPointComputer::ProcessAutomaton(
 bool FullEncodingFixedPointComputer::ProcessInverse(ConstraintIndex ct_index) {
   const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
   for (const int variable : ct.inverse().f_direct()) {
-    FullyEncode(ct_index, variable);
+    FullyEncode(variable);
   }
   for (const int variable : ct.inverse().f_inverse()) {
-    FullyEncode(ct_index, variable);
+    FullyEncode(variable);
   }
   return true;
 }
