@@ -734,7 +734,7 @@ void FullEncodingFixedPointComputer::ComputeFixedPoint() {
     const int64 domain_size_without_bounds = DomainSize(var) - 2;
     VLOG(2) << model_proto_.variables(var).ShortDebugString()
             << " is encoded with " << num_accesses
-            << "access constraints on a domain of size " << DomainSize(var);
+            << " accesses constraints on a domain of size " << DomainSize(var);
     if (num_accesses >= domain_size_without_bounds / 4) {
       VLOG(2) << "  - encode";
       FullyEncode(var);
@@ -856,7 +856,7 @@ bool FullEncodingFixedPointComputer::ProcessLinear(ConstraintIndex ct_index) {
 
   int64 value = ct.linear().domain(0);
   if (!IsEqCst(ct.linear(), mapping_, integer_trail_) &&
-      IsNeqCst(ct.linear(), mapping_, integer_trail_, &value)) {
+      !IsNeqCst(ct.linear(), mapping_, integer_trail_, &value)) {
     return true;
   }
 
