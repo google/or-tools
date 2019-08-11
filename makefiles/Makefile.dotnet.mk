@@ -74,6 +74,8 @@ OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME := $(OR_TOOLS_ASSEMBLY_NAME).FSharp.Tests
 DOTNET_ORTOOLS_NUPKG := $(PACKAGE_DIR)/$(OR_TOOLS_ASSEMBLY_NAME).$(OR_TOOLS_VERSION).nupkg
 DOTNET_ORTOOLS_NATIVE_NUPKG := $(PACKAGE_DIR)/$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).$(OR_TOOLS_VERSION).nupkg
 DOTNET_ORTOOLS_FSHARP_NUPKG := $(PACKAGE_DIR)/$(OR_TOOLS_FSHARP_ASSEMBLY_NAME).$(OR_TOOLS_VERSION).nupkg
+NUGET_PACK_ARGS := -c Release --include-symbols
+DOTNET_BUILD_ARGS := -c Release /p:Platform=x64
 
 ######################
 ##  RUNTIME CSHARP  ##
@@ -81,7 +83,9 @@ DOTNET_ORTOOLS_FSHARP_NUPKG := $(PACKAGE_DIR)/$(OR_TOOLS_FSHARP_ASSEMBLY_NAME).$
 .PHONY: dotnet_runtime # Build C# runtime OR-Tools
 dotnet_runtime: $(DOTNET_ORTOOLS_NATIVE_NUPKG)
 
-# Protobufs generated code
+###################################################################
+# Protobuf: generate C# cs files from proto specification files. ##
+###################################################################
 $(GEN_DIR)/ortools/constraint_solver/SearchLimit.pb.cs: \
  $(SRC_DIR)/ortools/constraint_solver/search_limit.proto \
  | $(GEN_DIR)/ortools/constraint_solver
@@ -138,7 +142,9 @@ $(GEN_DIR)/ortools/util/OptionalBoolean.pb.cs: \
  --csharp_opt=file_extension=.pb.cs \
  $(SRC_DIR)$Sortools$Sutil$Soptional_boolean.proto
 
-# Auto-generated rid dependent source code
+#############################################################################################
+# Swig: Generate C# wrapper cs files from swig specification files and C wrapper .c files. ##
+#############################################################################################
 $(GEN_DIR)/ortools/linear_solver/linear_solver_csharp_wrap.cc: \
  $(SRC_DIR)/ortools/linear_solver/csharp/linear_solver.i \
  $(SRC_DIR)/ortools/base/base.i \
@@ -295,6 +301,9 @@ $(OBJ_DIR)/swig/sorted_interval_list_csharp_wrap.$O: \
  -c $(GEN_PATH)$Sortools$Sutil$Ssorted_interval_list_csharp_wrap.cc \
  $(OBJ_OUT)$(OBJ_DIR)$Sswig$Ssorted_interval_list_csharp_wrap.$O
 
+############
+# Signing ##
+############
 ifneq ($(DOTNET_SNK),)
 $(DOTNET_ORTOOLS_SNK): | $(BIN_DIR)
 	$(COPY) $(DOTNET_SNK) $(DOTNET_ORTOOLS_SNK_PATH)
@@ -303,6 +312,9 @@ $(DOTNET_ORTOOLS_SNK): ortools/dotnet/CreateSigningKey/CreateSigningKey.csproj |
 	"$(DOTNET_BIN)" run --project ortools$Sdotnet$SCreateSigningKey$SCreateSigningKey.csproj $S$(DOTNET_ORTOOLS_SNK_PATH)
 endif
 
+##########################################
+# Swig: Generate native wrapper binary. ##
+##########################################
 $(LIB_DIR)/$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).$(SWIG_DOTNET_LIB_SUFFIX): \
  $(OR_TOOLS_LIBS) \
  $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O \
@@ -358,8 +370,8 @@ $(DOTNET_ORTOOLS_NATIVE_NUPKG): \
  $(GEN_DIR)/ortools/sat/CpModel.pb.cs \
  $(GEN_DIR)/ortools/util/OptionalBoolean.pb.cs \
  | $(DOTNET_ORTOOLS_SNK) $(PACKAGE_DIR)
-	"$(DOTNET_BIN)" build ortools$Sdotnet$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME)$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).csproj
-	"$(DOTNET_BIN)" pack ortools$Sdotnet$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME)$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).csproj
+	"$(DOTNET_BIN)" build $(DOTNET_BUILD_ARGS) ortools$Sdotnet$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME)$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).csproj
+	"$(DOTNET_BIN)" pack $(NUGET_PACK_ARGS) ortools$Sdotnet$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME)$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).csproj
 
 ##############
 ##  CSHARP  ##
@@ -367,25 +379,20 @@ $(DOTNET_ORTOOLS_NATIVE_NUPKG): \
 .PHONY: dotnet_csharp # Build C# OR-Tools
 dotnet_csharp: $(DOTNET_ORTOOLS_NUPKG)
 
+#  create csproj for managed project
 $(SRC_DIR)/ortools/dotnet/$(OR_TOOLS_ASSEMBLY_NAME)/$(OR_TOOLS_ASSEMBLY_NAME).csproj: \
  $(SRC_DIR)/ortools/dotnet/$(OR_TOOLS_ASSEMBLY_NAME)/$(OR_TOOLS_ASSEMBLY_NAME).csproj.in
 	$(SED) -e "s/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/" \
  ortools$Sdotnet$S$(OR_TOOLS_ASSEMBLY_NAME)$S$(OR_TOOLS_ASSEMBLY_NAME).csproj.in \
  > ortools$Sdotnet$S$(OR_TOOLS_ASSEMBLY_NAME)$S$(OR_TOOLS_ASSEMBLY_NAME).csproj
 
-$(SRC_DIR)/ortools/dotnet/$(OR_TOOLS_ASSEMBLY_NAME)/runtime.json: \
- $(SRC_DIR)/ortools/dotnet/$(OR_TOOLS_ASSEMBLY_NAME)/runtime.json.in
-	$(SED) -e "s/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/" \
- ortools$Sdotnet$S$(OR_TOOLS_ASSEMBLY_NAME)$Sruntime.json.in \
- > ortools$Sdotnet$S$(OR_TOOLS_ASSEMBLY_NAME)$Sruntime.json
-
+# Pack managed project nuget
 $(DOTNET_ORTOOLS_NUPKG): \
  $(DOTNET_ORTOOLS_NATIVE_NUPKG) \
  $(SRC_DIR)/ortools/dotnet/$(OR_TOOLS_ASSEMBLY_NAME)/$(OR_TOOLS_ASSEMBLY_NAME).csproj \
- $(SRC_DIR)/ortools/dotnet/$(OR_TOOLS_ASSEMBLY_NAME)/runtime.json \
  | $(DOTNET_ORTOOLS_SNK) $(PACKAGE_DIR)
-	"$(DOTNET_BIN)" build ortools$Sdotnet$S$(OR_TOOLS_ASSEMBLY_NAME)
-	"$(DOTNET_BIN)" pack ortools$Sdotnet$S$(OR_TOOLS_ASSEMBLY_NAME)
+	"$(DOTNET_BIN)" build $(DOTNET_BUILD_ARGS) ortools$Sdotnet$S$(OR_TOOLS_ASSEMBLY_NAME)
+	"$(DOTNET_BIN)" pack $(NUGET_PACK_ARGS) ortools$Sdotnet$S$(OR_TOOLS_ASSEMBLY_NAME)
 
 ##############
 ##  FSHARP  ##
@@ -393,19 +400,22 @@ $(DOTNET_ORTOOLS_NUPKG): \
 .PHONY: dotnet_fsharp # Build F# OR-Tools
 dotnet_fsharp: $(DOTNET_ORTOOLS_FSHARP_NUPKG)
 
+# create fsproj
 $(SRC_DIR)/ortools/dotnet/$(OR_TOOLS_FSHARP_ASSEMBLY_NAME)/$(OR_TOOLS_FSHARP_ASSEMBLY_NAME).fsproj: \
  $(SRC_DIR)/ortools/dotnet/$(OR_TOOLS_FSHARP_ASSEMBLY_NAME)/$(OR_TOOLS_FSHARP_ASSEMBLY_NAME).fsproj.in
 	$(SED) -e "s/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/" \
  ortools$Sdotnet$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME)$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME).fsproj.in \
  > ortools$Sdotnet$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME)$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME).fsproj
 
+# build and pack nuget
 $(DOTNET_ORTOOLS_FSHARP_NUPKG): \
  $(DOTNET_ORTOOLS_NUPKG) \
  $(SRC_DIR)/ortools/dotnet/$(OR_TOOLS_FSHARP_ASSEMBLY_NAME)/$(OR_TOOLS_FSHARP_ASSEMBLY_NAME).fsproj \
  | $(DOTNET_ORTOOLS_SNK) $(PACKAGE_DIR)
-	"$(DOTNET_BIN)" build ortools$Sdotnet$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME)
-	"$(DOTNET_BIN)" pack ortools$Sdotnet$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME)
+	"$(DOTNET_BIN)" build $(DOTNET_BUILD_ARGS) ortools$Sdotnet$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME)
+	"$(DOTNET_BIN)" pack $(NUGET_PACK_ARGS) ortools$Sdotnet$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME)
 
+# create test fsproj
 ortools/dotnet/$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)/$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME).fsproj: \
  ortools/dotnet/$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)/$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME).fsproj.in
 	$(SED) -e "s/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/" \
@@ -415,8 +425,8 @@ ortools/dotnet/$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)/$(OR_TOOLS_FSHARP_TESTS_AS
 .PHONY: test_dotnet_fsharp # Run F# OrTools Tests
 test_dotnet_fsharp: $(DOTNET_ORTOOLS_FSHARP_NUPKG) \
  ortools/dotnet/$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)/$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME).fsproj
-	"$(DOTNET_BIN)" build ortools$Sdotnet$S$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)
-	"$(DOTNET_BIN)" test ortools$Sdotnet$S$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)
+	"$(DOTNET_BIN)" build $(DOTNET_BUILD_ARGS) ortools$Sdotnet$S$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)
+	"$(DOTNET_BIN)" test $(DOTNET_BUILD_ARGS) ortools$Sdotnet$S$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)
 
 ###################
 ##  .NET SOURCE  ##
@@ -695,7 +705,6 @@ clean_dotnet:
 	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME)$Sbin
 	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_NATIVE_ASSEMBLY_NAME)$Sobj
 	-$(DEL) ortools$Sdotnet$S$(OR_TOOLS_ASSEMBLY_NAME)$S$(OR_TOOLS_ASSEMBLY_NAME)*.csproj
-	-$(DEL) ortools$Sdotnet$S$(OR_TOOLS_ASSEMBLY_NAME)$Sruntime.json
 	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_ASSEMBLY_NAME)$Sbin
 	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_ASSEMBLY_NAME)$Sobj
 	-$(DEL) ortools$Sdotnet$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME)$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME)*.fsproj
@@ -745,13 +754,13 @@ clean_dotnet:
 ######################
 .PHONY: nuget_archive # Build .Net "Google.OrTools" Nuget Package
 nuget_archive: dotnet | $(TEMP_DOTNET_DIR)
-	"$(DOTNET_BIN)" publish -c Release --no-dependencies --no-restore -f netstandard2.0 \
+	"$(DOTNET_BIN)" publish $(DOTNET_BUILD_ARGS) --no-build --no-dependencies --no-restore -f netstandard2.0 \
  -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" \
  ortools$Sdotnet$S$(OR_TOOLS_ASSEMBLY_NAME)$S$(OR_TOOLS_ASSEMBLY_NAME).csproj
-	"$(DOTNET_BIN)" publish -c Release --no-dependencies --no-restore -f netstandard2.0 \
+	"$(DOTNET_BIN)" publish $(DOTNET_BUILD_ARGS) --no-build --no-dependencies --no-restore -f netstandard2.0 \
  -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" \
  ortools$Sdotnet$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME)$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME).fsproj
-	"$(DOTNET_BIN)" pack -c Release \
+	"$(DOTNET_BIN)" pack -c Release $(NUGET_PACK_ARGS) --no-build \
  -o "..$S..$S..$S$(BIN_DIR)" \
  ortools$Sdotnet
 

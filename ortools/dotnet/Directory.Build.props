@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <!-- These settings are applied to all projects recursive from here (unless overridden).-->
+  <PropertyGroup>
+      <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+      <!-- Nuget Properties -->
+      <MinClientVersion>4.1.0</MinClientVersion>
+      <NeutralLanguage>en-US</NeutralLanguage>
+      <Authors>Laurent Perron</Authors>
+      <Company>Google LLC</Company>
+      <Copyright>Copyright 2019 Google LLC</Copyright>
+
+       <!-- Pack Option -->
+       <IncludeSymbols>true</IncludeSymbols>
+       <PackageTags>native;math;LinearSolver;LinearProgramming;ConstraintSolver;ConstraintProgramming</PackageTags>
+       <PackageIconUrl>https://developers.google.com/optimization/images/orLogo.png</PackageIconUrl>
+       <PackageProjectUrl>https://developers.google.com/optimization</PackageProjectUrl>
+       <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+       <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+       <PackageOutputPath>../../../packages</PackageOutputPath>
+       <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+       <RepositoryType>git</RepositoryType>
+       <RepositoryUrl>https://github.com/google/or-tools</RepositoryUrl>
+        <!--Disable CS1591 "Missing XML comment for publicly visible type or member" (Swig doesn't generate documentation)-->
+        <NoWarn>1591</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Label="BasePath">
+    <SolutionDir Condition="'$(SolutionDir)'==''">$(MSBuildThisFileDirectory)</SolutionDir>
+  </PropertyGroup>
+</Project>
