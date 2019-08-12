@@ -11,11 +11,11 @@ def main(version_number):
   """
   sections = create_section_data()
   doxy_tmp = 'tools/doc/tmp.doxy'
-  headerfile = 'tools/doc/ortools.header.html.in'
   header_tmp = 'tools/doc/header.tmp.html'
 
   for section in sections:
     doxyfile = 'tools/doc/' + section['doxyfile']
+    headerfile = 'tools/doc/' + section['headerfile']
     output_dir = section['output_dir']
     project_name = section['project name']
     input_files = section['input_files']
@@ -44,7 +44,7 @@ def main(version_number):
     f = open(headerfile, 'r')
     g = open(header_tmp, 'w')
     filedata = f.read()
-    filedata = re.sub('Banner Text', 'OR-Tools ' + version_number, filedata)
+    filedata = re.sub('Banner Text', 'Google OR-Tools ' + version_number, filedata)
     filedata = re.sub('Page Title', title, filedata)
     # Write filedata.
     g.write(filedata)
@@ -64,6 +64,7 @@ def create_section_data():
       'project name': 'Algorithms',
       'title': 'C++ Reference: Algorithms',
       'doxyfile': 'cpp.doxy.in',
+      'headerfile': 'cpp.header.html.in',
       'input_files': 'ortools/algorithms/dense_doubly_linked_list.h ' +
       'ortools/algorithms/dynamic_partition.h ' +
       'ortools/algorithms/dynamic_permutation.h ' +
@@ -77,6 +78,7 @@ def create_section_data():
       'project name': 'CP-SAT',
       'title': 'C++ Reference: CP-SAT',
       'doxyfile': 'cpp.doxy.in',
+      'headerfile': 'cpp.header.html.in',
       'input_files':
       'ortools/sat/cp_model.h ' +
       'ortools/sat/cp_model_solver.h ' +
@@ -90,6 +92,7 @@ def create_section_data():
       'project name': 'Graph',
       'title': 'C++ Reference: Graph',
       'doxyfile': 'cpp.doxy.in',
+      'headerfile': 'cpp.header.html.in',
       'input_files':
       'ortools/graph/christofides.h ' +
       'ortools/graph/cliques.h ' +
@@ -116,6 +119,7 @@ def create_section_data():
       'project name': 'Linear solver',
       'title': 'C++ Reference: Linear solver',
       'doxyfile': 'cpp.doxy.in',
+      'headerfile': 'cpp.header.html.in',
       'input_files':
       'ortools/linear_solver/linear_expr.h ' +
       'ortools/linear_solver/linear_solver.h ' +
@@ -129,6 +133,7 @@ def create_section_data():
       'project name': 'Routing',
       'title': 'C++ Reference: Routing',
       'doxyfile': 'cpp.doxy.in',
+      'headerfile': 'cpp.header.html.in',
       'input_files':
       'ortools/constraint_solver/constraint_solver.h ' +
       'ortools/constraint_solver/constraint_solveri.h ' +
@@ -147,6 +152,7 @@ def create_section_data():
       'project name': 'OR-Tools',
       'title': 'DotNet Reference',
       'doxyfile': 'dotnet.doxy.in',
+      'headerfile': 'dotnet.header.html.in',
       'input_files': ''
     },
     {
@@ -154,6 +160,7 @@ def create_section_data():
       'project name': 'OR-Tools',
       'title': 'Java Reference',
       'doxyfile': 'java.doxy.in',
+      'headerfile': 'java.header.html.in',
       'input_files': ''
     }
   ]
