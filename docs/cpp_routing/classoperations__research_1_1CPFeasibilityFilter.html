@@ -12,47 +12,18 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">OR-Tools 7.3</span>
+                <span id="sfml">Google OR-Tools 7.3</span>
             </div>
         </div>
-        <link rel="icon" href="https://developers.google.com/optimization/images/orLogo.png">
         <div id="content" style="width: 100%; overflow: hidden;">
         <div style="margin-left: 15px; margin-top: 5px; float: left; color: #145A32;">
-        <h2>Reference</h2>
-        <h3>C++</h3>
+        <h2>C++ Reference</h2>
         <ul>
           <li><a href="../cpp_algorithms/annotated.html">Algorithms</a></li>
+          <li><a href="../cpp_sat/annotated.html">CP-SAT</a></li>
           <li><a href="../cpp_graph/annotated.html">Graph</a></li>
           <li><a href="../cpp_routing/annotated.html">Routing</a></li>
           <li><a href="../cpp_linear/annotated.html">Linear solver</a></li>
-          <li><a href="../cpp_sat/annotated.html">CP-SAT</a></li>
-        </ul>
-        <h3>Python</h3>
-        <ul>
-          <li><a href="../python/ortools/sat/python/cp_model.html">CP-SAT</a></li>
-          <li><a href="../python/ortools/util/sorted_interval_list.html">Domain</a></li>
-          <li><a href="../python/ortools/graph/pywrapgraph.html">Graph</a></li>
-          <li><a href="../python/ortools/algorithms/pywrapknapsack_solver.html">Knapsack solver</a></li>
-          <li><a href="../python/ortools/linear_solver/pywraplp.html">Linear solver</a></li>
-          <li><a href="../python/ortools/constraint_solver/pywrapcp.html">Routing</a></li>
-        </ul>
-        <h3 id="dotnet-documentation">DotNET</h3>
-        <ul>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1Sat.html">CP-SAT</a></li>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1Graph.html">Graph</a></li>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1Algorithms.html">Knapsack solver</a></li>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1LinearSolver.html">Linear solver</a></li>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1ConstraintSolver.html">Routing</a></li>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1Util.html">Util</a></li>
-        </ul>
-        <h3 id="java-documentation">Java Documentation</h3>
-        <ul>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1sat.html">CP-SAT</a></li>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1graph.html">Graph</a></li>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1algorithms.html">Knapsack solver</a></li>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1linearsolver.html">Linear solver</a></li>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1constraintsolver.html">Routing</a></li>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1util.html">Util</a></li>
         </ul>
         </div>
         <div id="content">
@@ -85,7 +56,6 @@
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
-<a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="classoperations__research_1_1CPFeasibilityFilter-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">CPFeasibilityFilter</div>  </div>
@@ -137,8 +107,6 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a625550edd889d6c9a3b73db329d52a72"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1907b3ee12b9e6e2bfc69e1a69b5baf0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a1907b3ee12b9e6e2bfc69e1a69b5baf0">FindIndex</a> (<a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *const var, int64 *index) const</td></tr>
 <tr class="separator:a1907b3ee12b9e6e2bfc69e1a69b5baf0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a37b710650d48ab0d24b50d97ab29e890"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a37b710650d48ab0d24b50d97ab29e890">InjectObjectiveValue</a> (int64 objective_value)</td></tr>
-<tr class="separator:a37b710650d48ab0d24b50d97ab29e890"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad0c622b7f274388822c9f35659a56542"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#ad0c622b7f274388822c9f35659a56542">AddVars</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;vars)</td></tr>
 <tr class="memdesc:ad0c622b7f274388822c9f35659a56542"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add variables to "track" to the filter.  <a href="#ad0c622b7f274388822c9f35659a56542">More...</a><br /></td></tr>
 <tr class="separator:ad0c622b7f274388822c9f35659a56542"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -163,21 +131,12 @@ Public Member Functions</h2></td></tr>
 Protected Member Functions</h2></td></tr>
 <tr class="memitem:a07e7b2863d0982b2eb610f2d31171b4d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a07e7b2863d0982b2eb610f2d31171b4d">SynchronizeOnAssignment</a> (const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *assignment)</td></tr>
 <tr class="separator:a07e7b2863d0982b2eb610f2d31171b4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2dc9c376344340248828f8bd72bd5b54"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a2dc9c376344340248828f8bd72bd5b54">CanPropagateObjectiveValue</a> () const</td></tr>
-<tr class="separator:a2dc9c376344340248828f8bd72bd5b54"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4dfcedf5c4d2954adb56636fd224d69e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a4dfcedf5c4d2954adb56636fd224d69e">PropagateObjectiveValue</a> (int64 objective_value)</td></tr>
-<tr class="separator:a4dfcedf5c4d2954adb56636fd224d69e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
-Protected Attributes</h2></td></tr>
-<tr class="memitem:af0f3d5ace595a8f8aaf0b09ac554c96d"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#af0f3d5ace595a8f8aaf0b09ac554c96d">injected_objective_value_</a></td></tr>
-<tr class="separator:af0f3d5ace595a8f8aaf0b09ac554c96d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>This filter accepts deltas for which the assignment satisfies the constraints of the <a class="el" href="classoperations__research_1_1Solver.html" title="Solver Class.">Solver</a>. </p>
 <p>This is verified by keeping an internal copy of the assignment with all Next vars and their updated values, and calling RestoreAssignment() on the assignment+delta. exception of Next Vars (woud fail on large instances). WARNING: In the case of mandatory nodes, when all vehicles are currently being used in the solution but uninserted nodes still remain, this filter will reject the solution, even if the node could be inserted on one of these routes, because all Next vars of vehicle starts are already instantiated. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03260">3260</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03259">3259</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a0b2f66f74b2fc754eaa3a42df786caf3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0b2f66f74b2fc754eaa3a42df786caf3">&#9670;&nbsp;</a></span>CPFeasibilityFilter()</h2>
@@ -228,7 +187,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03263">3263</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03262">3262</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -314,33 +273,6 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a2dc9c376344340248828f8bd72bd5b54"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2dc9c376344340248828f8bd72bd5b54">&#9670;&nbsp;</a></span>CanPropagateObjectiveValue()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool CanPropagateObjectiveValue </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01591">1591</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
-
-</div>
-</div>
 <a id="aed804747c45a7e1caf81461f9e45dd91"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aed804747c45a7e1caf81461f9e45dd91">&#9670;&nbsp;</a></span>DebugString()</h2>
 
@@ -366,7 +298,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classoperations__research_1_1BaseObject.html#a8eba5d533fa9df4617c1868d3ec2afc4">BaseObject</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03264">3264</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03263">3263</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -404,7 +336,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01564">1564</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01562">1562</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -470,34 +402,6 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a37b710650d48ab0d24b50d97ab29e890"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a37b710650d48ab0d24b50d97ab29e890">&#9670;&nbsp;</a></span>InjectObjectiveValue()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual void InjectObjectiveValue </td>
-          <td>(</td>
-          <td class="paramtype">int64&#160;</td>
-          <td class="paramname"><em>objective_value</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01573">1573</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
-
-</div>
-</div>
 <a id="aa21d5f9b4adc94167e3a466095d82fd5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa21d5f9b4adc94167e3a466095d82fd5">&#9670;&nbsp;</a></span>IsIncremental()</h2>
 
@@ -551,7 +455,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01585">1585</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01579">1579</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -583,34 +487,6 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a4dfcedf5c4d2954adb56636fd224d69e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4dfcedf5c4d2954adb56636fd224d69e">&#9670;&nbsp;</a></span>PropagateObjectiveValue()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void PropagateObjectiveValue </td>
-          <td>(</td>
-          <td class="paramtype">int64&#160;</td>
-          <td class="paramname"><em>objective_value</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01594">1594</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
-
-</div>
-</div>
 <a id="a24926108b770033792d015cb86aeffb3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a24926108b770033792d015cb86aeffb3">&#9670;&nbsp;</a></span>Size()</h2>
 
@@ -634,7 +510,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01579">1579</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01573">1573</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -729,7 +605,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01581">1581</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01575">1575</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>
@@ -757,32 +633,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01580">1580</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Member Data Documentation</h2>
-<a id="af0f3d5ace595a8f8aaf0b09ac554c96d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af0f3d5ace595a8f8aaf0b09ac554c96d">&#9670;&nbsp;</a></span>injected_objective_value_</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int64 injected_objective_value_</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01599">1599</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01574">1574</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
 </div>
 </div>

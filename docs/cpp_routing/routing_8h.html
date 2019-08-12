@@ -12,47 +12,18 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">OR-Tools 7.3</span>
+                <span id="sfml">Google OR-Tools 7.3</span>
             </div>
         </div>
-        <link rel="icon" href="https://developers.google.com/optimization/images/orLogo.png">
         <div id="content" style="width: 100%; overflow: hidden;">
         <div style="margin-left: 15px; margin-top: 5px; float: left; color: #145A32;">
-        <h2>Reference</h2>
-        <h3>C++</h3>
+        <h2>C++ Reference</h2>
         <ul>
           <li><a href="../cpp_algorithms/annotated.html">Algorithms</a></li>
+          <li><a href="../cpp_sat/annotated.html">CP-SAT</a></li>
           <li><a href="../cpp_graph/annotated.html">Graph</a></li>
           <li><a href="../cpp_routing/annotated.html">Routing</a></li>
           <li><a href="../cpp_linear/annotated.html">Linear solver</a></li>
-          <li><a href="../cpp_sat/annotated.html">CP-SAT</a></li>
-        </ul>
-        <h3>Python</h3>
-        <ul>
-          <li><a href="../python/ortools/sat/python/cp_model.html">CP-SAT</a></li>
-          <li><a href="../python/ortools/util/sorted_interval_list.html">Domain</a></li>
-          <li><a href="../python/ortools/graph/pywrapgraph.html">Graph</a></li>
-          <li><a href="../python/ortools/algorithms/pywrapknapsack_solver.html">Knapsack solver</a></li>
-          <li><a href="../python/ortools/linear_solver/pywraplp.html">Linear solver</a></li>
-          <li><a href="../python/ortools/constraint_solver/pywrapcp.html">Routing</a></li>
-        </ul>
-        <h3 id="dotnet-documentation">DotNET</h3>
-        <ul>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1Sat.html">CP-SAT</a></li>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1Graph.html">Graph</a></li>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1Algorithms.html">Knapsack solver</a></li>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1LinearSolver.html">Linear solver</a></li>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1ConstraintSolver.html">Routing</a></li>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1Util.html">Util</a></li>
-        </ul>
-        <h3 id="java-documentation">Java Documentation</h3>
-        <ul>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1sat.html">CP-SAT</a></li>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1graph.html">Graph</a></li>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1algorithms.html">Knapsack solver</a></li>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1linearsolver.html">Linear solver</a></li>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1constraintsolver.html">Routing</a></li>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1util.html">Util</a></li>
         </ul>
         </div>
         <div id="content">
@@ -244,18 +215,18 @@ Functions</h2></td></tr>
 <tr class="memitem:aa17cca151690da44e948d7fbe07abca5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#aa17cca151690da44e948d7fbe07abca5">SolveModelWithSat</a> (const RoutingModel &amp;model, const RoutingSearchParameters &amp;search_parameters, const Assignment *initial_solution, Assignment *solution)</td></tr>
 <tr class="memdesc:aa17cca151690da44e948d7fbe07abca5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attempts to solve the model using the cp-sat solver.  <a href="namespaceoperations__research.html#aa17cca151690da44e948d7fbe07abca5">More...</a><br /></td></tr>
 <tr class="separator:aa17cca151690da44e948d7fbe07abca5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae096121f1559753c357ed8ee184353f8"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ae096121f1559753c357ed8ee184353f8">MakeNodeDisjunctionFilter</a> (const RoutingModel &amp;routing_model, std::function&lt; void(int64)&gt; objective_callback)</td></tr>
-<tr class="separator:ae096121f1559753c357ed8ee184353f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5f6417c3f4078b9fdaafdb8e19116b55"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a5f6417c3f4078b9fdaafdb8e19116b55">MakeVehicleAmortizedCostFilter</a> (const RoutingModel &amp;routing_model, Solver::ObjectiveWatcher objective_callback)</td></tr>
-<tr class="separator:a5f6417c3f4078b9fdaafdb8e19116b55"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae3012c6b24c5be29fe921cb17f9d1d60"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ae3012c6b24c5be29fe921cb17f9d1d60">MakeNodeDisjunctionFilter</a> (const RoutingModel &amp;routing_model)</td></tr>
+<tr class="separator:ae3012c6b24c5be29fe921cb17f9d1d60"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab6379327d3431a9fe8f7434651eece59"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ab6379327d3431a9fe8f7434651eece59">MakeVehicleAmortizedCostFilter</a> (const RoutingModel &amp;routing_model)</td></tr>
+<tr class="separator:ab6379327d3431a9fe8f7434651eece59"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3de43a015d4ee3ce53eb030e1d7232de"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a3de43a015d4ee3ce53eb030e1d7232de">MakeTypeRegulationsFilter</a> (const RoutingModel &amp;routing_model)</td></tr>
 <tr class="separator:a3de43a015d4ee3ce53eb030e1d7232de"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab7e213b9838f546243a7040d58506cd9"><td class="memItemLeft" align="right" valign="top">std::vector&lt; IntVarLocalSearchFilter * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ab7e213b9838f546243a7040d58506cd9">MakeCumulFilters</a> (const RoutingDimension &amp;dimension, Solver::ObjectiveWatcher objective_callback, bool filter_objective_cost)</td></tr>
-<tr class="separator:ab7e213b9838f546243a7040d58506cd9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab64b4ace42f0744e0814257a9a6ffa16"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ab64b4ace42f0744e0814257a9a6ffa16">MakePathCumulFilter</a> (const RoutingDimension &amp;dimension, Solver::ObjectiveWatcher objective_callback, bool propagate_own_objective_value, bool filter_objective_cost)</td></tr>
-<tr class="separator:ab64b4ace42f0744e0814257a9a6ffa16"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afbaa470f2ff428bc316d5eac61567955"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#afbaa470f2ff428bc316d5eac61567955">MakeGlobalLPCumulFilter</a> (const RoutingDimension &amp;dimension, Solver::ObjectiveWatcher objective_callback, bool filter_objective_cost)</td></tr>
-<tr class="separator:afbaa470f2ff428bc316d5eac61567955"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae2bc37439c27c9d82f9bb116e61f75f0"><td class="memItemLeft" align="right" valign="top">std::vector&lt; IntVarLocalSearchFilter * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ae2bc37439c27c9d82f9bb116e61f75f0">MakeCumulFilters</a> (const RoutingDimension &amp;dimension, bool filter_objective_cost)</td></tr>
+<tr class="separator:ae2bc37439c27c9d82f9bb116e61f75f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a014a0f7cc1dd527a3a7eb3aa2bc38ada"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a014a0f7cc1dd527a3a7eb3aa2bc38ada">MakePathCumulFilter</a> (const RoutingDimension &amp;dimension, bool propagate_own_objective_value, bool filter_objective_cost)</td></tr>
+<tr class="separator:a014a0f7cc1dd527a3a7eb3aa2bc38ada"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae65dba021cf5a1b57431c35ac9be3dab"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ae65dba021cf5a1b57431c35ac9be3dab">MakeGlobalLPCumulFilter</a> (const RoutingDimension &amp;dimension, bool filter_objective_cost)</td></tr>
+<tr class="separator:ae65dba021cf5a1b57431c35ac9be3dab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae3ffb53eac6214b414e926238012a2a0"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#ae3ffb53eac6214b414e926238012a2a0">MakePickupDeliveryFilter</a> (const RoutingModel &amp;routing_model, const RoutingModel::IndexPairs &amp;pairs, const std::vector&lt; RoutingModel::PickupAndDeliveryPolicy &gt; &amp;vehicle_policies)</td></tr>
 <tr class="separator:ae3ffb53eac6214b414e926238012a2a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a67f4b4b64a6c11717020eaa963b98c51"><td class="memItemLeft" align="right" valign="top">IntVarLocalSearchFilter *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research.html#a67f4b4b64a6c11717020eaa963b98c51">MakeVehicleVarFilter</a> (const RoutingModel &amp;routing_model)</td></tr>

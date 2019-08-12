@@ -12,47 +12,18 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">OR-Tools 7.3</span>
+                <span id="sfml">Google OR-Tools 7.3</span>
             </div>
         </div>
-        <link rel="icon" href="https://developers.google.com/optimization/images/orLogo.png">
         <div id="content" style="width: 100%; overflow: hidden;">
         <div style="margin-left: 15px; margin-top: 5px; float: left; color: #145A32;">
-        <h2>Reference</h2>
-        <h3>C++</h3>
+        <h2>C++ Reference</h2>
         <ul>
           <li><a href="../cpp_algorithms/annotated.html">Algorithms</a></li>
+          <li><a href="../cpp_sat/annotated.html">CP-SAT</a></li>
           <li><a href="../cpp_graph/annotated.html">Graph</a></li>
           <li><a href="../cpp_routing/annotated.html">Routing</a></li>
           <li><a href="../cpp_linear/annotated.html">Linear solver</a></li>
-          <li><a href="../cpp_sat/annotated.html">CP-SAT</a></li>
-        </ul>
-        <h3>Python</h3>
-        <ul>
-          <li><a href="../python/ortools/sat/python/cp_model.html">CP-SAT</a></li>
-          <li><a href="../python/ortools/util/sorted_interval_list.html">Domain</a></li>
-          <li><a href="../python/ortools/graph/pywrapgraph.html">Graph</a></li>
-          <li><a href="../python/ortools/algorithms/pywrapknapsack_solver.html">Knapsack solver</a></li>
-          <li><a href="../python/ortools/linear_solver/pywraplp.html">Linear solver</a></li>
-          <li><a href="../python/ortools/constraint_solver/pywrapcp.html">Routing</a></li>
-        </ul>
-        <h3 id="dotnet-documentation">DotNET</h3>
-        <ul>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1Sat.html">CP-SAT</a></li>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1Graph.html">Graph</a></li>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1Algorithms.html">Knapsack solver</a></li>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1LinearSolver.html">Linear solver</a></li>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1ConstraintSolver.html">Routing</a></li>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1Util.html">Util</a></li>
-        </ul>
-        <h3 id="java-documentation">Java Documentation</h3>
-        <ul>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1sat.html">CP-SAT</a></li>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1graph.html">Graph</a></li>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1algorithms.html">Knapsack solver</a></li>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1linearsolver.html">Linear solver</a></li>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1constraintsolver.html">Routing</a></li>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1util.html">Util</a></li>
         </ul>
         </div>
         <div id="content">
@@ -92,26 +63,21 @@
   <tr class="even"><td class="entry"><a class="el" href="classoperations__research_1_1LocalSearchFilter.html#a1eebe2111d0d0d63bc00b6fd5927b616">Accept</a>(const Assignment *delta, const Assignment *deltadelta, int64 objective_min, int64 objective_max)=0</td><td class="entry"><a class="el" href="classoperations__research_1_1LocalSearchFilter.html">LocalSearchFilter</a></td><td class="entry"><span class="mlabel">pure virtual</span></td></tr>
   <tr><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#ad0c622b7f274388822c9f35659a56542">AddVars</a>(const std::vector&lt; IntVar * &gt; &amp;vars)</td><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a></td><td class="entry"></td></tr>
   <tr class="even"><td class="entry"><a class="el" href="classoperations__research_1_1BaseObject.html#a48f1c86064886ad6b10822e12c877da9">BaseObject</a>()</td><td class="entry"><a class="el" href="classoperations__research_1_1BaseObject.html">BaseObject</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a2dc9c376344340248828f8bd72bd5b54">CanPropagateObjectiveValue</a>() const</td><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">protected</span></td></tr>
-  <tr class="even"><td class="entry"><a class="el" href="classoperations__research_1_1BaseObject.html#a8eba5d533fa9df4617c1868d3ec2afc4">DebugString</a>() const</td><td class="entry"><a class="el" href="classoperations__research_1_1BaseObject.html">BaseObject</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">virtual</span></td></tr>
-  <tr><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a1907b3ee12b9e6e2bfc69e1a69b5baf0">FindIndex</a>(IntVar *const var, int64 *index) const</td><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr class="even"><td class="entry"><a class="el" href="classoperations__research_1_1LocalSearchFilter.html#ae5d81865846ca6be009b31a1c59f2165">GetAcceptedObjectiveValue</a>() const</td><td class="entry"><a class="el" href="classoperations__research_1_1LocalSearchFilter.html">LocalSearchFilter</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">virtual</span></td></tr>
-  <tr><td class="entry"><a class="el" href="classoperations__research_1_1LocalSearchFilter.html#a14786ee7098dc88e3eefc6f0a2c9411e">GetSynchronizedObjectiveValue</a>() const</td><td class="entry"><a class="el" href="classoperations__research_1_1LocalSearchFilter.html">LocalSearchFilter</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">virtual</span></td></tr>
-  <tr class="even"><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#af0f3d5ace595a8f8aaf0b09ac554c96d">injected_objective_value_</a></td><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a></td><td class="entry"><span class="mlabel">protected</span></td></tr>
-  <tr><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a37b710650d48ab0d24b50d97ab29e890">InjectObjectiveValue</a>(int64 objective_value)</td><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">virtual</span></td></tr>
-  <tr class="even"><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a740160a444a4649b5c4c7171eaa3c328">IntVarLocalSearchFilter</a>(const std::vector&lt; IntVar * &gt; &amp;vars, Solver::ObjectiveWatcher objective_callback)</td><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a></td><td class="entry"></td></tr>
+  <tr><td class="entry"><a class="el" href="classoperations__research_1_1BaseObject.html#a8eba5d533fa9df4617c1868d3ec2afc4">DebugString</a>() const</td><td class="entry"><a class="el" href="classoperations__research_1_1BaseObject.html">BaseObject</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">virtual</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a1907b3ee12b9e6e2bfc69e1a69b5baf0">FindIndex</a>(IntVar *const var, int64 *index) const</td><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr><td class="entry"><a class="el" href="classoperations__research_1_1LocalSearchFilter.html#ae5d81865846ca6be009b31a1c59f2165">GetAcceptedObjectiveValue</a>() const</td><td class="entry"><a class="el" href="classoperations__research_1_1LocalSearchFilter.html">LocalSearchFilter</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">virtual</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classoperations__research_1_1LocalSearchFilter.html#a14786ee7098dc88e3eefc6f0a2c9411e">GetSynchronizedObjectiveValue</a>() const</td><td class="entry"><a class="el" href="classoperations__research_1_1LocalSearchFilter.html">LocalSearchFilter</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">virtual</span></td></tr>
   <tr><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a8db9c655c030223da3b1071e9469e441">IntVarLocalSearchFilter</a>(const std::vector&lt; IntVar * &gt; &amp;vars)</td><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a></td><td class="entry"><span class="mlabel">explicit</span></td></tr>
   <tr class="even"><td class="entry"><a class="el" href="classoperations__research_1_1LocalSearchFilter.html#aa21d5f9b4adc94167e3a466095d82fd5">IsIncremental</a>() const</td><td class="entry"><a class="el" href="classoperations__research_1_1LocalSearchFilter.html">LocalSearchFilter</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">virtual</span></td></tr>
   <tr><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#af295b14439014798b1fd34faffd3b5e7">IsVarSynced</a>(int index) const</td><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
   <tr class="even"><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a0aee6f5d9448e52ed735f92e581f2a3f">OnSynchronize</a>(const Assignment *delta)</td><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">protected</span><span class="mlabel">virtual</span></td></tr>
-  <tr><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a4dfcedf5c4d2954adb56636fd224d69e">PropagateObjectiveValue</a>(int64 objective_value)</td><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">protected</span></td></tr>
-  <tr class="even"><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a24926108b770033792d015cb86aeffb3">Size</a>() const</td><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a625550edd889d6c9a3b73db329d52a72">Synchronize</a>(const Assignment *assignment, const Assignment *delta) override</td><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a></td><td class="entry"><span class="mlabel">virtual</span></td></tr>
-  <tr class="even"><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a07e7b2863d0982b2eb610f2d31171b4d">SynchronizeOnAssignment</a>(const Assignment *assignment)</td><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a></td><td class="entry"><span class="mlabel">protected</span></td></tr>
-  <tr><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#acc37407ddda743886d3cb40298914f0d">Value</a>(int index) const</td><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr class="even"><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#abbab4c9580ab21b8dbd7af67ab35f393">Var</a>(int index) const</td><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr><td class="entry"><a class="el" href="classoperations__research_1_1BaseObject.html#a9d8322d9fcae16059ee5a30839360bfe">~BaseObject</a>()</td><td class="entry"><a class="el" href="classoperations__research_1_1BaseObject.html">BaseObject</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">virtual</span></td></tr>
-  <tr class="even"><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a32d7d75eadfb9b0f532f9bed4d864274">~IntVarLocalSearchFilter</a>() override</td><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a></td><td class="entry"></td></tr>
+  <tr><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a24926108b770033792d015cb86aeffb3">Size</a>() const</td><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a625550edd889d6c9a3b73db329d52a72">Synchronize</a>(const Assignment *assignment, const Assignment *delta) override</td><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a></td><td class="entry"><span class="mlabel">virtual</span></td></tr>
+  <tr><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a07e7b2863d0982b2eb610f2d31171b4d">SynchronizeOnAssignment</a>(const Assignment *assignment)</td><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a></td><td class="entry"><span class="mlabel">protected</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#acc37407ddda743886d3cb40298914f0d">Value</a>(int index) const</td><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#abbab4c9580ab21b8dbd7af67ab35f393">Var</a>(int index) const</td><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classoperations__research_1_1BaseObject.html#a9d8322d9fcae16059ee5a30839360bfe">~BaseObject</a>()</td><td class="entry"><a class="el" href="classoperations__research_1_1BaseObject.html">BaseObject</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">virtual</span></td></tr>
+  <tr><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a32d7d75eadfb9b0f532f9bed4d864274">~IntVarLocalSearchFilter</a>() override</td><td class="entry"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a></td><td class="entry"></td></tr>
 </table></div><!-- contents -->
         </div>
         </div>

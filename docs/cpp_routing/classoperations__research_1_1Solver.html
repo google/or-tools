@@ -12,47 +12,18 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">OR-Tools 7.3</span>
+                <span id="sfml">Google OR-Tools 7.3</span>
             </div>
         </div>
-        <link rel="icon" href="https://developers.google.com/optimization/images/orLogo.png">
         <div id="content" style="width: 100%; overflow: hidden;">
         <div style="margin-left: 15px; margin-top: 5px; float: left; color: #145A32;">
-        <h2>Reference</h2>
-        <h3>C++</h3>
+        <h2>C++ Reference</h2>
         <ul>
           <li><a href="../cpp_algorithms/annotated.html">Algorithms</a></li>
+          <li><a href="../cpp_sat/annotated.html">CP-SAT</a></li>
           <li><a href="../cpp_graph/annotated.html">Graph</a></li>
           <li><a href="../cpp_routing/annotated.html">Routing</a></li>
           <li><a href="../cpp_linear/annotated.html">Linear solver</a></li>
-          <li><a href="../cpp_sat/annotated.html">CP-SAT</a></li>
-        </ul>
-        <h3>Python</h3>
-        <ul>
-          <li><a href="../python/ortools/sat/python/cp_model.html">CP-SAT</a></li>
-          <li><a href="../python/ortools/util/sorted_interval_list.html">Domain</a></li>
-          <li><a href="../python/ortools/graph/pywrapgraph.html">Graph</a></li>
-          <li><a href="../python/ortools/algorithms/pywrapknapsack_solver.html">Knapsack solver</a></li>
-          <li><a href="../python/ortools/linear_solver/pywraplp.html">Linear solver</a></li>
-          <li><a href="../python/ortools/constraint_solver/pywrapcp.html">Routing</a></li>
-        </ul>
-        <h3 id="dotnet-documentation">DotNET</h3>
-        <ul>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1Sat.html">CP-SAT</a></li>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1Graph.html">Graph</a></li>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1Algorithms.html">Knapsack solver</a></li>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1LinearSolver.html">Linear solver</a></li>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1ConstraintSolver.html">Routing</a></li>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1Util.html">Util</a></li>
-        </ul>
-        <h3 id="java-documentation">Java Documentation</h3>
-        <ul>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1sat.html">CP-SAT</a></li>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1graph.html">Graph</a></li>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1algorithms.html">Knapsack solver</a></li>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1linearsolver.html">Linear solver</a></li>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1constraintsolver.html">Routing</a></li>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1util.html">Util</a></li>
         </ul>
         </div>
         <div id="content">
@@ -292,8 +263,6 @@ Public Types</h2></td></tr>
 <tr class="separator:ae69f986ba3ecb59d0c4fbc48ae76fa34"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3094f1982f455fd97342c64b7c0b3ccf"><td class="memItemLeft" align="right" valign="top">typedef std::function&lt; bool(int64, int64, int64)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Solver.html#a3094f1982f455fd97342c64b7c0b3ccf">VariableValueComparator</a></td></tr>
 <tr class="separator:a3094f1982f455fd97342c64b7c0b3ccf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acd0138bef17a3aa04074b85c56ff046e"><td class="memItemLeft" align="right" valign="top">typedef std::function&lt; void(int64)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Solver.html#acd0138bef17a3aa04074b85c56ff046e">ObjectiveWatcher</a></td></tr>
-<tr class="separator:acd0138bef17a3aa04074b85c56ff046e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae57bc6f29c7b4343cb90aa1946ce1869"><td class="memItemLeft" align="right" valign="top">typedef std::function&lt; <a class="el" href="classoperations__research_1_1Solver.html#a074172434184dde98798ed6590206d42">DecisionModification</a>()&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Solver.html#ae57bc6f29c7b4343cb90aa1946ce1869">BranchSelector</a></td></tr>
 <tr class="separator:ae57bc6f29c7b4343cb90aa1946ce1869"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad7946514ee3dd6cb3ab993dc9e98b33b"><td class="memItemLeft" align="right" valign="top">typedef std::function&lt; void(<a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Solver.html#ad7946514ee3dd6cb3ab993dc9e98b33b">Action</a></td></tr>
@@ -1385,12 +1354,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a2de6e91f22c2a71edc455c7f3c0363f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1af9539be3ec13dc54536bdd9d02539a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Solver.html#a1af9539be3ec13dc54536bdd9d02539a">MakeSumObjectiveFilter</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;vars, <a class="el" href="classoperations__research_1_1Solver.html#abb24034fec2804ac3c0172f043087321">IndexEvaluator2</a> values, <a class="el" href="classoperations__research_1_1Solver.html#afd2d924f019d44bc99930a1e931a735f">Solver::LocalSearchFilterBound</a> filter_enum)</td></tr>
 <tr class="separator:a1af9539be3ec13dc54536bdd9d02539a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad393710f1796cdab5043b2db65c726ae"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Solver.html#ad393710f1796cdab5043b2db65c726ae">MakeSumObjectiveFilter</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;vars, <a class="el" href="classoperations__research_1_1Solver.html#abb24034fec2804ac3c0172f043087321">IndexEvaluator2</a> values, <a class="el" href="classoperations__research_1_1Solver.html#acd0138bef17a3aa04074b85c56ff046e">ObjectiveWatcher</a> delta_objective_callback, <a class="el" href="classoperations__research_1_1Solver.html#afd2d924f019d44bc99930a1e931a735f">Solver::LocalSearchFilterBound</a> filter_enum)</td></tr>
-<tr class="separator:ad393710f1796cdab5043b2db65c726ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a39bd54fada2c915f59e3779f233fde62"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Solver.html#a39bd54fada2c915f59e3779f233fde62">MakeSumObjectiveFilter</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;vars, const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;secondary_vars, <a class="el" href="classoperations__research_1_1Solver.html#a86570ad216b68c88de1ef27085e3d084">Solver::IndexEvaluator3</a> values, <a class="el" href="classoperations__research_1_1Solver.html#afd2d924f019d44bc99930a1e931a735f">Solver::LocalSearchFilterBound</a> filter_enum)</td></tr>
-<tr class="separator:a39bd54fada2c915f59e3779f233fde62"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afd723dee26540e294db509bc5efc8826"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Solver.html#afd723dee26540e294db509bc5efc8826">MakeSumObjectiveFilter</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;vars, const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;secondary_vars, <a class="el" href="classoperations__research_1_1Solver.html#a86570ad216b68c88de1ef27085e3d084">Solver::IndexEvaluator3</a> values, <a class="el" href="classoperations__research_1_1Solver.html#acd0138bef17a3aa04074b85c56ff046e">ObjectiveWatcher</a> delta_objective_callback, <a class="el" href="classoperations__research_1_1Solver.html#afd2d924f019d44bc99930a1e931a735f">Solver::LocalSearchFilterBound</a> filter_enum)</td></tr>
-<tr class="separator:afd723dee26540e294db509bc5efc8826"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acf8a7872a4ed634bf704fd797e24f3ca"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Solver.html#acf8a7872a4ed634bf704fd797e24f3ca">MakeSumObjectiveFilter</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;vars, const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;secondary_vars, <a class="el" href="classoperations__research_1_1Solver.html#a86570ad216b68c88de1ef27085e3d084">IndexEvaluator3</a> values, <a class="el" href="classoperations__research_1_1Solver.html#afd2d924f019d44bc99930a1e931a735f">Solver::LocalSearchFilterBound</a> filter_enum)</td></tr>
+<tr class="separator:acf8a7872a4ed634bf704fd797e24f3ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4de855c905df4a729715972dc39997a4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Solver.html#a4de855c905df4a729715972dc39997a4">TopPeriodicCheck</a> ()</td></tr>
 <tr class="memdesc:a4de855c905df4a729715972dc39997a4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Performs PeriodicCheck on the top-level search; for instance, can be called from a nested solve to check top-level limits.  <a href="#a4de855c905df4a729715972dc39997a4">More...</a><br /></td></tr>
 <tr class="separator:a4de855c905df4a729715972dc39997a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1664,7 +1629,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00738">738</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00737">737</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1680,7 +1645,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00736">736</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00735">735</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1696,7 +1661,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00739">739</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00738">738</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1779,22 +1744,6 @@ Friends</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00727">727</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
-
-</div>
-</div>
-<a id="acd0138bef17a3aa04074b85c56ff046e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acd0138bef17a3aa04074b85c56ff046e">&#9670;&nbsp;</a></span>ObjectiveWatcher</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef std::function&lt;void(int64)&gt; <a class="el" href="classoperations__research_1_1Solver.html#acd0138bef17a3aa04074b85c56ff046e">ObjectiveWatcher</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00735">735</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2483,7 +2432,7 @@ Friends</h2></td></tr>
 
 <p>The number of accepted neighbors. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00987">987</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00986">986</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2665,7 +2614,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02813">2813</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02802">2802</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2694,7 +2643,7 @@ Friends</h2></td></tr>
 
 <p>The number of branches explored since the creation of the solver. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00966">966</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00965">965</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2802,7 +2751,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02929">2929</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02918">2918</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2829,7 +2778,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02821">2821</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02810">2810</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2858,7 +2807,7 @@ Friends</h2></td></tr>
 
 <p>Clears the local search state. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02877">2877</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02866">2866</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -3092,7 +3041,7 @@ Friends</h2></td></tr>
 
 <p>Counts the number of constraints that have been added to the solver before the search. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02808">2808</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02797">2797</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -3188,7 +3137,7 @@ Friends</h2></td></tr>
 
 <p>Access to demon profiler. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02823">2823</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02812">2812</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -3218,7 +3167,7 @@ Friends</h2></td></tr>
 
 <p>The number of demons executed during search for a given priority. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00975">975</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00974">974</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -3323,7 +3272,7 @@ Friends</h2></td></tr>
 
 <p>The number of failures encountered since the creation of the solver. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00978">978</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00977">977</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -3352,7 +3301,7 @@ Friends</h2></td></tr>
 
 <p>The number of filtered neighbors (neighbors accepted by filters). </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00984">984</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00983">983</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -14232,7 +14181,7 @@ Friends</h2></td></tr>
 </div>
 </div>
 <a id="a1af9539be3ec13dc54536bdd9d02539a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1af9539be3ec13dc54536bdd9d02539a">&#9670;&nbsp;</a></span>MakeSumObjectiveFilter() <span class="overload">[1/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1af9539be3ec13dc54536bdd9d02539a">&#9670;&nbsp;</a></span>MakeSumObjectiveFilter() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -14265,48 +14214,8 @@ Friends</h2></td></tr>
 
 </div>
 </div>
-<a id="ad393710f1796cdab5043b2db65c726ae"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad393710f1796cdab5043b2db65c726ae">&#9670;&nbsp;</a></span>MakeSumObjectiveFilter() <span class="overload">[2/4]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a>* MakeSumObjectiveFilter </td>
-          <td>(</td>
-          <td class="paramtype">const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;&#160;</td>
-          <td class="paramname"><em>vars</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1Solver.html#abb24034fec2804ac3c0172f043087321">IndexEvaluator2</a>&#160;</td>
-          <td class="paramname"><em>values</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1Solver.html#acd0138bef17a3aa04074b85c56ff046e">ObjectiveWatcher</a>&#160;</td>
-          <td class="paramname"><em>delta_objective_callback</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1Solver.html#afd2d924f019d44bc99930a1e931a735f">Solver::LocalSearchFilterBound</a>&#160;</td>
-          <td class="paramname"><em>filter_enum</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a39bd54fada2c915f59e3779f233fde62"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a39bd54fada2c915f59e3779f233fde62">&#9670;&nbsp;</a></span>MakeSumObjectiveFilter() <span class="overload">[3/4]</span></h2>
+<a id="acf8a7872a4ed634bf704fd797e24f3ca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acf8a7872a4ed634bf704fd797e24f3ca">&#9670;&nbsp;</a></span>MakeSumObjectiveFilter() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -14326,54 +14235,8 @@ Friends</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1Solver.html#a86570ad216b68c88de1ef27085e3d084">Solver::IndexEvaluator3</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1Solver.html#a86570ad216b68c88de1ef27085e3d084">IndexEvaluator3</a>&#160;</td>
           <td class="paramname"><em>values</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1Solver.html#afd2d924f019d44bc99930a1e931a735f">Solver::LocalSearchFilterBound</a>&#160;</td>
-          <td class="paramname"><em>filter_enum</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="afd723dee26540e294db509bc5efc8826"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afd723dee26540e294db509bc5efc8826">&#9670;&nbsp;</a></span>MakeSumObjectiveFilter() <span class="overload">[4/4]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html">IntVarLocalSearchFilter</a>* MakeSumObjectiveFilter </td>
-          <td>(</td>
-          <td class="paramtype">const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;&#160;</td>
-          <td class="paramname"><em>vars</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;&#160;</td>
-          <td class="paramname"><em>secondary_vars</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1Solver.html#a86570ad216b68c88de1ef27085e3d084">Solver::IndexEvaluator3</a>&#160;</td>
-          <td class="paramname"><em>values</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1Solver.html#acd0138bef17a3aa04074b85c56ff046e">ObjectiveWatcher</a>&#160;</td>
-          <td class="paramname"><em>delta_objective_callback</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -15202,7 +15065,7 @@ Friends</h2></td></tr>
 
 <p>The number of neighbors created. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00981">981</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00980">980</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -15463,7 +15326,7 @@ Friends</h2></td></tr>
 
 <p>The direction of optimization, getter and setter. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00997">997</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00996">996</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -15492,7 +15355,7 @@ Friends</h2></td></tr>
 
 <p>Stored Parameters. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00747">747</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00746">746</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -15559,7 +15422,7 @@ Friends</h2></td></tr>
 
 <p>Returns a random value between 0 and 'size' - 1;. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02786">2786</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02775">2775</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -15589,7 +15452,7 @@ Friends</h2></td></tr>
 
 <p>Returns a random value between 0 and 'size' - 1;. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02783">2783</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02772">2772</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -15750,7 +15613,7 @@ Friends</h2></td></tr>
 
 <p>Reseed the solver random generator. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02789">2789</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02778">2778</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -15817,7 +15680,7 @@ Friends</h2></td></tr>
 <p>Returns the argument for convenience: this way, the caller may directly invoke a constructor in the argument, without having to store the pointer first.</p>
 <p>This function is only for users that define their own subclasses of <a class="el" href="classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects.">BaseObject</a>: for all subclasses predefined in the library, the corresponding factory methods (e.g., MakeIntVar(...), MakeAllDifferent(...) already take care of the registration. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00775">775</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00774">774</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -15849,7 +15712,7 @@ Friends</h2></td></tr>
 <p>The entire array will be deleted when backtracking out of the current state.</p>
 <p>This method is valid for arrays of int, int64, uint64, bool, BaseObject*, IntVar*, IntExpr*, and Constraint*. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00786">786</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00785">785</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -15889,7 +15752,7 @@ Friends</h2></td></tr>
 
 <p>All-in-one SaveAndAdd_value. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02775">2775</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02764">2764</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -15929,7 +15792,7 @@ Friends</h2></td></tr>
 
 <p>All-in-one SaveAndSetValue. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02766">2766</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02755">2755</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -15960,7 +15823,7 @@ Friends</h2></td></tr>
 <p>reversibility </p>
 <p><a class="el" href="classoperations__research_1_1Solver.html#a0544697ab645219c7ed34fd2c19e5033" title="reversibility">SaveValue()</a> saves the value of the corresponding object. It must be called before modifying the object. The value will be restored upon backtrack. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00758">758</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00757">757</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -16065,7 +15928,7 @@ Friends</h2></td></tr>
 
 <p>Internal. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02817">2817</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02806">2806</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -16093,7 +15956,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l01000">1000</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00999">999</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -16172,7 +16035,7 @@ Friends</h2></td></tr>
 <p>enabled for metaheuristics. </p>
 <p>Disables/enables fast local search. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02827">2827</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02816">2816</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -16201,7 +16064,7 @@ Friends</h2></td></tr>
 
 <p>These methods are only useful for the SWIG wrappers, which need a way to externally cause the <a class="el" href="classoperations__research_1_1Solver.html" title="Solver Class.">Solver</a> to fail. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02928">2928</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02917">2917</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -16653,7 +16516,7 @@ Friends</h2></td></tr>
 
 <p>State of the solver. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00936">936</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l00935">935</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -16863,7 +16726,7 @@ Friends</h2></td></tr>
 
 <p>Returns true if fast local search is enabled. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02831">2831</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02820">2820</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -16908,7 +16771,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02885">2885</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02874">2874</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -16932,7 +16795,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02886">2886</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02875">2875</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -16956,7 +16819,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02887">2887</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02876">2876</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -16980,7 +16843,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02888">2888</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02877">2877</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -17040,7 +16903,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02889">2889</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02878">2878</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -17064,7 +16927,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02895">2895</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02884">2884</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -17088,7 +16951,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02890">2890</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02879">2879</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -17112,7 +16975,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02891">2891</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02880">2880</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -17136,7 +16999,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02902">2902</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02891">2891</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -17160,7 +17023,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02894">2894</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02883">2883</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -17184,7 +17047,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02893">2893</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02882">2882</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -17208,7 +17071,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02892">2892</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02881">2881</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -17232,7 +17095,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02900">2900</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02889">2889</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -17278,7 +17141,7 @@ Friends</h2></td></tr>
 <p>Unsafe temporary vector. </p>
 <p>It is used to avoid leaks in operations that need storage and that may fail. See <a class="el" href="classoperations__research_1_1IntVar.html#a10f9eba78d07596bd7f480fe834548c0" title="This method intersects the current domain with the values in the array.">IntVar::SetValues()</a> for instance. It is not locked; do not use in a multi-threaded or reentrant setup. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02883">2883</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l02872">2872</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>

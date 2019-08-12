@@ -12,47 +12,18 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">OR-Tools 7.3</span>
+                <span id="sfml">Google OR-Tools 7.3</span>
             </div>
         </div>
-        <link rel="icon" href="https://developers.google.com/optimization/images/orLogo.png">
         <div id="content" style="width: 100%; overflow: hidden;">
         <div style="margin-left: 15px; margin-top: 5px; float: left; color: #145A32;">
-        <h2>Reference</h2>
-        <h3>C++</h3>
+        <h2>C++ Reference</h2>
         <ul>
           <li><a href="../cpp_algorithms/annotated.html">Algorithms</a></li>
+          <li><a href="../cpp_sat/annotated.html">CP-SAT</a></li>
           <li><a href="../cpp_graph/annotated.html">Graph</a></li>
           <li><a href="../cpp_routing/annotated.html">Routing</a></li>
           <li><a href="../cpp_linear/annotated.html">Linear solver</a></li>
-          <li><a href="../cpp_sat/annotated.html">CP-SAT</a></li>
-        </ul>
-        <h3>Python</h3>
-        <ul>
-          <li><a href="../python/ortools/sat/python/cp_model.html">CP-SAT</a></li>
-          <li><a href="../python/ortools/util/sorted_interval_list.html">Domain</a></li>
-          <li><a href="../python/ortools/graph/pywrapgraph.html">Graph</a></li>
-          <li><a href="../python/ortools/algorithms/pywrapknapsack_solver.html">Knapsack solver</a></li>
-          <li><a href="../python/ortools/linear_solver/pywraplp.html">Linear solver</a></li>
-          <li><a href="../python/ortools/constraint_solver/pywrapcp.html">Routing</a></li>
-        </ul>
-        <h3 id="dotnet-documentation">DotNET</h3>
-        <ul>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1Sat.html">CP-SAT</a></li>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1Graph.html">Graph</a></li>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1Algorithms.html">Knapsack solver</a></li>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1LinearSolver.html">Linear solver</a></li>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1ConstraintSolver.html">Routing</a></li>
-          <li><a href="../dotnet/namespaceGoogle_1_1OrTools_1_1Util.html">Util</a></li>
-        </ul>
-        <h3 id="java-documentation">Java Documentation</h3>
-        <ul>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1sat.html">CP-SAT</a></li>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1graph.html">Graph</a></li>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1algorithms.html">Knapsack solver</a></li>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1linearsolver.html">Linear solver</a></li>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1constraintsolver.html">Routing</a></li>
-          <li><a href="../java/namespacecom_1_1google_1_1ortools_1_1util.html">Util</a></li>
         </ul>
         </div>
         <div id="content">
@@ -303,7 +274,7 @@ Static Public Attributes</h2></td></tr>
 <p>The main characteristics of an <a class="el" href="classoperations__research_1_1IntervalVar.html" title="Interval variables are often used in scheduling.">IntervalVar</a> are the start position, duration, and end date. All these characteristics can be queried and set, and demons can be posted on their modifications.</p>
 <p>An important aspect is optionality: an <a class="el" href="classoperations__research_1_1IntervalVar.html" title="Interval variables are often used in scheduling.">IntervalVar</a> can be performed or not. If unperformed, then it simply does not exist, and its characteristics cannot be accessed any more. An interval var is automatically marked as unperformed when it is not consistent anymore (start greater than end, duration &lt; 0...) </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04296">4296</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04285">4285</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a80fdadbf273640022be0e62fe34ca247"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a80fdadbf273640022be0e62fe34ca247">&#9670;&nbsp;</a></span>IntervalVar()</h2>
@@ -339,7 +310,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04302">4302</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04291">4291</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -366,7 +337,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04306">4306</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04295">4295</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -451,7 +422,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04394">4394</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04383">4383</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -482,7 +453,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1Pack.html#aed804747c45a7e1caf81461f9e45dd91">Pack</a>, <a class="el" href="classoperations__research_1_1Assignment.html#aed804747c45a7e1caf81461f9e45dd91">Assignment</a>, <a class="el" href="classoperations__research_1_1SequenceVar.html#aed804747c45a7e1caf81461f9e45dd91">SequenceVar</a>, <a class="el" href="classoperations__research_1_1Constraint.html#aed804747c45a7e1caf81461f9e45dd91">Constraint</a>, and <a class="el" href="classoperations__research_1_1BooleanVar.html#aed804747c45a7e1caf81461f9e45dd91">BooleanVar</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03115">3115</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03104">3104</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -693,7 +664,7 @@ Static Public Attributes</h2></td></tr>
 <p>This method pushes the demon onto the propagation queue. </p>
 <p>It will be processed directly if the queue is empty. It will be enqueued according to its priority otherwise. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03135">3135</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03124">3124</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -721,7 +692,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03136">3136</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03125">3125</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -777,7 +748,7 @@ Static Public Attributes</h2></td></tr>
 <p>This method freezes the propagation queue. </p>
 <p>It is useful when you need to apply multiple modifications at once. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03126">3126</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03115">3115</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -831,7 +802,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04395">4395</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04384">4384</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1114,7 +1085,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>This method clears the failure callback. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03149">3149</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03138">3138</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1223,7 +1194,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03143">3143</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03132">3132</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1279,7 +1250,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Shortcut for variable cleaner. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03152">3152</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03141">3141</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1596,7 +1567,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03122">3122</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03111">3111</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1706,7 +1677,7 @@ Static Public Attributes</h2></td></tr>
 <p>This method unfreezes the propagation queue. </p>
 <p>All modifications that happened when the queue was frozen will be processed. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03130">3130</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03119">3119</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1781,7 +1752,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Attaches a closure awakened when anything about this interval changes. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04413">4413</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04402">4402</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1811,7 +1782,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Attaches an action awakened when anything about this interval changes. </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04418">4418</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04407">4407</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1865,7 +1836,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04354">4354</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04343">4343</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1893,7 +1864,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04358">4358</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04347">4347</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1947,7 +1918,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04345">4345</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04334">4334</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1975,7 +1946,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04349">4349</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04338">4338</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2029,7 +2000,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04381">4381</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04370">4370</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2057,7 +2028,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04385">4385</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04374">4374</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2111,7 +2082,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04372">4372</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04361">4361</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2139,7 +2110,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04376">4376</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04365">4365</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2193,7 +2164,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04401">4401</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04390">4390</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2221,7 +2192,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04405">4405</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04394">4394</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2275,7 +2246,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04327">4327</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04316">4316</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2303,7 +2274,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04331">4331</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04320">4320</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2357,7 +2328,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04318">4318</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04307">4307</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2385,7 +2356,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04322">4322</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04311">4311</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2412,7 +2383,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>The largest acceptable value to be returned by <a class="el" href="classoperations__research_1_1IntervalVar.html#a4d64f6d586f2dffde03a5e6733895265">EndMax()</a> </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04301">4301</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04290">4290</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2438,7 +2409,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>The smallest acceptable value to be returned by <a class="el" href="classoperations__research_1_1IntervalVar.html#a962c32883b6e5af795e295cf2744df10" title="These methods query, set, and watch the start position of the interval var.">StartMin()</a> </p>
 
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04299">4299</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l04288">4288</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
 
 </div>
 </div>
