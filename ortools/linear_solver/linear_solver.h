@@ -49,7 +49,7 @@
  *   algorithms have proved efficient on very large linear programs.
  *
  *   Check Wikipedia for more detail:
- *     http: *en.wikipedia.org/wiki/Linear_programming
+ *     http://en.wikipedia.org/wiki/Linear_programming
  *
  * -----------------------------------
  *
@@ -152,7 +152,6 @@
 #include "ortools/base/macros.h"
 #include "ortools/base/status.h"
 #include "ortools/base/timer.h"
-#include "ortools/glop/parameters.pb.h"
 #include "ortools/linear_solver/linear_expr.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/port/proto_utils.h"
@@ -236,9 +235,7 @@ class MPSolver {
 #endif
   };
 
-  /**
-   * Create a solver with the given name and underlying solver backend.
-   */
+  /// Create a solver with the given name and underlying solver backend.
   MPSolver(const std::string& name, OptimizationProblemType problem_type);
   virtual ~MPSolver();
 
@@ -257,16 +254,12 @@ class MPSolver {
 
   bool IsMIP() const;
 
-  /**
-   * Returns the name of the model set at construction.
-   */
+  /// Returns the name of the model set at construction.
   const std::string& Name() const {
     return name_;  // Set at construction.
   }
 
-  /**
-   * Returns the optimization problem type set at construction
-   */
+  /// Returns the optimization problem type set at construction.
   virtual OptimizationProblemType ProblemType() const {
     return problem_type_;  // Set at construction.
   }
@@ -278,9 +271,7 @@ class MPSolver {
    */
   void Clear();
 
-  /**
-   * Returns the number of variables.
-   */
+  /// Returns the number of variables.
   int NumVariables() const { return variables_.size(); }
 
   /**
@@ -297,7 +288,7 @@ class MPSolver {
   MPVariable* LookupVariableOrNull(const std::string& var_name) const;
 
   /**
-   *  Creates a variable with the given bounds, integrality requirement and
+   * Creates a variable with the given bounds, integrality requirement and
    * name. Bounds can be finite or +/- MPSolver::infinity(). The MPSolver owns
    * the variable (i.e. the returned pointer is borrowed). Variable names are
    * optional. If you give an empty name, name() will auto-generate one for you
@@ -306,19 +297,13 @@ class MPSolver {
   MPVariable* MakeVar(double lb, double ub, bool integer,
                       const std::string& name);
 
-  /**
-   * Creates a continuous variable.
-   */
+  /// Creates a continuous variable.
   MPVariable* MakeNumVar(double lb, double ub, const std::string& name);
 
-  /**
-   * Creates an integer variable.
-   */
+  /// Creates an integer variable.
   MPVariable* MakeIntVar(double lb, double ub, const std::string& name);
 
-  /**
-   * Creates a boolean variable.
-   */
+  /// Creates a boolean variable.
   MPVariable* MakeBoolVar(const std::string& name);
 
   /**
@@ -339,27 +324,19 @@ class MPSolver {
                     const std::string& name_prefix,
                     std::vector<MPVariable*>* vars);
 
-  /**
-   * Creates an array of continuous variables.
-   */
+  /// Creates an array of continuous variables.
   void MakeNumVarArray(int nb, double lb, double ub, const std::string& name,
                        std::vector<MPVariable*>* vars);
 
-  /**
-   *  Creates an array of integer variables.
-   */
+  ///  Creates an array of integer variables.
   void MakeIntVarArray(int nb, double lb, double ub, const std::string& name,
                        std::vector<MPVariable*>* vars);
 
-  /**
-   * Creates an array of boolean variables.
-   */
+  /// Creates an array of boolean variables.
   void MakeBoolVarArray(int nb, const std::string& name,
                         std::vector<MPVariable*>* vars);
 
-  /**
-   * Returns the number of constraints.
-   */
+  /// Returns the number of constraints.
   int NumConstraints() const { return constraints_.size(); }
 
   /**
@@ -389,19 +366,14 @@ class MPSolver {
    */
   MPConstraint* MakeRowConstraint(double lb, double ub);
 
-  /**
-   * Creates a constraint with -infinity and +infinity bounds.
-   */
+  /// Creates a constraint with -infinity and +infinity bounds.
   MPConstraint* MakeRowConstraint();
 
-  /**
-   * Creates a named constraint with given bounds.
-   */
+  /// Creates a named constraint with given bounds.
   MPConstraint* MakeRowConstraint(double lb, double ub,
                                   const std::string& name);
-  /**
-   * Creates a named constraint with -infinity and +infinity bounds.
-   */
+
+  /// Creates a named constraint with -infinity and +infinity bounds.
   MPConstraint* MakeRowConstraint(const std::string& name);
 
   /**
@@ -410,9 +382,7 @@ class MPSolver {
    */
   MPConstraint* MakeRowConstraint(const LinearRange& range);
 
-  /**
-   * As above, but also names the constraint.
-   */
+  /// As above, but also names the constraint.
   MPConstraint* MakeRowConstraint(const LinearRange& range,
                                   const std::string& name);
 
@@ -424,9 +394,7 @@ class MPSolver {
    */
   const MPObjective& Objective() const { return *objective_; }
 
-  /**
-   * Returns the mutable objective object.
-   */
+  /// Returns the mutable objective object.
   MPObjective* MutableObjective() { return objective_.get(); }
 
   /**
@@ -452,14 +420,10 @@ class MPSolver {
     NOT_SOLVED = 6
   };
 
-  /**
-   * Solves the problem using default parameter values.
-   */
+  /// Solves the problem using default parameter values.
   ResultStatus Solve();
 
-  /**
-   * Solves the problem using the specified parameter values.
-   */
+  /// Solves the problem using the specified parameter values.
   ResultStatus Solve(const MPSolverParameters& param);
 
   /**
@@ -534,9 +498,7 @@ class MPSolver {
   MPSolverResponseStatus LoadModelFromProtoWithUniqueNamesOrDie(
       const MPModelProto& input_model, std::string* error_message);
 
-  /**
-   * Encodes the current solution in a solution response protocol buffer.
-   */
+  /// Encodes the current solution in a solution response protocol buffer.
   void FillSolutionResponseProto(MPSolutionResponse* response) const;
 
   /**
@@ -551,9 +513,7 @@ class MPSolver {
   static void SolveWithProto(const MPModelRequest& model_request,
                              MPSolutionResponse* response);
 
-  /**
-   * Exports model to protocol buffer.
-   */
+  /// Exports model to protocol buffer.
   void ExportModelToProto(MPModelProto* output_model) const;
 
   /**
@@ -619,9 +579,7 @@ class MPSolver {
    */
   util::Status SetNumThreads(int num_threads);
 
-  /**
-   * Returns the number of threads to be used during solve.
-   */
+  /// Returns the number of threads to be used during solve.
   int GetNumThreads() const { return num_threads_; }
 
   /**
@@ -629,10 +587,6 @@ class MPSolver {
    *
    * The format is solver-specific and is the same as the corresponding solver
    * configuration file format. Returns true if the operation was successful.
-   *
-   * TODO(user): Currently SCIP will always return true even if the format is
-   * wrong (you can check the log if you suspect an issue there). This seems to
-   * be a bug in SCIP though.
    */
   bool SetSolverSpecificParametersAsString(const std::string& parameters);
   std::string GetSolverSpecificParametersAsString() const {
@@ -640,7 +594,7 @@ class MPSolver {
   }
 
   /**
-   * Set a hint for solution.
+   * Sets a hint for solution.
    *
    * If a feasible or almost-feasible solution to the problem is already known,
    * it may be helpful to pass it to the solver so that it can be used. A solver
@@ -697,9 +651,11 @@ class MPSolver {
    * Output is suppressed by default.
    */
   bool OutputIsEnabled() const;
-  /** Enable output. */
+
+  /// Enables solver logging.
   void EnableOutput();
-  /** Suppress output. */
+
+  /// Suppresses solver logging.
   void SuppressOutput();
 
   absl::Duration TimeLimit() const { return time_limit_; }
@@ -712,9 +668,7 @@ class MPSolver {
     return absl::Now() - construction_time_;
   }
 
-  /**
-   * Returns the number of simplex iterations.
-   */
+  /// Returns the number of simplex iterations.
   int64 iterations() const;
 
   /**
@@ -724,9 +678,7 @@ class MPSolver {
    */
   int64 nodes() const;
 
-  /**
-   * Returns a std::string describing the underlying solver and its version.
-   */
+  /// Returns a std::string describing the underlying solver and its version.
   std::string SolverVersion() const;
 
   /**
@@ -922,9 +874,7 @@ inline std::string AbslUnparseFlag(
   return std::string(ToString(solver_type));
 }
 
-/**
- *  A class to express a linear objective.
- */
+/// A class to express a linear objective.
 class MPObjective {
  public:
   /**
@@ -957,14 +907,10 @@ class MPObjective {
     return coefficients_;
   }
 
-  /**
-   * Sets the constant term in the objective.
-   */
+  /// Sets the constant term in the objective.
   void SetOffset(double value);
 
-  /**
-   * Gets the constant term in the objective.
-   */
+  /// Gets the constant term in the objective.
   double offset() const { return offset_; }
 
   /**
@@ -973,46 +919,31 @@ class MPObjective {
    */
   void OptimizeLinearExpr(const LinearExpr& linear_expr, bool is_maximization);
 
-  /**
-   * Resets the current objective to maximize linear_expr.
-   */
+  /// Resets the current objective to maximize linear_expr.
   void MaximizeLinearExpr(const LinearExpr& linear_expr) {
     OptimizeLinearExpr(linear_expr, true);
   }
-  /**
-   * Resets the current objective to minimize linear_expr.
-   */
+  /// Resets the current objective to minimize linear_expr.
   void MinimizeLinearExpr(const LinearExpr& linear_expr) {
     OptimizeLinearExpr(linear_expr, false);
   }
 
-  /**
-   * Adds linear_expr to the current objective, does not change the direction.
-   */
+  /// Adds linear_expr to the current objective, does not change the direction.
   void AddLinearExpr(const LinearExpr& linear_expr);
 
-  /**
-   * Sets the optimization direction (maximize: true or minimize: false).
-   */
+  /// Sets the optimization direction (maximize: true or minimize: false).
   void SetOptimizationDirection(bool maximize);
 
-  /**
-   * Sets the optimization direction to minimize.
-   */
+  /// Sets the optimization direction to minimize.
   void SetMinimization() { SetOptimizationDirection(false); }
 
-  /**
-   * Sets the optimization direction to maximize.
-   */
+  /// Sets the optimization direction to maximize.
   void SetMaximization() { SetOptimizationDirection(true); }
 
-  /**
-   * Is the optimization direction set to maximize?
-   */
+  /// Is the optimization direction set to maximize?
   bool maximization() const;
-  /**
-   * Is the optimization direction set to minimize?
-   */
+
+  /// Is the optimization direction set to minimize?
   bool minimization() const;
 
   /**
@@ -1071,24 +1002,16 @@ class MPObjective {
   DISALLOW_COPY_AND_ASSIGN(MPObjective);
 };
 
-/**
- * The class for variables of a Mathematical Programming (MP) model.
- */
+/// The class for variables of a Mathematical Programming (MP) model.
 class MPVariable {
  public:
-  /**
-   * Returns the name of the variable.
-   */
+  /// Returns the name of the variable.
   const std::string& name() const { return name_; }
 
-  /**
-   * Sets the integrality requirement of the variable.
-   */
+  /// Sets the integrality requirement of the variable.
   void SetInteger(bool integer);
 
-  /**
-   * Returns the integrality requirement of the variable.
-   */
+  /// Returns the integrality requirement of the variable.
   bool integer() const { return integer_; }
 
   /**
@@ -1100,33 +1023,22 @@ class MPVariable {
    */
   double solution_value() const;
 
-  /**
-   * Returns the index of the variable in the MPSolver::variables_.
-   */
+  /// Returns the index of the variable in the MPSolver::variables_.
   int index() const { return index_; }
 
-  /**
-   * Returns the lower bound.
-   */
+  /// Returns the lower bound.
   double lb() const { return lb_; }
 
-  /**
-   * Returns the upper bound.
-   */
+  /// Returns the upper bound.
   double ub() const { return ub_; }
 
-  /**
-   * Sets the lower bound.
-   */
+  /// Sets the lower bound.
   void SetLB(double lb) { SetBounds(lb, ub_); }
-  /**
-   * Sets the upper bound.
-   */
+
+  /// Sets the upper bound.
   void SetUB(double ub) { SetBounds(lb_, ub); }
 
-  /**
-   * Sets both the lower and upper bounds.
-   */
+  /// Sets both the lower and upper bounds.
   void SetBounds(double lb, double ub);
 
   /**
@@ -1144,7 +1056,7 @@ class MPVariable {
   double reduced_cost() const;
 
   /**
-   *  Advanced usage: returns the basis status of the variable in the current
+   * Advanced usage: returns the basis status of the variable in the current
    * solution (only available for continuous problems).
    *
    * @see MPSolver::BasisStatus.
@@ -1219,14 +1131,10 @@ class MPVariable {
  */
 class MPConstraint {
  public:
-  /**
-   * Returns the name of the constraint.
-   */
+  /// Returns the name of the constraint.
   const std::string& name() const { return name_; }
 
-  /**
-   * Clears all variables and coefficients. Does not clear the bounds.
-   */
+  /// Clears all variables and coefficients. Does not clear the bounds.
   void Clear();
 
   /**
@@ -1252,34 +1160,22 @@ class MPConstraint {
     return coefficients_;
   }
 
-  /**
-   * Returns the lower bound.
-   */
+  /// Returns the lower bound.
   double lb() const { return lb_; }
 
-  /**
-   * Returns the upper bound.
-   */
+  /// Returns the upper bound.
   double ub() const { return ub_; }
 
-  /**
-   * Sets the lower bound.
-   */
+  /// Sets the lower bound.
   void SetLB(double lb) { SetBounds(lb, ub_); }
 
-  /**
-   * Sets the upper bound.
-   */
+  /// Sets the upper bound.
   void SetUB(double ub) { SetBounds(lb_, ub); }
 
-  /**
-   * Sets both the lower and upper bounds.
-   */
+  /// Sets both the lower and upper bounds.
   void SetBounds(double lb, double ub);
 
-  /**
-   * Advanced usage: returns true if the constraint is "lazy" (see below).
-   */
+  /// Advanced usage: returns true if the constraint is "lazy" (see below).
   bool is_lazy() const { return is_lazy_; }
 
   /**
@@ -1300,9 +1196,7 @@ class MPConstraint {
   const MPVariable* indicator_variable() const { return indicator_variable_; }
   bool indicator_value() const { return indicator_value_; }
 
-  /**
-   * Returns the index of the constraint in the MPSolver::constraints_.
-   */
+  /// Returns the index of the constraint in the MPSolver::constraints_.
   int index() const { return index_; }
 
   /**
@@ -1421,73 +1315,55 @@ class MPConstraint {
  */
 class MPSolverParameters {
  public:
-  /**
-   * Enumeration of parameters that take continuous values.
-   */
+  /// Enumeration of parameters that take continuous values.
   enum DoubleParam {
-    /**
-     * Limit for relative MIP gap.
-     */
+    /// Limit for relative MIP gap.
     RELATIVE_MIP_GAP = 0,
 
-    /**Advanced usage: tolerance for primal feasibility of basic solutions.
+    /**
+     * Advanced usage: tolerance for primal feasibility of basic solutions.
      *
      * This does not control the integer feasibility tolerance of integer
      * solutions for MIP or the tolerance used during presolve.
      */
     PRIMAL_TOLERANCE = 1,
-    /**
-     * Advanced usage: tolerance for dual feasibility of basic solutions.
-     */
+    /// Advanced usage: tolerance for dual feasibility of basic solutions.
     DUAL_TOLERANCE = 2
   };
 
-  /**
-   * Enumeration of parameters that take integer or categorical values.
-   */
+  /// Enumeration of parameters that take integer or categorical values.
   enum IntegerParam {
-    /**
-     * Advanced usage: presolve mode.
-     */
+    /// Advanced usage: presolve mode.
     PRESOLVE = 1000,
-    /**
-     * Algorithm to solve linear programs.
-     */
+    /// Algorithm to solve linear programs.
     LP_ALGORITHM = 1001,
-    /**
-     * Advanced usage: incrementality from one solve to the next.
-     */
+    /// Advanced usage: incrementality from one solve to the next.
     INCREMENTALITY = 1002,
-    /**
-     * Advanced usage: enable or disable matrix scaling.
-     */
+    /// Advanced usage: enable or disable matrix scaling.
     SCALING = 1003
   };
 
-  /**
-   * For each categorical parameter, enumeration of possible values.
-   */
+  /// For each categorical parameter, enumeration of possible values.
   enum PresolveValues {
-    PRESOLVE_OFF = 0,  // Presolve is off.
-    PRESOLVE_ON = 1    // Presolve is on.
+    /// Presolve is off.
+    PRESOLVE_OFF = 0,
+    /// Presolve is on.
+    PRESOLVE_ON = 1
   };
 
-  /**
-   * LP algorithm to use.
-   */
+  /// LP algorithm to use.
   enum LpAlgorithmValues {
-    DUAL = 10,    // Dual simplex.
-    PRIMAL = 11,  // Primal simplex.
-    BARRIER = 12  // Barrier algorithm.
+    /// Dual simplex.
+    DUAL = 10,
+    /// Primal simplex.
+    PRIMAL = 11,
+    /// Barrier algorithm.
+    BARRIER = 12
   };
 
-  /**
-   * Advanced usage: Incrementality options.
-   */
+  /// Advanced usage: Incrementality options.
   enum IncrementalityValues {
-    /**
-     * Start solve from scratch.
-     */
+    /// Start solve from scratch.
     INCREMENTALITY_OFF = 0,
 
     /**
@@ -1497,9 +1373,7 @@ class MPSolverParameters {
     INCREMENTALITY_ON = 1
   };
 
-  /**
-   * Advanced usage: Scaling options.
-   */
+  /// Advanced usage: Scaling options.
   enum ScalingValues {
     /// Scaling is off.
     SCALING_OFF = 0,
@@ -1507,20 +1381,15 @@ class MPSolverParameters {
     SCALING_ON = 1
   };
 
-  // @{
   // Placeholder value to indicate that a parameter is set to
   // the default value defined in the wrapper.
   static const double kDefaultDoubleParamValue;
   static const int kDefaultIntegerParamValue;
-  // @}
 
-  // @{
   // Placeholder value to indicate that a parameter is unknown.
   static const double kUnknownDoubleParamValue;
   static const int kUnknownIntegerParamValue;
-  // @}
 
-  // @{
   // Default values for parameters. Only parameters that define the
   // properties of the solution returned need to have a default value
   // (that is the same for all solvers). You can also define a default
@@ -1531,20 +1400,14 @@ class MPSolverParameters {
   static const double kDefaultDualTolerance;
   static const PresolveValues kDefaultPresolve;
   static const IncrementalityValues kDefaultIncrementality;
-  // @}
 
-  /**
-   * The constructor sets all parameters to their default value.
-   */
+  /// The constructor sets all parameters to their default value.
   MPSolverParameters();
 
-  /**
-   * Sets a double parameter to a specific value.
-   */
+  /// Sets a double parameter to a specific value.
   void SetDoubleParam(MPSolverParameters::DoubleParam param, double value);
-  /**
-   * Sets a integer parameter to a specific value.
-   */
+
+  /// Sets a integer parameter to a specific value.
   void SetIntegerParam(MPSolverParameters::IntegerParam param, int value);
 
   /**
@@ -1552,27 +1415,22 @@ class MPSolverParameters {
    * MPSolverParameters if it exists, otherwise the default value defined in
    * the underlying solver).
    */
-
   void ResetDoubleParam(MPSolverParameters::DoubleParam param);
+
   /**
    * Sets an integer parameter to its default value (default value defined in
    * MPSolverParameters if it exists, otherwise the default value defined in
    * the underlying solver).
    */
   void ResetIntegerParam(MPSolverParameters::IntegerParam param);
-  /**
-   * Sets all parameters to their default value.
-   */
+
+  /// Sets all parameters to their default value.
   void Reset();
 
-  /**
-   * Returns the value of a double parameter.
-   */
+  /// Returns the value of a double parameter.
   double GetDoubleParam(MPSolverParameters::DoubleParam param) const;
 
-  /**
-   * Returns the value of an integer parameter.
-   */
+  /// Returns the value of an integer parameter.
   int GetIntegerParam(MPSolverParameters::IntegerParam param) const;
 
  private:
@@ -1635,6 +1493,14 @@ class MPSolverInterface {
   // Solves problem with specified parameter values. Returns true if the
   // solution is optimal.
   virtual MPSolver::ResultStatus Solve(const MPSolverParameters& param) = 0;
+
+  // Directly solves a MPModelRequest, bypassing the MPSolver data structures
+  // entirely. Returns {} (eg. absl::nullopt) if the feature is not supported by
+  // the underlying solver.
+  virtual absl::optional<MPSolutionResponse> DirectlySolveProto(
+      const MPModelRequest& request) {
+    return absl::nullopt;
+  }
 
   // Writes the model using the solver internal write function.  Currently only
   // available for GurobiInterface.

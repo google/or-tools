@@ -77,16 +77,14 @@ struct LinearConstraint {
 };
 
 // Allow to build a LinearConstraint while making sure there is no duplicate
-// variables.
+// variables. Note that we do not simplify literal/variable that are currently
+// fixed here.
 class LinearConstraintBuilder {
  public:
   // We support "sticky" kMinIntegerValue for lb and kMaxIntegerValue for ub
   // for one-sided constraints.
   LinearConstraintBuilder(const Model* model, IntegerValue lb, IntegerValue ub)
-      : assignment_(model->Get<Trail>()->Assignment()),
-        encoder_(*model->Get<IntegerEncoder>()),
-        lb_(lb),
-        ub_(ub) {}
+      : encoder_(*model->Get<IntegerEncoder>()), lb_(lb), ub_(ub) {}
 
   // Adds var * coeff to the constraint.
   void AddTerm(IntegerVariable var, IntegerValue coeff);
@@ -105,7 +103,6 @@ class LinearConstraintBuilder {
   LinearConstraint Build();
 
  private:
-  const VariablesAssignment& assignment_;
   const IntegerEncoder& encoder_;
   IntegerValue lb_;
   IntegerValue ub_;

@@ -437,7 +437,8 @@ void ExtractArrayIntElement(fz::SolverData* data, fz::Constraint* ct) {
   }
 }
 
-void ExtractArrayIntElementNoOffset(fz::SolverData* data, fz::Constraint* ct) {
+void ExtractArrayIntElementNonShifted(fz::SolverData* data,
+                                      fz::Constraint* ct) {
   CHECK_EQ(1, ct->arguments[0].variables.size());
   Solver* const solver = data->solver();
   if (ct->arguments[0].type == fz::Argument::INT_VAR_REF) {
@@ -2969,8 +2970,8 @@ void ExtractConstraint(SolverData* data, Constraint* ct) {
     ExtractArrayBoolXor(data, ct);
   } else if (type == "array_int_element") {
     ExtractArrayIntElement(data, ct);
-  } else if (type == "array_int_element_no_offset") {
-    ExtractArrayIntElementNoOffset(data, ct);
+  } else if (type == "array_int_element_nonshifted") {
+    ExtractArrayIntElementNonShifted(data, ct);
   } else if (type == "array_var_bool_element") {
     ExtractArrayVarIntElement(data, ct);
   } else if (type == "array_var_int_element") {

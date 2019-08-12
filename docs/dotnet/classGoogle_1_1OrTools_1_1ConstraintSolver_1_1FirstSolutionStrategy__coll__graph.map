@@ -1,4 +1,4 @@
-<map id="Google.OrTools.ConstraintSolver.FirstSolutionStrategy" name="Google.OrTools.ConstraintSolver.FirstSolutionStrategy">
-<area shape="rect" id="node1" title="First solution strategies, used as starting point of local search." alt="" coords="6,92,192,131"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,192,44"/>
+<map id="FirstSolutionStrategy" name="FirstSolutionStrategy">
+<area shape="rect" id="node1" title="First solution strategies, used as starting point of local search." alt="" coords="46,79,191,104"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,231,31"/>
 </map>

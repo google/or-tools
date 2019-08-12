@@ -1,4 +1,4 @@
-<map id="Google.OrTools.Graph.MaxFlow" name="Google.OrTools.Graph.MaxFlow">
-<area shape="rect" id="node1" title=" " alt="" coords="5,79,217,104"/>
-<area shape="rect" id="node2" title=" " alt="" coords="22,5,200,31"/>
+<map id="MaxFlow" name="MaxFlow">
+<area shape="rect" id="node1" title=" " alt="" coords="36,79,110,104"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,141,31"/>
 </map>

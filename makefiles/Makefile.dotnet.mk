@@ -293,7 +293,7 @@ $(OBJ_DIR)/swig/sorted_interval_list_csharp_wrap.$O: \
  | $(OBJ_DIR)/swig
 	$(CCC) $(CFLAGS) \
  -c $(GEN_PATH)$Sortools$Sutil$Ssorted_interval_list_csharp_wrap.cc \
- $(OBJ_OUT)$(OBJ_DIR)$Sswig$Ssorted_interval_list_csharp_wrap.$O 
+ $(OBJ_OUT)$(OBJ_DIR)$Sswig$Ssorted_interval_list_csharp_wrap.$O
 
 ifneq ($(DOTNET_SNK),)
 $(DOTNET_ORTOOLS_SNK): | $(BIN_DIR)
@@ -650,7 +650,6 @@ test_dotnet_contrib:
 	$(MAKE) run SOURCE=examples/contrib/fsvolsay3-lpSolve.fs
 	$(MAKE) run SOURCE=examples/contrib/fsvolsay3.fs
 	$(MAKE) run SOURCE=examples/contrib/SimpleProgramFSharp.fs
-#	$(MAKE) run SOURCE=examples/contrib/csfz.cs # Flatzinc needed
 #	$(MAKE) run SOURCE=examples/contrib/nontransitive_dice.cs # too long
 #	$(MAKE) run SOURCE=examples/contrib/partition.cs # too long
 #	$(MAKE) run SOURCE=examples/contrib/secret_santa.cs # too long

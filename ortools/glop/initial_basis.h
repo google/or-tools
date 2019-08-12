@@ -79,11 +79,11 @@ class InitialBasis {
 
  private:
   // Internal implementation of the Primal/Dual CompleteTriangularBasis().
-  template <bool only_allow_zero_cost_column>
-  void CompleteTriangularBasis(ColIndex num_cols, RowToColMapping* basis);
+  //template <bool only_allow_zero_cost_column>
+  void CompleteTriangularBasis(ColIndex num_cols, RowToColMapping* basis, bool only_allow_zero_cost_column);
 
-  template <bool only_allow_zero_cost_column>
-  void GetMarosBasis(ColIndex num_cols, RowToColMapping* basis);
+  //template <bool only_allow_zero_cost_column>
+  void GetMarosBasis(ColIndex num_cols, RowToColMapping* basis, bool only_allow_zero_cost_column);
 
   // Returns an integer representing the order (the lower the better)
   // between column categories (known as C2, C3 or C4 in the paper).

@@ -21,7 +21,6 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/rins.h"
-#include "ortools/util/random_engine.h"
 
 namespace operations_research {
 namespace sat {
@@ -233,6 +232,11 @@ void NeighborhoodGenerator::Synchronize() {
   int num_not_fully_solved_in_batch = 0;
 
   for (const SolveData& data : solve_data_) {
+    ++num_calls_;
+
+    // INFEASIBLE or OPTIMAL means that we "fully solved" the local problem.
+    // If we didn't, then we cannot be sure that there is no improving solution
+    // in that neighborhood.
     if (data.status == CpSolverStatus::INFEASIBLE ||
         data.status == CpSolverStatus::OPTIMAL) {
       ++num_fully_solved_calls_;
@@ -241,20 +245,24 @@ void NeighborhoodGenerator::Synchronize() {
       ++num_not_fully_solved_in_batch;
     }
 
-    num_calls_++;
-    if (data.objective_improvement > 0) {
-      // Note(user): For this to work properly, the objective diff should be
-      // computed with respect to the best solution at the time of the
-      // neighborhood generation.
+    // It seems to make more sense to compare the new objective to the base
+    // solution objective, not the best one. However this causes issue in the
+    // logic below because on some problems the neighborhood can always lead
+    // to a better "new objective" if the base solution wasn't the best one.
+    //
+    // This might not be a final solution, but it does work ok for now.
+    const IntegerValue best_objective_improvement =
+        data.initial_best_objective - data.new_objective;
+    if (best_objective_improvement > 0) {
       num_consecutive_non_improving_calls_ = 0;
     } else {
-      num_consecutive_non_improving_calls_++;
+      ++num_consecutive_non_improving_calls_;
     }
 
     // TODO(user): Weight more recent data.
     // degrade the current average to forget old learnings.
     const double gain_per_time_unit =
-        std::max(0.0, static_cast<double>(data.objective_improvement.value())) /
+        std::max(0.0, static_cast<double>(best_objective_improvement.value())) /
         (1.0 + data.deterministic_time);
     if (num_calls_ <= 100) {
       current_average_ += (gain_per_time_unit - current_average_) / num_calls_;
@@ -278,6 +286,10 @@ void NeighborhoodGenerator::Synchronize() {
   if (num_consecutive_non_improving_calls_ > 20) {
     num_consecutive_non_improving_calls_ = 0;
     deterministic_limit_ *= 1.1;
+
+    // We do not want the limit to go to high. Intuitively, the goal is to try
+    // out a lot of neighborhoods, not just spend a lot of time on a few.
+    deterministic_limit_ = std::min(60.0, deterministic_limit_);
   }
 
   solve_data_.clear();
@@ -285,13 +297,12 @@ void NeighborhoodGenerator::Synchronize() {
 
 namespace {
 
-void GetRandomSubset(int seed, double relative_size, std::vector<int>* base) {
-  random_engine_t random;
-  random.seed(seed);
-
+template <class Random>
+void GetRandomSubset(double relative_size, std::vector<int>* base,
+                     Random* random) {
   // TODO(user): we could generate this more efficiently than using random
   // shuffle.
-  std::shuffle(base->begin(), base->end(), random);
+  std::shuffle(base->begin(), base->end(), *random);
   const int target_size = std::round(relative_size * base->size());
   base->resize(target_size);
 }
@@ -299,16 +310,16 @@ void GetRandomSubset(int seed, double relative_size, std::vector<int>* base) {
 }  // namespace
 
 Neighborhood SimpleNeighborhoodGenerator::Generate(
-    const CpSolverResponse& initial_solution, int64 seed,
-    double difficulty) const {
+    const CpSolverResponse& initial_solution, double difficulty,
+    random_engine_t* random) const {
   std::vector<int> fixed_variables = helper_.ActiveVariables();
-  GetRandomSubset(seed, 1.0 - difficulty, &fixed_variables);
+  GetRandomSubset(1.0 - difficulty, &fixed_variables, random);
   return helper_.FixGivenVariables(initial_solution, fixed_variables);
 }
 
 Neighborhood VariableGraphNeighborhoodGenerator::Generate(
-    const CpSolverResponse& initial_solution, int64 seed,
-    double difficulty) const {
+    const CpSolverResponse& initial_solution, double difficulty,
+    random_engine_t* random) const {
   const int num_active_vars = helper_.ActiveVariables().size();
   const int num_model_vars = helper_.ModelProto().variables_size();
   const int target_size = std::ceil(difficulty * num_active_vars);
@@ -317,15 +328,12 @@ Neighborhood VariableGraphNeighborhoodGenerator::Generate(
   }
   CHECK_GT(target_size, 0);
 
-  random_engine_t random;
-  random.seed(seed);
-
   std::uniform_int_distribution<int> random_var(0, num_active_vars - 1);
   std::vector<bool> visited_variables_set(num_model_vars, false);
   std::vector<int> relaxed_variables;
   std::vector<int> visited_variables;
 
-  const int first_var = helper_.ActiveVariables()[random_var(random)];
+  const int first_var = helper_.ActiveVariables()[random_var(*random)];
   visited_variables_set[first_var] = true;
   visited_variables.push_back(first_var);
   relaxed_variables.push_back(first_var);
@@ -343,7 +351,7 @@ Neighborhood VariableGraphNeighborhoodGenerator::Generate(
       }
     }
     // We always randomize to change the partial subgraph explored afterwards.
-    std::shuffle(random_variables.begin(), random_variables.end(), random);
+    std::shuffle(random_variables.begin(), random_variables.end(), *random);
     for (const int var : random_variables) {
       if (relaxed_variables.size() < target_size) {
         visited_variables.push_back(var);
@@ -361,8 +369,8 @@ Neighborhood VariableGraphNeighborhoodGenerator::Generate(
 }
 
 Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
-    const CpSolverResponse& initial_solution, int64 seed,
-    double difficulty) const {
+    const CpSolverResponse& initial_solution, double difficulty,
+    random_engine_t* random) const {
   const int num_active_vars = helper_.ActiveVariables().size();
   const int num_model_vars = helper_.ModelProto().variables_size();
   const int target_size = std::ceil(difficulty * num_active_vars);
@@ -372,9 +380,6 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
   }
   CHECK_GT(target_size, 0);
 
-  random_engine_t random;
-  random.seed(seed);
-
   std::vector<bool> visited_variables_set(num_model_vars, false);
   std::vector<int> relaxed_variables;
   std::vector<bool> added_constraints(num_constraints, false);
@@ -383,7 +388,7 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
   // Start by a random constraint.
   {
     std::uniform_int_distribution<int> random_start(0, num_constraints - 1);
-    next_constraints.push_back(random_start(random));
+    next_constraints.push_back(random_start(*random));
     added_constraints[next_constraints.back()] = true;
   }
 
@@ -395,7 +400,7 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
     // Pick a random unprocessed constraint.
     std::uniform_int_distribution<int> random_constraint(
         0, next_constraints.size() - 1);
-    const int i = random_constraint(random);
+    const int i = random_constraint(*random);
     const int contraint_index = next_constraints[i];
     std::swap(next_constraints[i], next_constraints.back());
     next_constraints.pop_back();
@@ -404,7 +409,7 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
     // possible constraints.
     CHECK_LT(contraint_index, num_constraints);
     random_variables = helper_.ConstraintToVar()[contraint_index];
-    std::shuffle(random_variables.begin(), random_variables.end(), random);
+    std::shuffle(random_variables.begin(), random_variables.end(), *random);
     for (const int var : random_variables) {
       if (visited_variables_set[var]) continue;
       visited_variables_set[var] = true;
@@ -517,19 +522,19 @@ Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
 }
 
 Neighborhood SchedulingNeighborhoodGenerator::Generate(
-    const CpSolverResponse& initial_solution, int64 seed,
-    double difficulty) const {
+    const CpSolverResponse& initial_solution, double difficulty,
+    random_engine_t* random) const {
   const auto span = helper_.TypeToConstraints(ConstraintProto::kInterval);
   std::vector<int> intervals_to_relax(span.begin(), span.end());
-  GetRandomSubset(seed, difficulty, &intervals_to_relax);
+  GetRandomSubset(difficulty, &intervals_to_relax, random);
 
   return GenerateSchedulingNeighborhoodForRelaxation(intervals_to_relax,
                                                      initial_solution, helper_);
 }
 
 Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
-    const CpSolverResponse& initial_solution, int64 seed,
-    double difficulty) const {
+    const CpSolverResponse& initial_solution, double difficulty,
+    random_engine_t* random) const {
   std::vector<std::pair<int64, int>> start_interval_pairs;
   for (const int i : helper_.TypeToConstraints(ConstraintProto::kInterval)) {
     const ConstraintProto& interval_ct = helper_.ModelProto().constraints(i);
@@ -540,12 +545,10 @@ Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
   }
   std::sort(start_interval_pairs.begin(), start_interval_pairs.end());
   const int relaxed_size = std::floor(difficulty * start_interval_pairs.size());
-  random_engine_t random;
-  random.seed(seed);
 
   std::uniform_int_distribution<int> random_var(
       0, start_interval_pairs.size() - relaxed_size - 1);
-  const int random_start_index = random_var(random);
+  const int random_start_index = random_var(*random);
   std::vector<int> intervals_to_relax;
   // TODO(user,user): Consider relaxing more than one time window intervals.
   // This seems to help with Giza models.
@@ -564,8 +567,8 @@ bool RelaxationInducedNeighborhoodGenerator::ReadyToGenerate() const {
 }
 
 Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
-    const CpSolverResponse& initial_solution, int64 seed,
-    double difficulty) const {
+    const CpSolverResponse& initial_solution, double difficulty,
+    random_engine_t* random) const {
   Neighborhood neighborhood = helper_.FullNeighborhood();
   neighborhood.is_generated = false;
 

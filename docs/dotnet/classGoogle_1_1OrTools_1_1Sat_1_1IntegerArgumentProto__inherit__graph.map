@@ -1,4 +1,4 @@
-<map id="Google.OrTools.Sat.IntegerArgumentProto" name="Google.OrTools.Sat.IntegerArgumentProto">
-<area shape="rect" id="node1" title="Argument of the constraints of the form target_var = OP(vars)." alt="" coords="20,92,203,131"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,218,44"/>
+<map id="IntegerArgumentProto" name="IntegerArgumentProto">
+<area shape="rect" id="node1" title="Argument of the constraints of the form target_var = OP(vars)." alt="" coords="24,92,177,117"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,195,44"/>
 </map>

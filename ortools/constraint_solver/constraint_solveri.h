@@ -1493,10 +1493,13 @@ class LocalSearchFilter : public BaseObject {
   /// Accepts a "delta" given the assignment with which the filter has been
   /// synchronized; the delta holds the variables which have been modified and
   /// their new value.
+  /// If the filter represents a part of the global objective, its contribution
+  /// must be between objective_min and objective_max.
   /// Sample: supposing one wants to maintain a[0,1] + b[0,1] <= 1,
   /// for the assignment (a,1), (b,0), the delta (b,1) will be rejected
   /// but the delta (a,0) will be accepted.
-  virtual bool Accept(Assignment* delta, Assignment* deltadelta) = 0;
+  virtual bool Accept(const Assignment* delta, const Assignment* deltadelta,
+                      int64 objective_min, int64 objective_max) = 0;
 
   /// Synchronizes the filter with the current solution, delta being the
   /// difference with the solution passed to the previous call to Synchronize()
@@ -1507,11 +1510,10 @@ class LocalSearchFilter : public BaseObject {
                            const Assignment* delta) = 0;
   virtual bool IsIncremental() const { return false; }
 
-  /// DO NOT USE. Objective value from last time Synchronize() was called.
+  /// Objective value from last time Synchronize() was called.
   virtual int64 GetSynchronizedObjectiveValue() const { return 0LL; }
-  /// DO NOT USE. Objective value from the last time Accept() was called and
-  /// returned true. If the last Accept() call returned false, returns an
-  /// undefined value.
+  /// Objective value from the last time Accept() was called and returned true.
+  // If the last Accept() call returned false, returns an undefined value.
   virtual int64 GetAcceptedObjectiveValue() const { return 0LL; }
 };
 
@@ -1522,20 +1524,14 @@ class LocalSearchFilter : public BaseObject {
 class LocalSearchFilterManager : public LocalSearchFilter {
  public:
   LocalSearchFilterManager(Solver* const solver,
-                           const std::vector<LocalSearchFilter*>& filters,
-                           IntVar* objective);
+                           const std::vector<LocalSearchFilter*>& filters);
   std::string DebugString() const override {
     return "LocalSearchFilterManager";
   }
   /// Returns true iff all filters return true, and the sum of their accepted
-  /// objectives is smaller or equal to the target objective. This target
-  /// objective is:
-  /// (objective_ == nullptr) ?
-  ///   kint64max :
-  ///   ((objective_ != delta->Objective()) ?
-  ///     objective_.Max() :
-  ///     min(objective_.Max(), delta->ObjectiveMax()))
-  bool Accept(Assignment* delta, Assignment* deltadelta) override;
+  /// objectives is between objective_min and objective_max.
+  bool Accept(const Assignment* delta, const Assignment* deltadelta,
+              int64 objective_min, int64 objective_max) override;
   /// Synchronizes all filters to assignment.
   void Synchronize(const Assignment* assignment,
                    const Assignment* delta) override;
@@ -1548,7 +1544,6 @@ class LocalSearchFilterManager : public LocalSearchFilter {
  private:
   Solver* const solver_;
   std::vector<LocalSearchFilter*> filters_;
-  IntVar* const objective_;
   bool is_incremental_;
   int64 synchronized_value_;
   int64 accepted_value_;
@@ -1557,8 +1552,6 @@ class LocalSearchFilterManager : public LocalSearchFilter {
 
 class IntVarLocalSearchFilter : public LocalSearchFilter {
  public:
-  IntVarLocalSearchFilter(const std::vector<IntVar*>& vars,
-                          Solver::ObjectiveWatcher objective_callback);
   explicit IntVarLocalSearchFilter(const std::vector<IntVar*>& vars);
   ~IntVarLocalSearchFilter() override;
   /// This method should not be overridden. Override OnSynchronize() instead
@@ -1575,10 +1568,6 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
     return *index != kUnassigned;
   }
 
-  virtual void InjectObjectiveValue(int64 objective_value) {
-    injected_objective_value_ = objective_value;
-  }
-
   /// Add variables to "track" to the filter.
   void AddVars(const std::vector<IntVar*>& vars);
   int Size() const { return vars_.size(); }
@@ -1593,23 +1582,12 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
   virtual void OnSynchronize(const Assignment* delta) {}
   void SynchronizeOnAssignment(const Assignment* assignment);
 
-  bool CanPropagateObjectiveValue() const {
-    return objective_callback_ != nullptr;
-  }
-  void PropagateObjectiveValue(int64 objective_value) {
-    if (objective_callback_ != nullptr) {
-      objective_callback_(objective_value);
-    }
-  }
-  int64 injected_objective_value_;
-
  private:
   std::vector<IntVar*> vars_;
   std::vector<int64> values_;
   std::vector<bool> var_synced_;
   std::vector<int> var_index_to_index_;
   static const int kUnassigned;
-  Solver::ObjectiveWatcher objective_callback_;
 };
 
 class PropagationMonitor : public SearchMonitor {
@@ -1787,7 +1765,7 @@ class SymmetryBreaker : public DecisionVisitor {
 class SearchLog : public SearchMonitor {
  public:
   SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
-            double scaling_factor,
+            double scaling_factor, double offset,
             std::function<std::string()> display_callback, int period);
   ~SearchLog() override;
   void EnterSearch() override;
@@ -1816,6 +1794,7 @@ class SearchLog : public SearchMonitor {
   IntVar* const var_;
   OptimizeVar* const obj_;
   const double scaling_factor_;
+  const double offset_;
   std::function<std::string()> display_callback_;
   int nsol_;
   int64 tick_;

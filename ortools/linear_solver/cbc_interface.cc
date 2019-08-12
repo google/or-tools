@@ -359,8 +359,8 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
     message_handler.setLogLevel(3, 0);  // Cgl messages
   } else {
     message_handler.setLogLevel(0, 1);  // Coin messages
-    message_handler.setLogLevel(1, 0);  // Clp messages
-    message_handler.setLogLevel(2, 0);  // Presolve messages
+    message_handler.setLogLevel(1, 1);  // Clp messages
+    message_handler.setLogLevel(2, 1);  // Presolve messages
     message_handler.setLogLevel(3, 1);  // Cgl messages
   }
 

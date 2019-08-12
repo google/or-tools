@@ -732,7 +732,6 @@ class Solver {
 
   typedef std::function<int64(const IntVar* v, int64 id)> VariableValueSelector;
   typedef std::function<bool(int64, int64, int64)> VariableValueComparator;
-  typedef std::function<void(int64)> ObjectiveWatcher;
   typedef std::function<DecisionModification()> BranchSelector;
   // TODO(user): wrap in swig.
   typedef std::function<void(Solver*)> Action;
@@ -2264,8 +2263,11 @@ class Solver {
     /// be used together).
     OptimizeVar* objective = nullptr;
     IntVar* variable = nullptr;
-    /// Objective or var values are unscaled by this factor when displayed.
+    /// When displayed, objective or var values will be scaled and offset by
+    /// the given values in the following way:
+    /// scaling_factor * (value + offset).
     double scaling_factor = 1.0;
+    double offset = 0;
     /// SearchMonitors will display the result of display_callback at each new
     /// solution found.
     std::function<std::string()> display_callback;
@@ -2682,24 +2684,27 @@ class Solver {
 
   /// Local Search Phase Parameters
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      LocalSearchOperator* const ls_operator,
+      IntVar* objective, LocalSearchOperator* const ls_operator,
       DecisionBuilder* const sub_decision_builder);
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      LocalSearchOperator* const ls_operator,
+      IntVar* objective, LocalSearchOperator* const ls_operator,
       DecisionBuilder* const sub_decision_builder, RegularLimit* const limit);
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      LocalSearchOperator* const ls_operator,
+      IntVar* objective, LocalSearchOperator* const ls_operator,
       DecisionBuilder* const sub_decision_builder, RegularLimit* const limit,
       const std::vector<LocalSearchFilter*>& filters);
 
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      SolutionPool* const pool, LocalSearchOperator* const ls_operator,
+      IntVar* objective, SolutionPool* const pool,
+      LocalSearchOperator* const ls_operator,
       DecisionBuilder* const sub_decision_builder);
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      SolutionPool* const pool, LocalSearchOperator* const ls_operator,
+      IntVar* objective, SolutionPool* const pool,
+      LocalSearchOperator* const ls_operator,
       DecisionBuilder* const sub_decision_builder, RegularLimit* const limit);
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      SolutionPool* const pool, LocalSearchOperator* const ls_operator,
+      IntVar* objective, SolutionPool* const pool,
+      LocalSearchOperator* const ls_operator,
       DecisionBuilder* const sub_decision_builder, RegularLimit* const limit,
       const std::vector<LocalSearchFilter*>& filters);
 
@@ -2707,21 +2712,11 @@ class Solver {
   LocalSearchFilter* MakeVariableDomainFilter();
   IntVarLocalSearchFilter* MakeSumObjectiveFilter(
       const std::vector<IntVar*>& vars, IndexEvaluator2 values,
-      IntVar* const objective, Solver::LocalSearchFilterBound filter_enum);
-  IntVarLocalSearchFilter* MakeSumObjectiveFilter(
-      const std::vector<IntVar*>& vars, IndexEvaluator2 values,
-      ObjectiveWatcher delta_objective_callback, IntVar* const objective,
       Solver::LocalSearchFilterBound filter_enum);
   IntVarLocalSearchFilter* MakeSumObjectiveFilter(
       const std::vector<IntVar*>& vars,
-      const std::vector<IntVar*>& secondary_vars,
-      Solver::IndexEvaluator3 values, IntVar* const objective,
+      const std::vector<IntVar*>& secondary_vars, IndexEvaluator3 values,
       Solver::LocalSearchFilterBound filter_enum);
-  IntVarLocalSearchFilter* MakeSumObjectiveFilter(
-      const std::vector<IntVar*>& vars,
-      const std::vector<IntVar*>& secondary_vars,
-      Solver::IndexEvaluator3 values, ObjectiveWatcher delta_objective_callback,
-      IntVar* const objective, Solver::LocalSearchFilterBound filter_enum);
 
   /// Performs PeriodicCheck on the top-level search; for instance, can be
   /// called from a nested solve to check top-level limits.

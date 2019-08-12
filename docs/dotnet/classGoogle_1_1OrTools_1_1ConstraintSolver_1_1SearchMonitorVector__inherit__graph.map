@@ -1,9 +1,9 @@
-<map id="Google.OrTools.ConstraintSolver.SearchMonitorVector" name="Google.OrTools.ConstraintSolver.SearchMonitorVector">
-<area shape="rect" id="node1" title=" " alt="" coords="270,145,457,184"/>
-<area shape="rect" id="node2" title=" " alt="" coords="68,5,159,31"/>
-<area shape="rect" id="node3" title=" " alt="" coords="45,55,183,93"/>
-<area shape="rect" id="node4" title=" " alt="" coords="5,117,222,156"/>
-<area shape="rect" id="node5" title=" " alt="" coords="25,180,203,205"/>
-<area shape="rect" id="node6" title=" " alt="" coords="27,229,201,268"/>
-<area shape="rect" id="node7" title=" " alt="" coords="5,292,222,331"/>
+<map id="SearchMonitorVector" name="SearchMonitorVector">
+<area shape="rect" id="node1" title=" " alt="" coords="209,129,355,155"/>
+<area shape="rect" id="node2" title=" " alt="" coords="38,5,129,31"/>
+<area shape="rect" id="node3" title=" " alt="" coords="35,55,132,80"/>
+<area shape="rect" id="node4" title=" " alt="" coords="5,104,161,129"/>
+<area shape="rect" id="node5" title=" " alt="" coords="15,153,151,179"/>
+<area shape="rect" id="node6" title=" " alt="" coords="35,203,132,228"/>
+<area shape="rect" id="node7" title=" " alt="" coords="5,252,161,277"/>
 </map>

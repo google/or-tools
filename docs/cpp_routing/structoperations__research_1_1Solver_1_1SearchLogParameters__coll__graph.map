@@ -1,0 +1,9 @@
+<map id="Solver::SearchLogParameters" name="Solver::SearchLogParameters">
+<area shape="rect" id="node1" title="Creates a search monitor from logging parameters." alt="" coords="23,427,223,452"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1OptimizeVar.html" title="This class encapsulates an objective." alt="" coords="30,340,124,365"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events." alt="" coords="5,129,113,155"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="28,5,118,31"/>
+<area shape="rect" id="node7" href="$classoperations__research_1_1PropagationBaseObject.html" title="NOLINT." alt="" coords="94,80,256,105"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr." alt="" coords="143,253,199,279"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming." alt="" coords="141,179,204,204"/>
+</map>

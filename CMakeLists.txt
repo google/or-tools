@@ -7,7 +7,7 @@ if(POLICY CMP0068)
   cmake_policy(SET CMP0068 NEW)
 endif()
 
-if(POLICY CMP0078)
+xif(POLICY CMP0078)
   cmake_policy(SET CMP0078 OLD)
 endif()
 

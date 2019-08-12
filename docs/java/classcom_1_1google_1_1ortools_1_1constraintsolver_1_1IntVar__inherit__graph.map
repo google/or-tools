@@ -1,0 +1,7 @@
+<map id="IntVar" name="IntVar">
+<area shape="rect" id="node1" title="The class IntVar is a subset of IntExpr." alt="" coords="58,225,114,251"/>
+<area shape="rect" id="node5" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BooleanVar.html" title=" " alt="" coords="41,299,131,324"/>
+<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming." alt="" coords="55,152,118,177"/>
+<area shape="rect" id="node3" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html" title="NOLINT The PropagationBaseObject is a subclass of BaseObject that is also friend to the Solver class." alt="" coords="5,79,168,104"/>
+<area shape="rect" id="node4" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="41,5,132,31"/>
+</map>

@@ -1570,6 +1570,10 @@ class CpModel(object):
             raise TypeError(&#39;TypeError: &#39; + str(x) +
                             &#39; is not a boolean variable&#39;)
 
+    def AddHint(self, var, value):
+        self.__model.solution_hint.vars.append(self.GetOrMakeIndex(var))
+        self.__model.solution_hint.values.append(value)
+
 
 def EvaluateLinearExpr(expression, solution):
     &#34;&#34;&#34;Evaluate a linear expression against a solution.&#34;&#34;&#34;
@@ -2976,7 +2980,11 @@ Returns:
                                 &#39; is not a boolean variable&#39;)
         elif not isinstance(x, _NotBooleanVariable):
             raise TypeError(&#39;TypeError: &#39; + str(x) +
-                            &#39; is not a boolean variable&#39;)</code></pre>
+                            &#39; is not a boolean variable&#39;)
+
+    def AddHint(self, var, value):
+        self.__model.solution_hint.vars.append(self.GetOrMakeIndex(var))
+        self.__model.solution_hint.values.append(value)</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
@@ -3557,6 +3565,18 @@ Raises:
     ct = self.AddAllowedAssignments(variables, tuples_list)
     self.__model.constraints[index].table.negated = True
     return ct</code></pre>
+</details>
+</dd>
+<dt id="cp_model.CpModel.AddHint"><code class="name flex">
+<span>def <span class="ident">AddHint</span></span>(<span>self, var, value)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def AddHint(self, var, value):
+    self.__model.solution_hint.vars.append(self.GetOrMakeIndex(var))
+    self.__model.solution_hint.values.append(value)</code></pre>
 </details>
 </dd>
 <dt id="cp_model.CpModel.AddImplication"><code class="name flex">
@@ -5915,6 +5935,7 @@ def Sum(cls, expressions):
 <li><code><a title="cp_model.CpModel.AddDivisionEquality" href="#cp_model.CpModel.AddDivisionEquality">AddDivisionEquality</a></code></li>
 <li><code><a title="cp_model.CpModel.AddElement" href="#cp_model.CpModel.AddElement">AddElement</a></code></li>
 <li><code><a title="cp_model.CpModel.AddForbiddenAssignments" href="#cp_model.CpModel.AddForbiddenAssignments">AddForbiddenAssignments</a></code></li>
+<li><code><a title="cp_model.CpModel.AddHint" href="#cp_model.CpModel.AddHint">AddHint</a></code></li>
 <li><code><a title="cp_model.CpModel.AddImplication" href="#cp_model.CpModel.AddImplication">AddImplication</a></code></li>
 <li><code><a title="cp_model.CpModel.AddInverse" href="#cp_model.CpModel.AddInverse">AddInverse</a></code></li>
 <li><code><a title="cp_model.CpModel.AddLinearConstraint" href="#cp_model.CpModel.AddLinearConstraint">AddLinearConstraint</a></code></li>

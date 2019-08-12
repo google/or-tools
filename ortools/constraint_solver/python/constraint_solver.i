@@ -337,11 +337,9 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
   LocalSearchFilter* SumObjectiveFilter(
       const std::vector<IntVar*>& vars,
       Solver::IndexEvaluator2 values,
-      IntVar* const objective,
       Solver::LocalSearchFilterBound filter_enum) {
     return $self->MakeSumObjectiveFilter(vars,
                                          values,
-                                         objective,
                                          filter_enum);
   }
 }
@@ -734,7 +732,7 @@ namespace operations_research {
 %unignore Solver::SolveAndCommit;
 %unignore Solver::FinishCurrentSearch;
 %unignore Solver::RestartCurrentSearch;
-// TOOD(lperron): Support Action in python.
+// TODO(user): Support Action in python.
 // %unignore Solver::AddBacktrackAction;
 
 // Solver: Debug and performance counters.

@@ -800,7 +800,7 @@ bool LinearProgrammingConstraint::Propagate() {
       const IntegerValue propagated_lb =
           integer_trail_->LowerBound(objective_cp_);
       if (approximate_new_lb > propagated_lb) {
-        VLOG(1) << "LP objective [ " << ToDouble(propagated_lb) << ", "
+        VLOG(2) << "LP objective [ " << ToDouble(propagated_lb) << ", "
                 << ToDouble(integer_trail_->UpperBound(objective_cp_))
                 << " ] approx_lb += "
                 << ToDouble(approximate_new_lb - propagated_lb);
@@ -1467,22 +1467,20 @@ void AddOutgoingCut(int num_nodes, int subset_size,
                     const std::vector<bool>& in_subset,
                     const std::vector<int>& tails,
                     const std::vector<int>& heads,
-                    const std::vector<IntegerVariable>& vars,
-                    const std::vector<double>& var_lp_values,
+                    const std::vector<Literal>& literals,
+                    const std::vector<double>& literal_lp_values,
                     int64 rhs_lower_bound,
                     const gtl::ITIVector<IntegerVariable, double>& lp_values,
-                    LinearConstraintManager* manager) {
-  LinearConstraint outgoing;
+                    LinearConstraintManager* manager, Model* model) {
+  LinearConstraintBuilder outgoing(model, IntegerValue(rhs_lower_bound),
+                                   kMaxIntegerValue);
   double sum_outgoing = 0.0;
-  outgoing.lb = IntegerValue(rhs_lower_bound);
-  outgoing.ub = kMaxIntegerValue;
 
   // Add outgoing arcs, compute outgoing flow.
   for (int i = 0; i < tails.size(); ++i) {
     if (in_subset[tails[i]] && !in_subset[heads[i]]) {
-      sum_outgoing += var_lp_values[i];
-      outgoing.vars.push_back(vars[i]);
-      outgoing.coeffs.push_back(IntegerValue(1));
+      sum_outgoing += literal_lp_values[i];
+      CHECK(outgoing.AddLiteralTerm(literals[i], IntegerValue(1)));
     }
   }
 
@@ -1501,13 +1499,13 @@ void AddOutgoingCut(int num_nodes, int subset_size,
     if (in_subset[tails[i]]) {
       num_optional_nodes_in++;
       if (optional_loop_in == -1 ||
-          var_lp_values[i] < var_lp_values[optional_loop_in]) {
+          literal_lp_values[i] < literal_lp_values[optional_loop_in]) {
         optional_loop_in = i;
       }
     } else {
       num_optional_nodes_out++;
       if (optional_loop_out == -1 ||
-          var_lp_values[i] < var_lp_values[optional_loop_out]) {
+          literal_lp_values[i] < literal_lp_values[optional_loop_out]) {
         optional_loop_out = i;
       }
     }
@@ -1517,32 +1515,32 @@ void AddOutgoingCut(int num_nodes, int subset_size,
     // When all optionals of one side are excluded in lp solution, no cut.
     if (num_optional_nodes_in == subset_size &&
         (optional_loop_in == -1 ||
-         var_lp_values[optional_loop_in] > 1.0 - 1e-6)) {
+         literal_lp_values[optional_loop_in] > 1.0 - 1e-6)) {
       return;
     }
     if (num_optional_nodes_out == num_nodes - subset_size &&
         (optional_loop_out == -1 ||
-         var_lp_values[optional_loop_out] > 1.0 - 1e-6)) {
+         literal_lp_values[optional_loop_out] > 1.0 - 1e-6)) {
       return;
     }
 
     // There is no mandatory node in subset, add optional_loop_in.
     if (num_optional_nodes_in == subset_size) {
-      outgoing.vars.push_back(vars[optional_loop_in]);
-      outgoing.coeffs.push_back(IntegerValue(1));
-      sum_outgoing += var_lp_values[optional_loop_in];
+      CHECK(
+          outgoing.AddLiteralTerm(literals[optional_loop_in], IntegerValue(1)));
+      sum_outgoing += literal_lp_values[optional_loop_in];
     }
 
     // There is no mandatory node out of subset, add optional_loop_out.
     if (num_optional_nodes_out == num_nodes - subset_size) {
-      outgoing.vars.push_back(vars[optional_loop_out]);
-      outgoing.coeffs.push_back(IntegerValue(1));
-      sum_outgoing += var_lp_values[optional_loop_out];
+      CHECK(outgoing.AddLiteralTerm(literals[optional_loop_out],
+                                    IntegerValue(1)));
+      sum_outgoing += literal_lp_values[optional_loop_out];
     }
   }
 
   if (sum_outgoing < rhs_lower_bound - 1e-6) {
-    manager->AddCut(outgoing, "Circuit", lp_values);
+    manager->AddCut(outgoing.Build(), "Circuit", lp_values);
   }
 }
 
@@ -1556,10 +1554,10 @@ void AddOutgoingCut(int num_nodes, int subset_size,
 // the asymmetric case.
 void SeparateSubtourInequalities(
     int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
-    const std::vector<IntegerVariable>& vars,
+    const std::vector<Literal>& literals,
     const gtl::ITIVector<IntegerVariable, double>& lp_values,
     absl::Span<const int64> demands, int64 capacity,
-    LinearConstraintManager* manager) {
+    LinearConstraintManager* manager, Model* model) {
   if (num_nodes <= 2) return;
 
   // We will collect only the arcs with a positive lp_values to speed up some
@@ -1572,11 +1570,20 @@ void SeparateSubtourInequalities(
   std::vector<Arc> relevant_arcs;
 
   // Sort the arcs by non-increasing lp_values.
+  std::vector<double> literal_lp_values(literals.size());
   std::vector<std::pair<double, int>> arc_by_decreasing_lp_values;
-  std::vector<double> var_lp_values;
-  for (int i = 0; i < vars.size(); ++i) {
-    const double lp_value = lp_values[vars[i]];
-    var_lp_values.push_back(lp_value);
+  auto* encoder = model->GetOrCreate<IntegerEncoder>();
+  for (int i = 0; i < literals.size(); ++i) {
+    double lp_value;
+    const IntegerVariable direct_view = encoder->GetLiteralView(literals[i]);
+    if (direct_view != kNoIntegerVariable) {
+      lp_value = lp_values[direct_view];
+    } else {
+      lp_value =
+          1.0 - lp_values[encoder->GetLiteralView(literals[i].Negated())];
+    }
+    literal_lp_values[i] = lp_value;
+
     if (lp_value < 1e-6) continue;
     relevant_arcs.push_back({tails[i], heads[i], lp_value});
     arc_by_decreasing_lp_values.push_back({lp_value, i});
@@ -1751,9 +1758,10 @@ void SeparateSubtourInequalities(
 
     // Add a cut if the current outgoing flow is not enough.
     if (outgoing_flow < min_outgoing_flow - 1e-6) {
-      AddOutgoingCut(num_nodes, subset.size(), in_subset, tails, heads, vars,
-                     var_lp_values,
-                     /*rhs_lower_bound=*/min_outgoing_flow, lp_values, manager);
+      AddOutgoingCut(num_nodes, subset.size(), in_subset, tails, heads,
+                     literals, literal_lp_values,
+                     /*rhs_lower_bound=*/min_outgoing_flow, lp_values, manager,
+                     model);
     }
 
     // Sparse clean up.
@@ -1761,20 +1769,42 @@ void SeparateSubtourInequalities(
   }
 }
 
+namespace {
+
+// Returns for each literal its integer view, or the view of its negation.
+std::vector<IntegerVariable> GetAssociatedVariables(
+    const std::vector<Literal>& literals, Model* model) {
+  auto* encoder = model->GetOrCreate<IntegerEncoder>();
+  std::vector<IntegerVariable> result;
+  for (const Literal l : literals) {
+    const IntegerVariable direct_view = encoder->GetLiteralView(l);
+    if (direct_view != kNoIntegerVariable) {
+      result.push_back(direct_view);
+    } else {
+      result.push_back(encoder->GetLiteralView(l.Negated()));
+      DCHECK_NE(result.back(), kNoIntegerVariable);
+    }
+  }
+  return result;
+}
+
+}  // namespace
+
 // We use a basic algorithm to detect components that are not connected to the
 // rest of the graph in the LP solution, and add cuts to force some arcs to
 // enter and leave this component from outside.
 CutGenerator CreateStronglyConnectedGraphCutGenerator(
     int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
-    const std::vector<IntegerVariable>& vars) {
+    const std::vector<Literal>& literals, Model* model) {
   CutGenerator result;
-  result.vars = vars;
+  result.vars = GetAssociatedVariables(literals, model);
   result.generate_cuts =
-      [num_nodes, tails, heads, vars](
+      [num_nodes, tails, heads, literals, model](
           const gtl::ITIVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
-        SeparateSubtourInequalities(num_nodes, tails, heads, vars, lp_values,
-                                    /*demands=*/{}, /*capacity=*/0, manager);
+        SeparateSubtourInequalities(
+            num_nodes, tails, heads, literals, lp_values,
+            /*demands=*/{}, /*capacity=*/0, manager, model);
       };
   return result;
 }
@@ -1782,17 +1812,18 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
 CutGenerator CreateCVRPCutGenerator(int num_nodes,
                                     const std::vector<int>& tails,
                                     const std::vector<int>& heads,
-                                    const std::vector<IntegerVariable>& vars,
+                                    const std::vector<Literal>& literals,
                                     const std::vector<int64>& demands,
-                                    int64 capacity) {
+                                    int64 capacity, Model* model) {
   CutGenerator result;
-  result.vars = vars;
+  result.vars = GetAssociatedVariables(literals, model);
   result.generate_cuts =
-      [num_nodes, tails, heads, demands, capacity, vars](
+      [num_nodes, tails, heads, demands, capacity, literals, model](
           const gtl::ITIVector<IntegerVariable, double>& lp_values,
           LinearConstraintManager* manager) {
-        SeparateSubtourInequalities(num_nodes, tails, heads, vars, lp_values,
-                                    demands, capacity, manager);
+        SeparateSubtourInequalities(num_nodes, tails, heads, literals,
+                                    lp_values, demands, capacity, manager,
+                                    model);
       };
   return result;
 }

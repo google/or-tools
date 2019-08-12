@@ -375,6 +375,7 @@ PROTO2_RETURN(
 %unignore operations_research::MPSolver::AT_UPPER_BOUND;  // no test
 %unignore operations_research::MPSolver::FIXED_VALUE;  // no test
 %unignore operations_research::MPSolver::BASIC;
+%unignore operations_research::MPSolver::SetStartingLpBasis;
 
 // MPVariable: writer API.
 %rename (setInteger) operations_research::MPVariable::SetInteger;

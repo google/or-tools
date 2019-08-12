@@ -3179,6 +3179,7 @@ class ChristofidesFilteredDecisionBuilder
 /// Therefore the resulting solution might not actually be feasible. Will return
 /// false if a solution could not be found.
 bool SolveModelWithSat(const RoutingModel& model,
+                       const RoutingSearchParameters& search_parameters,
                        const Assignment* initial_solution,
                        Assignment* solution);
 
@@ -3186,10 +3187,10 @@ bool SolveModelWithSat(const RoutingModel& model,
 
 class BasePathFilter : public IntVarLocalSearchFilter {
  public:
-  BasePathFilter(const std::vector<IntVar*>& nexts, int next_domain_size,
-                 std::function<void(int64)> objective_callback);
+  BasePathFilter(const std::vector<IntVar*>& nexts, int next_domain_size);
   ~BasePathFilter() override {}
-  bool Accept(Assignment* delta, Assignment* deltadelta) override;
+  bool Accept(const Assignment* delta, const Assignment* deltadelta,
+              int64 objective_min, int64 objective_max) override;
   void OnSynchronize(const Assignment* delta) override;
 
  protected:
@@ -3219,7 +3220,10 @@ class BasePathFilter : public IntVarLocalSearchFilter {
   virtual void InitializeAcceptPath() {}
   virtual bool AcceptPath(int64 path_start, int64 chain_start,
                           int64 chain_end) = 0;
-  virtual bool FinalizeAcceptPath(Assignment* delta) { return true; }
+  virtual bool FinalizeAcceptPath(const Assignment* delta, int64 objective_min,
+                                  int64 objective_max) {
+    return true;
+  }
   /// Detects path starts, used to track which node belongs to which path.
   void ComputePathStarts(std::vector<int64>* path_starts,
                          std::vector<int>* index_to_path);
@@ -3257,7 +3261,8 @@ class CPFeasibilityFilter : public IntVarLocalSearchFilter {
   explicit CPFeasibilityFilter(const RoutingModel* routing_model);
   ~CPFeasibilityFilter() override {}
   std::string DebugString() const override { return "CPFeasibilityFilter"; }
-  bool Accept(Assignment* delta, Assignment* deltadelta) override;
+  bool Accept(const Assignment* delta, const Assignment* deltadelta,
+              int64 objective_min, int64 objective_max) override;
   void OnSynchronize(const Assignment* delta) override;
 
  private:
@@ -3273,23 +3278,18 @@ class CPFeasibilityFilter : public IntVarLocalSearchFilter {
 
 #if !defined(SWIG)
 IntVarLocalSearchFilter* MakeNodeDisjunctionFilter(
-    const RoutingModel& routing_model,
-    std::function<void(int64)> objective_callback);
+    const RoutingModel& routing_model);
 IntVarLocalSearchFilter* MakeVehicleAmortizedCostFilter(
-    const RoutingModel& routing_model,
-    Solver::ObjectiveWatcher objective_callback);
+    const RoutingModel& routing_model);
 IntVarLocalSearchFilter* MakeTypeRegulationsFilter(
     const RoutingModel& routing_model);
 std::vector<IntVarLocalSearchFilter*> MakeCumulFilters(
-    const RoutingDimension& dimension,
-    Solver::ObjectiveWatcher objective_callback, bool filter_objective_cost);
-IntVarLocalSearchFilter* MakePathCumulFilter(
-    const RoutingDimension& dimension,
-    Solver::ObjectiveWatcher objective_callback,
-    bool propagate_own_objective_value, bool filter_objective_cost);
+    const RoutingDimension& dimension, bool filter_objective_cost);
+IntVarLocalSearchFilter* MakePathCumulFilter(const RoutingDimension& dimension,
+                                             bool propagate_own_objective_value,
+                                             bool filter_objective_cost);
 IntVarLocalSearchFilter* MakeGlobalLPCumulFilter(
-    const RoutingDimension& dimension,
-    Solver::ObjectiveWatcher objective_callback, bool filter_objective_cost);
+    const RoutingDimension& dimension, bool filter_objective_cost);
 IntVarLocalSearchFilter* MakePickupDeliveryFilter(
     const RoutingModel& routing_model, const RoutingModel::IndexPairs& pairs,
     const std::vector<RoutingModel::PickupAndDeliveryPolicy>& vehicle_policies);

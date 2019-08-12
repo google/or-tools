@@ -1,5 +1,5 @@
-<map id="Google.OrTools.Algorithms.KInt64Vector.KInt64VectorEnumerator" name="Google.OrTools.Algorithms.KInt64Vector.KInt64VectorEnumerator">
-<area shape="rect" id="node1" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="227,40,474,79"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,179,44"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,68,179,120"/>
+<map id="KInt64Vector.KInt64VectorEnumerator" name="KInt64Vector.KInt64VectorEnumerator">
+<area shape="rect" id="node1" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="35,79,212,117"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,100,31"/>
+<area shape="rect" id="node3" title=" " alt="" coords="124,5,267,31"/>
 </map>

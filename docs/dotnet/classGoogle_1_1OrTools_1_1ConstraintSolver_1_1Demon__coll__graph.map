@@ -1,5 +1,5 @@
-<map id="Google.OrTools.ConstraintSolver.Demon" name="Google.OrTools.ConstraintSolver.Demon">
-<area shape="rect" id="node1" title=" " alt="" coords="5,152,184,191"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="49,79,140,104"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,5,184,31"/>
+<map id="Demon" name="Demon">
+<area shape="rect" id="node1" title=" " alt="" coords="41,152,105,177"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="28,79,118,104"/>
+<area shape="rect" id="node3" title=" " alt="" coords="5,5,141,31"/>
 </map>

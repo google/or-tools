@@ -210,11 +210,9 @@ namespace Google.OrTools.Tests {
           {1, 1}, {2, 4}, {3, 9}, {4, 16}, {5, 25} };
         model.AddAllowedAssignments(new IntVar[] {delta, squaredDelta}, tuples);
         model.Minimize(squaredDelta);
-        //Console.WriteLine("model = " + model.Model.ToString());
 
         CpSolver solver = new CpSolver();
         CpSolverStatus status = solver.Solve(model);
-        Assert.Equal(CpSolverStatus.Optimal, status);
 
         CpSolverResponse response = solver.Response;
         Assert.Equal(1, solver.Value(boolvar));
@@ -222,8 +220,7 @@ namespace Google.OrTools.Tests {
         Assert.Equal(-1, solver.Value(delta));
         Assert.Equal(1, solver.Value(squaredDelta));
         Assert.Equal(new long[] {1, 4, -1, 1}, response.Solution);
-        Assert.Equal(1, response.ObjectiveValue);
-        //Console.WriteLine("response = " + reponse.ToString());
+        Assert.Equal(1.0, response.ObjectiveValue, 6);
       }
 
     [Fact]

@@ -54,7 +54,7 @@ namespace operations_research {
 // ---------- Search Log ---------
 
 SearchLog::SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
-                     double scaling_factor,
+                     double scaling_factor, double offset,
                      std::function<std::string()> display_callback, int period)
     : SearchMonitor(s),
       period_(period),
@@ -62,6 +62,7 @@ SearchLog::SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
       var_(var),
       obj_(obj),
       scaling_factor_(scaling_factor),
+      offset_(offset),
       display_callback_(std::move(display_callback)),
       nsol_(0),
       tick_(0),
@@ -107,8 +108,9 @@ bool SearchLog::AtSolution() {
   int64 current = 0;
   bool objective_updated = false;
   const auto scaled_str = [this](int64 value) {
-    if (scaling_factor_ != 1.0) {
-      return absl::StrFormat("%d (%.8lf)", value, value / scaling_factor_);
+    if (scaling_factor_ != 1.0 || offset_ != 0.0) {
+      return absl::StrFormat("%d (%.8lf)", value,
+                             scaling_factor_ * (value + offset_));
     } else {
       return absl::StrCat(value);
     }
@@ -275,43 +277,43 @@ std::string SearchLog::MemoryUsage() {
 
 SearchMonitor* Solver::MakeSearchLog(int branch_period) {
   return RevAlloc(
-      new SearchLog(this, nullptr, nullptr, 1.0, nullptr, branch_period));
+      new SearchLog(this, nullptr, nullptr, 1.0, 0.0, nullptr, branch_period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(int branch_period, IntVar* const var) {
   return RevAlloc(
-      new SearchLog(this, nullptr, var, 1.0, nullptr, branch_period));
+      new SearchLog(this, nullptr, var, 1.0, 0.0, nullptr, branch_period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(
     int branch_period, std::function<std::string()> display_callback) {
-  return RevAlloc(new SearchLog(this, nullptr, nullptr, 1.0,
+  return RevAlloc(new SearchLog(this, nullptr, nullptr, 1.0, 0.0,
                                 std::move(display_callback), branch_period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(
     int branch_period, IntVar* const var,
     std::function<std::string()> display_callback) {
-  return RevAlloc(new SearchLog(this, nullptr, var, 1.0,
+  return RevAlloc(new SearchLog(this, nullptr, var, 1.0, 0.0,
                                 std::move(display_callback), branch_period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(int branch_period,
                                      OptimizeVar* const opt_var) {
   return RevAlloc(
-      new SearchLog(this, opt_var, nullptr, 1.0, nullptr, branch_period));
+      new SearchLog(this, opt_var, nullptr, 1.0, 0.0, nullptr, branch_period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(
     int branch_period, OptimizeVar* const opt_var,
     std::function<std::string()> display_callback) {
-  return RevAlloc(new SearchLog(this, opt_var, nullptr, 1.0,
+  return RevAlloc(new SearchLog(this, opt_var, nullptr, 1.0, 0.0,
                                 std::move(display_callback), branch_period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(SearchLogParameters parameters) {
   return RevAlloc(new SearchLog(this, parameters.objective, parameters.variable,
-                                parameters.scaling_factor,
+                                parameters.scaling_factor, parameters.offset,
                                 std::move(parameters.display_callback),
                                 parameters.branch_period));
 }
@@ -3266,7 +3268,7 @@ class SimulatedAnnealing : public Metaheuristic {
   std::string DebugString() const override { return "Simulated Annealing"; }
 
  private:
-  float Temperature() const;
+  double Temperature() const;
 
   const int64 temperature0_;
   int64 iteration_;
@@ -3335,7 +3337,7 @@ void SimulatedAnnealing::AcceptNeighbor() {
   }
 }
 
-float SimulatedAnnealing::Temperature() const {
+double SimulatedAnnealing::Temperature() const {
   if (iteration_ > 0) {
     return (1.0 * temperature0_) / iteration_;  // Cauchy annealing
   } else {

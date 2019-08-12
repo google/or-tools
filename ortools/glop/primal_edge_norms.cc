@@ -152,8 +152,8 @@ void PrimalEdgeNorms::ComputeDirectionLeftInverse(
       (direction_left_inverse_.non_zeros.size() + direction.non_zeros.size() <
        2 * kThreshold)) {
     ClearAndResizeVectorWithNonZeros(size, &direction_left_inverse_);
-    for (const RowIndex row : direction.non_zeros) {
-      direction_left_inverse_[RowToColIndex(row)] = direction[row];
+    for (const auto e : direction) {
+      direction_left_inverse_[RowToColIndex(e.row())] = e.coefficient();
     }
   } else {
     direction_left_inverse_.values = Transpose(direction.values);

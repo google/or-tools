@@ -282,6 +282,7 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
   //   - Different propatation levels for scheduling constraints
   SatParameters new_params = params;
   new_params.set_random_seed(params.random_seed() + worker_id);
+  new_params.set_use_lns_only(false);
   int index = worker_id;
 
   if (cp_model.has_objective()) {

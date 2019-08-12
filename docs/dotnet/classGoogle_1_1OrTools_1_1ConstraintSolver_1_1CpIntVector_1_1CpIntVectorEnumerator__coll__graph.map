@@ -1,5 +1,5 @@
-<map id="Google.OrTools.ConstraintSolver.CpIntVector.CpIntVectorEnumerator" name="Google.OrTools.ConstraintSolver.CpIntVector.CpIntVectorEnumerator">
-<area shape="rect" id="node1" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="247,31,451,83"/>
-<area shape="rect" id="node2" title=" " alt="" coords="15,5,189,44"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,68,199,107"/>
+<map id="CpIntVector.CpIntVectorEnumerator" name="CpIntVector.CpIntVectorEnumerator">
+<area shape="rect" id="node1" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="5,79,239,104"/>
+<area shape="rect" id="node2" title=" " alt="" coords="7,5,101,31"/>
+<area shape="rect" id="node3" title=" " alt="" coords="125,5,257,31"/>
 </map>

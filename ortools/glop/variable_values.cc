@@ -157,9 +157,9 @@ void VariableValues::UpdateOnPivoting(const ScatteredColumn& direction,
   // Note that there is no need to call variables_info_.Update() on basic
   // variables when they change values. Note also that the status of
   // entering_col will be updated later.
-  for (const RowIndex row : direction.non_zeros) {
-    const ColIndex col = basis_[row];
-    variable_values_[col] -= direction[row] * step;
+  for (const auto e : direction) {
+    const ColIndex col = basis_[e.row()];
+    variable_values_[col] -= e.coefficient() * step;
   }
   variable_values_[entering_col] += step;
 }
@@ -167,51 +167,52 @@ void VariableValues::UpdateOnPivoting(const ScatteredColumn& direction,
 void VariableValues::UpdateGivenNonBasicVariables(
     const std::vector<ColIndex>& cols_to_update, bool update_basic_variables) {
   SCOPED_TIME_STAT(&stats_);
-  if (update_basic_variables) {
-    const RowIndex num_rows = matrix_.num_rows();
-    initially_all_zero_scratchpad_.values.resize(num_rows, 0.0);
-    initially_all_zero_scratchpad_.is_non_zero.resize(num_rows, false);
-    DCHECK(IsAllZero(initially_all_zero_scratchpad_.values));
-    DCHECK(IsAllFalse(initially_all_zero_scratchpad_.is_non_zero));
-
-    // TODO(user): Abort the non-zeros computation earlier if dense.
+  if (!update_basic_variables) {
     for (ColIndex col : cols_to_update) {
-      const Fractional old_value = variable_values_[col];
       SetNonBasicVariableValueFromStatus(col);
+    }
+    return;
+  }
+
+  const RowIndex num_rows = matrix_.num_rows();
+  initially_all_zero_scratchpad_.values.resize(num_rows, 0.0);
+  DCHECK(IsAllZero(initially_all_zero_scratchpad_.values));
+  initially_all_zero_scratchpad_.ClearSparseMask();
+  bool use_dense = false;
+  for (ColIndex col : cols_to_update) {
+    const Fractional old_value = variable_values_[col];
+    SetNonBasicVariableValueFromStatus(col);
+    if (use_dense) {
+      matrix_.ColumnAddMultipleToDenseColumn(
+          col, variable_values_[col] - old_value,
+          &initially_all_zero_scratchpad_.values);
+    } else {
       matrix_.ColumnAddMultipleToSparseScatteredColumn(
           col, variable_values_[col] - old_value,
           &initially_all_zero_scratchpad_);
-    }
-    if (ShouldUseDenseIteration(initially_all_zero_scratchpad_)) {
-      initially_all_zero_scratchpad_.non_zeros.clear();
-      initially_all_zero_scratchpad_.is_non_zero.assign(num_rows, false);
-    } else {
-      for (const RowIndex row : initially_all_zero_scratchpad_.non_zeros) {
-        initially_all_zero_scratchpad_.is_non_zero[row] = false;
-      }
-    }
-
-    basis_factorization_.RightSolve(&initially_all_zero_scratchpad_);
-    if (initially_all_zero_scratchpad_.non_zeros.empty()) {
-      for (RowIndex row(0); row < num_rows; ++row) {
-        variable_values_[basis_[row]] -= initially_all_zero_scratchpad_[row];
-      }
-      initially_all_zero_scratchpad_.values.AssignToZero(num_rows);
-      ResetPrimalInfeasibilityInformation();
-    } else {
-      for (const RowIndex row : initially_all_zero_scratchpad_.non_zeros) {
-        variable_values_[basis_[row]] -= initially_all_zero_scratchpad_[row];
-        initially_all_zero_scratchpad_[row] = 0.0;
-      }
-      UpdatePrimalInfeasibilityInformation(
-          initially_all_zero_scratchpad_.non_zeros);
-      initially_all_zero_scratchpad_.non_zeros.clear();
-    }
-  } else {
-    for (ColIndex col : cols_to_update) {
-      SetNonBasicVariableValueFromStatus(col);
+      use_dense = initially_all_zero_scratchpad_.ShouldUseDenseIteration();
     }
   }
+  initially_all_zero_scratchpad_.ClearSparseMask();
+  initially_all_zero_scratchpad_.ClearNonZerosIfTooDense();
+
+  basis_factorization_.RightSolve(&initially_all_zero_scratchpad_);
+  if (initially_all_zero_scratchpad_.non_zeros.empty()) {
+    for (RowIndex row(0); row < num_rows; ++row) {
+      variable_values_[basis_[row]] -= initially_all_zero_scratchpad_[row];
+    }
+    initially_all_zero_scratchpad_.values.AssignToZero(num_rows);
+    ResetPrimalInfeasibilityInformation();
+    return;
+  }
+
+  for (const auto e : initially_all_zero_scratchpad_) {
+    variable_values_[basis_[e.row()]] -= e.coefficient();
+    initially_all_zero_scratchpad_[e.row()] = 0.0;
+  }
+  UpdatePrimalInfeasibilityInformation(
+      initially_all_zero_scratchpad_.non_zeros);
+  initially_all_zero_scratchpad_.non_zeros.clear();
 }
 
 const DenseColumn& VariableValues::GetPrimalSquaredInfeasibilities() const {

@@ -59,6 +59,7 @@ def SolveAndPrint(solver, variable_list):
     print('Number of variables = %d' % solver.NumVariables())
     print('Number of constraints = %d' % solver.NumConstraints())
 
+    solver.SetNumThreads(8)
     result_status = solver.Solve()
 
     # The problem has an optimal solution.

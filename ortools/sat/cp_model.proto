@@ -57,6 +57,11 @@ message IntegerVariableProto {
   //  - max == domain.back();
   //  - for all i < n   :      min_i <= max_i
   //  - for all i < n-1 :  max_i + 1 < min_{i+1}.
+  //
+  // Note that we check at validation that a variable domain is small enough so
+  // that we don't run into integer overflow in our algorithms. Because of that,
+  // you cannot just have "unbounded" variable like [0, kint64max] and should
+  // try to specify tighter domains.
   repeated int64 domain = 2;
 }
 
@@ -516,6 +521,7 @@ enum CpSolverStatus {
 //
 // TODO(user): support returning multiple solutions. Look at the Stubby
 // streaming API as we probably wants to get them as they are found.
+// Next id: 23
 message CpSolverResponse {
   // The status of the solve.
   CpSolverStatus status = 1;
@@ -577,6 +583,7 @@ message CpSolverResponse {
   double wall_time = 15;
   double user_time = 16;
   double deterministic_time = 17;
+  double primal_integral = 22;
 
   // Additional information about how the solution was found.
   string solution_info = 20;

@@ -1,9 +1,9 @@
-<map id="Google.OrTools.ConstraintSolver.EvaluatorCheapestAdditionFilteredDecisionBuilder" name="Google.OrTools.ConstraintSolver.EvaluatorCheapestAdditionFilteredDecisionBuilder">
-<area shape="rect" id="node1" title=" " alt="" coords="5,459,229,511"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CheapestAdditionFilteredDecisionBuilder.html" title=" " alt="" coords="32,372,203,411"/>
-<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingFilteredDecisionBuilder.html" title=" " alt="" coords="15,299,219,324"/>
-<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarFilteredDecisionBuilder.html" title=" " alt="" coords="21,225,214,251"/>
-<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html" title=" " alt="" coords="60,152,174,177"/>
-<area shape="rect" id="node6" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="72,79,162,104"/>
-<area shape="rect" id="node7" title=" " alt="" coords="28,5,206,31"/>
+<map id="EvaluatorCheapestAdditionFilteredDecisionBuilder" name="EvaluatorCheapestAdditionFilteredDecisionBuilder">
+<area shape="rect" id="node1" title=" " alt="" coords="16,459,199,497"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1CheapestAdditionFilteredDecisionBuilder.html" title=" " alt="" coords="22,372,193,411"/>
+<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingFilteredDecisionBuilder.html" title=" " alt="" coords="5,299,210,324"/>
+<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarFilteredDecisionBuilder.html" title=" " alt="" coords="11,225,204,251"/>
+<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html" title=" " alt="" coords="51,152,165,177"/>
+<area shape="rect" id="node6" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="62,79,153,104"/>
+<area shape="rect" id="node7" title=" " alt="" coords="40,5,175,31"/>
 </map>

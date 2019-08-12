@@ -1,0 +1,5 @@
+<map id="IntVarLocalSearchOperatorTemplate" name="IntVarLocalSearchOperatorTemplate">
+<area shape="rect" id="node1" title="Base operator class for operators manipulating variables." alt="" coords="5,152,188,191"/>
+<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html" title="This class represent a reversible FIFO structure." alt="" coords="23,79,171,104"/>
+<area shape="rect" id="node3" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="52,5,142,31"/>
+</map>

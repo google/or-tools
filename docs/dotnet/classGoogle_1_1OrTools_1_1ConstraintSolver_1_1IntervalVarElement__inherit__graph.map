@@ -1,5 +1,5 @@
-<map id="Google.OrTools.ConstraintSolver.IntervalVarElement" name="Google.OrTools.ConstraintSolver.IntervalVarElement">
-<area shape="rect" id="node1" title=" " alt="" coords="5,152,184,191"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentElement.html" title=" " alt="" coords="25,79,165,104"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,5,184,31"/>
+<map id="IntervalVarElement" name="IntervalVarElement">
+<area shape="rect" id="node1" title=" " alt="" coords="8,152,142,177"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1AssignmentElement.html" title=" " alt="" coords="5,79,145,104"/>
+<area shape="rect" id="node3" title=" " alt="" coords="8,5,143,31"/>
 </map>

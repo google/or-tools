@@ -1,4 +1,4 @@
-FROM minizinc/mznc2018:1.0
+FROM minizinc/mznc2019:1.0
 
 ENV SRC_GIT_BRANCH master
 
@@ -15,9 +15,9 @@ RUN git clone -b "$SRC_GIT_BRANCH" --single-branch https://github.com/google/or-
 
 WORKDIR /root/or-tools
 
-RUN make -j 8 third_party
+RUN make -j 4 third_party
 
-RUN make -j 8 cc fz
+RUN make -j 4 cc fz
 
 RUN ln -s /root/or-tools/bin/fz /entry_data/fzn-exec
 

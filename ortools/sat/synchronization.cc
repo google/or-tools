@@ -14,6 +14,7 @@
 #include "ortools/sat/synchronization.h"
 
 #include "absl/container/flat_hash_set.h"
+#include "ortools/base/integral_types.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_search.h"
@@ -21,6 +22,7 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -36,12 +38,23 @@ SharedSolutionRepository::Solution SharedSolutionRepository::GetSolution(
   return solutions_[i];
 }
 
+// TODO(user): Experiments on the best distribution.
+SharedSolutionRepository::Solution
+SharedSolutionRepository::GetRandomBiasedSolution(
+    random_engine_t* random) const {
+  absl::MutexLock mutex_lock(&mutex_);
+  weights_.resize(solutions_.size());
+  const int64 best_objective = solutions_[0].internal_objective;
+  for (int i = 0; i < solutions_.size(); ++i) {
+    weights_[i] =
+        solutions_[i].internal_objective == best_objective ? 1.0 : 0.1;
+  }
+  std::discrete_distribution<> dist(weights_.begin(), weights_.end());
+  return solutions_[dist(*random)];
+}
+
 void SharedSolutionRepository::Add(const Solution& solution) {
   absl::MutexLock mutex_lock(&mutex_);
-  if (new_solutions_.size() < num_solutions_to_keep_) {
-    new_solutions_.push_back(solution);
-    return;
-  }
   int worse_solution_index = 0;
   for (int i = 0; i < new_solutions_.size(); ++i) {
     // Do not add identical solution.
@@ -50,7 +63,9 @@ void SharedSolutionRepository::Add(const Solution& solution) {
       worse_solution_index = i;
     }
   }
-  if (solution < new_solutions_[worse_solution_index]) {
+  if (new_solutions_.size() < num_solutions_to_keep_) {
+    new_solutions_.push_back(solution);
+  } else if (solution < new_solutions_[worse_solution_index]) {
     new_solutions_[worse_solution_index] = solution;
   }
 }
@@ -67,12 +82,16 @@ void SharedSolutionRepository::Synchronize() {
 }
 
 // TODO(user): Experiments and play with the num_solutions_to_keep parameter.
-SharedResponseManager::SharedResponseManager(bool log_updates,
-                                             const CpModelProto* proto,
-                                             const WallTimer* wall_timer)
+SharedResponseManager::SharedResponseManager(
+    bool log_updates, bool enumerate_all_solutions, int solution_limit,
+    const CpModelProto* proto, const WallTimer* wall_timer,
+    const SharedTimeLimit* shared_time_limit)
     : log_updates_(log_updates),
+      enumerate_all_solutions_(enumerate_all_solutions),
+      solution_limit_(solution_limit),
       model_proto_(*proto),
       wall_timer_(*wall_timer),
+      shared_time_limit_(*shared_time_limit),
       solutions_(/*num_solutions_to_keep=*/10) {}
 
 namespace {
@@ -96,6 +115,23 @@ void LogNewSatSolution(const std::string& event_or_solution_count,
 
 }  // namespace
 
+void SharedResponseManager::UpdatePrimalIntegral(int64 max_integral) {
+  if (!model_proto_.has_objective()) return;
+  const double current_time = shared_time_limit_.GetElapsedDeterministicTime();
+  const double time_delta = current_time - last_primal_integral_time_stamp_;
+  last_primal_integral_time_stamp_ = current_time;
+  const CpObjectiveProto& obj = model_proto_.objective();
+  double bounds_delta = 0.0;
+  if (inner_objective_upper_bound_ == kint64max ||
+      inner_objective_lower_bound_ == kint64min) {
+    bounds_delta = ScaleObjectiveValue(obj, max_integral);
+  } else {
+    bounds_delta = ScaleObjectiveValue(
+        obj, inner_objective_upper_bound_ - inner_objective_lower_bound_);
+  }
+  primal_integral_ += time_delta * std::abs(bounds_delta);
+}
+
 void SharedResponseManager::UpdateInnerObjectiveBounds(
     const std::string& worker_info, IntegerValue lb, IntegerValue ub) {
   absl::MutexLock mutex_lock(&mutex_);
@@ -110,13 +146,20 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
     return;
   }
 
-  bool change = false;
+  const bool change =
+      (lb > inner_objective_lower_bound_ || ub < inner_objective_upper_bound_);
+  if (change) {
+    IntegerValue max_integral(0);
+    if (!AddProductTo(IntegerValue(2), ub - lb, &max_integral)) {
+      // Overflow.
+      max_integral = kMaxIntegerValue;
+    }
+    UpdatePrimalIntegral(/*max_integral=*/std::max(int64{0}, max_integral.value()));
+  }
   if (lb > inner_objective_lower_bound_) {
-    change = true;
     inner_objective_lower_bound_ = lb.value();
   }
   if (ub < inner_objective_upper_bound_) {
-    change = true;
     inner_objective_upper_bound_ = ub.value();
   }
   if (inner_objective_lower_bound_ > inner_objective_upper_bound_) {
@@ -161,6 +204,7 @@ void SharedResponseManager::NotifyThatImprovingProblemIsInfeasible(
     CHECK_EQ(num_solutions_, 0);
     best_response_.set_status(CpSolverStatus::INFEASIBLE);
   }
+  UpdatePrimalIntegral(/*max_integral=*/kint64max);
   if (log_updates_) LogNewSatSolution("Done", wall_timer_.Get(), worker_info);
 }
 
@@ -177,6 +221,11 @@ IntegerValue SharedResponseManager::GetInnerObjectiveUpperBound() {
 IntegerValue SharedResponseManager::BestSolutionInnerObjectiveValue() {
   absl::MutexLock mutex_lock(&mutex_);
   return IntegerValue(best_solution_objective_value_);
+}
+
+double SharedResponseManager::PrimalIntegral() const {
+  absl::MutexLock mutex_lock(&mutex_);
+  return primal_integral_;
 }
 
 int SharedResponseManager::AddSolutionCallback(
@@ -239,6 +288,8 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
   absl::MutexLock mutex_lock(&mutex_);
   CHECK_NE(best_response_.status(), CpSolverStatus::INFEASIBLE);
 
+  if (solution_limit_ > 0 && num_solutions_ >= solution_limit_) return;
+
   if (model_proto_.has_objective()) {
     const int64 objective_value =
         ComputeInnerObjective(model_proto_.objective(), response);
@@ -260,6 +311,14 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
     CHECK_LT(objective_value, best_solution_objective_value_);
     CHECK_NE(best_response_.status(), CpSolverStatus::OPTIMAL);
     best_solution_objective_value_ = objective_value;
+
+    IntegerValue max_integral(0);
+    if (!AddProductTo(IntegerValue(2), IntegerValue(std::abs(objective_value)),
+                      &max_integral)) {
+      // Overflow.
+      max_integral = kMaxIntegerValue;
+    }
+    UpdatePrimalIntegral(/*max_integral=*/max_integral.value());
 
     // Update the new bound.
     inner_objective_upper_bound_ = objective_value - 1;
@@ -330,6 +389,7 @@ void SharedResponseManager::SetStatsFromModelInternal(Model* model) {
   best_response_.set_num_booleans(sat_solver->NumVariables());
   best_response_.set_num_branches(sat_solver->num_branches());
   best_response_.set_num_conflicts(sat_solver->num_failures());
+  best_response_.set_primal_integral(primal_integral_);
   best_response_.set_num_binary_propagations(sat_solver->num_propagations());
   best_response_.set_num_integer_propagations(
       integer_trail == nullptr ? 0 : integer_trail->num_enqueues());
@@ -342,10 +402,16 @@ void SharedResponseManager::SetStatsFromModelInternal(Model* model) {
 bool SharedResponseManager::ProblemIsSolved() const {
   absl::MutexLock mutex_lock(&mutex_);
 
+  if (solution_limit_ > 0 && num_solutions_ >= solution_limit_) {
+    return true;
+  }
+
   // TODO(user): Currently this work because we do not allow enumerate all
   // solution in multithread.
   if (!model_proto_.has_objective() &&
-      best_response_.status() == CpSolverStatus::FEASIBLE) {
+      ((best_response_.status() == CpSolverStatus::FEASIBLE &&
+        !enumerate_all_solutions_) ||
+       best_response_.status() == CpSolverStatus::OPTIMAL)) {
     return true;
   }
 

@@ -33,6 +33,8 @@ DEFINE_bool(fz_floats_are_ints, true,
 namespace operations_research {
 namespace fz {
 namespace {
+enum PresolveState { ALWAYS_FALSE, ALWAYS_TRUE, UNDECIDED };
+
 // TODO(user): accept variables fixed to 0 or 1.
 bool Has01Values(IntegerVariable* var) {
   return var->domain.Min() == 0 && var->domain.Max() == 1;
@@ -572,6 +574,42 @@ Presolver::RuleStatus Presolver::Unreify(Constraint* ct, std::string* log) {
   return CONSTRAINT_REWRITTEN;
 }
 
+// A implied constraint is a constraint that has an enforcement literal that
+// states whether the constraint is active or not.
+//
+// Rule 1:
+// Input : int_xx_imp(arg1, arg2, true) or
+//         int_lin_xx_imp(arg1, arg2, c, true)
+//         with xx = eq, ne, le, lt, ge, gt
+// Output: int_xx(arg1, arg2) or int_lin_xx(arg1, arg2, c)
+//
+// Rule 2:
+// Input : int_xx_imp(arg1, arg2, false) or
+//         int_lin_xx_imp(arg1, arg2, c, false)
+//         with xx = eq, ne, le, lt, ge, gt
+// Output: remove constraint.
+Presolver::RuleStatus Presolver::RemoveFixedEnforcementLiteral(
+    Constraint* ct, std::string* log) {
+  const Argument& last_argument = ct->arguments.back();
+  if (!last_argument.HasOneValue()) {
+    return NOT_CHANGED;
+  }
+  DCHECK(absl::EndsWith(ct->type, "_imp")) << ct->DebugString();
+  ct->type.resize(ct->type.size() - 4);
+  ct->RemoveTargetVariable();
+  if (last_argument.Value() == 1) {
+    // Rule 1.
+    log->append("Remove true enforcement literal");
+    ct->RemoveTargetVariable();
+    ct->arguments.pop_back();
+    return CONSTRAINT_REWRITTEN;
+  } else {
+    // Rule 2.
+    log->append("Remove constraint with false enforcement literal");
+    return CONSTRAINT_ALWAYS_TRUE;
+  }
+}
+
 // Propagates the values of set_in
 // Input : set_in(x, [c1..c2]) or set_in(x, {c1, .., cn})
 // Action: Intersect the domain of x with the set of values.
@@ -1008,9 +1046,9 @@ Presolver::RuleStatus Presolver::PresolveIntLinLt(Constraint* ct,
 }
 
 // Simplifies linear equations of size 1, i.e. c1 * x = c2.
-// Input : int_lin_xx([c1], [x], c2) and int_lin_xx_reif([c1], [x], c2, b)
+// Input : int_lin_xx([c1], [x], c2) and int_lin_xx_{reif|imp}([c1], [x], c2, b)
 //         with (c1 == 1 or c2 % c1 == 0) and xx = eq, ne, lt, le, gt, ge
-// Output: int_xx(x, c2 / c1) and int_xx_reif(x, c2 / c1, b)
+// Output: int_xx(x, c2 / c1) and int_xx_{reif|imp}(x, c2 / c1, b)
 Presolver::RuleStatus Presolver::SimplifyUnaryLinear(Constraint* ct,
                                                      std::string* log) {
   if (!ct->arguments[0].HasOneValue() ||
@@ -1464,6 +1502,10 @@ Presolver::RuleStatus Presolver::PresolveLinear(Constraint* ct,
     ct->type = "int_lin_ge_reif";
   } else if (ct->type == "int_lin_ge_reif") {
     ct->type = "int_lin_le_reif";
+  } else if (ct->type == "int_lin_le_imp") {
+    ct->type = "int_lin_ge_imp";
+  } else if (ct->type == "int_lin_ge_imp") {
+    ct->type = "int_lin_le_imp";
   }
   return CONSTRAINT_REWRITTEN;
 }
@@ -1599,56 +1641,56 @@ Presolver::RuleStatus Presolver::SimplifyLinear(Constraint* ct,
       break;  // Early exit the loop.
     }
   }
-  if (ct->type == "int_lin_ge") {
+
+  PresolveState state = UNDECIDED;
+  if (absl::StartsWith(ct->type, "int_lin_ge")) {
     if (rhs_min >= rhs) {
-      return CONSTRAINT_ALWAYS_TRUE;
+      state = ALWAYS_TRUE;
     } else if (rhs_max < rhs) {
-      return CONSTRAINT_ALWAYS_FALSE;
+      state = ALWAYS_FALSE;
+    }
+  } else if (absl::StartsWith(ct->type, "int_lin_le")) {
+    if (rhs_min > rhs) {
+      state = ALWAYS_FALSE;
+    } else if (rhs_max <= rhs) {
+      state = ALWAYS_TRUE;
+    }
+  } else if (rhs < rhs_min || rhs > rhs_max) {
+    if (absl::StartsWith(ct->type, "int_lin_eq")) {
+      state = ALWAYS_FALSE;
+    } else if (absl::StartsWith(ct->type, "int_lin_ne")) {
+      state = ALWAYS_TRUE;
     }
   }
-  if (ct->type == "int_lin_ge_reif") {
-    if (rhs_min >= rhs) {
-      SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 1);
-      return CONSTRAINT_REWRITTEN;
-    } else if (rhs_max < rhs) {
+
+  if (state == ALWAYS_FALSE) {
+    if (absl::EndsWith(ct->type, "_reif") || absl::EndsWith(ct->type, "_imp")) {
+      // Always false. Propagates to enforcement literal.
       SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 0);
       return CONSTRAINT_REWRITTEN;
-    }
-  }
-  if (ct->type == "int_lin_le") {
-    if (rhs_min > rhs) {
+    } else {
       return CONSTRAINT_ALWAYS_FALSE;
-    } else if (rhs_max <= rhs) {
+    }
+  } else if (state == ALWAYS_TRUE) {
+    if (absl::EndsWith(ct->type, "_reif")) {
+      // Always true, protagate to reified literal.
+      SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 1);
+      return CONSTRAINT_REWRITTEN;
+    } else {
       return CONSTRAINT_ALWAYS_TRUE;
     }
   }
-  if (ct->type == "int_lin_le_reif") {
-    if (rhs_min > rhs) {
-      SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 0);
-      return CONSTRAINT_REWRITTEN;
-    } else if (rhs_max <= rhs) {
-      SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 1);
-      return CONSTRAINT_REWRITTEN;
-    }
-  }
-  if (rhs < rhs_min || rhs > rhs_max) {
-    if (ct->type == "int_lin_eq") {
-      return CONSTRAINT_ALWAYS_FALSE;
-    } else if (ct->type == "int_lin_eq_reif") {
-      SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 0);
-      return CONSTRAINT_REWRITTEN;
-    } else if (ct->type == "int_lin_ne") {
-      return CONSTRAINT_ALWAYS_TRUE;
-    } else if (ct->type == "int_lin_ne_reif") {
-      SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 1);
-      return CONSTRAINT_REWRITTEN;
-    }
-  } else if (rhs == rhs_min) {
+
+  // In case the test in on a bounds, change test for value into comparison.
+  if (rhs == rhs_min) {
     if (ct->type == "int_lin_eq") {
       ct->type = "int_lin_le";
       return CONSTRAINT_REWRITTEN;
     } else if (ct->type == "int_lin_eq_reif") {
       ct->type = "int_lin_le_reif";
+      return CONSTRAINT_REWRITTEN;
+    } else if (ct->type == "int_lin_eq_imp") {
+      ct->type = "int_lin_le_imp";
       return CONSTRAINT_REWRITTEN;
     } else if (ct->type == "int_lin_ne") {
       ct->type = "int_lin_ge";
@@ -1656,6 +1698,10 @@ Presolver::RuleStatus Presolver::SimplifyLinear(Constraint* ct,
       return CONSTRAINT_REWRITTEN;
     } else if (ct->type == "int_lin_ne_reif") {
       ct->type = "int_lin_ge_reif";
+      ct->arguments[2] = Argument::IntegerValue(rhs + 1);
+      return CONSTRAINT_REWRITTEN;
+    } else if (ct->type == "int_lin_ne_imp") {
+      ct->type = "int_lin_ge_imp";
       ct->arguments[2] = Argument::IntegerValue(rhs + 1);
       return CONSTRAINT_REWRITTEN;
     }
@@ -1666,12 +1712,19 @@ Presolver::RuleStatus Presolver::SimplifyLinear(Constraint* ct,
     } else if (ct->type == "int_lin_eq_reif") {
       ct->type = "int_lin_ge_reif";
       return CONSTRAINT_REWRITTEN;
+    } else if (ct->type == "int_lin_eq_imp") {
+      ct->type = "int_lin_ge_imp";
+      return CONSTRAINT_REWRITTEN;
     } else if (ct->type == "int_lin_ne") {
       ct->type = "int_lin_le";
       ct->arguments[2] = Argument::IntegerValue(rhs - 1);
       return CONSTRAINT_REWRITTEN;
     } else if (ct->type == "int_lin_ne_reif") {
       ct->type = "int_lin_le_reif";
+      ct->arguments[2] = Argument::IntegerValue(rhs - 1);
+      return CONSTRAINT_REWRITTEN;
+    } else if (ct->type == "int_lin_ne_imp") {
+      ct->type = "int_lin_le_imp";
       ct->arguments[2] = Argument::IntegerValue(rhs - 1);
       return CONSTRAINT_REWRITTEN;
     }
@@ -2349,6 +2402,193 @@ Presolver::RuleStatus Presolver::PropagateReifiedComparisons(Constraint* ct,
   return NOT_CHANGED;
 }
 
+// Propagate implied comparisons: int_eq_imp, int_ge_imp, int_le_imp:
+//
+// Rule 1:
+// Input : int_xx_imp(x, x, b) or bool_eq_imp(b1, b1, b)
+// Action: Remove constraint if xx in {le, ge, eq}, or set b to false otherwise.
+// Output: inactive constraint.
+//
+// Rule 2:
+// Input : int_xx_imp(x, c, b) or bool_xx_imp(b1, t, b) or
+//         int_xx_imp(c, x, b) or bool_xx_imp(t, b2, b)
+// Action: Assign b to true or false if this can be decided from the of x and
+//         c, or the comparison of b1/b2 with t.
+// Output: inactive constraint of b was assigned a value.
+//
+// Rule 3:
+// Input : int_xx_imp(x, y, b) or bool_xx_imp(b1, b1, b2).
+// Action: Assign b to true or false if this can be decided from the domain of
+//         x and y.
+// Output: inactive constraint if b was assigned a value.
+Presolver::RuleStatus Presolver::PropagateImpliedComparisons(Constraint* ct,
+                                                             std::string* log) {
+  const std::string& id = ct->type;
+  if (ct->arguments[0].IsVariable() && ct->arguments[1].IsVariable() &&
+      ct->arguments[0].variables[0] == ct->arguments[1].variables[0]) {
+    // Rule 1.
+    if (id == "int_eq_imp" || id == "int_ge_imp" || id == "int_le_imp" ||
+        id == "bool_eq_imp" || id == "bool_ge_imp" || id == "bool_le_imp") {
+      log->append("remove always true enforced constraint");
+    } else {
+      log->append("force enforcement literal to false");
+      IntersectVarWithSingleton(ct->arguments[2].Var(), 0);
+    }
+    return CONSTRAINT_ALWAYS_TRUE;
+  }
+
+  // Rule 2, easy case. Both constants.
+  if (ct->arguments[0].HasOneValue() && ct->arguments[1].HasOneValue()) {
+    const int64 a = ct->arguments[0].Value();
+    const int64 b = ct->arguments[1].Value();
+    PresolveState state = UNDECIDED;
+    if (id == "int_eq_imp" || id == "bool_eq_imp") {
+      state = (a == b) ? ALWAYS_TRUE : ALWAYS_FALSE;
+    } else if (id == "int_ne_imp" || id == "bool_ne_imp") {
+      state = (a != b) ? ALWAYS_TRUE : ALWAYS_FALSE;
+    } else if (id == "int_lt_imp" || id == "bool_lt_imp") {
+      state = (a < b) ? ALWAYS_TRUE : ALWAYS_FALSE;
+    } else if (id == "int_gt_imp" || id == "bool_gt_imp") {
+      state = (a > b) ? ALWAYS_TRUE : ALWAYS_FALSE;
+    } else if (id == "int_le_imp" || id == "bool_le_imp") {
+      state = (a <= b) ? ALWAYS_TRUE : ALWAYS_FALSE;
+    } else if (id == "int_ge_imp" || id == "bool_ge_imp") {
+      state = (a >= b) ? ALWAYS_TRUE : ALWAYS_FALSE;
+    }
+    if (state == ALWAYS_FALSE) {
+      log->append("force enforcement literal to false");
+      IntersectVarWithSingleton(ct->arguments[2].Var(), 0);
+      return CONSTRAINT_ALWAYS_TRUE;
+    } else if (state == ALWAYS_TRUE) {
+      log->append("remove always true enforced constraint");
+      return CONSTRAINT_ALWAYS_TRUE;
+    }
+  }
+
+  IntegerVariable* var = nullptr;
+  int64 value = 0;
+  bool reverse = false;
+  if (ct->arguments[0].IsVariable() && ct->arguments[1].HasOneValue()) {
+    var = ct->arguments[0].Var();
+    value = ct->arguments[1].Value();
+  } else if (ct->arguments[1].IsVariable() && ct->arguments[0].HasOneValue()) {
+    var = ct->arguments[1].Var();
+    value = ct->arguments[0].Value();
+    reverse = true;
+  }
+  if (var != nullptr) {
+    // Rule 2.
+    PresolveState state = UNDECIDED;
+    if (id == "int_eq_imp" || id == "bool_eq_imp") {
+      if (var->domain.Contains(value)) {
+        if (var->domain.HasOneValue()) {
+          state = ALWAYS_TRUE;
+        }
+      } else {
+        state = ALWAYS_FALSE;
+      }
+    } else if (id == "int_ne_imp" || id == "bool_ne_imp") {
+      if (var->domain.Contains(value)) {
+        if (var->domain.HasOneValue()) {
+          state = ALWAYS_FALSE;
+        }
+      } else {
+        state = ALWAYS_TRUE;
+      }
+    } else if ((((id == "int_lt_imp" || id == "bool_lt_imp") && reverse) ||
+                ((id == "int_gt_imp" || id == "bool_gt_imp") && !reverse)) &&
+               !var->domain.IsAllInt64()) {  // int_gt
+      if (var->domain.Min() > value) {
+        state = ALWAYS_TRUE;
+      } else if (var->domain.Max() <= value) {
+        state = ALWAYS_FALSE;
+      }
+    } else if ((((id == "int_lt_imp" || id == "bool_lt_imp") && !reverse) ||
+                ((id == "int_gt_imp" || id == "bool_gt_imp") && reverse)) &&
+               !var->domain.IsAllInt64()) {  // int_lt
+      if (var->domain.Max() < value) {
+        state = ALWAYS_TRUE;
+      } else if (var->domain.Min() >= value) {
+        state = ALWAYS_FALSE;
+      }
+    } else if ((((id == "int_le_imp" || id == "bool_le_imp") && reverse) ||
+                ((id == "int_ge_imp" || id == "bool_ge_imp") && !reverse)) &&
+               !var->domain.IsAllInt64()) {  // int_ge
+      if (var->domain.Min() >= value) {
+        state = ALWAYS_TRUE;
+      } else if (var->domain.Max() < value) {
+        state = ALWAYS_FALSE;
+      }
+    } else if ((((id == "int_le_imp" || id == "bool_le_imp") && !reverse) ||
+                ((id == "int_ge_imp" || id == "bool_ge_imp") && reverse)) &&
+               !var->domain.IsAllInt64()) {  // int_le
+      if (var->domain.Max() <= value) {
+        state = ALWAYS_TRUE;
+      } else if (var->domain.Min() > value) {
+        state = ALWAYS_FALSE;
+      }
+    }
+    if (state == ALWAYS_FALSE) {
+      log->append("force enforcement literal to false");
+      IntersectVarWithSingleton(ct->arguments[2].Var(), 0);
+      return CONSTRAINT_ALWAYS_TRUE;
+    } else if (state == ALWAYS_TRUE) {
+      log->append("remove always true enforced constraint");
+      return CONSTRAINT_ALWAYS_TRUE;
+    }
+  }
+
+  // Rule 3.
+  if (!ct->arguments[0].HasOneValue() && !ct->arguments[1].HasOneValue()) {
+    const Domain& ld = ct->arguments[0].Var()->domain;
+    const Domain& rd = ct->arguments[1].Var()->domain;
+    PresolveState state = UNDECIDED;
+    if (id == "int_eq_imp" || id == "bool_eq_imp") {
+      if (!ld.OverlapsDomain(rd)) {
+        state = ALWAYS_FALSE;
+      }
+    } else if (id == "int_ne_imp" || id == "bool_ne_imp") {
+      // TODO(user): Test if the domain are disjoint.
+      if (ld.Min() > rd.Max() || ld.Max() < rd.Min()) {
+        state = ALWAYS_TRUE;
+      }
+    } else if (id == "int_lt_imp" || id == "bool_lt_imp") {
+      if (ld.Max() < rd.Min()) {
+        state = ALWAYS_TRUE;
+      } else if (ld.Min() >= rd.Max()) {
+        state = ALWAYS_FALSE;
+      }
+    } else if (id == "int_gt_imp" || id == "bool_gt_imp") {
+      if (ld.Max() <= rd.Min()) {
+        state = ALWAYS_FALSE;
+      } else if (ld.Min() > rd.Max()) {
+        state = ALWAYS_TRUE;
+      }
+    } else if (id == "int_le_imp" || id == "bool_le_imp") {
+      if (ld.Max() <= rd.Min()) {
+        state = ALWAYS_TRUE;
+      } else if (ld.Min() > rd.Max()) {
+        state = ALWAYS_FALSE;
+      }
+    } else if (id == "int_ge_imp" || id == "bool_ge_imp") {
+      if (ld.Max() < rd.Min()) {
+        state = ALWAYS_FALSE;
+      } else if (ld.Min() >= rd.Max()) {
+        state = ALWAYS_TRUE;
+      }
+    }
+    if (state == ALWAYS_FALSE) {
+      log->append("force enforcement literal to false");
+      IntersectVarWithSingleton(ct->arguments[2].Var(), 0);
+      return CONSTRAINT_ALWAYS_TRUE;
+    } else if (state == ALWAYS_TRUE) {
+      log->append("remove always true enforced constraint");
+      return CONSTRAINT_ALWAYS_TRUE;
+    }
+  }
+  return NOT_CHANGED;
+}
+
 // Stores the existence of int_eq_reif(x, y, b)
 Presolver::RuleStatus Presolver::StoreIntEqReif(Constraint* ct,
                                                 std::string* log) {
@@ -2399,6 +2639,7 @@ Presolver::RuleStatus Presolver::StoreAbs(Constraint* ct, std::string* log) {
     // Stores abs() map.
     log->append("Store abs map");
     abs_map_[ct->arguments[1].Var()] = ct->arguments[0].Var();
+    abs_ct_[ct->arguments[1].Var()] = ct;
     MarkChangedVariable(ct->arguments[1].Var());
     return CONTEXT_CHANGED;
   }
@@ -2425,6 +2666,34 @@ Presolver::RuleStatus Presolver::RemoveAbsFromIntLeReif(Constraint* ct,
       ct->RemoveTargetVariable();
       return CONSTRAINT_REWRITTEN;
     }
+  }
+  return NOT_CHANGED;
+}
+
+// Remove abs from int_lin_le.
+// Input : int_lin_le([x, a],[1, b], 0) with x == abs(y)
+// Output: int_lin_le([y, a],[1, b], 0) and int_lin_le([y, a],[1, -b], 0)
+Presolver::RuleStatus Presolver::RemoveAbsFromIntLinLe(Constraint* ct,
+                                                       std::string* log) {
+  if (ct->arguments[1].variables.size() == 2 &&
+      ct->arguments[0].values[0] == 1 && ct->arguments[2].HasOneValue() &&
+      ct->arguments[2].Value() == 0 &&
+      gtl::ContainsKey(abs_map_, ct->arguments[1].variables[0])) {
+    IntegerVariable* const abs_var = ct->arguments[1].variables[0];
+    IntegerVariable* const other_var = ct->arguments[1].variables[1];
+    int64 other_coeff = ct->arguments[0].values[1];
+
+    IntegerVariable* const var = abs_map_[abs_var];
+    ct->arguments[1].variables[0] = var;
+
+    Constraint* const abs_ct = abs_ct_[abs_var];
+    abs_ct->type = "int_lin_ge";
+    abs_ct->arguments[0] = Argument::IntegerList({1, -other_coeff});
+    abs_ct->arguments[1] = Argument::IntVarRefArray({var, other_var});
+    abs_ct->arguments.push_back(Argument::IntegerValue(0));
+    abs_ct->RemoveTargetVariable();
+
+    return CONSTRAINT_REWRITTEN;
   }
   return NOT_CHANGED;
 }
@@ -3011,6 +3280,7 @@ Presolver::RuleStatus Presolver::PresolveDiffN(Constraint* ct,
 // Main presolve rule caller.
 void Presolver::PresolveOneConstraint(int index, Constraint* ct) {
   CALL_SUFFIX(index, ct, "_reif", Unreify);
+  CALL_SUFFIX(index, ct, "_imp", RemoveFixedEnforcementLiteral);
   CALL_TYPE(index, ct, "bool2int", PresolveBool2Int);
   if (absl::StartsWith(ct->type, "int_")) {
     CALL_TYPE(index, ct, "int_le", PresolveInequalities);
@@ -3025,13 +3295,14 @@ void Presolver::PresolveOneConstraint(int index, Constraint* ct) {
     CALL_TYPE(index, ct, "bool_gt", PresolveInequalities);
   }
 
-  CALL_TYPE(index, ct, "int_abs", StoreAbs);
   CALL_TYPE(index, ct, "int_eq_reif", StoreIntEqReif);
   CALL_TYPE(index, ct, "int_ne_reif", SimplifyIntNeReif);
+  CALL_TYPE(index, ct, "int_abs", StoreAbs);
+  CALL_TYPE(index, ct, "int_abs", PropagateAbsBounds);
   CALL_TYPE(index, ct, "int_eq_reif", RemoveAbsFromIntEqNeReif);
   CALL_TYPE(index, ct, "int_ne", RemoveAbsFromIntEqNeReif);
   CALL_TYPE(index, ct, "int_ne_reif", RemoveAbsFromIntEqNeReif);
-  CALL_TYPE(index, ct, "int_abs", PropagateAbsBounds);
+  CALL_TYPE(index, ct, "int_lin_le", RemoveAbsFromIntLinLe);
   CALL_TYPE(index, ct, "set_in", PresolveSetIn);
   CALL_TYPE(index, ct, "set_not_in", PresolveSetNotIn);
   CALL_TYPE(index, ct, "set_in_reif", PresolveSetInReif);
@@ -3075,6 +3346,12 @@ void Presolver::PresolveOneConstraint(int index, Constraint* ct) {
     CALL_TYPE(index, ct, "int_lt_reif", PropagateReifiedComparisons);
     CALL_TYPE(index, ct, "int_ge_reif", PropagateReifiedComparisons);
     CALL_TYPE(index, ct, "int_gt_reif", PropagateReifiedComparisons);
+    CALL_TYPE(index, ct, "int_eq_imp", PropagateImpliedComparisons);
+    CALL_TYPE(index, ct, "int_ne_imp", PropagateImpliedComparisons);
+    CALL_TYPE(index, ct, "int_le_imp", PropagateImpliedComparisons);
+    CALL_TYPE(index, ct, "int_lt_imp", PropagateImpliedComparisons);
+    CALL_TYPE(index, ct, "int_ge_imp", PropagateImpliedComparisons);
+    CALL_TYPE(index, ct, "int_gt_imp", PropagateImpliedComparisons);
     CALL_TYPE(index, ct, "int_mod", PresolveIntMod);
   }
 
@@ -3491,7 +3768,7 @@ bool Presolver::Run(Model* model) {
         const AffineMapping& mapping = affine_map_[index_var];
         if (mapping.coefficient == 1 && mapping.offset == 1) {
           FZVLOG << "remove offset by one from " << ct->DebugString();
-          ct->type += "_no_offset";
+          ct->type += "_nonshifted";
           ct->arguments[0].variables[0] = mapping.variable;
           FZVLOG << "  -> " << ct->DebugString() << FZENDL;
           successful_rules_["RemoveOffsetFromElement"]++;

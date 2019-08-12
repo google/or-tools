@@ -190,19 +190,9 @@ void LuFactorization::RightSolveLWithPermutedInput(const DenseColumn& a,
   }
 }
 
-void LuFactorization::RightSolveLForColumnView(const ColumnView& b,
-                                               ScatteredColumn* x) const {
-  SCOPED_TIME_STAT(&stats_);
-  DCHECK(IsAllZero(x->values));
-  x->non_zeros.clear();
-  if (is_identity_factorization_) {
-    for (const ColumnView::Entry e : b) {
-      (*x)[e.row()] = e.coefficient();
-      x->non_zeros.push_back(e.row());
-    }
-    return;
-  }
-
+template <typename Column>
+void LuFactorization::RightSolveLInternal(const Column& b,
+                                          ScatteredColumn* x) const {
   // This code is equivalent to
   //    b.PermutedCopyToDenseVector(row_perm_, num_rows, x);
   // but it also computes the first column index which does not correspond to an
@@ -210,7 +200,7 @@ void LuFactorization::RightSolveLForColumnView(const ColumnView& b,
   // of b.
   ColIndex first_column_to_consider(RowToColIndex(x->values.size()));
   const ColIndex limit = lower_.GetFirstNonIdentityColumn();
-  for (const ColumnView::Entry e : b) {
+  for (const auto e : b) {
     const RowIndex permuted_row = row_perm_[e.row()];
     (*x)[permuted_row] = e.coefficient();
     x->non_zeros.push_back(permuted_row);
@@ -234,6 +224,22 @@ void LuFactorization::RightSolveLForColumnView(const ColumnView& b,
   }
 }
 
+void LuFactorization::RightSolveLForColumnView(const ColumnView& b,
+                                               ScatteredColumn* x) const {
+  SCOPED_TIME_STAT(&stats_);
+  DCHECK(IsAllZero(x->values));
+  x->non_zeros.clear();
+  if (is_identity_factorization_) {
+    for (const ColumnView::Entry e : b) {
+      (*x)[e.row()] = e.coefficient();
+      x->non_zeros.push_back(e.row());
+    }
+    return;
+  }
+
+  RightSolveLInternal(b, x);
+}
+
 void LuFactorization::RightSolveLWithNonZeros(ScatteredColumn* x) const {
   if (is_identity_factorization_) return;
   if (x->non_zeros.empty()) {
@@ -253,9 +259,6 @@ void LuFactorization::RightSolveLWithNonZeros(ScatteredColumn* x) const {
   }
 }
 
-// TODO(user): This code is almost the same a RightSolveLForSparseColumn()
-// except that the API to iterate on the input is different. Find a way to
-// deduplicate the code.
 void LuFactorization::RightSolveLForScatteredColumn(const ScatteredColumn& b,
                                                     ScatteredColumn* x) const {
   SCOPED_TIME_STAT(&stats_);
@@ -272,34 +275,7 @@ void LuFactorization::RightSolveLForScatteredColumn(const ScatteredColumn& b,
     return RightSolveLWithNonZeros(x);
   }
 
-  // This code is equivalent to
-  //    b.PermutedCopyToDenseVector(row_perm_, num_rows, x);
-  // but it also computes the first column index which does not correspond to an
-  // identity column of lower_ thus exploiting a bit the hyper-sparsity of b.
-  ColIndex first_column_to_consider(RowToColIndex(x->values.size()));
-  const ColIndex limit = lower_.GetFirstNonIdentityColumn();
-  for (const RowIndex row : b.non_zeros) {
-    const RowIndex permuted_row = row_perm_[row];
-    (*x)[permuted_row] = b[row];
-    x->non_zeros.push_back(permuted_row);
-
-    // The second condition only works because the elements on the diagonal of
-    // lower_ are all equal to 1.0.
-    const ColIndex col = RowToColIndex(permuted_row);
-    if (col < limit || lower_.ColumnIsDiagonalOnly(col)) {
-      DCHECK_EQ(1.0, lower_.GetDiagonalCoefficient(col));
-      continue;
-    }
-    first_column_to_consider = std::min(first_column_to_consider, col);
-  }
-
-  lower_.ComputeRowsToConsiderInSortedOrder(&x->non_zeros);
-  x->non_zeros_are_sorted = true;
-  if (x->non_zeros.empty()) {
-    lower_.LowerSolveStartingAt(first_column_to_consider, &x->values);
-  } else {
-    lower_.HyperSparseSolve(&x->values, &x->non_zeros);
-  }
+  RightSolveLInternal(b, x);
 }
 
 void LuFactorization::LeftSolveUWithNonZeros(ScatteredRow* y) const {

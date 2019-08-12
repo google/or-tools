@@ -1,9 +1,9 @@
-<map id="Google.OrTools.ConstraintSolver.SymmetryBreakerVector" name="Google.OrTools.ConstraintSolver.SymmetryBreakerVector">
-<area shape="rect" id="node1" title=" " alt="" coords="290,156,497,195"/>
-<area shape="rect" id="node2" title=" " alt="" coords="78,5,169,31"/>
-<area shape="rect" id="node3" title=" " alt="" coords="55,55,193,93"/>
-<area shape="rect" id="node4" title=" " alt="" coords="34,117,213,169"/>
-<area shape="rect" id="node5" title=" " alt="" coords="35,193,213,219"/>
-<area shape="rect" id="node6" title=" " alt="" coords="37,243,211,281"/>
-<area shape="rect" id="node7" title=" " alt="" coords="5,305,242,344"/>
+<map id="SymmetryBreakerVector" name="SymmetryBreakerVector">
+<area shape="rect" id="node1" title=" " alt="" coords="229,129,395,155"/>
+<area shape="rect" id="node2" title=" " alt="" coords="48,5,139,31"/>
+<area shape="rect" id="node3" title=" " alt="" coords="45,55,142,80"/>
+<area shape="rect" id="node4" title=" " alt="" coords="5,104,181,129"/>
+<area shape="rect" id="node5" title=" " alt="" coords="25,153,161,179"/>
+<area shape="rect" id="node6" title=" " alt="" coords="45,203,142,228"/>
+<area shape="rect" id="node7" title=" " alt="" coords="5,252,181,277"/>
 </map>

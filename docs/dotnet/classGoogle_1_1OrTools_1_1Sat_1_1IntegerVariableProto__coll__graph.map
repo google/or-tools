@@ -1,4 +1,4 @@
-<map id="Google.OrTools.Sat.IntegerVariableProto" name="Google.OrTools.Sat.IntegerVariableProto">
-<area shape="rect" id="node1" title="An integer variable." alt="" coords="15,92,198,131"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,208,44"/>
+<map id="IntegerVariableProto" name="IntegerVariableProto">
+<area shape="rect" id="node1" title="An integer variable." alt="" coords="24,92,167,117"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,185,44"/>
 </map>

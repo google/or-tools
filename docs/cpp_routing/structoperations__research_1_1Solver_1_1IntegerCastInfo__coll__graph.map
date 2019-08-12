@@ -1,0 +1,8 @@
+<map id="Solver::IntegerCastInfo" name="Solver::IntegerCastInfo">
+<area shape="rect" id="node1" title="Holds semantic information stating that the &#39;expression&#39; has been cast into &#39;variable&#39; using the Var(..." alt="" coords="40,340,197,365"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming." alt="" coords="87,155,150,180"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr." alt="" coords="91,253,147,279"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1PropagationBaseObject.html" title="NOLINT." alt="" coords="72,80,234,105"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1Constraint.html" title="A constraint is the main modeling object." alt="" coords="151,204,233,229"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="108,5,198,31"/>
+</map>
