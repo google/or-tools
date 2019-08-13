@@ -12,6 +12,7 @@
 // limitations under the License.
 
 /**
+ * \file
  * This file implements a wrapper around the CP-SAT model proto.
  *
  * Here is a minimal example that shows how to create a model, solve it, and
