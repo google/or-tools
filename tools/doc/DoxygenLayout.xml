@@ -72,7 +72,6 @@
       <privatestaticmethods title=""/>
       <privateattributes title=""/>
       <privatestaticattributes title=""/>
-      <related title="" subtitle=""/>
       <membergroups visible="yes"/>
     </memberdecl>
     <memberdef>
@@ -83,7 +82,6 @@
       <interfaces title=""/>
       <constructors title=""/>
       <functions title=""/>
-      <related title=""/>
       <variables title=""/>
       <properties title=""/>
       <events title=""/>
