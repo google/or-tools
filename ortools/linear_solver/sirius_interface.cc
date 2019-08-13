@@ -94,6 +94,9 @@ namespace operations_research {
 		// Solve the problem using the parameter values specified.
 		virtual MPSolver::ResultStatus Solve(MPSolverParameters const &param);
 
+		// Writes the model.
+		void Write(const std::string& filename) override;
+
 		// ----- Model modifications and extraction -----
 		// Resets extracted model
 		virtual void Reset();
@@ -1346,6 +1349,18 @@ namespace operations_research {
 
 		sync_status_ = SOLUTION_SYNCHRONIZED;
 		return result_status_;
+	}
+
+	void SiriusInterface::Write(const std::string& filename) {
+		if (sync_status_ == MUST_RELOAD) {
+			Reset();
+		}
+		ExtractModel();
+		VLOG(1) << "Writing Sirius MPS \"" << filename << "\".";
+		const int status = SRSwritempsprob(mLp->problem_mps, filename.c_str());
+		if (status) {
+			LOG(WARNING) << "Failed to write MPS.";
+		}
 	}
 
 	MPSolverInterface *BuildSiriusInterface(bool mip, MPSolver *const solver) {
