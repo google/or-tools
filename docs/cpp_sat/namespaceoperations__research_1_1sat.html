@@ -203,7 +203,7 @@ Functions</h2></td></tr>
 <tr class="memdesc:a8ec893fa736de5b95135ecb9314ee6d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the max of an integer variable in a solution.  <a href="#a8ec893fa736de5b95135ecb9314ee6d8">More...</a><br /></td></tr>
 <tr class="separator:a8ec893fa736de5b95135ecb9314ee6d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afa415e372a9d64eede869ed98666c29c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#afa415e372a9d64eede869ed98666c29c">SolutionBooleanValue</a> (const <a class="el" href="classoperations__research_1_1sat_1_1CpSolverResponse.html">CpSolverResponse</a> &amp;r, <a class="el" href="classoperations__research_1_1sat_1_1BoolVar.html">BoolVar</a> x)</td></tr>
-<tr class="memdesc:afa415e372a9d64eede869ed98666c29c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Evaluates a the value of a Boolean literal in a solver response.  <a href="#afa415e372a9d64eede869ed98666c29c">More...</a><br /></td></tr>
+<tr class="memdesc:afa415e372a9d64eede869ed98666c29c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Evaluates the value of a Boolean literal in a solver response.  <a href="#afa415e372a9d64eede869ed98666c29c">More...</a><br /></td></tr>
 <tr class="separator:afa415e372a9d64eede869ed98666c29c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a287579e5f181fc7c89feccf1128faffb"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a287579e5f181fc7c89feccf1128faffb">CpModelStats</a> (const <a class="el" href="classoperations__research_1_1sat_1_1CpModelProto.html">CpModelProto</a> &amp;model)</td></tr>
 <tr class="memdesc:a287579e5f181fc7c89feccf1128faffb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a std::string with some statistics on the given <a class="el" href="classoperations__research_1_1sat_1_1CpModelProto.html">CpModelProto</a>.  <a href="#a287579e5f181fc7c89feccf1128faffb">More...</a><br /></td></tr>
@@ -224,7 +224,7 @@ Functions</h2></td></tr>
 <tr class="memdesc:af52c27ecb43d6486c1a70e022b4aad39"><td class="mdescLeft">&#160;</td><td class="mdescRight">Solves the given cp_model with the given sat parameters as std::string in JSon format, and returns an instance of <a class="el" href="classoperations__research_1_1sat_1_1CpSolverResponse.html">CpSolverResponse</a>.  <a href="#af52c27ecb43d6486c1a70e022b4aad39">More...</a><br /></td></tr>
 <tr class="separator:af52c27ecb43d6486c1a70e022b4aad39"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad04337634227eac006d3e33a7028f82f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#ad04337634227eac006d3e33a7028f82f">SetSynchronizationFunction</a> (std::function&lt; <a class="el" href="classoperations__research_1_1sat_1_1CpSolverResponse.html">CpSolverResponse</a>()&gt; f, <a class="el" href="classoperations__research_1_1sat_1_1Model.html">Model</a> *model)</td></tr>
-<tr class="memdesc:ad04337634227eac006d3e33a7028f82f"><td class="mdescLeft">&#160;</td><td class="mdescRight">If set, the underlying solver will call this function "regularly" in a deterministic way.  <a href="#ad04337634227eac006d3e33a7028f82f">More...</a><br /></td></tr>
+<tr class="memdesc:ad04337634227eac006d3e33a7028f82f"><td class="mdescLeft">&#160;</td><td class="mdescRight">If set, the underlying solver will call this function regularly in a deterministic way.  <a href="#ad04337634227eac006d3e33a7028f82f">More...</a><br /></td></tr>
 <tr class="separator:ad04337634227eac006d3e33a7028f82f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9644b126f05b927a27fc7eba8e62dd57"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a9644b126f05b927a27fc7eba8e62dd57">DecisionStrategyProto_VariableSelectionStrategy_IsValid</a> (int value)</td></tr>
 <tr class="separator:a9644b126f05b927a27fc7eba8e62dd57"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -257,10 +257,10 @@ Functions</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
 <tr class="memitem:a47117e7eefc0bb9b66054a64988804e6"><td class="memItemLeft" align="right" valign="top">std::function&lt; void(<a class="el" href="classoperations__research_1_1sat_1_1Model.html">Model</a> *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a47117e7eefc0bb9b66054a64988804e6">NewFeasibleSolutionObserver</a> (const std::function&lt; void(const <a class="el" href="classoperations__research_1_1sat_1_1CpSolverResponse.html">CpSolverResponse</a> &amp;response)&gt; &amp;observer)</td></tr>
-<tr class="memdesc:a47117e7eefc0bb9b66054a64988804e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allows to register a solution "observer" with the model with model.Add(NewFeasibleSolutionObserver([](response){...}));.  <a href="#a47117e7eefc0bb9b66054a64988804e6">More...</a><br /></td></tr>
+<tr class="memdesc:a47117e7eefc0bb9b66054a64988804e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a solution observer with the model with model.Add(NewFeasibleSolutionObserver([](response){...}));.  <a href="#a47117e7eefc0bb9b66054a64988804e6">More...</a><br /></td></tr>
 <tr class="separator:a47117e7eefc0bb9b66054a64988804e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1684fe34484d78336d3cdac55ec6de57"><td class="memItemLeft" align="right" valign="top">std::function&lt; SatParameters(<a class="el" href="classoperations__research_1_1sat_1_1Model.html">Model</a> *)&gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a1684fe34484d78336d3cdac55ec6de57">NewSatParameters</a> (const std::string &amp;params)</td></tr>
-<tr class="memdesc:a1684fe34484d78336d3cdac55ec6de57"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allows to change the default parameters with.  <a href="#a1684fe34484d78336d3cdac55ec6de57">More...</a><br /></td></tr>
+<tr class="memdesc:a1684fe34484d78336d3cdac55ec6de57"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates parameters for the solver, which you can add to the model with.  <a href="#a1684fe34484d78336d3cdac55ec6de57">More...</a><br /></td></tr>
 <tr class="separator:a1684fe34484d78336d3cdac55ec6de57"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5022cdbf0a4511363b80caf245fb2854"><td class="memItemLeft" align="right" valign="top">AllDifferentConstraintProtoDefaultTypeInternal&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceoperations__research_1_1sat.html#a5022cdbf0a4511363b80caf245fb2854">_AllDifferentConstraintProto_default_instance_</a></td></tr>
 <tr class="separator:a5022cdbf0a4511363b80caf245fb2854"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -878,9 +878,9 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>If set, the underlying solver will call this function "regularly" in a deterministic way. </p>
-<p>It will then wait until this function returns with the current "best" information about the current problem.</p>
-<p>This is meant to be used in a multi-threaded environment with many parallel solving process. If the returned current "best" response only uses informations derived at a lower deterministic time (possibly with offset) than the deterministic time of the current thread, then the whole process can be made deterministic. </p>
+<p>If set, the underlying solver will call this function regularly in a deterministic way. </p>
+<p>It will then wait until this function returns with the current best information about the current problem.</p>
+<p>This is meant to be used in a multi-threaded environment with many parallel solving process. If the returned current "best" response only uses information derived at a lower deterministic time (possibly with offset) than the deterministic time of the current thread, the whole process can be made deterministic. </p>
 
 </div>
 </div>
@@ -910,7 +910,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Evaluates a the value of a Boolean literal in a solver response. </p>
+<p>Evaluates the value of a Boolean literal in a solver response. </p>
 
 </div>
 </div>
@@ -1051,7 +1051,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Solves the given <a class="el" href="classoperations__research_1_1sat_1_1CpModelProto.html">CpModelProto</a>. </p>
-<p>Note that the API takes a Model* that will be filled with the in-memory representation of the given <a class="el" href="classoperations__research_1_1sat_1_1CpModelProto.html">CpModelProto</a>. It is done this way so that it is easy to set custom parameters or interrupt the solver will calls like:</p>
+<p>Note that the API takes a Model* that will be filled with the in-memory representation of the given <a class="el" href="classoperations__research_1_1sat_1_1CpModelProto.html">CpModelProto</a>. This makes it easy to set custom parameters or interrupt the solver with calls like:</p>
 <ul>
 <li>model-&gt;Add(NewSatParameters(parameters_as_string_or_proto));</li>
 <li>model-&gt;GetOrCreate&lt;TimeLimit&gt;()-&gt;RegisterExternalBooleanAsLimit(&amp;stop); </li>
@@ -1612,8 +1612,8 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Allows to register a solution "observer" with the model with model.Add(NewFeasibleSolutionObserver([](response){...}));. </p>
-<p>The given function will be called on each "improving" feasible solution found during the search. For a non-optimization problem, if the option to find all solution was set, then this will be called on each new solution. </p>
+<p>Creates a solution observer with the model with model.Add(NewFeasibleSolutionObserver([](response){...}));. </p>
+<p>The given function will be called on each improving feasible solution found during the search. For a non-optimization problem, if the option to find all solution was set, then this will be called on each new solution. </p>
 
 <p class="definition">Definition at line <a class="el" href="cp__model__solver_8h_source.html#l00074">74</a> of file <a class="el" href="cp__model__solver_8h_source.html">cp_model_solver.h</a>.</p>
 
@@ -1631,7 +1631,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Allows to change the default parameters with. </p>
+<p>Creates parameters for the solver, which you can add to the model with. </p>
 <div class="fragment"><div class="line">model-&gt;Add(<a class="code" href="namespaceoperations__research_1_1sat.html#a1684fe34484d78336d3cdac55ec6de57">NewSatParameters</a>(parameters_as_string_or_proto))</div></div><!-- fragment --><p> before calling <code><a class="el" href="namespaceoperations__research_1_1sat.html#a9d67b9c66f1cb9c1dcc3415cd5af11bf" title="Solves the given CpModelProto.">SolveCpModel()</a></code>. </p>
 
 <p class="definition">Definition at line <a class="el" href="cp__model__solver_8h_source.html#l00099">99</a> of file <a class="el" href="cp__model__solver_8h_source.html">cp_model_solver.h</a>.</p>

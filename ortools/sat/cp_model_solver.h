@@ -36,8 +36,8 @@ std::string CpSolverResponseStats(const CpSolverResponse& response);
  * Solves the given CpModelProto.
  *
  * Note that the API takes a Model* that will be filled with the in-memory
- * representation of the given CpModelProto. It is done this way so that it is
- * easy to set custom parameters or interrupt the solver will calls like:
+ * representation of the given CpModelProto. This makes it easy to set custom
+ * parameters or interrupt the solver with calls like:
  *
  * - model->Add(NewSatParameters(parameters_as_string_or_proto));
  * - model->GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stop);
@@ -64,10 +64,10 @@ CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
 #endif  // !__PORTABLE_PLATFORM__
 
 /**
- * Allows to register a solution "observer" with the model with
+ * Creates a solution observer with the model with
  *   model.Add(NewFeasibleSolutionObserver([](response){...}));
  *
- * The given function will be called on each "improving" feasible solution found
+ * The given function will be called on each improving feasible solution found
  * during the search. For a non-optimization problem, if the option to find all
  * solution was set, then this will be called on each new solution.
  */
@@ -75,21 +75,21 @@ std::function<void(Model*)> NewFeasibleSolutionObserver(
     const std::function<void(const CpSolverResponse& response)>& observer);
 
 /**
- * If set, the underlying solver will call this function "regularly" in a
+ * If set, the underlying solver will call this function regularly in a
  * deterministic way. It will then wait until this function returns with the
- * current "best" information about the current problem.
+ * current best information about the current problem.
  *
  * This is meant to be used in a multi-threaded environment with many parallel
  * solving process. If the returned current "best" response only uses
- * informations derived at a lower deterministic time (possibly with offset)
- * than the deterministic time of the current thread, then the whole process can
+ * information derived at a lower deterministic time (possibly with offset)
+ * than the deterministic time of the current thread, the whole process can
  * be made deterministic.
  */
 void SetSynchronizationFunction(std::function<CpSolverResponse()> f,
                                 Model* model);
 
 /**
- * Allows to change the default parameters with
+ * Creates parameters for the solver, which you can add to the model with
  * \code
     model->Add(NewSatParameters(parameters_as_string_or_proto))
    \endcode

@@ -58,7 +58,7 @@
 <li>AddXXX to create new constraints and add them to the model. </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00561">561</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00563">563</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -162,7 +162,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:acc9c643fff37dd8f960fb0a6d67803f6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds target == prod(vars).  <a href="#acc9c643fff37dd8f960fb0a6d67803f6">More...</a><br /></td></tr>
 <tr class="separator:acc9c643fff37dd8f960fb0a6d67803f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af6e22d55cdb0a5a5dda6e70f4d339f85"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1CpModelBuilder.html#af6e22d55cdb0a5a5dda6e70f4d339f85">AddNoOverlap</a> (absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1IntervalVar.html">IntervalVar</a> &gt; vars)</td></tr>
-<tr class="memdesc:af6e22d55cdb0a5a5dda6e70f4d339f85"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a no-overlap constraint.  <a href="#af6e22d55cdb0a5a5dda6e70f4d339f85">More...</a><br /></td></tr>
+<tr class="memdesc:af6e22d55cdb0a5a5dda6e70f4d339f85"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a no-overlap constraint that ensures that all present intervals do not overlap in time.  <a href="#af6e22d55cdb0a5a5dda6e70f4d339f85">More...</a><br /></td></tr>
 <tr class="separator:af6e22d55cdb0a5a5dda6e70f4d339f85"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab0da51955684003ebd40b203c9515538"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1NoOverlap2DConstraint.html">NoOverlap2DConstraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1CpModelBuilder.html#ab0da51955684003ebd40b203c9515538">AddNoOverlap2D</a> ()</td></tr>
 <tr class="memdesc:ab0da51955684003ebd40b203c9515538"><td class="mdescLeft">&#160;</td><td class="mdescRight">The no_overlap_2d constraint prevents a set of boxes from overlapping.  <a href="#ab0da51955684003ebd40b203c9515538">More...</a><br /></td></tr>
@@ -381,7 +381,7 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Adds a circuit constraint. </p>
-<p>The circuit constraint is defined on a graph where the arc presence are controlled by literals. That is the arc is part of the circuit of its corresponding literal is assigned to true.</p>
+<p>The circuit constraint is defined on a graph where the arc presence is controlled by literals. That is the arc is part of the circuit of its corresponding literal is assigned to true.</p>
 <p>For now, we ignore node indices with no incident arc. All the other nodes must have exactly one incoming and one outgoing selected arc (i.e. literal at true). All the selected arcs that are not self-loops must form a single circuit.</p>
 <p>It returns a circuit constraint that allows adding arcs incrementally after construction. </p>
 
@@ -700,7 +700,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Adds a =&gt; b. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00595">595</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00597">597</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -937,8 +937,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Adds a no-overlap constraint. </p>
-<p>it ensures that all present intervals do not overlap in time. </p>
+<p>Adds a no-overlap constraint that ensures that all present intervals do not overlap in time. </p>
 
 </div>
 </div>
@@ -1113,7 +1112,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00800">800</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00801">801</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -1199,7 +1198,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00803">803</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00804">804</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -1363,7 +1362,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00802">802</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00803">803</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>

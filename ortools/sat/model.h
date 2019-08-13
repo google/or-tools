@@ -39,14 +39,14 @@ class Model {
   Model() {}
 
   /**
-   * This allows to have a nicer API on the client side, and it allows both of
-   * these forms:
+   * This makes it possible  to have a nicer API on the client side, and it
+   * allows both of these forms:
    *   - ConstraintCreationFunction(contraint_args, &model);
    *   - model.Add(ConstraintCreationFunction(contraint_args));
    *
    * The second form is a bit nicer for the client and it also allows to store
    * constraints and add them later. However, the function creating the
-   * constraint is slighly more involved:
+   * constraint is slighly more involved.
    *
    * \code
    std::function<void(Model*)> ConstraintCreationFunction(contraint_args) {
@@ -59,7 +59,7 @@ class Model {
    * We also have a templated return value for the functions that need it like
    * \code
    const BooleanVariable b = model.Add(NewBooleanVariable());
-   const IntegerVariable i = model.Add(NewWeightedSum(weigths, variables));
+   const IntegerVariable i = model.Add(NewWeightedSum(weights, variables));
    \endcode
    */
   template <typename T>
@@ -84,7 +84,7 @@ class Model {
    * or both, it can depend on a Watcher class to register itself in order to
    * be called when needed and so on.
    *
-   * IMPORTANT: the Model* constructors function shouldn't form a cycle between
+   * IMPORTANT: the Model* constructor functions shouldn't form a cycle between
    * each other, otherwise this will crash the program.
    */
   template <typename T>

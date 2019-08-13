@@ -64,11 +64,11 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a30c57abda5ed227c85b50007cee876db"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7b8d774b566431b8932ba0f3c921ec7d"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
 <tr class="memitem:a7b8d774b566431b8932ba0f3c921ec7d"><td class="memTemplItemLeft" align="right" valign="top">T&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1Model.html#a7b8d774b566431b8932ba0f3c921ec7d">Add</a> (std::function&lt; T(<a class="el" href="classoperations__research_1_1sat_1_1Model.html">Model</a> *)&gt; f)</td></tr>
-<tr class="memdesc:a7b8d774b566431b8932ba0f3c921ec7d"><td class="mdescLeft">&#160;</td><td class="mdescRight">This allows to have a nicer API on the client side, and it allows both of these forms:  <a href="#a7b8d774b566431b8932ba0f3c921ec7d">More...</a><br /></td></tr>
+<tr class="memdesc:a7b8d774b566431b8932ba0f3c921ec7d"><td class="mdescLeft">&#160;</td><td class="mdescRight">This makes it possible to have a nicer API on the client side, and it allows both of these forms:  <a href="#a7b8d774b566431b8932ba0f3c921ec7d">More...</a><br /></td></tr>
 <tr class="separator:a7b8d774b566431b8932ba0f3c921ec7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a37eb53a23cb596ef5d2e3bbc0fab70dc"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
 <tr class="memitem:a37eb53a23cb596ef5d2e3bbc0fab70dc"><td class="memTemplItemLeft" align="right" valign="top">T&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1Model.html#a37eb53a23cb596ef5d2e3bbc0fab70dc">Get</a> (std::function&lt; T(const <a class="el" href="classoperations__research_1_1sat_1_1Model.html">Model</a> &amp;)&gt; f) const</td></tr>
-<tr class="memdesc:a37eb53a23cb596ef5d2e3bbc0fab70dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Similar to <a class="el" href="classoperations__research_1_1sat_1_1Model.html#a7b8d774b566431b8932ba0f3c921ec7d" title="This allows to have a nicer API on the client side, and it allows both of these forms:">Add()</a> but this is const.  <a href="#a37eb53a23cb596ef5d2e3bbc0fab70dc">More...</a><br /></td></tr>
+<tr class="memdesc:a37eb53a23cb596ef5d2e3bbc0fab70dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Similar to <a class="el" href="classoperations__research_1_1sat_1_1Model.html#a7b8d774b566431b8932ba0f3c921ec7d" title="This makes it possible to have a nicer API on the client side, and it allows both of these forms:">Add()</a> but this is const.  <a href="#a37eb53a23cb596ef5d2e3bbc0fab70dc">More...</a><br /></td></tr>
 <tr class="separator:a37eb53a23cb596ef5d2e3bbc0fab70dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8d72645353ea6770911c4e0724995ed6"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
 <tr class="memitem:a8d72645353ea6770911c4e0724995ed6"><td class="memTemplItemLeft" align="right" valign="top">T *&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1Model.html#a8d72645353ea6770911c4e0724995ed6">GetOrCreate</a> ()</td></tr>
@@ -148,13 +148,13 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>This allows to have a nicer API on the client side, and it allows both of these forms: </p>
+<p>This makes it possible to have a nicer API on the client side, and it allows both of these forms: </p>
 <ul>
 <li>ConstraintCreationFunction(contraint_args, &amp;model);</li>
 <li>model.Add(ConstraintCreationFunction(contraint_args));</li>
 </ul>
-<p>The second form is a bit nicer for the client and it also allows to store constraints and add them later. However, the function creating the constraint is slighly more involved:</p>
-<div class="fragment"><div class="line">std::function&lt;void(<a class="code" href="classoperations__research_1_1sat_1_1Model.html#a30c57abda5ed227c85b50007cee876db">Model</a>*)&gt; ConstraintCreationFunction(contraint_args) {</div><div class="line">  <span class="keywordflow">return</span> [=] (<a class="code" href="classoperations__research_1_1sat_1_1Model.html#a30c57abda5ed227c85b50007cee876db">Model</a>* model) {</div><div class="line">     ... the same code ...</div><div class="line">  };</div><div class="line">}</div></div><!-- fragment --><p>We also have a templated return value for the functions that need it like </p><div class="fragment"><div class="line"><span class="keyword">const</span> BooleanVariable b = model.Add(NewBooleanVariable());</div><div class="line"><span class="keyword">const</span> IntegerVariable i = model.Add(NewWeightedSum(weigths, variables));</div></div><!-- fragment --> 
+<p>The second form is a bit nicer for the client and it also allows to store constraints and add them later. However, the function creating the constraint is slighly more involved.</p>
+<div class="fragment"><div class="line">std::function&lt;void(<a class="code" href="classoperations__research_1_1sat_1_1Model.html#a30c57abda5ed227c85b50007cee876db">Model</a>*)&gt; ConstraintCreationFunction(contraint_args) {</div><div class="line">  <span class="keywordflow">return</span> [=] (<a class="code" href="classoperations__research_1_1sat_1_1Model.html#a30c57abda5ed227c85b50007cee876db">Model</a>* model) {</div><div class="line">     ... the same code ...</div><div class="line">  };</div><div class="line">}</div></div><!-- fragment --><p>We also have a templated return value for the functions that need it like </p><div class="fragment"><div class="line"><span class="keyword">const</span> BooleanVariable b = model.Add(NewBooleanVariable());</div><div class="line"><span class="keyword">const</span> IntegerVariable i = model.Add(NewWeightedSum(weights, variables));</div></div><!-- fragment --> 
 <p class="definition">Definition at line <a class="el" href="model_8h_source.html#l00066">66</a> of file <a class="el" href="model_8h_source.html">model.h</a>.</p>
 
 </div>
@@ -213,7 +213,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Similar to <a class="el" href="classoperations__research_1_1sat_1_1Model.html#a7b8d774b566431b8932ba0f3c921ec7d" title="This allows to have a nicer API on the client side, and it allows both of these forms:">Add()</a> but this is const. </p>
+<p>Similar to <a class="el" href="classoperations__research_1_1sat_1_1Model.html#a7b8d774b566431b8932ba0f3c921ec7d" title="This makes it possible to have a nicer API on the client side, and it allows both of these forms:">Add()</a> but this is const. </p>
 
 <p class="definition">Definition at line <a class="el" href="model_8h_source.html#l00072">72</a> of file <a class="el" href="model_8h_source.html">model.h</a>.</p>
 
@@ -275,7 +275,7 @@ Public Member Functions</h2></td></tr>
 <p>Returns an object of type T that is unique to this model (like a "local" singleton). </p>
 <p>This returns an already created instance or create a new one if needed using the T(Model* model) constructor if it exist or T() otherwise.</p>
 <p>This works a bit like in a dependency injection framework and allows to really easily wire all the classes that make up a solver together. For instance a constraint can depends on the LiteralTrail, or the IntegerTrail or both, it can depend on a Watcher class to register itself in order to be called when needed and so on.</p>
-<p>IMPORTANT: the Model* constructors function shouldn't form a cycle between each other, otherwise this will crash the program. </p>
+<p>IMPORTANT: the Model* constructor functions shouldn't form a cycle between each other, otherwise this will crash the program. </p>
 
 <p class="definition">Definition at line <a class="el" href="model_8h_source.html#l00091">91</a> of file <a class="el" href="model_8h_source.html">model.h</a>.</p>
 

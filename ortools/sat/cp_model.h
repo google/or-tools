@@ -135,7 +135,7 @@ BoolVar Not(BoolVar x);
  * An integer variable.
  *
  * This class wraps an IntegerVariableProto.
- * This can only be constructed via CpModelBuilder.NewIntVar().
+ * This can only be constructed via \c CpModelBuilder.NewIntVar().
  *
  * Note that a BoolVar can be used in any place that accept an
  * IntVar via an implicit cast. It will simply take the value
@@ -308,7 +308,7 @@ class LinearExpr {
  * these constraints will also set these presence literals to false if they
  * cannot fit these intervals into the schedule.
  *
- * It can only be constructed via CpModelBuilder.NewIntervalVar().
+ * It can only be constructed via \c CpModelBuilder.NewIntervalVar().
  */
 class IntervalVar {
  public:
@@ -380,9 +380,11 @@ std::ostream& operator<<(std::ostream& os, const IntervalVar& var);
 /**
  * A constraint.
  *
- * This class enable modifying the constraint that was added to the model.
+ * This class enables you to modify the constraint that was previously added to
+ * the model.
  *
- * It can anly be built by the different CpModelBuilder::AddXXX methods.
+ * The constraint must be built using the different \c CpModelBuilder::AddXXX
+ * methods.
  */
 class Constraint {
  public:
@@ -632,7 +634,7 @@ class CpModelBuilder {
   /**
    * Adds a circuit constraint.
    *
-   * The circuit constraint is defined on a graph where the arc presence are
+   * The circuit constraint is defined on a graph where the arc presence is
    * controlled by literals. That is the arc is part of the circuit of its
    * corresponding literal is assigned to true.
    *
@@ -750,9 +752,8 @@ class CpModelBuilder {
   Constraint AddProductEquality(IntVar target, absl::Span<const IntVar> vars);
 
   /**
-   *  Adds a no-overlap constraint
-   *
-   * it ensures that all present intervals do not overlap in time.
+   *  Adds a no-overlap constraint that ensures that all present intervals do
+   * not overlap in time.
    */
   Constraint AddNoOverlap(absl::Span<const IntervalVar> vars);
 
@@ -833,7 +834,7 @@ int64 SolutionIntegerMin(const CpSolverResponse& r, IntVar x);
 /// Returns the max of an integer variable in a solution.
 int64 SolutionIntegerMax(const CpSolverResponse& r, IntVar x);
 
-/// Evaluates a the value of a Boolean literal in a solver response.
+/// Evaluates the value of a Boolean literal in a solver response.
 bool SolutionBooleanValue(const CpSolverResponse& r, BoolVar x);
 
 }  // namespace sat
