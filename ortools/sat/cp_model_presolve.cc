@@ -1991,8 +1991,8 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
     const int64 v0 = context_.MinOf(ct->element().vars(0));
     const int64 v1 = context_.MinOf(ct->element().vars(1));
 
-    ConstraintProto* new_ct = context_.working_model->add_constraints();
-    LinearConstraintProto* const lin = new_ct->mutable_linear();
+    LinearConstraintProto* const lin =
+        context_.working_model->add_constraints()->mutable_linear();
     lin->add_vars(target_ref);
     lin->add_coeffs(1);
     lin->add_vars(index_ref);

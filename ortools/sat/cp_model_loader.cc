@@ -56,24 +56,8 @@ std::vector<int64> ValuesFromProto(const Values& values) {
   return std::vector<int64>(values.begin(), values.end());
 }
 
-bool IsTooLargeToEncode(int var, CpModelMapping* mapping,
-                        IntegerTrail* integer_trail) {
-  const IntegerVariable sat_var = mapping->Integer(var);
-  const IntegerValue lb = integer_trail->LowerBound(sat_var);
-  const IntegerValue ub = integer_trail->UpperBound(sat_var);
-  return ub - lb > 1024;  // Arbitrary limit value.
-}
-
-bool IsSmallEnoughToAlwaysEncode(int var, CpModelMapping* mapping,
-                                 IntegerTrail* integer_trail) {
-  const IntegerVariable sat_var = mapping->Integer(var);
-  const IntegerValue lb = integer_trail->LowerBound(sat_var);
-  const IntegerValue ub = integer_trail->UpperBound(sat_var);
-  return ub - lb <= 64;  // Arbitrary limit value.
-}
-
-bool IsEqCst(const LinearConstraintProto& proto, CpModelMapping* mapping,
-             IntegerTrail* integer_trail) {
+bool IsEqCstInsideBounds(const LinearConstraintProto& proto,
+                         CpModelMapping* mapping, IntegerTrail* integer_trail) {
   if (proto.domain_size() != 2 || proto.domain(0) != proto.domain(1)) {
     return false;
   }
@@ -100,8 +84,9 @@ bool IsEqCst(const LinearConstraintProto& proto, CpModelMapping* mapping,
   return value > sum_min && value < sum_max;
 }
 
-bool IsNeqCst(const LinearConstraintProto& proto, CpModelMapping* mapping,
-              IntegerTrail* integer_trail, int64* single_value) {
+bool IsNEqCstInsideBounds(const LinearConstraintProto& proto,
+                          CpModelMapping* mapping, IntegerTrail* integer_trail,
+                          int64* single_value) {
   int64 sum_min = 0;
   int64 sum_max = 0;
 
@@ -678,7 +663,7 @@ class FullEncodingFixedPointComputer {
       result += proto.domain(i + 1) - proto.domain(i) + 1;
     }
     return result;
-  }  
+  }
 
   bool ProcessConstraint(ConstraintIndex ct_index);
   bool ProcessElement(ConstraintIndex ct_index);
@@ -701,7 +686,6 @@ class FullEncodingFixedPointComputer {
 
   gtl::ITIVector<ConstraintIndex, bool> constraint_is_finished_;
   gtl::ITIVector<ConstraintIndex, bool> constraint_is_registered_;
-
 
   absl::flat_hash_map<int, absl::flat_hash_set<int64>> is_eq_cst_;
   absl::flat_hash_map<int, absl::flat_hash_set<int>> is_eq_var_;
@@ -730,16 +714,16 @@ void FullEncodingFixedPointComputer::ComputeFixedPoint() {
 
   for (const auto& var_size : to_process) {
     const int var = var_size.first;
-    const int64 num_accesses = var_size.second;
+    const int64 num_constraints = var_size.second;
     const int64 domain_size_without_bounds = DomainSize(var) - 2;
-    VLOG(2) << model_proto_.variables(var).ShortDebugString()
-            << " is encoded with " << num_accesses
-            << " accesses constraints on a domain of size " << DomainSize(var);
-    if (num_accesses >= domain_size_without_bounds / 4) {
-      VLOG(2) << "  - encode";
+    if (num_constraints >= domain_size_without_bounds / 4) {
+      VLOG(2) << model_proto_.variables(var).ShortDebugString()
+              << " is encoded with " << num_constraints
+              << " unary or binary constraints on a domain of size "
+              << DomainSize(var);
       FullyEncode(var);
     }
-  }  
+  }
 
   // Make sure all fully encoded variables of interest are in the queue.
   for (int v = 0; v < variable_watchers_.size(); v++) {
@@ -855,8 +839,8 @@ bool FullEncodingFixedPointComputer::ProcessLinear(ConstraintIndex ct_index) {
   if (ct.name() == "MAPPING") return true;
 
   int64 value = ct.linear().domain(0);
-  if (!IsEqCst(ct.linear(), mapping_, integer_trail_) &&
-      !IsNeqCst(ct.linear(), mapping_, integer_trail_, &value)) {
+  if (!IsEqCstInsideBounds(ct.linear(), mapping_, integer_trail_) &&
+      !IsNEqCstInsideBounds(ct.linear(), mapping_, integer_trail_, &value)) {
     return true;
   }
 
@@ -1005,7 +989,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
   const SatParameters& params = *m->GetOrCreate<SatParameters>();
   int64 single_value = 0;
   if (params.boolean_encoding_level() > 0 && ct.linear().vars_size() == 2 &&
-      IsEqCst(ct.linear(), mapping, integer_trail)) {
+      IsEqCstInsideBounds(ct.linear(), mapping, integer_trail)) {
     auto* encoder = m->GetOrCreate<IntegerEncoder>();
     if (encoder->VariableIsFullyEncoded(vars[0]) &&
         encoder->VariableIsFullyEncoded(vars[1])) {
@@ -1016,7 +1000,8 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
     }
   }
   if (params.boolean_encoding_level() > 0 && ct.linear().vars_size() == 2 &&
-      IsNeqCst(ct.linear(), mapping, integer_trail, &single_value)) {
+      IsNEqCstInsideBounds(ct.linear(), mapping, integer_trail,
+                           &single_value)) {
     auto* encoder = m->GetOrCreate<IntegerEncoder>();
     if (encoder->VariableIsFullyEncoded(vars[0]) &&
         encoder->VariableIsFullyEncoded(vars[1])) {
