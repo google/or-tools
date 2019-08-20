@@ -109,6 +109,10 @@ class CumulBoundsPropagator {
 
   // Vector used in DisassembleSubtree() to avoid memory reallocation.
   std::vector<int> tmp_dfs_stack_;
+
+  // Used to store the pickup/delivery pairs encountered on the routes.
+  std::vector<std::pair<int64, int64>>
+      visited_pickup_delivery_indices_for_pair_;
 };
 
 // Utility class used in Local/GlobalDimensionCumulOptimizer to set the LP
@@ -118,8 +122,8 @@ class DimensionCumulOptimizerCore {
   DimensionCumulOptimizerCore(const RoutingDimension* dimension,
                               bool use_precedence_propagator)
       : dimension_(dimension),
-        visited_pickup_index_for_pair_(
-            dimension->model()->GetPickupAndDeliveryPairs().size(), -1) {
+        visited_pickup_delivery_indices_for_pair_(
+            dimension->model()->GetPickupAndDeliveryPairs().size(), {-1, -1}) {
     if (use_precedence_propagator) {
       propagator_ = absl::make_unique<CumulBoundsPropagator>(dimension);
     }
@@ -212,7 +216,8 @@ class DimensionCumulOptimizerCore {
   std::vector<glop::ColIndex> index_to_cumul_variable_;
   glop::ColIndex max_end_cumul_;
   glop::ColIndex min_start_cumul_;
-  std::vector<int64> visited_pickup_index_for_pair_;
+  std::vector<std::pair<int64, int64>>
+      visited_pickup_delivery_indices_for_pair_;
 };
 
 // Class used to compute optimal values for dimension cumuls of routes,

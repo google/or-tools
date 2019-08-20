@@ -78,6 +78,65 @@ bool GetCumulBoundsWithOffset(const IntVar& cumul_var, int64 cumul_offset,
   return true;
 }
 
+// Finds the pickup/delivery pairs of nodes on a given vehicle's route.
+// Returns the vector of visited pair indices, and stores the corresponding
+// pickup/delivery indices in visited_pickup_delivery_indices_for_pair_.
+// NOTE: Supposes that visited_pickup_delivery_indices_for_pair is correctly
+// sized and initialized to {-1, -1} for all pairs.
+void StoreVisitedPickupDeliveryPairsOnRoute(
+    const RoutingDimension& dimension, int vehicle,
+    const std::function<int64(int64)>& next_accessor,
+    std::vector<int>* visited_pairs,
+    std::vector<std::pair<int64, int64>>*
+        visited_pickup_delivery_indices_for_pair) {
+  // visited_pickup_delivery_indices_for_pair must be all {-1, -1}.
+  DCHECK_EQ(visited_pickup_delivery_indices_for_pair->size(),
+            dimension.model()->GetPickupAndDeliveryPairs().size());
+  DCHECK(std::all_of(visited_pickup_delivery_indices_for_pair->begin(),
+                     visited_pickup_delivery_indices_for_pair->end(),
+                     [](std::pair<int64, int64> p) {
+                       return p.first == -1 && p.second == -1;
+                     }));
+  visited_pairs->clear();
+  if (!dimension.HasPickupToDeliveryLimits()) {
+    return;
+  }
+  const RoutingModel& model = *dimension.model();
+
+  int64 node_index = model.Start(vehicle);
+  while (!model.IsEnd(node_index)) {
+    const std::vector<std::pair<int, int>>& pickup_index_pairs =
+        model.GetPickupIndexPairs(node_index);
+    const std::vector<std::pair<int, int>>& delivery_index_pairs =
+        model.GetDeliveryIndexPairs(node_index);
+    if (!pickup_index_pairs.empty()) {
+      // The current node is a pickup. We verify that it belongs to a single
+      // pickup index pair and that it's not a delivery, and store the index.
+      DCHECK(delivery_index_pairs.empty());
+      DCHECK_EQ(pickup_index_pairs.size(), 1);
+      (*visited_pickup_delivery_indices_for_pair)[pickup_index_pairs[0].first]
+          .first = node_index;
+      visited_pairs->push_back(pickup_index_pairs[0].first);
+    } else if (!delivery_index_pairs.empty()) {
+      // The node is a delivery. We verify that it belongs to a single
+      // delivery pair, and set the limit with its pickup if one has been
+      // visited for this pair.
+      DCHECK_EQ(delivery_index_pairs.size(), 1);
+      const int pair_index = delivery_index_pairs[0].first;
+      std::pair<int64, int64>& pickup_delivery_index =
+          (*visited_pickup_delivery_indices_for_pair)[pair_index];
+      if (pickup_delivery_index.first < 0) {
+        // This case should not happen, as a delivery must have its pickup
+        // on the route, but we ignore it here.
+        node_index = next_accessor(node_index);
+        continue;
+      }
+      pickup_delivery_index.second = node_index;
+    }
+    node_index = next_accessor(node_index);
+  }
+}
+
 }  // namespace
 
 LocalDimensionCumulOptimizer::LocalDimensionCumulOptimizer(
@@ -145,6 +204,8 @@ CumulBoundsPropagator::CumulBoundsPropagator(const RoutingDimension* dimension)
   node_in_queue_.resize(num_nodes_, false);
   tree_parent_node_of_.resize(num_nodes_, kNoParent);
   propagated_bounds_.resize(num_nodes_);
+  visited_pickup_delivery_indices_for_pair_.resize(
+      dimension->model()->GetPickupAndDeliveryPairs().size(), {-1, -1});
 }
 
 void CumulBoundsPropagator::AddArcs(int first_index, int second_index,
@@ -202,6 +263,33 @@ bool CumulBoundsPropagator::InitializeArcsAndBounds(
       }
 
       node = next;
+    }
+
+    // Set pickup/delivery limits on route.
+    std::vector<int> visited_pairs;
+    StoreVisitedPickupDeliveryPairsOnRoute(
+        dimension_, vehicle, next_accessor, &visited_pairs,
+        &visited_pickup_delivery_indices_for_pair_);
+    for (int pair_index : visited_pairs) {
+      const int64 pickup_index =
+          visited_pickup_delivery_indices_for_pair_[pair_index].first;
+      const int64 delivery_index =
+          visited_pickup_delivery_indices_for_pair_[pair_index].second;
+      visited_pickup_delivery_indices_for_pair_[pair_index] = {-1, -1};
+
+      DCHECK_GE(pickup_index, 0);
+      if (delivery_index < 0) {
+        // We didn't encounter a delivery for this pickup.
+        continue;
+      }
+
+      const int64 limit = dimension_.GetPickupToDeliveryLimitForPair(
+          pair_index, model->GetPickupIndexPairs(pickup_index)[0].second,
+          model->GetDeliveryIndexPairs(delivery_index)[0].second);
+      if (limit < kint64max) {
+        // delivery_cumul - limit  <= pickup_cumul.
+        AddArcs(delivery_index, pickup_index, -limit);
+      }
     }
   }
 
@@ -684,49 +772,37 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     }
   }
   // Add pickup and delivery limits.
-  if (dimension_->HasPickupToDeliveryLimits()) {
-    // visited_pickup_index_for_pair_ must be all -1.
-    DCHECK(std::all_of(visited_pickup_index_for_pair_.begin(),
-                       visited_pickup_index_for_pair_.end(),
-                       [](int64 node) { return node == -1; }));
-    std::vector<int64> visited_pairs;
-    for (int pos = 0; pos < path_size - 1; ++pos) {
-      const std::vector<std::pair<int, int>>& pickup_index_pairs =
-          model->GetPickupIndexPairs(path[pos]);
-      const std::vector<std::pair<int, int>>& delivery_index_pairs =
-          model->GetDeliveryIndexPairs(path[pos]);
-      if (!pickup_index_pairs.empty()) {
-        // The current node is a pickup. We verify that it belongs to a single
-        // pickup index pair and that it's not a delivery, and store the index.
-        DCHECK(delivery_index_pairs.empty());
-        DCHECK_EQ(pickup_index_pairs.size(), 1);
-        visited_pickup_index_for_pair_[pickup_index_pairs[0].first] = path[pos];
-        visited_pairs.push_back(pickup_index_pairs[0].first);
-      } else if (!delivery_index_pairs.empty()) {
-        // The node is a delivery. We verify that it belongs to a single
-        // delivery pair, and set the limit with its pickup if one has been
-        // visited for this pair.
-        DCHECK_EQ(delivery_index_pairs.size(), 1);
-        const int pair_index = delivery_index_pairs[0].first;
-        const int64 pickup_index = visited_pickup_index_for_pair_[pair_index];
-        if (pickup_index < 0) continue;
-        const int64 limit = dimension_->GetPickupToDeliveryLimitForPair(
-            pair_index, model->GetPickupIndexPairs(pickup_index)[0].second,
-            delivery_index_pairs[0].second);
-        if (limit < kint64max) {
-          // delivery_cumul - pickup_cumul <= limit.
-          glop::RowIndex ct = linear_program->CreateNewConstraint();
-          linear_program->SetConstraintBounds(ct, -glop::kInfinity, limit);
-          linear_program->SetCoefficient(ct, lp_cumuls[pos], 1);
-          linear_program->SetCoefficient(
-              ct, index_to_cumul_variable_[pickup_index], -1);
-        }
-      }
+  std::vector<int> visited_pairs;
+  StoreVisitedPickupDeliveryPairsOnRoute(
+      *dimension_, vehicle, next_accessor, &visited_pairs,
+      &visited_pickup_delivery_indices_for_pair_);
+  for (int pair_index : visited_pairs) {
+    const int64 pickup_index =
+        visited_pickup_delivery_indices_for_pair_[pair_index].first;
+    const int64 delivery_index =
+        visited_pickup_delivery_indices_for_pair_[pair_index].second;
+    visited_pickup_delivery_indices_for_pair_[pair_index] = {-1, -1};
+
+    DCHECK_GE(pickup_index, 0);
+    if (delivery_index < 0) {
+      // We didn't encounter a delivery for this pickup.
+      continue;
     }
-    for (const int64 pair : visited_pairs) {
-      visited_pickup_index_for_pair_[pair] = -1;
+
+    const int64 limit = dimension_->GetPickupToDeliveryLimitForPair(
+        pair_index, model->GetPickupIndexPairs(pickup_index)[0].second,
+        model->GetDeliveryIndexPairs(delivery_index)[0].second);
+    if (limit < kint64max) {
+      // delivery_cumul - pickup_cumul <= limit.
+      glop::RowIndex ct = linear_program->CreateNewConstraint();
+      linear_program->SetConstraintBounds(ct, -glop::kInfinity, limit);
+      linear_program->SetCoefficient(
+          ct, index_to_cumul_variable_[delivery_index], 1);
+      linear_program->SetCoefficient(ct, index_to_cumul_variable_[pickup_index],
+                                     -1);
     }
   }
+
   // Add span bound constraint.
   const int64 span_bound = dimension_->GetSpanUpperBoundForVehicle(vehicle);
   if (span_bound < kint64max) {
