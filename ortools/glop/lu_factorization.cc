@@ -30,10 +30,10 @@ LuFactorization::LuFactorization()
 
 void LuFactorization::Clear() {
   SCOPED_TIME_STAT(&stats_);
-  lower_.Reset(RowIndex(0));
-  upper_.Reset(RowIndex(0));
-  transpose_upper_.Reset(RowIndex(0));
-  transpose_lower_.Reset(RowIndex(0));
+  lower_.Reset(RowIndex(0), ColIndex(0));
+  upper_.Reset(RowIndex(0), ColIndex(0));
+  transpose_upper_.Reset(RowIndex(0), ColIndex(0));
+  transpose_lower_.Reset(RowIndex(0), ColIndex(0));
   is_identity_factorization_ = true;
   col_perm_.clear();
   row_perm_.clear();

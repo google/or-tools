@@ -90,6 +90,7 @@ class Preprocessor {
   ProblemStatus status_;
   const GlopParameters& parameters_;
   bool in_mip_context_;
+  std::unique_ptr<TimeLimit> infinite_time_limit_;
   TimeLimit* time_limit_;
 };
 

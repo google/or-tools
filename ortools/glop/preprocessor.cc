@@ -44,7 +44,8 @@ Preprocessor::Preprocessor(const GlopParameters* parameters)
     : status_(ProblemStatus::INIT),
       parameters_(*parameters),
       in_mip_context_(false),
-      time_limit_(TimeLimit::Infinite().get()) {}
+      infinite_time_limit_(TimeLimit::Infinite()),
+      time_limit_(infinite_time_limit_.get()) {}
 Preprocessor::~Preprocessor() {}
 
 // --------------------------------------------------------

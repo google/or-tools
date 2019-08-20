@@ -506,7 +506,6 @@ class TriangularMatrix : private CompactSparseMatrix {
   // Only a subset of the functions from CompactSparseMatrix are exposed (note
   // the private inheritance). They are extended to deal with diagonal
   // coefficients properly.
-  void Reset(RowIndex num_rows);
   void PopulateFromTranspose(const TriangularMatrix& input);
   void Swap(TriangularMatrix* other);
   bool IsEmpty() const { return diagonal_coefficients_.empty(); }
@@ -516,17 +515,25 @@ class TriangularMatrix : private CompactSparseMatrix {
     return EntryIndex(num_cols_.value()) + coefficients_.size();
   }
 
+  // On top of the CompactSparseMatrix functionality, TriangularMatrix::Reset()
+  // also pre-allocates space of size col_size for a number of internal vectors.
+  // This helps reduce costly push_back operations for large problems.
+  //
+  // WARNING: Reset() must be called with a sufficiently large col_capacity
+  // prior to any Add* calls (e.g., AddTriangularColumn).
+  void Reset(RowIndex num_rows, ColIndex col_capacity);
+
   // Constructs a triangular matrix from the given SparseMatrix. The input is
   // assumed to be lower or upper triangular without any permutations. This is
   // checked in debug mode.
   void PopulateFromTriangularSparseMatrix(const SparseMatrix& input);
 
-  // Functions to create a triangular matrix incrementally, columns by columns.
-  // A client need to call Reset(num_rows) first, and then each column must be
+  // Functions to create a triangular matrix incrementally, column by column.
+  // A client needs to call Reset(num_rows) first, and then each column must be
   // added by calling one of the 3 functions below.
   //
   // Note that the row indices of the columns are allowed to be permuted: the
-  // diagonal entry of the column #col not beeing necessarily on the row #col.
+  // diagonal entry of the column #col not being necessarily on the row #col.
   // This is why these functions require the 'diagonal_row' parameter. The
   // permutation can be fixed at the end by a call to
   // ApplyRowPermutationToNonDiagonalEntries() or accounted directly in the case

@@ -150,7 +150,7 @@ void VariableValues::UpdateOnPivoting(const ScatteredColumn& direction,
   // - The rows for which direction_[row] < tolerance.
   // - The non-zeros of direction_ignored_position_ in case of degeneracy.
   // Such positions may result in basic variables going out of their bounds by
-  // more than the allowed tolerance. We could choose not to update theses
+  // more than the allowed tolerance. We could choose not to update these
   // variables or not make them take out-of-bound values, but this would
   // introduce artificial errors.
 
