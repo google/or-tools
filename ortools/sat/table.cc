@@ -532,8 +532,7 @@ void AddNegatedTableConstraint(absl::Span<const IntegerVariable> vars,
 
   std::vector<absl::flat_hash_map<int64, Literal>> mapping(n);
   for (int i = 0; i < n; ++i) {
-    if (integer_encoder->VariableIsFullyEncoded(vars[i]) ||
-        integer_trail->InitialVariableDomain(vars[i]).Size() <= 8) {
+    if (integer_encoder->VariableIsFullyEncoded(vars[i])) {
       for (const auto pair : model->Add(FullyEncodeVariable(vars[i]))) {
         mapping[i][pair.value.value()] = pair.literal;
       }

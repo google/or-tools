@@ -13,9 +13,13 @@
 
 #include "ortools/sat/linear_programming_constraint.h"
 
+#include <algorithm>
 #include <cmath>
+#include <iterator>
 #include <limits>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "ortools/base/commandlineflags.h"
@@ -29,6 +33,7 @@
 #include "ortools/glop/status.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/sat/integer.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
@@ -59,6 +64,10 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(Model* model)
   glop::GlopParameters parameters;
   parameters.set_use_dual_simplex(true);
   simplex_.SetParameters(parameters);
+  if (sat_parameters_.use_branching_in_lp() ||
+      sat_parameters_.search_branching() == SatParameters::LP_SEARCH) {
+    compute_reduced_cost_averages_ = true;
+  }
 }
 
 void LinearProgrammingConstraint::AddLinearConstraint(
@@ -198,6 +207,148 @@ void LinearProgrammingConstraint::CreateLpFromConstraintManager() {
   VLOG(1) << "LP relaxation: " << lp_data_.GetDimensionString() << ". "
           << constraint_manager_.AllConstraints().size()
           << " Managed constraints.";
+}
+
+LPSolveInfo LinearProgrammingConstraint::SolveLpForBranching() {
+  LPSolveInfo info;
+  glop::BasisState basis_state = simplex_.GetState();
+
+  const auto status = simplex_.Solve(lp_data_, time_limit_);
+  simplex_.LoadStateForNextSolve(basis_state);
+  if (!status.ok()) {
+    VLOG(1) << "The LP solver encountered an error: " << status.error_message();
+    info.status = glop::ProblemStatus::ABNORMAL;
+    return info;
+  }
+  info.status = simplex_.GetProblemStatus();
+  if (info.status == glop::ProblemStatus::OPTIMAL ||
+      info.status == glop::ProblemStatus::DUAL_FEASIBLE) {
+    // Record the objective bound.
+    info.lp_objective = simplex_.GetObjectiveValue();
+    info.new_obj_bound = IntegerValue(
+        static_cast<int64>(std::ceil(info.lp_objective - kCpEpsilon)));
+  }
+  return info;
+}
+
+void LinearProgrammingConstraint::FillReducedCostReasonIn(
+    const glop::DenseRow& reduced_costs,
+    std::vector<IntegerLiteral>* integer_reason) {
+  integer_reason->clear();
+  const int num_vars = integer_variables_.size();
+  for (int i = 0; i < num_vars; i++) {
+    const double rc = reduced_costs[glop::ColIndex(i)];
+    if (rc > kLpEpsilon) {
+      integer_reason->push_back(
+          integer_trail_->LowerBoundAsLiteral(integer_variables_[i]));
+    } else if (rc < -kLpEpsilon) {
+      integer_reason->push_back(
+          integer_trail_->UpperBoundAsLiteral(integer_variables_[i]));
+    }
+  }
+
+  integer_trail_->RemoveLevelZeroBounds(integer_reason);
+}
+
+bool LinearProgrammingConstraint::BranchOnVar(IntegerVariable positive_var) {
+  // From the current LP solution, branch on the given var if fractional.
+  DCHECK(lp_solution_is_set_);
+  const double current_value = GetSolutionValue(positive_var);
+  DCHECK_GT(std::abs(current_value - std::round(current_value)), kCpEpsilon);
+
+  // Used as empty reason in this method.
+  integer_reason_.clear();
+
+  bool deductions_were_made = false;
+
+  UpdateBoundsOfLpVariables();
+
+  const IntegerValue current_obj_lb = integer_trail_->LowerBound(objective_cp_);
+  // This will try to branch in both direction around the LP value of the
+  // given variable and push any deduction done this way.
+
+  const glop::ColIndex lp_var = GetOrCreateMirrorVariable(positive_var);
+  const double current_lb = ToDouble(integer_trail_->LowerBound(positive_var));
+  const double current_ub = ToDouble(integer_trail_->UpperBound(positive_var));
+  const double factor = CpToLpScalingFactor(lp_var);
+  if (current_value < current_lb || current_value > current_ub) {
+    return false;
+  }
+
+  // Form LP1 var <= floor(current_value)
+  const double new_ub = std::floor(current_value);
+  lp_data_.SetVariableBounds(lp_var, current_lb * factor, new_ub * factor);
+
+  LPSolveInfo lower_branch_info = SolveLpForBranching();
+  if (lower_branch_info.status != glop::ProblemStatus::OPTIMAL &&
+      lower_branch_info.status != glop::ProblemStatus::DUAL_FEASIBLE &&
+      lower_branch_info.status != glop::ProblemStatus::DUAL_UNBOUNDED) {
+    return false;
+  }
+
+  if (lower_branch_info.status == glop::ProblemStatus::DUAL_UNBOUNDED) {
+    // Push the other branch.
+    const IntegerLiteral deduction = IntegerLiteral::GreaterOrEqual(
+        positive_var, IntegerValue(std::ceil(current_value)));
+    if (!integer_trail_->Enqueue(deduction, {}, integer_reason_)) {
+      return false;
+    }
+    deductions_were_made = true;
+  } else if (lower_branch_info.new_obj_bound <= current_obj_lb) {
+    return false;
+  }
+
+  // Form LP2 var >= ceil(current_value)
+  const double new_lb = std::ceil(current_value);
+  lp_data_.SetVariableBounds(lp_var, new_lb * factor, current_ub * factor);
+
+  LPSolveInfo upper_branch_info = SolveLpForBranching();
+  if (upper_branch_info.status != glop::ProblemStatus::OPTIMAL &&
+      upper_branch_info.status != glop::ProblemStatus::DUAL_FEASIBLE &&
+      upper_branch_info.status != glop::ProblemStatus::DUAL_UNBOUNDED) {
+    return deductions_were_made;
+  }
+
+  if (upper_branch_info.status == glop::ProblemStatus::DUAL_UNBOUNDED) {
+    // Push the other branch if not infeasible.
+    if (lower_branch_info.status != glop::ProblemStatus::DUAL_UNBOUNDED) {
+      const IntegerLiteral deduction = IntegerLiteral::LowerOrEqual(
+          positive_var, IntegerValue(std::floor(current_value)));
+      if (!integer_trail_->Enqueue(deduction, {}, integer_reason_)) {
+        return deductions_were_made;
+      }
+      deductions_were_made = true;
+    }
+  } else if (upper_branch_info.new_obj_bound <= current_obj_lb) {
+    return deductions_were_made;
+  }
+
+  IntegerValue approximate_obj_lb = kMinIntegerValue;
+
+  if (lower_branch_info.status == glop::ProblemStatus::DUAL_UNBOUNDED &&
+      upper_branch_info.status == glop::ProblemStatus::DUAL_UNBOUNDED) {
+    return integer_trail_->ReportConflict(integer_reason_);
+  } else if (lower_branch_info.status == glop::ProblemStatus::DUAL_UNBOUNDED) {
+    approximate_obj_lb = upper_branch_info.new_obj_bound;
+  } else if (upper_branch_info.status == glop::ProblemStatus::DUAL_UNBOUNDED) {
+    approximate_obj_lb = lower_branch_info.new_obj_bound;
+  } else {
+    approximate_obj_lb = std::min(lower_branch_info.new_obj_bound,
+                                  upper_branch_info.new_obj_bound);
+  }
+
+  // NOTE: On some problems, the approximate_obj_lb could be inexact which add
+  // some tolerance to CP-SAT where currently there is none.
+  if (approximate_obj_lb <= current_obj_lb) return deductions_were_made;
+
+  // Push the bound to the trail.
+  const IntegerLiteral deduction =
+      IntegerLiteral::GreaterOrEqual(objective_cp_, approximate_obj_lb);
+  if (!integer_trail_->Enqueue(deduction, {}, integer_reason_)) {
+    return deductions_were_made;
+  }
+
+  return true;
 }
 
 void LinearProgrammingConstraint::RegisterWith(Model* model) {
@@ -652,19 +803,18 @@ void LinearProgrammingConstraint::UpdateSimplexIterationLimit(
     return;
   }
   CHECK_GT(num_cols, 0);
-  const bool is_degenerate = num_degenerate_columns >= 0.3 * num_cols;
   const int64 decrease_factor = (10 * num_degenerate_columns) / num_cols;
   if (simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_FEASIBLE) {
     // We reached here probably because we predicted wrong. We use this as a
     // signal to increase the iterations or punish less for degeneracy compare
     // to the other part.
-    if (is_degenerate) {
+    if (is_degenerate_) {
       next_simplex_iter_ /= std::max(int64{1}, decrease_factor);
     } else {
       next_simplex_iter_ *= 2;
     }
   } else if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
-    if (is_degenerate) {
+    if (is_degenerate_) {
       next_simplex_iter_ /= std::max(int64{1}, 2 * decrease_factor);
     } else {
       // This is the most common case. We use the size of the problem to
@@ -772,7 +922,8 @@ bool LinearProgrammingConstraint::Propagate() {
     if (sat_parameters_.use_exact_lp_reason()) {
       if (!FillExactDualRayReason()) return true;
     } else {
-      FillDualRayReason();
+      FillReducedCostReasonIn(simplex_.GetDualRayRowCombination(),
+                              &integer_reason_);
     }
     return integer_trail_->ReportConflict(integer_reason_);
   }
@@ -806,7 +957,7 @@ bool LinearProgrammingConstraint::Propagate() {
                 << ToDouble(approximate_new_lb - propagated_lb);
       }
     } else {
-      FillReducedCostsReason();
+      FillReducedCostReasonIn(simplex_.GetReducedCosts(), &integer_reason_);
       const double objective_cp_ub =
           ToDouble(integer_trail_->UpperBound(objective_cp_));
       ReducedCostStrengtheningDeductions(objective_cp_ub -
@@ -859,6 +1010,16 @@ bool LinearProgrammingConstraint::Propagate() {
     }
 
     if (compute_reduced_cost_averages_) {
+      const int num_vars = integer_variables_.size();
+      if (sum_cost_down_.size() < num_vars) {
+        VLOG(1) << " LPReducedCostAverageBranching has #variables: "
+                << num_vars;
+        sum_cost_down_.resize(num_vars, 0.0);
+        num_cost_down_.resize(num_vars, 0);
+        sum_cost_up_.resize(num_vars, 0.0);
+        num_cost_up_.resize(num_vars, 0);
+      }
+
       // Decay averages.
       num_calls_since_reduced_cost_averages_reset_++;
       if (num_calls_since_reduced_cost_averages_reset_ == 10000) {
@@ -893,6 +1054,74 @@ bool LinearProgrammingConstraint::Propagate() {
           num_cost_up_[i]++;
         }
       }
+    }
+  }
+
+  if (sat_parameters_.use_branching_in_lp() && objective_is_defined_ &&
+      trail_->CurrentDecisionLevel() == 0 && !is_degenerate_ &&
+      lp_solution_is_set_ && !lp_solution_is_integer_ &&
+      sat_parameters_.linearization_level() >= 2 &&
+      compute_reduced_cost_averages_ &&
+      simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
+    count_since_last_branching_++;
+    if (count_since_last_branching_ < branching_frequency_) {
+      return true;
+    }
+    count_since_last_branching_ = 0;
+    bool branching_successful = false;
+
+    // Strong branching on top max_num_branches variable.
+    const int max_num_branches = 3;
+    const int num_vars = integer_variables_.size();
+    std::vector<std::pair<double, IntegerVariable>> branching_vars;
+    for (int i = 0; i < num_vars; ++i) {
+      const IntegerVariable var = integer_variables_[i];
+      const IntegerVariable positive_var = PositiveVariable(var);
+
+      // Skip non fractional variables.
+      const double current_value = GetSolutionValue(positive_var);
+      if (std::abs(current_value - std::round(current_value)) <= kCpEpsilon) {
+        continue;
+      }
+
+      // Skip ignored variables.
+      if (integer_trail_->IsCurrentlyIgnored(var)) continue;
+
+      // We can use any metric to select a variable to branch on. Reduced cost
+      // average is one of the most promissing metric. It captures the history
+      // of the objective bound improvement in LP due to changes in the given
+      // variable bounds.
+      //
+      // NOTE: We also experimented using PseudoCosts as a metric but it
+      // doesn't give better results on benchmarks.
+      //
+      // TODO(user): Experiment using most recent reduced costs
+      // instead of average reduced costs.
+      const double cost_i = GetCostFromAverageReducedCosts(i);
+      std::pair<double, IntegerVariable> branching_var =
+          std::make_pair(-cost_i, positive_var);
+      auto iterator = std::lower_bound(branching_vars.begin(),
+                                       branching_vars.end(), branching_var);
+
+      branching_vars.insert(iterator, branching_var);
+      if (branching_vars.size() > max_num_branches) {
+        branching_vars.resize(max_num_branches);
+      }
+    }
+
+    for (const std::pair<double, IntegerVariable>& branching_var :
+         branching_vars) {
+      const IntegerVariable positive_var = branching_var.second;
+      VLOG(2) << "Branching on: " << positive_var;
+      if (BranchOnVar(positive_var)) {
+        VLOG(2) << "Branching successful.";
+        branching_successful = true;
+      } else {
+        break;
+      }
+    }
+    if (!branching_successful) {
+      branching_frequency_ *= 2;
     }
   }
   return true;
@@ -1362,24 +1591,7 @@ bool LinearProgrammingConstraint::FillExactDualRayReason() {
   return true;
 }
 
-void LinearProgrammingConstraint::FillReducedCostsReason() {
-  integer_reason_.clear();
-  const int num_vars = integer_variables_.size();
-  for (int i = 0; i < num_vars; i++) {
-    const double rc = simplex_.GetReducedCost(glop::ColIndex(i));
-    if (rc > kLpEpsilon) {
-      integer_reason_.push_back(
-          integer_trail_->LowerBoundAsLiteral(integer_variables_[i]));
-    } else if (rc < -kLpEpsilon) {
-      integer_reason_.push_back(
-          integer_trail_->UpperBoundAsLiteral(integer_variables_[i]));
-    }
-  }
-
-  integer_trail_->RemoveLevelZeroBounds(&integer_reason_);
-}
-
-int64 LinearProgrammingConstraint::CalculateDegeneracy() const {
+int64 LinearProgrammingConstraint::CalculateDegeneracy() {
   const glop::ColIndex num_vars = simplex_.GetProblemNumCols();
   int num_non_basic_with_zero_rc = 0;
   for (glop::ColIndex i(0); i < num_vars; ++i) {
@@ -1390,28 +1602,9 @@ int64 LinearProgrammingConstraint::CalculateDegeneracy() const {
     }
     num_non_basic_with_zero_rc++;
   }
+  const int64 num_cols = simplex_.GetProblemNumCols().value();
+  is_degenerate_ = num_non_basic_with_zero_rc >= 0.3 * num_cols;
   return num_non_basic_with_zero_rc;
-}
-
-void LinearProgrammingConstraint::FillDualRayReason() {
-  integer_reason_.clear();
-  const int num_vars = integer_variables_.size();
-  for (int i = 0; i < num_vars; i++) {
-    // TODO(user): Like for FillReducedCostsReason(), the bounds could be
-    // extended here. Actually, the "dual ray cost updates" is the reduced cost
-    // of an optimal solution if we were optimizing one direction of one basic
-    // variable. The simplex_ interface would need to be slightly extended to
-    // retrieve the basis column in question and the variable values though.
-    const double rc = simplex_.GetDualRayRowCombination()[glop::ColIndex(i)];
-    if (rc > kLpEpsilon) {
-      integer_reason_.push_back(
-          integer_trail_->LowerBoundAsLiteral(integer_variables_[i]));
-    } else if (rc < -kLpEpsilon) {
-      integer_reason_.push_back(
-          integer_trail_->UpperBoundAsLiteral(integer_variables_[i]));
-    }
-  }
-  integer_trail_->RemoveLevelZeroBounds(&integer_reason_);
 }
 
 void LinearProgrammingConstraint::ReducedCostStrengtheningDeductions(
@@ -1978,6 +2171,24 @@ LinearProgrammingConstraint::LPReducedCostAverageBranching() {
   return [this]() { return this->LPReducedCostAverageDecision(); };
 }
 
+double LinearProgrammingConstraint::GetCostFromAverageReducedCosts(
+    int position) {
+  // If only one direction exist, we takes its value divided by 2, so that
+  // such variable should have a smaller cost than the min of the two side
+  // except if one direction have a really high reduced costs.
+  if (num_cost_down_[position] > 0 && num_cost_up_[position] > 0) {
+    return std::min(sum_cost_down_[position] / num_cost_down_[position],
+                    sum_cost_up_[position] / num_cost_up_[position]);
+  } else {
+    const double divisor = num_cost_down_[position] + num_cost_up_[position];
+    if (divisor != 0) {
+      return 0.5 * (sum_cost_down_[position] + sum_cost_up_[position]) /
+             divisor;
+    }
+  }
+  return 0.0;
+}
+
 LiteralIndex LinearProgrammingConstraint::LPReducedCostAverageDecision() {
   const int num_vars = integer_variables_.size();
   // Select noninstantiated variable with highest pseudo-cost.
@@ -1991,19 +2202,7 @@ LiteralIndex LinearProgrammingConstraint::LPReducedCostAverageDecision() {
     const IntegerValue ub = integer_trail_->UpperBound(var);
     if (lb == ub) continue;
 
-    // If only one direction exist, we takes its value divided by 2, so that
-    // such variable should have a smaller cost than the min of the two side
-    // except if one direction have a really high reduced costs.
-    double cost_i = 0.0;
-    if (num_cost_down_[i] > 0 && num_cost_up_[i] > 0) {
-      cost_i = std::min(sum_cost_down_[i] / num_cost_down_[i],
-                        sum_cost_up_[i] / num_cost_up_[i]);
-    } else {
-      const double divisor = num_cost_down_[i] + num_cost_up_[i];
-      if (divisor != 0) {
-        cost_i = 0.5 * (sum_cost_down_[i] + sum_cost_up_[i]) / divisor;
-      }
-    }
+    const double cost_i = GetCostFromAverageReducedCosts(i);
 
     if (selected_index == -1 || cost_i > best_cost) {
       best_cost = cost_i;

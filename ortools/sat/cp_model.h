@@ -273,6 +273,8 @@ class LinearExpr {
   /// Constructs the scalar product of Booleans and coefficients.
   static LinearExpr BooleanScalProd(absl::Span<const BoolVar> vars,
                                     absl::Span<const int64> coeffs);
+  /// Construncts var * coefficient.
+  static LinearExpr Term(IntVar var, int64 coefficient);
 
   /// Returns the vector of variables.
   const std::vector<IntVar>& variables() const { return variables_; }

@@ -2209,7 +2209,6 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
 bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
   if (context_.ModelIsUnsat()) return false;
   if (HasEnforcementLiteral(*ct)) return false;
-  if (ct->table().negated()) return false;
   if (ct->table().vars().empty()) {
     context_.UpdateRuleStats("table: empty constraint");
     return RemoveConstraint(ct);
@@ -2290,6 +2289,9 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
     }
     context_.UpdateRuleStats("table: replace variable by canonical affine one");
   }
+
+  // Nothing more to do for negated tables.
+  if (ct->table().negated()) return modified_variables;
 
   // Filter the variable domains.
   bool changed = false;

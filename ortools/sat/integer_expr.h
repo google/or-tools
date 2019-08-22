@@ -374,6 +374,7 @@ inline std::function<void(Model*)> ConditionalWeightedSumLowerOrEqual(
               vars[0], IntegerValue(upper_bound / coefficients[0])));
     }
   }
+
   if (vars.size() == 2 && (coefficients[0] == 1 || coefficients[0] == -1) &&
       (coefficients[1] == 1 || coefficients[1] == -1)) {
     return ConditionalSum2LowerOrEqual(
@@ -390,13 +391,39 @@ inline std::function<void(Model*)> ConditionalWeightedSumLowerOrEqual(
         coefficients[2] == 1 ? vars[2] : NegationOf(vars[2]), upper_bound,
         enforcement_literals);
   }
+
   return [=](Model* model) {
-    IntegerSumLE* constraint = new IntegerSumLE(
-        enforcement_literals, vars,
-        std::vector<IntegerValue>(coefficients.begin(), coefficients.end()),
-        IntegerValue(upper_bound), model);
-    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(constraint);
+    // If value == min(expression), then we can avoid creating the sum.
+    IntegerValue expression_min(0);
+    auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+    for (int i = 0; i < vars.size(); ++i) {
+      expression_min +=
+          coefficients[i] * (coefficients[i] >= 0
+                                 ? integer_trail->LowerBound(vars[i])
+                                 : integer_trail->UpperBound(vars[i]));
+    }
+    if (expression_min == upper_bound) {
+      for (int i = 0; i < vars.size(); ++i) {
+        if (coefficients[i] > 0) {
+          model->Add(
+              Implication(enforcement_literals,
+                          IntegerLiteral::LowerOrEqual(
+                              vars[i], integer_trail->LowerBound(vars[i]))));
+        } else if (coefficients[i] < 0) {
+          model->Add(
+              Implication(enforcement_literals,
+                          IntegerLiteral::GreaterOrEqual(
+                              vars[i], integer_trail->UpperBound(vars[i]))));
+        }
+      }
+    } else {
+      IntegerSumLE* constraint = new IntegerSumLE(
+          enforcement_literals, vars,
+          std::vector<IntegerValue>(coefficients.begin(), coefficients.end()),
+          IntegerValue(upper_bound), model);
+      constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+      model->TakeOwnership(constraint);
+    }
   };
 }
 

@@ -26,6 +26,13 @@
 namespace operations_research {
 namespace sat {
 
+/// Solves the given CpModelProto and returns an instance of CpSolverResponse.
+CpSolverResponse Solve(const CpModelProto& model_proto);
+
+/// Solves the given CpModelProto with the given parameters.
+CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
+                                     const SatParameters& params);
+
 /// Returns a std::string with some statistics on the given CpModelProto.
 std::string CpModelStats(const CpModelProto& model);
 
@@ -35,28 +42,19 @@ std::string CpSolverResponseStats(const CpSolverResponse& response);
 /**
  * Solves the given CpModelProto.
  *
- * Note that the API takes a Model* that will be filled with the in-memory
- * representation of the given CpModelProto. This makes it easy to set custom
- * parameters or interrupt the solver with calls like:
+ * This advanced API accept a Model* which allows to access more adavanced
+ * features by configuring some classes in the Model before solve.
  *
+ * For instance:
  * - model->Add(NewSatParameters(parameters_as_string_or_proto));
  * - model->GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stop);
+ * - model->Add(NewFeasibleSolutionObserver(observer));
  */
 CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model);
 
-/// Solves the given cp_model and returns an instance of CpSolverResponse.
-CpSolverResponse Solve(const CpModelProto& model_proto);
-
-/**
- * Solves the given cp_model with the give sat parameters, and returns an
- *  instance of CpSolverResponse.
- */
-CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
-                                     const SatParameters& params);
-
 #if !defined(__PORTABLE_PLATFORM__)
 /**
- * Solves the given cp_model with the given sat parameters as std::string in
+ * Solves the given CpModelProto with the given sat parameters as std::string in
  * JSon format, and returns an instance of CpSolverResponse.
  */
 CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
