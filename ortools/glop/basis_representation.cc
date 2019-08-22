@@ -344,8 +344,7 @@ const DenseColumn& BasisFactorization::RightSolveForTau(
       // Once used, the intermediate result is overwritten, so
       // RightSolveForTau() can no longer use the optimized algorithm.
       tau_computation_can_be_optimized_ = false;
-      lu_factorization_.RightSolveLWithPermutedInput(a.values, &tau_.values);
-      tau_.non_zeros.clear();
+      lu_factorization_.RightSolveLWithPermutedInput(a.values, &tau_);
     } else {
       ClearAndResizeVectorWithNonZeros(compact_matrix_.num_rows(), &tau_);
       lu_factorization_.RightSolveLForScatteredColumn(a, &tau_);

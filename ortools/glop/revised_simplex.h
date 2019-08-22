@@ -190,6 +190,7 @@ class RevisedSimplex {
   int64 GetNumberOfIterations() const;
   Fractional GetVariableValue(ColIndex col) const;
   Fractional GetReducedCost(ColIndex col) const;
+  const DenseRow& GetReducedCosts() const;
   Fractional GetDualValue(RowIndex row) const;
   Fractional GetConstraintActivity(RowIndex row) const;
   VariableStatus GetVariableStatus(ColIndex col) const;

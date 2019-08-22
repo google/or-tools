@@ -394,6 +394,10 @@ Fractional RevisedSimplex::GetReducedCost(ColIndex col) const {
   return solution_reduced_costs_[col];
 }
 
+const DenseRow& RevisedSimplex::GetReducedCosts() const {
+  return solution_reduced_costs_;
+}
+
 Fractional RevisedSimplex::GetDualValue(RowIndex row) const {
   return solution_dual_values_[row];
 }

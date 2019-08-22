@@ -182,11 +182,16 @@ bool AreEqualWithPermutation(const DenseColumn& a, const DenseColumn& b,
 }  // namespace
 
 void LuFactorization::RightSolveLWithPermutedInput(const DenseColumn& a,
-                                                   DenseColumn* x) const {
+                                                   ScatteredColumn* x) const {
   SCOPED_TIME_STAT(&stats_);
   if (!is_identity_factorization_) {
-    DCHECK(AreEqualWithPermutation(a, *x, row_perm_));
-    lower_.LowerSolve(x);
+    DCHECK(AreEqualWithPermutation(a, x->values, row_perm_));
+    lower_.ComputeRowsToConsiderInSortedOrder(&x->non_zeros);
+    if (x->non_zeros.empty()) {
+      lower_.LowerSolve(&x->values);
+    } else {
+      lower_.HyperSparseSolve(&x->values, &x->non_zeros);
+    }
   }
 }
 

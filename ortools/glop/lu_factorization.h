@@ -115,7 +115,8 @@ class LuFactorization {
 
   // Specialized version of RightSolveLWithNonZeros() where x is originaly equal
   // to 'a' permuted by row_perm_. Note that 'a' is only used for DCHECK.
-  void RightSolveLWithPermutedInput(const DenseColumn& a, DenseColumn* x) const;
+  void RightSolveLWithPermutedInput(const DenseColumn& a,
+                                    ScatteredColumn* x) const;
 
   // Specialized version of LeftSolveU() for an unit right-hand side.
   // non_zeros will either be cleared or set to the non zeros of the results.
