@@ -42,4 +42,9 @@ public interface LinearExpr {
     }
     return new ScalProd(variables, tmp);
   }
+
+  /** Creates a linear term (var * coefficient). */
+  static LinearExpr term(IntVar variable, long coefficient) {
+    return new ScalProd(new IntVar[] {variable}, new long[] {coefficient});
+  }
 }
