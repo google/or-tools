@@ -157,6 +157,7 @@ class KnapsackSolver {
      */
     KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER = 3,
 #endif  // USE_CBC
+
     /** Generic Solver.
      *
      * This solver can deal with both large number of items and several
