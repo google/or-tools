@@ -301,16 +301,19 @@ namespace operations_research {
 		// (supportIncrementalExtraction is true) then we MUST perform the
 		// update here or we will lose it.
 
-		if (!supportIncrementalExtraction && !(slowUpdates & SlowSetVariableBounds)) {
-			InvalidateModelSynchronization();
-		}
-		else {
+		//if (!supportIncrementalExtraction && !(slowUpdates & SlowSetVariableBounds)) {
+		//	InvalidateModelSynchronization();
+		//}
+		//else
+		{
 			if (variable_is_extracted(var_index)) {
 				// Variable has already been extracted, so we must modify the
 				// modeling object.
 				DCHECK_LT(var_index, last_variable_index_);
 				int const idx[1] = { var_index };
-				CHECK_STATUS(SRSchgbds(mLp, 1, idx, &lb, &ub));
+				double lb_l = (lb == -MPSolver::infinity() ? -SRS_infinite : lb);
+				double ub_l = (ub == MPSolver::infinity() ? SRS_infinite : ub);
+				CHECK_STATUS(SRSchgbds(mLp, 1, idx, &lb_l, &ub_l));
 			}
 			else {
 				// Variable is not yet extracted. It is sufficient to just mark
@@ -447,7 +450,7 @@ namespace operations_research {
 				char sense;
 				double range, rhs;
 				MakeRhs(lb, ub, rhs, sense, range);
-				CHECK_STATUS(SRSchgrhs(mLp, 1, &index, &lb));
+				CHECK_STATUS(SRSchgrhs(mLp, 1, &index, &rhs));
 				CHECK_STATUS(SRSchgsens(mLp, 1, &index, &sense));
 				CHECK_STATUS(SRSchgrangeval(mLp, 1, &index, &range));
 			}
