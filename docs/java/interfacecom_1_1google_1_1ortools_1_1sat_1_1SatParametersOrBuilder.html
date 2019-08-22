@@ -539,6 +539,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:abe9c404e5c52de2317157227335b6d56"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2f1dd762e33951b9fb514030e22ab691"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html#a2f1dd762e33951b9fb514030e22ab691">getUseExactLpReason</a> ()</td></tr>
 <tr class="separator:a2f1dd762e33951b9fb514030e22ab691"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac7bfd830e09340c576e6bc78c23b9756"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html#ac7bfd830e09340c576e6bc78c23b9756">hasUseBranchingInLp</a> ()</td></tr>
+<tr class="separator:ac7bfd830e09340c576e6bc78c23b9756"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9ab24d94a690c639930d9db5a011d0bb"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html#a9ab24d94a690c639930d9db5a011d0bb">getUseBranchingInLp</a> ()</td></tr>
+<tr class="separator:a9ab24d94a690c639930d9db5a011d0bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7daf0e3355eb78c1e0b54051afffb90c"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html#a7daf0e3355eb78c1e0b54051afffb90c">hasUseCombinedNoOverlap</a> ()</td></tr>
 <tr class="separator:a7daf0e3355eb78c1e0b54051afffb90c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adee608613b705bf8d9ce5aff4b769f35"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html#adee608613b705bf8d9ce5aff4b769f35">getUseCombinedNoOverlap</a> ()</td></tr>
@@ -3029,6 +3033,30 @@ at the previous conflicts.
 </pre><p><code>optional bool use_blocking_restart = 64 [default = false];</code> </p>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a9296e10406aa84ef75a8838531464148">SatParameters.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#a9296e10406aa84ef75a8838531464148">SatParameters</a>.</p>
+
+</div>
+</div>
+<a id="a9ab24d94a690c639930d9db5a011d0bb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9ab24d94a690c639930d9db5a011d0bb">&#9670;&nbsp;</a></span>getUseBranchingInLp()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">boolean getUseBranchingInLp </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+If true, the solver attemts to generate more info inside lp propagator by
+branching on some variables if certain criteria are met during the search
+tree exploration.
+</pre><p><code>optional bool use_branching_in_lp = 139 [default = false];</code> </p>
+
+<p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a9ab24d94a690c639930d9db5a011d0bb">SatParameters.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#a9ab24d94a690c639930d9db5a011d0bb">SatParameters</a>.</p>
 
 </div>
 </div>
@@ -5766,6 +5794,30 @@ at the previous conflicts.
 </pre><p><code>optional bool use_blocking_restart = 64 [default = false];</code> </p>
 
 <p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#ab7cbf2c17b4a6bb5d73422fa9032c3a4">SatParameters.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#ab7cbf2c17b4a6bb5d73422fa9032c3a4">SatParameters</a>.</p>
+
+</div>
+</div>
+<a id="ac7bfd830e09340c576e6bc78c23b9756"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac7bfd830e09340c576e6bc78c23b9756">&#9670;&nbsp;</a></span>hasUseBranchingInLp()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">boolean hasUseBranchingInLp </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre>
+If true, the solver attemts to generate more info inside lp propagator by
+branching on some variables if certain criteria are met during the search
+tree exploration.
+</pre><p><code>optional bool use_branching_in_lp = 139 [default = false];</code> </p>
+
+<p>Implemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#ac7bfd830e09340c576e6bc78c23b9756">SatParameters.Builder</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#ac7bfd830e09340c576e6bc78c23b9756">SatParameters</a>.</p>
 
 </div>
 </div>

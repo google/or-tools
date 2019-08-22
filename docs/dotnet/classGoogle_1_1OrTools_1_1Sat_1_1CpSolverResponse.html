@@ -56,9 +56,9 @@
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>The response returned by a solver trying to solve a <a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html" title="A constraint programming problem.">CpModelProto</a>. </p>
-<p>TODO(user): support returning multiple solutions. Look at the Stubby streaming API as we probably wants to get them as they are found. </p>
+<p>TODO(user): support returning multiple solutions. Look at the Stubby streaming API as we probably wants to get them as they are found. Next id: 23 </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05500">5500</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05502">5502</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -135,6 +135,9 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:ae6ba8e632a004b49b83b99cb81469457"><td class="memItemLeft" align="right" valign="top">const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html#ae6ba8e632a004b49b83b99cb81469457">DeterministicTimeFieldNumber</a> = 17</td></tr>
 <tr class="memdesc:ae6ba8e632a004b49b83b99cb81469457"><td class="mdescLeft">&#160;</td><td class="mdescRight">Field number for the "deterministic_time" field.  <a href="#ae6ba8e632a004b49b83b99cb81469457">More...</a><br /></td></tr>
 <tr class="separator:ae6ba8e632a004b49b83b99cb81469457"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abdadb2dc122c05dfaaee41095ff57e85"><td class="memItemLeft" align="right" valign="top">const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html#abdadb2dc122c05dfaaee41095ff57e85">PrimalIntegralFieldNumber</a> = 22</td></tr>
+<tr class="memdesc:abdadb2dc122c05dfaaee41095ff57e85"><td class="mdescLeft">&#160;</td><td class="mdescRight">Field number for the "primal_integral" field.  <a href="#abdadb2dc122c05dfaaee41095ff57e85">More...</a><br /></td></tr>
+<tr class="separator:abdadb2dc122c05dfaaee41095ff57e85"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aebb6a9095483a3d450a5050e9ad2d334"><td class="memItemLeft" align="right" valign="top">const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html#aebb6a9095483a3d450a5050e9ad2d334">SolutionInfoFieldNumber</a> = 20</td></tr>
 <tr class="memdesc:aebb6a9095483a3d450a5050e9ad2d334"><td class="mdescLeft">&#160;</td><td class="mdescRight">Field number for the "solution_info" field.  <a href="#aebb6a9095483a3d450a5050e9ad2d334">More...</a><br /></td></tr>
 <tr class="separator:aebb6a9095483a3d450a5050e9ad2d334"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -185,6 +188,8 @@ Properties</h2></td></tr>
 <tr class="separator:a4f149348bac87e3dc6c323a5ed5e4787"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1da59f263b4106431875968b621fcae6"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html#a1da59f263b4106431875968b621fcae6">DeterministicTime</a><code> [get, set]</code></td></tr>
 <tr class="separator:a1da59f263b4106431875968b621fcae6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a47567cf8d21a8fb5b660246053645d2e"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html#a47567cf8d21a8fb5b660246053645d2e">PrimalIntegral</a><code> [get, set]</code></td></tr>
+<tr class="separator:a47567cf8d21a8fb5b660246053645d2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aac598b5b76738002261dd0f5411f7e9c"><td class="memItemLeft" align="right" valign="top">string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html#aac598b5b76738002261dd0f5411f7e9c">SolutionInfo</a><code> [get, set]</code></td></tr>
 <tr class="memdesc:aac598b5b76738002261dd0f5411f7e9c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Additional information about how the solution was found.  <a href="#aac598b5b76738002261dd0f5411f7e9c">More...</a><br /></td></tr>
 <tr class="separator:aac598b5b76738002261dd0f5411f7e9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -213,7 +218,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05517">5517</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05519">5519</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -241,7 +246,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05524">5524</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05526">5526</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -269,7 +274,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05917">5917</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05937">5937</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -296,7 +301,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05546">5546</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05549">5549</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -324,7 +329,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05790">5790</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05804">5804</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -352,7 +357,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05795">5795</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05809">5809</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -379,7 +384,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05823">5823</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05838">5838</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -407,7 +412,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05969">5969</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05992">5992</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -435,7 +440,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06020">6020</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l06046">6046</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -462,7 +467,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05849">5849</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05865">5865</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -490,7 +495,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05854">5854</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05870">5870</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -509,7 +514,7 @@ Properties</h2></td></tr>
 
 <p>Field number for the "all_solutions_were_found" field. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05667">5667</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05670">5670</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -527,7 +532,7 @@ Properties</h2></td></tr>
 
 <p>Field number for the "best_objective_bound" field. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05598">5598</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05601">5601</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -545,7 +550,7 @@ Properties</h2></td></tr>
 
 <p>Field number for the "deterministic_time" field. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05765">5765</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05768">5768</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -563,7 +568,7 @@ Properties</h2></td></tr>
 
 <p>Field number for the "num_binary_propagations" field. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05721">5721</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05724">5724</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -581,7 +586,7 @@ Properties</h2></td></tr>
 
 <p>Field number for the "num_booleans" field. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05685">5685</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05688">5688</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -599,7 +604,7 @@ Properties</h2></td></tr>
 
 <p>Field number for the "num_branches" field. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05710">5710</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05713">5713</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -617,7 +622,7 @@ Properties</h2></td></tr>
 
 <p>Field number for the "num_conflicts" field. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05699">5699</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05702">5702</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -635,7 +640,7 @@ Properties</h2></td></tr>
 
 <p>Field number for the "num_integer_propagations" field. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05732">5732</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05735">5735</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -653,7 +658,25 @@ Properties</h2></td></tr>
 
 <p>Field number for the "objective_value" field. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05581">5581</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05584">5584</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+
+</div>
+</div>
+<a id="abdadb2dc122c05dfaaee41095ff57e85"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abdadb2dc122c05dfaaee41095ff57e85">&#9670;&nbsp;</a></span>PrimalIntegralFieldNumber</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const int PrimalIntegralFieldNumber = 22</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Field number for the "primal_integral" field. </p>
+
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05779">5779</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -671,7 +694,7 @@ Properties</h2></td></tr>
 
 <p>Field number for the "solution" field. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05565">5565</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05568">5568</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -689,7 +712,7 @@ Properties</h2></td></tr>
 
 <p>Field number for the "solution_info" field. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05776">5776</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05790">5790</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -707,7 +730,7 @@ Properties</h2></td></tr>
 
 <p>Field number for the "solution_lower_bounds" field. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05614">5614</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05617">5617</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -725,7 +748,7 @@ Properties</h2></td></tr>
 
 <p>Field number for the "solution_upper_bounds" field. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05633">5633</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05636">5636</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -743,7 +766,7 @@ Properties</h2></td></tr>
 
 <p>Field number for the "status" field. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05551">5551</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05554">5554</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -761,7 +784,7 @@ Properties</h2></td></tr>
 
 <p>Field number for the "tightened_variables" field. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05643">5643</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05646">5646</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -779,7 +802,7 @@ Properties</h2></td></tr>
 
 <p>Field number for the "user_time" field. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05754">5754</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05757">5757</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -797,7 +820,7 @@ Properties</h2></td></tr>
 
 <p>Field number for the "wall_time" field. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05743">5743</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05746">5746</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -825,7 +848,7 @@ Properties</h2></td></tr>
 <p>This will be true iff the solver was asked to find all solutions to a satisfiability problem (or all optimal solutions to an optimization problem), and it was successful in doing so. </p>
 <p>TODO(user): Remove as we also use the OPTIMAL vs FEASIBLE status for that. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05677">5677</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05680">5680</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -852,7 +875,7 @@ Properties</h2></td></tr>
 <p>Only make sense for an optimization problem. </p>
 <p>A proven lower-bound on the objective for a minimization problem, or a proven upper-bound for a maximization problem. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05606">5606</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05609">5609</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -876,7 +899,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05507">5507</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05509">5509</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -900,7 +923,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05768">5768</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05771">5771</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -924,7 +947,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05724">5724</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05727">5727</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -950,7 +973,7 @@ Properties</h2></td></tr>
 
 <p>Some statistics about the solve. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05691">5691</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05694">5694</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -974,7 +997,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05713">5713</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05716">5716</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -998,7 +1021,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05702">5702</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05705">5705</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -1022,7 +1045,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05735">5735</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05738">5738</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -1049,7 +1072,7 @@ Properties</h2></td></tr>
 <p>Only make sense for an optimization problem. </p>
 <p>The objective value of the returned solution if it is non-empty. If there is no solution, then for a minimization problem, this will be an upper-bound of the objective of any feasible solution, and a lower-bound for a maximization problem. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05590">5590</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05593">5593</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -1073,7 +1096,31 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05504">5504</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05506">5506</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+
+</div>
+</div>
+<a id="a47567cf8d21a8fb5b660246053645d2e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a47567cf8d21a8fb5b660246053645d2e">&#9670;&nbsp;</a></span>PrimalIntegral</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double PrimalIntegral</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">get</span><span class="mlabel">set</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05782">5782</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -1100,7 +1147,7 @@ Properties</h2></td></tr>
 <p>A feasible solution to the given problem. </p>
 <p>Depending on the returned status it may be optimal or just feasible. This is in one-to-one correspondence with a CpModelProto::variables repeated field and list the values of all the variables. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05576">5576</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05579">5579</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -1126,7 +1173,7 @@ Properties</h2></td></tr>
 
 <p>Additional information about how the solution was found. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05782">5782</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05796">5796</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -1153,7 +1200,7 @@ Properties</h2></td></tr>
 <p>Advanced usage. </p>
 <p>If the problem has some variables that are not fixed at the end of the search (because of a particular search strategy in the <a class="el" href="classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html" title="A constraint programming problem.">CpModelProto</a>) then this will be used instead of filling the solution above. The two fields will then contains the lower and upper bounds of each variable as they were when the best "solution" was found. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05628">5628</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05631">5631</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -1177,7 +1224,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05638">5638</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05641">5641</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -1203,7 +1250,7 @@ Properties</h2></td></tr>
 
 <p>The status of the solve. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05557">5557</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05560">5560</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -1231,7 +1278,7 @@ Properties</h2></td></tr>
 <p>If the option fill_tightened_domains_in_response is set, then this field will be a copy of the CpModelProto.variables where each domain has been reduced using the information the solver was able to derive. Note that this is only filled with the info derived during a normal search and we do not have any dedicated algorithm to improve it.</p>
 <p>If the problem is a feasibility problem, then these bounds will be valid for any feasible solution. If the problem is an optimization problem, then these bounds will only be valid for any OPTIMAL solutions, it can exclude sub-optimal feasible ones. </p>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05662">5662</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05665">5665</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -1255,7 +1302,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05757">5757</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05760">5760</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>
@@ -1279,7 +1326,7 @@ Properties</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05746">5746</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l05749">5749</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>

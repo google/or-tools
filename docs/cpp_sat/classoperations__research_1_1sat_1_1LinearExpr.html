@@ -105,6 +105,9 @@ Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a811ab20e65e9e2a3062c4f367ecccbfb"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html#a811ab20e65e9e2a3062c4f367ecccbfb">BooleanScalProd</a> (absl::Span&lt; const <a class="el" href="classoperations__research_1_1sat_1_1BoolVar.html">BoolVar</a> &gt; vars, absl::Span&lt; const int64 &gt; coeffs)</td></tr>
 <tr class="memdesc:a811ab20e65e9e2a3062c4f367ecccbfb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs the scalar product of Booleans and coefficients.  <a href="#a811ab20e65e9e2a3062c4f367ecccbfb">More...</a><br /></td></tr>
 <tr class="separator:a811ab20e65e9e2a3062c4f367ecccbfb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4575c5afc539cb5f35bf5fe753158569"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html">LinearExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html#a4575c5afc539cb5f35bf5fe753158569">Term</a> (<a class="el" href="classoperations__research_1_1sat_1_1IntVar.html">IntVar</a> var, int64 coefficient)</td></tr>
+<tr class="memdesc:a4575c5afc539cb5f35bf5fe753158569"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construncts var * coefficient.  <a href="#a4575c5afc539cb5f35bf5fe753158569">More...</a><br /></td></tr>
+<tr class="separator:a4575c5afc539cb5f35bf5fe753158569"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a708e7b52aae1fa3c440ef7ced3f06cd9"></a>
@@ -347,7 +350,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the vector of coefficients. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00281">281</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00283">283</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -376,7 +379,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the constant term. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00284">284</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00286">286</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -446,6 +449,44 @@ Static Public Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a4575c5afc539cb5f35bf5fe753158569"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4575c5afc539cb5f35bf5fe753158569">&#9670;&nbsp;</a></span>Term()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="el" href="classoperations__research_1_1sat_1_1LinearExpr.html">LinearExpr</a> Term </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classoperations__research_1_1sat_1_1IntVar.html">IntVar</a>&#160;</td>
+          <td class="paramname"><em>var</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int64&#160;</td>
+          <td class="paramname"><em>coefficient</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Construncts var * coefficient. </p>
+
+</div>
+</div>
 <a id="aa96427ca5156644ef61e4ffec3ea4083"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa96427ca5156644ef61e4ffec3ea4083">&#9670;&nbsp;</a></span>variables()</h2>
 
@@ -471,7 +512,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the vector of variables. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00278">278</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00280">280</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
