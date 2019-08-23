@@ -4287,7 +4287,6 @@ void CpModelPresolver::RemoveUnusedEquivalentVariables() {
     }
 
     ConstraintProto* ct = proto->add_constraints();
-    ct->set_name("MAPPING");
     auto* arg = ct->mutable_linear();
     arg->add_vars(var);
     arg->add_coeffs(1);

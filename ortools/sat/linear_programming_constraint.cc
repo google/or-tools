@@ -2158,9 +2158,8 @@ LinearProgrammingConstraint::HeuristicLPPseudoCostBinary(Model* model) {
 
 std::function<LiteralIndex()>
 LinearProgrammingConstraint::LPReducedCostAverageBranching() {
-  if (!compute_reduced_cost_averages_) {
-    compute_reduced_cost_averages_ = true;
-    const int num_vars = integer_variables_.size();
+  const int num_vars = integer_variables_.size();
+  if (sum_cost_down_.size() < num_vars) {
     VLOG(1) << " LPReducedCostAverageBranching has #variables: " << num_vars;
     sum_cost_down_.resize(num_vars, 0.0);
     num_cost_down_.resize(num_vars, 0);

@@ -398,12 +398,9 @@ void SharedResponseManager::SetStatsFromModelInternal(Model* model) {
 bool SharedResponseManager::ProblemIsSolved() const {
   absl::MutexLock mutex_lock(&mutex_);
 
-  // TODO(user): Currently this work because we do not allow enumerate all
-  // solution in multithread.
   if (!model_proto_.has_objective() &&
-      ((best_response_.status() == CpSolverStatus::FEASIBLE &&
-        !enumerate_all_solutions_) ||
-       best_response_.status() == CpSolverStatus::OPTIMAL)) {
+      best_response_.status() == CpSolverStatus::FEASIBLE &&
+      !enumerate_all_solutions_) {
     return true;
   }
 

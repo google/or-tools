@@ -160,6 +160,13 @@ class CpModelMapping {
     return result;
   }
 
+  int NumEncodedValues(int var) {
+    if (gtl::ContainsKey(variables_to_encoded_values_, var)) {
+      return variables_to_encoded_values_[var].size();
+    }
+    return 0;
+  }
+
  private:
   // Note that only the variables used by at least one constraint will be
   // created, the other will have a kNo[Integer,Interval,Boolean]VariableValue.
@@ -177,6 +184,9 @@ class CpModelMapping {
   // ExtractEncoding().
   absl::flat_hash_set<const ConstraintProto*> already_loaded_ct_;
   absl::flat_hash_set<const ConstraintProto*> is_half_encoding_ct_;
+
+  absl::flat_hash_map<int, absl::flat_hash_set<int64>>
+      variables_to_encoded_values_;
 };
 
 // Inspects the model and use some heuristic to decide which variable, if any,
