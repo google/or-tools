@@ -118,6 +118,7 @@ bool IsNEqCstInsideBounds(const LinearConstraintProto& proto,
   const Domain complement =
       Domain(sum_min, sum_max)
           .IntersectionWith(ReadDomainFromProto(proto).Complement());
+  if (complement.IsEmpty()) return false;
   const int64 value = complement.Min();
 
   if (complement.Size() == 1 && value > sum_min && value < sum_max) {
@@ -277,12 +278,14 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
       continue;
     }
 
+    const IntegerVariable var = integers_[int_var];
+    if (encoder->VariableIsFullyEncoded(var)) continue;
+
     const int64 coeff = ct.linear().coeffs(1);
     const int64 rhs = ct.linear().domain(0);
     const int64 vmin = int_var_proto.domain(0);
     const int64 vmax = int_var_proto.domain(int_var_proto.domain_size() - 1);
     const sat::Literal lit(booleans_[bool_var], true);
-    const IntegerVariable var = integers_[int_var];
     if (coeff > 0) {
       CHECK_EQ(vmax - vmin, coeff);
       CHECK_EQ(vmax, rhs) << ct.DebugString()
@@ -354,8 +357,11 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
 // Boolean b => x > 5. These shouldn't happen if we merge linear constraints.
 void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
                                      Model* m) {
-  IntegerEncoder* encoder = m->GetOrCreate<IntegerEncoder>();
-  IntegerTrail* integer_trail = m->GetOrCreate<IntegerTrail>();
+  auto* encoder = m->GetOrCreate<IntegerEncoder>();
+  auto* integer_trail = m->GetOrCreate<IntegerTrail>();
+  auto* sat_solver = m->GetOrCreate<SatSolver>();
+
+  if (sat_solver->IsModelUnsat()) return;
 
   // Detection of literal equivalent to (i_var == value). We collect all the
   // half-reified constraint lit => equality or lit => inequality for a given
