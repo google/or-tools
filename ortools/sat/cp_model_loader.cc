@@ -305,19 +305,16 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
     const int64 rhs = coeff_mult * ct.linear().domain(0);
     const int64 vmin = int_var_proto.domain(0);
     const int64 vmax = int_var_proto.domain(int_var_proto.domain_size() - 1);
-    const sat::Literal lit(booleans_[bool_var], true);
-    if (coeff > 0) {
-      CHECK_EQ(vmax - vmin, coeff);
-      CHECK_EQ(vmax, rhs) << ct.DebugString()
-                          << ", int_var = " << int_var_proto.DebugString()
-                          << ", bool_var = " << bool_var_proto.DebugString();
-      encoder->AssociateToIntegerEqualValue(lit, var, IntegerValue(vmin));
+     if (coeff > 0) {
+      // Checks propagation is complete. May not be the case in the postsolve.
+      if (vmax - vmin != coeff || vmax != rhs) continue;
+      encoder->AssociateToIntegerEqualValue(
+          sat::Literal(booleans_[bool_var], true), var, IntegerValue(vmin));
     } else {
-      CHECK_EQ(vmax - vmin, -coeff);
-      CHECK_EQ(vmin, rhs) << ct.DebugString()
-                          << ", int_var = " << int_var_proto.DebugString()
-                          << ", bool_var = " << bool_var_proto.DebugString();
-      encoder->AssociateToIntegerEqualValue(lit, var, IntegerValue(vmax));
+      // Checks propagation is complete. May not be the case in the postsolve.
+      if (vmax - vmin != -coeff || vmin != rhs) continue;
+      encoder->AssociateToIntegerEqualValue(
+          sat::Literal(booleans_[bool_var], true), var, IntegerValue(vmax));
     }
 
     // This is needed so that IsFullyEncoded() returns true.
