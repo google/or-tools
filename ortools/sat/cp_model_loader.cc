@@ -69,6 +69,8 @@ bool ComputeLinearBounds(const LinearConstraintProto& proto,
     const int64 lb = integer_trail->LowerBound(sat_var).value();
     const int64 ub = integer_trail->UpperBound(sat_var).value();
     if (lb == ub) {
+      // Currently, we do not support if one variable is fixed in the linear
+      // expansion. It should never happen is presolve is good.
       return false;
     }
     if (coeff >= 0) {
@@ -292,26 +294,12 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
                           << ", int_var = " << int_var_proto.DebugString()
                           << ", bool_var = " << bool_var_proto.DebugString();
       encoder->AssociateToIntegerEqualValue(lit, var, IntegerValue(vmin));
-      // encoder->AssociateToIntegerEqualValue(lit.Negated(), var,
-      //                                       IntegerValue(vmax));
-      // encoder->AssociateToIntegerLiteral(
-      //     lit.Negated(),
-      //     IntegerLiteral::GreaterOrEqual(var, IntegerValue(vmax)));
-      // encoder->AssociateToIntegerLiteral(
-      //     lit, IntegerLiteral::LowerOrEqual(var, IntegerValue(vmin)));
     } else {
       CHECK_EQ(vmax - vmin, -coeff);
       CHECK_EQ(vmin, rhs) << ct.DebugString()
                           << ", int_var = " << int_var_proto.DebugString()
                           << ", bool_var = " << bool_var_proto.DebugString();
       encoder->AssociateToIntegerEqualValue(lit, var, IntegerValue(vmax));
-      // encoder->AssociateToIntegerEqualValue(lit.Negated(), var,
-      //                                       IntegerValue(vmin));
-      // encoder->AssociateToIntegerLiteral(
-      //     lit, IntegerLiteral::GreaterOrEqual(var, IntegerValue(vmax)));
-      // encoder->AssociateToIntegerLiteral(
-      //     lit.Negated(), IntegerLiteral::LowerOrEqual(var,
-      //     IntegerValue(vmin)));
     }
 
     // This is needed so that IsFullyEncoded() returns true.
@@ -361,6 +349,7 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   auto* sat_solver = m->GetOrCreate<SatSolver>();
 
+  // TODO(user): Debug what makes it unsat at this point.
   if (sat_solver->IsModelUnsat()) return;
 
   // Detection of literal equivalent to (i_var == value). We collect all the
@@ -404,59 +393,88 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
   for (const ConstraintProto& ct : model_proto.constraints()) {
     // For now, we only look at linear constraints with one term and one
     // enforcement literal.
-    if (ct.enforcement_literal().size() != 1) continue;
-    if (ct.constraint_case() != ConstraintProto::ConstraintCase::kLinear) {
-      continue;
-    }
-    if (ct.linear().vars_size() != 1) continue;
+    if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
+      if (ct.enforcement_literal().size() != 1) continue;
+      if (ct.linear().vars_size() != 1) continue;
 
-    const sat::Literal enforcement_literal = Literal(ct.enforcement_literal(0));
-    const int ref = ct.linear().vars(0);
-    const int var = PositiveRef(ref);
+      const sat::Literal enforcement_literal =
+          Literal(ct.enforcement_literal(0));
+      const int ref = ct.linear().vars(0);
+      const int var = PositiveRef(ref);
 
-    const Domain domain = ReadDomainFromProto(model_proto.variables(var));
-    const Domain domain_if_enforced =
-        ReadDomainFromProto(ct.linear())
-            .InverseMultiplicationBy(ct.linear().coeffs(0) *
-                                     (RefIsPositive(ref) ? 1 : -1));
+      const Domain domain = ReadDomainFromProto(model_proto.variables(var));
+      const Domain domain_if_enforced =
+          ReadDomainFromProto(ct.linear())
+              .InverseMultiplicationBy(ct.linear().coeffs(0) *
+                                       (RefIsPositive(ref) ? 1 : -1));
 
-    // Detect enforcement_literal => (var >= value or var <= value).
-    if (domain_if_enforced.NumIntervals() == 1) {
-      if (domain_if_enforced.Max() >= domain.Max() &&
-          domain_if_enforced.Min() > domain.Min()) {
-        inequalities.push_back(
-            {&ct, enforcement_literal,
-             IntegerLiteral::GreaterOrEqual(
-                 Integer(var), IntegerValue(domain_if_enforced.Min()))});
-      } else if (domain_if_enforced.Min() <= domain.Min() &&
-                 domain_if_enforced.Max() < domain.Max()) {
-        inequalities.push_back(
-            {&ct, enforcement_literal,
-             IntegerLiteral::LowerOrEqual(
-                 Integer(var), IntegerValue(domain_if_enforced.Max()))});
+      // Detect enforcement_literal => (var >= value or var <= value).
+      if (domain_if_enforced.NumIntervals() == 1) {
+        if (domain_if_enforced.Max() >= domain.Max() &&
+            domain_if_enforced.Min() > domain.Min()) {
+          inequalities.push_back(
+              {&ct, enforcement_literal,
+               IntegerLiteral::GreaterOrEqual(
+                   Integer(var), IntegerValue(domain_if_enforced.Min()))});
+        } else if (domain_if_enforced.Min() <= domain.Min() &&
+                   domain_if_enforced.Max() < domain.Max()) {
+          inequalities.push_back(
+              {&ct, enforcement_literal,
+               IntegerLiteral::LowerOrEqual(
+                   Integer(var), IntegerValue(domain_if_enforced.Max()))});
+        }
       }
-    }
 
-    // Detect enforcement_literal => (var == value or var != value).
-    //
-    // Note that for domain with 2 values like [0, 1], we will detect both == 0
-    // and != 1. Similarly, for a domain in [min, max], we should both detect
-    // (== min) and (<= min), and both detect (== max) and (>= max).
-    {
-      const Domain inter = domain.IntersectionWith(domain_if_enforced);
-      if (!inter.IsEmpty() && inter.Min() == inter.Max()) {
-        var_to_equalities[var].push_back(
-            {&ct, enforcement_literal, inter.Min(), true});
-        variables_to_encoded_values_[var].insert(inter.Min());
+      // Detect enforcement_literal => (var == value or var != value).
+      //
+      // Note that for domain with 2 values like [0, 1], we will detect both ==
+      // 0 and != 1. Similarly, for a domain in [min, max], we should both
+      // detect
+      // (== min) and (<= min), and both detect (== max) and (>= max).
+      {
+        const Domain inter = domain.IntersectionWith(domain_if_enforced);
+        if (!inter.IsEmpty() && inter.Min() == inter.Max()) {
+          var_to_equalities[var].push_back(
+              {&ct, enforcement_literal, inter.Min(), true});
+          if (inter.Min() != domain.Min() && inter.Min() != domain.Max() &&
+              domain.Contains(inter.Min())) {
+            variables_to_encoded_values_[var].insert(inter.Min());
+          }
+        }
       }
-    }
-    {
-      const Domain inter =
-          domain.IntersectionWith(domain_if_enforced.Complement());
-      if (!inter.IsEmpty() && inter.Min() == inter.Max()) {
-        var_to_equalities[var].push_back(
-            {&ct, enforcement_literal, inter.Min(), false});
-        variables_to_encoded_values_[var].insert(inter.Min());
+      {
+        const Domain inter =
+            domain.IntersectionWith(domain_if_enforced.Complement());
+        if (!inter.IsEmpty() && inter.Min() == inter.Max()) {
+          var_to_equalities[var].push_back(
+              {&ct, enforcement_literal, inter.Min(), false});
+          if (inter.Min() != domain.Min() && inter.Min() != domain.Max() &&
+              domain.Contains(inter.Min())) {
+            variables_to_encoded_values_[var].insert(inter.Min());
+          }
+        }
+      }
+    } else if (ct.constraint_case() ==
+               ConstraintProto::ConstraintCase::kTable) {
+      // Positive table already fully encode their variables, after having
+      // reduced their domain during presolve.
+      if (!ct.table().negated()) continue;
+      const int num_vars = ct.table().vars_size();
+      const int num_tuples = ct.table().values_size() / num_vars;
+      for (int tuple = 0; tuple < num_tuples; ++tuple) {
+        for (int v = 0; v < num_vars; ++v) {
+          int64 value = ct.table().values(tuple * num_vars + v);
+          int var = ct.table().vars(v);
+          if (var < 0) {
+            var = NegatedRef(var);
+            value = -value;
+          }
+          const Domain domain = ReadDomainFromProto(model_proto.variables(var));
+          if (value != domain.Min() && value != domain.Max() &&
+              domain.Contains(value)) {
+            variables_to_encoded_values_[var].insert(value);
+          }
+        }
       }
     }
   }
@@ -499,6 +517,7 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
     m->Add(
         Implication(inequality.literal,
                     encoder->GetOrCreateAssociatedLiteral(inequality.i_lit)));
+    if (sat_solver->IsModelUnsat()) return;
 
     ++num_half_inequalities;
     already_loaded_ct_.insert(inequality.ct);
@@ -538,6 +557,8 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
       already_loaded_ct_.insert(encoding[j + 1].ct);
       values.insert(encoding[j].value);
     }
+
+    if (sat_solver->IsModelUnsat()) return;
 
     // Encode the half-equalities.
     for (const auto equality : encoding) {
@@ -706,9 +727,14 @@ class FullEncodingFixedPointComputer {
            integer_encoder_->VariableIsFullyEncoded(variable);
   }
 
+  const bool VariableIsFixed(int v) {
+    const IntegerVariable variable = mapping_->Integer(v);
+    if (v == kNoIntegerVariable) return false;
+    return model_->Get(IsFixed(variable));
+  }
+
   void FullyEncode(int v) {
     v = PositiveRef(v);
-    VLOG(3) << "Fully encode " << v;
     const IntegerVariable variable = mapping_->Integer(v);
     if (v == kNoIntegerVariable) return;
     if (!model_->Get(IsFixed(variable))) {
@@ -828,12 +854,14 @@ bool FullEncodingFixedPointComputer::ProcessElement(ConstraintIndex ct_index) {
   const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
 
   // Index must always be full encoded.
-  VLOG(3) << "Element " << ct.DebugString() << " fully encode index "
-          << ct.element().index();
   FullyEncode(ct.element().index());
 
-  // If target is a constant or fully encoded, variables must be fully encoded.
   const int target = ct.element().target();
+
+  // If target is fixed, do not encode variables.
+  if (VariableIsFixed(target)) return true;
+
+  // If target is a constant or fully encoded, variables must be fully encoded.
   if (IsFullyEncoded(target)) {
     for (const int v : ct.element().vars()) FullyEncode(v);
   }
@@ -870,6 +898,7 @@ bool FullEncodingFixedPointComputer::ProcessTable(ConstraintIndex ct_index) {
   for (const int variable : ct.table().vars()) {
     FullyEncode(variable);
   }
+
   return true;
 }
 
@@ -884,7 +913,6 @@ bool FullEncodingFixedPointComputer::ProcessAutomaton(
 
 bool FullEncodingFixedPointComputer::ProcessInverse(ConstraintIndex ct_index) {
   const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
-  VLOG(3) << "Process inverse " << ct.DebugString();
   for (const int variable : ct.inverse().f_direct()) {
     FullyEncode(variable);
   }
@@ -1060,7 +1088,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
   if (params.boolean_encoding_level() > 0 && ct.linear().vars_size() == 2 &&
       IsEqCstInsideBounds(ct.linear(), mapping, integer_trail) &&
       encoder->VariableIsFullyEncoded(vars[0]) &&
-      encoder->VariableIsFullyEncoded(vars[1]) && max_domain_size < 64) {
+      encoder->VariableIsFullyEncoded(vars[1]) && max_domain_size < 16) {
     VLOG(3) << "Load AC version of " << ct.DebugString() << ", var0 domain = "
             << integer_trail->InitialVariableDomain(vars[0])
             << ", var1 domain = "
@@ -1074,7 +1102,7 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
       IsNEqCstInsideBounds(ct.linear(), mapping, integer_trail,
                            &single_value) &&
       encoder->VariableIsFullyEncoded(vars[0]) &&
-      encoder->VariableIsFullyEncoded(vars[1]) && max_domain_size < 64) {
+      encoder->VariableIsFullyEncoded(vars[1]) && max_domain_size < 16) {
     VLOG(3) << "Load NAC version of " << ct.DebugString() << ", var0 domain = "
             << integer_trail->InitialVariableDomain(vars[0])
             << ", var1 domain = "
