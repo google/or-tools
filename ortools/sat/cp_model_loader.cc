@@ -256,16 +256,28 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
     if (ct.enforcement_literal_size() > 0 ||
         ct.constraint_case() != ConstraintProto::ConstraintCase::kLinear ||
         ct.linear().vars_size() != 2 || ct.linear().coeffs(0) != 1 ||
+        ct.linear().vars(1) < 0 ||
         booleans_[ct.linear().vars(1)] == kNoBooleanVariable ||
-        integers_[ct.linear().vars(0)] == kNoIntegerVariable ||
-        booleans_[ct.linear().vars(0)] != kNoBooleanVariable ||
+        integers_[PositiveRef(ct.linear().vars(0))] == kNoIntegerVariable ||
+        booleans_[PositiveRef(ct.linear().vars(0))] != kNoBooleanVariable ||
         ct.linear().domain_size() != 2 ||
         ct.linear().domain(0) != ct.linear().domain(1)) {
       continue;
     }
 
-    const int int_var = ct.linear().vars(0);
+    const int int_ref = ct.linear().vars(0);
+    const int int_var = PositiveRef(int_ref);
+    const bool ref_is_positive = RefIsPositive(int_ref);
+    int64 coeff_mult = ref_is_positive ? 1 : -1;
+
     const int bool_var = ct.linear().vars(1);
+    CHECK(RefIsPositive(bool_var));
+
+    DCHECK_GE(int_var, 0);
+    DCHECK_LT(int_var, model_proto.variables_size());
+    DCHECK_GE(bool_var, 0);
+    DCHECK_LT(bool_var, model_proto.variables_size());
+
     const IntegerVariableProto& int_var_proto = model_proto.variables(int_var);
     const IntegerVariableProto& bool_var_proto =
         model_proto.variables(bool_var);
@@ -275,6 +287,9 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
       int_var_domain_size +=
           int_var_proto.domain(i + 1) - int_var_proto.domain(i) + 1;
     }
+
+    // Check the bool_var is not instantiated, and the int_var has a domain size
+    // of 2, to be compatible with the scaled bool_var.
     if (bool_var_proto.domain_size() != 2 || bool_var_proto.domain(0) != 0 ||
         bool_var_proto.domain(1) != 1 || int_var_domain_size != 2) {
       continue;
@@ -283,8 +298,8 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
     const IntegerVariable var = integers_[int_var];
     if (encoder->VariableIsFullyEncoded(var)) continue;
 
-    const int64 coeff = ct.linear().coeffs(1);
-    const int64 rhs = ct.linear().domain(0);
+    const int64 coeff = coeff_mult * ct.linear().coeffs(1);
+    const int64 rhs = coeff_mult * ct.linear().domain(0);
     const int64 vmin = int_var_proto.domain(0);
     const int64 vmax = int_var_proto.domain(int_var_proto.domain_size() - 1);
     const sat::Literal lit(booleans_[bool_var], true);
