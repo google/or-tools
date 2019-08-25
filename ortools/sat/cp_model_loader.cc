@@ -253,6 +253,9 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
 
   int num_encoded_from_affine = 0;
   for (const ConstraintProto& ct : model_proto.constraints()) {
+    // We try to recognize a mapping between an integer variable of size 2, and
+    // a Boolean variable. In that case, we can fully encode the integer
+    // variable using the Boolean variable.
     if (ct.enforcement_literal_size() > 0 ||
         ct.constraint_case() != ConstraintProto::ConstraintCase::kLinear ||
         ct.linear().vars_size() != 2 || ct.linear().coeffs(0) != 1 ||
@@ -268,7 +271,7 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
     const int int_ref = ct.linear().vars(0);
     const int int_var = PositiveRef(int_ref);
     const bool ref_is_positive = RefIsPositive(int_ref);
-    int64 coeff_mult = ref_is_positive ? 1 : -1;
+    const int64 coeff_mult = ref_is_positive ? 1 : -1;
 
     const int bool_var = ct.linear().vars(1);
     CHECK(RefIsPositive(bool_var));
@@ -319,6 +322,7 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
 
     // This is needed so that IsFullyEncoded() returns true.
     encoder->FullyEncodeVariable(integers_[int_var]);
+
     num_encoded_from_affine++;
     already_loaded_ct_.insert(&ct);
   }
@@ -444,8 +448,7 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
       //
       // Note that for domain with 2 values like [0, 1], we will detect both ==
       // 0 and != 1. Similarly, for a domain in [min, max], we should both
-      // detect
-      // (== min) and (<= min), and both detect (== max) and (>= max).
+      // detect (== min) and (<= min), and both detect (== max) and (>= max).
       {
         const Domain inter = domain.IntersectionWith(domain_if_enforced);
         if (!inter.IsEmpty() && inter.Min() == inter.Max()) {
@@ -474,6 +477,7 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
       // Positive table already fully encode their variables, after having
       // reduced their domain during presolve.
       if (!ct.table().negated()) continue;
+
       const int num_vars = ct.table().vars_size();
       const int num_tuples = ct.table().values_size() / num_vars;
       for (int tuple = 0; tuple < num_tuples; ++tuple) {
@@ -573,6 +577,7 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
       values.insert(encoding[j].value);
     }
 
+    // Redundant check of unsat.
     if (sat_solver->IsModelUnsat()) return;
 
     // Encode the half-equalities.

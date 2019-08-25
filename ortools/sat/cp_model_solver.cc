@@ -1076,9 +1076,9 @@ void LoadCpModel(const CpModelProto& model_proto,
   mapping->CreateVariables(model_proto, view_all_booleans_as_integers, model);
   mapping->DetectOptionalVariables(model_proto, model);
   mapping->ExtractEncoding(model_proto, model);
-  if (model->GetOrCreate<SatSolver>()->IsModelUnsat()) {
-    return unsat();
-  }
+
+  // Check the model is still feasible before continuing.
+  if (model->GetOrCreate<SatSolver>()->IsModelUnsat()) return unsat();
 
   // Force some variables to be fully encoded.
   MaybeFullyEncodeMoreVariables(model_proto, model);
