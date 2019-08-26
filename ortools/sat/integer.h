@@ -574,6 +574,9 @@ class IntegerTrail : public SatPropagator {
   IntegerValue LowerBound(IntegerVariable i) const;
   IntegerValue UpperBound(IntegerVariable i) const;
 
+  // Checks if the variable is fixed.
+  bool IsFixed(IntegerVariable i) const;
+
   // Returns the integer literal that represent the current lower/upper bound of
   // the given integer variable.
   IntegerLiteral LowerBoundAsLiteral(IntegerVariable i) const;
@@ -1149,6 +1152,10 @@ inline IntegerValue IntegerTrail::LowerBound(IntegerVariable i) const {
 
 inline IntegerValue IntegerTrail::UpperBound(IntegerVariable i) const {
   return -vars_[NegationOf(i)].current_bound;
+}
+
+inline bool IntegerTrail::IsFixed(IntegerVariable i) const {
+  return vars_[i].current_bound == -vars_[NegationOf(i)].current_bound;
 }
 
 inline IntegerLiteral IntegerTrail::LowerBoundAsLiteral(

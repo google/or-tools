@@ -160,11 +160,16 @@ class CpModelMapping {
     return result;
   }
 
-  int NumEncodedValues(int var) {
-    if (gtl::ContainsKey(variables_to_encoded_values_, var)) {
-      return variables_to_encoded_values_[var].size();
+  // Returns a heuristic set of values that could be created for the given
+  // variable when the constraints will be loaded.
+  // Note that the pointer is not stable across calls.
+  // It returns nullptr if the set is empty.
+  const absl::flat_hash_set<int64>* PotentialEncodedValues(int var) {
+    const auto& it = variables_to_encoded_values_.find(var);
+    if (it != variables_to_encoded_values_.end()) {
+      return &it->second;
     }
-    return 0;
+    return nullptr;
   }
 
  private:

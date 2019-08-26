@@ -1055,10 +1055,11 @@ void RegisterObjectiveBoundsImport(
 void LoadCpModel(const CpModelProto& model_proto,
                  SharedResponseManager* shared_response_manager, Model* model) {
   CHECK(shared_response_manager != nullptr);
+  auto* sat_solver = model->GetOrCreate<SatSolver>();
 
   // Simple function for the few places where we do "return unsat()".
-  const auto unsat = [shared_response_manager, model] {
-    model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+  const auto unsat = [shared_response_manager, sat_solver, model] {
+    sat_solver->NotifyThatModelIsUnsat();
     shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
         absl::StrCat(model->GetOrCreate<WorkerInfo>()->worker_name,
                      " [loading]"));
@@ -1078,7 +1079,7 @@ void LoadCpModel(const CpModelProto& model_proto,
   mapping->ExtractEncoding(model_proto, model);
 
   // Check the model is still feasible before continuing.
-  if (model->GetOrCreate<SatSolver>()->IsModelUnsat()) return unsat();
+  if (sat_solver->IsModelUnsat()) return unsat();
 
   // Force some variables to be fully encoded.
   MaybeFullyEncodeMoreVariables(model_proto, model);
@@ -1086,7 +1087,6 @@ void LoadCpModel(const CpModelProto& model_proto,
   // Load the constraints.
   std::set<std::string> unsupported_types;
   int num_ignored_constraints = 0;
-  auto* sat_solver = model->GetOrCreate<SatSolver>();
   for (const ConstraintProto& ct : model_proto.constraints()) {
     if (mapping->ConstraintIsAlreadyLoaded(&ct)) {
       ++num_ignored_constraints;

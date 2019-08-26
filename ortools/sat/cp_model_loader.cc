@@ -56,7 +56,7 @@ std::vector<int64> ValuesFromProto(const Values& values) {
   return std::vector<int64>(values.begin(), values.end());
 }
 
-bool ComputeLinearBounds(const LinearConstraintProto& proto,
+void ComputeLinearBounds(const LinearConstraintProto& proto,
                          CpModelMapping* mapping, IntegerTrail* integer_trail,
                          int64* sum_min, int64* sum_max) {
   *sum_min = 0;
@@ -68,11 +68,6 @@ bool ComputeLinearBounds(const LinearConstraintProto& proto,
     const IntegerVariable sat_var = mapping->Integer(var);
     const int64 lb = integer_trail->LowerBound(sat_var).value();
     const int64 ub = integer_trail->UpperBound(sat_var).value();
-    if (lb == ub) {
-      // Currently, we do not support if one variable is fixed in the linear
-      // expansion. It should never happen is presolve is good.
-      return false;
-    }
     if (coeff >= 0) {
       (*sum_min) += coeff * lb;
       (*sum_max) += coeff * ub;
@@ -81,41 +76,19 @@ bool ComputeLinearBounds(const LinearConstraintProto& proto,
       (*sum_max) += coeff * lb;
     }
   }
-  return true;
 }
 
-// We check that it is strictly inside bounds, because
-//     b => sum(ai * xi) == ub(ai * xi) or lb(ai * xi)
-// can be implemented without the actual sum. Therefore, there would be no need
-// to fully encode in that case.
-bool IsEqCstInsideBounds(const LinearConstraintProto& proto,
-                         CpModelMapping* mapping, IntegerTrail* integer_trail) {
-  if (proto.domain_size() != 2 || proto.domain(0) != proto.domain(1)) {
-    return false;
-  }
-
-  int64 sum_min = 0;
-  int64 sum_max = 0;
-  if (!ComputeLinearBounds(proto, mapping, integer_trail, &sum_min, &sum_max)) {
-    return false;
-  }
-
-  const int64 value = proto.domain(0);
-  return value > sum_min && value < sum_max;
+// We check if the constraint is a sum(ax * xi) == value.
+bool IsEqCst(const LinearConstraintProto& proto) {
+  return proto.domain_size() == 2 && proto.domain(0) != proto.domain(1);
 }
 
-// We check that it is strictly inside bounds, because
-//     b => sum(ai * xi) < ub(ai * xi) or > lb(ai * xi)
-// can be implemented without the actual sum. Therefore, there would be no need
-// to fully encode in that case.
-bool IsNEqCstInsideBounds(const LinearConstraintProto& proto,
-                          CpModelMapping* mapping, IntegerTrail* integer_trail,
-                          int64* single_value) {
+// We check if the constraint is a sum(ax * xi) != value.
+bool IsNEqCst(const LinearConstraintProto& proto, CpModelMapping* mapping,
+              IntegerTrail* integer_trail, int64* single_value) {
   int64 sum_min = 0;
   int64 sum_max = 0;
-  if (!ComputeLinearBounds(proto, mapping, integer_trail, &sum_min, &sum_max)) {
-    return false;
-  }
+  ComputeLinearBounds(proto, mapping, integer_trail, &sum_min, &sum_max);
 
   const Domain complement =
       Domain(sum_min, sum_max)
@@ -123,7 +96,7 @@ bool IsNEqCstInsideBounds(const LinearConstraintProto& proto,
   if (complement.IsEmpty()) return false;
   const int64 value = complement.Min();
 
-  if (complement.Size() == 1 && value > sum_min && value < sum_max) {
+  if (complement.Size() == 1) {
     if (single_value != nullptr) {
       *single_value = value;
     }
@@ -305,7 +278,7 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
     const int64 rhs = coeff_mult * ct.linear().domain(0);
     const int64 vmin = int_var_proto.domain(0);
     const int64 vmax = int_var_proto.domain(int_var_proto.domain_size() - 1);
-     if (coeff > 0) {
+    if (coeff > 0) {
       // Checks propagation is complete. May not be the case in the postsolve.
       if (vmax - vmin != coeff || vmax != rhs) continue;
       encoder->AssociateToIntegerEqualValue(
@@ -407,12 +380,11 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
 
   // Loop over all contraints and fill var_to_equalities and inequalities.
   for (const ConstraintProto& ct : model_proto.constraints()) {
-    // For now, we only look at linear constraints with one term and one
-    // enforcement literal.
     if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
       if (ct.enforcement_literal().size() != 1) continue;
       if (ct.linear().vars_size() != 1) continue;
 
+      // ct is a linear constraint with one term and one enforcement literal.
       const sat::Literal enforcement_literal =
           Literal(ct.enforcement_literal(0));
       const int ref = ct.linear().vars(0);
@@ -451,8 +423,7 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
         if (!inter.IsEmpty() && inter.Min() == inter.Max()) {
           var_to_equalities[var].push_back(
               {&ct, enforcement_literal, inter.Min(), true});
-          if (inter.Min() != domain.Min() && inter.Min() != domain.Max() &&
-              domain.Contains(inter.Min())) {
+          if (domain.Contains(inter.Min())) {
             variables_to_encoded_values_[var].insert(inter.Min());
           }
         }
@@ -463,32 +434,8 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
         if (!inter.IsEmpty() && inter.Min() == inter.Max()) {
           var_to_equalities[var].push_back(
               {&ct, enforcement_literal, inter.Min(), false});
-          if (inter.Min() != domain.Min() && inter.Min() != domain.Max() &&
-              domain.Contains(inter.Min())) {
+          if (domain.Contains(inter.Min())) {
             variables_to_encoded_values_[var].insert(inter.Min());
-          }
-        }
-      }
-    } else if (ct.constraint_case() ==
-               ConstraintProto::ConstraintCase::kTable) {
-      // Positive table already fully encode their variables, after having
-      // reduced their domain during presolve.
-      if (!ct.table().negated()) continue;
-
-      const int num_vars = ct.table().vars_size();
-      const int num_tuples = ct.table().values_size() / num_vars;
-      for (int tuple = 0; tuple < num_tuples; ++tuple) {
-        for (int v = 0; v < num_vars; ++v) {
-          int64 value = ct.table().values(tuple * num_vars + v);
-          int var = ct.table().vars(v);
-          if (var < 0) {
-            var = NegatedRef(var);
-            value = -value;
-          }
-          const Domain domain = ReadDomainFromProto(model_proto.variables(var));
-          if (value != domain.Min() && value != domain.Max() &&
-              domain.Contains(value)) {
-            variables_to_encoded_values_[var].insert(value);
           }
         }
       }
@@ -574,7 +521,9 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
       values.insert(encoding[j].value);
     }
 
-    // Redundant check of unsat.
+    // TODO(user): Try to remove it. Normally we caught UNSAT above, but
+    // tests are very flaky (it only happens in parallel). Keeping it there for
+    // the time being.
     if (sat_solver->IsModelUnsat()) return;
 
     // Encode the half-equalities.
@@ -740,21 +689,21 @@ class FullEncodingFixedPointComputer {
   const bool IsFullyEncoded(int v) {
     const IntegerVariable variable = mapping_->Integer(v);
     if (v == kNoIntegerVariable) return false;
-    return model_->Get(IsFixed(variable)) ||
+    return integer_trail_->IsFixed(variable) ||
            integer_encoder_->VariableIsFullyEncoded(variable);
   }
 
   const bool VariableIsFixed(int v) {
     const IntegerVariable variable = mapping_->Integer(v);
     if (v == kNoIntegerVariable) return false;
-    return model_->Get(IsFixed(variable));
+    return integer_trail_->IsFixed(variable);
   }
 
   void FullyEncode(int v) {
     v = PositiveRef(v);
     const IntegerVariable variable = mapping_->Integer(v);
     if (v == kNoIntegerVariable) return;
-    if (!model_->Get(IsFixed(variable))) {
+    if (!integer_trail_->IsFixed(variable)) {
       model_->Add(FullyEncodeVariable(variable));
     }
     AddVariableToPropagationQueue(v);
@@ -790,43 +739,61 @@ class FullEncodingFixedPointComputer {
 // Note that if a variable was already added once, we never add it again.
 void FullEncodingFixedPointComputer::ComputeFixedPoint() {
   const int num_constraints = model_proto_.constraints_size();
-  constraint_is_registered_.assign(num_constraints, false);
+  const int num_vars = model_proto_.variables_size();
   constraint_is_finished_.assign(num_constraints, false);
+  constraint_is_registered_.assign(num_constraints, false);
 
   // Process all constraint once.
   for (ConstraintIndex ct_index(0); ct_index < num_constraints; ++ct_index) {
     ProcessConstraint(ct_index);
   }
 
-  std::vector<int> variable_usages(model_proto_.variables_size());
-  for (int i = 0; i < variable_usages.size(); ++i) {
-    variable_usages[i] = mapping_->NumEncodedValues(i);
-    if (gtl::ContainsKey(variables_to_equal_or_diff_variables_, i)) {
-      variable_usages[i] += variables_to_equal_or_diff_variables_[i].size();
+  int num_variables_fully_encoded_by_heuristics = 0;
+  // We run a heuristics to decide if we want to fully encode a variable or not.
+  // We decide to fully encode a variable if:
+  //   - a variable appears in enough a1 * x1 + a2 + x2 ==/!= value and the
+  //     domain is small.
+  //   - the number of values that appears in b => x ==/!= value that are not
+  //   the bounds of the variables is more that half the size of the domain.
+  for (int var = 0; var < num_vars; ++var) {
+    if (!mapping_->IsInteger(var) || IsFullyEncoded(var)) continue;
+    const IntegerVariableProto& int_var_proto = model_proto_.variables(var);
+    const Domain domain = ReadDomainFromProto(int_var_proto);
+    int64 domain_size = domain.Size();
+    int64 num_diff_or_equal_var_constraints = 0;
+    int64 num_potential_encoded_values_without_bounds = 0;
+
+    const absl::flat_hash_set<int64>* value_set_ptr =
+        mapping_->PotentialEncodedValues(var);
+    if (value_set_ptr != nullptr) {
+      for (const int value : *value_set_ptr) {
+        if (value > domain.Min() && value < domain.Max() &&
+            domain.Contains(value)) {
+          num_potential_encoded_values_without_bounds++;
+        }
+      }
     }
-  }
 
-  int num_var_encoded_from_linear_accesses = 0;
-  for (int var = 0; var < variable_usages.size(); ++var) {
-    if (variable_usages[var] == 0) continue;
-    if (IsFullyEncoded(var)) continue;
+    const auto& it = variables_to_equal_or_diff_variables_.find(var);
+    if (it != variables_to_equal_or_diff_variables_.end()) {
+      num_diff_or_equal_var_constraints = it->second.size();
+    }
 
-    const int64 num_constraints = variable_usages[var];
-    const int64 domain_size =
-        ReadDomainFromProto(model_proto_.variables(var)).Size();
-    if (num_constraints >= domain_size / 2) {
+    if (num_potential_encoded_values_without_bounds >= domain_size / 2 ||
+        (num_diff_or_equal_var_constraints >= domain_size / 2 &&
+         domain_size < 16)) {
       VLOG(3) << model_proto_.variables(var).ShortDebugString()
-              << " is encoded with " << num_constraints
-              << " unary or binary constraints on a domain of size "
-              << domain_size;
+              << " is encoded with "
+              << num_potential_encoded_values_without_bounds
+              << " unary constraints, and " << num_diff_or_equal_var_constraints
+              << " binary constraints on a domain of size " << domain_size;
       FullyEncode(var);
-      num_var_encoded_from_linear_accesses++;
+      num_variables_fully_encoded_by_heuristics++;
     }
   }
-
-  if (num_var_encoded_from_linear_accesses > 0) {
-    VLOG(2) << num_var_encoded_from_linear_accesses
-            << " variables fully encoded from linear constraints";
+  if (num_variables_fully_encoded_by_heuristics > 0) {
+    VLOG(2) << num_variables_fully_encoded_by_heuristics
+            << " variables fully encoded after model introspection.";
   }
 
   // Make sure all fully encoded variables of interest are in the queue.
@@ -940,26 +907,26 @@ bool FullEncodingFixedPointComputer::ProcessInverse(ConstraintIndex ct_index) {
 }
 
 bool FullEncodingFixedPointComputer::ProcessLinear(ConstraintIndex ct_index) {
+  // We are only interested in linear equations of the form:
+  //     [b =>] a1 * x1 + a2 * x2 ==|!= value
   const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
-  if (parameters_.boolean_encoding_level() == 0) {
+  if (parameters_.boolean_encoding_level() == 0 ||
+      ct.linear().vars_size() != 2) {
     return true;
   }
 
-  int64 value = ct.linear().domain(0);
-  if (!IsEqCstInsideBounds(ct.linear(), mapping_, integer_trail_) &&
-      !IsNEqCstInsideBounds(ct.linear(), mapping_, integer_trail_, &value)) {
+  if (!IsEqCst(ct.linear()) &&
+      !IsNEqCst(ct.linear(), mapping_, integer_trail_, nullptr)) {
     return true;
   }
 
-  if (ct.linear().vars_size() == 2) {
-    const int var0 = ct.linear().vars(0);
-    const int var1 = ct.linear().vars(1);
-    if (!IsFullyEncoded(var0)) {
-      variables_to_equal_or_diff_variables_[var0].insert(var1);
-    }
-    if (!IsFullyEncoded(var1)) {
-      variables_to_equal_or_diff_variables_[var1].insert(var0);
-    }
+  const int var0 = ct.linear().vars(0);
+  const int var1 = ct.linear().vars(1);
+  if (!IsFullyEncoded(var0)) {
+    variables_to_equal_or_diff_variables_[var0].insert(var1);
+  }
+  if (!IsFullyEncoded(var1)) {
+    variables_to_equal_or_diff_variables_[var1].insert(var0);
   }
   return true;
 }
@@ -1070,16 +1037,12 @@ void LoadEquivalenceNeqAC(const std::vector<Literal> enforcement_literal,
   }
   for (const auto value_literal : encoder->FullDomainEncoding(var2)) {
     const IntegerValue target_value = rhs - value_literal.value * coeff2;
-    if (gtl::ContainsKey(term1_value_to_literal, target_value)) {
-      const Literal target_literal = term1_value_to_literal[target_value];
-      if (enforcement_literal.empty()) {
-        m->Add(ClauseConstraint(
-            {value_literal.literal.Negated(), target_literal.Negated()}));
-      } else {
-        m->Add(EnforcedClause(
-            enforcement_literal,
-            {value_literal.literal.Negated(), target_literal.Negated()}));
-      }
+    const auto& it = term1_value_to_literal.find(target_value);
+    if (it != term1_value_to_literal.end()) {
+      const Literal target_literal = it->second;
+      m->Add(EnforcedClause(
+          enforcement_literal,
+          {value_literal.literal.Negated(), target_literal.Negated()}));
     }
   }
 }
@@ -1099,11 +1062,15 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
     const IntegerValue vmax = integer_trail->UpperBound(vars[i]);
     max_domain_size = std::max(max_domain_size, vmax - vmin + 1);
   }
+  int64 min_linear = 0;
+  int64 max_linear = 0;
+  ComputeLinearBounds(ct.linear(), mapping, integer_trail, &min_linear,
+                      &max_linear);
 
   const SatParameters& params = *m->GetOrCreate<SatParameters>();
-  int64 single_value = 0;
   if (params.boolean_encoding_level() > 0 && ct.linear().vars_size() == 2 &&
-      IsEqCstInsideBounds(ct.linear(), mapping, integer_trail) &&
+      IsEqCst(ct.linear()) && ct.linear().domain(0) != min_linear &&
+      ct.linear().domain(0) != max_linear &&
       encoder->VariableIsFullyEncoded(vars[0]) &&
       encoder->VariableIsFullyEncoded(vars[1]) && max_domain_size < 16) {
     VLOG(3) << "Load AC version of " << ct.DebugString() << ", var0 domain = "
@@ -1115,9 +1082,11 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
                              IntegerValue(coeffs[1]), vars[1],
                              IntegerValue(ct.linear().domain(0)), m);
   }
+
+  int64 single_value = 0;
   if (params.boolean_encoding_level() > 0 && ct.linear().vars_size() == 2 &&
-      IsNEqCstInsideBounds(ct.linear(), mapping, integer_trail,
-                           &single_value) &&
+      IsNEqCst(ct.linear(), mapping, integer_trail, &single_value) &&
+      single_value != min_linear && single_value != max_linear &&
       encoder->VariableIsFullyEncoded(vars[0]) &&
       encoder->VariableIsFullyEncoded(vars[1]) && max_domain_size < 16) {
     VLOG(3) << "Load NAC version of " << ct.DebugString() << ", var0 domain = "
