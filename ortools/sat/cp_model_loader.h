@@ -164,12 +164,12 @@ class CpModelMapping {
   // variable when the constraints will be loaded.
   // Note that the pointer is not stable across calls.
   // It returns nullptr if the set is empty.
-  const absl::flat_hash_set<int64>* PotentialEncodedValues(int var) {
+  const absl::flat_hash_set<int64>& PotentialEncodedValues(int var) {
     const auto& it = variables_to_encoded_values_.find(var);
     if (it != variables_to_encoded_values_.end()) {
-      return &it->second;
+      return it->second;
     }
-    return nullptr;
+    return empty_set_;
   }
 
  private:
@@ -192,6 +192,7 @@ class CpModelMapping {
 
   absl::flat_hash_map<int, absl::flat_hash_set<int64>>
       variables_to_encoded_values_;
+  const absl::flat_hash_set<int64> empty_set_;
 };
 
 // Inspects the model and use some heuristic to decide which variable, if any,

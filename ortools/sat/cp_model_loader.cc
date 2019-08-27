@@ -748,13 +748,14 @@ void FullEncodingFixedPointComputer::ComputeFixedPoint() {
     ProcessConstraint(ct_index);
   }
 
-  int num_variables_fully_encoded_by_heuristics = 0;
   // We run a heuristics to decide if we want to fully encode a variable or not.
   // We decide to fully encode a variable if:
   //   - a variable appears in enough a1 * x1 + a2 + x2 ==/!= value and the
   //     domain is small.
   //   - the number of values that appears in b => x ==/!= value that are not
-  //   the bounds of the variables is more that half the size of the domain.
+  //     the bounds of the variables is more that half the size of the domain.
+  // . - the size of the domain is > 2
+  int num_variables_fully_encoded_by_heuristics = 0;
   for (int var = 0; var < num_vars; ++var) {
     if (!mapping_->IsInteger(var) || IsFullyEncoded(var)) continue;
     const IntegerVariableProto& int_var_proto = model_proto_.variables(var);
@@ -763,14 +764,14 @@ void FullEncodingFixedPointComputer::ComputeFixedPoint() {
     int64 num_diff_or_equal_var_constraints = 0;
     int64 num_potential_encoded_values_without_bounds = 0;
 
-    const absl::flat_hash_set<int64>* value_set_ptr =
+    if (domain_size <= 2) continue;
+
+    const absl::flat_hash_set<int64>& value_set =
         mapping_->PotentialEncodedValues(var);
-    if (value_set_ptr != nullptr) {
-      for (const int value : *value_set_ptr) {
-        if (value > domain.Min() && value < domain.Max() &&
-            domain.Contains(value)) {
-          num_potential_encoded_values_without_bounds++;
-        }
+    for (const int value : value_set) {
+      if (value > domain.Min() && value < domain.Max() &&
+          domain.Contains(value)) {
+        num_potential_encoded_values_without_bounds++;
       }
     }
 
@@ -875,8 +876,6 @@ bool FullEncodingFixedPointComputer::ProcessElement(ConstraintIndex ct_index) {
 bool FullEncodingFixedPointComputer::ProcessTable(ConstraintIndex ct_index) {
   const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
 
-  // TODO(user): This constraint also fully encode variable sometimes. Find a
-  // way to be in sync.
   if (ct.table().negated()) return true;
 
   for (const int variable : ct.table().vars()) {
@@ -1072,7 +1071,9 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
       IsEqCst(ct.linear()) && ct.linear().domain(0) != min_linear &&
       ct.linear().domain(0) != max_linear &&
       encoder->VariableIsFullyEncoded(vars[0]) &&
-      encoder->VariableIsFullyEncoded(vars[1]) && max_domain_size < 16) {
+      encoder->VariableIsFullyEncoded(vars[1]) &&
+      !integer_trail->IsFixed(vars[0]) && !integer_trail->IsFixed(vars[1]) &&
+      max_domain_size < 16) {
     VLOG(3) << "Load AC version of " << ct.DebugString() << ", var0 domain = "
             << integer_trail->InitialVariableDomain(vars[0])
             << ", var1 domain = "
@@ -1088,7 +1089,9 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
       IsNEqCst(ct.linear(), mapping, integer_trail, &single_value) &&
       single_value != min_linear && single_value != max_linear &&
       encoder->VariableIsFullyEncoded(vars[0]) &&
-      encoder->VariableIsFullyEncoded(vars[1]) && max_domain_size < 16) {
+      encoder->VariableIsFullyEncoded(vars[1]) &&
+      !integer_trail->IsFixed(vars[0]) && !integer_trail->IsFixed(vars[1]) &&
+      max_domain_size < 16) {
     VLOG(3) << "Load NAC version of " << ct.DebugString() << ", var0 domain = "
             << integer_trail->InitialVariableDomain(vars[0])
             << ", var1 domain = "
