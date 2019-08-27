@@ -2343,8 +2343,11 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                         postsolve_mapping, &wall_timer, response);
       if (params.fill_tightened_domains_in_response()) {
         // TODO(user): for now, we just use the domain infered during presolve.
-        for (int i = 0; i < model_proto.variables().size(); ++i) {
-          *response->add_tightened_variables() = mapping_proto.variables(i);
+        if (mapping_proto.variables().size() >=
+            model_proto.variables().size()) {
+          for (int i = 0; i < model_proto.variables().size(); ++i) {
+            *response->add_tightened_variables() = mapping_proto.variables(i);
+          }
         }
       }
       response->set_wall_time(wall_timer.Get());

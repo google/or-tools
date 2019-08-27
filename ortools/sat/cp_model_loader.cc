@@ -80,7 +80,7 @@ void ComputeLinearBounds(const LinearConstraintProto& proto,
 
 // We check if the constraint is a sum(ax * xi) == value.
 bool IsEqCst(const LinearConstraintProto& proto) {
-  return proto.domain_size() == 2 && proto.domain(0) != proto.domain(1);
+  return proto.domain_size() == 2 && proto.domain(0) == proto.domain(1);
 }
 
 // We check if the constraint is a sum(ax * xi) != value.
