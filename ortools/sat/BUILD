@@ -244,6 +244,21 @@ cc_library(
 )
 
 cc_library(
+    name = "presolve_util",
+    srcs = ["presolve_util.cc"],
+    hdrs = ["presolve_util.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:int_type",
+        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:map_util",
+        "//ortools/util:bitset",
+        "//ortools/util:sorted_interval_list",
+        "@com_google_absl//absl/container:flat_hash_map",
+    ],
+)
+
+cc_library(
     name = "cp_model_presolve",
     srcs = ["cp_model_presolve.cc"],
     hdrs = ["cp_model_presolve.h"],
@@ -253,6 +268,7 @@ cc_library(
         ":cp_model_loader",
         ":cp_model_objective",
         ":cp_model_utils",
+        ":presolve_util",
         ":probing",
         ":sat_base",
         ":sat_parameters_cc_proto",
@@ -1019,7 +1035,7 @@ cc_library(
         "//ortools/util:adaptative_parameter_value",
         "//ortools/util:random_engine",
         "//ortools/util:time_limit",
-        "@com_google_absl//absl/synchronization",        
+        "@com_google_absl//absl/synchronization",
     ],
 )
 

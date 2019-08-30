@@ -61,6 +61,15 @@ class CpModelMapping {
   // as already loaded.
   void ExtractEncoding(const CpModelProto& model_proto, Model* m);
 
+  // Process all affine relations of the form a*X + b*Y == cte. For each
+  // literals associated to (X >= bound) or (X == value) associate it to its
+  // corresponding relation on Y. Also do the other side.
+  //
+  // TODO(user): In an ideal world, all affine relations like this should be
+  // removed in the presolve.
+  void PropagateEncodingFromEquivalenceRelations(
+      const CpModelProto& model_proto, Model* m);
+
   // Returns true if the given CpModelProto variable reference refers to a
   // Boolean varaible. Such variable will always have an associated Literal(),
   // but not always an associated Integer().

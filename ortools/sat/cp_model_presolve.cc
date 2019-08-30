@@ -1382,7 +1382,7 @@ bool CpModelPresolver::PresolveLinear(ConstraintProto* ct) {
   FillDomainInProto(rhs, ct->mutable_linear());
 
   // Propagate the variable bounds.
-  if (!HasEnforcementLiteral(*ct)) {
+  if (ct->enforcement_literal().size() <= 1) {
     bool new_bounds = false;
     Domain new_domain;
     Domain right_domain(0, 0);
@@ -1393,6 +1393,15 @@ bool CpModelPresolver::PresolveLinear(ConstraintProto* ct) {
       new_domain = left_domains[i]
                        .AdditionWith(right_domain)
                        .InverseMultiplicationBy(-ct->linear().coeffs(i));
+
+      if (ct->enforcement_literal().size() == 1) {
+        // We cannot push the new domain, but we can add some deduction.
+        CHECK(RefIsPositive(ct->linear().vars(i)));
+        context_.deductions.AddDeduction(ct->enforcement_literal(0),
+                                         ct->linear().vars(i), new_domain);
+        continue;
+      }
+
       bool domain_modified = false;
       if (!context_.IntersectDomainWith(ct->linear().vars(i), new_domain,
                                         &domain_modified)) {
@@ -4203,6 +4212,9 @@ void CpModelPresolver::PresolveToFixPoint() {
   if (context_.ModelIsUnsat()) return;
 
   // Make sure we filter out absent intervals.
+  // Also try to infer domain reductions from clauses.
+  //
+  // TODO(user): Also add deductions achieved during probing!
   //
   // TODO(user): ideally we should "wake-up" any constraint that contains an
   // absent interval in the main propagation loop above. But we currently don't
@@ -4225,10 +4237,26 @@ void CpModelPresolver::PresolveToFixPoint() {
           context_.UpdateConstraintVariableUsage(c);
         }
         break;
+      case ConstraintProto::ConstraintCase::kBoolOr: {
+        for (const auto pair :
+             context_.deductions.ProcessClause(ct->bool_or().literals())) {
+          bool modified = false;
+          if (!context_.IntersectDomainWith(pair.first, pair.second,
+                                            &modified)) {
+            return;
+          }
+          if (modified) {
+            context_.UpdateRuleStats("deductions: reduced variable domain");
+          }
+        }
+        break;
+      }
       default:
         break;
     }
   }
+
+  context_.deductions.MarkProcessingAsDoneForNow();
 }
 
 void CpModelPresolver::RemoveUnusedEquivalentVariables() {
@@ -4488,6 +4516,27 @@ bool CpModelPresolver::Presolve() {
     DCHECK(context_.ConstraintVariableUsageIsConsistent());
   }
 
+  // Remove duplicate constraints.
+  //
+  // TODO(user): We might want to do that earlier so that our count of variable
+  // usage is not biased by duplicate constraints.
+  const std::vector<int> duplicates =
+      FindDuplicateConstraints(*context_.working_model);
+  if (!duplicates.empty()) {
+    for (const int c : duplicates) {
+      const int type = context_.working_model->constraints(c).constraint_case();
+      if (type == ConstraintProto::ConstraintCase::kInterval) {
+        // TODO(user): we could delete duplicate identical interval, but we need
+        // to make sure reference to them are updated.
+        continue;
+      }
+
+      context_.working_model->mutable_constraints(c)->Clear();
+      context_.UpdateConstraintVariableUsage(c);
+      context_.UpdateRuleStats("removed duplicate constraints");
+    }
+  }
+
   SyncDomainAndRemoveEmptyConstraints();
 
   // The strategy variable indices will be remapped in ApplyVariableMapping()
@@ -4557,6 +4606,12 @@ bool CpModelPresolver::Presolve() {
     postsolve_mapping_->push_back(i);
   }
   ApplyVariableMapping(mapping, context_.working_model);
+
+  // Hack to display the number of deductions stored.
+  if (context_.deductions.NumDeductions() > 0) {
+    context_.UpdateRuleStats(absl::StrCat(
+        "deductions: ", context_.deductions.NumDeductions(), " stored"));
+  }
 
   // Stats and checks.
   if (options_.log_info) LogInfoFromContext(context_);
@@ -4655,6 +4710,35 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
   for (const IntegerVariableProto& v : proto->variables()) {
     CHECK_GT(v.domain_size(), 0);
   }
+}
+
+std::vector<int> FindDuplicateConstraints(const CpModelProto& model_proto) {
+  std::vector<int> result;
+
+  // We use a map hash: serialized_constraint_proto -> constraint index.
+  absl::flat_hash_map<int64, int> equiv_constraints;
+
+  std::string s;
+  const int num_constraints = model_proto.constraints().size();
+  for (int c = 0; c < num_constraints; ++c) {
+    if (model_proto.constraints(c).constraint_case() ==
+        ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET) {
+      continue;
+    }
+    s = model_proto.constraints(c).SerializeAsString();
+    const int64 hash = std::hash<std::string>{}(s);
+    const auto insert = equiv_constraints.insert({hash, c});
+    if (!insert.second) {
+      // Already present!
+      const int other_c_with_same_hash = insert.first->second;
+      if (s ==
+          model_proto.constraints(other_c_with_same_hash).SerializeAsString()) {
+        result.push_back(c);
+      }
+    }
+  }
+
+  return result;
 }
 
 }  // namespace sat

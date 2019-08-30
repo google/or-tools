@@ -232,7 +232,7 @@ class IntegerEncoder {
   }
 
   // Fully encode a variable using its current initial domain.
-  // This can be called only once.
+  // If the variable is already fully encoded, this does nothing.
   //
   // This creates new Booleans variables as needed:
   // 1) num_values for the literals X == value. Except when there is just
@@ -249,15 +249,10 @@ class IntegerEncoder {
   // search (for now). This is Checked.
   void FullyEncodeVariable(IntegerVariable var);
 
-  // Returns true iff FullyEncodeVariable(var) has been called. Note that
-  // PartialDomainEncoding() may actually return a full domain encoding, but if
-  // FullyEncodeVariable() was not called, this will still return false.
-  //
-  // TODO(user): Detect this case and mark such variable as fully encoded?
-  bool VariableIsFullyEncoded(IntegerVariable var) const {
-    if (var >= is_fully_encoded_.size()) return false;
-    return is_fully_encoded_[var];
-  }
+  // Returns true if we know that PartialDomainEncoding(var) span the full
+  // domain of var. This is always true if FullyEncodeVariable(var) has been
+  // called.
+  bool VariableIsFullyEncoded(IntegerVariable var) const;
 
   // Computes the full encoding of a variable on which FullyEncodeVariable() has
   // been called. The returned elements are always sorted by increasing
@@ -324,7 +319,9 @@ class IntegerEncoder {
   // that this returns false even though GetOrCreateAssociatedLiteral() would
   // not create a new literal.
   bool LiteralIsAssociated(IntegerLiteral i_lit) const;
-  LiteralIndex GetAssociatedLiteral(IntegerLiteral i_lit);
+  LiteralIndex GetAssociatedLiteral(IntegerLiteral i_lit) const;
+  LiteralIndex GetAssociatedEqualityLiteral(IntegerVariable var,
+                                            IntegerValue value) const;
 
   // Advanced usage. It is more efficient to create the associated literals in
   // order, but it might be anoying to do so. Instead, you can first call
@@ -462,7 +459,7 @@ class IntegerEncoder {
       equality_by_var_;
 
   // Variables that are fully encoded.
-  gtl::ITIVector<IntegerVariable, bool> is_fully_encoded_;
+  mutable gtl::ITIVector<IntegerVariable, bool> is_fully_encoded_;
 
   // A literal that is always true, convenient to encode trivial domains.
   // This will be lazily created when needed.

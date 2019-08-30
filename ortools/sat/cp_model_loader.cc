@@ -63,11 +63,10 @@ void ComputeLinearBounds(const LinearConstraintProto& proto,
   *sum_max = 0;
 
   for (int i = 0; i < proto.vars_size(); ++i) {
-    const int var = proto.vars(i);
     const int64 coeff = proto.coeffs(i);
-    const IntegerVariable sat_var = mapping->Integer(var);
-    const int64 lb = integer_trail->LowerBound(sat_var).value();
-    const int64 ub = integer_trail->UpperBound(sat_var).value();
+    const IntegerVariable var = mapping->Integer(proto.vars(i));
+    const int64 lb = integer_trail->LowerBound(var).value();
+    const int64 ub = integer_trail->UpperBound(var).value();
     if (coeff >= 0) {
       (*sum_min) += coeff * lb;
       (*sum_max) += coeff * ub;
@@ -79,13 +78,14 @@ void ComputeLinearBounds(const LinearConstraintProto& proto,
 }
 
 // We check if the constraint is a sum(ax * xi) == value.
-bool IsEqCst(const LinearConstraintProto& proto) {
+bool ConstraintIsEq(const LinearConstraintProto& proto) {
   return proto.domain_size() == 2 && proto.domain(0) == proto.domain(1);
 }
 
 // We check if the constraint is a sum(ax * xi) != value.
-bool IsNEqCst(const LinearConstraintProto& proto, CpModelMapping* mapping,
-              IntegerTrail* integer_trail, int64* single_value) {
+bool ConstraintIsNEq(const LinearConstraintProto& proto,
+                     CpModelMapping* mapping, IntegerTrail* integer_trail,
+                     int64* single_value) {
   int64 sum_min = 0;
   int64 sum_max = 0;
   ComputeLinearBounds(proto, mapping, integer_trail, &sum_min, &sum_max);
@@ -219,87 +219,6 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
     // Associate with corresponding integer variable.
     encoder->AssociateToIntegerEqualValue(sat::Literal(booleans_[i], true),
                                           integers_[i], IntegerValue(1));
-
-    // This is needed so that IsFullyEncoded() returns true.
-    encoder->FullyEncodeVariable(integers_[i]);
-  }
-
-  int num_encoded_from_affine = 0;
-  for (const ConstraintProto& ct : model_proto.constraints()) {
-    // We try to recognize a mapping between an integer variable of size 2, and
-    // a Boolean variable. In that case, we can fully encode the integer
-    // variable using the Boolean variable.
-    if (ct.enforcement_literal_size() > 0 ||
-        ct.constraint_case() != ConstraintProto::ConstraintCase::kLinear ||
-        ct.linear().vars_size() != 2 || ct.linear().coeffs(0) != 1 ||
-        ct.linear().vars(1) < 0 ||
-        booleans_[ct.linear().vars(1)] == kNoBooleanVariable ||
-        integers_[PositiveRef(ct.linear().vars(0))] == kNoIntegerVariable ||
-        booleans_[PositiveRef(ct.linear().vars(0))] != kNoBooleanVariable ||
-        ct.linear().domain_size() != 2 ||
-        ct.linear().domain(0) != ct.linear().domain(1)) {
-      continue;
-    }
-
-    const int int_ref = ct.linear().vars(0);
-    const int int_var = PositiveRef(int_ref);
-    const bool ref_is_positive = RefIsPositive(int_ref);
-    const int64 coeff_mult = ref_is_positive ? 1 : -1;
-
-    const int bool_var = ct.linear().vars(1);
-    CHECK(RefIsPositive(bool_var));
-
-    DCHECK_GE(int_var, 0);
-    DCHECK_LT(int_var, model_proto.variables_size());
-    DCHECK_GE(bool_var, 0);
-    DCHECK_LT(bool_var, model_proto.variables_size());
-
-    const IntegerVariableProto& int_var_proto = model_proto.variables(int_var);
-    const IntegerVariableProto& bool_var_proto =
-        model_proto.variables(bool_var);
-
-    int64 int_var_domain_size = 0;
-    for (int i = 0; i < int_var_proto.domain_size(); i += 2) {
-      int_var_domain_size +=
-          int_var_proto.domain(i + 1) - int_var_proto.domain(i) + 1;
-    }
-
-    // Check the bool_var is not instantiated, and the int_var has a domain size
-    // of 2, to be compatible with the scaled bool_var.
-    if (bool_var_proto.domain_size() != 2 || bool_var_proto.domain(0) != 0 ||
-        bool_var_proto.domain(1) != 1 || int_var_domain_size != 2) {
-      continue;
-    }
-
-    const IntegerVariable var = integers_[int_var];
-    if (encoder->VariableIsFullyEncoded(var)) continue;
-
-    const int64 coeff = coeff_mult * ct.linear().coeffs(1);
-    const int64 rhs = coeff_mult * ct.linear().domain(0);
-    const int64 vmin = int_var_proto.domain(0);
-    const int64 vmax = int_var_proto.domain(int_var_proto.domain_size() - 1);
-    if (coeff > 0) {
-      // Checks propagation is complete. May not be the case in the postsolve.
-      if (vmax - vmin != coeff || vmax != rhs) continue;
-      encoder->AssociateToIntegerEqualValue(
-          sat::Literal(booleans_[bool_var], true), var, IntegerValue(vmin));
-    } else {
-      // Checks propagation is complete. May not be the case in the postsolve.
-      if (vmax - vmin != -coeff || vmin != rhs) continue;
-      encoder->AssociateToIntegerEqualValue(
-          sat::Literal(booleans_[bool_var], true), var, IntegerValue(vmax));
-    }
-
-    // This is needed so that IsFullyEncoded() returns true.
-    encoder->FullyEncodeVariable(integers_[int_var]);
-
-    num_encoded_from_affine++;
-    already_loaded_ct_.insert(&ct);
-  }
-  if (num_encoded_from_affine > 0) {
-    VLOG(2)
-        << num_encoded_from_affine
-        << " integer variables were fully encoded against Boolean variables";
   }
 
   // Create the interval variables.
@@ -326,6 +245,7 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
     already_loaded_ct_.insert(&ct);
   }
 }
+
 // The logic assumes that the linear constraints have been presolved, so that
 // equality with a domain bound have been converted to <= or >= and so that we
 // never have any trivial inequalities.
@@ -380,63 +300,63 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
 
   // Loop over all contraints and fill var_to_equalities and inequalities.
   for (const ConstraintProto& ct : model_proto.constraints()) {
-    if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
-      if (ct.enforcement_literal().size() != 1) continue;
-      if (ct.linear().vars_size() != 1) continue;
+    if (ct.constraint_case() != ConstraintProto::ConstraintCase::kLinear) {
+      continue;
+    }
+    if (ct.enforcement_literal().size() != 1) continue;
+    if (ct.linear().vars_size() != 1) continue;
 
-      // ct is a linear constraint with one term and one enforcement literal.
-      const sat::Literal enforcement_literal =
-          Literal(ct.enforcement_literal(0));
-      const int ref = ct.linear().vars(0);
-      const int var = PositiveRef(ref);
+    // ct is a linear constraint with one term and one enforcement literal.
+    const sat::Literal enforcement_literal = Literal(ct.enforcement_literal(0));
+    const int ref = ct.linear().vars(0);
+    const int var = PositiveRef(ref);
 
-      const Domain domain = ReadDomainFromProto(model_proto.variables(var));
-      const Domain domain_if_enforced =
-          ReadDomainFromProto(ct.linear())
-              .InverseMultiplicationBy(ct.linear().coeffs(0) *
-                                       (RefIsPositive(ref) ? 1 : -1));
+    const Domain domain = ReadDomainFromProto(model_proto.variables(var));
+    const Domain domain_if_enforced =
+        ReadDomainFromProto(ct.linear())
+            .InverseMultiplicationBy(ct.linear().coeffs(0) *
+                                     (RefIsPositive(ref) ? 1 : -1));
 
-      // Detect enforcement_literal => (var >= value or var <= value).
-      if (domain_if_enforced.NumIntervals() == 1) {
-        if (domain_if_enforced.Max() >= domain.Max() &&
-            domain_if_enforced.Min() > domain.Min()) {
-          inequalities.push_back(
-              {&ct, enforcement_literal,
-               IntegerLiteral::GreaterOrEqual(
-                   Integer(var), IntegerValue(domain_if_enforced.Min()))});
-        } else if (domain_if_enforced.Min() <= domain.Min() &&
-                   domain_if_enforced.Max() < domain.Max()) {
-          inequalities.push_back(
-              {&ct, enforcement_literal,
-               IntegerLiteral::LowerOrEqual(
-                   Integer(var), IntegerValue(domain_if_enforced.Max()))});
+    // Detect enforcement_literal => (var >= value or var <= value).
+    if (domain_if_enforced.NumIntervals() == 1) {
+      if (domain_if_enforced.Max() >= domain.Max() &&
+          domain_if_enforced.Min() > domain.Min()) {
+        inequalities.push_back(
+            {&ct, enforcement_literal,
+             IntegerLiteral::GreaterOrEqual(
+                 Integer(var), IntegerValue(domain_if_enforced.Min()))});
+      } else if (domain_if_enforced.Min() <= domain.Min() &&
+                 domain_if_enforced.Max() < domain.Max()) {
+        inequalities.push_back(
+            {&ct, enforcement_literal,
+             IntegerLiteral::LowerOrEqual(
+                 Integer(var), IntegerValue(domain_if_enforced.Max()))});
+      }
+    }
+
+    // Detect enforcement_literal => (var == value or var != value).
+    //
+    // Note that for domain with 2 values like [0, 1], we will detect both ==
+    // 0 and != 1. Similarly, for a domain in [min, max], we should both
+    // detect (== min) and (<= min), and both detect (== max) and (>= max).
+    {
+      const Domain inter = domain.IntersectionWith(domain_if_enforced);
+      if (!inter.IsEmpty() && inter.Min() == inter.Max()) {
+        var_to_equalities[var].push_back(
+            {&ct, enforcement_literal, inter.Min(), true});
+        if (domain.Contains(inter.Min())) {
+          variables_to_encoded_values_[var].insert(inter.Min());
         }
       }
-
-      // Detect enforcement_literal => (var == value or var != value).
-      //
-      // Note that for domain with 2 values like [0, 1], we will detect both ==
-      // 0 and != 1. Similarly, for a domain in [min, max], we should both
-      // detect (== min) and (<= min), and both detect (== max) and (>= max).
-      {
-        const Domain inter = domain.IntersectionWith(domain_if_enforced);
-        if (!inter.IsEmpty() && inter.Min() == inter.Max()) {
-          var_to_equalities[var].push_back(
-              {&ct, enforcement_literal, inter.Min(), true});
-          if (domain.Contains(inter.Min())) {
-            variables_to_encoded_values_[var].insert(inter.Min());
-          }
-        }
-      }
-      {
-        const Domain inter =
-            domain.IntersectionWith(domain_if_enforced.Complement());
-        if (!inter.IsEmpty() && inter.Min() == inter.Max()) {
-          var_to_equalities[var].push_back(
-              {&ct, enforcement_literal, inter.Min(), false});
-          if (domain.Contains(inter.Min())) {
-            variables_to_encoded_values_[var].insert(inter.Min());
-          }
+    }
+    {
+      const Domain inter =
+          domain.IntersectionWith(domain_if_enforced.Complement());
+      if (!inter.IsEmpty() && inter.Min() == inter.Max()) {
+        var_to_equalities[var].push_back(
+            {&ct, enforcement_literal, inter.Min(), false});
+        if (domain.Contains(inter.Min())) {
+          variables_to_encoded_values_[var].insert(inter.Min());
         }
       }
     }
@@ -492,7 +412,9 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
             << num_half_inequalities << " half-associations.";
   }
 
-  // Detect Literal <=> X == value and fully encoded variables.
+  // Detect Literal <=> X == value and associate them in the IntegerEncoder.
+  //
+  // TODO(user): Fully encode variable that are almost fully encoded?
   int num_constraints = 0;
   int num_equalities = 0;
   int num_half_equalities = 0;
@@ -527,6 +449,11 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
     if (sat_solver->IsModelUnsat()) return;
 
     // Encode the half-equalities.
+    //
+    // TODO(user): delay this after ExtractEncodingFromEquivalenceRelations()?
+    // Otherwise we might create new Boolean variables for no reason. Note
+    // however, that in the presolve, we should only use the "representative" in
+    // linear constraints, so we should be fine.
     for (const auto equality : encoding) {
       if (ConstraintIsAlreadyLoaded(equality.ct)) continue;
       const class Literal eq = encoder->GetOrCreateLiteralAssociatedToEquality(
@@ -542,17 +469,13 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
       is_half_encoding_ct_.insert(equality.ct);
     }
 
-    // Detect fully encoded variables and mark them as such.
-    //
-    // TODO(user): Also fully encode variable that are almost fully encoded?
-    const Domain domain = ReadDomainFromProto(model_proto.variables(i));
-    if (domain.Size() == values.size()) {
-      ++num_fully_encoded;
-      if (!encoder->VariableIsFullyEncoded(integers_[i])) {
-        encoder->FullyEncodeVariable(integers_[i]);
+    // Update stats.
+    if (VLOG_IS_ON(1)) {
+      if (encoder->VariableIsFullyEncoded(integers_[i])) {
+        ++num_fully_encoded;
+      } else {
+        ++num_partially_encoded;
       }
-    } else {
-      ++num_partially_encoded;
     }
   }
 
@@ -565,6 +488,87 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
   }
   if (num_partially_encoded > 0) {
     VLOG(1) << "num_partially_encoded_variables: " << num_partially_encoded;
+  }
+}
+
+void CpModelMapping::PropagateEncodingFromEquivalenceRelations(
+    const CpModelProto& model_proto, Model* m) {
+  auto* encoder = m->GetOrCreate<IntegerEncoder>();
+  auto* sat_solver = m->GetOrCreate<SatSolver>();
+
+  // Loop over all contraints and find affine ones.
+  int64 num_associations = 0;
+  int64 num_set_to_false = 0;
+  for (const ConstraintProto& ct : model_proto.constraints()) {
+    if (!ct.enforcement_literal().empty()) continue;
+    if (ct.constraint_case() != ConstraintProto::kLinear) continue;
+    if (ct.linear().vars_size() != 2) continue;
+    if (!ConstraintIsEq(ct.linear())) continue;
+
+    const IntegerValue rhs(ct.linear().domain(0));
+
+    // Make sure the coefficient are positive.
+    IntegerVariable var1 = Integer(ct.linear().vars(0));
+    IntegerVariable var2 = Integer(ct.linear().vars(1));
+    IntegerValue coeff1(ct.linear().coeffs(0));
+    IntegerValue coeff2(ct.linear().coeffs(1));
+    if (coeff1 < 0) {
+      var1 = NegationOf(var1);
+      coeff1 = -coeff1;
+    }
+    if (coeff2 < 0) {
+      var2 = NegationOf(var2);
+      coeff2 = -coeff2;
+    }
+    CHECK_NE(coeff1, 0);
+    CHECK_NE(coeff2, 0);
+
+    // We first map the >= literals.
+    // It is important to do that first, since otherwise mapping a == literal
+    // might creates the underlying >= and <= literals.
+    for (int i = 0; i < 2; ++i) {
+      for (const auto value_literal :
+           encoder->PartialGreaterThanEncoding(var1)) {
+        const IntegerValue value1 = value_literal.first;
+        const IntegerValue bound2 = FloorRatio(rhs - value1 * coeff1, coeff2);
+        ++num_associations;
+        encoder->AssociateToIntegerLiteral(
+            value_literal.second, IntegerLiteral::LowerOrEqual(var2, bound2));
+      }
+      std::swap(var1, var2);
+      std::swap(coeff1, coeff2);
+    }
+
+    // Same for the == literals.
+    //
+    // TODO(user): This is similar to LoadEquivalenceAC() for unreified
+    // constraints, but when the later is called, more encoding might have taken
+    // place.
+    for (int i = 0; i < 2; ++i) {
+      for (const auto value_literal : encoder->PartialDomainEncoding(var1)) {
+        const IntegerValue value1 = value_literal.value;
+        const IntegerValue intermediate = rhs - value1 * coeff1;
+        if (intermediate % coeff2 != 0) {
+          // Using this function deals properly with UNSAT.
+          ++num_set_to_false;
+          sat_solver->AddUnitClause(value_literal.literal.Negated());
+          continue;
+        }
+        ++num_associations;
+        encoder->AssociateToIntegerEqualValue(value_literal.literal, var2,
+                                              intermediate / coeff2);
+      }
+      std::swap(var1, var2);
+      std::swap(coeff1, coeff2);
+    }
+  }
+
+  if (num_associations > 0) {
+    VLOG(1) << "Num associations from equivalences = " << num_associations;
+  }
+  if (num_set_to_false > 0) {
+    VLOG(1) << "Num literals set to false from equivalences = "
+            << num_set_to_false;
   }
 }
 
@@ -713,7 +717,6 @@ class FullEncodingFixedPointComputer {
   bool ProcessElement(ConstraintIndex ct_index);
   bool ProcessTable(ConstraintIndex ct_index);
   bool ProcessAutomaton(ConstraintIndex ct_index);
-  bool ProcessInverse(ConstraintIndex ct_index);
   bool ProcessLinear(ConstraintIndex ct_index);
 
   const CpModelProto& model_proto_;
@@ -745,7 +748,7 @@ void FullEncodingFixedPointComputer::ComputeFixedPoint() {
 
   // Process all constraint once.
   for (ConstraintIndex ct_index(0); ct_index < num_constraints; ++ct_index) {
-    ProcessConstraint(ct_index);
+    constraint_is_finished_[ct_index] = ProcessConstraint(ct_index);
   }
 
   // We run a heuristics to decide if we want to fully encode a variable or not.
@@ -826,8 +829,6 @@ bool FullEncodingFixedPointComputer::ProcessConstraint(
       return ProcessTable(ct_index);
     case ConstraintProto::ConstraintProto::kAutomaton:
       return ProcessAutomaton(ct_index);
-    case ConstraintProto::ConstraintProto::kInverse:
-      return ProcessInverse(ct_index);
     case ConstraintProto::ConstraintProto::kLinear:
       return ProcessLinear(ct_index);
     default:
@@ -894,17 +895,6 @@ bool FullEncodingFixedPointComputer::ProcessAutomaton(
   return true;
 }
 
-bool FullEncodingFixedPointComputer::ProcessInverse(ConstraintIndex ct_index) {
-  const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
-  for (const int variable : ct.inverse().f_direct()) {
-    FullyEncode(variable);
-  }
-  for (const int variable : ct.inverse().f_inverse()) {
-    FullyEncode(variable);
-  }
-  return true;
-}
-
 bool FullEncodingFixedPointComputer::ProcessLinear(ConstraintIndex ct_index) {
   // We are only interested in linear equations of the form:
   //     [b =>] a1 * x1 + a2 * x2 ==|!= value
@@ -914,8 +904,8 @@ bool FullEncodingFixedPointComputer::ProcessLinear(ConstraintIndex ct_index) {
     return true;
   }
 
-  if (!IsEqCst(ct.linear()) &&
-      !IsNEqCst(ct.linear(), mapping_, integer_trail_, nullptr)) {
+  if (!ConstraintIsEq(ct.linear()) &&
+      !ConstraintIsNEq(ct.linear(), mapping_, integer_trail_, nullptr)) {
     return true;
   }
 
@@ -1061,15 +1051,28 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
     const IntegerValue vmax = integer_trail->UpperBound(vars[i]);
     max_domain_size = std::max(max_domain_size, vmax - vmin + 1);
   }
-  int64 min_linear = 0;
-  int64 max_linear = 0;
-  ComputeLinearBounds(ct.linear(), mapping, integer_trail, &min_linear,
-                      &max_linear);
+
+  // Compute the min/max to relax the bounds if needed.
+  //
+  // TODO(user): Reuse ComputeLinearBounds()? but then we need another loop
+  // to detect if we only have Booleans.
+  IntegerValue min_sum(0);
+  IntegerValue max_sum(0);
+  bool all_booleans = true;
+  for (int i = 0; i < vars.size(); ++i) {
+    if (all_booleans && !mapping->IsBoolean(ct.linear().vars(i))) {
+      all_booleans = false;
+    }
+    const IntegerValue term_a = coeffs[i] * integer_trail->LowerBound(vars[i]);
+    const IntegerValue term_b = coeffs[i] * integer_trail->UpperBound(vars[i]);
+    min_sum += std::min(term_a, term_b);
+    max_sum += std::max(term_a, term_b);
+  }
 
   const SatParameters& params = *m->GetOrCreate<SatParameters>();
   if (params.boolean_encoding_level() > 0 && ct.linear().vars_size() == 2 &&
-      IsEqCst(ct.linear()) && ct.linear().domain(0) != min_linear &&
-      ct.linear().domain(0) != max_linear &&
+      ConstraintIsEq(ct.linear()) && ct.linear().domain(0) != min_sum &&
+      ct.linear().domain(0) != max_sum &&
       encoder->VariableIsFullyEncoded(vars[0]) &&
       encoder->VariableIsFullyEncoded(vars[1]) &&
       !integer_trail->IsFixed(vars[0]) && !integer_trail->IsFixed(vars[1]) &&
@@ -1086,8 +1089,8 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
 
   int64 single_value = 0;
   if (params.boolean_encoding_level() > 0 && ct.linear().vars_size() == 2 &&
-      IsNEqCst(ct.linear(), mapping, integer_trail, &single_value) &&
-      single_value != min_linear && single_value != max_linear &&
+      ConstraintIsNEq(ct.linear(), mapping, integer_trail, &single_value) &&
+      single_value != min_sum && single_value != max_sum &&
       encoder->VariableIsFullyEncoded(vars[0]) &&
       encoder->VariableIsFullyEncoded(vars[1]) &&
       !integer_trail->IsFixed(vars[0]) && !integer_trail->IsFixed(vars[1]) &&
@@ -1095,25 +1098,12 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
     VLOG(3) << "Load NAC version of " << ct.DebugString() << ", var0 domain = "
             << integer_trail->InitialVariableDomain(vars[0])
             << ", var1 domain = "
-            << integer_trail->InitialVariableDomain(vars[1]);
+            << integer_trail->InitialVariableDomain(vars[1])
+            << ", value = " << single_value;
     return LoadEquivalenceNeqAC(mapping->Literals(ct.enforcement_literal()),
                                 IntegerValue(coeffs[0]), vars[0],
                                 IntegerValue(coeffs[1]), vars[1],
                                 IntegerValue(single_value), m);
-  }
-
-  // Compute the min/max to relax the bounds if needed.
-  IntegerValue min_sum(0);
-  IntegerValue max_sum(0);
-  bool all_booleans = true;
-  for (int i = 0; i < vars.size(); ++i) {
-    if (all_booleans && !mapping->IsBoolean(ct.linear().vars(i))) {
-      all_booleans = false;
-    }
-    const IntegerValue term_a = coeffs[i] * integer_trail->LowerBound(vars[i]);
-    const IntegerValue term_b = coeffs[i] * integer_trail->UpperBound(vars[i]);
-    min_sum += std::min(term_a, term_b);
-    max_sum += std::max(term_a, term_b);
   }
 
   if (ct.linear().domain_size() == 2) {
@@ -1196,7 +1186,7 @@ void LoadAllDiffConstraint(const ConstraintProto& ct, Model* m) {
 
     IntegerValue lb = integer_trail->LowerBound(variable);
     IntegerValue ub = integer_trail->UpperBound(variable);
-    int64 domain_size = ub.value() - lb.value();
+    const int64 domain_size = ub.value() - lb.value() + 1;
     max_domain_size = std::max(max_domain_size, domain_size);
   }
 
@@ -1698,72 +1688,6 @@ void LoadCircuitCoveringConstraint(const ConstraintProto& ct, Model* m) {
   m->Add(CircuitCovering(graph, distinguished));
 }
 
-void LoadInverseConstraint(const ConstraintProto& ct, Model* m) {
-  auto* mapping = m->GetOrCreate<CpModelMapping>();
-
-  // Fully encode both arrays of variables, encode the constraint using Boolean
-  // equalities: f_direct[i] == j <=> f_inverse[j] == i.
-  const int num_variables = ct.inverse().f_direct_size();
-  CHECK_EQ(num_variables, ct.inverse().f_inverse_size());
-  const std::vector<IntegerVariable> direct =
-      mapping->Integers(ct.inverse().f_direct());
-  const std::vector<IntegerVariable> inverse =
-      mapping->Integers(ct.inverse().f_inverse());
-
-  // Fill LiteralIndex matrices.
-  std::vector<std::vector<LiteralIndex>> matrix_direct(
-      num_variables,
-      std::vector<LiteralIndex>(num_variables, kFalseLiteralIndex));
-
-  std::vector<std::vector<LiteralIndex>> matrix_inverse(
-      num_variables,
-      std::vector<LiteralIndex>(num_variables, kFalseLiteralIndex));
-
-  auto fill_matrix = [&m](std::vector<std::vector<LiteralIndex>>& matrix,
-                          const std::vector<IntegerVariable>& variables) {
-    const int num_variables = variables.size();
-    for (int i = 0; i < num_variables; i++) {
-      if (m->Get(IsFixed(variables[i]))) {
-        matrix[i][m->Get(Value(variables[i]))] = kTrueLiteralIndex;
-      } else {
-        const auto encoding = m->Add(FullyEncodeVariable(variables[i]));
-        for (const auto literal_value : encoding) {
-          matrix[i][literal_value.value.value()] =
-              literal_value.literal.Index();
-        }
-      }
-    }
-  };
-
-  fill_matrix(matrix_direct, direct);
-  fill_matrix(matrix_inverse, inverse);
-
-  // matrix_direct should be the transpose of matrix_inverse.
-  for (int i = 0; i < num_variables; i++) {
-    for (int j = 0; j < num_variables; j++) {
-      LiteralIndex l_ij = matrix_direct[i][j];
-      LiteralIndex l_ji = matrix_inverse[j][i];
-      if (l_ij >= 0 && l_ji >= 0) {
-        // l_ij <=> l_ji.
-        m->Add(ClauseConstraint({Literal(l_ij), Literal(l_ji).Negated()}));
-        m->Add(ClauseConstraint({Literal(l_ij).Negated(), Literal(l_ji)}));
-      } else if (l_ij < 0 && l_ji < 0) {
-        // Problem infeasible if l_ij != l_ji, otherwise nothing to add.
-        if (l_ij != l_ji) {
-          m->Add(ClauseConstraint({}));
-          return;
-        }
-      } else {
-        // One of the LiteralIndex is fixed, let it be l_ij.
-        if (l_ij > l_ji) std::swap(l_ij, l_ji);
-        const Literal lit = Literal(l_ji);
-        m->Add(ClauseConstraint(
-            {l_ij == kFalseLiteralIndex ? lit.Negated() : lit}));
-      }
-    }
-  }
-}
-
 bool LoadConstraint(const ConstraintProto& ct, Model* m) {
   switch (ct.constraint_case()) {
     case ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET:
@@ -1827,9 +1751,6 @@ bool LoadConstraint(const ConstraintProto& ct, Model* m) {
       return true;
     case ConstraintProto::ConstraintProto::kCircuitCovering:
       LoadCircuitCoveringConstraint(ct, m);
-      return true;
-    case ConstraintProto::ConstraintProto::kInverse:
-      LoadInverseConstraint(ct, m);
       return true;
     default:
       return false;

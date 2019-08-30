@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 140
+// NEXT TAG: 141
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -396,6 +396,19 @@ message SatParameters {
   // presolve iterations.
   optional int32 max_presolve_iterations = 138 [default = 3];
 
+  // Whether we presolve the cp_model before solving it.
+  optional bool cp_model_presolve = 86 [default = true];
+
+  // How much effort do we spend on probing. 0 disables it completely.
+  optional int32 cp_model_probing_level = 110 [default = 2];
+
+  // Whether we also use the sat presolve when cp_model_presolve is true.
+  optional bool cp_model_use_sat_presolve = 93 [default = true];
+
+  // If true, the element constraints are expanded into many
+  // linear constraints of the form (index == i) => (element[i] == target).
+  optional bool expand_element_constraints = 140 [default = true];
+
   // ==========================================================================
   // Max-sat parameters
   // ==========================================================================
@@ -650,15 +663,6 @@ message SatParameters {
   // http://aaai.org/ocs/index.php/AAAI/AAAI17/paper/view/14489
   optional bool optimize_with_max_hs = 85 [default = false];
 
-  // Whether we presolve the cp_model before solving it.
-  optional bool cp_model_presolve = 86 [default = true];
-
-  // How much effort do we spend on probing. 0 disables it completely.
-  optional int32 cp_model_probing_level = 110 [default = 2];
-
-  // Whether we also use the sat presolve when cp_model_presolve is true.
-  optional bool cp_model_use_sat_presolve = 93 [default = true];
-
   // Whether we enumerate all solutions of a problem without objective. Note
   // that setting this to true automatically disable the presolve. This is
   // because the presolve rules only guarantee the existence of one feasible
@@ -753,6 +757,11 @@ message SatParameters {
   // intervals, but 1M intervals in the no-overlap constraints covering them.
   optional bool use_combined_no_overlap = 133 [default = false];
 
+  // Indicates if the CP-SAT layer should catch Control-C (SIGINT) signals
+  // when calling solve. If set, catching the SIGINT signal will terminate the
+  // search gracefully, as if a time limit was reached.
+  optional bool catch_sigint_signal = 135 [default = true];
+
   // ==========================================================================
   // MIP -> CP-SAT (i.e. IP with integer coeff) conversion parameters that are
   // used by our automatic "scaling" algorithm.
@@ -800,9 +809,4 @@ message SatParameters {
   // cannot, we will report MODEL_INVALID if the relative preicision is larger
   // than this parameter.
   optional double mip_check_precision = 128 [default = 1e-4];
-
-  // Indicates if the CP-SAT layer should catch Control-C (SIGINT) signals
-  // when calling solve. If set, catching the SIGINT signal will terminate the
-  // search gracefully, as if a time limit was reached.
-  optional bool catch_sigint_signal = 135 [default = true];
 }

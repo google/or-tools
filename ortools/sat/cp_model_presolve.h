@@ -18,6 +18,7 @@
 
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/presolve_util.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/affine_relation.h"
 #include "ortools/util/bitset.h"
@@ -184,6 +185,9 @@ struct PresolveContext {
   // Each time a domain is modified this is set to true.
   SparseBitset<int64> modified_domains;
 
+  // Advanced presolve. See this class comment.
+  DomainDeductions deductions;
+
  private:
   void AddVariableUsage(int c);
 
@@ -333,6 +337,17 @@ class CpModelPresolver {
 bool PresolveCpModel(const PresolveOptions& options,
                      CpModelProto* presolved_model, CpModelProto* mapping_model,
                      std::vector<int>* postsolve_mapping);
+
+// Returns the index of exact duplicate constraints in the given proto. That
+// is, all returned constraints will have an identical constraint before it in
+// the model_proto.constraints() list. Empty constraints are ignored.
+//
+// Visible here for testing. This is meant to be called at the end of the
+// presolve where constraints have been canonicalized.
+//
+// TODO(user): Ignore names? canonicalize constraint futher by sorting
+// enforcement literal list for instance...
+std::vector<int> FindDuplicateConstraints(const CpModelProto& model_proto);
 
 }  // namespace sat
 }  // namespace operations_research

@@ -472,10 +472,6 @@ class SatSolver {
   // Sets is_model_unsat_ to true and return false.
   bool SetModelUnsat();
 
-  // Utility function to insert spaces proportional to the search depth.
-  // It is used in the pretty print of the search.
-  std::string Indent() const;
-
   // Returns the decision level of a given variable.
   int DecisionLevel(BooleanVariable var) const {
     return trail_->Info(var).level;

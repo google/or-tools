@@ -1123,6 +1123,7 @@ SAT_DEPS = \
  $(SRC_DIR)/ortools/sat/overload_checker.h \
  $(SRC_DIR)/ortools/sat/pb_constraint.h \
  $(SRC_DIR)/ortools/sat/precedences.h \
+ $(SRC_DIR)/ortools/sat/presolve_util.h \
  $(SRC_DIR)/ortools/sat/probing.h \
  $(SRC_DIR)/ortools/sat/pseudo_costs.h \
  $(SRC_DIR)/ortools/sat/restart.h \
@@ -1181,6 +1182,7 @@ SAT_LIB_OBJS = \
  $(OBJ_DIR)/sat/optimization.$O \
  $(OBJ_DIR)/sat/overload_checker.$O \
  $(OBJ_DIR)/sat/pb_constraint.$O \
+ $(OBJ_DIR)/sat/presolve_util.$O \
  $(OBJ_DIR)/sat/precedences.$O \
  $(OBJ_DIR)/sat/probing.$O \
  $(OBJ_DIR)/sat/pseudo_costs.$O \
@@ -1968,6 +1970,26 @@ objs/sat/pb_constraint.$O: ortools/sat/pb_constraint.cc \
  ortools/util/stats.h ortools/base/timer.h ortools/base/basictypes.h \
  ortools/base/thorough_hash.h ortools/util/saturated_arithmetic.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Spb_constraint.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Spb_constraint.$O
+
+objs/sat/presolve_util.$O: ortools/sat/presolve_util.cc \
+ ortools/sat/presolve_util.h ortools/base/int_type.h ortools/base/macros.h \
+ ortools/base/int_type_indexed_vector.h ortools/base/integral_types.h \
+ ortools/sat/integer.h ortools/base/hash.h ortools/base/basictypes.h \
+ ortools/base/logging.h ortools/base/map_util.h ortools/graph/iterators.h \
+ ortools/sat/model.h ortools/base/typeid.h ortools/sat/sat_base.h \
+ ortools/util/bitset.h ortools/sat/sat_solver.h ortools/base/timer.h \
+ ortools/sat/clause.h ortools/sat/drat_proof_handler.h \
+ ortools/sat/drat_checker.h ortools/sat/drat_writer.h ortools/base/file.h \
+ ortools/base/status.h ortools/gen/ortools/sat/sat_parameters.pb.h \
+ ortools/util/random_engine.h ortools/util/stats.h \
+ ortools/sat/pb_constraint.h ortools/sat/restart.h \
+ ortools/util/running_stat.h ortools/sat/sat_decision.h \
+ ortools/util/integer_pq.h ortools/util/time_limit.h \
+ ortools/base/commandlineflags.h ortools/util/rev.h \
+ ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
+ ortools/base/cleanup.h ortools/base/stl_util.h \
+ ortools/sat/cp_constraints.h | $(OBJ_DIR)/sat
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Spresolve_util.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Spresolve_util.$O
 
 objs/sat/precedences.$O: ortools/sat/precedences.cc \
  ortools/sat/precedences.h ortools/base/int_type.h ortools/base/macros.h \
@@ -3849,4 +3871,3 @@ $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h: \
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: \
  $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sconstraint_solver$Ssolver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
-

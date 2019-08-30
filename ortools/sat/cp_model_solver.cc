@@ -1077,6 +1077,7 @@ void LoadCpModel(const CpModelProto& model_proto,
   mapping->CreateVariables(model_proto, view_all_booleans_as_integers, model);
   mapping->DetectOptionalVariables(model_proto, model);
   mapping->ExtractEncoding(model_proto, model);
+  mapping->PropagateEncodingFromEquivalenceRelations(model_proto, model);
 
   // Check the model is still feasible before continuing.
   if (sat_solver->IsModelUnsat()) return unsat();
@@ -1104,16 +1105,17 @@ void LoadCpModel(const CpModelProto& model_proto,
     // Note that we only do that in debug mode as this can be really slow on
     // certain types of problems with millions of constraints.
     if (DEBUG_MODE) {
-      if (!sat_solver->FinishPropagation()) return unsat();
-      Trail* trail = model->GetOrCreate<Trail>();
-      const int old_num_fixed = trail->Index();
-      if (trail->Index() > old_num_fixed) {
-        VLOG(3) << "Constraint fixed " << trail->Index() - old_num_fixed
-                << " Boolean variable(s): " << ProtobufDebugString(ct);
+      if (sat_solver->FinishPropagation()) {
+        Trail* trail = model->GetOrCreate<Trail>();
+        const int old_num_fixed = trail->Index();
+        if (trail->Index() > old_num_fixed) {
+          VLOG(3) << "Constraint fixed " << trail->Index() - old_num_fixed
+                  << " Boolean variable(s): " << ProtobufDebugString(ct);
+        }
       }
     }
     if (sat_solver->IsModelUnsat()) {
-      VLOG(3) << "UNSAT during extraction (after adding '"
+      VLOG(2) << "UNSAT during extraction (after adding '"
               << ConstraintCaseName(ct.constraint_case()) << "'). "
               << ProtobufDebugString(ct);
       break;
@@ -2304,6 +2306,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   CpModelProto new_cp_model_proto = model_proto;  // Copy.
   PresolveOptions options;
   options.log_info = log_search;
+  options.parameters = *model->GetOrCreate<SatParameters>();
   ExpandCpModel(&new_cp_model_proto, options);
 
   // This function will be called before any CpSolverResponse is returned

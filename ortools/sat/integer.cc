@@ -34,7 +34,8 @@ std::vector<IntegerVariable> NegationOf(
 }
 
 void IntegerEncoder::FullyEncodeVariable(IntegerVariable var) {
-  CHECK(!VariableIsFullyEncoded(var));
+  if (VariableIsFullyEncoded(var)) return;
+
   CHECK_EQ(0, sat_solver_->CurrentDecisionLevel());
   CHECK(!(*domains_)[var].IsEmpty());  // UNSAT. We don't deal with that here.
   CHECK_LT((*domains_)[var].Size(), 100000)
@@ -49,12 +50,47 @@ void IntegerEncoder::FullyEncodeVariable(IntegerVariable var) {
   }
 
   // Mark var and Negation(var) as fully encoded.
-  const int required_size = std::max(var, NegationOf(var)).value() + 1;
-  if (required_size > is_fully_encoded_.size()) {
-    is_fully_encoded_.resize(required_size, false);
-  }
+  CHECK_LT(var.value(), is_fully_encoded_.size());
+  CHECK_LT(NegationOf(var).value(), is_fully_encoded_.size());
+  CHECK(!equality_by_var_[var].empty());
+  CHECK(!equality_by_var_[NegationOf(var)].empty());
   is_fully_encoded_[var] = true;
   is_fully_encoded_[NegationOf(var)] = true;
+}
+
+bool IntegerEncoder::VariableIsFullyEncoded(IntegerVariable var) const {
+  if (var >= is_fully_encoded_.size()) return false;
+
+  // Once fully encoded, the status never changes.
+  if (is_fully_encoded_[var]) return true;
+
+  // TODO(user): Cache result as long as equality_by_var_[var] is unchanged?
+  // It might not be needed since if the variable is not fully encoded, then
+  // PartialDomainEncoding() will filter unreachable values, and so the size
+  // check will be false until further value have been encoded.
+  const int64 initial_domain_size = (*domains_)[var].Size();
+  if (equality_by_var_[var].size() < initial_domain_size) return false;
+
+  // This cleans equality_by_var_[var] as a side effect and in particular, sorts
+  // it by values.
+  PartialDomainEncoding(var);
+
+  // TODO(user): Comparing the size might be enough, but we want to be always
+  // valid even if either (*domains_[var]) or PartialDomainEncoding(var) are
+  // not properly synced because the propagation is not finished.
+  const auto& ref = equality_by_var_[var];
+  int index = 0;
+  for (const ClosedInterval interval : (*domains_)[var]) {
+    for (int64 v = interval.start; v <= interval.end; ++v) {
+      if (index < ref.size() && v == ref[index].value) {
+        index++;
+      }
+    }
+  }
+  if (index == ref.size()) {
+    is_fully_encoded_[var] = true;
+  }
+  return is_fully_encoded_[var];
 }
 
 std::vector<IntegerEncoder::ValueLiteralPair>
@@ -175,10 +211,22 @@ Literal IntegerEncoder::GetOrCreateAssociatedLiteral(IntegerLiteral i_lit) {
   const Literal literal(sat_solver_->NewBooleanVariable(), true);
   AssociateToIntegerLiteral(literal, new_lit);
 
-  // TODO(user): on some problem the check below fail. We should probably
-  // make sure that we don't create extra fixed Boolean variable for no reason.
-  DCHECK(!sat_solver_->Assignment().LiteralIsAssigned(literal));
+  // TODO(user): on some problem this happens. We should probably make sure that
+  // we don't create extra fixed Boolean variable for no reason.
+  if (sat_solver_->Assignment().LiteralIsAssigned(literal)) {
+    VLOG(1) << "Created a fixed literal for no reason!";
+  }
   return literal;
+}
+
+LiteralIndex IntegerEncoder::GetAssociatedEqualityLiteral(
+    IntegerVariable var, IntegerValue value) const {
+  const std::pair<IntegerVariable, IntegerValue> key{var, value};
+  const auto it = equality_to_associated_literal_.find(key);
+  if (it != equality_to_associated_literal_.end()) {
+    return it->second.Index();
+  }
+  return kNoLiteralIndex;
 }
 
 Literal IntegerEncoder::GetOrCreateLiteralAssociatedToEquality(
@@ -194,10 +242,7 @@ Literal IntegerEncoder::GetOrCreateLiteralAssociatedToEquality(
   // Check for trivial true/false literal to avoid creating variable for no
   // reasons.
   const Domain& domain = (*domains_)[var];
-  if (!domain.Contains(value.value())) {
-    AssociateToIntegerEqualValue(GetFalseLiteral(), var, value);
-    return GetFalseLiteral();
-  }
+  if (!domain.Contains(value.value())) return GetFalseLiteral();
   if (value == domain.Min() && value == domain.Max()) {
     AssociateToIntegerEqualValue(GetTrueLiteral(), var, value);
     return GetTrueLiteral();
@@ -207,9 +252,14 @@ Literal IntegerEncoder::GetOrCreateLiteralAssociatedToEquality(
   const Literal literal(sat_solver_->NewBooleanVariable(), true);
   AssociateToIntegerEqualValue(literal, var, value);
 
-  // TODO(user): on some problem the check below fail. We should probably
+  // TODO(user): this happens on some problem. We should probably
   // make sure that we don't create extra fixed Boolean variable for no reason.
-  DCHECK(!sat_solver_->Assignment().LiteralIsAssigned(literal));
+  // Note that here we could detect the case before creating the literal. The
+  // initial domain didn't contain it, but maybe the one of (>= value) or (<=
+  // value) is false?
+  if (sat_solver_->Assignment().LiteralIsAssigned(literal)) {
+    VLOG(1) << "Created a fixed literal for no reason!";
+  }
   return literal;
 }
 
@@ -292,6 +342,7 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
   const int needed_size = std::max(var.value(), NegationOf(var).value()) + 1;
   if (needed_size > equality_by_var_.size()) {
     equality_by_var_.resize(needed_size);
+    is_fully_encoded_.resize(needed_size);
   }
   equality_by_var_[var].push_back(ValueLiteralPair(value, literal));
   equality_by_var_[NegationOf(var)].push_back(
@@ -384,7 +435,7 @@ bool IntegerEncoder::LiteralIsAssociated(IntegerLiteral i) const {
   return encoding.find(i.bound) != encoding.end();
 }
 
-LiteralIndex IntegerEncoder::GetAssociatedLiteral(IntegerLiteral i) {
+LiteralIndex IntegerEncoder::GetAssociatedLiteral(IntegerLiteral i) const {
   if (i.var >= encoding_by_var_.size()) return kNoLiteralIndex;
   const std::map<IntegerValue, Literal>& encoding = encoding_by_var_[i.var];
   const auto result = encoding.find(i.bound);

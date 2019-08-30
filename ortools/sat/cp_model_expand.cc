@@ -354,11 +354,115 @@ void ExpandIntProd(ConstraintProto* ct, PresolveContext* context) {
   }
 }
 
+void ExpandInverse(ConstraintProto* ct, PresolveContext* context) {
+  const int size = ct->inverse().f_direct().size();
+  CHECK_EQ(size, ct->inverse().f_inverse().size());
+
+  // Make sure the domains are included in [0, size - 1).
+  //
+  // TODO(user): Add support for UNSAT at expansion. This should create empty
+  // domain if UNSAT, so it should still work correctly.
+  for (const int ref : ct->inverse().f_direct()) {
+    if (!context->IntersectDomainWith(ref, Domain(0, size - 1))) {
+      VLOG(1) << "Empty domain for a variable in ExpandInverse()";
+    }
+  }
+  for (const int ref : ct->inverse().f_inverse()) {
+    if (!context->IntersectDomainWith(ref, Domain(0, size - 1))) {
+      VLOG(1) << "Empty domain for a variable in ExpandInverse()";
+    }
+  }
+
+  // Add the "full-encoding" clauses for better presolving.
+  std::vector<BoolArgumentProto*> direct_clauses;
+  std::vector<BoolArgumentProto*> inverse_clauses;
+  for (int i = 0; i < size; ++i) {
+    direct_clauses.push_back(
+        context->working_model->add_constraints()->mutable_bool_or());
+    inverse_clauses.push_back(
+        context->working_model->add_constraints()->mutable_bool_or());
+  }
+
+  // TODO(user): Avoid creating trivially false literal.
+  for (int i = 0; i < size; ++i) {
+    const int f_i = ct->inverse().f_direct(i);
+    for (int j = 0; j < size; ++j) {
+      const int r_j = ct->inverse().f_inverse(j);
+
+      // We have f[i] == j <=> r[j] == i;
+      // Add or reuse a Boolean equivalent to all these fact.
+      //
+      // TODO(user): if r_j == i is already encoded but not f_i == j, reuse
+      // the Boolean. The presolve should eventually remove these, but better
+      // not to create them in the first place.
+      const int bvar = context->GetOrCreateVarValueEncoding(f_i, j);
+      context->AddImplyInDomain(bvar, r_j, Domain(i));
+      context->AddImplyInDomain(NegatedRef(bvar), r_j, Domain(i).Complement());
+
+      direct_clauses[i]->add_literals(bvar);
+      inverse_clauses[j]->add_literals(bvar);
+    }
+  }
+
+  ct->Clear();
+  context->UpdateRuleStats("inverse: expanded");
+}
+
+void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
+  const ElementConstraintProto& element = ct->element();
+  const int index_ref = element.index();
+  const int target_ref = element.target();
+  const int size = element.vars_size();
+  if (!context->IntersectDomainWith(index_ref, Domain(0, size - 1))) {
+    VLOG(1) << "Empty domain for the index variable in ExpandElement()";
+  }
+
+  const Domain index_domain = context->DomainOf(index_ref);
+  const Domain target_domain = context->DomainOf(target_ref);
+
+  // While this is not stricly needed since all value in the index will be
+  // covered, it allows to easily detect this fact in the presolve.
+  auto* bool_or = context->working_model->add_constraints()->mutable_bool_or();
+
+  for (const ClosedInterval& interval : index_domain) {
+    for (int64 v = interval.start; v <= interval.end; ++v) {
+      const int var = element.vars(v);
+      const int index_lit = context->GetOrCreateVarValueEncoding(index_ref, v);
+      const Domain var_domain = context->DomainOf(var);
+
+      bool_or->add_literals(index_lit);
+
+      if (target_ref == index_ref) {
+        // This adds extra code. But this information is really important, and
+        // hard to retrieve once lost.
+        context->AddImplyInDomain(index_lit, var, Domain(v));
+      } else if (target_domain.Size() == 1) {
+        context->AddImplyInDomain(index_lit, var, target_domain);
+      } else if (var_domain.Size() == 1) {
+        context->AddImplyInDomain(index_lit, target_ref, var_domain);
+      } else {
+        ConstraintProto* const ct = context->working_model->add_constraints();
+        ct->add_enforcement_literal(index_lit);
+        ct->mutable_linear()->add_vars(var);
+        ct->mutable_linear()->add_coeffs(1);
+        ct->mutable_linear()->add_vars(target_ref);
+        ct->mutable_linear()->add_coeffs(-1);
+        ct->mutable_linear()->add_domain(0);
+        ct->mutable_linear()->add_domain(0);
+      }
+    }
+  }
+  context->UpdateRuleStats("element: expanded");
+  ct->Clear();
+}
+
 }  // namespace
 
 void ExpandCpModel(CpModelProto* working_model, PresolveOptions options) {
   PresolveContext context;
   context.working_model = working_model;
+  context.InitializeNewDomains();
+
   const int num_constraints = context.working_model->constraints_size();
   for (int i = 0; i < num_constraints; ++i) {
     ConstraintProto* const ct = context.working_model->mutable_constraints(i);
@@ -372,9 +476,23 @@ void ExpandCpModel(CpModelProto* working_model, PresolveOptions options) {
       case ConstraintProto::ConstraintCase::kIntProd:
         ExpandIntProd(ct, &context);
         break;
+      case ConstraintProto::ConstraintCase::kElement:
+        if (options.parameters.expand_element_constraints()) {
+          ExpandElement(ct, &context);
+        }
+        break;
+      case ConstraintProto::ConstraintCase::kInverse:
+        ExpandInverse(ct, &context);
+        break;
       default:
         break;
     }
+  }
+
+  // Update any changed domain from the context.
+  for (int i = 0; i < context.working_model->variables_size(); ++i) {
+    FillDomainInProto(context.DomainOf(i),
+                      context.working_model->mutable_variables(i));
   }
 
   if (options.log_info) {
