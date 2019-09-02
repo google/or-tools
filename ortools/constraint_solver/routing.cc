@@ -175,21 +175,19 @@ bool DimensionFixedTransitsEqualTransitEvaluators(
 class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
  public:
   SetCumulsFromLocalDimensionCosts(
-      const std::vector<RoutingDimension*>& dimensions_for_local_optimizer,
+      const std::vector<std::unique_ptr<LocalDimensionCumulOptimizer>>*
+          local_optimizers,
       SearchMonitor* monitor, bool optimize_and_pack = false)
-      : monitor_(monitor), optimize_and_pack_(optimize_and_pack) {
-    local_optimizers_.reserve(dimensions_for_local_optimizer.size());
-    for (RoutingDimension* const dimension : dimensions_for_local_optimizer) {
-      local_optimizers_.emplace_back(dimension);
-    }
-  }
+      : local_optimizers_(*local_optimizers),
+        monitor_(monitor),
+        optimize_and_pack_(optimize_and_pack) {}
   Decision* Next(Solver* const solver) override {
     // The following boolean variable indicates if the solver should fail, in
     // order to postpone the Fail() call until after the internal for loop, so
     // there are no memory leaks related to the cumul_values vector.
     bool should_fail = false;
-    for (LocalDimensionCumulOptimizer& optimizer : local_optimizers_) {
-      const RoutingDimension* const dimension = optimizer.dimension();
+    for (const auto& optimizer : local_optimizers_) {
+      const RoutingDimension* const dimension = optimizer->dimension();
       RoutingModel* const model = dimension->model();
       const auto next = [model](int64 i) { return model->NextVar(i)->Value(); };
       for (int vehicle = 0; vehicle < model->vehicles(); ++vehicle) {
@@ -199,9 +197,9 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
         std::vector<int64> cumul_values;
         const bool cumuls_optimized =
             optimize_and_pack_
-                ? optimizer.ComputePackedRouteCumuls(vehicle, next,
-                                                     &cumul_values)
-                : optimizer.ComputeRouteCumuls(vehicle, next, &cumul_values);
+                ? optimizer->ComputePackedRouteCumuls(vehicle, next,
+                                                      &cumul_values)
+                : optimizer->ComputeRouteCumuls(vehicle, next, &cumul_values);
         if (!cumuls_optimized) {
           should_fail = true;
           break;
@@ -234,7 +232,8 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
   }
 
  private:
-  std::vector<LocalDimensionCumulOptimizer> local_optimizers_;
+  const std::vector<std::unique_ptr<LocalDimensionCumulOptimizer>>&
+      local_optimizers_;
   SearchMonitor* const monitor_;
   const bool optimize_and_pack_;
 };
@@ -242,15 +241,12 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
 class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
  public:
   SetCumulsFromGlobalDimensionCosts(
-      const std::vector<RoutingDimension*>& dimensions_for_global_optimizer,
+      const std::vector<std::unique_ptr<GlobalDimensionCumulOptimizer>>*
+          global_optimizers,
       SearchMonitor* monitor, bool optimize_and_pack = false)
-      : monitor_(monitor), optimize_and_pack_(optimize_and_pack) {
-    global_optimizers_.reserve(dimensions_for_global_optimizer.size());
-    for (const RoutingDimension* dimension : dimensions_for_global_optimizer) {
-      global_optimizers_.emplace_back(
-          absl::make_unique<GlobalDimensionCumulOptimizer>(dimension));
-    }
-  }
+      : global_optimizers_(*global_optimizers),
+        monitor_(monitor),
+        optimize_and_pack_(optimize_and_pack) {}
   Decision* Next(Solver* const solver) override {
     // The following boolean variable indicates if the solver should fail, in
     // order to postpone the Fail() call until after the for loop, so there are
@@ -287,7 +283,7 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
   }
 
  private:
-  std::vector<std::unique_ptr<GlobalDimensionCumulOptimizer>>
+  const std::vector<std::unique_ptr<GlobalDimensionCumulOptimizer>>&
       global_optimizers_;
   SearchMonitor* const monitor_;
   const bool optimize_and_pack_;
@@ -303,8 +299,8 @@ const Assignment* RoutingModel::PackCumulsOfOptimizerDimensionsFromAssignment(
           ? kint64max
           : absl::ToInt64Milliseconds(duration_limit);
   if (time_limit_ms <= 0 || original_assignment == nullptr ||
-      (dimensions_for_global_optimizer_.empty() &&
-       dimensions_for_local_optimizer_.empty())) {
+      (global_dimension_optimizers_.empty() &&
+       local_dimension_optimizers_.empty())) {
     return original_assignment;
   }
 
@@ -323,12 +319,12 @@ const Assignment* RoutingModel::PackCumulsOfOptimizerDimensionsFromAssignment(
       solver_->MakeRestoreAssignment(packed_assignment));
   decision_builders.push_back(
       solver_->RevAlloc(new SetCumulsFromLocalDimensionCosts(
-          dimensions_for_local_optimizer_,
+          &local_dimension_optimizers_,
           GetOrCreateLargeNeighborhoodSearchLimit(),
           /*optimize_and_pack=*/true)));
   decision_builders.push_back(
       solver_->RevAlloc(new SetCumulsFromGlobalDimensionCosts(
-          dimensions_for_global_optimizer_,
+          &global_dimension_optimizers_,
           GetOrCreateLargeNeighborhoodSearchLimit(),
           /*optimize_and_pack=*/true)));
   decision_builders.push_back(
@@ -1134,6 +1130,30 @@ std::vector<std::string> RoutingModel::GetAllDimensionNames() const {
   }
   std::sort(dimension_names.begin(), dimension_names.end());
   return dimension_names;
+}
+
+GlobalDimensionCumulOptimizer* RoutingModel::GetMutableGlobalCumulOptimizer(
+    const RoutingDimension& dimension) const {
+  const DimensionIndex dim_index = GetDimensionIndex(dimension.name());
+  if (dim_index < 0 || dim_index >= global_optimizer_index_.size() ||
+      global_optimizer_index_[dim_index] < 0) {
+    return nullptr;
+  }
+  const int optimizer_index = global_optimizer_index_[dim_index];
+  DCHECK_LT(optimizer_index, global_dimension_optimizers_.size());
+  return global_dimension_optimizers_[optimizer_index].get();
+}
+
+LocalDimensionCumulOptimizer* RoutingModel::GetMutableLocalCumulOptimizer(
+    const RoutingDimension& dimension) const {
+  const DimensionIndex dim_index = GetDimensionIndex(dimension.name());
+  if (dim_index < 0 || dim_index >= local_optimizer_index_.size() ||
+      local_optimizer_index_[dim_index] < 0) {
+    return nullptr;
+  }
+  const int optimizer_index = local_optimizer_index_[dim_index];
+  DCHECK_LT(optimizer_index, local_dimension_optimizers_.size());
+  return local_dimension_optimizers_[optimizer_index].get();
 }
 
 bool RoutingModel::HasDimension(const std::string& dimension_name) const {
@@ -2144,9 +2164,8 @@ void RoutingModel::CloseModelWithParameters(
     }
   }
 
-  // Store the dimensions for local/global cumul optimizers, along with their
-  // offsets.
-  StoreDimensionsForDimensionCumulOptimizers();
+  // Store the local/global cumul optimizers, along with their offsets.
+  StoreDimensionCumulOptimizers();
 
   // Keep this out of SetupSearch as this contains static search objects.
   // This will allow calling SetupSearch multiple times with different search
@@ -2927,8 +2946,8 @@ const Assignment* RoutingModel::SolveFromAssignmentWithParameters(
   // We set this time limit based on whether local/global dimension optimizers
   // are used in the finalizer to avoid going over the general time limit.
   // TODO(user): Adapt this when absolute timeouts are given to the model.
-  const int time_limit_shares = 1 + !dimensions_for_global_optimizer_.empty() +
-                                !dimensions_for_local_optimizer_.empty();
+  const int time_limit_shares = 1 + !global_dimension_optimizers_.empty() +
+                                !local_dimension_optimizers_.empty();
   const int64 first_solution_lns_time_limit =
       std::max(GetTimeLimitMs(parameters) / time_limit_shares,
                GetLnsTimeLimitMs(parameters));
@@ -4371,14 +4390,20 @@ bool AllTransitsPositive(const RoutingDimension& dimension) {
 }
 }  // namespace
 
-void RoutingModel::StoreDimensionsForDimensionCumulOptimizers() {
+void RoutingModel::StoreDimensionCumulOptimizers() {
   Assignment* packed_dimensions_collector_assignment =
       solver_->MakeAssignment();
-  for (RoutingDimension* dimension : dimensions_) {
+  const int num_dimensions = dimensions_.size();
+  local_optimizer_index_.resize(num_dimensions, -1);
+  global_optimizer_index_.resize(num_dimensions, -1);
+  for (DimensionIndex dim = DimensionIndex(0); dim < num_dimensions; dim++) {
+    RoutingDimension* dimension = dimensions_[dim];
     if (dimension->global_span_cost_coefficient() > 0 ||
         !dimension->GetNodePrecedences().empty()) {
       // Use global optimizer.
-      dimensions_for_global_optimizer_.push_back(dimension);
+      global_optimizer_index_[dim] = global_dimension_optimizers_.size();
+      global_dimension_optimizers_.push_back(
+          absl::make_unique<GlobalDimensionCumulOptimizer>(dimension));
       packed_dimensions_collector_assignment->Add(dimension->cumuls());
       if (!AllTransitsPositive(*dimension)) {
         dimension->SetOffsetForGlobalOptimizer(0);
@@ -4424,7 +4449,9 @@ void RoutingModel::StoreDimensionsForDimensionCumulOptimizers() {
       if (num_linear_constraints >= 2) {
         dimension->SetVehicleOffsetsForLocalOptimizer(
             std::move(vehicle_offsets));
-        dimensions_for_local_optimizer_.push_back(dimension);
+        local_optimizer_index_[dim] = local_dimension_optimizers_.size();
+        local_dimension_optimizers_.push_back(
+            absl::make_unique<LocalDimensionCumulOptimizer>(dimension));
         packed_dimensions_collector_assignment->Add(dimension->cumuls());
       }
     }
@@ -4500,15 +4527,15 @@ DecisionBuilder* RoutingModel::CreateSolutionFinalizer(SearchLimit* lns_limit) {
   decision_builders.push_back(solver_->MakePhase(
       nexts_, Solver::CHOOSE_FIRST_UNBOUND, Solver::ASSIGN_MIN_VALUE));
 
-  if (!dimensions_for_local_optimizer_.empty()) {
+  if (!local_dimension_optimizers_.empty()) {
     decision_builders.push_back(
         solver_->RevAlloc(new SetCumulsFromLocalDimensionCosts(
-            dimensions_for_local_optimizer_, lns_limit)));
+            &local_dimension_optimizers_, lns_limit)));
   }
-  if (!dimensions_for_global_optimizer_.empty()) {
+  if (!global_dimension_optimizers_.empty()) {
     decision_builders.push_back(
         solver_->RevAlloc(new SetCumulsFromGlobalDimensionCosts(
-            dimensions_for_global_optimizer_, lns_limit)));
+            &global_dimension_optimizers_, lns_limit)));
   }
   decision_builders.push_back(
       CreateFinalizerForMinimizedAndMaximizedVariables());

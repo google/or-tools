@@ -192,7 +192,9 @@
 
 namespace operations_research {
 
+class GlobalDimensionCumulOptimizer;
 class IntVarFilteredDecisionBuilder;
+class LocalDimensionCumulOptimizer;
 class LocalSearchOperator;
 class RoutingDimension;
 #ifndef SWIG
@@ -512,16 +514,26 @@ class RoutingModel {
   }
   /// Returns dimensions with soft or vehicle span costs.
   std::vector<RoutingDimension*> GetDimensionsWithSoftOrSpanCosts() const;
-  /// Returns dimensions_for_[global|local]_optimizer_ if the model has been
-  /// closed, and empty vectors otherwise.
-  const std::vector<RoutingDimension*>& GetDimensionsForGlobalCumulOptimizers()
-      const {
-    return dimensions_for_global_optimizer_;
+  // clang-format off
+  /// Returns [global|local]_dimension_optimizers_, which are empty if the model
+  /// has not been closed.
+  const std::vector<std::unique_ptr<GlobalDimensionCumulOptimizer> >&
+  GetGlobalDimensionCumulOptimizers() const {
+    return global_dimension_optimizers_;
   }
-  const std::vector<RoutingDimension*>& GetDimensionsForLocalCumulOptimizers()
-      const {
-    return dimensions_for_local_optimizer_;
+  const std::vector<std::unique_ptr<LocalDimensionCumulOptimizer> >&
+  GetLocalDimensionCumulOptimizers() const {
+    return local_dimension_optimizers_;
   }
+  // clang-format on
+
+  /// Returns the global/local dimension cumul optimizer for a given dimension,
+  /// or nullptr if there is none.
+  GlobalDimensionCumulOptimizer* GetMutableGlobalCumulOptimizer(
+      const RoutingDimension& dimension) const;
+  LocalDimensionCumulOptimizer* GetMutableLocalCumulOptimizer(
+      const RoutingDimension& dimension) const;
+
   /// Returns true if a dimension exists for a given dimension name.
   bool HasDimension(const std::string& dimension_name) const;
   /// Returns a dimension from its name. Dies if the dimension does not exist.
@@ -1017,8 +1029,9 @@ class RoutingModel {
   /// Adds an extra variable to the vehicle routing assignment.
   void AddToAssignment(IntVar* const var);
   void AddIntervalToAssignment(IntervalVar* const interval);
-  /// For every dimension in the model's dimensions_for_local/global_optimizer_,
-  /// this method tries to pack the cumul values of the dimension, such that:
+  /// For every dimension in the model with an optimizer in
+  /// local/global_dimension_optimizers_, this method tries to pack the cumul
+  /// values of the dimension, such that:
   /// - The cumul costs (span costs, soft lower and upper bound costs, etc) are
   ///   minimized.
   /// - The cumuls of the ends of the routes are minimized for this given
@@ -1338,8 +1351,9 @@ class RoutingModel {
       RoutingDimension* dimension);
   DimensionIndex GetDimensionIndex(const std::string& dimension_name) const;
 
-  /// Stores dimensions for which global and local cumul optimizers may be used
-  /// in the corresponding dimensions_for_[global|local]_optimizer_ vectors.
+  /// Creates global and local cumul optimizers for the dimensions needing them,
+  /// and stores them in the corresponding [local|global]_dimension_optimizers_
+  /// vectors.
   /// This function also computes and stores the "offsets" for these dimensions,
   /// used in the local/global optimizers to simplify LP computations.
   ///
@@ -1364,7 +1378,7 @@ class RoutingModel {
   /// On the other hand, when transits on a route can be negative, no assumption
   /// can be made on the cumuls of nodes wrt the start cumuls, and the offset is
   /// therefore set to 0.
-  void StoreDimensionsForDimensionCumulOptimizers();
+  void StoreDimensionCumulOptimizers();
 
   void ComputeCostClasses(const RoutingSearchParameters& parameters);
   void ComputeVehicleClasses();
@@ -1510,8 +1524,17 @@ class RoutingModel {
   /// Dimensions
   absl::flat_hash_map<std::string, DimensionIndex> dimension_name_to_index_;
   gtl::ITIVector<DimensionIndex, RoutingDimension*> dimensions_;
-  std::vector<RoutingDimension*> dimensions_for_global_optimizer_;
-  std::vector<RoutingDimension*> dimensions_for_local_optimizer_;
+  // clang-format off
+  /// TODO(user): Define a new Dimension[Global|Local]OptimizerIndex type
+  /// and use it to define ITIVectors and for the dimension to optimizer index
+  /// mappings below.
+  std::vector<std::unique_ptr<GlobalDimensionCumulOptimizer> >
+      global_dimension_optimizers_;
+  gtl::ITIVector<DimensionIndex, int> global_optimizer_index_;
+  std::vector<std::unique_ptr<LocalDimensionCumulOptimizer> >
+      local_dimension_optimizers_;
+  // clang-format off
+  gtl::ITIVector<DimensionIndex, int> local_optimizer_index_;
   std::string primary_constrained_dimension_;
   /// Costs
   IntVar* cost_ = nullptr;
@@ -1546,16 +1569,16 @@ class RoutingModel {
   std::function<int(int64)> vehicle_start_class_callback_;
   /// Disjunctions
   gtl::ITIVector<DisjunctionIndex, Disjunction> disjunctions_;
-  std::vector<std::vector<DisjunctionIndex>> index_to_disjunctions_;
+  std::vector<std::vector<DisjunctionIndex> > index_to_disjunctions_;
   /// Same vehicle costs
-  std::vector<ValuedNodes<int64>> same_vehicle_costs_;
+  std::vector<ValuedNodes<int64> > same_vehicle_costs_;
   /// Allowed vehicles
 #ifndef SWIG
   std::vector<std::unordered_set<int>> allowed_vehicles_;
 #endif  // SWIG
   /// Pickup and delivery
   IndexPairs pickup_delivery_pairs_;
-  std::vector<std::pair<DisjunctionIndex, DisjunctionIndex>>
+  std::vector<std::pair<DisjunctionIndex, DisjunctionIndex> >
       pickup_delivery_disjunctions_;
   // clang-format off
   // If node_index is a pickup, index_to_pickup_index_pairs_[node_index] is the
@@ -3289,7 +3312,7 @@ IntVarLocalSearchFilter* MakePathCumulFilter(const RoutingDimension& dimension,
                                              bool propagate_own_objective_value,
                                              bool filter_objective_cost);
 IntVarLocalSearchFilter* MakeGlobalLPCumulFilter(
-    const RoutingDimension& dimension, bool filter_objective_cost);
+    GlobalDimensionCumulOptimizer* optimizer, bool filter_objective_cost);
 IntVarLocalSearchFilter* MakePickupDeliveryFilter(
     const RoutingModel& routing_model, const RoutingModel::IndexPairs& pairs,
     const std::vector<RoutingModel::PickupAndDeliveryPolicy>& vehicle_policies);

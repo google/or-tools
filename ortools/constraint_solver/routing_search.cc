@@ -1167,7 +1167,8 @@ class PathCumulFilter : public BasePathFilter {
   gtl::small_ordered_set<std::set<int>> delta_paths_;
   const std::string name_;
 
-  LocalDimensionCumulOptimizer optimizer_;
+  LocalDimensionCumulOptimizer* optimizer_;
+  std::unique_ptr<LocalDimensionCumulOptimizer> internal_optimizer_;
   const bool filter_objective_cost_;
   const bool propagate_own_objective_value_;
 
@@ -1200,7 +1201,7 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
       delta_max_end_cumul_(kint64min),
       delta_nodes_with_precedences_and_changed_cumul_(routing_model.Size()),
       name_(dimension.name()),
-      optimizer_(&dimension),
+      optimizer_(routing_model.GetMutableLocalCumulOptimizer(dimension)),
       filter_objective_cost_(filter_objective_cost),
       propagate_own_objective_value_(propagate_own_objective_value),
       lns_detected_(false) {
@@ -1286,6 +1287,19 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
           node_precedence);
       node_index_to_precedences_[node_precedence.second_node].push_back(
           node_precedence);
+    }
+  }
+  // NOTE(user): The model's local optimizer for this dimension could be
+  // null because the finalizer is using a global optimizer, so we create a
+  // separate optimizer for the PathCumulFilter if we need it.
+  if (optimizer_ == nullptr) {
+    for (int vehicle = 0; vehicle < routing_model.vehicles(); vehicle++) {
+      if (FilterWithDimensionCumulOptimizerForVehicle(vehicle)) {
+        internal_optimizer_ =
+            absl::make_unique<LocalDimensionCumulOptimizer>(&dimension);
+        optimizer_ = internal_optimizer_.get();
+        break;
+      }
     }
   }
 }
@@ -1380,7 +1394,7 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
         // reason behind the failure. The only admissible failures here are
         // because of LP timeout.
         filter_with_optimizer =
-            optimizer_.ComputeRouteCumulCostWithoutFixedTransits(
+            optimizer_->ComputeRouteCumulCostWithoutFixedTransits(
                 vehicle, [this](int64 node) { return Value(node); },
                 &current_cumul_cost_value);
       }
@@ -1607,7 +1621,7 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
                GetPathCumulSoftLowerBoundCost(delta_path_transits_, path));
   }
   if (filter_with_optimizer &&
-      !optimizer_.ComputeRouteCumulCostWithoutFixedTransits(
+      !optimizer_->ComputeRouteCumulCostWithoutFixedTransits(
           vehicle, [this](int64 node) { return GetNext(node); },
           &cumul_cost_delta)) {
     return false;
@@ -1912,16 +1926,19 @@ std::vector<IntVarLocalSearchFilter*> MakeCumulFilters(
       !dimension.GetNodePrecedences().empty() ||
       (filter_objective_cost && dimension.global_span_cost_coefficient() > 0);
 
+  const RoutingModel& model = *dimension.model();
   if (DimensionHasCumulConstraint(dimension)) {
     filters.push_back(MakePathCumulFilter(dimension, !use_global_lp_filter,
                                           filter_objective_cost));
   } else {
-    filters.push_back(dimension.model()->solver()->RevAlloc(
-        new ChainCumulFilter(*dimension.model(), dimension)));
+    filters.push_back(
+        model.solver()->RevAlloc(new ChainCumulFilter(model, dimension)));
   }
   if (use_global_lp_filter) {
+    DCHECK(model.GetMutableGlobalCumulOptimizer(dimension) != nullptr);
     filters.push_back(
-        MakeGlobalLPCumulFilter(dimension, filter_objective_cost));
+        MakeGlobalLPCumulFilter(model.GetMutableGlobalCumulOptimizer(dimension),
+                                filter_objective_cost));
   }
   return filters;
 }
@@ -2214,8 +2231,9 @@ namespace {
 
 class LPCumulFilter : public IntVarLocalSearchFilter {
  public:
-  LPCumulFilter(const RoutingModel& routing_model,
-                const RoutingDimension& dimension, bool filter_objective_cost);
+  LPCumulFilter(const std::vector<IntVar*>& nexts,
+                GlobalDimensionCumulOptimizer* optimizer,
+                bool filter_objective_cost);
   bool Accept(const Assignment* delta, const Assignment* deltadelta,
               int64 objective_min, int64 objective_max) override;
   int64 GetAcceptedObjectiveValue() const override;
@@ -2226,7 +2244,7 @@ class LPCumulFilter : public IntVarLocalSearchFilter {
   }
 
  private:
-  GlobalDimensionCumulOptimizer optimizer_;
+  GlobalDimensionCumulOptimizer& optimizer_;
   const bool filter_objective_cost_;
   int64 synchronized_cost_without_transit_;
   int64 delta_cost_without_transit_;
@@ -2234,11 +2252,11 @@ class LPCumulFilter : public IntVarLocalSearchFilter {
   std::vector<int64> delta_nexts_;
 };
 
-LPCumulFilter::LPCumulFilter(const RoutingModel& routing_model,
-                             const RoutingDimension& dimension,
+LPCumulFilter::LPCumulFilter(const std::vector<IntVar*>& nexts,
+                             GlobalDimensionCumulOptimizer* optimizer,
                              bool filter_objective_cost)
-    : IntVarLocalSearchFilter(routing_model.Nexts()),
-      optimizer_(&dimension),
+    : IntVarLocalSearchFilter(nexts),
+      optimizer_(*optimizer),
       filter_objective_cost_(filter_objective_cost),
       synchronized_cost_without_transit_(-1),
       delta_cost_without_transit_(-1),
@@ -2303,10 +2321,10 @@ int64 LPCumulFilter::GetSynchronizedObjectiveValue() const {
 }  // namespace
 
 IntVarLocalSearchFilter* MakeGlobalLPCumulFilter(
-    const RoutingDimension& dimension, bool filter_objective_cost) {
-  const RoutingModel* model = dimension.model();
-  return model->solver()->RevAlloc(
-      new LPCumulFilter(*model, dimension, filter_objective_cost));
+    GlobalDimensionCumulOptimizer* optimizer, bool filter_objective_cost) {
+  const RoutingModel& model = *optimizer->dimension()->model();
+  return model.solver()->RevAlloc(
+      new LPCumulFilter(model.Nexts(), optimizer, filter_objective_cost));
 }
 
 const int64 CPFeasibilityFilter::kUnassigned = -1;
