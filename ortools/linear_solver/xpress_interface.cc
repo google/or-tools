@@ -1305,15 +1305,17 @@ namespace operations_research {
 		SetParameters(param);
 		if (solver_->time_limit()) {
 			VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
+                        // In Xpress, a time limit should usually have a negative sign. With a positive sign,
+                        // the solver will only stop when a solution has been found
 			CHECK_STATUS(
-				XPRSsetdblcontrol(mLp, XPRS_MAXTIME, solver_->time_limit() * 1e-3));
+				XPRSsetdblcontrol(mLp, XPRS_MAXTIME, -1.0*solver_->time_limit_in_secs()));
 		}
 
 		// Solve.
 		// Do not CHECK_STATUS here since some errors (for example CPXERR_NO_MEMORY)
 		// still allow us to query useful information.
 		timer.Restart();
-		
+
 		int xpressstat = 0;
 		if (mMip) {
 			if (this->maximize_)
