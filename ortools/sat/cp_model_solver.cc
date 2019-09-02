@@ -2064,9 +2064,10 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       << "Enumerating all solutions in parallel is not supported.";
 
   // If "interleave_search" is true, then the number of strategies is
-  // independent of the number of threads.
-  const int num_strategies =
-      parameters.interleave_search() ? 8 : num_search_workers;
+  // 4 if num_search_workers = 1, or 8 otherwise.
+  const int num_strategies = parameters.interleave_search()
+                                 ? (num_search_workers == 1 ? 4 : 8)
+                                 : num_search_workers;
 
   std::unique_ptr<SharedBoundsManager> shared_bounds_manager;
   if (global_model->GetOrCreate<SatParameters>()->share_level_zero_bounds()) {

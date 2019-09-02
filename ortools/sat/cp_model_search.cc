@@ -285,7 +285,58 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
   new_params.set_use_lns_only(false);
   int index = worker_id;
 
-  if (cp_model.has_objective()) {
+  if (cp_model.has_objective() && params.num_search_workers() == 1 &&
+      params.interleave_search()) {
+    // Low memory mode for interleaved search in single thread (4 workers).
+
+    // First worker.
+    if (index == 0) {  // Use default parameters and automatic search.
+      new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+      // new_params.set_linearization_level(1);
+      *name = "auto";
+      return new_params;
+    }
+
+    // Second worker (fixed or lp branching).
+    if (cp_model.search_strategy_size() > 0) {
+      if (--index == 0) {  // Use default parameters and fixed search.
+        new_params.set_search_branching(SatParameters::FIXED_SEARCH);
+        *name = "fixed";
+        return new_params;
+      }
+    } else {
+      // TODO(user): Disable lp_br if linear part is small or empty.
+      if (--index == 0) {
+        new_params.set_search_branching(SatParameters::LP_SEARCH);
+        *name = "lp_br";
+        return new_params;
+      }
+    }
+
+    // Third worker (core or no_lp).
+    if (cp_model.objective().vars_size() > 1) {
+      if (--index == 0) {  // Core based approach.
+        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+        new_params.set_optimize_with_core(true);
+        new_params.set_linearization_level(0);
+        *name = "core";
+        return new_params;
+      }
+    } else {
+      if (--index == 0) {  // Remove LP relaxation.
+        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+        new_params.set_linearization_level(0);
+        *name = "no_lp";
+        return new_params;
+      }
+    }
+
+    // Fourth worker using LNS.
+    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+    new_params.set_use_lns_only(true);
+    *name = absl::StrFormat("lns_%i", index);
+    return new_params;
+  } else if (cp_model.has_objective()) {
     if (index == 0) {  // Use default parameters and automatic search.
       new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
       new_params.set_linearization_level(1);
@@ -334,8 +385,7 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
     }
 
     // Only add this strategy if we have enough worker left for LNS.
-    if ((params.num_search_workers() > 8 || params.interleave_search()) &&
-        --index == 0) {
+    if (params.num_search_workers() > 8 && --index == 0) {
       new_params.set_search_branching(
           SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
       *name = "quick_restart";
