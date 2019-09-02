@@ -5,12 +5,12 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.google.ortools</groupId>
   <artifactId>ortools-java</artifactId>
-  <version>7.2</version>
+  <version>7.3</version>
   <dependencies>
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
-      <version>3.8.0</version>
+      <version>3.9.0</version>
     </dependency>
   </dependencies>  
   <build>
