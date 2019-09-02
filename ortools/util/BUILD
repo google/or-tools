@@ -7,6 +7,12 @@ cc_library(
 )
 
 cc_library(
+    name = "lazy_mutable_copy",
+    hdrs = ["lazy_mutable_copy.h"],
+    deps = ["@com_google_absl//absl/memory"],
+)
+
+cc_library(
     name = "affine_relation",
     hdrs = ["affine_relation.h"],
     deps = [
