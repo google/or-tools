@@ -454,6 +454,11 @@ message MPModelRequest {
   // MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS.
   optional string solver_specific_parameters = 5;
 
+
+  // Advanced usage: model "delta". If used, "model" must be unset. See the
+  // definition of MPModelDeltaProto.
+  optional MPModelDeltaProto model_delta = 8;
+
 }
 
 // Status returned by the solver. They follow a hierarchical nomenclature, to

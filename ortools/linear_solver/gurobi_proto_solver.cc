@@ -24,6 +24,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
+#include "absl/types/optional.h"
 #include "ortools/base/canonical_errors.h"
 #include "ortools/base/cleanup.h"
 #include "ortools/base/status.h"
@@ -31,6 +32,7 @@
 #include "ortools/linear_solver/gurobi_environment.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
+#include "ortools/util/lazy_mutable_copy.h"
 
 namespace operations_research {
 
@@ -188,11 +190,11 @@ int AddMaxConstraint(const MPGeneralConstraintProto& gen_cst,
 util::StatusOr<MPSolutionResponse> GurobiSolveProto(
     const MPModelRequest& request) {
   MPSolutionResponse response;
-  if (MPRequestIsEmptyOrInvalid(request, &response)) {
-    return response;
-  }
+  const absl::optional<LazyMutableCopy<MPModelProto>> optional_model =
+      ExtractValidMPModelOrPopulateResponseStatus(request, &response);
+  if (!optional_model) return response;
+  const MPModelProto& model = optional_model->get();
 
-  const MPModelProto& model = request.model();
   if (request.has_solver_specific_parameters()) {
     // TODO(user): Support solver-specific parameters without duplicating
     // all of the write file / read file code in linear_solver.cc.

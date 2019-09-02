@@ -582,6 +582,7 @@ MPSolverResponseStatus MPSolver::LoadModelFromProto(
   // unlike the MPSolver C++ API which crashes if there are duplicate names.
   // Clearing the names makes the MPSolver generate unique names.
   return LoadModelFromProtoInternal(input_model, /*clear_names=*/true,
+                                    /*check_model_validity=*/true,
                                     error_message);
 }
 
@@ -592,26 +593,29 @@ MPSolverResponseStatus MPSolver::LoadModelFromProtoWithUniqueNamesOrDie(
   GenerateConstraintNameIndex();
 
   return LoadModelFromProtoInternal(input_model, /*clear_names=*/false,
+                                    /*check_model_validity=*/true,
                                     error_message);
 }
 
 MPSolverResponseStatus MPSolver::LoadModelFromProtoInternal(
     const MPModelProto& input_model, bool clear_names,
-    std::string* error_message) {
+    bool check_model_validity, std::string* error_message) {
   CHECK(error_message != nullptr);
-  const std::string error = FindErrorInMPModelProto(input_model);
-  if (!error.empty()) {
-    *error_message = error;
-    LOG_IF(INFO, OutputIsEnabled())
-        << "Invalid model given to LoadModelFromProto(): " << error;
-    if (FLAGS_mpsolver_bypass_model_validation) {
+  if (check_model_validity) {
+    const std::string error = FindErrorInMPModelProto(input_model);
+    if (!error.empty()) {
+      *error_message = error;
       LOG_IF(INFO, OutputIsEnabled())
-          << "Ignoring the model error(s) because of"
-          << " --mpsolver_bypass_model_validation.";
-    } else {
-      return error.find("Infeasible") == std::string::npos
-                 ? MPSOLVER_MODEL_INVALID
-                 : MPSOLVER_INFEASIBLE;
+          << "Invalid model given to LoadModelFromProto(): " << error;
+      if (FLAGS_mpsolver_bypass_model_validation) {
+        LOG_IF(INFO, OutputIsEnabled())
+            << "Ignoring the model error(s) because of"
+            << " --mpsolver_bypass_model_validation.";
+      } else {
+        return error.find("Infeasible") == std::string::npos
+                   ? MPSOLVER_MODEL_INVALID
+                   : MPSOLVER_INFEASIBLE;
+      }
     }
   }
 
@@ -773,9 +777,9 @@ void MPSolver::FillSolutionResponseProto(MPSolutionResponse* response) const {
 void MPSolver::SolveWithProto(const MPModelRequest& model_request,
                               MPSolutionResponse* response) {
   CHECK(response != nullptr);
-  const MPModelProto& model = model_request.model();
-  MPSolver solver(model.name(), static_cast<MPSolver::OptimizationProblemType>(
-                                    model_request.solver_type()));
+  MPSolver solver(model_request.model().name(),
+                  static_cast<MPSolver::OptimizationProblemType>(
+                      model_request.solver_type()));
   if (model_request.enable_internal_solver_output()) {
     solver.EnableOutput();
   }
@@ -786,12 +790,26 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
     return;
   }
 
+  const absl::optional<LazyMutableCopy<MPModelProto>> optional_model =
+      ExtractValidMPModelOrPopulateResponseStatus(model_request, response);
+  if (!optional_model) {
+    LOG_IF(WARNING, model_request.enable_internal_solver_output())
+        << "Failed to extract a valid model from protocol buffer. Status: "
+        << ProtoEnumToString<MPSolverResponseStatus>(response->status()) << " ("
+        << response->status() << "): " << response->status_str();
+    return;
+  }
   std::string error_message;
-  response->set_status(solver.LoadModelFromProto(model, &error_message));
+  response->set_status(solver.LoadModelFromProtoInternal(
+      optional_model->get(), /*clear_names=*/true,
+      /*check_model_validity=*/false, &error_message));
+  // Even though we don't re-check model validity here, there can be some
+  // problems found by LoadModelFromProto, eg. unsupported features.
   if (response->status() != MPSOLVER_MODEL_IS_VALID) {
     response->set_status_str(error_message);
     LOG_IF(WARNING, model_request.enable_internal_solver_output())
-        << "Loading model from protocol buffer failed, load status = "
+        << "LoadModelFromProtoInternal() failed even though the model was "
+        << "valid! Status: "
         << ProtoEnumToString<MPSolverResponseStatus>(response->status()) << " ("
         << response->status() << "); Error: " << error_message;
     return;
@@ -864,7 +882,7 @@ void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
     constraint_proto->set_is_lazy(constraint->is_lazy());
     // Vector linear_term will contain pairs (variable index, coeff), that will
     // be sorted by variable index.
-    std::vector<std::pair<int, double> > linear_term;
+    std::vector<std::pair<int, double>> linear_term;
     for (const auto& entry : constraint->coefficients_) {
       const MPVariable* const var = entry.first;
       const int var_index = gtl::FindWithDefault(var_to_index, var, -1);
@@ -1452,8 +1470,7 @@ bool MPSolver::ExportModelAsMpsFormat(bool fixed_format, bool obfuscate,
   return status_or.ok();
 }
 
-void MPSolver::SetHint(
-    std::vector<std::pair<const MPVariable*, double> > hint) {
+void MPSolver::SetHint(std::vector<std::pair<const MPVariable*, double>> hint) {
   for (const auto& var_value_pair : hint) {
     CHECK(OwnsVariable(var_value_pair.first))
         << "hint variable does not belong to this solver";

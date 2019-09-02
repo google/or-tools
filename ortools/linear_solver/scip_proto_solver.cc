@@ -27,6 +27,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
+#include "absl/types/optional.h"
 #include "ortools/base/canonical_errors.h"
 #include "ortools/base/cleanup.h"
 #include "ortools/base/status.h"
@@ -34,6 +35,7 @@
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
+#include "ortools/util/lazy_mutable_copy.h"
 #include "scip/cons_disjunction.h"
 #include "scip/cons_linear.h"
 #include "scip/pub_var.h"
@@ -350,12 +352,13 @@ util::Status AddAbsConstraint(const MPGeneralConstraintProto& gen_cst,
   std::vector<SCIP_CONS*> cons;
   auto add_abs_constraint =
       [&](const std::string& name_prefix) -> util::Status {
-    SCIP_CONS* scip_cons;
+    SCIP_CONS* scip_cons = nullptr;
+    CHECK(vars.size() == vals.size());
     const std::string name =
         gen_cst.has_name() ? absl::StrCat(gen_cst.name(), name_prefix) : "";
     RETURN_IF_SCIP_ERROR(SCIPcreateConsBasicLinear(
         scip, /*cons=*/&scip_cons,
-        /*name=*/name.c_str(), /*nvars=*/2, /*vars=*/vars.data(),
+        /*name=*/name.c_str(), /*nvars=*/vars.size(), /*vars=*/vars.data(),
         /*vals=*/vals.data(), /*lhs=*/0.0, /*rhs=*/0.0));
     // Note that the constraints are, by design, not added into the model using
     // SCIPaddCons.
@@ -377,7 +380,7 @@ util::Status AddAbsConstraint(const MPGeneralConstraintProto& gen_cst,
       gen_cst.has_name() ? absl::StrCat(gen_cst.name(), "_disj") : "";
   RETURN_IF_SCIP_ERROR(SCIPcreateConsBasicDisjunction(
       scip, /*cons=*/scip_cst, /*name=*/name.c_str(),
-      /*nconss=*/2, /*conss=*/cons.data(), /*relaxcons=*/nullptr));
+      /*nconss=*/cons.size(), /*conss=*/cons.data(), /*relaxcons=*/nullptr));
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip, *scip_cst));
 
   return util::OkStatus();
@@ -455,12 +458,13 @@ util::Status AddMinMaxConstraint(const MPGeneralConstraintProto& gen_cst,
   auto add_lin_constraint = [&](const std::string& name_prefix,
                                 double lower_bound = 0.0,
                                 double upper_bound = 0.0) -> util::Status {
-    SCIP_CONS* scip_cons;
+    SCIP_CONS* scip_cons = nullptr;
+    CHECK(vars.size() == vals.size());
     const std::string name =
         gen_cst.has_name() ? absl::StrCat(gen_cst.name(), name_prefix) : "";
     RETURN_IF_SCIP_ERROR(SCIPcreateConsBasicLinear(
         scip, /*cons=*/&scip_cons,
-        /*name=*/name.c_str(), /*nvars=*/2, /*vars=*/vars.data(),
+        /*name=*/name.c_str(), /*nvars=*/vars.size(), /*vars=*/vars.data(),
         /*vals=*/vals.data(), /*lhs=*/lower_bound, /*rhs=*/upper_bound));
     // Note that the constraints are, by design, not added into the model using
     // SCIPaddCons.
@@ -488,7 +492,7 @@ util::Status AddMinMaxConstraint(const MPGeneralConstraintProto& gen_cst,
       gen_cst.has_name() ? absl::StrCat(gen_cst.name(), "_disj") : "";
   RETURN_IF_SCIP_ERROR(SCIPcreateConsBasicDisjunction(
       scip, /*cons=*/scip_cst, /*name=*/name.c_str(),
-      /*nconss=*/2, /*conss=*/cons.data(), /*relaxcons=*/nullptr));
+      /*nconss=*/cons.size(), /*conss=*/cons.data(), /*relaxcons=*/nullptr));
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip, *scip_cst));
 
   // Add all of the inequality constraints.
@@ -505,14 +509,16 @@ util::Status AddMinMaxConstraint(const MPGeneralConstraintProto& gen_cst,
                                          kInfinity));
     }
   }
-  vars = {scip_resultant_var};
-  vals = {1};
-  if (gen_cst.has_min_constraint()) {
-    RETURN_IF_ERROR(add_lin_constraint(absl::StrCat("_ineq_constant"),
-                                       -kInfinity, minmax.constant()));
-  } else {
-    RETURN_IF_ERROR(add_lin_constraint(absl::StrCat("_ineq_constant"),
-                                       minmax.constant(), kInfinity));
+  if (minmax.has_constant()) {
+    vars = {scip_resultant_var};
+    vals = {1};
+    if (gen_cst.has_min_constraint()) {
+      RETURN_IF_ERROR(add_lin_constraint(absl::StrCat("_ineq_constant"),
+                                         -kInfinity, minmax.constant()));
+    } else {
+      RETURN_IF_ERROR(add_lin_constraint(absl::StrCat("_ineq_constant"),
+                                         minmax.constant(), kInfinity));
+    }
   }
   for (SCIP_CONS* scip_cons : cons) {
     scip_constraints->push_back(scip_cons);
@@ -652,10 +658,10 @@ bool MPModelIsInvalidForScip(const MPModelProto& model, SCIP* scip,
 util::StatusOr<MPSolutionResponse> ScipSolveProto(
     const MPModelRequest& request) {
   MPSolutionResponse response;
-  if (MPRequestIsEmptyOrInvalid(request, &response)) return response;
-
-  const MPModelProto& model = request.model();
-
+  const absl::optional<LazyMutableCopy<MPModelProto>> optional_model =
+      ExtractValidMPModelOrPopulateResponseStatus(request, &response);
+  if (!optional_model) return response;
+  const MPModelProto& model = optional_model->get();
   SCIP* scip = nullptr;
   std::vector<SCIP_VAR*> scip_variables(model.variable_size(), nullptr);
   std::vector<SCIP_CONS*> scip_constraints(

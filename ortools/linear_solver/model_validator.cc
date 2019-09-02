@@ -17,13 +17,18 @@
 #include <cmath>
 #include <limits>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/types/optional.h"
 #include "ortools/base/accurate_sum.h"
+#include "ortools/base/status.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/port/file.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/util/fp_utils.h"
+#include "ortools/util/lazy_mutable_copy.h"
 
 namespace operations_research {
 namespace {
@@ -478,27 +483,60 @@ std::string FindErrorInMPModelProto(const MPModelProto& model) {
   return std::string();
 }
 
-bool MPRequestIsEmptyOrInvalid(const MPModelRequest& request,
-                               MPSolutionResponse* response) {
+absl::optional<LazyMutableCopy<MPModelProto>>
+ExtractValidMPModelOrPopulateResponseStatus(const MPModelRequest& request,
+                                            MPSolutionResponse* response) {
   CHECK(response != nullptr);
 
-  if (!request.has_model()) {
+  if (!request.has_model() && !request.has_model_delta()) {
     response->set_status(MPSOLVER_OPTIMAL);
     response->set_status_str("Requests without model are considered OPTIMAL");
-    return true;
+    return absl::nullopt;
   }
-  const MPModelProto& model = request.model();
-  if (model.variable_size() == 0 && model.constraint_size() == 0 &&
-      model.general_constraint_size() == 0) {
-    response->set_status(MPSOLVER_OPTIMAL);
-    response->set_objective_value(request.model().objective_offset());
-    response->set_best_objective_bound(request.model().objective_offset());
+  if (request.has_model() && request.has_model_delta()) {
+    response->set_status(MPSOLVER_MODEL_INVALID);
     response->set_status_str(
-        "Requests without variables and constraints are considered OPTIMAL");
-    return true;
+        "Fields 'model' and 'model_delta' are mutually exclusive");
+    return absl::nullopt;
   }
 
-  const std::string error = FindErrorInMPModelProto(model);
+  // Extract the baseline model.
+  LazyMutableCopy<MPModelProto> model(request.model());
+  if (request.has_model_delta()) {
+    // NOTE(user): This library needs to be portable, so we can't include
+    // ortools/base/file.h; see ../port/file.h.
+    std::string contents;
+    const util::Status file_read_status = PortableFileGetContents(
+        request.model_delta().baseline_model_file_path(), &contents);
+    if (!file_read_status.ok()) {
+      response->set_status(MPSOLVER_MODEL_INVALID);
+      response->set_status_str(
+          "Error when reading model_delta.baseline_model_file_path: '" +
+          file_read_status.ToString());
+      return absl::nullopt;
+    }
+    if (!model.get_mutable()->ParseFromString(contents)) {
+      response->set_status(MPSOLVER_MODEL_INVALID);
+      response->set_status_str(
+          absl::StrFormat("The contents of baseline model file '%s' couldn't "
+                          "be parsed as a raw serialized MPModelProto",
+                          request.model_delta().baseline_model_file_path()));
+      return absl::nullopt;
+    }
+  }
+
+  // Validate the baseline model.
+  std::string error = FindErrorInMPModelProto(model.get());
+
+  // If the baseline is valid and we have a model delta, validate the delta,
+  // then apply it.
+  if (error.empty() && request.has_model_delta()) {
+    const MPModelDeltaProto& delta = request.model_delta();
+    error = FindErrorInMPModelDeltaProto(delta, model.get());
+    if (error.empty()) ApplyVerifiedMPModelDelta(delta, model.get_mutable());
+  }
+
+  // Deal with errors.
   if (!error.empty()) {
     if (request.enable_internal_solver_output()) {
       LOG(ERROR) << absl::StrCat("Invalid model: ", error);
@@ -507,9 +545,31 @@ bool MPRequestIsEmptyOrInvalid(const MPModelRequest& request,
                              ? MPSOLVER_MODEL_INVALID
                              : MPSOLVER_INFEASIBLE);
     response->set_status_str(error);
-    return true;
+    return absl::nullopt;
   }
-  return false;
+
+  if (model.get().variable_size() == 0 && model.get().constraint_size() == 0 &&
+      model.get().general_constraint_size() == 0) {
+    response->set_status(MPSOLVER_OPTIMAL);
+    response->set_objective_value(model.get().objective_offset());
+    response->set_best_objective_bound(response->objective_value());
+    response->set_status_str(
+        "Requests without variables and constraints are considered OPTIMAL");
+    return absl::nullopt;
+  }
+
+  return std::move(model);
+}
+
+bool ExtractValidMPModelInPlaceOrPopulateResponseStatus(
+    MPModelRequest* request, MPSolutionResponse* response) {
+  absl::optional<LazyMutableCopy<MPModelProto>> lazy_copy =
+      ExtractValidMPModelOrPopulateResponseStatus(*request, response);
+  if (!lazy_copy) return false;
+  if (lazy_copy->was_copied()) {
+    lazy_copy->get_mutable()->Swap(request->mutable_model());
+  }
+  return true;
 }
 
 // TODO(user): Add a general FindFeasibilityErrorInSolution() and factor out the
@@ -671,6 +731,107 @@ void MergeMPConstraintProtoExceptTerms(const MPConstraintProto& from,
   COPY_FIELD_IF_PRESENT(name);
   COPY_FIELD_IF_PRESENT(is_lazy);
 #undef COPY_FIELD_IF_PRESENT
+}
+
+namespace {
+void PruneZeroTermsInMpConstraint(MPConstraintProto* ct) {
+  // Optimize the fast path (when no term is pruned) by doing a first quick scan
+  // until the first zero.
+  int first_zero = 0;
+  while (first_zero < ct->var_index_size() &&
+         ct->coefficient(first_zero) != 0.0) {
+    ++first_zero;
+  }
+  int num_kept = first_zero;
+  for (int i = first_zero; i < ct->var_index_size(); ++i) {
+    if (ct->coefficient(i) == 0.0) continue;
+    if (num_kept != i) {
+      ct->set_var_index(num_kept, ct->var_index(i));
+      ct->set_coefficient(num_kept, ct->coefficient(i));
+    }
+    ++num_kept;
+  }
+  ct->mutable_var_index()->Truncate(num_kept);
+  ct->mutable_coefficient()->Truncate(num_kept);
+}
+
+// Adds default entries to a repeated message field until it has the wanted
+// size. We don't use google::protobuf::util::Resize() because it's not
+// compatible with 'light' protos.
+template <class T>
+void ExtendRepeatedPtrFieldToSize(const int size, T* repeated_messages) {
+  DCHECK_GE(size, repeated_messages->size());
+  while (repeated_messages->size() < size) repeated_messages->Add();
+}
+}  // namespace
+
+void ApplyVerifiedMPModelDelta(const MPModelDeltaProto& delta,
+                               MPModelProto* model) {
+  // Apply the delta to the variables: first, resize the variable array.
+  int max_var_index = -1;
+  for (const auto& p : delta.variable_overrides()) {
+    max_var_index = std::max(max_var_index, p.first);
+  }
+  if (max_var_index >= model->variable_size()) {
+    ExtendRepeatedPtrFieldToSize(max_var_index + 1, model->mutable_variable());
+  }
+  // Then, apply the variable overrides.
+  for (const auto& p : delta.variable_overrides()) {
+    model->mutable_variable(p.first)->MergeFrom(p.second);
+  }
+
+  // Apply the delta to the constraints: first, resize the constraint array.
+  int max_ct_index = -1;
+  for (const auto& p : delta.constraint_overrides()) {
+    max_ct_index = std::max(max_ct_index, p.first);
+  }
+  const int old_num_constraints = model->constraint_size();
+  if (max_ct_index >= old_num_constraints) {
+    ExtendRepeatedPtrFieldToSize(max_ct_index + 1, model->mutable_constraint());
+  }
+  // Then, apply the constraint overrides.
+  for (const auto& p : delta.constraint_overrides()) {
+    const MPConstraintProto& override_ct = p.second;
+    MPConstraintProto* baseline = model->mutable_constraint(p.first);
+    // Fast path for added constraints.
+    if (p.first >= old_num_constraints) {
+      *baseline = override_ct;
+      continue;
+    }
+    MergeMPConstraintProtoExceptTerms(/*from=*/override_ct, /*to=*/baseline);
+    // Special case: the override is neutralized.
+    if (override_ct.has_lower_bound() &&
+        override_ct.lower_bound() == -kInfinity &&
+        override_ct.has_upper_bound() &&
+        override_ct.upper_bound() == kInfinity) {
+      baseline->clear_var_index();
+      baseline->clear_coefficient();
+      continue;
+    }
+    // Otherwise we have to apply the term overrides. We can't do that in less
+    // than O(|baseline| + |override_ct|) because the baseline doesn't have a
+    // lookup-friendly data structure. But we still try to do it as efficiently
+    // as possible. In particular, we only use O(|override_ct|) extra memory.
+    absl::flat_hash_map<int, double> term_overrides;
+    term_overrides.reserve(override_ct.var_index_size());
+    for (int i = 0; i < override_ct.var_index_size(); ++i) {
+      term_overrides[override_ct.var_index(i)] = override_ct.coefficient(i);
+    }
+    for (int i = 0; i < baseline->var_index_size(); ++i) {
+      auto it = term_overrides.find(baseline->var_index(i));
+      if (it == term_overrides.end()) continue;
+      baseline->set_coefficient(i, it->second);
+      it->second = 0.0;  // To mark this term override as 'has been applied'.
+    }
+    PruneZeroTermsInMpConstraint(baseline);
+    // Add the term overrides which haven't been used: those are added terms.
+    for (const auto& p : term_overrides) {
+      if (p.second != 0.0) {
+        baseline->add_var_index(p.first);
+        baseline->add_coefficient(p.second);
+      }
+    }
+  }
 }
 
 }  // namespace operations_research
