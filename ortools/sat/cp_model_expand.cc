@@ -415,9 +415,66 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
   const int size = element.vars_size();
   if (!context->IntersectDomainWith(index_ref, Domain(0, size - 1))) {
     VLOG(1) << "Empty domain for the index variable in ExpandElement()";
+    return;
+  }
+
+  bool all_constants = true;
+  std::set<int64> reached_values;
+  std::vector<int64> invalid_indices;
+  const Domain initial_index_domain = context->DomainOf(index_ref);
+  const Domain initial_target_domain = context->DomainOf(target_ref);
+  for (const ClosedInterval& interval : initial_index_domain) {
+    for (int64 v = interval.start; v <= interval.end; ++v) {
+      const int var = element.vars(v);
+      const Domain var_domain = context->DomainOf(var);
+      if (var_domain.IntersectionWith(initial_target_domain).IsEmpty()) {
+        invalid_indices.push_back(v);
+        continue;
+      }
+      if (var_domain.Min() != var_domain.Max()) {
+        all_constants = false;
+        break;
+      }
+      reached_values.insert(var_domain.Min());
+    }
+  }
+
+  if (!invalid_indices.empty()) {
+    if (!context->IntersectDomainWith(
+            index_ref, Domain::FromValues(invalid_indices).Complement())) {
+      VLOG(1) << "No compatible variable domains in ExpandElement()";
+      return;
+    }
   }
 
   const Domain index_domain = context->DomainOf(index_ref);
+
+  std::map<int64, BoolArgumentProto*> supports;
+  if (all_constants && target_ref != index_ref) {
+    if (!context->IntersectDomainWith(
+            target_ref, Domain::FromValues(
+                            {reached_values.begin(), reached_values.end()}))) {
+      VLOG(1) << "Empty domain for the target variable in ExpandElement()";
+      return;
+    }
+
+    const Domain domain = context->DomainOf(target_ref);
+    if (domain.Size() == 1) {
+      context->UpdateRuleStats("element: array is constant");
+      return;
+    }
+
+    for (const ClosedInterval& interval : context->DomainOf(target_ref)) {
+      for (int64 v = interval.start; v <= interval.end; ++v) {
+        const int lit = context->GetOrCreateVarValueEncoding(target_ref, v);
+        CHECK(gtl::ContainsKey(reached_values, v));
+        supports[v] =
+            context->working_model->add_constraints()->mutable_bool_or();
+        supports[v]->add_literals(NegatedRef(lit));
+      }
+    }
+  }
+
   const Domain target_domain = context->DomainOf(target_ref);
 
   // While this is not stricly needed since all value in the index will be
@@ -433,13 +490,16 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
       bool_or->add_literals(index_lit);
 
       if (target_ref == index_ref) {
-        // This adds extra code. But this information is really important, and
-        // hard to retrieve once lost.
+        // This adds extra code. But this information is really important,
+        // and hard to retrieve once lost.
         context->AddImplyInDomain(index_lit, var, Domain(v));
       } else if (target_domain.Size() == 1) {
         context->AddImplyInDomain(index_lit, var, target_domain);
       } else if (var_domain.Size() == 1) {
         context->AddImplyInDomain(index_lit, target_ref, var_domain);
+        if (all_constants) {
+          supports[var_domain.Min()]->add_literals(index_lit);
+        }
       } else {
         ConstraintProto* const ct = context->working_model->add_constraints();
         ct->add_enforcement_literal(index_lit);
@@ -452,7 +512,12 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
       }
     }
   }
-  context->UpdateRuleStats("element: expanded");
+
+  if (all_constants) {
+    context->UpdateRuleStats("element: expanded value element");
+  } else {
+    context->UpdateRuleStats("element: expanded");
+  }
   ct->Clear();
 }
 
