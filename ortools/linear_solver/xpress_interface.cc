@@ -1214,7 +1214,10 @@ namespace operations_research {
 			CHECK_STATUS(XPRSsetintcontrol(mLp, XPRS_SCALING, 0));
 			break;
 		case MPSolverParameters::SCALING_ON:
-			CHECK_STATUS(XPRSsetintcontrol(mLp, XPRS_SCALING, 1));
+                  	CHECK_STATUS(XPRSsetdefaultcontrol(mLp, XPRS_SCALING));
+                        // In Xpress, scaling is not  a binary on/off control, but a bit vector control
+                        // setting it to 1 would only enable bit 1. Instead we reset it to its default (163 for the current version 8.6)
+                        // Alternatively, we could call CHECK_STATUS(XPRSsetintcontrol(mLp, XPRS_SCALING, 163));
 			break;
 		}
 	}
