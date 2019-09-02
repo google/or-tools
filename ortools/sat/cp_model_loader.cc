@@ -450,7 +450,7 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
 
     // Encode the half-equalities.
     //
-    // TODO(user): delay this after ExtractEncodingFromEquivalenceRelations()?
+    // TODO(user): delay this after PropagateEncodingFromEquivalenceRelations()?
     // Otherwise we might create new Boolean variables for no reason. Note
     // however, that in the presolve, we should only use the "representative" in
     // linear constraints, so we should be fine.
@@ -520,8 +520,10 @@ void CpModelMapping::PropagateEncodingFromEquivalenceRelations(
       var2 = NegationOf(var2);
       coeff2 = -coeff2;
     }
-    CHECK_NE(coeff1, 0);
-    CHECK_NE(coeff2, 0);
+
+    // TODO(user): This is not supposed to happen, but apparently it did on
+    // once on routing_GCM_0001_sat.fzn. Investigate and fix.
+    if (coeff1 == 0 || coeff2 == 0) continue;
 
     // We first map the >= literals.
     // It is important to do that first, since otherwise mapping a == literal

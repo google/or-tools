@@ -1396,9 +1396,12 @@ bool CpModelPresolver::PresolveLinear(ConstraintProto* ct) {
 
       if (ct->enforcement_literal().size() == 1) {
         // We cannot push the new domain, but we can add some deduction.
-        CHECK(RefIsPositive(ct->linear().vars(i)));
-        context_.deductions.AddDeduction(ct->enforcement_literal(0),
-                                         ct->linear().vars(i), new_domain);
+        const int var = ct->linear().vars(i);
+        CHECK(RefIsPositive(var));
+        if (!context_.DomainOfVarIsIncludedIn(var, new_domain)) {
+          context_.deductions.AddDeduction(ct->enforcement_literal(0), var,
+                                           new_domain);
+        }
         continue;
       }
 
@@ -4212,7 +4215,9 @@ void CpModelPresolver::PresolveToFixPoint() {
   if (context_.ModelIsUnsat()) return;
 
   // Make sure we filter out absent intervals.
-  // Also try to infer domain reductions from clauses.
+  //
+  // Try to infer domain reductions from clauses and the saved "implies in
+  // domain" relations.
   //
   // TODO(user): Also add deductions achieved during probing!
   //

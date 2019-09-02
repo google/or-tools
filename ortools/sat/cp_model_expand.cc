@@ -374,6 +374,10 @@ void ExpandInverse(ConstraintProto* ct, PresolveContext* context) {
   }
 
   // Add the "full-encoding" clauses for better presolving.
+  //
+  // TODO(user): Dectect full encoding at presolve and automatically add them or
+  // (maybe implicitely). This way we don't need to add them here and we also
+  // support in a better way encoding already present in the model.
   std::vector<BoolArgumentProto*> direct_clauses;
   std::vector<BoolArgumentProto*> inverse_clauses;
   for (int i = 0; i < size; ++i) {

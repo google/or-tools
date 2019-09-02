@@ -58,6 +58,11 @@ struct PresolveContext {
   bool DomainContains(int ref, int64 value) const;
   Domain DomainOf(int ref) const;
 
+  // This function takes a positive variable reference.
+  bool DomainOfVarIsIncludedIn(int var, const Domain& domain) {
+    return domains[var].IsIncludedIn(domain);
+  }
+
   // Returns true if this ref only appear in one constraint.
   bool VariableIsUniqueAndRemovable(int ref) const;
 

@@ -292,7 +292,6 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
     // First worker.
     if (index == 0) {  // Use default parameters and automatic search.
       new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-      // new_params.set_linearization_level(1);
       *name = "auto";
       return new_params;
     }
@@ -307,8 +306,9 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
     } else {
       // TODO(user): Disable lp_br if linear part is small or empty.
       if (--index == 0) {
-        new_params.set_search_branching(SatParameters::LP_SEARCH);
-        *name = "lp_br";
+        new_params.set_search_branching(SatParameters::PSEUDO_COST_SEARCH);
+        new_params.set_exploit_best_solution(true);
+        *name = "pseudo_cost";
         return new_params;
       }
     }
