@@ -1294,9 +1294,7 @@ namespace operations_research {
 
 		// Set log level.
 		CHECK_STATUS(
-			XPRSsetintcontrol(mLp, XPRS_LPLOG, quiet() ? 0 : 1));
-		CHECK_STATUS(
-			XPRSsetintcontrol(mLp, XPRS_MIPLOG, quiet() ? 0 : 1));
+			XPRSsetintcontrol(mLp, XPRS_OUTPUTLOG, quiet() ? 0 : 1));
 
 		// Set parameters.
 		// NOTE: We must invoke SetSolverSpecificParametersAsString() _first_.
@@ -1336,7 +1334,7 @@ namespace operations_research {
 		}
 
 		// Disable screen output right after solve
-		XPRSsetintcontrol(mLp, XPRS_LPLOG, 0);
+		XPRSsetintcontrol(mLp, XPRS_OUTPUTLOG, 0);
 
 		if (status) {
 			VLOG(1) << absl::StrFormat("Failed to optimize MIP. Error %d", status);
