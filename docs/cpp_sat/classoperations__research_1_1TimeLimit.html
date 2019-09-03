@@ -56,7 +56,7 @@
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>A simple class to enforce both an elapsed time limit and a deterministic time limit in the same thread as a program. </p>
 <p>The idea is to call <a class="el" href="classoperations__research_1_1TimeLimit.html#a810d5f7aaf80cc09cf5a094e20c1aaca" title="Returns true when the external limit is true, or the deterministic time is over the deterministic lim...">LimitReached()</a> as often as possible, until it returns false. The program should then abort as fast as possible.</p>
-<p>The deterministic limit is used to ensure reproductibility, as a consequence the deterministic time has to be advanced manually using the method <a class="el" href="classoperations__research_1_1TimeLimit.html#af90cfd1fc238433fc303ee28c5914eb9" title="Advances the deterministic time.">AdvanceDeterministicTime()</a>.</p>
+<p>The deterministic limit is used to ensure reproductibility. As a consequence the deterministic time has to be advanced manually using the method <a class="el" href="classoperations__research_1_1TimeLimit.html#af90cfd1fc238433fc303ee28c5914eb9" title="Advances the deterministic time.">AdvanceDeterministicTime()</a>.</p>
 <p>The instruction counter keeps track of number of executed cpu instructions. It uses Performance Monitoring Unit (PMU) counters to keep track of instruction count.</p>
 <p>The call itself is as fast as CycleClock::Now() + a few trivial instructions, unless the time_limit_use_instruction_count flag is set.</p>
 <p>The limit is very conservative: it returns true (i.e. the limit is reached) when current_time + max(T, ε) &gt;= limit_time, where ε is a small constant (see <a class="el" href="classoperations__research_1_1TimeLimit.html#a1837453fa693143e6ec334701557a448">TimeLimit::kSafetyBufferSeconds</a>), and T is the maximum measured time interval between two consecutive calls to <a class="el" href="classoperations__research_1_1TimeLimit.html#a810d5f7aaf80cc09cf5a094e20c1aaca" title="Returns true when the external limit is true, or the deterministic time is over the deterministic lim...">LimitReached()</a> over the last kHistorySize calls (so that we only consider "recent" history). This is made so that the probability of actually exceeding the time limit is small, without aborting too early.</p>
@@ -751,7 +751,7 @@ Static Public Attributes</h2></td></tr>
 
 <p>Registers the external Boolean to check when <a class="el" href="classoperations__research_1_1TimeLimit.html#a810d5f7aaf80cc09cf5a094e20c1aaca" title="Returns true when the external limit is true, or the deterministic time is over the deterministic lim...">LimitReached()</a> is called. </p>
 <p>This is used to mark the limit as reached through an external Boolean, i.e. <code><a class="el" href="classoperations__research_1_1TimeLimit.html#a810d5f7aaf80cc09cf5a094e20c1aaca" title="Returns true when the external limit is true, or the deterministic time is over the deterministic lim...">LimitReached()</a></code> returns true when the value of external_boolean_as_limit is true whatever the time limits are.</p>
-<p>Note 1: the external_boolean_as_limit can be modified during solve.</p>
+<p>Note 1: The external_boolean_as_limit can be modified during solve.</p>
 <p>Note 2: <code><a class="el" href="classoperations__research_1_1TimeLimit.html#a312550ebabce586fb77c49e813c610f8" title="Sets new time limits.">ResetLimitFromParameters()</a></code> will set this Boolean to false. </p>
 
 <p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00274">274</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
@@ -783,7 +783,7 @@ Static Public Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Sets new time limits. </p>
-<p>Note that this do not reset the running max nor any registered external boolean or calls to RegisterSigintHandler(). </p>
+<p>Note that this does not reset the running max nor any registered external boolean or calls to RegisterSigintHandler(). </p>
 
 <p class="definition">Definition at line <a class="el" href="time__limit_8h_source.html#l00452">452</a> of file <a class="el" href="time__limit_8h_source.html">time_limit.h</a>.</p>
 

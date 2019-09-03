@@ -57,7 +57,7 @@
 <p>This class can be used to represent such set efficiently as a sorted and non-adjacent list of intervals. This is efficient as long as the size of such list stays reasonable.</p>
 <p>In the comments below, the domain of *this will always be written 'D'. Note that all the functions are safe with respect to integer overflow. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00068">68</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00076">76</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -80,10 +80,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a354dd8c252cf59b748602b342db6019d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of elements in the domain. It is capped at kint64max.  <a href="#a354dd8c252cf59b748602b342db6019d">More...</a><br /></td></tr>
 <tr class="separator:a354dd8c252cf59b748602b342db6019d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a53e9735282c0bf0769962bd1b6a643bc"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Domain.html#a53e9735282c0bf0769962bd1b6a643bc">Min</a> () const</td></tr>
-<tr class="memdesc:a53e9735282c0bf0769962bd1b6a643bc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the domain min value.  <a href="#a53e9735282c0bf0769962bd1b6a643bc">More...</a><br /></td></tr>
+<tr class="memdesc:a53e9735282c0bf0769962bd1b6a643bc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the min value of the domain.  <a href="#a53e9735282c0bf0769962bd1b6a643bc">More...</a><br /></td></tr>
 <tr class="separator:a53e9735282c0bf0769962bd1b6a643bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5fa627799e723b650fe562b05e1fef5f"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Domain.html#a5fa627799e723b650fe562b05e1fef5f">Max</a> () const</td></tr>
-<tr class="memdesc:a5fa627799e723b650fe562b05e1fef5f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the domain max value.  <a href="#a5fa627799e723b650fe562b05e1fef5f">More...</a><br /></td></tr>
+<tr class="memdesc:a5fa627799e723b650fe562b05e1fef5f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the max value of the domain.  <a href="#a5fa627799e723b650fe562b05e1fef5f">More...</a><br /></td></tr>
 <tr class="separator:a5fa627799e723b650fe562b05e1fef5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab5228a93ebd3b866fc792ad8e5fe8fdc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Domain.html#ab5228a93ebd3b866fc792ad8e5fe8fdc">Contains</a> (int64 value) const</td></tr>
 <tr class="memdesc:ab5228a93ebd3b866fc792ad8e5fe8fdc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true iff value is in <a class="el" href="classoperations__research_1_1Domain.html" title="We call &quot;domain&quot; any subset of Int64 = [kint64min, kint64max].">Domain</a>.  <a href="#ab5228a93ebd3b866fc792ad8e5fe8fdc">More...</a><br /></td></tr>
@@ -131,7 +131,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a19c380b03cea21d7ac7325136a131ff0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a compact std::string of a vector of intervals like "[1,4][6][10,20]".  <a href="#a19c380b03cea21d7ac7325136a131ff0">More...</a><br /></td></tr>
 <tr class="separator:a19c380b03cea21d7ac7325136a131ff0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4e5a75821e16c8a560b487d3b1528a14"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Domain.html#a4e5a75821e16c8a560b487d3b1528a14">operator&lt;</a> (const <a class="el" href="classoperations__research_1_1Domain.html">Domain</a> &amp;other) const</td></tr>
-<tr class="memdesc:a4e5a75821e16c8a560b487d3b1528a14"><td class="mdescLeft">&#160;</td><td class="mdescRight">Lexicographic order on the <a class="el" href="classoperations__research_1_1Domain.html#a990d3e7957d45a6f940612ca59ed0d80" title="Deprecated.">intervals()</a> representation.  <a href="#a4e5a75821e16c8a560b487d3b1528a14">More...</a><br /></td></tr>
+<tr class="memdesc:a4e5a75821e16c8a560b487d3b1528a14"><td class="mdescLeft">&#160;</td><td class="mdescRight">Lexicographic order on the <a class="el" href="classoperations__research_1_1Domain.html#a990d3e7957d45a6f940612ca59ed0d80">intervals()</a> representation.  <a href="#a4e5a75821e16c8a560b487d3b1528a14">More...</a><br /></td></tr>
 <tr class="separator:a4e5a75821e16c8a560b487d3b1528a14"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9cab9b78b4670f5a40bfe367b4f3988b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Domain.html#a9cab9b78b4670f5a40bfe367b4f3988b">operator==</a> (const <a class="el" href="classoperations__research_1_1Domain.html">Domain</a> &amp;other) const</td></tr>
 <tr class="separator:a9cab9b78b4670f5a40bfe367b4f3988b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -151,7 +151,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a33fc82d1b38cc54c46504efd8d198686"><td class="memItemLeft" align="right" valign="top">absl::InlinedVector&lt; <a class="el" href="structoperations__research_1_1ClosedInterval.html">ClosedInterval</a>, 1 &gt;::const_iterator&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Domain.html#a33fc82d1b38cc54c46504efd8d198686">end</a> () const</td></tr>
 <tr class="separator:a33fc82d1b38cc54c46504efd8d198686"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a990d3e7957d45a6f940612ca59ed0d80"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="structoperations__research_1_1ClosedInterval.html">ClosedInterval</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Domain.html#a990d3e7957d45a6f940612ca59ed0d80">intervals</a> () const</td></tr>
-<tr class="memdesc:a990d3e7957d45a6f940612ca59ed0d80"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deprecated.  <a href="#a990d3e7957d45a6f940612ca59ed0d80">More...</a><br /></td></tr>
 <tr class="separator:a990d3e7957d45a6f940612ca59ed0d80"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
@@ -165,6 +164,9 @@ Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a51a3e4b033d405dd83bbf852f8515768"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classoperations__research_1_1Domain.html">Domain</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Domain.html#a51a3e4b033d405dd83bbf852f8515768">FromIntervals</a> (absl::Span&lt; const <a class="el" href="structoperations__research_1_1ClosedInterval.html">ClosedInterval</a> &gt; <a class="el" href="classoperations__research_1_1Domain.html#a990d3e7957d45a6f940612ca59ed0d80">intervals</a>)</td></tr>
 <tr class="memdesc:a51a3e4b033d405dd83bbf852f8515768"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a domain from the union of an unsorted list of intervals.  <a href="#a51a3e4b033d405dd83bbf852f8515768">More...</a><br /></td></tr>
 <tr class="separator:a51a3e4b033d405dd83bbf852f8515768"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a753af535fc1df6721ef1fb7e5a3d7426"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classoperations__research_1_1Domain.html">Domain</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Domain.html#a753af535fc1df6721ef1fb7e5a3d7426">FromFlatSpanOfIntervals</a> (absl::Span&lt; const int64 &gt; flat_intervals)</td></tr>
+<tr class="memdesc:a753af535fc1df6721ef1fb7e5a3d7426"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same as <a class="el" href="classoperations__research_1_1Domain.html#a51a3e4b033d405dd83bbf852f8515768" title="Creates a domain from the union of an unsorted list of intervals.">FromIntervals()</a> for a flattened representation (start, end, start, end, ...).  <a href="#a753af535fc1df6721ef1fb7e5a3d7426">More...</a><br /></td></tr>
+<tr class="separator:a753af535fc1df6721ef1fb7e5a3d7426"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6b332ba43f153d22f8059ac9740e606a"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classoperations__research_1_1Domain.html">Domain</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Domain.html#a6b332ba43f153d22f8059ac9740e606a">FromVectorIntervals</a> (const std::vector&lt; std::vector&lt; int64 &gt; &gt; &amp;<a class="el" href="classoperations__research_1_1Domain.html#a990d3e7957d45a6f940612ca59ed0d80">intervals</a>)</td></tr>
 <tr class="memdesc:a6b332ba43f153d22f8059ac9740e606a"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method is available in Python, Java and .NET.  <a href="#a6b332ba43f153d22f8059ac9740e606a">More...</a><br /></td></tr>
 <tr class="separator:a6b332ba43f153d22f8059ac9740e606a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -198,7 +200,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>By default, <a class="el" href="classoperations__research_1_1Domain.html" title="We call &quot;domain&quot; any subset of Int64 = [kint64min, kint64max].">Domain</a> will be empty. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00071">71</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00079">79</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -332,7 +334,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00233">233</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00275">275</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -359,7 +361,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00235">235</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00277">277</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -490,7 +492,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00238">238</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00280">280</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -541,6 +543,34 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 
 <p>This method is available in Python, Java and .NET. </p>
 <p>It allows building a <a class="el" href="classoperations__research_1_1Domain.html" title="We call &quot;domain&quot; any subset of Int64 = [kint64min, kint64max].">Domain</a> object from a flattened list of intervals (long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python). </p>
+
+</div>
+</div>
+<a id="a753af535fc1df6721ef1fb7e5a3d7426"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a753af535fc1df6721ef1fb7e5a3d7426">&#9670;&nbsp;</a></span>FromFlatSpanOfIntervals()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="el" href="classoperations__research_1_1Domain.html">Domain</a> FromFlatSpanOfIntervals </td>
+          <td>(</td>
+          <td class="paramtype">absl::Span&lt; const int64 &gt;&#160;</td>
+          <td class="paramname"><em>flat_intervals</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Same as <a class="el" href="classoperations__research_1_1Domain.html#a51a3e4b033d405dd83bbf852f8515768" title="Creates a domain from the union of an unsorted list of intervals.">FromIntervals()</a> for a flattened representation (start, end, start, end, ...). </p>
 
 </div>
 </div>
@@ -653,7 +683,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00232">232</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00274">274</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -700,10 +730,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 </table>
 </div><div class="memdoc">
 
-<p>Deprecated. </p>
-<p>TODO(user): remove, this makes a copy and is of a different type that our internal InlinedVector() anyway. </p>
-
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00246">246</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00288">288</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -782,8 +809,8 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
       </table>
 </div><div class="memdoc">
 
-<p>Returns the domain max value. </p>
-<p>It checks that the domain is not empty. </p>
+<p>Returns the max value of the domain. </p>
+<p>This Checks that the domain is not empty. </p>
 
 </div>
 </div>
@@ -802,8 +829,8 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
       </table>
 </div><div class="memdoc">
 
-<p>Returns the domain min value. </p>
-<p>It checks that the domain is not empty. </p>
+<p>Returns the min value of the domain. </p>
+<p>This Checks that the domain is not empty. </p>
 
 </div>
 </div>
@@ -884,7 +911,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 <p>Basic read-only std::vector&lt;&gt; wrapping to view a <a class="el" href="classoperations__research_1_1Domain.html" title="We call &quot;domain&quot; any subset of Int64 = [kint64min, kint64max].">Domain</a> as a sorted list of non-adjacent intervals. </p>
 <p>Note that we don't expose size() which might be confused with the number of values in the domain. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00230">230</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00273">273</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -912,7 +939,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00222">222</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00264">264</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -932,7 +959,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
       </table>
 </div><div class="memdoc">
 
-<p>Lexicographic order on the <a class="el" href="classoperations__research_1_1Domain.html#a990d3e7957d45a6f940612ca59ed0d80" title="Deprecated.">intervals()</a> representation. </p>
+<p>Lexicographic order on the <a class="el" href="classoperations__research_1_1Domain.html#a990d3e7957d45a6f940612ca59ed0d80">intervals()</a> representation. </p>
 
 </div>
 </div>
@@ -960,7 +987,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00218">218</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00260">260</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -988,7 +1015,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00234">234</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00276">276</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
