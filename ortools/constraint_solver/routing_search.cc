@@ -1890,6 +1890,9 @@ namespace {
 bool DimensionHasCumulConstraint(const RoutingDimension& dimension) {
   if (dimension.global_span_cost_coefficient() != 0) return true;
   if (dimension.HasSoftSpanUpperBounds()) return true;
+  if (dimension.HasBreakConstraints()) return true;
+  if (dimension.HasPickupToDeliveryLimits()) return true;
+  if (!dimension.GetNodePrecedences().empty()) return true;
   for (const int64 upper_bound : dimension.vehicle_span_upper_bounds()) {
     if (upper_bound != kint64max) return true;
   }

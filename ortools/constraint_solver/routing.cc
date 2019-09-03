@@ -214,6 +214,14 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
             break;
           }
         }
+        // Setting the cumuls of path start/end first is more efficient than
+        // setting the cumuls in order of path appearance, because setting start
+        // and end cumuls gives an opportunity to fix all cumuls with two
+        // decisions instead of |path| decisions.
+        // To this effect, we put end cumul just after the start cumul.
+        std::swap(cumuls[1], cumuls[cumuls.size() - 1]);
+        std::swap(cumul_values[1], cumul_values[cumuls.size() - 1]);
+
         // TODO(user): Use SetValuesFromTargets to return a Decision instead
         // of the nested Solve.
         if (!solver->SolveAndCommit(

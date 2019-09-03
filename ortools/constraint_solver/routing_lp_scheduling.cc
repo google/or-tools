@@ -265,6 +265,12 @@ bool CumulBoundsPropagator::InitializeArcsAndBounds(
       node = next;
     }
 
+    // Add vehicle span upper bound: end - span_ub <= start.
+    const int64 span_ub = dimension_.GetSpanUpperBoundForVehicle(vehicle);
+    if (span_ub < kint64max) {
+      AddArcs(model->End(vehicle), model->Start(vehicle), -span_ub);
+    }
+
     // Set pickup/delivery limits on route.
     std::vector<int> visited_pairs;
     StoreVisitedPickupDeliveryPairsOnRoute(
