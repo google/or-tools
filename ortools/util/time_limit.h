@@ -34,7 +34,7 @@
 #endif  // HAS_PERF_SUBSYSTEM
 
 /**
- * Enables to change the behavior of the TimeLimit class to use \b usertime
+ * Enables changing the behavior of the TimeLimit class to use -b usertime
  * instead of \b walltime. This is mainly useful for benchmarks.
  */
 DECLARE_bool(time_limit_use_usertime);
@@ -53,7 +53,7 @@ namespace operations_research {
  * The idea is to call LimitReached() as often as possible, until it returns
  * false. The program should then abort as fast as possible.
  *
- * The deterministic limit is used to ensure reproductibility, as a consequence
+ * The deterministic limit is used to ensure reproductibility. As a consequence
  * the deterministic time has to be advanced manually using the method
  * AdvanceDeterministicTime().
  *
@@ -267,7 +267,7 @@ class TimeLimit {
    * i.e. \c LimitReached() returns true when the value of
    * external_boolean_as_limit is true whatever the time limits are.
    *
-   * Note 1: the external_boolean_as_limit can be modified during solve.
+   * Note 1: The external_boolean_as_limit can be modified during solve.
    *
    * Note 2: \c ResetLimitFromParameters() will set this Boolean to false.
    */
@@ -284,7 +284,7 @@ class TimeLimit {
   }
 
   /**
-   * Sets new time limits. Note that this do not reset the running max nor
+   * Sets new time limits. Note that this does not reset the running max nor
    * any registered external boolean or calls to RegisterSigintHandler().
    */
   template <typename Parameters>

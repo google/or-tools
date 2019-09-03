@@ -134,6 +134,21 @@ Domain Domain::FromIntervals(absl::Span<const ClosedInterval> intervals) {
   return result;
 }
 
+Domain Domain::FromFlatSpanOfIntervals(absl::Span<const int64> flat_intervals) {
+  Domain result;
+  result.intervals_.reserve(flat_intervals.size() / 2);
+  for (int i = 0; i < flat_intervals.size(); i += 2) {
+    result.intervals_.push_back({flat_intervals[i], flat_intervals[i + 1]});
+  }
+  std::sort(result.intervals_.begin(), result.intervals_.end());
+  UnionOfSortedIntervals(&result.intervals_);
+  return result;
+}
+
+Domain Domain::FromFlatIntervals(const std::vector<int64>& flat_intervals) {
+  return FromFlatSpanOfIntervals(absl::MakeSpan(flat_intervals));
+}
+
 Domain Domain::FromVectorIntervals(
     const std::vector<std::vector<int64>>& intervals) {
   Domain result;
@@ -143,18 +158,6 @@ Domain Domain::FromVectorIntervals(
     } else {
       result.intervals_.push_back({interval[0], interval[1]});
     }
-  }
-  std::sort(result.intervals_.begin(), result.intervals_.end());
-  UnionOfSortedIntervals(&result.intervals_);
-  return result;
-}
-
-Domain Domain::FromFlatIntervals(const std::vector<int64>& flat_intervals) {
-  Domain result;
-  const int new_size = flat_intervals.size() / 2;
-  for (int i = 0; i < new_size; ++i) {
-    result.intervals_.push_back(
-        {flat_intervals[2 * i], flat_intervals[2 * i + 1]});
   }
   std::sort(result.intervals_.begin(), result.intervals_.end());
   UnionOfSortedIntervals(&result.intervals_);
@@ -212,6 +215,7 @@ bool Domain::IsIncludedIn(const Domain& domain) const {
 Domain Domain::Complement() const {
   Domain result;
   int64 next_start = kint64min;
+  result.intervals_.reserve(intervals_.size() + 1);
   for (const ClosedInterval& interval : intervals_) {
     if (interval.start != kint64min) {
       result.intervals_.push_back({next_start, interval.start - 1});
@@ -226,19 +230,23 @@ Domain Domain::Complement() const {
 
 Domain Domain::Negation() const {
   Domain result = *this;
-  if (intervals_.empty()) return result;
-  std::reverse(result.intervals_.begin(), result.intervals_.end());
-  if (result.intervals_.back().end == kint64min) {
+  result.NegateInPlace();
+  return result;
+}
+
+void Domain::NegateInPlace() {
+  if (intervals_.empty()) return;
+  std::reverse(intervals_.begin(), intervals_.end());
+  if (intervals_.back().end == kint64min) {
     // corner-case
-    result.intervals_.pop_back();
+    intervals_.pop_back();
   }
-  for (ClosedInterval& ref : result.intervals_) {
+  for (ClosedInterval& ref : intervals_) {
     std::swap(ref.start, ref.end);
     ref.start = ref.start == kint64min ? kint64max : -ref.start;
     ref.end = ref.end == kint64min ? kint64max : -ref.end;
   }
-  DCHECK(IntervalsAreSortedAndNonAdjacent(result.intervals_));
-  return result;
+  DCHECK(IntervalsAreSortedAndNonAdjacent(intervals_));
 }
 
 Domain Domain::IntersectionWith(const Domain& domain) const {
@@ -280,11 +288,13 @@ Domain Domain::UnionWith(const Domain& domain) const {
   return result;
 }
 
+// TODO(user): Use a better algorithm.
 Domain Domain::AdditionWith(const Domain& domain) const {
   Domain result;
 
   const auto& a = intervals_;
   const auto& b = domain.intervals_;
+  result.intervals_.reserve(a.size() * b.size());
   for (const ClosedInterval& i : a) {
     for (const ClosedInterval& j : b) {
       result.intervals_.push_back(
@@ -292,7 +302,7 @@ Domain Domain::AdditionWith(const Domain& domain) const {
     }
   }
 
-  // The copy is not needed if one of the list is of size 1.
+  // The sort is not needed if one of the list is of size 1.
   if (a.size() > 1 && b.size() > 1) {
     std::sort(result.intervals_.begin(), result.intervals_.end());
   }
@@ -313,24 +323,27 @@ Domain Domain::MultiplicationBy(int64 coeff, bool* exact) const {
   if (intervals_.empty() || coeff == 0) return {};
 
   const int64 abs_coeff = std::abs(coeff);
-  if (abs_coeff > 1 && Size() > kDomainComplexityLimit) {
+  const int64 size_if_non_trivial = abs_coeff > 1 ? Size() : 0;
+  if (size_if_non_trivial > kDomainComplexityLimit) {
     if (exact != nullptr) *exact = false;
     return ContinuousMultiplicationBy(coeff);
   }
 
   Domain result;
-  if (abs_coeff != 1) {
-    std::vector<int64> individual_values;
+  if (abs_coeff > 1) {
+    result.intervals_.reserve(size_if_non_trivial);
     for (const ClosedInterval& i : intervals_) {
       for (int v = i.start; v <= i.end; ++v) {
-        individual_values.push_back(CapProd(v, abs_coeff));
+        // Because abs_coeff > 1, all new values are disjoint.
+        const int64 new_value = CapProd(v, abs_coeff);
+        result.intervals_.push_back({new_value, new_value});
       }
     }
-    result = Domain::FromValues(individual_values);
   } else {
     result = *this;
   }
-  return coeff > 0 ? result : result.Negation();
+  if (coeff < 0) result.NegateInPlace();
+  return result;
 }
 
 Domain Domain::ContinuousMultiplicationBy(int64 coeff) const {
@@ -341,7 +354,8 @@ Domain Domain::ContinuousMultiplicationBy(int64 coeff) const {
     i.end = CapProd(i.end, abs_coeff);
   }
   UnionOfSortedIntervals(&result.intervals_);
-  return coeff > 0 ? result : result.Negation();
+  if (coeff < 0) result.NegateInPlace();
+  return result;
 }
 
 Domain Domain::ContinuousMultiplicationBy(const Domain& domain) const {
@@ -372,7 +386,8 @@ Domain Domain::DivisionBy(int64 coeff) const {
     i.end = i.end / abs_coeff;
   }
   UnionOfSortedIntervals(&result.intervals_);
-  return coeff > 0 ? result : result.Negation();
+  if (coeff < 0) result.NegateInPlace();
+  return result;
 }
 
 Domain Domain::InverseMultiplicationBy(const int64 coeff) const {
@@ -395,7 +410,8 @@ Domain Domain::InverseMultiplicationBy(const int64 coeff) const {
   result.intervals_.resize(new_size);
   result.intervals_.shrink_to_fit();
   DCHECK(IntervalsAreSortedAndNonAdjacent(result.intervals_));
-  return coeff > 0 ? result : result.Negation();
+  if (coeff < 0) result.NegateInPlace();
+  return result;
 }
 
 // TODO(user): This could be computed more efficiently with a dedicated code
