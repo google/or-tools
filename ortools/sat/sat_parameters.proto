@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 141
+// NEXT TAG: 142
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -701,6 +701,9 @@ message SatParameters {
   // work with just one worker, in which case the solver is deterministic even
   // if deterministic_parallel_search is false.
   optional bool interleave_search = 136 [default = false];
+
+  // Temporary parameter until the memory usage is more optimized.
+  optional bool reduce_memory_usage_in_interleave_mode = 141 [default = true];
 
   // Make the parallelization deterministic. Currently, this only work with
   // use_lns_only().

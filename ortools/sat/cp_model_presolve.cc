@@ -77,10 +77,14 @@ void PresolveContext::AddImplication(int a, int b) {
 // b => x in [lb, ub].
 void PresolveContext::AddImplyInDomain(int b, int x, const Domain& domain) {
   ConstraintProto* const imply = working_model->add_constraints();
-  imply->add_enforcement_literal(b);
-  imply->mutable_linear()->add_vars(x);
-  imply->mutable_linear()->add_coeffs(1);
-  FillDomainInProto(domain, imply->mutable_linear());
+
+  // Doing it like this seems to use slightly less memory.
+  // TODO(user): Find the best way to create such small proto.
+  imply->mutable_enforcement_literal()->Resize(1, b);
+  LinearConstraintProto* mutable_linear = imply->mutable_linear();
+  mutable_linear->mutable_vars()->Resize(1, x);
+  mutable_linear->mutable_coeffs()->Resize(1, 1);
+  FillDomainInProto(domain, mutable_linear);
 }
 
 bool PresolveContext::DomainIsEmpty(int ref) const {
@@ -379,7 +383,8 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64 value) {
   }
   std::pair<int, int64> key{var, s_value};
 
-  if (encoding.contains(key)) return encoding[key];
+  auto it = encoding.find(key);
+  if (it != encoding.end()) return it->second;
 
   if (domains[var].Size() == 1) {
     const int true_literal = GetOrCreateConstantVar(1);

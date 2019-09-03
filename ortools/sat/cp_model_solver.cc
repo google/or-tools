@@ -2065,9 +2065,10 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
 
   // If "interleave_search" is true, then the number of strategies is
   // 4 if num_search_workers = 1, or 8 otherwise.
-  const int num_strategies = parameters.interleave_search()
-                                 ? (num_search_workers == 1 ? 4 : 8)
-                                 : num_search_workers;
+  const int num_strategies =
+      parameters.interleave_search()
+          ? (parameters.reduce_memory_usage_in_interleave_mode() ? 4 : 8)
+          : num_search_workers;
 
   std::unique_ptr<SharedBoundsManager> shared_bounds_manager;
   if (global_model->GetOrCreate<SatParameters>()->share_level_zero_bounds()) {
@@ -2129,7 +2130,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     // Add the NeighborhoodGeneratorHelper as a special subsolver so that its
     // Synchronize() is called before any LNS neighborhood solvers.
     auto unique_helper = absl::make_unique<NeighborhoodGeneratorHelper>(
-        /*id=*/subsolvers.size(), model_proto, &parameters,
+        /*id=*/subsolvers.size(), &model_proto, &parameters,
         shared_response_manager, shared_time_limit,
         shared_bounds_manager.get());
     NeighborhoodGeneratorHelper* helper = unique_helper.get();
