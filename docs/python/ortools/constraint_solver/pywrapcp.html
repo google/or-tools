@@ -3714,12 +3714,19 @@ class RoutingModel(object):
         r&#34;&#34;&#34; Returns dimensions with soft or vehicle span costs.&#34;&#34;&#34;
         return _pywrapcp.RoutingModel_GetDimensionsWithSoftOrSpanCosts(self)
 
-    def GetDimensionsForGlobalCumulOptimizers(self) -&gt; &#34;std::vector&lt; operations_research::RoutingDimension * &gt; const &amp;&#34;:
-        r&#34;&#34;&#34; Returns dimensions_for_[global|local]_optimizer_ if the model has been closed, and empty vectors otherwise.&#34;&#34;&#34;
-        return _pywrapcp.RoutingModel_GetDimensionsForGlobalCumulOptimizers(self)
+    def GetGlobalDimensionCumulOptimizers(self) -&gt; &#34;std::vector&lt; std::unique_ptr&lt; operations_research::GlobalDimensionCumulOptimizer &gt; &gt; const &amp;&#34;:
+        r&#34;&#34;&#34; Returns [global|local]_dimension_optimizers_, which are empty if the model has not been closed.&#34;&#34;&#34;
+        return _pywrapcp.RoutingModel_GetGlobalDimensionCumulOptimizers(self)
 
-    def GetDimensionsForLocalCumulOptimizers(self) -&gt; &#34;std::vector&lt; operations_research::RoutingDimension * &gt; const &amp;&#34;:
-        return _pywrapcp.RoutingModel_GetDimensionsForLocalCumulOptimizers(self)
+    def GetLocalDimensionCumulOptimizers(self) -&gt; &#34;std::vector&lt; std::unique_ptr&lt; operations_research::LocalDimensionCumulOptimizer &gt; &gt; const &amp;&#34;:
+        return _pywrapcp.RoutingModel_GetLocalDimensionCumulOptimizers(self)
+
+    def GetMutableGlobalCumulOptimizer(self, dimension: &#39;RoutingDimension&#39;) -&gt; &#34;operations_research::GlobalDimensionCumulOptimizer *&#34;:
+        r&#34;&#34;&#34; Returns the global/local dimension cumul optimizer for a given dimension, or nullptr if there is none.&#34;&#34;&#34;
+        return _pywrapcp.RoutingModel_GetMutableGlobalCumulOptimizer(self, dimension)
+
+    def GetMutableLocalCumulOptimizer(self, dimension: &#39;RoutingDimension&#39;) -&gt; &#34;operations_research::LocalDimensionCumulOptimizer *&#34;:
+        return _pywrapcp.RoutingModel_GetMutableLocalCumulOptimizer(self, dimension)
 
     def HasDimension(self, dimension_name: &#39;std::string const &amp;&#39;) -&gt; &#34;bool&#34;:
         r&#34;&#34;&#34; Returns true if a dimension exists for a given dimension name.&#34;&#34;&#34;
@@ -4042,7 +4049,7 @@ class RoutingModel(object):
         return _pywrapcp.RoutingModel_AddIntervalToAssignment(self, interval)
 
     def PackCumulsOfOptimizerDimensionsFromAssignment(self, original_assignment: &#39;Assignment&#39;, duration_limit: &#39;absl::Duration&#39;) -&gt; &#34;operations_research::Assignment const *&#34;:
-        r&#34;&#34;&#34; For every dimension in the model&#39;s dimensions_for_local/global_optimizer_, this method tries to pack the cumul values of the dimension, such that: - The cumul costs (span costs, soft lower and upper bound costs, etc) are   minimized. - The cumuls of the ends of the routes are minimized for this given   minimal cumul cost. - Given these minimal end cumuls, the route start cumuls are maximized. Returns the assignment resulting from allocating these packed cumuls with the solver, and nullptr if these cumuls could not be set by the solver.&#34;&#34;&#34;
+        r&#34;&#34;&#34; For every dimension in the model with an optimizer in local/global_dimension_optimizers_, this method tries to pack the cumul values of the dimension, such that: - The cumul costs (span costs, soft lower and upper bound costs, etc) are   minimized. - The cumuls of the ends of the routes are minimized for this given   minimal cumul cost. - Given these minimal end cumuls, the route start cumuls are maximized. Returns the assignment resulting from allocating these packed cumuls with the solver, and nullptr if these cumuls could not be set by the solver.&#34;&#34;&#34;
         return _pywrapcp.RoutingModel_PackCumulsOfOptimizerDimensionsFromAssignment(self, original_assignment, duration_limit)
 
     def AddLocalSearchFilter(self, filter: &#39;LocalSearchFilter&#39;) -&gt; &#34;void&#34;:
@@ -13032,12 +13039,19 @@ RoutingModel model(manager);</p></section>
         r&#34;&#34;&#34; Returns dimensions with soft or vehicle span costs.&#34;&#34;&#34;
         return _pywrapcp.RoutingModel_GetDimensionsWithSoftOrSpanCosts(self)
 
-    def GetDimensionsForGlobalCumulOptimizers(self) -&gt; &#34;std::vector&lt; operations_research::RoutingDimension * &gt; const &amp;&#34;:
-        r&#34;&#34;&#34; Returns dimensions_for_[global|local]_optimizer_ if the model has been closed, and empty vectors otherwise.&#34;&#34;&#34;
-        return _pywrapcp.RoutingModel_GetDimensionsForGlobalCumulOptimizers(self)
+    def GetGlobalDimensionCumulOptimizers(self) -&gt; &#34;std::vector&lt; std::unique_ptr&lt; operations_research::GlobalDimensionCumulOptimizer &gt; &gt; const &amp;&#34;:
+        r&#34;&#34;&#34; Returns [global|local]_dimension_optimizers_, which are empty if the model has not been closed.&#34;&#34;&#34;
+        return _pywrapcp.RoutingModel_GetGlobalDimensionCumulOptimizers(self)
 
-    def GetDimensionsForLocalCumulOptimizers(self) -&gt; &#34;std::vector&lt; operations_research::RoutingDimension * &gt; const &amp;&#34;:
-        return _pywrapcp.RoutingModel_GetDimensionsForLocalCumulOptimizers(self)
+    def GetLocalDimensionCumulOptimizers(self) -&gt; &#34;std::vector&lt; std::unique_ptr&lt; operations_research::LocalDimensionCumulOptimizer &gt; &gt; const &amp;&#34;:
+        return _pywrapcp.RoutingModel_GetLocalDimensionCumulOptimizers(self)
+
+    def GetMutableGlobalCumulOptimizer(self, dimension: &#39;RoutingDimension&#39;) -&gt; &#34;operations_research::GlobalDimensionCumulOptimizer *&#34;:
+        r&#34;&#34;&#34; Returns the global/local dimension cumul optimizer for a given dimension, or nullptr if there is none.&#34;&#34;&#34;
+        return _pywrapcp.RoutingModel_GetMutableGlobalCumulOptimizer(self, dimension)
+
+    def GetMutableLocalCumulOptimizer(self, dimension: &#39;RoutingDimension&#39;) -&gt; &#34;operations_research::LocalDimensionCumulOptimizer *&#34;:
+        return _pywrapcp.RoutingModel_GetMutableLocalCumulOptimizer(self, dimension)
 
     def HasDimension(self, dimension_name: &#39;std::string const &amp;&#39;) -&gt; &#34;bool&#34;:
         r&#34;&#34;&#34; Returns true if a dimension exists for a given dimension name.&#34;&#34;&#34;
@@ -13360,7 +13374,7 @@ RoutingModel model(manager);</p></section>
         return _pywrapcp.RoutingModel_AddIntervalToAssignment(self, interval)
 
     def PackCumulsOfOptimizerDimensionsFromAssignment(self, original_assignment: &#39;Assignment&#39;, duration_limit: &#39;absl::Duration&#39;) -&gt; &#34;operations_research::Assignment const *&#34;:
-        r&#34;&#34;&#34; For every dimension in the model&#39;s dimensions_for_local/global_optimizer_, this method tries to pack the cumul values of the dimension, such that: - The cumul costs (span costs, soft lower and upper bound costs, etc) are   minimized. - The cumuls of the ends of the routes are minimized for this given   minimal cumul cost. - Given these minimal end cumuls, the route start cumuls are maximized. Returns the assignment resulting from allocating these packed cumuls with the solver, and nullptr if these cumuls could not be set by the solver.&#34;&#34;&#34;
+        r&#34;&#34;&#34; For every dimension in the model with an optimizer in local/global_dimension_optimizers_, this method tries to pack the cumul values of the dimension, such that: - The cumul costs (span costs, soft lower and upper bound costs, etc) are   minimized. - The cumuls of the ends of the routes are minimized for this given   minimal cumul cost. - Given these minimal end cumuls, the route start cumuls are maximized. Returns the assignment resulting from allocating these packed cumuls with the solver, and nullptr if these cumuls could not be set by the solver.&#34;&#34;&#34;
         return _pywrapcp.RoutingModel_PackCumulsOfOptimizerDimensionsFromAssignment(self, original_assignment, duration_limit)
 
     def AddLocalSearchFilter(self, filter: &#39;LocalSearchFilter&#39;) -&gt; &#34;void&#34;:
@@ -14250,29 +14264,6 @@ and end at the same node (single depot), this is the node returned.</p></section
     return _pywrapcp.RoutingModel_GetDimensions(self)</code></pre>
 </details>
 </dd>
-<dt id="pywrapcp.RoutingModel.GetDimensionsForGlobalCumulOptimizers"><code class="name flex">
-<span>def <span class="ident">GetDimensionsForGlobalCumulOptimizers</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Returns dimensions_for_[global|local]<em>optimizer</em> if the model has been closed, and empty vectors otherwise.</p></section>
-<details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def GetDimensionsForGlobalCumulOptimizers(self) -&gt; &#34;std::vector&lt; operations_research::RoutingDimension * &gt; const &amp;&#34;:
-    r&#34;&#34;&#34; Returns dimensions_for_[global|local]_optimizer_ if the model has been closed, and empty vectors otherwise.&#34;&#34;&#34;
-    return _pywrapcp.RoutingModel_GetDimensionsForGlobalCumulOptimizers(self)</code></pre>
-</details>
-</dd>
-<dt id="pywrapcp.RoutingModel.GetDimensionsForLocalCumulOptimizers"><code class="name flex">
-<span>def <span class="ident">GetDimensionsForLocalCumulOptimizers</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<section class="desc"></section>
-<details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def GetDimensionsForLocalCumulOptimizers(self) -&gt; &#34;std::vector&lt; operations_research::RoutingDimension * &gt; const &amp;&#34;:
-    return _pywrapcp.RoutingModel_GetDimensionsForLocalCumulOptimizers(self)</code></pre>
-</details>
-</dd>
 <dt id="pywrapcp.RoutingModel.GetDimensionsWithSoftOrSpanCosts"><code class="name flex">
 <span>def <span class="ident">GetDimensionsWithSoftOrSpanCosts</span></span>(<span>self)</span>
 </code></dt>
@@ -14333,6 +14324,18 @@ and end at the same node (single depot), this is the node returned.</p></section
     return _pywrapcp.RoutingModel_GetFixedCostOfVehicle(self, vehicle)</code></pre>
 </details>
 </dd>
+<dt id="pywrapcp.RoutingModel.GetGlobalDimensionCumulOptimizers"><code class="name flex">
+<span>def <span class="ident">GetGlobalDimensionCumulOptimizers</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Returns [global|local]<em>dimension_optimizers</em>, which are empty if the model has not been closed.</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def GetGlobalDimensionCumulOptimizers(self) -&gt; &#34;std::vector&lt; std::unique_ptr&lt; operations_research::GlobalDimensionCumulOptimizer &gt; &gt; const &amp;&#34;:
+    r&#34;&#34;&#34; Returns [global|local]_dimension_optimizers_, which are empty if the model has not been closed.&#34;&#34;&#34;
+    return _pywrapcp.RoutingModel_GetGlobalDimensionCumulOptimizers(self)</code></pre>
+</details>
+</dd>
 <dt id="pywrapcp.RoutingModel.GetHardTypeIncompatibilitiesOfType"><code class="name flex">
 <span>def <span class="ident">GetHardTypeIncompatibilitiesOfType</span></span>(<span>self, type)</span>
 </code></dt>
@@ -14357,6 +14360,17 @@ and end at the same node (single depot), this is the node returned.</p></section
     return _pywrapcp.RoutingModel_GetHomogeneousCost(self, from_index, to_index)</code></pre>
 </details>
 </dd>
+<dt id="pywrapcp.RoutingModel.GetLocalDimensionCumulOptimizers"><code class="name flex">
+<span>def <span class="ident">GetLocalDimensionCumulOptimizers</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def GetLocalDimensionCumulOptimizers(self) -&gt; &#34;std::vector&lt; std::unique_ptr&lt; operations_research::LocalDimensionCumulOptimizer &gt; &gt; const &amp;&#34;:
+    return _pywrapcp.RoutingModel_GetLocalDimensionCumulOptimizers(self)</code></pre>
+</details>
+</dd>
 <dt id="pywrapcp.RoutingModel.GetMutableDimension"><code class="name flex">
 <span>def <span class="ident">GetMutableDimension</span></span>(<span>self, dimension_name)</span>
 </code></dt>
@@ -14367,6 +14381,29 @@ and end at the same node (single depot), this is the node returned.</p></section
 <pre><code class="python">def GetMutableDimension(self, dimension_name: &#39;std::string const &amp;&#39;) -&gt; &#34;operations_research::RoutingDimension *&#34;:
     r&#34;&#34;&#34; Returns a dimension from its name. Returns nullptr if the dimension does not exist.&#34;&#34;&#34;
     return _pywrapcp.RoutingModel_GetMutableDimension(self, dimension_name)</code></pre>
+</details>
+</dd>
+<dt id="pywrapcp.RoutingModel.GetMutableGlobalCumulOptimizer"><code class="name flex">
+<span>def <span class="ident">GetMutableGlobalCumulOptimizer</span></span>(<span>self, dimension)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Returns the global/local dimension cumul optimizer for a given dimension, or nullptr if there is none.</p></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def GetMutableGlobalCumulOptimizer(self, dimension: &#39;RoutingDimension&#39;) -&gt; &#34;operations_research::GlobalDimensionCumulOptimizer *&#34;:
+    r&#34;&#34;&#34; Returns the global/local dimension cumul optimizer for a given dimension, or nullptr if there is none.&#34;&#34;&#34;
+    return _pywrapcp.RoutingModel_GetMutableGlobalCumulOptimizer(self, dimension)</code></pre>
+</details>
+</dd>
+<dt id="pywrapcp.RoutingModel.GetMutableLocalCumulOptimizer"><code class="name flex">
+<span>def <span class="ident">GetMutableLocalCumulOptimizer</span></span>(<span>self, dimension)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>Source code</summary>
+<pre><code class="python">def GetMutableLocalCumulOptimizer(self, dimension: &#39;RoutingDimension&#39;) -&gt; &#34;operations_research::LocalDimensionCumulOptimizer *&#34;:
+    return _pywrapcp.RoutingModel_GetMutableLocalCumulOptimizer(self, dimension)</code></pre>
 </details>
 </dd>
 <dt id="pywrapcp.RoutingModel.GetNonZeroCostClassesCount"><code class="name flex">
@@ -14803,13 +14840,13 @@ dimension-&gt;CumulVar(end) - dimension-&gt;CumulVar(start) This does stronger p
 <span>def <span class="ident">PackCumulsOfOptimizerDimensionsFromAssignment</span></span>(<span>self, original_assignment, duration_limit)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>For every dimension in the model's dimensions_for_local/global_optimizer_, this method tries to pack the cumul values of the dimension, such that: - The cumul costs (span costs, soft lower and upper bound costs, etc) are
+<section class="desc"><p>For every dimension in the model with an optimizer in local/global_dimension_optimizers_, this method tries to pack the cumul values of the dimension, such that: - The cumul costs (span costs, soft lower and upper bound costs, etc) are
 minimized. - The cumuls of the ends of the routes are minimized for this given
 minimal cumul cost. - Given these minimal end cumuls, the route start cumuls are maximized. Returns the assignment resulting from allocating these packed cumuls with the solver, and nullptr if these cumuls could not be set by the solver.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def PackCumulsOfOptimizerDimensionsFromAssignment(self, original_assignment: &#39;Assignment&#39;, duration_limit: &#39;absl::Duration&#39;) -&gt; &#34;operations_research::Assignment const *&#34;:
-    r&#34;&#34;&#34; For every dimension in the model&#39;s dimensions_for_local/global_optimizer_, this method tries to pack the cumul values of the dimension, such that: - The cumul costs (span costs, soft lower and upper bound costs, etc) are   minimized. - The cumuls of the ends of the routes are minimized for this given   minimal cumul cost. - Given these minimal end cumuls, the route start cumuls are maximized. Returns the assignment resulting from allocating these packed cumuls with the solver, and nullptr if these cumuls could not be set by the solver.&#34;&#34;&#34;
+    r&#34;&#34;&#34; For every dimension in the model with an optimizer in local/global_dimension_optimizers_, this method tries to pack the cumul values of the dimension, such that: - The cumul costs (span costs, soft lower and upper bound costs, etc) are   minimized. - The cumuls of the ends of the routes are minimized for this given   minimal cumul cost. - Given these minimal end cumuls, the route start cumuls are maximized. Returns the assignment resulting from allocating these packed cumuls with the solver, and nullptr if these cumuls could not be set by the solver.&#34;&#34;&#34;
     return _pywrapcp.RoutingModel_PackCumulsOfOptimizerDimensionsFromAssignment(self, original_assignment, duration_limit)</code></pre>
 </details>
 </dd>
@@ -22097,16 +22134,18 @@ p2/d2. - For a temporal requirement, p2 must be visited between p1 and d1.</p></
 <li><code><a title="pywrapcp.RoutingModel.GetDepot" href="#pywrapcp.RoutingModel.GetDepot">GetDepot</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetDimensionOrDie" href="#pywrapcp.RoutingModel.GetDimensionOrDie">GetDimensionOrDie</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetDimensions" href="#pywrapcp.RoutingModel.GetDimensions">GetDimensions</a></code></li>
-<li><code><a title="pywrapcp.RoutingModel.GetDimensionsForGlobalCumulOptimizers" href="#pywrapcp.RoutingModel.GetDimensionsForGlobalCumulOptimizers">GetDimensionsForGlobalCumulOptimizers</a></code></li>
-<li><code><a title="pywrapcp.RoutingModel.GetDimensionsForLocalCumulOptimizers" href="#pywrapcp.RoutingModel.GetDimensionsForLocalCumulOptimizers">GetDimensionsForLocalCumulOptimizers</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetDimensionsWithSoftOrSpanCosts" href="#pywrapcp.RoutingModel.GetDimensionsWithSoftOrSpanCosts">GetDimensionsWithSoftOrSpanCosts</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetDisjunctionIndices" href="#pywrapcp.RoutingModel.GetDisjunctionIndices">GetDisjunctionIndices</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetDisjunctionMaxCardinality" href="#pywrapcp.RoutingModel.GetDisjunctionMaxCardinality">GetDisjunctionMaxCardinality</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetDisjunctionPenalty" href="#pywrapcp.RoutingModel.GetDisjunctionPenalty">GetDisjunctionPenalty</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetFixedCostOfVehicle" href="#pywrapcp.RoutingModel.GetFixedCostOfVehicle">GetFixedCostOfVehicle</a></code></li>
+<li><code><a title="pywrapcp.RoutingModel.GetGlobalDimensionCumulOptimizers" href="#pywrapcp.RoutingModel.GetGlobalDimensionCumulOptimizers">GetGlobalDimensionCumulOptimizers</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetHardTypeIncompatibilitiesOfType" href="#pywrapcp.RoutingModel.GetHardTypeIncompatibilitiesOfType">GetHardTypeIncompatibilitiesOfType</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetHomogeneousCost" href="#pywrapcp.RoutingModel.GetHomogeneousCost">GetHomogeneousCost</a></code></li>
+<li><code><a title="pywrapcp.RoutingModel.GetLocalDimensionCumulOptimizers" href="#pywrapcp.RoutingModel.GetLocalDimensionCumulOptimizers">GetLocalDimensionCumulOptimizers</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetMutableDimension" href="#pywrapcp.RoutingModel.GetMutableDimension">GetMutableDimension</a></code></li>
+<li><code><a title="pywrapcp.RoutingModel.GetMutableGlobalCumulOptimizer" href="#pywrapcp.RoutingModel.GetMutableGlobalCumulOptimizer">GetMutableGlobalCumulOptimizer</a></code></li>
+<li><code><a title="pywrapcp.RoutingModel.GetMutableLocalCumulOptimizer" href="#pywrapcp.RoutingModel.GetMutableLocalCumulOptimizer">GetMutableLocalCumulOptimizer</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetNonZeroCostClassesCount" href="#pywrapcp.RoutingModel.GetNonZeroCostClassesCount">GetNonZeroCostClassesCount</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetNumOfSingletonNodes" href="#pywrapcp.RoutingModel.GetNumOfSingletonNodes">GetNumOfSingletonNodes</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetNumberOfDecisionsInFirstSolution" href="#pywrapcp.RoutingModel.GetNumberOfDecisionsInFirstSolution">GetNumberOfDecisionsInFirstSolution</a></code></li>

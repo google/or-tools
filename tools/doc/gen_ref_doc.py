@@ -84,6 +84,7 @@ def create_section_data():
       'ortools/sat/cp_model_solver.h ' +
       'ortools/sat/model.h ' +
       'ortools/util/sorted_interval_list.h ' +
+      'ortools/util/time_limit.h ' +
       'ortools/gen/ortools/sat/cp_model.pb.h ' +
       'ortools/gen/ortools/sat/sat_parameters.pb.h'
     },

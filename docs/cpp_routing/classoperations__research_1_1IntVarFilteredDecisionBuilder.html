@@ -56,7 +56,7 @@
 <div class="textblock"><p><a class="el" href="classoperations__research_1_1Decision.html" title="A Decision represents a choice point in the search tree.">Decision</a> builders building a solution using local search filters to evaluate its feasibility. </p>
 <p>This is very fast but can eventually fail when the solution is restored if filters did not detect all infeasiblities. More details: Using local search filters to build a solution. The approach is pretty straight-forward: have a general assignment storing the current solution, build delta assigment representing possible extensions to the current solution and validate them with filters. The tricky bit comes from using the assignment and filter APIs in a way which avoids the lazy creation of internal hash_maps between variables and indices. Generic filter-based decision builder applied to IntVars. when the code is mature enough. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02498">2498</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02521">2521</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -168,7 +168,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02503">2503</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02526">2526</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -320,7 +320,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns true if the variable of index 'index' is in the current solution. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02538">2538</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02561">2561</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -378,7 +378,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Virtual method to initialize the solution. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02514">2514</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02537">2537</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -438,7 +438,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns statistics on search, number of decisions sent to filters, number of decisions rejected by filters. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02509">2509</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02532">2532</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -465,7 +465,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02510">2510</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02533">2533</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -505,7 +505,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Modifies the current solution by setting the variable of index 'index' to value 'value'. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02523">2523</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02546">2546</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -534,7 +534,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns the number of variables the decision builder is trying to instantiate. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02543">2543</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02566">2566</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -565,7 +565,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classoperations__research_1_1RoutingFilteredDecisionBuilder.html#a95f347f8419578337202450136ca78be">RoutingFilteredDecisionBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02520">2520</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02543">2543</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -595,7 +595,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns the value of the variable of index 'index' in the last committed solution. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02534">2534</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02557">2557</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -625,7 +625,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns the variable of index 'index'. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02545">2545</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02568">2568</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>

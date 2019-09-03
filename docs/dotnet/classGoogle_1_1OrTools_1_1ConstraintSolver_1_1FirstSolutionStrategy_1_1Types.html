@@ -111,9 +111,9 @@ Public Types</h2></td></tr>
 <tr><td class="fieldname"><a id="a896c037a32087c5c20d97e64a1786880afabfac3f293171b27129b62f01763ea5"></a>PathCheapestArc&#160;</td><td class="fielddoc"><p>&mdash; Path addition heuristics &mdash; Starting from a route "start" node, connect it to the node which produces the cheapest route segment, then extend the route by iterating on the last node added to the route. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a896c037a32087c5c20d97e64a1786880a1e0911afce171548016e1262ca4cfc78"></a>PathMostConstrainedArc&#160;</td><td class="fielddoc"><p>Same as PATH_CHEAPEST_ARC, but arcs are evaluated with a comparison-based selector which will favor the most constrained arc first. </p>
-<p>To assign a selector to the routing model, see <a class="el" href="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html#a62f2d1aa8707616a15468b8efa4b7439">RoutingModel::ArcIsMoreConstrainedThanArc()</a> in routing.h for details. </p>
+<p>To assign a selector to the routing model, see RoutingModel::ArcIsMoreConstrainedThanArc() in routing.h for details. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a896c037a32087c5c20d97e64a1786880aa5ffc082c74d7f8c702155a6efce4cf4"></a>EvaluatorStrategy&#160;</td><td class="fielddoc"><p>Same as PATH_CHEAPEST_ARC, except that arc costs are evaluated using the function passed to <a class="el" href="classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModel.html#a508550f2f6d106fb7ad246005b918332">RoutingModel::SetFirstSolutionEvaluator()</a> (cf. </p>
+<tr><td class="fieldname"><a id="a896c037a32087c5c20d97e64a1786880aa5ffc082c74d7f8c702155a6efce4cf4"></a>EvaluatorStrategy&#160;</td><td class="fielddoc"><p>Same as PATH_CHEAPEST_ARC, except that arc costs are evaluated using the function passed to RoutingModel::SetFirstSolutionEvaluator() (cf. </p>
 <p>routing.h). </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a896c037a32087c5c20d97e64a1786880aab0da0e987457927aebb5111d5d32c12"></a>Savings&#160;</td><td class="fielddoc"><p>Savings algorithm (Clarke &amp; Wright). </p>
