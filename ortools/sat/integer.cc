@@ -50,47 +50,46 @@ void IntegerEncoder::FullyEncodeVariable(IntegerVariable var) {
   }
 
   // Mark var and Negation(var) as fully encoded.
-  CHECK_LT(var.value(), is_fully_encoded_.size());
-  CHECK_LT(NegationOf(var).value(), is_fully_encoded_.size());
-  CHECK(!equality_by_var_[var].empty());
-  CHECK(!equality_by_var_[NegationOf(var)].empty());
-  is_fully_encoded_[var] = true;
-  is_fully_encoded_[NegationOf(var)] = true;
+  CHECK_LT(GetPositiveOnlyIndex(var), is_fully_encoded_.size());
+  CHECK(!equality_by_var_[GetPositiveOnlyIndex(var)].empty());
+  is_fully_encoded_[GetPositiveOnlyIndex(var)] = true;
 }
 
 bool IntegerEncoder::VariableIsFullyEncoded(IntegerVariable var) const {
-  if (var >= is_fully_encoded_.size()) return false;
+  const PositiveOnlyIndex index = GetPositiveOnlyIndex(var);
+  if (index >= is_fully_encoded_.size()) return false;
 
   // Once fully encoded, the status never changes.
-  if (is_fully_encoded_[var]) return true;
+  if (is_fully_encoded_[index]) return true;
+  if (!VariableIsPositive(var)) var = PositiveVariable(var);
 
-  // TODO(user): Cache result as long as equality_by_var_[var] is unchanged?
+  // TODO(user): Cache result as long as equality_by_var_[index] is unchanged?
   // It might not be needed since if the variable is not fully encoded, then
   // PartialDomainEncoding() will filter unreachable values, and so the size
   // check will be false until further value have been encoded.
   const int64 initial_domain_size = (*domains_)[var].Size();
-  if (equality_by_var_[var].size() < initial_domain_size) return false;
+  if (equality_by_var_[index].size() < initial_domain_size) return false;
 
-  // This cleans equality_by_var_[var] as a side effect and in particular, sorts
-  // it by values.
+  // This cleans equality_by_var_[index] as a side effect and in particular,
+  // sorts it by values.
   PartialDomainEncoding(var);
 
   // TODO(user): Comparing the size might be enough, but we want to be always
   // valid even if either (*domains_[var]) or PartialDomainEncoding(var) are
   // not properly synced because the propagation is not finished.
-  const auto& ref = equality_by_var_[var];
-  int index = 0;
+  const auto& ref = equality_by_var_[index];
+  int i = 0;
   for (const ClosedInterval interval : (*domains_)[var]) {
     for (int64 v = interval.start; v <= interval.end; ++v) {
-      if (index < ref.size() && v == ref[index].value) {
-        index++;
+      if (i < ref.size() && v == ref[i].value) {
+        i++;
       }
     }
   }
-  if (index == ref.size()) {
-    is_fully_encoded_[var] = true;
+  if (i == ref.size()) {
+    is_fully_encoded_[index] = true;
   }
-  return is_fully_encoded_[var];
+  return is_fully_encoded_[index];
 }
 
 std::vector<IntegerEncoder::ValueLiteralPair>
@@ -102,23 +101,31 @@ IntegerEncoder::FullDomainEncoding(IntegerVariable var) const {
 std::vector<IntegerEncoder::ValueLiteralPair>
 IntegerEncoder::PartialDomainEncoding(IntegerVariable var) const {
   CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
-  if (var >= equality_by_var_.size()) return {};
+  const PositiveOnlyIndex index = GetPositiveOnlyIndex(var);
+  if (index >= equality_by_var_.size()) return {};
 
   int new_size = 0;
-  std::vector<ValueLiteralPair>& ref = equality_by_var_[var];
+  std::vector<ValueLiteralPair>& ref = equality_by_var_[index];
   for (int i = 0; i < ref.size(); ++i) {
     const ValueLiteralPair pair = ref[i];
     if (sat_solver_->Assignment().LiteralIsFalse(pair.literal)) continue;
     if (sat_solver_->Assignment().LiteralIsTrue(pair.literal)) {
       ref.clear();
       ref.push_back(pair);
-      return ref;
+      new_size = 1;
+      break;
     }
     ref[new_size++] = pair;
   }
   ref.resize(new_size);
   std::sort(ref.begin(), ref.end());
-  return ref;
+
+  std::vector<IntegerEncoder::ValueLiteralPair> result = ref;
+  if (!VariableIsPositive(var)) {
+    std::reverse(result.begin(), result.end());
+    for (ValueLiteralPair& ref : result) ref.value = -ref.value;
+  }
+  return result;
 }
 
 // Note that by not inserting the literal in "order" we can in the worst case
@@ -219,10 +226,18 @@ Literal IntegerEncoder::GetOrCreateAssociatedLiteral(IntegerLiteral i_lit) {
   return literal;
 }
 
+namespace {
+std::pair<PositiveOnlyIndex, IntegerValue> PositiveVarKey(IntegerVariable var,
+                                                          IntegerValue value) {
+  return std::make_pair(GetPositiveOnlyIndex(var),
+                        VariableIsPositive(var) ? value : -value);
+}
+}  // namespace
+
 LiteralIndex IntegerEncoder::GetAssociatedEqualityLiteral(
     IntegerVariable var, IntegerValue value) const {
-  const std::pair<IntegerVariable, IntegerValue> key{var, value};
-  const auto it = equality_to_associated_literal_.find(key);
+  const auto it =
+      equality_to_associated_literal_.find(PositiveVarKey(var, value));
   if (it != equality_to_associated_literal_.end()) {
     return it->second.Index();
   }
@@ -232,8 +247,8 @@ LiteralIndex IntegerEncoder::GetAssociatedEqualityLiteral(
 Literal IntegerEncoder::GetOrCreateLiteralAssociatedToEquality(
     IntegerVariable var, IntegerValue value) {
   {
-    const std::pair<IntegerVariable, IntegerValue> key{var, value};
-    const auto it = equality_to_associated_literal_.find(key);
+    const auto it =
+        equality_to_associated_literal_.find(PositiveVarKey(var, value));
     if (it != equality_to_associated_literal_.end()) {
       return it->second;
     }
@@ -315,8 +330,8 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
 
   // We use the "do not insert if present" behavior of .insert() to do just one
   // lookup.
-  const auto insert_result =
-      equality_to_associated_literal_.insert({{var, value}, literal});
+  const auto insert_result = equality_to_associated_literal_.insert(
+      {PositiveVarKey(var, value), literal});
   if (!insert_result.second) {
     // If this key is already associated, make the two literals equal.
     const Literal representative = insert_result.first->second;
@@ -327,8 +342,6 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
     }
     return;
   }
-  gtl::InsertOrDieNoPrint(&equality_to_associated_literal_,
-                          {{NegationOf(var), -value}, literal});
 
   // Fix literal for value outside the domain.
   if (!domain.Contains(value.value())) {
@@ -339,14 +352,13 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
   // Update equality_by_var. Note that due to the
   // equality_to_associated_literal_ hash table, there should never be any
   // duplicate values for a given variable.
-  const int needed_size = std::max(var.value(), NegationOf(var).value()) + 1;
-  if (needed_size > equality_by_var_.size()) {
-    equality_by_var_.resize(needed_size);
-    is_fully_encoded_.resize(needed_size);
+  const PositiveOnlyIndex index = GetPositiveOnlyIndex(var);
+  if (index >= equality_by_var_.size()) {
+    equality_by_var_.resize(index.value() + 1);
+    is_fully_encoded_.resize(index.value() + 1);
   }
-  equality_by_var_[var].push_back(ValueLiteralPair(value, literal));
-  equality_by_var_[NegationOf(var)].push_back(
-      ValueLiteralPair(-value, literal));
+  equality_by_var_[index].push_back(
+      ValueLiteralPair(VariableIsPositive(var) ? value : -value, literal));
 
   // Fix literal for constant domain.
   if (value == domain.Min() && value == domain.Max()) {

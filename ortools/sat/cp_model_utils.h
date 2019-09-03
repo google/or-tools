@@ -96,11 +96,7 @@ void FillDomainInProto(const Domain& domain, ProtoWithDomain* proto) {
 // Reads a Domain from the domain field of a proto.
 template <typename ProtoWithDomain>
 Domain ReadDomainFromProto(const ProtoWithDomain& proto) {
-  std::vector<ClosedInterval> intervals;
-  for (int i = 0; i < proto.domain_size(); i += 2) {
-    intervals.push_back({proto.domain(i), proto.domain(i + 1)});
-  }
-  return Domain::FromIntervals(intervals);
+  return Domain::FromFlatSpanOfIntervals(proto.domain());
 }
 
 // Returns the list of values in a given domain.

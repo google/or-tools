@@ -419,19 +419,20 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
   const int size = element.vars_size();
   if (!context->IntersectDomainWith(index_ref, Domain(0, size - 1))) {
     VLOG(1) << "Empty domain for the index variable in ExpandElement()";
+    CHECK(!context->NotifyThatModelIsUnsat());
     return;
   }
 
   bool all_constants = true;
-  std::set<int64> reached_values;
+  absl::flat_hash_set<int64> constant_var_values;
   std::vector<int64> invalid_indices;
-  const Domain initial_index_domain = context->DomainOf(index_ref);
-  const Domain initial_target_domain = context->DomainOf(target_ref);
-  for (const ClosedInterval& interval : initial_index_domain) {
+  Domain index_domain = context->DomainOf(index_ref);
+  Domain target_domain = context->DomainOf(target_ref);
+  for (const ClosedInterval& interval : index_domain) {
     for (int64 v = interval.start; v <= interval.end; ++v) {
       const int var = element.vars(v);
       const Domain var_domain = context->DomainOf(var);
-      if (var_domain.IntersectionWith(initial_target_domain).IsEmpty()) {
+      if (var_domain.IntersectionWith(target_domain).IsEmpty()) {
         invalid_indices.push_back(v);
         continue;
       }
@@ -439,7 +440,7 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
         all_constants = false;
         break;
       }
-      reached_values.insert(var_domain.Min());
+      constant_var_values.insert(var_domain.Min());
     }
   }
 
@@ -447,39 +448,46 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
     if (!context->IntersectDomainWith(
             index_ref, Domain::FromValues(invalid_indices).Complement())) {
       VLOG(1) << "No compatible variable domains in ExpandElement()";
+      CHECK(!context->NotifyThatModelIsUnsat());
       return;
     }
+
+    // Re-read the domain.
+    index_domain = context->DomainOf(index_ref);
   }
 
-  const Domain index_domain = context->DomainOf(index_ref);
-
-  std::map<int64, BoolArgumentProto*> supports;
+  // This BoolOrs implements the deduction that if all index literals pointing
+  // to the same values in the constant array are false, then this value is no
+  // no longer valid for the target variable.
+  // Order is not important.
+  absl::flat_hash_map<int64, BoolArgumentProto*> supports;
   if (all_constants && target_ref != index_ref) {
     if (!context->IntersectDomainWith(
-            target_ref, Domain::FromValues(
-                            {reached_values.begin(), reached_values.end()}))) {
+            target_ref, Domain::FromValues({constant_var_values.begin(),
+                                            constant_var_values.end()}))) {
       VLOG(1) << "Empty domain for the target variable in ExpandElement()";
       return;
     }
 
-    const Domain domain = context->DomainOf(target_ref);
-    if (domain.Size() == 1) {
-      context->UpdateRuleStats("element: array is constant");
+    target_domain = context->DomainOf(target_ref);
+    if (target_domain.Size() == 1) {
+      context->UpdateRuleStats("element: one value array");
+      ct->Clear();
       return;
     }
 
-    for (const ClosedInterval& interval : context->DomainOf(target_ref)) {
+    // TODO(user): only create 1 literal if the value has only one support.
+
+    for (const ClosedInterval& interval : target_domain) {
       for (int64 v = interval.start; v <= interval.end; ++v) {
         const int lit = context->GetOrCreateVarValueEncoding(target_ref, v);
-        CHECK(gtl::ContainsKey(reached_values, v));
+        CHECK(constant_var_values.contains(v));
         supports[v] =
             context->working_model->add_constraints()->mutable_bool_or();
         supports[v]->add_literals(NegatedRef(lit));
       }
     }
   }
-
-  const Domain target_domain = context->DomainOf(target_ref);
 
   // While this is not stricly needed since all value in the index will be
   // covered, it allows to easily detect this fact in the presolve.
@@ -502,7 +510,9 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
       } else if (var_domain.Size() == 1) {
         context->AddImplyInDomain(index_lit, target_ref, var_domain);
         if (all_constants) {
-          supports[var_domain.Min()]->add_literals(index_lit);
+          BoolArgumentProto* const support =
+              gtl::FindOrDie(supports, var_domain.Min());
+          support->add_literals(index_lit);
         }
       } else {
         ConstraintProto* const ct = context->working_model->add_constraints();
@@ -556,6 +566,9 @@ void ExpandCpModel(CpModelProto* working_model, PresolveOptions options) {
       default:
         break;
     }
+
+    // Early exit if the model is unsat.
+    if (context.ModelIsUnsat()) return;
   }
 
   // Update any changed domain from the context.
