@@ -683,7 +683,7 @@ void MatrixNonZeroPattern::Update(RowIndex pivot_row, ColIndex pivot_col,
 
     // If the row is fully dense, there is nothing to do (the merge below will
     // not change anything). This is a small price to pay for a huge gain when
-    // the matrix become dense.
+    // the matrix becomes dense.
     if (e.coefficient() == 0.0 || row_degree_[row] == max_row_degree) continue;
     DCHECK_LT(row_degree_[row], max_row_degree);
 

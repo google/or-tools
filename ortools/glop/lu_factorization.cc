@@ -307,12 +307,13 @@ void LuFactorization::RightSolveUWithNonZeros(ScatteredColumn* x) const {
   // If non-zeros is non-empty, we use an hypersparse solve. Note that if
   // non_zeros starts to be too big, we clear it and thus switch back to a
   // normal sparse solve.
-  upper_.ComputeRowsToConsiderInSortedOrder(&x->non_zeros);
+  upper_.ComputeRowsToConsiderInSortedOrder(&x->non_zeros, 0.1, 0.2);
   x->non_zeros_are_sorted = true;
   if (x->non_zeros.empty()) {
-    upper_.UpperSolve(&x->values);
+    transpose_upper_.TransposeLowerSolve(&x->values);
   } else {
-    upper_.HyperSparseSolveWithReversedNonZeros(&x->values, &x->non_zeros);
+    transpose_upper_.TransposeHyperSparseSolveWithReversedNonZeros(
+        &x->values, &x->non_zeros);
   }
 }
 

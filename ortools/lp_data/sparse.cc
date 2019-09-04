@@ -1050,7 +1050,7 @@ void TriangularMatrix::PermutedLowerSparseSolve(const ColumnView& rhs,
 
   // Copy rhs into initially_all_zero_scratchpad_.
   initially_all_zero_scratchpad_.resize(num_rows_, 0.0);
-  for (SparseColumn::Entry e : rhs) {
+  for (const auto e : rhs) {
     initially_all_zero_scratchpad_[e.row()] = e.coefficient();
   }
 
@@ -1074,9 +1074,8 @@ void TriangularMatrix::PermutedLowerSparseSolve(const ColumnView& rhs,
     DCHECK_GE(row_as_col, 0);
     upper_column->SetCoefficient(permuted_row, pivot);
     DCHECK_EQ(diagonal_coefficients_[row_as_col], 1.0);
-    for (const EntryIndex i : Column(row_as_col)) {
-      initially_all_zero_scratchpad_[EntryRow(i)] -=
-          EntryCoefficient(i) * pivot;
+    for (const auto e : column(row_as_col)) {
+      initially_all_zero_scratchpad_[e.row()] -= e.coefficient() * pivot;
     }
   }
 
@@ -1306,6 +1305,15 @@ void TriangularMatrix::ComputeRowsToConsiderWithDfs(
 
 void TriangularMatrix::ComputeRowsToConsiderInSortedOrder(
     RowIndexVector* non_zero_rows) const {
+  static const Fractional kDefaultSparsityRatio = 0.025;
+  static const Fractional kDefaultNumOpsRatio = 0.05;
+  ComputeRowsToConsiderInSortedOrder(non_zero_rows, kDefaultSparsityRatio,
+                                     kDefaultNumOpsRatio);
+}
+
+void TriangularMatrix::ComputeRowsToConsiderInSortedOrder(
+    RowIndexVector* non_zero_rows, Fractional sparsity_ratio,
+    Fractional num_ops_ratio) const {
   if (non_zero_rows->empty()) return;
 
   // TODO(user): Investigate the best thresholds.
