@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <AssemblyName>Google.OrTools.runtime.win-x64</AssemblyName>
+    <AssemblyName>google-ortools-native</AssemblyName>
     <Version>@PROJECT_VERSION@</Version>
 
     <!-- Nuget Properties -->
@@ -30,7 +30,7 @@
   <ItemGroup>
     <!-- Native library must be in native directory... -->
     <!-- On windows libortools is built as static -->
-    <Content Include="../../../lib/Google.OrTools.runtime.win-x64.dll">
+    <Content Include="../../../lib/$(AssemblyName).dll">
       <PackagePath>runtimes/win-x64/native/%(Filename)%(Extension)</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

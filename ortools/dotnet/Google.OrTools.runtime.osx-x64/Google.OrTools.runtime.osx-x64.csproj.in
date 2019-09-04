@@ -3,7 +3,7 @@
     <OutputType>Library</OutputType>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RuntimeIdentifier>osx-x64</RuntimeIdentifier>
-    <AssemblyName>Google.OrTools.runtime.osx-x64</AssemblyName>
+    <AssemblyName>google-ortools-native</AssemblyName>
     <Version>@PROJECT_VERSION@</Version>
 
     <!-- Nuget Properties -->
@@ -27,7 +27,7 @@
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="../../../lib/Google.OrTools.runtime.osx-x64.dylib; ../../../lib/libortools.dylib">
+    <Content Include="../../../lib/$(AssemblyName).dylib; ../../../lib/libortools.dylib">
       <PackagePath>runtimes/osx-x64/native/%(Filename)%(Extension)</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
