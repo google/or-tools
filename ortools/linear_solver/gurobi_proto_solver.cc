@@ -50,6 +50,34 @@ inline util::Status GurobiCodeToUtilStatus(int error_code,
       source_file, source_line, statement, GRBgeterrormsg(env)));
 }
 
+util::Status SetSolverSpecificParameters(const std::string& parameters,
+                                         GRBenv* gurobi) {
+  for (const auto parameter :
+       absl::StrSplit(parameters, '\n', absl::SkipWhitespace())) {
+    if (parameter.empty()) return util::OkStatus();
+    if (*parameter.begin() == '#') return util::OkStatus();
+    std::vector<std::string> key_value =
+        absl::StrSplit(parameter, ' ', absl::SkipWhitespace());
+    if (key_value.size() != 2) {
+      return util::InvalidArgumentError(
+          absl::StrFormat("Cannot parse parameter '%s'. Expected format is "
+                          "'ParameterName value'",
+                          parameter));
+    }
+
+    std::string name = key_value[0];
+    std::string value = key_value[1];
+
+    if (GRBsetparam(gurobi, name.c_str(), value.c_str()) != GRB_OK) {
+      return util::InvalidArgumentError(
+          absl::StrFormat("Error setting parameter '%s' to value '%s': %s",
+                          name, value, GRBgeterrormsg(gurobi)));
+    }
+  }
+
+  return util::OkStatus();
+}
+
 int AddSosConstraint(const MPSosConstraint& sos_cst, GRBmodel* gurobi_model,
                      std::vector<int>* tmp_variables,
                      std::vector<double>* tmp_weights) {
@@ -195,12 +223,6 @@ util::StatusOr<MPSolutionResponse> GurobiSolveProto(
   if (!optional_model) return response;
   const MPModelProto& model = optional_model->get();
 
-  if (request.has_solver_specific_parameters()) {
-    // TODO(user): Support solver-specific parameters without duplicating
-    // all of the write file / read file code in linear_solver.cc.
-    return util::UnimplementedError(
-        "Solver-specific parameters not supported.");
-  }
   if (model.has_solution_hint()) {
     // TODO(user): Support solution hints.
     return util::UnimplementedError("Solution hint not supported.");
@@ -234,6 +256,15 @@ util::StatusOr<MPSolutionResponse> GurobiSolveProto(
                                      /*vtype=*/nullptr,
                                      /*varnames=*/nullptr));
 
+  if (request.has_solver_specific_parameters()) {
+    const auto parameters_status = SetSolverSpecificParameters(
+        request.solver_specific_parameters(), gurobi);
+    if (!parameters_status.ok()) {
+      response.set_status(MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS);
+      response.set_status_str(parameters_status.error_message());
+      return response;
+    }
+  }
   if (request.solver_time_limit_seconds() > 0) {
     RETURN_IF_GUROBI_ERROR(GRBsetdblparam(GRBgetenv(gurobi_model),
                                           GRB_DBL_PAR_TIMELIMIT,
