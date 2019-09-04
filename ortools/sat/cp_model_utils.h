@@ -96,7 +96,12 @@ void FillDomainInProto(const Domain& domain, ProtoWithDomain* proto) {
 // Reads a Domain from the domain field of a proto.
 template <typename ProtoWithDomain>
 Domain ReadDomainFromProto(const ProtoWithDomain& proto) {
+#if defined(__PORTABLE_PLATFORM__)
+  return Domain::FromFlatIntervals(
+      {proto.domain().begin(), proto.domain().end()});
+#else
   return Domain::FromFlatSpanOfIntervals(proto.domain());
+#endif
 }
 
 // Returns the list of values in a given domain.
