@@ -414,15 +414,53 @@ Domain Domain::InverseMultiplicationBy(const int64 coeff) const {
   return result;
 }
 
-// TODO(user): This could be computed more efficiently with a dedicated code
-// like for the intersection.
+// It is a bit difficult to see, but this code is doing the same thing as
+// for all interval in this.UnionWith(implied_domain.Complement())):
+//  - Take the two extreme points (min and max) in interval \inter implied.
+//  - Append to result [min, max] if these points exists.
 Domain Domain::SimplifyUsingImpliedDomain(const Domain& implied_domain) const {
   Domain result;
-  for (const ClosedInterval i : UnionWith(implied_domain.Complement())) {
-    const Domain d = implied_domain.IntersectionWith(Domain(i.start, i.end));
-    if (!d.IsEmpty()) {
-      result.intervals_.push_back({d.Min(), d.Max()});
+  if (implied_domain.IsEmpty()) return result;
+
+  int i = 0;
+  int64 min_point;
+  int64 max_point;
+  bool started = false;
+  for (const ClosedInterval interval : intervals_) {
+    // We only "close" the new result interval if it cannot be extended by
+    // implied_domain.Complement(). The only extension possible look like:
+    // interval_:    ...]   [....
+    // implied :   ...]       [...  i  ...]
+    if (started && implied_domain.intervals_[i].start < interval.start) {
+      result.intervals_.push_back({min_point, max_point});
+      started = false;
     }
+
+    // Find the two extreme points in interval \inter implied_domain.
+    // Always stop the loop at the first interval with and end strictly greater
+    // that interval.end.
+    for (; i < implied_domain.intervals_.size(); ++i) {
+      const ClosedInterval current = implied_domain.intervals_[i];
+      if (current.end >= interval.start && current.start <= interval.end) {
+        // Current and interval have a non-empty intersection.
+        const int64 inter_max = std::min(interval.end, current.end);
+        if (!started) {
+          started = true;
+          min_point = std::max(interval.start, current.start);
+          max_point = inter_max;
+        } else {
+          // No need to update the min_point here, and the new inter_max must
+          // necessarily be > old one.
+          DCHECK_GE(inter_max, max_point);
+          max_point = inter_max;
+        }
+      }
+      if (current.end > interval.end) break;
+    }
+    if (i == implied_domain.intervals_.size()) break;
+  }
+  if (started) {
+    result.intervals_.push_back({min_point, max_point});
   }
   DCHECK(IntervalsAreSortedAndNonAdjacent(result.intervals_));
   return result;
