@@ -37,11 +37,9 @@ struct ClosedInterval {
     return start == other.start && end == other.end;
   }
 
-  /**
-   * Because we mainly manipulate vector of disjoint intervals, we only need to
-   * sort by the start. We do not care about the order in which interval with
-   * the same start appear since they will always be merged into one interval.
-   */
+  // Because we mainly manipulate vector of disjoint intervals, we only need to
+  // sort by the start. We do not care about the order in which interval with
+  // the same start appear since they will always be merged into one interval.
   bool operator<(const ClosedInterval& other) const {
     return start < other.start;
   }
@@ -64,7 +62,7 @@ bool IntervalsAreSortedAndNonAdjacent(
     absl::Span<const ClosedInterval> intervals);
 
 /**
- * We call "domain" any subset of Int64 = [kint64min, kint64max].
+ * We call \e domain any subset of Int64 = [kint64min, kint64max].
  *
  * This class can be used to represent such set efficiently as a sorted and
  * non-adjacent list of intervals. This is efficient as long as the size of such
@@ -87,7 +85,9 @@ class Domain {
    */
   Domain(int64 left, int64 right);
 
-  /// Returns the full domain Int64.
+  /**
+   * Returns the full domain Int64.
+   */
   static Domain AllValues();
 
   /**
@@ -96,7 +96,9 @@ class Domain {
    */
   static Domain FromValues(std::vector<int64> values);
 
-  /// Creates a domain from the union of an unsorted list of intervals.
+  /**
+   * Creates a domain from the union of an unsorted list of intervals.
+   */
   static Domain FromIntervals(absl::Span<const ClosedInterval> intervals);
 
   /**
@@ -129,10 +131,14 @@ class Domain {
    */
   std::vector<int64> FlattenedIntervals() const;
 
-  /// Returns true if this is the empty set.
+  /**
+   * Returns true if this is the empty set.
+   */
   bool IsEmpty() const;
 
-  /// Returns the number of elements in the domain. It is capped at kint64max.
+  /**
+   * Returns the number of elements in the domain. It is capped at kint64max
+   */
   int64 Size() const;
 
   /**
@@ -149,13 +155,19 @@ class Domain {
    */
   int64 Max() const;
 
-  /// Returns true iff value is in Domain.
+  /**
+   * Returns true iff value is in Domain.
+   */
   bool Contains(int64 value) const;
 
-  /// Returns true iff D is included in the given domain.
+  /**
+   * Returns true iff D is included in the given domain.
+   */
   bool IsIncludedIn(const Domain& domain) const;
 
-  /// Returns the set Int64 ∖ D.
+  /**
+   * Returns the set Int64 ∖ D.
+   */
   Domain Complement() const;
 
   /**
@@ -166,13 +178,19 @@ class Domain {
    */
   Domain Negation() const;
 
-  /// Returns the set D ∩ domain.
+  /**
+   * Returns the set D ∩ domain.
+   */
   Domain IntersectionWith(const Domain& domain) const;
 
-  /// Returns the set D ∪ domain.
+  /**
+   * Returns the set D ∪ domain.
+   */
   Domain UnionWith(const Domain& domain) const;
 
-  /// Returns {x ∈ Int64, ∃ a ∈ D, ∃ b ∈ domain, x = a + b}.
+  /**
+   * Returns {x ∈ Int64, ∃ a ∈ D, ∃ b ∈ domain, x = a + b}.
+   */
   Domain AdditionWith(const Domain& domain) const;
 
   /**
@@ -185,7 +203,9 @@ class Domain {
    */
   Domain MultiplicationBy(int64 coeff, bool* exact = nullptr) const;
 
-  /// If NumIntervals() is too large, this return a superset of the domain.
+  /**
+   * If NumIntervals() is too large, this return a superset of the domain.
+   */
   Domain RelaxIfTooComplex() const;
 
   /**
@@ -229,7 +249,7 @@ class Domain {
   Domain InverseMultiplicationBy(const int64 coeff) const;
 
   /**
-   * Advanced usage. Given some "implied" information on this domain that is
+   * Advanced usage. Given some \e implied information on this domain that is
    * assumed to be always true (i.e. only values in the intersection with
    * implied domain matter), this function will simplify the current domain
    * without changing the set of "possible values".
@@ -244,17 +264,21 @@ class Domain {
    *    I.e if the input is [1,2] and implied is [0,4], then the domain will
    *    not be changed.
    *
-   * Note that domain.SimplifyUsingImpliedDomain(domain) will just return
+   * Note that \b domain.SimplifyUsingImpliedDomain(domain) will just return
    * [domain.Min(), domain.Max()]. This is meant to be applied to the rhs of a
    * constraint to make its propagation more efficient.
    */
   Domain SimplifyUsingImpliedDomain(const Domain& implied_domain) const;
 
-  /// Returns a compact std::string of a vector of intervals like
-  /// "[1,4][6][10,20]".
+  /**
+   * Returns a compact std::string of a vector of intervals like
+   * "[1,4][6][10,20]".
+   */
   std::string ToString() const;
 
-  /// Lexicographic order on the intervals() representation.
+  /**
+   * Lexicographic order on the intervals() representation.
+   */
   bool operator<(const Domain& other) const;
 
   bool operator==(const Domain& other) const {
@@ -307,12 +331,13 @@ class Domain {
 
 std::ostream& operator<<(std::ostream& out, const Domain& domain);
 
-// This class represents a sorted list of disjoint, closed intervals.  When an
-// interval is inserted, all intervals that overlap it or that are even adjacent
-// to it are merged into one. I.e. [0,14] and [15,30] will be merged to [0,30].
-//
-// Iterators returned by this class are invalidated by non-const operations.
-//
+/**
+ * This class represents a sorted list of disjoint, closed intervals.  When an
+ * interval is inserted, all intervals that overlap it or that are even adjacent
+ * to it are merged into one. I.e. [0,14] and [15,30] will be merged to [0,30].
+ *
+ * Iterators returned by this class are invalidated by non-const operations.
+ */
 // TODO(user): Templatize the class on the type of the bounds.
 class SortedDisjointIntervalList {
  public:
@@ -328,10 +353,11 @@ class SortedDisjointIntervalList {
   explicit SortedDisjointIntervalList(
       const std::vector<ClosedInterval>& intervals);
 
-  // Creates a SortedDisjointIntervalList and fills it with intervals
-  // [starts[i]..ends[i]]. All intervals must be consistent (starts[i] <=
-  // ends[i]). There's two version, one for int64, one for int.
-  //
+  /**
+   * Creates a SortedDisjointIntervalList and fills it with intervals
+   * [starts[i]..ends[i]]. All intervals must be consistent (starts[i] <=
+   * ends[i]). There's two version, one for int64, one for int.
+   */
   // TODO(user): Explain why we favored this API to the more natural
   // input std::vector<ClosedInterval> or std::vector<std::pair<int, int>>.
   SortedDisjointIntervalList(const std::vector<int64>& starts,
@@ -339,43 +365,57 @@ class SortedDisjointIntervalList {
   SortedDisjointIntervalList(const std::vector<int>& starts,
                              const std::vector<int>& ends);
 
-  // Builds the complement of the interval list on the interval [start, end].
+  /**
+   * Builds the complement of the interval list on the interval [start, end].
+   */
   SortedDisjointIntervalList BuildComplementOnInterval(int64 start, int64 end);
 
-  // Adds the interval [start..end] to the list, and merges overlapping or
-  // immediately adjacent intervals ([2, 5] and [6, 7] are adjacent, but
-  // [2, 5] and [7, 8] are not).
-  //
-  // Returns an iterator to the inserted interval (possibly merged with others).
-  //
-  // If start > end, it does LOG(DFATAL) and returns end() (no interval added).
+  /**
+   * Adds the interval [start..end] to the list, and merges overlapping or
+   * immediately adjacent intervals ([2, 5] and [6, 7] are adjacent, but
+   * [2, 5] and [7, 8] are not).
+   *
+   * Returns an iterator to the inserted interval (possibly merged with others).
+   *
+   * If start > end, it does LOG(DFATAL) and returns end() (no interval added).
+   */
   Iterator InsertInterval(int64 start, int64 end);
 
-  // If value is in an interval, increase its end by one, otherwise insert the
-  // interval [value, value]. In both cases, this returns an iterator to the
-  // new/modified interval (possibly merged with others) and fills newly_covered
-  // with the new value that was just added in the union of all the intervals.
-  //
-  // If this causes an interval ending at kint64max to grow, it will die with a
-  // CHECK fail.
+  /**
+   * If value is in an interval, increase its end by one, otherwise insert the
+   * interval [value, value]. In both cases, this returns an iterator to the
+   * new/modified interval (possibly merged with others) and fills newly_covered
+   * with the new value that was just added in the union of all the intervals.
+   *
+   * If this causes an interval ending at kint64max to grow, it will die with a
+   * CHECK fail.
+   */
   Iterator GrowRightByOne(int64 value, int64* newly_covered);
 
-  // Adds all intervals [starts[i]..ends[i]]. Same behavior as InsertInterval()
-  // upon invalid intervals. There's a version with int64 and int32.
+  /**
+   * Adds all intervals [starts[i]..ends[i]].
+   *
+   * Same behavior as InsertInterval() upon invalid intervals. There's a version
+   * with int64 and int32.
+   */
   void InsertIntervals(const std::vector<int64>& starts,
                        const std::vector<int64>& ends);
   void InsertIntervals(const std::vector<int>& starts,
                        const std::vector<int>& ends);
 
-  // Returns the number of disjoint intervals in the list.
+  /**
+   * Returns the number of disjoint intervals in the list.
+   */
   int NumIntervals() const { return intervals_.size(); }
 
-  // Returns an iterator to either:
-  // - the first interval containing or above the given value, or
-  // - the last interval containing or below the given value.
-  // Returns end() if no interval fulfils that condition.
-  //
-  // If the value is within an interval, both functions will return it.
+  /**
+   * Returns an iterator to either:
+   * - the first interval containing or above the given value, or
+   * - the last interval containing or below the given value.
+   * Returns end() if no interval fulfils that condition.
+   *
+   * If the value is within an interval, both functions will return it.
+   */
   Iterator FirstIntervalGreaterOrEqual(int64 value) const;
   Iterator LastIntervalLessOrEqual(int64 value) const;
 
@@ -390,7 +430,9 @@ class SortedDisjointIntervalList {
   const Iterator begin() const { return intervals_.begin(); }
   const Iterator end() const { return intervals_.end(); }
 
-  // Returns a const& to the last interval. The list must not be empty.
+  /**
+   * Returns a const& to the last interval. The list must not be empty.
+   */
   const ClosedInterval& last() const { return *intervals_.rbegin(); }
 
   void clear() { intervals_.clear(); }
