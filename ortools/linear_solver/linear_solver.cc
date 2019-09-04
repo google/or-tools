@@ -350,7 +350,8 @@ extern MPSolverInterface* BuildCplexInterface(bool mip, MPSolver* const solver);
 extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
 #endif
 #if defined(USE_XPRESS)
-extern MPSolverInterface* BuildXpressInterface(bool mip, MPSolver* const solver);
+extern MPSolverInterface* BuildXpressInterface(bool mip,
+                                               MPSolver* const solver);
 #endif
 
 namespace {
@@ -396,10 +397,10 @@ MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
       return BuildCplexInterface(true, solver);
 #endif
 #if defined(USE_XPRESS)
-	case MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING:
-		return BuildXpressInterface(true, solver);
-	case MPSolver::XPRESS_LINEAR_PROGRAMMING:
-		return BuildXpressInterface(false, solver);
+    case MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING:
+      return BuildXpressInterface(true, solver);
+    case MPSolver::XPRESS_LINEAR_PROGRAMMING:
+      return BuildXpressInterface(false, solver);
 #endif
     default:
       // TODO(user): Revert to the best *available* interface.
@@ -502,6 +503,9 @@ constexpr
 #if defined(USE_GUROBI)
         {MPSolver::GUROBI_LINEAR_PROGRAMMING, "gurobi_lp"},
 #endif
+#if defined(USE_XPRESS)
+        {MPSolver::XPRESS_LINEAR_PROGRAMMING, "xpress_lp"},
+#endif
 #if defined(USE_SCIP)
         {MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING, "scip"},
 #endif
@@ -516,6 +520,9 @@ constexpr
 #endif
 #if defined(USE_GUROBI)
         {MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING, "gurobi_mip"},
+#endif
+#if defined(USE_XPRESS)
+        {MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING, "xpress_mip"},
 #endif
 };
 
