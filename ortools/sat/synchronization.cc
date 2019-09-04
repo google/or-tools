@@ -301,11 +301,11 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
 
     // Ignore any non-strictly improving solution.
     // We also perform some basic checks on the inner bounds.
-    CHECK_GE(objective_value, inner_objective_lower_bound_);
+    DCHECK_GE(objective_value, inner_objective_lower_bound_);
     if (objective_value > inner_objective_upper_bound_) return;
 
-    CHECK_LT(objective_value, best_solution_objective_value_);
-    CHECK_NE(best_response_.status(), CpSolverStatus::OPTIMAL);
+    DCHECK_LT(objective_value, best_solution_objective_value_);
+    DCHECK_NE(best_response_.status(), CpSolverStatus::OPTIMAL);
     best_solution_objective_value_ = objective_value;
 
     IntegerValue max_integral(0);
