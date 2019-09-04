@@ -314,7 +314,7 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
         }
       }
 
-      // Third strategy (core or lp branching).
+      // Third strategy (core or no_lp).
       if (cp_model.objective().vars_size() > 1) {
         if (--index == 0) {  // Core based approach.
           new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
@@ -332,7 +332,17 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
         }
       }
 
-      // Fourth strategy using LNS.
+      // Fourth strategy: max_lp.
+      if (--index == 0) {  // Reinforce LP relaxation.
+        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+        new_params.set_linearization_level(2);
+        new_params.set_add_cg_cuts(true);
+        new_params.set_use_branching_in_lp(true);
+        *name = "max_lp";
+        return new_params;
+      }
+
+      // Fifth strategy using LNS.
       new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
       new_params.set_use_lns_only(true);
       *name = "lns";
@@ -361,14 +371,24 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
         }
       }
 
-      if (--index == 0) {  // Third strategy: reduce boolean encoding.
+      // Third strategy: reduce boolean encoding.
+      if (--index == 0) {
         new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
         new_params.set_boolean_encoding_level(0);
         *name = "less encoding";
         return new_params;
       }
 
-      // Final strategy: quick restart.
+      // Fourth strategy: max_lp.
+      if (--index == 0) {  // Reinforce LP relaxation.
+        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+        new_params.set_linearization_level(2);
+        new_params.set_add_cg_cuts(true);
+        *name = "max_lp";
+        return new_params;
+      }
+
+      // Fifth strategy: quick restart.
       new_params.set_search_branching(
           SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
       *name = "random";

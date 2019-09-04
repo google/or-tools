@@ -2067,7 +2067,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   // 4 if num_search_workers = 1, or 8 otherwise.
   const int num_strategies =
       parameters.interleave_search()
-          ? (parameters.reduce_memory_usage_in_interleave_mode() ? 4 : 8)
+          ? (parameters.reduce_memory_usage_in_interleave_mode() ? 5 : 8)
           : num_search_workers;
 
   std::unique_ptr<SharedBoundsManager> shared_bounds_manager;
