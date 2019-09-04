@@ -998,7 +998,6 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   }
   if (p.use_free_search) {
     m.parameters.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-    LOG(INFO) << "p.number_of_threads = " << p.number_of_threads;
     if (p.number_of_threads <= 1) {
       m.parameters.set_interleave_search(true);
       m.parameters.set_reduce_memory_usage_in_interleave_mode(true);
