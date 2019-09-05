@@ -42,9 +42,6 @@ class SharedTimeLimit {
       stopped_ = &stopped_boolean_;
       time_limit->RegisterExternalBooleanAsLimit(stopped_);
     }
-
-    // We reset the Boolean to false in case it starts at true.
-    *stopped_ = false;
   }
 
   ~SharedTimeLimit() {
