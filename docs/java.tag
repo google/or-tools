@@ -2,133 +2,133 @@
 <tagfile>
   <compound kind="file">
     <name>Assignment.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>Assignment_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::Assignment</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>AssignmentElement.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>AssignmentElement_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::AssignmentElement</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>AssignmentIntContainer.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>AssignmentIntContainer_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::AssignmentIntContainer</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>AssignmentIntervalContainer.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>AssignmentIntervalContainer_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::AssignmentIntervalContainer</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>AssignmentSequenceContainer.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>AssignmentSequenceContainer_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::AssignmentSequenceContainer</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>BaseIntExpr.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>BaseIntExpr_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::BaseIntExpr</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>BaseLns.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>BaseLns_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::BaseLns</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>BaseObject.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>BaseObject_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::BaseObject</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>BasePathFilter.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>BasePathFilter_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::BasePathFilter</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>BooleanVar.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>BooleanVar_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::BooleanVar</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>CastConstraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>CastConstraint_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::CastConstraint</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>ChangeValue.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>ChangeValue_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::ChangeValue</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>CheapestAdditionFilteredDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>CheapestAdditionFilteredDecisionBuilder_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::CheapestAdditionFilteredDecisionBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>CheapestInsertionFilteredDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>CheapestInsertionFilteredDecisionBuilder_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::CheapestInsertionFilteredDecisionBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>ChristofidesFilteredDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>ChristofidesFilteredDecisionBuilder_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::ChristofidesFilteredDecisionBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>ComparatorCheapestAdditionFilteredDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>ComparatorCheapestAdditionFilteredDecisionBuilder_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::ComparatorCheapestAdditionFilteredDecisionBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>com/google/ortools/sat/Constraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
     <filename>com_2google_2ortools_2sat_2Constraint_8java</filename>
     <class kind="class">com::google::ortools::sat::Constraint</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>gen/com/google/ortools/constraintsolver/Constraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>gen_2com_2google_2ortools_2constraintsolver_2Constraint_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::Constraint</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>ConstraintSolverParameters.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>ConstraintSolverParameters_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::ConstraintSolverParameters</class>
     <class kind="enum">com::google::ortools::constraintsolver::ConstraintSolverParameters::TrailCompression</class>
@@ -137,21 +137,21 @@
   </compound>
   <compound kind="file">
     <name>ConstraintSolverParametersOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>ConstraintSolverParametersOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::ConstraintSolverParametersOrBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>CPFeasibilityFilter.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>CPFeasibilityFilter_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::CPFeasibilityFilter</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>CpModel.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
     <filename>CpModel_8java</filename>
     <class kind="class">com::google::ortools::sat::CpModel</class>
     <class kind="class">com::google::ortools::sat::CpModel::MismatchedArrayLengths</class>
@@ -160,7 +160,7 @@
   </compound>
   <compound kind="file">
     <name>CpModelProto.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/sat/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/sat/</path>
     <filename>CpModelProto_8java</filename>
     <class kind="class">com::google::ortools::sat::CpModelProto</class>
     <class kind="class">com::google::ortools::sat::CpModelProto::Builder</class>
@@ -168,77 +168,77 @@
   </compound>
   <compound kind="file">
     <name>CpSolver.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
     <filename>CpSolver_8java</filename>
     <class kind="class">com::google::ortools::sat::CpSolver</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>CpSolverSolutionCallback.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
     <filename>CpSolverSolutionCallback_8java</filename>
     <class kind="class">com::google::ortools::sat::CpSolverSolutionCallback</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>Decision.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>Decision_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::Decision</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>DecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>DecisionBuilder_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::DecisionBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>DecisionVisitor.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>DecisionVisitor_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::DecisionVisitor</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>DefaultPhaseParameters.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>DefaultPhaseParameters_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::DefaultPhaseParameters</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>Demon.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>Demon_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::Demon</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>DisjunctiveConstraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>DisjunctiveConstraint_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::DisjunctiveConstraint</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>Domain.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/util/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/util/</path>
     <filename>Domain_8java</filename>
     <class kind="class">com::google::ortools::util::Domain</class>
     <namespace>com::google::ortools::util</namespace>
   </compound>
   <compound kind="file">
     <name>EvaluatorCheapestAdditionFilteredDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>EvaluatorCheapestAdditionFilteredDecisionBuilder_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::EvaluatorCheapestAdditionFilteredDecisionBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>FirstSolutionStrategy.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>FirstSolutionStrategy_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::FirstSolutionStrategy</class>
     <class kind="enum">com::google::ortools::constraintsolver::FirstSolutionStrategy::Value</class>
@@ -247,140 +247,140 @@
   </compound>
   <compound kind="file">
     <name>FirstSolutionStrategyOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>FirstSolutionStrategyOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::FirstSolutionStrategyOrBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>GlobalCheapestInsertionFilteredDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>GlobalCheapestInsertionFilteredDecisionBuilder_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::GlobalCheapestInsertionFilteredDecisionBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>GlobalVehicleBreaksConstraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>GlobalVehicleBreaksConstraint_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::GlobalVehicleBreaksConstraint</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>com/google/ortools/sat/IntervalVar.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
     <filename>com_2google_2ortools_2sat_2IntervalVar_8java</filename>
     <class kind="class">com::google::ortools::sat::IntervalVar</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>gen/com/google/ortools/constraintsolver/IntervalVar.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntervalVar</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntervalVarElement.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>IntervalVarElement_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntervalVarElement</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntExpr.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>IntExpr_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntExpr</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntIntToLongFunction.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/com/google/ortools/constraintsolver/</path>
     <filename>IntIntToLongFunction_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::IntIntToLongFunction</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntTupleSet.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>IntTupleSet_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntTupleSet</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>com/google/ortools/sat/IntVar.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
     <filename>com_2google_2ortools_2sat_2IntVar_8java</filename>
     <class kind="class">com::google::ortools::sat::IntVar</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>gen/com/google/ortools/constraintsolver/IntVar.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>gen_2com_2google_2ortools_2constraintsolver_2IntVar_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVar</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntVarElement.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>IntVarElement_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVarElement</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntVarFilteredDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>IntVarFilteredDecisionBuilder_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVarFilteredDecisionBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntVarIterator.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>IntVarIterator_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVarIterator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntVarLocalSearchFilter.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>IntVarLocalSearchFilter_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVarLocalSearchFilter</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntVarLocalSearchHandler.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>IntVarLocalSearchHandler_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVarLocalSearchHandler</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntVarLocalSearchOperator.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>IntVarLocalSearchOperator_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVarLocalSearchOperator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntVarLocalSearchOperatorTemplate.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>IntVarLocalSearchOperatorTemplate_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVarLocalSearchOperatorTemplate</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>JavaDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/com/google/ortools/constraintsolver/</path>
     <filename>JavaDecisionBuilder_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::JavaDecisionBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>KnapsackSolver.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/algorithms/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/algorithms/</path>
     <filename>KnapsackSolver_8java</filename>
     <class kind="class">com::google::ortools::algorithms::KnapsackSolver</class>
     <class kind="enum">com::google::ortools::algorithms::KnapsackSolver::SolverType</class>
@@ -388,21 +388,21 @@
   </compound>
   <compound kind="file">
     <name>LinearExpr.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
     <filename>LinearExpr_8java</filename>
     <class kind="interface">com::google::ortools::sat::LinearExpr</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>LinearSolver.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>LinearSolver_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::LinearSolver</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LinearSumAssignment.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/graph/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/graph/</path>
     <filename>LinearSumAssignment_8java</filename>
     <class kind="class">com::google::ortools::graph::LinearSumAssignment</class>
     <class kind="enum">com::google::ortools::graph::LinearSumAssignment::Status</class>
@@ -410,28 +410,28 @@
   </compound>
   <compound kind="file">
     <name>Literal.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
     <filename>Literal_8java</filename>
     <class kind="interface">com::google::ortools::sat::Literal</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>LocalCheapestInsertionFilteredDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>LocalCheapestInsertionFilteredDecisionBuilder_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::LocalCheapestInsertionFilteredDecisionBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LocalSearchFilter.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>LocalSearchFilter_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::LocalSearchFilter</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LocalSearchMetaheuristic.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>LocalSearchMetaheuristic_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::LocalSearchMetaheuristic</class>
     <class kind="enum">com::google::ortools::constraintsolver::LocalSearchMetaheuristic::Value</class>
@@ -440,56 +440,56 @@
   </compound>
   <compound kind="file">
     <name>LocalSearchMetaheuristicOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>LocalSearchMetaheuristicOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::LocalSearchMetaheuristicOrBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LocalSearchMonitor.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>LocalSearchMonitor_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::LocalSearchMonitor</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LocalSearchOperator.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>LocalSearchOperator_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::LocalSearchOperator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LocalSearchPhaseParameters.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>LocalSearchPhaseParameters_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::LocalSearchPhaseParameters</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LongTernaryOperator.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/com/google/ortools/constraintsolver/</path>
     <filename>LongTernaryOperator_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::LongTernaryOperator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LongTernaryPredicate.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/com/google/ortools/constraintsolver/</path>
     <filename>LongTernaryPredicate_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::LongTernaryPredicate</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>mainConstants.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>mainConstants_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::mainConstants</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MaxFlow.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/graph/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/graph/</path>
     <filename>MaxFlow_8java</filename>
     <class kind="class">com::google::ortools::graph::MaxFlow</class>
     <class kind="enum">com::google::ortools::graph::MaxFlow::Status</class>
@@ -497,14 +497,14 @@
   </compound>
   <compound kind="file">
     <name>MinCostFlow.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/graph/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/graph/</path>
     <filename>MinCostFlow_8java</filename>
     <class kind="class">com::google::ortools::graph::MinCostFlow</class>
     <namespace>com::google::ortools::graph</namespace>
   </compound>
   <compound kind="file">
     <name>MinCostFlowBase.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/graph/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/graph/</path>
     <filename>MinCostFlowBase_8java</filename>
     <class kind="class">com::google::ortools::graph::MinCostFlowBase</class>
     <class kind="enum">com::google::ortools::graph::MinCostFlowBase::Status</class>
@@ -512,21 +512,21 @@
   </compound>
   <compound kind="file">
     <name>ModelCache.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>ModelCache_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::ModelCache</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>ModelVisitor.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>ModelVisitor_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::ModelVisitor</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPAbsConstraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPAbsConstraint_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPAbsConstraint</class>
     <class kind="class">com::google::ortools::linearsolver::MPAbsConstraint::Builder</class>
@@ -534,14 +534,14 @@
   </compound>
   <compound kind="file">
     <name>MPAbsConstraintOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPAbsConstraintOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPAbsConstraintOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPArrayConstraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPArrayConstraint_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPArrayConstraint</class>
     <class kind="class">com::google::ortools::linearsolver::MPArrayConstraint::Builder</class>
@@ -549,14 +549,14 @@
   </compound>
   <compound kind="file">
     <name>MPArrayConstraintOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPArrayConstraintOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPArrayConstraintOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPArrayWithConstantConstraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPArrayWithConstantConstraint_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPArrayWithConstantConstraint</class>
     <class kind="class">com::google::ortools::linearsolver::MPArrayWithConstantConstraint::Builder</class>
@@ -564,21 +564,21 @@
   </compound>
   <compound kind="file">
     <name>MPArrayWithConstantConstraintOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPArrayWithConstantConstraintOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPArrayWithConstantConstraintOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPConstraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPConstraint_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPConstraint</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPConstraintProto.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPConstraintProto_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPConstraintProto</class>
     <class kind="class">com::google::ortools::linearsolver::MPConstraintProto::Builder</class>
@@ -586,14 +586,14 @@
   </compound>
   <compound kind="file">
     <name>MPConstraintProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPConstraintProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPGeneralConstraintProto.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPGeneralConstraintProto_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPGeneralConstraintProto</class>
     <class kind="enum">com::google::ortools::linearsolver::MPGeneralConstraintProto::GeneralConstraintCase</class>
@@ -602,14 +602,14 @@
   </compound>
   <compound kind="file">
     <name>MPGeneralConstraintProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPGeneralConstraintProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPGeneralConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPIndicatorConstraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPIndicatorConstraint_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPIndicatorConstraint</class>
     <class kind="class">com::google::ortools::linearsolver::MPIndicatorConstraint::Builder</class>
@@ -617,14 +617,14 @@
   </compound>
   <compound kind="file">
     <name>MPIndicatorConstraintOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPIndicatorConstraintOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPIndicatorConstraintOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPModelDeltaProto.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPModelDeltaProto_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPModelDeltaProto</class>
     <class kind="class">com::google::ortools::linearsolver::MPModelDeltaProto::Builder</class>
@@ -632,21 +632,21 @@
   </compound>
   <compound kind="file">
     <name>MPModelDeltaProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPModelDeltaProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPModelDeltaProtoOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPModelExportOptions.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPModelExportOptions_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPModelExportOptions</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPModelProto.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPModelProto_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPModelProto</class>
     <class kind="class">com::google::ortools::linearsolver::MPModelProto::Builder</class>
@@ -654,14 +654,14 @@
   </compound>
   <compound kind="file">
     <name>MPModelProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPModelProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPModelProtoOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPModelRequest.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPModelRequest_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPModelRequest</class>
     <class kind="enum">com::google::ortools::linearsolver::MPModelRequest::SolverType</class>
@@ -670,21 +670,21 @@
   </compound>
   <compound kind="file">
     <name>MPModelRequestOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPModelRequestOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPModelRequestOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPObjective.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPObjective_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPObjective</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPQuadraticConstraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPQuadraticConstraint_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPQuadraticConstraint</class>
     <class kind="class">com::google::ortools::linearsolver::MPQuadraticConstraint::Builder</class>
@@ -692,14 +692,14 @@
   </compound>
   <compound kind="file">
     <name>MPQuadraticConstraintOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPQuadraticConstraintOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPQuadraticConstraintOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPQuadraticObjective.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPQuadraticObjective_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPQuadraticObjective</class>
     <class kind="class">com::google::ortools::linearsolver::MPQuadraticObjective::Builder</class>
@@ -707,14 +707,14 @@
   </compound>
   <compound kind="file">
     <name>MPQuadraticObjectiveOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPQuadraticObjectiveOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPQuadraticObjectiveOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPSolutionResponse.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPSolutionResponse_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPSolutionResponse</class>
     <class kind="class">com::google::ortools::linearsolver::MPSolutionResponse::Builder</class>
@@ -722,14 +722,14 @@
   </compound>
   <compound kind="file">
     <name>MPSolutionResponseOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPSolutionResponseOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPSolutionResponseOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPSolver.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPSolver_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPSolver</class>
     <class kind="enum">com::google::ortools::linearsolver::MPSolver::OptimizationProblemType</class>
@@ -739,7 +739,7 @@
   </compound>
   <compound kind="file">
     <name>MPSolverCommonParameters.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPSolverCommonParameters_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPSolverCommonParameters</class>
     <class kind="enum">com::google::ortools::linearsolver::MPSolverCommonParameters::LPAlgorithmValues</class>
@@ -748,14 +748,14 @@
   </compound>
   <compound kind="file">
     <name>MPSolverCommonParametersOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPSolverCommonParametersOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPSolverCommonParametersOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPSolverParameters.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPSolverParameters_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPSolverParameters</class>
     <class kind="enum">com::google::ortools::linearsolver::MPSolverParameters::DoubleParam</class>
@@ -768,14 +768,14 @@
   </compound>
   <compound kind="file">
     <name>MPSolverResponseStatus.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPSolverResponseStatus_8java</filename>
     <class kind="enum">com::google::ortools::linearsolver::MPSolverResponseStatus</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPSosConstraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPSosConstraint_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPSosConstraint</class>
     <class kind="enum">com::google::ortools::linearsolver::MPSosConstraint::Type</class>
@@ -784,21 +784,21 @@
   </compound>
   <compound kind="file">
     <name>MPSosConstraintOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPSosConstraintOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPSosConstraintOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPVariable.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPVariable_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPVariable</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPVariableProto.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPVariableProto_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPVariableProto</class>
     <class kind="class">com::google::ortools::linearsolver::MPVariableProto::Builder</class>
@@ -806,35 +806,35 @@
   </compound>
   <compound kind="file">
     <name>MPVariableProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPVariableProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPVariableProtoOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>OptimizeVar.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>OptimizeVar_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::OptimizeVar</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>OptionalBoolean.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/util/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/util/</path>
     <filename>OptionalBoolean_8java</filename>
     <class kind="enum">com::google::ortools::util::OptionalBoolean</class>
     <namespace>com::google::ortools::util</namespace>
   </compound>
   <compound kind="file">
     <name>OptionalBooleanOuterClass.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/util/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/util/</path>
     <filename>OptionalBooleanOuterClass_8java</filename>
     <class kind="class">com::google::ortools::util::OptionalBooleanOuterClass</class>
     <namespace>com::google::ortools::util</namespace>
   </compound>
   <compound kind="file">
     <name>OptionalDouble.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>OptionalDouble_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::OptionalDouble</class>
     <class kind="class">com::google::ortools::linearsolver::OptionalDouble::Builder</class>
@@ -842,28 +842,28 @@
   </compound>
   <compound kind="file">
     <name>OptionalDoubleOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>OptionalDoubleOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::OptionalDoubleOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>Pack.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>Pack_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::Pack</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>ParallelSavingsFilteredDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>ParallelSavingsFilteredDecisionBuilder_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::ParallelSavingsFilteredDecisionBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>PartialVariableAssignment.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>PartialVariableAssignment_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::PartialVariableAssignment</class>
     <class kind="class">com::google::ortools::linearsolver::PartialVariableAssignment::Builder</class>
@@ -871,49 +871,49 @@
   </compound>
   <compound kind="file">
     <name>PartialVariableAssignmentOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>PartialVariableAssignmentOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::PartialVariableAssignmentOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>PathOperator.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>PathOperator_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::PathOperator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>PathWithPreviousNodesOperator.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>PathWithPreviousNodesOperator_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::PathWithPreviousNodesOperator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>PropagationBaseObject.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>PropagationBaseObject_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::PropagationBaseObject</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>PropagationMonitor.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>PropagationMonitor_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::PropagationMonitor</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RegularLimit.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RegularLimit_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RegularLimit</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RegularLimitParameters.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RegularLimitParameters_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RegularLimitParameters</class>
     <class kind="class">com::google::ortools::constraintsolver::RegularLimitParameters::Builder</class>
@@ -921,77 +921,77 @@
   </compound>
   <compound kind="file">
     <name>RegularLimitParametersOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RegularLimitParametersOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::RegularLimitParametersOrBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RevBool.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RevBool_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RevBool</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RevInteger.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RevInteger_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RevInteger</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RevLong.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RevLong_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RevLong</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RevPartialSequence.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RevPartialSequence_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RevPartialSequence</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingDimension.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RoutingDimension_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingDimension</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingEnums.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RoutingEnums_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingEnums</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingFilteredDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RoutingFilteredDecisionBuilder_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingFilteredDecisionBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingIndexManager.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RoutingIndexManager_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingIndexManager</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingModel.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RoutingModel_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingModel</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingModelParameters.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RoutingModelParameters_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingModelParameters</class>
     <class kind="class">com::google::ortools::constraintsolver::RoutingModelParameters::Builder</class>
@@ -999,28 +999,28 @@
   </compound>
   <compound kind="file">
     <name>RoutingModelParametersOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RoutingModelParametersOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::RoutingModelParametersOrBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingModelVisitor.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RoutingModelVisitor_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingModelVisitor</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingParameters.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RoutingParameters_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingParameters</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingSearchParameters.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RoutingSearchParameters_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingSearchParameters</class>
     <class kind="interface">com::google::ortools::constraintsolver::RoutingSearchParameters::LocalSearchNeighborhoodOperatorsOrBuilder</class>
@@ -1031,14 +1031,14 @@
   </compound>
   <compound kind="file">
     <name>RoutingSearchParametersOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RoutingSearchParametersOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::RoutingSearchParametersOrBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SatParameters.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/sat/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/sat/</path>
     <filename>SatParameters_8java</filename>
     <class kind="class">com::google::ortools::sat::SatParameters</class>
     <class kind="enum">com::google::ortools::sat::SatParameters::VariableOrder</class>
@@ -1056,14 +1056,14 @@
   </compound>
   <compound kind="file">
     <name>SatParametersOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/sat/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/sat/</path>
     <filename>SatParametersOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::SatParametersOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>SavingsFilteredDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SavingsFilteredDecisionBuilder_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SavingsFilteredDecisionBuilder</class>
     <class kind="class">com::google::ortools::constraintsolver::SavingsFilteredDecisionBuilder::SavingsParameters</class>
@@ -1071,91 +1071,91 @@
   </compound>
   <compound kind="file">
     <name>SearchLimit.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SearchLimit_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SearchLimit</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SearchLimitProtobuf.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SearchLimitProtobuf_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SearchLimitProtobuf</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SearchLog.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SearchLog_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SearchLog</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SearchMonitor.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SearchMonitor_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SearchMonitor</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SequenceVar.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SequenceVar_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SequenceVar</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SequenceVarElement.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SequenceVarElement_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SequenceVarElement</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SequenceVarLocalSearchHandler.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SequenceVarLocalSearchHandler_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SequenceVarLocalSearchHandler</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SequenceVarLocalSearchOperator.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SequenceVarLocalSearchOperator_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SequenceVarLocalSearchOperator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SequenceVarLocalSearchOperatorTemplate.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SequenceVarLocalSearchOperatorTemplate_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SequenceVarLocalSearchOperatorTemplate</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SequentialSavingsFilteredDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SequentialSavingsFilteredDecisionBuilder_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SequentialSavingsFilteredDecisionBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SolutionCollector.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SolutionCollector_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SolutionCollector</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SolutionPool.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SolutionPool_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SolutionPool</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>Solver.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>Solver_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::Solver</class>
     <class kind="class">com::google::ortools::constraintsolver::Solver::FailException</class>
@@ -1164,49 +1164,49 @@
   </compound>
   <compound kind="file">
     <name>SolverParameters.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SolverParameters_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SolverParameters</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SortedDisjointIntervalList.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/util/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/util/</path>
     <filename>SortedDisjointIntervalList_8java</filename>
     <class kind="class">com::google::ortools::util::SortedDisjointIntervalList</class>
     <namespace>com::google::ortools::util</namespace>
   </compound>
   <compound kind="file">
     <name>SymmetryBreaker.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SymmetryBreaker_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SymmetryBreaker</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>TypeIncompatibilityChecker.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>TypeIncompatibilityChecker_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::TypeIncompatibilityChecker</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>TypeRegulationsChecker.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>TypeRegulationsChecker_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::TypeRegulationsChecker</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>TypeRegulationsConstraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>TypeRegulationsConstraint_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::TypeRegulationsConstraint</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>TypeRequirementChecker.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>TypeRequirementChecker_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::TypeRequirementChecker</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
@@ -1720,21 +1720,21 @@
       <arglist>(SequenceVar var)</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>forwardSequence</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html</anchorfile>
       <anchor>a1cb98fc3db786f2c2900d20dcc26615a</anchor>
       <arglist>(SequenceVar var)</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>backwardSequence</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html</anchorfile>
       <anchor>a8356f9346309ad89f1968faf86550468</anchor>
       <arglist>(SequenceVar var)</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>unperformed</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html</anchorfile>
       <anchor>a986b02476febae65327a70cfb7bf64da</anchor>
@@ -21063,7 +21063,7 @@
       <arglist>(long left, long right)</arglist>
     </member>
     <member kind="function">
-      <type>long []</type>
+      <type>long[]</type>
       <name>flattenedIntervals</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1util_1_1Domain.html</anchorfile>
       <anchor>a8f3d8247806e88dd3d62d9d03e520acf</anchor>
@@ -35286,56 +35286,56 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>MPVariable []</type>
+      <type>MPVariable[]</type>
       <name>makeVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
       <anchor>a01d1141a64d0ea2d4c70049139a39489</anchor>
       <arglist>(int count, double lb, double ub, boolean integer)</arglist>
     </member>
     <member kind="function">
-      <type>MPVariable []</type>
+      <type>MPVariable[]</type>
       <name>makeVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
       <anchor>ab42b9ff3770c218f3189db51a8f5dd2b</anchor>
       <arglist>(int count, double lb, double ub, boolean integer, String var_name)</arglist>
     </member>
     <member kind="function">
-      <type>MPVariable []</type>
+      <type>MPVariable[]</type>
       <name>makeNumVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
       <anchor>ae0bf2f8026a136d8cabecd3c94c00ead</anchor>
       <arglist>(int count, double lb, double ub)</arglist>
     </member>
     <member kind="function">
-      <type>MPVariable []</type>
+      <type>MPVariable[]</type>
       <name>makeNumVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
       <anchor>a6afb82b104046e5ea4b2605eec2baa7f</anchor>
       <arglist>(int count, double lb, double ub, String var_name)</arglist>
     </member>
     <member kind="function">
-      <type>MPVariable []</type>
+      <type>MPVariable[]</type>
       <name>makeIntVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
       <anchor>a751dbf8b47d66f985da829ba52f0cec8</anchor>
       <arglist>(int count, double lb, double ub)</arglist>
     </member>
     <member kind="function">
-      <type>MPVariable []</type>
+      <type>MPVariable[]</type>
       <name>makeIntVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
       <anchor>a036e958befd6b580149e8a85ae64db2f</anchor>
       <arglist>(int count, double lb, double ub, String var_name)</arglist>
     </member>
     <member kind="function">
-      <type>MPVariable []</type>
+      <type>MPVariable[]</type>
       <name>makeBoolVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
       <anchor>a90cffe34affa69de7e6630c313efb590</anchor>
       <arglist>(int count)</arglist>
     </member>
     <member kind="function">
-      <type>MPVariable []</type>
+      <type>MPVariable[]</type>
       <name>makeBoolVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
       <anchor>ae8812dddb6912b92a029702a2d4e550b</anchor>
@@ -35363,7 +35363,7 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>MPVariable []</type>
+      <type>MPVariable[]</type>
       <name>variables</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
       <anchor>afa1dd9d9836702c74f8d44e2bcde3390</anchor>
@@ -35412,7 +35412,7 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>MPConstraint []</type>
+      <type>MPConstraint[]</type>
       <name>constraints</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
       <anchor>aa3f051ba337b2c775a91a3adb08dfdc9</anchor>
@@ -35475,7 +35475,7 @@
       <arglist>(MPSolverParameters param)</arglist>
     </member>
     <member kind="function">
-      <type>double []</type>
+      <type>double[]</type>
       <name>computeConstraintActivities</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
       <anchor>ac824e10d554bc452d97976679e423b9a</anchor>
@@ -41173,28 +41173,28 @@
       <arglist>(long index)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar []</type>
+      <type>IntVar[]</type>
       <name>cumuls</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html</anchorfile>
       <anchor>aa5c7d7852ad47cb0eb72d23fee032514</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>IntVar []</type>
+      <type>IntVar[]</type>
       <name>fixed_transits</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html</anchorfile>
       <anchor>aa2a3b81811cedf3afec7281782067c60</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>IntVar []</type>
+      <type>IntVar[]</type>
       <name>transits</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html</anchorfile>
       <anchor>a10a410c5659475992d277b8d3c7dd1ae</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>IntVar []</type>
+      <type>IntVar[]</type>
       <name>slacks</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html</anchorfile>
       <anchor>aaad507796c437b91330ddd17014f01c4</anchor>
@@ -41327,7 +41327,7 @@
       <arglist>(IntervalVar[] breaks, int vehicle, long[] node_visit_transits, LongBinaryOperator group_delays)</arglist>
     </member>
     <member kind="function">
-      <type>IntervalVar []</type>
+      <type>IntervalVar[]</type>
       <name>getBreakIntervalsOfVehicle</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html</anchorfile>
       <anchor>aae06e90a6c65de3acc680e15f0daf156</anchor>
@@ -41627,7 +41627,7 @@
       <arglist>(int node)</arglist>
     </member>
     <member kind="function">
-      <type>long []</type>
+      <type>long[]</type>
       <name>nodesToIndices</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingIndexManager.html</anchorfile>
       <anchor>af7056a25e273df9f3cccefdb3bec4743</anchor>
@@ -41841,14 +41841,14 @@
       <arglist>(long[] indices)</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>getDisjunctionIndices</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
       <anchor>af88f80fbd0d00903fcda58f988874d59</anchor>
       <arglist>(long index)</arglist>
     </member>
     <member kind="function">
-      <type>long []</type>
+      <type>long[]</type>
       <name>getDisjunctionIndices</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
       <anchor>a941221a2e25ea7a1865724fea5d26fa4</anchor>
@@ -42037,14 +42037,14 @@
       <arglist>(long linear_cost_factor, long quadratic_cost_factor, int vehicle)</arglist>
     </member>
     <member kind="function">
-      <type>long []</type>
+      <type>long[]</type>
       <name>getAmortizedLinearCostFactorOfVehicles</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
       <anchor>adfe8545ba546a13a6111c693d8af31db</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>long []</type>
+      <type>long[]</type>
       <name>getAmortizedQuadraticCostFactorOfVehicles</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
       <anchor>a0983d068a5931cf4eda4a51404676fcb</anchor>
@@ -42345,14 +42345,14 @@
       <arglist>(Assignment assignment, int vehicle)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar []</type>
+      <type>IntVar[]</type>
       <name>nexts</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
       <anchor>a54249384cda0b5692ff00e0a64c647a0</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>IntVar []</type>
+      <type>IntVar[]</type>
       <name>vehicleVars</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
       <anchor>a6c5871a1b9d8673e4668102868da39d7</anchor>
@@ -42471,7 +42471,7 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>getSameVehicleIndicesOfIndex</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
       <anchor>a5371ba240592f02a09635793d839feb3</anchor>
@@ -49765,21 +49765,21 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>forwardSequence</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarElement.html</anchorfile>
       <anchor>ab43686c5bb98450134a0d6fa57d6b60b</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>backwardSequence</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarElement.html</anchorfile>
       <anchor>a0f92d7a984cf59f9edbae4442a0125a3</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>unperformed</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarElement.html</anchorfile>
       <anchor>ac5ebddb0e322048d56cb43f5a9a1acf6</anchor>
@@ -49984,7 +49984,7 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>value</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperatorTemplate.html</anchorfile>
       <anchor>a409f5fe254e1288adc8ba57a8166f989</anchor>
@@ -49998,7 +49998,7 @@
       <arglist>(long index)</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>oldValue</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperatorTemplate.html</anchorfile>
       <anchor>a553f26b7c13397c93b3dd4c57b74d375</anchor>
@@ -50129,7 +50129,7 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>value</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperatorTemplate.html</anchorfile>
       <anchor>a409f5fe254e1288adc8ba57a8166f989</anchor>
@@ -50143,7 +50143,7 @@
       <arglist>(long index)</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>oldValue</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperatorTemplate.html</anchorfile>
       <anchor>a553f26b7c13397c93b3dd4c57b74d375</anchor>
@@ -50531,21 +50531,21 @@
       <arglist>(int n, IntervalVar var)</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>forwardSequence</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html</anchorfile>
       <anchor>a690d3ee12e0a18b442115110e4c248e1</anchor>
       <arglist>(int n, SequenceVar var)</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>backwardSequence</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html</anchorfile>
       <anchor>a8a941badc3ff836ee8edcd376bd52cae</anchor>
       <arglist>(int n, SequenceVar var)</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>unperformed</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html</anchorfile>
       <anchor>a6703bb3fcb4173ac05a8e4609d86eb05</anchor>
@@ -50822,42 +50822,42 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>IntVar []</type>
+      <type>IntVar[]</type>
       <name>makeIntVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html</anchorfile>
       <anchor>add62fd5d4a55f85e77558af774d08ab9</anchor>
       <arglist>(int count, long min, long max)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar []</type>
+      <type>IntVar[]</type>
       <name>makeIntVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html</anchorfile>
       <anchor>ae91e47002f55903cde7f949cfe518062</anchor>
       <arglist>(int count, long min, long max, String name)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar []</type>
+      <type>IntVar[]</type>
       <name>makeBoolVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html</anchorfile>
       <anchor>a66e5ae535df13b5f26ea995cc001a157</anchor>
       <arglist>(int count)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar []</type>
+      <type>IntVar[]</type>
       <name>makeBoolVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html</anchorfile>
       <anchor>a8ee27c007133dbb64dfb678e882d68c7</anchor>
       <arglist>(int count, String name)</arglist>
     </member>
     <member kind="function">
-      <type>IntervalVar []</type>
+      <type>IntervalVar[]</type>
       <name>makeFixedDurationIntervalVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html</anchorfile>
       <anchor>a932b967722291abd64e6d1084ab88a04</anchor>
       <arglist>(int count, long start_min, long start_max, long duration, boolean optional)</arglist>
     </member>
     <member kind="function">
-      <type>IntervalVar []</type>
+      <type>IntervalVar[]</type>
       <name>makeFixedDurationIntervalVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html</anchorfile>
       <anchor>a19c0fd3e2a78358b75d7afa29f8261ec</anchor>
@@ -53790,7 +53790,7 @@
       <arglist>(long[] value)</arglist>
     </member>
     <member kind="function">
-      <type>long []</type>
+      <type>long[]</type>
       <name>getTmp_vector_</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html</anchorfile>
       <anchor>a66c2c63cfc8fc1473306c516fc837d8a</anchor>
@@ -54671,6 +54671,13 @@
     </member>
     <member kind="variable">
       <type></type>
+      <name>XPRESS_LINEAR_PROGRAMMING</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</anchorfile>
+      <anchor>ae6b647d2f21153f53d9f578d84559c7a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
       <name>CPLEX_LINEAR_PROGRAMMING</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</anchorfile>
       <anchor>a9c3d76cc0050811f701ccd7213d59785</anchor>
@@ -54702,6 +54709,13 @@
       <name>GUROBI_MIXED_INTEGER_PROGRAMMING</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</anchorfile>
       <anchor>a3ef59a15836dbdfc9767bfb7628ff492</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>XPRESS_MIXED_INTEGER_PROGRAMMING</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</anchorfile>
+      <anchor>a672d6fd20c82cef2dfc8356b6c31ee44</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
@@ -54762,6 +54776,13 @@
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
+      <name>XPRESS_LINEAR_PROGRAMMING_VALUE</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</anchorfile>
+      <anchor>a08fba00a472de59918678a8e5cac3014</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
       <name>CPLEX_LINEAR_PROGRAMMING_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</anchorfile>
       <anchor>a5fb66d4224a3ec979b69646e75226364</anchor>
@@ -54793,6 +54814,13 @@
       <name>GUROBI_MIXED_INTEGER_PROGRAMMING_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</anchorfile>
       <anchor>afb33b329963e33eb334c204b9fd2b4a2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>XPRESS_MIXED_INTEGER_PROGRAMMING_VALUE</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</anchorfile>
+      <anchor>a7c2b2068ea98cf545e943a7d593c327a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
