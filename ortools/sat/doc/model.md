@@ -107,10 +107,14 @@ def SolutionHintingSampleSat():
   model.Maximize(x + 2 * y + 3 * z)
 
   # Solution hinting: x <- 1, y <- 2
-  model.Proto().solution_hint.vars.append(x.Index())
-  model.Proto().solution_hint.values.append(1)
-  model.Proto().solution_hint.vars.append(y.Index())
-  model.Proto().solution_hint.values.append(2)
+  model.AddHint(x, 1)
+  model.AddHint(y, 2)
+  
+  # Equivalent to
+  # model.Proto().solution_hint.vars.append(x.Index())
+  # model.Proto().solution_hint.values.append(1)
+  # model.Proto().solution_hint.vars.append(y.Index())
+  # model.Proto().solution_hint.values.append(2)
 
   # Creates a solver and solves.
   solver = cp_model.CpSolver()
