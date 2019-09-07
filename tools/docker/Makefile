@@ -19,8 +19,8 @@ help:
 	@echo -e "\t${BOLD}archives${RESET}: Build all OR-Tools archives in export."
 	@echo -e "\t${BOLD}test_archives${RESET}: Test each OR-Tools archives for all ${BOLD}<distro>${RESET} and ${BOLD}<lang>${RESET}."
 	@echo
-	@echo -e "\t${BOLD}python${RESET}: Build manylinux2010 python 'ortools' wheel packages (2.7, 3.5, 3.6, 3.7)."
-	@echo -e "\t${BOLD}test_python${RESET}: Test manylinux2010 python 'ortools' wheel packages (2.7, 3.5, 3.6, 3.7)."
+	@echo -e "\t${BOLD}python${RESET}: Build manylinux2010 python 'ortools' wheel packages (3.5, 3.6, 3.7)."
+	@echo -e "\t${BOLD}test_python${RESET}: Test manylinux2010 python 'ortools' wheel packages (3.5, 3.6, 3.7)."
 	@echo
 	@echo -e "\t${BOLD}docker_<distro>${RESET}: Build an image container with or-tools sources and third parties already prebuilt."
 	@echo -e "\t${BOLD}bash_<distro>${RESET}: Run a container using the ${BOLD}docker_<distro>${RESET} image."
