@@ -44,7 +44,7 @@ if [ "${BUILDER}" == make ];then
     echo 'travis_fold:start:third_party'
     make third_party --jobs=4
     echo 'travis_fold:end:third_party'
-    if "${LANGUAGE}"  == python3 ]; then
+    if [ "${LANGUAGE}"  == python3 ]; then
       echo 'travis_fold:start:python'
       make python --jobs=4
       echo 'travis_fold:end:python'
