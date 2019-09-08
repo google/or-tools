@@ -119,92 +119,266 @@ __pdoc__[&#39;Solver.thisown&#39;] = False
 __pdoc__[&#39;Variable.thisown&#39;] = False
 
 class Solver(object):
+    r&#34;&#34;&#34;
+    This mathematical programming (MP) solver class is the main class
+    though which users build and solve problems.
+    &#34;&#34;&#34;
+
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
     __repr__ = _swig_repr
     CLP_LINEAR_PROGRAMMING = _pywraplp.Solver_CLP_LINEAR_PROGRAMMING
+    r&#34;&#34;&#34; Linear Programming solver using Coin CBC.&#34;&#34;&#34;
     GLOP_LINEAR_PROGRAMMING = _pywraplp.Solver_GLOP_LINEAR_PROGRAMMING
+    r&#34;&#34;&#34; Linear Programming solver using GLOP (Recommended solver).&#34;&#34;&#34;
     CBC_MIXED_INTEGER_PROGRAMMING = _pywraplp.Solver_CBC_MIXED_INTEGER_PROGRAMMING
+    r&#34;&#34;&#34; Mixed integer Programming Solver using Coin CBC.&#34;&#34;&#34;
     BOP_INTEGER_PROGRAMMING = _pywraplp.Solver_BOP_INTEGER_PROGRAMMING
+    r&#34;&#34;&#34; Linear Boolean Programming Solver.&#34;&#34;&#34;
 
     def __init__(self, name: &#34;std::string const &amp;&#34;, problem_type: &#34;operations_research::MPSolver::OptimizationProblemType&#34;):
+        r&#34;&#34;&#34; Create a solver with the given name and underlying solver backend.&#34;&#34;&#34;
         _pywraplp.Solver_swiginit(self, _pywraplp.new_Solver(name, problem_type))
     __swig_destroy__ = _pywraplp.delete_Solver
 
     @staticmethod
     def SupportsProblemType(problem_type: &#34;operations_research::MPSolver::OptimizationProblemType&#34;) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34;
+        Whether the given problem type is supported (this will depend on the
+        targets that you linked).
+        &#34;&#34;&#34;
         return _pywraplp.Solver_SupportsProblemType(problem_type)
 
     def Clear(self) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34;
+        Clears the objective (including the optimization direction), all variables
+        and constraints. All the other properties of the MPSolver (like the time
+        limit) are kept untouched.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_Clear(self)
 
     def NumVariables(self) -&gt; &#34;int&#34;:
+        r&#34;&#34;&#34; Returns the number of variables.&#34;&#34;&#34;
         return _pywraplp.Solver_NumVariables(self)
 
     def variables(self) -&gt; &#34;std::vector&lt; operations_research::MPVariable * &gt; const &amp;&#34;:
+        r&#34;&#34;&#34;
+        Returns the array of variables handled by the MPSolver. (They are listed in
+        the order in which they were created.)
+        &#34;&#34;&#34;
         return _pywraplp.Solver_variables(self)
 
     def LookupVariable(self, var_name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPVariable *&#34;:
+        r&#34;&#34;&#34;
+        Looks up a variable by name, and returns nullptr if it does not exist. The
+        first call has a O(n) complexity, as the variable name index is lazily
+        created upon first use. Will crash if variable names are not unique.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_LookupVariable(self, var_name)
 
     def Var(self, lb: &#34;double&#34;, ub: &#34;double&#34;, integer: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPVariable *&#34;:
+        r&#34;&#34;&#34;
+        Creates a variable with the given bounds, integrality requirement and
+        name. Bounds can be finite or +/- MPSolver::infinity(). The MPSolver owns
+        the variable (i.e. the returned pointer is borrowed). Variable names are
+        optional. If you give an empty name, name() will auto-generate one for you
+        upon request.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_Var(self, lb, ub, integer, name)
 
     def NumVar(self, lb: &#34;double&#34;, ub: &#34;double&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPVariable *&#34;:
+        r&#34;&#34;&#34; Creates a continuous variable.&#34;&#34;&#34;
         return _pywraplp.Solver_NumVar(self, lb, ub, name)
 
     def IntVar(self, lb: &#34;double&#34;, ub: &#34;double&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPVariable *&#34;:
+        r&#34;&#34;&#34; Creates an integer variable.&#34;&#34;&#34;
         return _pywraplp.Solver_IntVar(self, lb, ub, name)
 
     def BoolVar(self, name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPVariable *&#34;:
+        r&#34;&#34;&#34; Creates a boolean variable.&#34;&#34;&#34;
         return _pywraplp.Solver_BoolVar(self, name)
 
     def NumConstraints(self) -&gt; &#34;int&#34;:
+        r&#34;&#34;&#34; Returns the number of constraints.&#34;&#34;&#34;
         return _pywraplp.Solver_NumConstraints(self)
 
     def constraints(self) -&gt; &#34;std::vector&lt; operations_research::MPConstraint * &gt; const &amp;&#34;:
+        r&#34;&#34;&#34;
+        Returns the array of constraints handled by the MPSolver.
+
+        They are listed in the order in which they were created.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_constraints(self)
 
     def LookupConstraint(self, constraint_name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPConstraint *&#34;:
+        r&#34;&#34;&#34;
+         Looks up a constraint by name, and returns nullptr if it does not exist.
+
+        The first call has a O(n) complexity, as the constraint name index is
+        lazily created upon first use. Will crash if constraint names are not
+        unique.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_LookupConstraint(self, constraint_name)
 
     def Constraint(self, *args) -&gt; &#34;operations_research::MPConstraint *&#34;:
+        r&#34;&#34;&#34;
+        *Overload 1:*
+
+        Creates a linear constraint with given bounds.
+
+        Bounds can be finite or +/- MPSolver::infinity(). The MPSolver class
+        assumes ownership of the constraint.
+
+        :rtype: :py:class:`MPConstraint`
+        :return: a pointer to the newly created constraint.
+
+        |
+
+        *Overload 2:*
+         Creates a constraint with -infinity and +infinity bounds.
+
+        |
+
+        *Overload 3:*
+         Creates a named constraint with given bounds.
+
+        |
+
+        *Overload 4:*
+         Creates a named constraint with -infinity and +infinity bounds.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_Constraint(self, *args)
 
     def Objective(self) -&gt; &#34;operations_research::MPObjective *&#34;:
+        r&#34;&#34;&#34; Returns the mutable objective object.&#34;&#34;&#34;
         return _pywraplp.Solver_Objective(self)
     OPTIMAL = _pywraplp.Solver_OPTIMAL
+    r&#34;&#34;&#34; optimal.&#34;&#34;&#34;
     FEASIBLE = _pywraplp.Solver_FEASIBLE
+    r&#34;&#34;&#34; feasible, or stopped by limit.&#34;&#34;&#34;
     INFEASIBLE = _pywraplp.Solver_INFEASIBLE
+    r&#34;&#34;&#34; proven infeasible.&#34;&#34;&#34;
     UNBOUNDED = _pywraplp.Solver_UNBOUNDED
+    r&#34;&#34;&#34; proven unbounded.&#34;&#34;&#34;
     ABNORMAL = _pywraplp.Solver_ABNORMAL
+    r&#34;&#34;&#34; abnormal, i.e., error of some kind.&#34;&#34;&#34;
     NOT_SOLVED = _pywraplp.Solver_NOT_SOLVED
+    r&#34;&#34;&#34; not been solved yet.&#34;&#34;&#34;
 
     def Solve(self, *args) -&gt; &#34;operations_research::MPSolver::ResultStatus&#34;:
+        r&#34;&#34;&#34;
+        *Overload 1:*
+        Solves the problem using default parameter values.
+
+        |
+
+        *Overload 2:*
+        Solves the problem using the specified parameter values.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_Solve(self, *args)
 
     def ComputeConstraintActivities(self) -&gt; &#34;std::vector&lt; double &gt;&#34;:
+        r&#34;&#34;&#34;
+        Advanced usage: compute the &#34;activities&#34; of all constraints, which are the
+        sums of their linear terms. The activities are returned in the same order
+        as constraints(), which is the order in which constraints were added; but
+        you can also use MPConstraint::index() to get a constraint&#39;s index.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_ComputeConstraintActivities(self)
 
     def VerifySolution(self, tolerance: &#34;double&#34;, log_errors: &#34;bool&#34;) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34;
+        Advanced usage: Verifies the *correctness* of the solution.
+
+        It verifies that all variables must be within their domains, all
+        constraints must be satisfied, and the reported objective value must be
+        accurate.
+
+        Usage:
+        - This can only be called after Solve() was called.
+        - &#34;tolerance&#34; is interpreted as an absolute error threshold.
+        - For the objective value only, if the absolute error is too large,
+          the tolerance is interpreted as a relative error threshold instead.
+        - If &#34;log_errors&#34; is true, every single violation will be logged.
+        - If &#34;tolerance&#34; is negative, it will be set to infinity().
+
+        Most users should just set the --verify_solution flag and not bother using
+        this method directly.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_VerifySolution(self, tolerance, log_errors)
 
     def InterruptSolve(self) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34;
+         Interrupts the Solve() execution to terminate processing if possible.
+
+        If the underlying interface supports interruption; it does that and returns
+        true regardless of whether there&#39;s an ongoing Solve() or not. The Solve()
+        call may still linger for a while depending on the conditions.  If
+        interruption is not supported; returns false and does nothing.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_InterruptSolve(self)
 
     def FillSolutionResponseProto(self, response: &#34;operations_research::MPSolutionResponse *&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Encodes the current solution in a solution response protocol buffer.&#34;&#34;&#34;
         return _pywraplp.Solver_FillSolutionResponseProto(self, response)
 
     @staticmethod
     def SolveWithProto(model_request: &#34;operations_research::MPModelRequest const &amp;&#34;, response: &#34;operations_research::MPSolutionResponse *&#34;) -&gt; &#34;operations_research::MPSolutionResponse *&#34;:
+        r&#34;&#34;&#34;
+        Solves the model encoded by a MPModelRequest protocol buffer and fills the
+        solution encoded as a MPSolutionResponse.
+
+        Note(user): This creates a temporary MPSolver and destroys it at the end.
+        If you want to keep the MPSolver alive (for debugging, or for incremental
+        solving), you should write another version of this function that creates
+        the MPSolver object on the heap and returns it.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_SolveWithProto(model_request, response)
 
     def ExportModelToProto(self, output_model: &#34;operations_research::MPModelProto *&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Exports model to protocol buffer.&#34;&#34;&#34;
         return _pywraplp.Solver_ExportModelToProto(self, output_model)
 
     def LoadSolutionFromProto(self, *args) -&gt; &#34;util::Status&#34;:
+        r&#34;&#34;&#34;
+        Load a solution encoded in a protocol buffer onto this solver for easy
+          access via the MPSolver interface.
+
+        IMPORTANT: This may only be used in conjunction with ExportModel(),
+          following this example:
+
+           .. code-block:: c++
+
+                 MPSolver my_solver;
+                 ... add variables and constraints ...
+                 MPModelProto model_proto;
+                 my_solver.ExportModelToProto(model_proto);
+                 MPSolutionResponse solver_response;
+                 MPSolver::SolveWithProto(model_proto, solver_response);
+                 if (solver_response.result_status() == MPSolutionResponse::OPTIMAL) {
+                   CHECK_OK(my_solver.LoadSolutionFromProto(solver_response));
+                   ... inspect the solution using the usual API: solution_value(), etc...
+                 }
+
+        The response must be in OPTIMAL or FEASIBLE status.
+
+        Returns a non-OK status if a problem arised (typically, if it wasn&#39;t used
+            like it should be):
+        - loading a solution whose variables don&#39;t correspond to the solver&#39;s
+          current variables
+        - loading a solution with a status other than OPTIMAL / FEASIBLE.
+
+        Note: the objective value isn&#39;t checked. You can use VerifySolution() for
+              that.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_LoadSolutionFromProto(self, *args)
 
     def SetSolverSpecificParametersAsString(self, parameters: &#34;std::string const &amp;&#34;) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34;
+        Advanced usage: pass solver specific parameters in text format.
+
+        The format is solver-specific and is the same as the corresponding solver
+        configuration file format. Returns true if the operation was successful.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_SetSolverSpecificParametersAsString(self, parameters)
     FREE = _pywraplp.Solver_FREE
     AT_LOWER_BOUND = _pywraplp.Solver_AT_LOWER_BOUND
@@ -214,24 +388,75 @@ class Solver(object):
 
     @staticmethod
     def infinity() -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34;
+        Infinity.
+
+        You can use -MPSolver::infinity() for negative infinity.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_infinity()
 
     def EnableOutput(self) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Enables solver logging.&#34;&#34;&#34;
         return _pywraplp.Solver_EnableOutput(self)
 
     def SuppressOutput(self) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Suppresses solver logging.&#34;&#34;&#34;
         return _pywraplp.Solver_SuppressOutput(self)
 
     def iterations(self) -&gt; &#34;int64&#34;:
+        r&#34;&#34;&#34; Returns the number of simplex iterations.&#34;&#34;&#34;
         return _pywraplp.Solver_iterations(self)
 
     def nodes(self) -&gt; &#34;int64&#34;:
+        r&#34;&#34;&#34;
+        Returns the number of branch-and-bound nodes evaluated during the solve.
+
+        Only available for discrete problems.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_nodes(self)
 
     def ComputeExactConditionNumber(self) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34;
+         Advanced usage: computes the exact condition number of the current scaled
+        basis: L1norm(B) * L1norm(inverse(B)), where B is the scaled basis.
+
+        This method requires that a basis exists: it should be called after Solve.
+        It is only available for continuous problems. It is implemented for GLPK
+        but not CLP because CLP does not provide the API for doing it.
+
+        The condition number measures how well the constraint matrix is conditioned
+        and can be used to predict whether numerical issues will arise during the
+        solve: the model is declared infeasible whereas it is feasible (or
+        vice-versa), the solution obtained is not optimal or violates some
+        constraints, the resolution is slow because of repeated singularities.
+
+        The rule of thumb to interpret the condition number kappa is:
+          - o kappa &lt;= 1e7: virtually no chance of numerical issues
+          - o 1e7 &lt; kappa &lt;= 1e10: small chance of numerical issues
+          - o 1e10 &lt; kappa &lt;= 1e13: medium chance of numerical issues
+          - o kappa &gt; 1e13: high chance of numerical issues
+
+        The computation of the condition number depends on the quality of the LU
+        decomposition, so it is not very accurate when the matrix is ill
+        conditioned.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_ComputeExactConditionNumber(self)
 
     def NextSolution(self) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34;
+        Some solvers (MIP only, not LP) can produce multiple solutions to the
+        problem. Returns true when another solution is available, and updates the
+        MPVariable* objects to make the new solution queryable. Call only after
+        calling solve.
+
+        The optimality properties of the additional solutions found, and whether or
+        not the solver computes them ahead of time or when NextSolution() is called
+        is solver specific.
+
+        As of 2018-08-09, only Gurobi supports NextSolution(), see
+        linear_solver_underlying_gurobi_test for an example of how to configure
+        Gurobi for this purpose. The other solvers return false unconditionally.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_NextSolution(self)
 
     def set_time_limit(self, time_limit_milliseconds: &#34;int64&#34;) -&gt; &#34;void&#34;:
@@ -250,9 +475,11 @@ class Solver(object):
         return _pywraplp.Solver_ExportModelAsMpsFormat(self, fixed_format, obfuscated)
 
     def SetHint(self, variables: &#34;std::vector&lt; operations_research::MPVariable * &gt; const &amp;&#34;, values: &#34;std::vector&lt; double &gt; const &amp;&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Set a hint for solution. If a feasible or almost-feasible solution to the problem is already known, it may be helpful to pass it to the solver so that it can be used. A solver that supports this feature will try to use this information to create its initial feasible solution. Note that it may not always be faster to give a hint like this to the solver. There is also no guarantee that the solver will use this hint or try to return a solution &#34;close&#34; to this assignment in case of multiple optimal solutions.&#34;&#34;&#34;
         return _pywraplp.Solver_SetHint(self, variables, values)
 
     def SetNumThreads(self, num_theads: &#34;int&#34;) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34; Sets the number of threads to be used by the solver.&#34;&#34;&#34;
         return _pywraplp.Solver_SetNumThreads(self, num_theads)
 
     def Add(self, constraint, name=&#39;&#39;):
@@ -313,12 +540,30 @@ class Solver(object):
 _pywraplp.Solver_swigregister(Solver)
 
 def Solver_SupportsProblemType(problem_type: &#34;operations_research::MPSolver::OptimizationProblemType&#34;) -&gt; &#34;bool&#34;:
+    r&#34;&#34;&#34;
+    Whether the given problem type is supported (this will depend on the
+    targets that you linked).
+    &#34;&#34;&#34;
     return _pywraplp.Solver_SupportsProblemType(problem_type)
 
 def Solver_SolveWithProto(model_request: &#34;operations_research::MPModelRequest const &amp;&#34;, response: &#34;operations_research::MPSolutionResponse *&#34;) -&gt; &#34;operations_research::MPSolutionResponse *&#34;:
+    r&#34;&#34;&#34;
+    Solves the model encoded by a MPModelRequest protocol buffer and fills the
+    solution encoded as a MPSolutionResponse.
+
+    Note(user): This creates a temporary MPSolver and destroys it at the end.
+    If you want to keep the MPSolver alive (for debugging, or for incremental
+    solving), you should write another version of this function that creates
+    the MPSolver object on the heap and returns it.
+    &#34;&#34;&#34;
     return _pywraplp.Solver_SolveWithProto(model_request, response)
 
 def Solver_infinity() -&gt; &#34;double&#34;:
+    r&#34;&#34;&#34;
+    Infinity.
+
+    You can use -MPSolver::infinity() for negative infinity.
+    &#34;&#34;&#34;
     return _pywraplp.Solver_infinity()
 
 def Solver_Infinity() -&gt; &#34;double&#34;:
@@ -328,6 +573,8 @@ def Solver_Infinity() -&gt; &#34;double&#34;:
 def __lshift__(*args) -&gt; &#34;std::ostream &amp;&#34;:
     return _pywraplp.__lshift__(*args)
 class Objective(object):
+    r&#34;&#34;&#34; A class to express a linear objective.&#34;&#34;&#34;
+
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
 
     def __init__(self, *args, **kwargs):
@@ -335,39 +582,78 @@ class Objective(object):
     __repr__ = _swig_repr
 
     def Clear(self) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34;
+         Clears the offset, all variables and coefficients, and the optimization
+        direction.
+        &#34;&#34;&#34;
         return _pywraplp.Objective_Clear(self)
 
     def SetCoefficient(self, var: &#34;Variable&#34;, coeff: &#34;double&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34;
+        Sets the coefficient of the variable in the objective.
+
+        If the variable does not belong to the solver, the function just returns,
+        or crashes in non-opt mode.
+        &#34;&#34;&#34;
         return _pywraplp.Objective_SetCoefficient(self, var, coeff)
 
     def GetCoefficient(self, var: &#34;Variable&#34;) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34;
+         Gets the coefficient of a given variable in the objective
+
+        It returns 0 if the variable does not appear in the objective).
+        &#34;&#34;&#34;
         return _pywraplp.Objective_GetCoefficient(self, var)
 
     def SetOffset(self, value: &#34;double&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Sets the constant term in the objective.&#34;&#34;&#34;
         return _pywraplp.Objective_SetOffset(self, value)
 
     def offset(self) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34; Gets the constant term in the objective.&#34;&#34;&#34;
         return _pywraplp.Objective_offset(self)
 
     def SetOptimizationDirection(self, maximize: &#34;bool&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Sets the optimization direction (maximize: true or minimize: false).&#34;&#34;&#34;
         return _pywraplp.Objective_SetOptimizationDirection(self, maximize)
 
     def SetMinimization(self) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Sets the optimization direction to minimize.&#34;&#34;&#34;
         return _pywraplp.Objective_SetMinimization(self)
 
     def SetMaximization(self) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Sets the optimization direction to maximize.&#34;&#34;&#34;
         return _pywraplp.Objective_SetMaximization(self)
 
     def maximization(self) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34; Is the optimization direction set to maximize?&#34;&#34;&#34;
         return _pywraplp.Objective_maximization(self)
 
     def minimization(self) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34; Is the optimization direction set to minimize?&#34;&#34;&#34;
         return _pywraplp.Objective_minimization(self)
 
     def Value(self) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34;
+        Returns the objective value of the best solution found so far.
+
+        It is the optimal objective value if the problem has been solved to
+        optimality.
+
+        Note: the objective value may be slightly different than what you could
+        compute yourself using ``MPVariable::solution_value();`` please use the
+        --verify_solution flag to gain confidence about the numerical stability of
+        your solution.
+        &#34;&#34;&#34;
         return _pywraplp.Objective_Value(self)
 
     def BestBound(self) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34;
+        Returns the best objective bound.
+
+        In case of minimization, it is a lower bound on the objective value of the
+        optimal integer solution. Only available for discrete problems.
+        &#34;&#34;&#34;
         return _pywraplp.Objective_BestBound(self)
 
     def Offset(self) -&gt; &#34;double&#34;:
@@ -378,36 +664,61 @@ class Objective(object):
 _pywraplp.Objective_swigregister(Objective)
 
 class Variable(object):
+    r&#34;&#34;&#34; The class for variables of a Mathematical Programming (MP) model.&#34;&#34;&#34;
+
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
 
     def __init__(self, *args, **kwargs):
         raise AttributeError(&#34;No constructor defined&#34;)
 
     def name(self) -&gt; &#34;std::string const &amp;&#34;:
+        r&#34;&#34;&#34; Returns the name of the variable.&#34;&#34;&#34;
         return _pywraplp.Variable_name(self)
 
     def integer(self) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34; Returns the integrality requirement of the variable.&#34;&#34;&#34;
         return _pywraplp.Variable_integer(self)
 
     def solution_value(self) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34;
+        Returns the value of the variable in the current solution.
+
+        If the variable is integer, then the value will always be an integer (the
+        underlying solver handles floating-point values only, but this function
+        automatically rounds it to the nearest integer; see: man 3 round).
+        &#34;&#34;&#34;
         return _pywraplp.Variable_solution_value(self)
 
     def index(self) -&gt; &#34;int&#34;:
+        r&#34;&#34;&#34; Returns the index of the variable in the MPSolver::variables_.&#34;&#34;&#34;
         return _pywraplp.Variable_index(self)
 
     def lb(self) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34; Returns the lower bound.&#34;&#34;&#34;
         return _pywraplp.Variable_lb(self)
 
     def ub(self) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34; Returns the upper bound.&#34;&#34;&#34;
         return _pywraplp.Variable_ub(self)
 
     def SetBounds(self, lb: &#34;double&#34;, ub: &#34;double&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Sets both the lower and upper bounds.&#34;&#34;&#34;
         return _pywraplp.Variable_SetBounds(self, lb, ub)
 
     def reduced_cost(self) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34;
+        Advanced usage: returns the reduced cost of the variable in the current
+        solution (only available for continuous problems).
+        &#34;&#34;&#34;
         return _pywraplp.Variable_reduced_cost(self)
 
     def basis_status(self) -&gt; &#34;operations_research::MPSolver::BasisStatus&#34;:
+        r&#34;&#34;&#34;
+        Advanced usage: returns the basis status of the variable in the current
+        solution (only available for continuous problems).
+
+        See also: MPSolver::BasisStatus.
+        &#34;&#34;&#34;
         return _pywraplp.Variable_basis_status(self)
 
     def __str__(self) -&gt; &#34;std::string&#34;:
@@ -446,6 +757,12 @@ class Variable(object):
 _pywraplp.Variable_swigregister(Variable)
 
 class Constraint(object):
+    r&#34;&#34;&#34;
+    The class for constraints of a Mathematical Programming (MP) model.
+
+    A constraint is represented as a linear equation or inequality.
+    &#34;&#34;&#34;
+
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
 
     def __init__(self, *args, **kwargs):
@@ -453,33 +770,77 @@ class Constraint(object):
     __repr__ = _swig_repr
 
     def name(self) -&gt; &#34;std::string const &amp;&#34;:
+        r&#34;&#34;&#34; Returns the name of the constraint.&#34;&#34;&#34;
         return _pywraplp.Constraint_name(self)
 
     def SetCoefficient(self, var: &#34;Variable&#34;, coeff: &#34;double&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34;
+        Sets the coefficient of the variable on the constraint.
+
+        If the variable does not belong to the solver, the function just returns,
+        or crashes in non-opt mode.
+        &#34;&#34;&#34;
         return _pywraplp.Constraint_SetCoefficient(self, var, coeff)
 
     def GetCoefficient(self, var: &#34;Variable&#34;) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34;
+        Gets the coefficient of a given variable on the constraint (which is 0 if
+        the variable does not appear in the constraint).
+        &#34;&#34;&#34;
         return _pywraplp.Constraint_GetCoefficient(self, var)
 
     def lb(self) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34; Returns the lower bound.&#34;&#34;&#34;
         return _pywraplp.Constraint_lb(self)
 
     def ub(self) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34; Returns the upper bound.&#34;&#34;&#34;
         return _pywraplp.Constraint_ub(self)
 
     def SetBounds(self, lb: &#34;double&#34;, ub: &#34;double&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Sets both the lower and upper bounds.&#34;&#34;&#34;
         return _pywraplp.Constraint_SetBounds(self, lb, ub)
 
     def set_is_lazy(self, laziness: &#34;bool&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34;
+        Advanced usage: sets the constraint &#34;laziness&#34;.
+
+        **This is only supported for SCIP and has no effect on other
+        solvers.**
+
+        When **laziness** is true, the constraint is only considered by the Linear
+        Programming solver if its current solution violates the constraint. In this
+        case, the constraint is definitively added to the problem. This may be
+        useful in some MIP problems, and may have a dramatic impact on performance.
+
+        For more info see: http://tinyurl.com/lazy-constraints.
+        &#34;&#34;&#34;
         return _pywraplp.Constraint_set_is_lazy(self, laziness)
 
     def index(self) -&gt; &#34;int&#34;:
+        r&#34;&#34;&#34; Returns the index of the constraint in the MPSolver::constraints_.&#34;&#34;&#34;
         return _pywraplp.Constraint_index(self)
 
     def dual_value(self) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34;
+        Advanced usage: returns the dual value of the constraint in the current
+        solution (only available for continuous problems).
+        &#34;&#34;&#34;
         return _pywraplp.Constraint_dual_value(self)
 
     def basis_status(self) -&gt; &#34;operations_research::MPSolver::BasisStatus&#34;:
+        r&#34;&#34;&#34;
+        Advanced usage: returns the basis status of the constraint.
+
+        It is only available for continuous problems).
+
+        Note that if a constraint &#34;linear_expression in [lb, ub]&#34; is transformed
+        into &#34;linear_expression + slack = 0&#34; with slack in [-ub, -lb], then this
+        status is the same as the status of the slack variable with AT_UPPER_BOUND
+        and AT_LOWER_BOUND swapped.
+
+        See also: MPSolver::BasisStatus.
+        &#34;&#34;&#34;
         return _pywraplp.Constraint_basis_status(self)
 
     def Lb(self) -&gt; &#34;double&#34;:
@@ -502,38 +863,94 @@ class Constraint(object):
 _pywraplp.Constraint_swigregister(Constraint)
 
 class MPSolverParameters(object):
+    r&#34;&#34;&#34;
+    This class stores parameter settings for LP and MIP solvers. Some parameters
+    are marked as advanced: do not change their values unless you know what you
+    are doing!
+
+    For developers: how to add a new parameter:
+    - Add the new Foo parameter in the DoubleParam or IntegerParam enum.
+    - If it is a categorical param, add a FooValues enum.
+    - Decide if the wrapper should define a default value for it: yes
+      if it controls the properties of the solution (example:
+      tolerances) or if it consistently improves performance, no
+      otherwise. If yes, define kDefaultFoo.
+    - Add a foo_value_ member and, if no default value is defined, a
+      foo_is_default_ member.
+    - Add code to handle Foo in Set...Param, Reset...Param,
+      Get...Param, Reset and the constructor.
+    - In class MPSolverInterface, add a virtual method SetFoo, add it
+      to SetCommonParameters or SetMIPParameters, and implement it for
+      each solver. Sometimes, parameters need to be implemented
+      differently, see for example the INCREMENTALITY implementation.
+    - Add a test in linear_solver_test.cc.
+
+    TODO(user): store the parameter values in a protocol buffer
+    instead. We need to figure out how to deal with the subtleties of
+    the default values.
+    &#34;&#34;&#34;
+
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
     __repr__ = _swig_repr
     RELATIVE_MIP_GAP = _pywraplp.MPSolverParameters_RELATIVE_MIP_GAP
+    r&#34;&#34;&#34; Limit for relative MIP gap.&#34;&#34;&#34;
     PRIMAL_TOLERANCE = _pywraplp.MPSolverParameters_PRIMAL_TOLERANCE
+    r&#34;&#34;&#34;
+    Advanced usage: tolerance for primal feasibility of basic solutions.
+
+    This does not control the integer feasibility tolerance of integer
+    solutions for MIP or the tolerance used during presolve.
+    &#34;&#34;&#34;
     DUAL_TOLERANCE = _pywraplp.MPSolverParameters_DUAL_TOLERANCE
+    r&#34;&#34;&#34; Advanced usage: tolerance for dual feasibility of basic solutions.&#34;&#34;&#34;
     PRESOLVE = _pywraplp.MPSolverParameters_PRESOLVE
+    r&#34;&#34;&#34; Advanced usage: presolve mode.&#34;&#34;&#34;
     LP_ALGORITHM = _pywraplp.MPSolverParameters_LP_ALGORITHM
+    r&#34;&#34;&#34; Algorithm to solve linear programs.&#34;&#34;&#34;
     INCREMENTALITY = _pywraplp.MPSolverParameters_INCREMENTALITY
+    r&#34;&#34;&#34; Advanced usage: incrementality from one solve to the next.&#34;&#34;&#34;
     SCALING = _pywraplp.MPSolverParameters_SCALING
+    r&#34;&#34;&#34; Advanced usage: enable or disable matrix scaling.&#34;&#34;&#34;
     PRESOLVE_OFF = _pywraplp.MPSolverParameters_PRESOLVE_OFF
+    r&#34;&#34;&#34; Presolve is off.&#34;&#34;&#34;
     PRESOLVE_ON = _pywraplp.MPSolverParameters_PRESOLVE_ON
+    r&#34;&#34;&#34; Presolve is on.&#34;&#34;&#34;
     DUAL = _pywraplp.MPSolverParameters_DUAL
+    r&#34;&#34;&#34; Dual simplex.&#34;&#34;&#34;
     PRIMAL = _pywraplp.MPSolverParameters_PRIMAL
+    r&#34;&#34;&#34; Primal simplex.&#34;&#34;&#34;
     BARRIER = _pywraplp.MPSolverParameters_BARRIER
+    r&#34;&#34;&#34; Barrier algorithm.&#34;&#34;&#34;
     INCREMENTALITY_OFF = _pywraplp.MPSolverParameters_INCREMENTALITY_OFF
+    r&#34;&#34;&#34; Start solve from scratch.&#34;&#34;&#34;
     INCREMENTALITY_ON = _pywraplp.MPSolverParameters_INCREMENTALITY_ON
+    r&#34;&#34;&#34;
+    Reuse results from previous solve as much as the underlying solver
+    allows.
+    &#34;&#34;&#34;
     SCALING_OFF = _pywraplp.MPSolverParameters_SCALING_OFF
+    r&#34;&#34;&#34; Scaling is off.&#34;&#34;&#34;
     SCALING_ON = _pywraplp.MPSolverParameters_SCALING_ON
+    r&#34;&#34;&#34; Scaling is on.&#34;&#34;&#34;
 
     def __init__(self):
+        r&#34;&#34;&#34; The constructor sets all parameters to their default value.&#34;&#34;&#34;
         _pywraplp.MPSolverParameters_swiginit(self, _pywraplp.new_MPSolverParameters())
 
     def SetDoubleParam(self, param: &#34;operations_research::MPSolverParameters::DoubleParam&#34;, value: &#34;double&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Sets a double parameter to a specific value.&#34;&#34;&#34;
         return _pywraplp.MPSolverParameters_SetDoubleParam(self, param, value)
 
     def SetIntegerParam(self, param: &#34;operations_research::MPSolverParameters::IntegerParam&#34;, value: &#34;int&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Sets a integer parameter to a specific value.&#34;&#34;&#34;
         return _pywraplp.MPSolverParameters_SetIntegerParam(self, param, value)
 
     def GetDoubleParam(self, param: &#34;operations_research::MPSolverParameters::DoubleParam&#34;) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34; Returns the value of a double parameter.&#34;&#34;&#34;
         return _pywraplp.MPSolverParameters_GetDoubleParam(self, param)
 
     def GetIntegerParam(self, param: &#34;operations_research::MPSolverParameters::IntegerParam&#34;) -&gt; &#34;int&#34;:
+        r&#34;&#34;&#34; Returns the value of an integer parameter.&#34;&#34;&#34;
         return _pywraplp.MPSolverParameters_GetIntegerParam(self, param)
     __swig_destroy__ = _pywraplp.delete_MPSolverParameters
 
@@ -547,6 +964,8 @@ MPSolverParameters.kDefaultPresolve = _pywraplp.cvar.MPSolverParameters_kDefault
 MPSolverParameters.kDefaultIncrementality = _pywraplp.cvar.MPSolverParameters_kDefaultIncrementality
 
 class ModelExportOptions(object):
+    r&#34;&#34;&#34; Export options.&#34;&#34;&#34;
+
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
     __repr__ = _swig_repr
 
@@ -610,10 +1029,17 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>(</span><span>*args, **kwargs)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>The class for constraints of a Mathematical Programming (MP) model.</p>
+<p>A constraint is represented as a linear equation or inequality.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">class Constraint(object):
+    r&#34;&#34;&#34;
+    The class for constraints of a Mathematical Programming (MP) model.
+
+    A constraint is represented as a linear equation or inequality.
+    &#34;&#34;&#34;
+
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
 
     def __init__(self, *args, **kwargs):
@@ -621,33 +1047,77 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
     __repr__ = _swig_repr
 
     def name(self) -&gt; &#34;std::string const &amp;&#34;:
+        r&#34;&#34;&#34; Returns the name of the constraint.&#34;&#34;&#34;
         return _pywraplp.Constraint_name(self)
 
     def SetCoefficient(self, var: &#34;Variable&#34;, coeff: &#34;double&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34;
+        Sets the coefficient of the variable on the constraint.
+
+        If the variable does not belong to the solver, the function just returns,
+        or crashes in non-opt mode.
+        &#34;&#34;&#34;
         return _pywraplp.Constraint_SetCoefficient(self, var, coeff)
 
     def GetCoefficient(self, var: &#34;Variable&#34;) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34;
+        Gets the coefficient of a given variable on the constraint (which is 0 if
+        the variable does not appear in the constraint).
+        &#34;&#34;&#34;
         return _pywraplp.Constraint_GetCoefficient(self, var)
 
     def lb(self) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34; Returns the lower bound.&#34;&#34;&#34;
         return _pywraplp.Constraint_lb(self)
 
     def ub(self) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34; Returns the upper bound.&#34;&#34;&#34;
         return _pywraplp.Constraint_ub(self)
 
     def SetBounds(self, lb: &#34;double&#34;, ub: &#34;double&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Sets both the lower and upper bounds.&#34;&#34;&#34;
         return _pywraplp.Constraint_SetBounds(self, lb, ub)
 
     def set_is_lazy(self, laziness: &#34;bool&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34;
+        Advanced usage: sets the constraint &#34;laziness&#34;.
+
+        **This is only supported for SCIP and has no effect on other
+        solvers.**
+
+        When **laziness** is true, the constraint is only considered by the Linear
+        Programming solver if its current solution violates the constraint. In this
+        case, the constraint is definitively added to the problem. This may be
+        useful in some MIP problems, and may have a dramatic impact on performance.
+
+        For more info see: http://tinyurl.com/lazy-constraints.
+        &#34;&#34;&#34;
         return _pywraplp.Constraint_set_is_lazy(self, laziness)
 
     def index(self) -&gt; &#34;int&#34;:
+        r&#34;&#34;&#34; Returns the index of the constraint in the MPSolver::constraints_.&#34;&#34;&#34;
         return _pywraplp.Constraint_index(self)
 
     def dual_value(self) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34;
+        Advanced usage: returns the dual value of the constraint in the current
+        solution (only available for continuous problems).
+        &#34;&#34;&#34;
         return _pywraplp.Constraint_dual_value(self)
 
     def basis_status(self) -&gt; &#34;operations_research::MPSolver::BasisStatus&#34;:
+        r&#34;&#34;&#34;
+        Advanced usage: returns the basis status of the constraint.
+
+        It is only available for continuous problems).
+
+        Note that if a constraint &#34;linear_expression in [lb, ub]&#34; is transformed
+        into &#34;linear_expression + slack = 0&#34; with slack in [-ub, -lb], then this
+        status is the same as the status of the slack variable with AT_UPPER_BOUND
+        and AT_LOWER_BOUND swapped.
+
+        See also: MPSolver::BasisStatus.
+        &#34;&#34;&#34;
         return _pywraplp.Constraint_basis_status(self)
 
     def Lb(self) -&gt; &#34;double&#34;:
@@ -683,10 +1153,15 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">GetCoefficient</span></span>(<span>self, var)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Gets the coefficient of a given variable on the constraint (which is 0 if
+the variable does not appear in the constraint).</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def GetCoefficient(self, var: &#34;Variable&#34;) -&gt; &#34;double&#34;:
+    r&#34;&#34;&#34;
+    Gets the coefficient of a given variable on the constraint (which is 0 if
+    the variable does not appear in the constraint).
+    &#34;&#34;&#34;
     return _pywraplp.Constraint_GetCoefficient(self, var)</code></pre>
 </details>
 </dd>
@@ -705,10 +1180,11 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">SetBounds</span></span>(<span>self, lb, ub)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Sets both the lower and upper bounds.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def SetBounds(self, lb: &#34;double&#34;, ub: &#34;double&#34;) -&gt; &#34;void&#34;:
+    r&#34;&#34;&#34; Sets both the lower and upper bounds.&#34;&#34;&#34;
     return _pywraplp.Constraint_SetBounds(self, lb, ub)</code></pre>
 </details>
 </dd>
@@ -716,10 +1192,18 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">SetCoefficient</span></span>(<span>self, var, coeff)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Sets the coefficient of the variable on the constraint.</p>
+<p>If the variable does not belong to the solver, the function just returns,
+or crashes in non-opt mode.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def SetCoefficient(self, var: &#34;Variable&#34;, coeff: &#34;double&#34;) -&gt; &#34;void&#34;:
+    r&#34;&#34;&#34;
+    Sets the coefficient of the variable on the constraint.
+
+    If the variable does not belong to the solver, the function just returns,
+    or crashes in non-opt mode.
+    &#34;&#34;&#34;
     return _pywraplp.Constraint_SetCoefficient(self, var, coeff)</code></pre>
 </details>
 </dd>
@@ -760,10 +1244,28 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">basis_status</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Advanced usage: returns the basis status of the constraint.</p>
+<p>It is only available for continuous problems).</p>
+<p>Note that if a constraint "linear_expression in [lb, ub]" is transformed
+into "linear_expression + slack = 0" with slack in [-ub, -lb], then this
+status is the same as the status of the slack variable with AT_UPPER_BOUND
+and AT_LOWER_BOUND swapped.</p>
+<p>See also: MPSolver::BasisStatus.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def basis_status(self) -&gt; &#34;operations_research::MPSolver::BasisStatus&#34;:
+    r&#34;&#34;&#34;
+    Advanced usage: returns the basis status of the constraint.
+
+    It is only available for continuous problems).
+
+    Note that if a constraint &#34;linear_expression in [lb, ub]&#34; is transformed
+    into &#34;linear_expression + slack = 0&#34; with slack in [-ub, -lb], then this
+    status is the same as the status of the slack variable with AT_UPPER_BOUND
+    and AT_LOWER_BOUND swapped.
+
+    See also: MPSolver::BasisStatus.
+    &#34;&#34;&#34;
     return _pywraplp.Constraint_basis_status(self)</code></pre>
 </details>
 </dd>
@@ -771,10 +1273,15 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">dual_value</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Advanced usage: returns the dual value of the constraint in the current
+solution (only available for continuous problems).</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def dual_value(self) -&gt; &#34;double&#34;:
+    r&#34;&#34;&#34;
+    Advanced usage: returns the dual value of the constraint in the current
+    solution (only available for continuous problems).
+    &#34;&#34;&#34;
     return _pywraplp.Constraint_dual_value(self)</code></pre>
 </details>
 </dd>
@@ -782,10 +1289,11 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">index</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Returns the index of the constraint in the MPSolver::constraints_.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def index(self) -&gt; &#34;int&#34;:
+    r&#34;&#34;&#34; Returns the index of the constraint in the MPSolver::constraints_.&#34;&#34;&#34;
     return _pywraplp.Constraint_index(self)</code></pre>
 </details>
 </dd>
@@ -793,10 +1301,11 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">lb</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Returns the lower bound.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def lb(self) -&gt; &#34;double&#34;:
+    r&#34;&#34;&#34; Returns the lower bound.&#34;&#34;&#34;
     return _pywraplp.Constraint_lb(self)</code></pre>
 </details>
 </dd>
@@ -804,10 +1313,11 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">name</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Returns the name of the constraint.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def name(self) -&gt; &#34;std::string const &amp;&#34;:
+    r&#34;&#34;&#34; Returns the name of the constraint.&#34;&#34;&#34;
     return _pywraplp.Constraint_name(self)</code></pre>
 </details>
 </dd>
@@ -815,10 +1325,30 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">set_is_lazy</span></span>(<span>self, laziness)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Advanced usage: sets the constraint "laziness".</p>
+<p><strong>This is only supported for SCIP and has no effect on other
+solvers.</strong></p>
+<p>When <strong>laziness</strong> is true, the constraint is only considered by the Linear
+Programming solver if its current solution violates the constraint. In this
+case, the constraint is definitively added to the problem. This may be
+useful in some MIP problems, and may have a dramatic impact on performance.</p>
+<p>For more info see: <a href="http://tinyurl.com/lazy-constraints.">http://tinyurl.com/lazy-constraints.</a></p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def set_is_lazy(self, laziness: &#34;bool&#34;) -&gt; &#34;void&#34;:
+    r&#34;&#34;&#34;
+    Advanced usage: sets the constraint &#34;laziness&#34;.
+
+    **This is only supported for SCIP and has no effect on other
+    solvers.**
+
+    When **laziness** is true, the constraint is only considered by the Linear
+    Programming solver if its current solution violates the constraint. In this
+    case, the constraint is definitively added to the problem. This may be
+    useful in some MIP problems, and may have a dramatic impact on performance.
+
+    For more info see: http://tinyurl.com/lazy-constraints.
+    &#34;&#34;&#34;
     return _pywraplp.Constraint_set_is_lazy(self, laziness)</code></pre>
 </details>
 </dd>
@@ -826,10 +1356,11 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">ub</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Returns the upper bound.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def ub(self) -&gt; &#34;double&#34;:
+    r&#34;&#34;&#34; Returns the upper bound.&#34;&#34;&#34;
     return _pywraplp.Constraint_ub(self)</code></pre>
 </details>
 </dd>
@@ -839,42 +1370,120 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>class <span class="ident">MPSolverParameters</span></span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>This class stores parameter settings for LP and MIP solvers. Some parameters
+are marked as advanced: do not change their values unless you know what you
+are doing!</p>
+<p>For developers: how to add a new parameter:
+- Add the new Foo parameter in the DoubleParam or IntegerParam enum.
+- If it is a categorical param, add a FooValues enum.
+- Decide if the wrapper should define a default value for it: yes
+if it controls the properties of the solution (example:
+tolerances) or if it consistently improves performance, no
+otherwise. If yes, define kDefaultFoo.
+- Add a foo_value_ member and, if no default value is defined, a
+foo_is_default_ member.
+- Add code to handle Foo in Set&hellip;Param, Reset&hellip;Param,
+Get&hellip;Param, Reset and the constructor.
+- In class MPSolverInterface, add a virtual method SetFoo, add it
+to SetCommonParameters or SetMIPParameters, and implement it for
+each solver. Sometimes, parameters need to be implemented
+differently, see for example the INCREMENTALITY implementation.
+- Add a test in linear_solver_test.cc.</p>
+<p>TODO(user): store the parameter values in a protocol buffer
+instead. We need to figure out how to deal with the subtleties of
+the default values.</p>
+<p>The constructor sets all parameters to their default value.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">class MPSolverParameters(object):
+    r&#34;&#34;&#34;
+    This class stores parameter settings for LP and MIP solvers. Some parameters
+    are marked as advanced: do not change their values unless you know what you
+    are doing!
+
+    For developers: how to add a new parameter:
+    - Add the new Foo parameter in the DoubleParam or IntegerParam enum.
+    - If it is a categorical param, add a FooValues enum.
+    - Decide if the wrapper should define a default value for it: yes
+      if it controls the properties of the solution (example:
+      tolerances) or if it consistently improves performance, no
+      otherwise. If yes, define kDefaultFoo.
+    - Add a foo_value_ member and, if no default value is defined, a
+      foo_is_default_ member.
+    - Add code to handle Foo in Set...Param, Reset...Param,
+      Get...Param, Reset and the constructor.
+    - In class MPSolverInterface, add a virtual method SetFoo, add it
+      to SetCommonParameters or SetMIPParameters, and implement it for
+      each solver. Sometimes, parameters need to be implemented
+      differently, see for example the INCREMENTALITY implementation.
+    - Add a test in linear_solver_test.cc.
+
+    TODO(user): store the parameter values in a protocol buffer
+    instead. We need to figure out how to deal with the subtleties of
+    the default values.
+    &#34;&#34;&#34;
+
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
     __repr__ = _swig_repr
     RELATIVE_MIP_GAP = _pywraplp.MPSolverParameters_RELATIVE_MIP_GAP
+    r&#34;&#34;&#34; Limit for relative MIP gap.&#34;&#34;&#34;
     PRIMAL_TOLERANCE = _pywraplp.MPSolverParameters_PRIMAL_TOLERANCE
+    r&#34;&#34;&#34;
+    Advanced usage: tolerance for primal feasibility of basic solutions.
+
+    This does not control the integer feasibility tolerance of integer
+    solutions for MIP or the tolerance used during presolve.
+    &#34;&#34;&#34;
     DUAL_TOLERANCE = _pywraplp.MPSolverParameters_DUAL_TOLERANCE
+    r&#34;&#34;&#34; Advanced usage: tolerance for dual feasibility of basic solutions.&#34;&#34;&#34;
     PRESOLVE = _pywraplp.MPSolverParameters_PRESOLVE
+    r&#34;&#34;&#34; Advanced usage: presolve mode.&#34;&#34;&#34;
     LP_ALGORITHM = _pywraplp.MPSolverParameters_LP_ALGORITHM
+    r&#34;&#34;&#34; Algorithm to solve linear programs.&#34;&#34;&#34;
     INCREMENTALITY = _pywraplp.MPSolverParameters_INCREMENTALITY
+    r&#34;&#34;&#34; Advanced usage: incrementality from one solve to the next.&#34;&#34;&#34;
     SCALING = _pywraplp.MPSolverParameters_SCALING
+    r&#34;&#34;&#34; Advanced usage: enable or disable matrix scaling.&#34;&#34;&#34;
     PRESOLVE_OFF = _pywraplp.MPSolverParameters_PRESOLVE_OFF
+    r&#34;&#34;&#34; Presolve is off.&#34;&#34;&#34;
     PRESOLVE_ON = _pywraplp.MPSolverParameters_PRESOLVE_ON
+    r&#34;&#34;&#34; Presolve is on.&#34;&#34;&#34;
     DUAL = _pywraplp.MPSolverParameters_DUAL
+    r&#34;&#34;&#34; Dual simplex.&#34;&#34;&#34;
     PRIMAL = _pywraplp.MPSolverParameters_PRIMAL
+    r&#34;&#34;&#34; Primal simplex.&#34;&#34;&#34;
     BARRIER = _pywraplp.MPSolverParameters_BARRIER
+    r&#34;&#34;&#34; Barrier algorithm.&#34;&#34;&#34;
     INCREMENTALITY_OFF = _pywraplp.MPSolverParameters_INCREMENTALITY_OFF
+    r&#34;&#34;&#34; Start solve from scratch.&#34;&#34;&#34;
     INCREMENTALITY_ON = _pywraplp.MPSolverParameters_INCREMENTALITY_ON
+    r&#34;&#34;&#34;
+    Reuse results from previous solve as much as the underlying solver
+    allows.
+    &#34;&#34;&#34;
     SCALING_OFF = _pywraplp.MPSolverParameters_SCALING_OFF
+    r&#34;&#34;&#34; Scaling is off.&#34;&#34;&#34;
     SCALING_ON = _pywraplp.MPSolverParameters_SCALING_ON
+    r&#34;&#34;&#34; Scaling is on.&#34;&#34;&#34;
 
     def __init__(self):
+        r&#34;&#34;&#34; The constructor sets all parameters to their default value.&#34;&#34;&#34;
         _pywraplp.MPSolverParameters_swiginit(self, _pywraplp.new_MPSolverParameters())
 
     def SetDoubleParam(self, param: &#34;operations_research::MPSolverParameters::DoubleParam&#34;, value: &#34;double&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Sets a double parameter to a specific value.&#34;&#34;&#34;
         return _pywraplp.MPSolverParameters_SetDoubleParam(self, param, value)
 
     def SetIntegerParam(self, param: &#34;operations_research::MPSolverParameters::IntegerParam&#34;, value: &#34;int&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Sets a integer parameter to a specific value.&#34;&#34;&#34;
         return _pywraplp.MPSolverParameters_SetIntegerParam(self, param, value)
 
     def GetDoubleParam(self, param: &#34;operations_research::MPSolverParameters::DoubleParam&#34;) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34; Returns the value of a double parameter.&#34;&#34;&#34;
         return _pywraplp.MPSolverParameters_GetDoubleParam(self, param)
 
     def GetIntegerParam(self, param: &#34;operations_research::MPSolverParameters::IntegerParam&#34;) -&gt; &#34;int&#34;:
+        r&#34;&#34;&#34; Returns the value of an integer parameter.&#34;&#34;&#34;
         return _pywraplp.MPSolverParameters_GetIntegerParam(self, param)
     __swig_destroy__ = _pywraplp.delete_MPSolverParameters</code></pre>
 </details>
@@ -882,67 +1491,70 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <dl>
 <dt id="pywraplp.MPSolverParameters.BARRIER"><code class="name">var <span class="ident">BARRIER</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Barrier algorithm.</p></section>
 </dd>
 <dt id="pywraplp.MPSolverParameters.DUAL"><code class="name">var <span class="ident">DUAL</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Dual simplex.</p></section>
 </dd>
 <dt id="pywraplp.MPSolverParameters.DUAL_TOLERANCE"><code class="name">var <span class="ident">DUAL_TOLERANCE</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Advanced usage: tolerance for dual feasibility of basic solutions.</p></section>
 </dd>
 <dt id="pywraplp.MPSolverParameters.INCREMENTALITY"><code class="name">var <span class="ident">INCREMENTALITY</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Advanced usage: incrementality from one solve to the next.</p></section>
 </dd>
 <dt id="pywraplp.MPSolverParameters.INCREMENTALITY_OFF"><code class="name">var <span class="ident">INCREMENTALITY_OFF</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Start solve from scratch.</p></section>
 </dd>
 <dt id="pywraplp.MPSolverParameters.INCREMENTALITY_ON"><code class="name">var <span class="ident">INCREMENTALITY_ON</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Reuse results from previous solve as much as the underlying solver
+allows.</p></section>
 </dd>
 <dt id="pywraplp.MPSolverParameters.LP_ALGORITHM"><code class="name">var <span class="ident">LP_ALGORITHM</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Algorithm to solve linear programs.</p></section>
 </dd>
 <dt id="pywraplp.MPSolverParameters.PRESOLVE"><code class="name">var <span class="ident">PRESOLVE</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Advanced usage: presolve mode.</p></section>
 </dd>
 <dt id="pywraplp.MPSolverParameters.PRESOLVE_OFF"><code class="name">var <span class="ident">PRESOLVE_OFF</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Presolve is off.</p></section>
 </dd>
 <dt id="pywraplp.MPSolverParameters.PRESOLVE_ON"><code class="name">var <span class="ident">PRESOLVE_ON</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Presolve is on.</p></section>
 </dd>
 <dt id="pywraplp.MPSolverParameters.PRIMAL"><code class="name">var <span class="ident">PRIMAL</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Primal simplex.</p></section>
 </dd>
 <dt id="pywraplp.MPSolverParameters.PRIMAL_TOLERANCE"><code class="name">var <span class="ident">PRIMAL_TOLERANCE</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Advanced usage: tolerance for primal feasibility of basic solutions.</p>
+<p>This does not control the integer feasibility tolerance of integer
+solutions for MIP or the tolerance used during presolve.</p></section>
 </dd>
 <dt id="pywraplp.MPSolverParameters.RELATIVE_MIP_GAP"><code class="name">var <span class="ident">RELATIVE_MIP_GAP</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Limit for relative MIP gap.</p></section>
 </dd>
 <dt id="pywraplp.MPSolverParameters.SCALING"><code class="name">var <span class="ident">SCALING</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Advanced usage: enable or disable matrix scaling.</p></section>
 </dd>
 <dt id="pywraplp.MPSolverParameters.SCALING_OFF"><code class="name">var <span class="ident">SCALING_OFF</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Scaling is off.</p></section>
 </dd>
 <dt id="pywraplp.MPSolverParameters.SCALING_ON"><code class="name">var <span class="ident">SCALING_ON</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Scaling is on.</p></section>
 </dd>
 <dt id="pywraplp.MPSolverParameters.kDefaultDualTolerance"><code class="name">var <span class="ident">kDefaultDualTolerance</span></code></dt>
 <dd>
@@ -971,10 +1583,11 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">GetDoubleParam</span></span>(<span>self, param)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Returns the value of a double parameter.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def GetDoubleParam(self, param: &#34;operations_research::MPSolverParameters::DoubleParam&#34;) -&gt; &#34;double&#34;:
+    r&#34;&#34;&#34; Returns the value of a double parameter.&#34;&#34;&#34;
     return _pywraplp.MPSolverParameters_GetDoubleParam(self, param)</code></pre>
 </details>
 </dd>
@@ -982,10 +1595,11 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">GetIntegerParam</span></span>(<span>self, param)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Returns the value of an integer parameter.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def GetIntegerParam(self, param: &#34;operations_research::MPSolverParameters::IntegerParam&#34;) -&gt; &#34;int&#34;:
+    r&#34;&#34;&#34; Returns the value of an integer parameter.&#34;&#34;&#34;
     return _pywraplp.MPSolverParameters_GetIntegerParam(self, param)</code></pre>
 </details>
 </dd>
@@ -993,10 +1607,11 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">SetDoubleParam</span></span>(<span>self, param, value)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Sets a double parameter to a specific value.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def SetDoubleParam(self, param: &#34;operations_research::MPSolverParameters::DoubleParam&#34;, value: &#34;double&#34;) -&gt; &#34;void&#34;:
+    r&#34;&#34;&#34; Sets a double parameter to a specific value.&#34;&#34;&#34;
     return _pywraplp.MPSolverParameters_SetDoubleParam(self, param, value)</code></pre>
 </details>
 </dd>
@@ -1004,10 +1619,11 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">SetIntegerParam</span></span>(<span>self, param, value)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Sets a integer parameter to a specific value.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def SetIntegerParam(self, param: &#34;operations_research::MPSolverParameters::IntegerParam&#34;, value: &#34;int&#34;) -&gt; &#34;void&#34;:
+    r&#34;&#34;&#34; Sets a integer parameter to a specific value.&#34;&#34;&#34;
     return _pywraplp.MPSolverParameters_SetIntegerParam(self, param, value)</code></pre>
 </details>
 </dd>
@@ -1017,10 +1633,12 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>class <span class="ident">ModelExportOptions</span></span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Export options.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">class ModelExportOptions(object):
+    r&#34;&#34;&#34; Export options.&#34;&#34;&#34;
+
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
     __repr__ = _swig_repr
 
@@ -1034,10 +1652,12 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>(</span><span>*args, **kwargs)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>A class to express a linear objective.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">class Objective(object):
+    r&#34;&#34;&#34; A class to express a linear objective.&#34;&#34;&#34;
+
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
 
     def __init__(self, *args, **kwargs):
@@ -1045,39 +1665,78 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
     __repr__ = _swig_repr
 
     def Clear(self) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34;
+         Clears the offset, all variables and coefficients, and the optimization
+        direction.
+        &#34;&#34;&#34;
         return _pywraplp.Objective_Clear(self)
 
     def SetCoefficient(self, var: &#34;Variable&#34;, coeff: &#34;double&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34;
+        Sets the coefficient of the variable in the objective.
+
+        If the variable does not belong to the solver, the function just returns,
+        or crashes in non-opt mode.
+        &#34;&#34;&#34;
         return _pywraplp.Objective_SetCoefficient(self, var, coeff)
 
     def GetCoefficient(self, var: &#34;Variable&#34;) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34;
+         Gets the coefficient of a given variable in the objective
+
+        It returns 0 if the variable does not appear in the objective).
+        &#34;&#34;&#34;
         return _pywraplp.Objective_GetCoefficient(self, var)
 
     def SetOffset(self, value: &#34;double&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Sets the constant term in the objective.&#34;&#34;&#34;
         return _pywraplp.Objective_SetOffset(self, value)
 
     def offset(self) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34; Gets the constant term in the objective.&#34;&#34;&#34;
         return _pywraplp.Objective_offset(self)
 
     def SetOptimizationDirection(self, maximize: &#34;bool&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Sets the optimization direction (maximize: true or minimize: false).&#34;&#34;&#34;
         return _pywraplp.Objective_SetOptimizationDirection(self, maximize)
 
     def SetMinimization(self) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Sets the optimization direction to minimize.&#34;&#34;&#34;
         return _pywraplp.Objective_SetMinimization(self)
 
     def SetMaximization(self) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Sets the optimization direction to maximize.&#34;&#34;&#34;
         return _pywraplp.Objective_SetMaximization(self)
 
     def maximization(self) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34; Is the optimization direction set to maximize?&#34;&#34;&#34;
         return _pywraplp.Objective_maximization(self)
 
     def minimization(self) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34; Is the optimization direction set to minimize?&#34;&#34;&#34;
         return _pywraplp.Objective_minimization(self)
 
     def Value(self) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34;
+        Returns the objective value of the best solution found so far.
+
+        It is the optimal objective value if the problem has been solved to
+        optimality.
+
+        Note: the objective value may be slightly different than what you could
+        compute yourself using ``MPVariable::solution_value();`` please use the
+        --verify_solution flag to gain confidence about the numerical stability of
+        your solution.
+        &#34;&#34;&#34;
         return _pywraplp.Objective_Value(self)
 
     def BestBound(self) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34;
+        Returns the best objective bound.
+
+        In case of minimization, it is a lower bound on the objective value of the
+        optimal integer solution. Only available for discrete problems.
+        &#34;&#34;&#34;
         return _pywraplp.Objective_BestBound(self)
 
     def Offset(self) -&gt; &#34;double&#34;:
@@ -1090,10 +1749,18 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">BestBound</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Returns the best objective bound.</p>
+<p>In case of minimization, it is a lower bound on the objective value of the
+optimal integer solution. Only available for discrete problems.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def BestBound(self) -&gt; &#34;double&#34;:
+    r&#34;&#34;&#34;
+    Returns the best objective bound.
+
+    In case of minimization, it is a lower bound on the objective value of the
+    optimal integer solution. Only available for discrete problems.
+    &#34;&#34;&#34;
     return _pywraplp.Objective_BestBound(self)</code></pre>
 </details>
 </dd>
@@ -1101,10 +1768,15 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">Clear</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Clears the offset, all variables and coefficients, and the optimization
+direction.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def Clear(self) -&gt; &#34;void&#34;:
+    r&#34;&#34;&#34;
+     Clears the offset, all variables and coefficients, and the optimization
+    direction.
+    &#34;&#34;&#34;
     return _pywraplp.Objective_Clear(self)</code></pre>
 </details>
 </dd>
@@ -1112,10 +1784,16 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">GetCoefficient</span></span>(<span>self, var)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Gets the coefficient of a given variable in the objective</p>
+<p>It returns 0 if the variable does not appear in the objective).</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def GetCoefficient(self, var: &#34;Variable&#34;) -&gt; &#34;double&#34;:
+    r&#34;&#34;&#34;
+     Gets the coefficient of a given variable in the objective
+
+    It returns 0 if the variable does not appear in the objective).
+    &#34;&#34;&#34;
     return _pywraplp.Objective_GetCoefficient(self, var)</code></pre>
 </details>
 </dd>
@@ -1134,10 +1812,18 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">SetCoefficient</span></span>(<span>self, var, coeff)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Sets the coefficient of the variable in the objective.</p>
+<p>If the variable does not belong to the solver, the function just returns,
+or crashes in non-opt mode.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def SetCoefficient(self, var: &#34;Variable&#34;, coeff: &#34;double&#34;) -&gt; &#34;void&#34;:
+    r&#34;&#34;&#34;
+    Sets the coefficient of the variable in the objective.
+
+    If the variable does not belong to the solver, the function just returns,
+    or crashes in non-opt mode.
+    &#34;&#34;&#34;
     return _pywraplp.Objective_SetCoefficient(self, var, coeff)</code></pre>
 </details>
 </dd>
@@ -1145,10 +1831,11 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">SetMaximization</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Sets the optimization direction to maximize.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def SetMaximization(self) -&gt; &#34;void&#34;:
+    r&#34;&#34;&#34; Sets the optimization direction to maximize.&#34;&#34;&#34;
     return _pywraplp.Objective_SetMaximization(self)</code></pre>
 </details>
 </dd>
@@ -1156,10 +1843,11 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">SetMinimization</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Sets the optimization direction to minimize.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def SetMinimization(self) -&gt; &#34;void&#34;:
+    r&#34;&#34;&#34; Sets the optimization direction to minimize.&#34;&#34;&#34;
     return _pywraplp.Objective_SetMinimization(self)</code></pre>
 </details>
 </dd>
@@ -1167,10 +1855,11 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">SetOffset</span></span>(<span>self, value)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Sets the constant term in the objective.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def SetOffset(self, value: &#34;double&#34;) -&gt; &#34;void&#34;:
+    r&#34;&#34;&#34; Sets the constant term in the objective.&#34;&#34;&#34;
     return _pywraplp.Objective_SetOffset(self, value)</code></pre>
 </details>
 </dd>
@@ -1178,10 +1867,11 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">SetOptimizationDirection</span></span>(<span>self, maximize)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Sets the optimization direction (maximize: true or minimize: false).</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def SetOptimizationDirection(self, maximize: &#34;bool&#34;) -&gt; &#34;void&#34;:
+    r&#34;&#34;&#34; Sets the optimization direction (maximize: true or minimize: false).&#34;&#34;&#34;
     return _pywraplp.Objective_SetOptimizationDirection(self, maximize)</code></pre>
 </details>
 </dd>
@@ -1189,10 +1879,27 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">Value</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Returns the objective value of the best solution found so far.</p>
+<p>It is the optimal objective value if the problem has been solved to
+optimality.</p>
+<p>Note: the objective value may be slightly different than what you could
+compute yourself using <code>MPVariable::solution_value();</code> please use the
+&ndash;verify_solution flag to gain confidence about the numerical stability of
+your solution.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def Value(self) -&gt; &#34;double&#34;:
+    r&#34;&#34;&#34;
+    Returns the objective value of the best solution found so far.
+
+    It is the optimal objective value if the problem has been solved to
+    optimality.
+
+    Note: the objective value may be slightly different than what you could
+    compute yourself using ``MPVariable::solution_value();`` please use the
+    --verify_solution flag to gain confidence about the numerical stability of
+    your solution.
+    &#34;&#34;&#34;
     return _pywraplp.Objective_Value(self)</code></pre>
 </details>
 </dd>
@@ -1200,10 +1907,11 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">maximization</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Is the optimization direction set to maximize?</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def maximization(self) -&gt; &#34;bool&#34;:
+    r&#34;&#34;&#34; Is the optimization direction set to maximize?&#34;&#34;&#34;
     return _pywraplp.Objective_maximization(self)</code></pre>
 </details>
 </dd>
@@ -1211,10 +1919,11 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">minimization</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Is the optimization direction set to minimize?</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def minimization(self) -&gt; &#34;bool&#34;:
+    r&#34;&#34;&#34; Is the optimization direction set to minimize?&#34;&#34;&#34;
     return _pywraplp.Objective_minimization(self)</code></pre>
 </details>
 </dd>
@@ -1222,10 +1931,11 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>def <span class="ident">offset</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Gets the constant term in the objective.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def offset(self) -&gt; &#34;double&#34;:
+    r&#34;&#34;&#34; Gets the constant term in the objective.&#34;&#34;&#34;
     return _pywraplp.Objective_offset(self)</code></pre>
 </details>
 </dd>
@@ -1236,96 +1946,272 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <span>(</span><span>name, problem_type)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>This mathematical programming (MP) solver class is the main class
+though which users build and solve problems.</p>
+<p>Create a solver with the given name and underlying solver backend.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">class Solver(object):
+    r&#34;&#34;&#34;
+    This mathematical programming (MP) solver class is the main class
+    though which users build and solve problems.
+    &#34;&#34;&#34;
+
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
     __repr__ = _swig_repr
     CLP_LINEAR_PROGRAMMING = _pywraplp.Solver_CLP_LINEAR_PROGRAMMING
+    r&#34;&#34;&#34; Linear Programming solver using Coin CBC.&#34;&#34;&#34;
     GLOP_LINEAR_PROGRAMMING = _pywraplp.Solver_GLOP_LINEAR_PROGRAMMING
+    r&#34;&#34;&#34; Linear Programming solver using GLOP (Recommended solver).&#34;&#34;&#34;
     CBC_MIXED_INTEGER_PROGRAMMING = _pywraplp.Solver_CBC_MIXED_INTEGER_PROGRAMMING
+    r&#34;&#34;&#34; Mixed integer Programming Solver using Coin CBC.&#34;&#34;&#34;
     BOP_INTEGER_PROGRAMMING = _pywraplp.Solver_BOP_INTEGER_PROGRAMMING
+    r&#34;&#34;&#34; Linear Boolean Programming Solver.&#34;&#34;&#34;
 
     def __init__(self, name: &#34;std::string const &amp;&#34;, problem_type: &#34;operations_research::MPSolver::OptimizationProblemType&#34;):
+        r&#34;&#34;&#34; Create a solver with the given name and underlying solver backend.&#34;&#34;&#34;
         _pywraplp.Solver_swiginit(self, _pywraplp.new_Solver(name, problem_type))
     __swig_destroy__ = _pywraplp.delete_Solver
 
     @staticmethod
     def SupportsProblemType(problem_type: &#34;operations_research::MPSolver::OptimizationProblemType&#34;) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34;
+        Whether the given problem type is supported (this will depend on the
+        targets that you linked).
+        &#34;&#34;&#34;
         return _pywraplp.Solver_SupportsProblemType(problem_type)
 
     def Clear(self) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34;
+        Clears the objective (including the optimization direction), all variables
+        and constraints. All the other properties of the MPSolver (like the time
+        limit) are kept untouched.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_Clear(self)
 
     def NumVariables(self) -&gt; &#34;int&#34;:
+        r&#34;&#34;&#34; Returns the number of variables.&#34;&#34;&#34;
         return _pywraplp.Solver_NumVariables(self)
 
     def variables(self) -&gt; &#34;std::vector&lt; operations_research::MPVariable * &gt; const &amp;&#34;:
+        r&#34;&#34;&#34;
+        Returns the array of variables handled by the MPSolver. (They are listed in
+        the order in which they were created.)
+        &#34;&#34;&#34;
         return _pywraplp.Solver_variables(self)
 
     def LookupVariable(self, var_name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPVariable *&#34;:
+        r&#34;&#34;&#34;
+        Looks up a variable by name, and returns nullptr if it does not exist. The
+        first call has a O(n) complexity, as the variable name index is lazily
+        created upon first use. Will crash if variable names are not unique.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_LookupVariable(self, var_name)
 
     def Var(self, lb: &#34;double&#34;, ub: &#34;double&#34;, integer: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPVariable *&#34;:
+        r&#34;&#34;&#34;
+        Creates a variable with the given bounds, integrality requirement and
+        name. Bounds can be finite or +/- MPSolver::infinity(). The MPSolver owns
+        the variable (i.e. the returned pointer is borrowed). Variable names are
+        optional. If you give an empty name, name() will auto-generate one for you
+        upon request.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_Var(self, lb, ub, integer, name)
 
     def NumVar(self, lb: &#34;double&#34;, ub: &#34;double&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPVariable *&#34;:
+        r&#34;&#34;&#34; Creates a continuous variable.&#34;&#34;&#34;
         return _pywraplp.Solver_NumVar(self, lb, ub, name)
 
     def IntVar(self, lb: &#34;double&#34;, ub: &#34;double&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPVariable *&#34;:
+        r&#34;&#34;&#34; Creates an integer variable.&#34;&#34;&#34;
         return _pywraplp.Solver_IntVar(self, lb, ub, name)
 
     def BoolVar(self, name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPVariable *&#34;:
+        r&#34;&#34;&#34; Creates a boolean variable.&#34;&#34;&#34;
         return _pywraplp.Solver_BoolVar(self, name)
 
     def NumConstraints(self) -&gt; &#34;int&#34;:
+        r&#34;&#34;&#34; Returns the number of constraints.&#34;&#34;&#34;
         return _pywraplp.Solver_NumConstraints(self)
 
     def constraints(self) -&gt; &#34;std::vector&lt; operations_research::MPConstraint * &gt; const &amp;&#34;:
+        r&#34;&#34;&#34;
+        Returns the array of constraints handled by the MPSolver.
+
+        They are listed in the order in which they were created.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_constraints(self)
 
     def LookupConstraint(self, constraint_name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPConstraint *&#34;:
+        r&#34;&#34;&#34;
+         Looks up a constraint by name, and returns nullptr if it does not exist.
+
+        The first call has a O(n) complexity, as the constraint name index is
+        lazily created upon first use. Will crash if constraint names are not
+        unique.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_LookupConstraint(self, constraint_name)
 
     def Constraint(self, *args) -&gt; &#34;operations_research::MPConstraint *&#34;:
+        r&#34;&#34;&#34;
+        *Overload 1:*
+
+        Creates a linear constraint with given bounds.
+
+        Bounds can be finite or +/- MPSolver::infinity(). The MPSolver class
+        assumes ownership of the constraint.
+
+        :rtype: :py:class:`MPConstraint`
+        :return: a pointer to the newly created constraint.
+
+        |
+
+        *Overload 2:*
+         Creates a constraint with -infinity and +infinity bounds.
+
+        |
+
+        *Overload 3:*
+         Creates a named constraint with given bounds.
+
+        |
+
+        *Overload 4:*
+         Creates a named constraint with -infinity and +infinity bounds.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_Constraint(self, *args)
 
     def Objective(self) -&gt; &#34;operations_research::MPObjective *&#34;:
+        r&#34;&#34;&#34; Returns the mutable objective object.&#34;&#34;&#34;
         return _pywraplp.Solver_Objective(self)
     OPTIMAL = _pywraplp.Solver_OPTIMAL
+    r&#34;&#34;&#34; optimal.&#34;&#34;&#34;
     FEASIBLE = _pywraplp.Solver_FEASIBLE
+    r&#34;&#34;&#34; feasible, or stopped by limit.&#34;&#34;&#34;
     INFEASIBLE = _pywraplp.Solver_INFEASIBLE
+    r&#34;&#34;&#34; proven infeasible.&#34;&#34;&#34;
     UNBOUNDED = _pywraplp.Solver_UNBOUNDED
+    r&#34;&#34;&#34; proven unbounded.&#34;&#34;&#34;
     ABNORMAL = _pywraplp.Solver_ABNORMAL
+    r&#34;&#34;&#34; abnormal, i.e., error of some kind.&#34;&#34;&#34;
     NOT_SOLVED = _pywraplp.Solver_NOT_SOLVED
+    r&#34;&#34;&#34; not been solved yet.&#34;&#34;&#34;
 
     def Solve(self, *args) -&gt; &#34;operations_research::MPSolver::ResultStatus&#34;:
+        r&#34;&#34;&#34;
+        *Overload 1:*
+        Solves the problem using default parameter values.
+
+        |
+
+        *Overload 2:*
+        Solves the problem using the specified parameter values.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_Solve(self, *args)
 
     def ComputeConstraintActivities(self) -&gt; &#34;std::vector&lt; double &gt;&#34;:
+        r&#34;&#34;&#34;
+        Advanced usage: compute the &#34;activities&#34; of all constraints, which are the
+        sums of their linear terms. The activities are returned in the same order
+        as constraints(), which is the order in which constraints were added; but
+        you can also use MPConstraint::index() to get a constraint&#39;s index.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_ComputeConstraintActivities(self)
 
     def VerifySolution(self, tolerance: &#34;double&#34;, log_errors: &#34;bool&#34;) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34;
+        Advanced usage: Verifies the *correctness* of the solution.
+
+        It verifies that all variables must be within their domains, all
+        constraints must be satisfied, and the reported objective value must be
+        accurate.
+
+        Usage:
+        - This can only be called after Solve() was called.
+        - &#34;tolerance&#34; is interpreted as an absolute error threshold.
+        - For the objective value only, if the absolute error is too large,
+          the tolerance is interpreted as a relative error threshold instead.
+        - If &#34;log_errors&#34; is true, every single violation will be logged.
+        - If &#34;tolerance&#34; is negative, it will be set to infinity().
+
+        Most users should just set the --verify_solution flag and not bother using
+        this method directly.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_VerifySolution(self, tolerance, log_errors)
 
     def InterruptSolve(self) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34;
+         Interrupts the Solve() execution to terminate processing if possible.
+
+        If the underlying interface supports interruption; it does that and returns
+        true regardless of whether there&#39;s an ongoing Solve() or not. The Solve()
+        call may still linger for a while depending on the conditions.  If
+        interruption is not supported; returns false and does nothing.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_InterruptSolve(self)
 
     def FillSolutionResponseProto(self, response: &#34;operations_research::MPSolutionResponse *&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Encodes the current solution in a solution response protocol buffer.&#34;&#34;&#34;
         return _pywraplp.Solver_FillSolutionResponseProto(self, response)
 
     @staticmethod
     def SolveWithProto(model_request: &#34;operations_research::MPModelRequest const &amp;&#34;, response: &#34;operations_research::MPSolutionResponse *&#34;) -&gt; &#34;operations_research::MPSolutionResponse *&#34;:
+        r&#34;&#34;&#34;
+        Solves the model encoded by a MPModelRequest protocol buffer and fills the
+        solution encoded as a MPSolutionResponse.
+
+        Note(user): This creates a temporary MPSolver and destroys it at the end.
+        If you want to keep the MPSolver alive (for debugging, or for incremental
+        solving), you should write another version of this function that creates
+        the MPSolver object on the heap and returns it.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_SolveWithProto(model_request, response)
 
     def ExportModelToProto(self, output_model: &#34;operations_research::MPModelProto *&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Exports model to protocol buffer.&#34;&#34;&#34;
         return _pywraplp.Solver_ExportModelToProto(self, output_model)
 
     def LoadSolutionFromProto(self, *args) -&gt; &#34;util::Status&#34;:
+        r&#34;&#34;&#34;
+        Load a solution encoded in a protocol buffer onto this solver for easy
+          access via the MPSolver interface.
+
+        IMPORTANT: This may only be used in conjunction with ExportModel(),
+          following this example:
+
+           .. code-block:: c++
+
+                 MPSolver my_solver;
+                 ... add variables and constraints ...
+                 MPModelProto model_proto;
+                 my_solver.ExportModelToProto(model_proto);
+                 MPSolutionResponse solver_response;
+                 MPSolver::SolveWithProto(model_proto, solver_response);
+                 if (solver_response.result_status() == MPSolutionResponse::OPTIMAL) {
+                   CHECK_OK(my_solver.LoadSolutionFromProto(solver_response));
+                   ... inspect the solution using the usual API: solution_value(), etc...
+                 }
+
+        The response must be in OPTIMAL or FEASIBLE status.
+
+        Returns a non-OK status if a problem arised (typically, if it wasn&#39;t used
+            like it should be):
+        - loading a solution whose variables don&#39;t correspond to the solver&#39;s
+          current variables
+        - loading a solution with a status other than OPTIMAL / FEASIBLE.
+
+        Note: the objective value isn&#39;t checked. You can use VerifySolution() for
+              that.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_LoadSolutionFromProto(self, *args)
 
     def SetSolverSpecificParametersAsString(self, parameters: &#34;std::string const &amp;&#34;) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34;
+        Advanced usage: pass solver specific parameters in text format.
+
+        The format is solver-specific and is the same as the corresponding solver
+        configuration file format. Returns true if the operation was successful.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_SetSolverSpecificParametersAsString(self, parameters)
     FREE = _pywraplp.Solver_FREE
     AT_LOWER_BOUND = _pywraplp.Solver_AT_LOWER_BOUND
@@ -1335,24 +2221,75 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 
     @staticmethod
     def infinity() -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34;
+        Infinity.
+
+        You can use -MPSolver::infinity() for negative infinity.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_infinity()
 
     def EnableOutput(self) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Enables solver logging.&#34;&#34;&#34;
         return _pywraplp.Solver_EnableOutput(self)
 
     def SuppressOutput(self) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Suppresses solver logging.&#34;&#34;&#34;
         return _pywraplp.Solver_SuppressOutput(self)
 
     def iterations(self) -&gt; &#34;int64&#34;:
+        r&#34;&#34;&#34; Returns the number of simplex iterations.&#34;&#34;&#34;
         return _pywraplp.Solver_iterations(self)
 
     def nodes(self) -&gt; &#34;int64&#34;:
+        r&#34;&#34;&#34;
+        Returns the number of branch-and-bound nodes evaluated during the solve.
+
+        Only available for discrete problems.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_nodes(self)
 
     def ComputeExactConditionNumber(self) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34;
+         Advanced usage: computes the exact condition number of the current scaled
+        basis: L1norm(B) * L1norm(inverse(B)), where B is the scaled basis.
+
+        This method requires that a basis exists: it should be called after Solve.
+        It is only available for continuous problems. It is implemented for GLPK
+        but not CLP because CLP does not provide the API for doing it.
+
+        The condition number measures how well the constraint matrix is conditioned
+        and can be used to predict whether numerical issues will arise during the
+        solve: the model is declared infeasible whereas it is feasible (or
+        vice-versa), the solution obtained is not optimal or violates some
+        constraints, the resolution is slow because of repeated singularities.
+
+        The rule of thumb to interpret the condition number kappa is:
+          - o kappa &lt;= 1e7: virtually no chance of numerical issues
+          - o 1e7 &lt; kappa &lt;= 1e10: small chance of numerical issues
+          - o 1e10 &lt; kappa &lt;= 1e13: medium chance of numerical issues
+          - o kappa &gt; 1e13: high chance of numerical issues
+
+        The computation of the condition number depends on the quality of the LU
+        decomposition, so it is not very accurate when the matrix is ill
+        conditioned.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_ComputeExactConditionNumber(self)
 
     def NextSolution(self) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34;
+        Some solvers (MIP only, not LP) can produce multiple solutions to the
+        problem. Returns true when another solution is available, and updates the
+        MPVariable* objects to make the new solution queryable. Call only after
+        calling solve.
+
+        The optimality properties of the additional solutions found, and whether or
+        not the solver computes them ahead of time or when NextSolution() is called
+        is solver specific.
+
+        As of 2018-08-09, only Gurobi supports NextSolution(), see
+        linear_solver_underlying_gurobi_test for an example of how to configure
+        Gurobi for this purpose. The other solvers return false unconditionally.
+        &#34;&#34;&#34;
         return _pywraplp.Solver_NextSolution(self)
 
     def set_time_limit(self, time_limit_milliseconds: &#34;int64&#34;) -&gt; &#34;void&#34;:
@@ -1371,9 +2308,11 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
         return _pywraplp.Solver_ExportModelAsMpsFormat(self, fixed_format, obfuscated)
 
     def SetHint(self, variables: &#34;std::vector&lt; operations_research::MPVariable * &gt; const &amp;&#34;, values: &#34;std::vector&lt; double &gt; const &amp;&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Set a hint for solution. If a feasible or almost-feasible solution to the problem is already known, it may be helpful to pass it to the solver so that it can be used. A solver that supports this feature will try to use this information to create its initial feasible solution. Note that it may not always be faster to give a hint like this to the solver. There is also no guarantee that the solver will use this hint or try to return a solution &#34;close&#34; to this assignment in case of multiple optimal solutions.&#34;&#34;&#34;
         return _pywraplp.Solver_SetHint(self, variables, values)
 
     def SetNumThreads(self, num_theads: &#34;int&#34;) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34; Sets the number of threads to be used by the solver.&#34;&#34;&#34;
         return _pywraplp.Solver_SetNumThreads(self, num_theads)
 
     def Add(self, constraint, name=&#39;&#39;):
@@ -1434,7 +2373,7 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <dl>
 <dt id="pywraplp.Solver.ABNORMAL"><code class="name">var <span class="ident">ABNORMAL</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>abnormal, i.e., error of some kind.</p></section>
 </dd>
 <dt id="pywraplp.Solver.AT_LOWER_BOUND"><code class="name">var <span class="ident">AT_LOWER_BOUND</span></code></dt>
 <dd>
@@ -1450,19 +2389,19 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 </dd>
 <dt id="pywraplp.Solver.BOP_INTEGER_PROGRAMMING"><code class="name">var <span class="ident">BOP_INTEGER_PROGRAMMING</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Linear Boolean Programming Solver.</p></section>
 </dd>
 <dt id="pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING"><code class="name">var <span class="ident">CBC_MIXED_INTEGER_PROGRAMMING</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Mixed integer Programming Solver using Coin CBC.</p></section>
 </dd>
 <dt id="pywraplp.Solver.CLP_LINEAR_PROGRAMMING"><code class="name">var <span class="ident">CLP_LINEAR_PROGRAMMING</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Linear Programming solver using Coin CBC.</p></section>
 </dd>
 <dt id="pywraplp.Solver.FEASIBLE"><code class="name">var <span class="ident">FEASIBLE</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>feasible, or stopped by limit.</p></section>
 </dd>
 <dt id="pywraplp.Solver.FIXED_VALUE"><code class="name">var <span class="ident">FIXED_VALUE</span></code></dt>
 <dd>
@@ -1474,23 +2413,23 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 </dd>
 <dt id="pywraplp.Solver.GLOP_LINEAR_PROGRAMMING"><code class="name">var <span class="ident">GLOP_LINEAR_PROGRAMMING</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Linear Programming solver using GLOP (Recommended solver).</p></section>
 </dd>
 <dt id="pywraplp.Solver.INFEASIBLE"><code class="name">var <span class="ident">INFEASIBLE</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>proven infeasible.</p></section>
 </dd>
 <dt id="pywraplp.Solver.NOT_SOLVED"><code class="name">var <span class="ident">NOT_SOLVED</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>not been solved yet.</p></section>
 </dd>
 <dt id="pywraplp.Solver.OPTIMAL"><code class="name">var <span class="ident">OPTIMAL</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>optimal.</p></section>
 </dd>
 <dt id="pywraplp.Solver.UNBOUNDED"><code class="name">var <span class="ident">UNBOUNDED</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>proven unbounded.</p></section>
 </dd>
 </dl>
 <h3>Static methods</h3>
@@ -1511,11 +2450,25 @@ def Infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">SolveWithProto</span></span>(<span>model_request, response)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Solves the model encoded by a MPModelRequest protocol buffer and fills the
+solution encoded as a MPSolutionResponse.</p>
+<p>Note(user): This creates a temporary MPSolver and destroys it at the end.
+If you want to keep the MPSolver alive (for debugging, or for incremental
+solving), you should write another version of this function that creates
+the MPSolver object on the heap and returns it.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">@staticmethod
 def SolveWithProto(model_request: &#34;operations_research::MPModelRequest const &amp;&#34;, response: &#34;operations_research::MPSolutionResponse *&#34;) -&gt; &#34;operations_research::MPSolutionResponse *&#34;:
+    r&#34;&#34;&#34;
+    Solves the model encoded by a MPModelRequest protocol buffer and fills the
+    solution encoded as a MPSolutionResponse.
+
+    Note(user): This creates a temporary MPSolver and destroys it at the end.
+    If you want to keep the MPSolver alive (for debugging, or for incremental
+    solving), you should write another version of this function that creates
+    the MPSolver object on the heap and returns it.
+    &#34;&#34;&#34;
     return _pywraplp.Solver_SolveWithProto(model_request, response)</code></pre>
 </details>
 </dd>
@@ -1523,11 +2476,16 @@ def SolveWithProto(model_request: &#34;operations_research::MPModelRequest const
 <span>def <span class="ident">SupportsProblemType</span></span>(<span>problem_type)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Whether the given problem type is supported (this will depend on the
+targets that you linked).</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">@staticmethod
 def SupportsProblemType(problem_type: &#34;operations_research::MPSolver::OptimizationProblemType&#34;) -&gt; &#34;bool&#34;:
+    r&#34;&#34;&#34;
+    Whether the given problem type is supported (this will depend on the
+    targets that you linked).
+    &#34;&#34;&#34;
     return _pywraplp.Solver_SupportsProblemType(problem_type)</code></pre>
 </details>
 </dd>
@@ -1535,11 +2493,17 @@ def SupportsProblemType(problem_type: &#34;operations_research::MPSolver::Optimi
 <span>def <span class="ident">infinity</span></span>(<span>)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Infinity.</p>
+<p>You can use -MPSolver::infinity() for negative infinity.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">@staticmethod
 def infinity() -&gt; &#34;double&#34;:
+    r&#34;&#34;&#34;
+    Infinity.
+
+    You can use -MPSolver::infinity() for negative infinity.
+    &#34;&#34;&#34;
     return _pywraplp.Solver_infinity()</code></pre>
 </details>
 </dd>
@@ -1567,10 +2531,11 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">BoolVar</span></span>(<span>self, name)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Creates a boolean variable.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def BoolVar(self, name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPVariable *&#34;:
+    r&#34;&#34;&#34; Creates a boolean variable.&#34;&#34;&#34;
     return _pywraplp.Solver_BoolVar(self, name)</code></pre>
 </details>
 </dd>
@@ -1578,10 +2543,17 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">Clear</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Clears the objective (including the optimization direction), all variables
+and constraints. All the other properties of the MPSolver (like the time
+limit) are kept untouched.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def Clear(self) -&gt; &#34;void&#34;:
+    r&#34;&#34;&#34;
+    Clears the objective (including the optimization direction), all variables
+    and constraints. All the other properties of the MPSolver (like the time
+    limit) are kept untouched.
+    &#34;&#34;&#34;
     return _pywraplp.Solver_Clear(self)</code></pre>
 </details>
 </dd>
@@ -1589,10 +2561,19 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">ComputeConstraintActivities</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Advanced usage: compute the "activities" of all constraints, which are the
+sums of their linear terms. The activities are returned in the same order
+as constraints(), which is the order in which constraints were added; but
+you can also use MPConstraint::index() to get a constraint's index.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def ComputeConstraintActivities(self) -&gt; &#34;std::vector&lt; double &gt;&#34;:
+    r&#34;&#34;&#34;
+    Advanced usage: compute the &#34;activities&#34; of all constraints, which are the
+    sums of their linear terms. The activities are returned in the same order
+    as constraints(), which is the order in which constraints were added; but
+    you can also use MPConstraint::index() to get a constraint&#39;s index.
+    &#34;&#34;&#34;
     return _pywraplp.Solver_ComputeConstraintActivities(self)</code></pre>
 </details>
 </dd>
@@ -1600,10 +2581,51 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">ComputeExactConditionNumber</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Advanced usage: computes the exact condition number of the current scaled
+basis: L1norm(B) * L1norm(inverse(B)), where B is the scaled basis.</p>
+<p>This method requires that a basis exists: it should be called after Solve.
+It is only available for continuous problems. It is implemented for GLPK
+but not CLP because CLP does not provide the API for doing it.</p>
+<p>The condition number measures how well the constraint matrix is conditioned
+and can be used to predict whether numerical issues will arise during the
+solve: the model is declared infeasible whereas it is feasible (or
+vice-versa), the solution obtained is not optimal or violates some
+constraints, the resolution is slow because of repeated singularities.</p>
+<p>The rule of thumb to interpret the condition number kappa is:
+- o kappa &lt;= 1e7: virtually no chance of numerical issues
+- o 1e7 &lt; kappa &lt;= 1e10: small chance of numerical issues
+- o 1e10 &lt; kappa &lt;= 1e13: medium chance of numerical issues
+- o kappa &gt; 1e13: high chance of numerical issues</p>
+<p>The computation of the condition number depends on the quality of the LU
+decomposition, so it is not very accurate when the matrix is ill
+conditioned.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def ComputeExactConditionNumber(self) -&gt; &#34;double&#34;:
+    r&#34;&#34;&#34;
+     Advanced usage: computes the exact condition number of the current scaled
+    basis: L1norm(B) * L1norm(inverse(B)), where B is the scaled basis.
+
+    This method requires that a basis exists: it should be called after Solve.
+    It is only available for continuous problems. It is implemented for GLPK
+    but not CLP because CLP does not provide the API for doing it.
+
+    The condition number measures how well the constraint matrix is conditioned
+    and can be used to predict whether numerical issues will arise during the
+    solve: the model is declared infeasible whereas it is feasible (or
+    vice-versa), the solution obtained is not optimal or violates some
+    constraints, the resolution is slow because of repeated singularities.
+
+    The rule of thumb to interpret the condition number kappa is:
+      - o kappa &lt;= 1e7: virtually no chance of numerical issues
+      - o 1e7 &lt; kappa &lt;= 1e10: small chance of numerical issues
+      - o 1e10 &lt; kappa &lt;= 1e13: medium chance of numerical issues
+      - o kappa &gt; 1e13: high chance of numerical issues
+
+    The computation of the condition number depends on the quality of the LU
+    decomposition, so it is not very accurate when the matrix is ill
+    conditioned.
+    &#34;&#34;&#34;
     return _pywraplp.Solver_ComputeExactConditionNumber(self)</code></pre>
 </details>
 </dd>
@@ -1611,10 +2633,50 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">Constraint</span></span>(<span>self, *args)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p><em>Overload 1:</em></p>
+<p>Creates a linear constraint with given bounds.</p>
+<p>Bounds can be finite or +/- MPSolver::infinity(). The MPSolver class
+assumes ownership of the constraint.</p>
+<p>:rtype: :py:class:<code>MPConstraint</code>
+:return: a pointer to the newly created constraint.</p>
+<p>|</p>
+<p><em>Overload 2:</em>
+Creates a constraint with -infinity and +infinity bounds.</p>
+<p>|</p>
+<p><em>Overload 3:</em>
+Creates a named constraint with given bounds.</p>
+<p>|</p>
+<p><em>Overload 4:</em>
+Creates a named constraint with -infinity and +infinity bounds.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def Constraint(self, *args) -&gt; &#34;operations_research::MPConstraint *&#34;:
+    r&#34;&#34;&#34;
+    *Overload 1:*
+
+    Creates a linear constraint with given bounds.
+
+    Bounds can be finite or +/- MPSolver::infinity(). The MPSolver class
+    assumes ownership of the constraint.
+
+    :rtype: :py:class:`MPConstraint`
+    :return: a pointer to the newly created constraint.
+
+    |
+
+    *Overload 2:*
+     Creates a constraint with -infinity and +infinity bounds.
+
+    |
+
+    *Overload 3:*
+     Creates a named constraint with given bounds.
+
+    |
+
+    *Overload 4:*
+     Creates a named constraint with -infinity and +infinity bounds.
+    &#34;&#34;&#34;
     return _pywraplp.Solver_Constraint(self, *args)</code></pre>
 </details>
 </dd>
@@ -1622,10 +2684,11 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">EnableOutput</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Enables solver logging.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def EnableOutput(self) -&gt; &#34;void&#34;:
+    r&#34;&#34;&#34; Enables solver logging.&#34;&#34;&#34;
     return _pywraplp.Solver_EnableOutput(self)</code></pre>
 </details>
 </dd>
@@ -1655,10 +2718,11 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">ExportModelToProto</span></span>(<span>self, output_model)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Exports model to protocol buffer.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def ExportModelToProto(self, output_model: &#34;operations_research::MPModelProto *&#34;) -&gt; &#34;void&#34;:
+    r&#34;&#34;&#34; Exports model to protocol buffer.&#34;&#34;&#34;
     return _pywraplp.Solver_ExportModelToProto(self, output_model)</code></pre>
 </details>
 </dd>
@@ -1666,10 +2730,11 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">FillSolutionResponseProto</span></span>(<span>self, response)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Encodes the current solution in a solution response protocol buffer.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def FillSolutionResponseProto(self, response: &#34;operations_research::MPSolutionResponse *&#34;) -&gt; &#34;void&#34;:
+    r&#34;&#34;&#34; Encodes the current solution in a solution response protocol buffer.&#34;&#34;&#34;
     return _pywraplp.Solver_FillSolutionResponseProto(self, response)</code></pre>
 </details>
 </dd>
@@ -1677,10 +2742,11 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">IntVar</span></span>(<span>self, lb, ub, name)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Creates an integer variable.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def IntVar(self, lb: &#34;double&#34;, ub: &#34;double&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPVariable *&#34;:
+    r&#34;&#34;&#34; Creates an integer variable.&#34;&#34;&#34;
     return _pywraplp.Solver_IntVar(self, lb, ub, name)</code></pre>
 </details>
 </dd>
@@ -1688,10 +2754,23 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">InterruptSolve</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Interrupts the Solve() execution to terminate processing if possible.</p>
+<p>If the underlying interface supports interruption; it does that and returns
+true regardless of whether there's an ongoing Solve() or not. The Solve()
+call may still linger for a while depending on the conditions.
+If
+interruption is not supported; returns false and does nothing.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def InterruptSolve(self) -&gt; &#34;bool&#34;:
+    r&#34;&#34;&#34;
+     Interrupts the Solve() execution to terminate processing if possible.
+
+    If the underlying interface supports interruption; it does that and returns
+    true regardless of whether there&#39;s an ongoing Solve() or not. The Solve()
+    call may still linger for a while depending on the conditions.  If
+    interruption is not supported; returns false and does nothing.
+    &#34;&#34;&#34;
     return _pywraplp.Solver_InterruptSolve(self)</code></pre>
 </details>
 </dd>
@@ -1721,10 +2800,64 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">LoadSolutionFromProto</span></span>(<span>self, *args)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Load a solution encoded in a protocol buffer onto this solver for easy
+access via the MPSolver interface.</p>
+<p>IMPORTANT: This may only be used in conjunction with ExportModel(),
+following this example:</p>
+<p>.. code-block:: c++</p>
+<pre><code>     MPSolver my_solver;
+     ... add variables and constraints ...
+     MPModelProto model_proto;
+     my_solver.ExportModelToProto(model_proto);
+     MPSolutionResponse solver_response;
+     MPSolver::SolveWithProto(model_proto, solver_response);
+     if (solver_response.result_status() == MPSolutionResponse::OPTIMAL) {
+       CHECK_OK(my_solver.LoadSolutionFromProto(solver_response));
+       ... inspect the solution using the usual API: solution_value(), etc...
+     }
+</code></pre>
+<p>The response must be in OPTIMAL or FEASIBLE status.</p>
+<p>Returns a non-OK status if a problem arised (typically, if it wasn't used
+like it should be):
+- loading a solution whose variables don't correspond to the solver's
+current variables
+- loading a solution with a status other than OPTIMAL / FEASIBLE.</p>
+<p>Note: the objective value isn't checked. You can use VerifySolution() for
+that.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def LoadSolutionFromProto(self, *args) -&gt; &#34;util::Status&#34;:
+    r&#34;&#34;&#34;
+    Load a solution encoded in a protocol buffer onto this solver for easy
+      access via the MPSolver interface.
+
+    IMPORTANT: This may only be used in conjunction with ExportModel(),
+      following this example:
+
+       .. code-block:: c++
+
+             MPSolver my_solver;
+             ... add variables and constraints ...
+             MPModelProto model_proto;
+             my_solver.ExportModelToProto(model_proto);
+             MPSolutionResponse solver_response;
+             MPSolver::SolveWithProto(model_proto, solver_response);
+             if (solver_response.result_status() == MPSolutionResponse::OPTIMAL) {
+               CHECK_OK(my_solver.LoadSolutionFromProto(solver_response));
+               ... inspect the solution using the usual API: solution_value(), etc...
+             }
+
+    The response must be in OPTIMAL or FEASIBLE status.
+
+    Returns a non-OK status if a problem arised (typically, if it wasn&#39;t used
+        like it should be):
+    - loading a solution whose variables don&#39;t correspond to the solver&#39;s
+      current variables
+    - loading a solution with a status other than OPTIMAL / FEASIBLE.
+
+    Note: the objective value isn&#39;t checked. You can use VerifySolution() for
+          that.
+    &#34;&#34;&#34;
     return _pywraplp.Solver_LoadSolutionFromProto(self, *args)</code></pre>
 </details>
 </dd>
@@ -1732,10 +2865,20 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">LookupConstraint</span></span>(<span>self, constraint_name)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Looks up a constraint by name, and returns nullptr if it does not exist.</p>
+<p>The first call has a O(n) complexity, as the constraint name index is
+lazily created upon first use. Will crash if constraint names are not
+unique.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def LookupConstraint(self, constraint_name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPConstraint *&#34;:
+    r&#34;&#34;&#34;
+     Looks up a constraint by name, and returns nullptr if it does not exist.
+
+    The first call has a O(n) complexity, as the constraint name index is
+    lazily created upon first use. Will crash if constraint names are not
+    unique.
+    &#34;&#34;&#34;
     return _pywraplp.Solver_LookupConstraint(self, constraint_name)</code></pre>
 </details>
 </dd>
@@ -1743,10 +2886,17 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">LookupVariable</span></span>(<span>self, var_name)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Looks up a variable by name, and returns nullptr if it does not exist. The
+first call has a O(n) complexity, as the variable name index is lazily
+created upon first use. Will crash if variable names are not unique.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def LookupVariable(self, var_name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPVariable *&#34;:
+    r&#34;&#34;&#34;
+    Looks up a variable by name, and returns nullptr if it does not exist. The
+    first call has a O(n) complexity, as the variable name index is lazily
+    created upon first use. Will crash if variable names are not unique.
+    &#34;&#34;&#34;
     return _pywraplp.Solver_LookupVariable(self, var_name)</code></pre>
 </details>
 </dd>
@@ -1794,10 +2944,33 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">NextSolution</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Some solvers (MIP only, not LP) can produce multiple solutions to the
+problem. Returns true when another solution is available, and updates the
+MPVariable* objects to make the new solution queryable. Call only after
+calling solve.</p>
+<p>The optimality properties of the additional solutions found, and whether or
+not the solver computes them ahead of time or when NextSolution() is called
+is solver specific.</p>
+<p>As of 2018-08-09, only Gurobi supports NextSolution(), see
+linear_solver_underlying_gurobi_test for an example of how to configure
+Gurobi for this purpose. The other solvers return false unconditionally.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def NextSolution(self) -&gt; &#34;bool&#34;:
+    r&#34;&#34;&#34;
+    Some solvers (MIP only, not LP) can produce multiple solutions to the
+    problem. Returns true when another solution is available, and updates the
+    MPVariable* objects to make the new solution queryable. Call only after
+    calling solve.
+
+    The optimality properties of the additional solutions found, and whether or
+    not the solver computes them ahead of time or when NextSolution() is called
+    is solver specific.
+
+    As of 2018-08-09, only Gurobi supports NextSolution(), see
+    linear_solver_underlying_gurobi_test for an example of how to configure
+    Gurobi for this purpose. The other solvers return false unconditionally.
+    &#34;&#34;&#34;
     return _pywraplp.Solver_NextSolution(self)</code></pre>
 </details>
 </dd>
@@ -1805,10 +2978,11 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">NumConstraints</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Returns the number of constraints.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def NumConstraints(self) -&gt; &#34;int&#34;:
+    r&#34;&#34;&#34; Returns the number of constraints.&#34;&#34;&#34;
     return _pywraplp.Solver_NumConstraints(self)</code></pre>
 </details>
 </dd>
@@ -1816,10 +2990,11 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">NumVar</span></span>(<span>self, lb, ub, name)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Creates a continuous variable.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def NumVar(self, lb: &#34;double&#34;, ub: &#34;double&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPVariable *&#34;:
+    r&#34;&#34;&#34; Creates a continuous variable.&#34;&#34;&#34;
     return _pywraplp.Solver_NumVar(self, lb, ub, name)</code></pre>
 </details>
 </dd>
@@ -1827,10 +3002,11 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">NumVariables</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Returns the number of variables.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def NumVariables(self) -&gt; &#34;int&#34;:
+    r&#34;&#34;&#34; Returns the number of variables.&#34;&#34;&#34;
     return _pywraplp.Solver_NumVariables(self)</code></pre>
 </details>
 </dd>
@@ -1838,10 +3014,11 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">Objective</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Returns the mutable objective object.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def Objective(self) -&gt; &#34;operations_research::MPObjective *&#34;:
+    r&#34;&#34;&#34; Returns the mutable objective object.&#34;&#34;&#34;
     return _pywraplp.Solver_Objective(self)</code></pre>
 </details>
 </dd>
@@ -1860,10 +3037,11 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">SetHint</span></span>(<span>self, variables, values)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Set a hint for solution. If a feasible or almost-feasible solution to the problem is already known, it may be helpful to pass it to the solver so that it can be used. A solver that supports this feature will try to use this information to create its initial feasible solution. Note that it may not always be faster to give a hint like this to the solver. There is also no guarantee that the solver will use this hint or try to return a solution "close" to this assignment in case of multiple optimal solutions.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def SetHint(self, variables: &#34;std::vector&lt; operations_research::MPVariable * &gt; const &amp;&#34;, values: &#34;std::vector&lt; double &gt; const &amp;&#34;) -&gt; &#34;void&#34;:
+    r&#34;&#34;&#34; Set a hint for solution. If a feasible or almost-feasible solution to the problem is already known, it may be helpful to pass it to the solver so that it can be used. A solver that supports this feature will try to use this information to create its initial feasible solution. Note that it may not always be faster to give a hint like this to the solver. There is also no guarantee that the solver will use this hint or try to return a solution &#34;close&#34; to this assignment in case of multiple optimal solutions.&#34;&#34;&#34;
     return _pywraplp.Solver_SetHint(self, variables, values)</code></pre>
 </details>
 </dd>
@@ -1871,10 +3049,11 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">SetNumThreads</span></span>(<span>self, num_theads)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Sets the number of threads to be used by the solver.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def SetNumThreads(self, num_theads: &#34;int&#34;) -&gt; &#34;bool&#34;:
+    r&#34;&#34;&#34; Sets the number of threads to be used by the solver.&#34;&#34;&#34;
     return _pywraplp.Solver_SetNumThreads(self, num_theads)</code></pre>
 </details>
 </dd>
@@ -1882,10 +3061,18 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">SetSolverSpecificParametersAsString</span></span>(<span>self, parameters)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Advanced usage: pass solver specific parameters in text format.</p>
+<p>The format is solver-specific and is the same as the corresponding solver
+configuration file format. Returns true if the operation was successful.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def SetSolverSpecificParametersAsString(self, parameters: &#34;std::string const &amp;&#34;) -&gt; &#34;bool&#34;:
+    r&#34;&#34;&#34;
+    Advanced usage: pass solver specific parameters in text format.
+
+    The format is solver-specific and is the same as the corresponding solver
+    configuration file format. Returns true if the operation was successful.
+    &#34;&#34;&#34;
     return _pywraplp.Solver_SetSolverSpecificParametersAsString(self, parameters)</code></pre>
 </details>
 </dd>
@@ -1904,10 +3091,23 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">Solve</span></span>(<span>self, *args)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p><em>Overload 1:</em>
+Solves the problem using default parameter values.</p>
+<p>|</p>
+<p><em>Overload 2:</em>
+Solves the problem using the specified parameter values.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def Solve(self, *args) -&gt; &#34;operations_research::MPSolver::ResultStatus&#34;:
+    r&#34;&#34;&#34;
+    *Overload 1:*
+    Solves the problem using default parameter values.
+
+    |
+
+    *Overload 2:*
+    Solves the problem using the specified parameter values.
+    &#34;&#34;&#34;
     return _pywraplp.Solver_Solve(self, *args)</code></pre>
 </details>
 </dd>
@@ -1927,10 +3127,11 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">SuppressOutput</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Suppresses solver logging.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def SuppressOutput(self) -&gt; &#34;void&#34;:
+    r&#34;&#34;&#34; Suppresses solver logging.&#34;&#34;&#34;
     return _pywraplp.Solver_SuppressOutput(self)</code></pre>
 </details>
 </dd>
@@ -1938,10 +3139,21 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">Var</span></span>(<span>self, lb, ub, integer, name)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Creates a variable with the given bounds, integrality requirement and
+name. Bounds can be finite or +/- MPSolver::infinity(). The MPSolver owns
+the variable (i.e. the returned pointer is borrowed). Variable names are
+optional. If you give an empty name, name() will auto-generate one for you
+upon request.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def Var(self, lb: &#34;double&#34;, ub: &#34;double&#34;, integer: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPVariable *&#34;:
+    r&#34;&#34;&#34;
+    Creates a variable with the given bounds, integrality requirement and
+    name. Bounds can be finite or +/- MPSolver::infinity(). The MPSolver owns
+    the variable (i.e. the returned pointer is borrowed). Variable names are
+    optional. If you give an empty name, name() will auto-generate one for you
+    upon request.
+    &#34;&#34;&#34;
     return _pywraplp.Solver_Var(self, lb, ub, integer, name)</code></pre>
 </details>
 </dd>
@@ -1949,10 +3161,40 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">VerifySolution</span></span>(<span>self, tolerance, log_errors)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Advanced usage: Verifies the <em>correctness</em> of the solution.</p>
+<p>It verifies that all variables must be within their domains, all
+constraints must be satisfied, and the reported objective value must be
+accurate.</p>
+<p>Usage:
+- This can only be called after Solve() was called.
+- "tolerance" is interpreted as an absolute error threshold.
+- For the objective value only, if the absolute error is too large,
+the tolerance is interpreted as a relative error threshold instead.
+- If "log_errors" is true, every single violation will be logged.
+- If "tolerance" is negative, it will be set to infinity().</p>
+<p>Most users should just set the &ndash;verify_solution flag and not bother using
+this method directly.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def VerifySolution(self, tolerance: &#34;double&#34;, log_errors: &#34;bool&#34;) -&gt; &#34;bool&#34;:
+    r&#34;&#34;&#34;
+    Advanced usage: Verifies the *correctness* of the solution.
+
+    It verifies that all variables must be within their domains, all
+    constraints must be satisfied, and the reported objective value must be
+    accurate.
+
+    Usage:
+    - This can only be called after Solve() was called.
+    - &#34;tolerance&#34; is interpreted as an absolute error threshold.
+    - For the objective value only, if the absolute error is too large,
+      the tolerance is interpreted as a relative error threshold instead.
+    - If &#34;log_errors&#34; is true, every single violation will be logged.
+    - If &#34;tolerance&#34; is negative, it will be set to infinity().
+
+    Most users should just set the --verify_solution flag and not bother using
+    this method directly.
+    &#34;&#34;&#34;
     return _pywraplp.Solver_VerifySolution(self, tolerance, log_errors)</code></pre>
 </details>
 </dd>
@@ -1971,10 +3213,16 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">constraints</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Returns the array of constraints handled by the MPSolver.</p>
+<p>They are listed in the order in which they were created.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def constraints(self) -&gt; &#34;std::vector&lt; operations_research::MPConstraint * &gt; const &amp;&#34;:
+    r&#34;&#34;&#34;
+    Returns the array of constraints handled by the MPSolver.
+
+    They are listed in the order in which they were created.
+    &#34;&#34;&#34;
     return _pywraplp.Solver_constraints(self)</code></pre>
 </details>
 </dd>
@@ -1982,10 +3230,11 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">iterations</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Returns the number of simplex iterations.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def iterations(self) -&gt; &#34;int64&#34;:
+    r&#34;&#34;&#34; Returns the number of simplex iterations.&#34;&#34;&#34;
     return _pywraplp.Solver_iterations(self)</code></pre>
 </details>
 </dd>
@@ -1993,10 +3242,16 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">nodes</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Returns the number of branch-and-bound nodes evaluated during the solve.</p>
+<p>Only available for discrete problems.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def nodes(self) -&gt; &#34;int64&#34;:
+    r&#34;&#34;&#34;
+    Returns the number of branch-and-bound nodes evaluated during the solve.
+
+    Only available for discrete problems.
+    &#34;&#34;&#34;
     return _pywraplp.Solver_nodes(self)</code></pre>
 </details>
 </dd>
@@ -2015,10 +3270,15 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">variables</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Returns the array of variables handled by the MPSolver. (They are listed in
+the order in which they were created.)</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def variables(self) -&gt; &#34;std::vector&lt; operations_research::MPVariable * &gt; const &amp;&#34;:
+    r&#34;&#34;&#34;
+    Returns the array of variables handled by the MPSolver. (They are listed in
+    the order in which they were created.)
+    &#34;&#34;&#34;
     return _pywraplp.Solver_variables(self)</code></pre>
 </details>
 </dd>
@@ -2040,40 +3300,65 @@ def infinity() -&gt; &#34;double&#34;:
 <span>(</span><span>*args, **kwargs)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>The class for variables of a Mathematical Programming (MP) model.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">class Variable(object):
+    r&#34;&#34;&#34; The class for variables of a Mathematical Programming (MP) model.&#34;&#34;&#34;
+
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
 
     def __init__(self, *args, **kwargs):
         raise AttributeError(&#34;No constructor defined&#34;)
 
     def name(self) -&gt; &#34;std::string const &amp;&#34;:
+        r&#34;&#34;&#34; Returns the name of the variable.&#34;&#34;&#34;
         return _pywraplp.Variable_name(self)
 
     def integer(self) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34; Returns the integrality requirement of the variable.&#34;&#34;&#34;
         return _pywraplp.Variable_integer(self)
 
     def solution_value(self) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34;
+        Returns the value of the variable in the current solution.
+
+        If the variable is integer, then the value will always be an integer (the
+        underlying solver handles floating-point values only, but this function
+        automatically rounds it to the nearest integer; see: man 3 round).
+        &#34;&#34;&#34;
         return _pywraplp.Variable_solution_value(self)
 
     def index(self) -&gt; &#34;int&#34;:
+        r&#34;&#34;&#34; Returns the index of the variable in the MPSolver::variables_.&#34;&#34;&#34;
         return _pywraplp.Variable_index(self)
 
     def lb(self) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34; Returns the lower bound.&#34;&#34;&#34;
         return _pywraplp.Variable_lb(self)
 
     def ub(self) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34; Returns the upper bound.&#34;&#34;&#34;
         return _pywraplp.Variable_ub(self)
 
     def SetBounds(self, lb: &#34;double&#34;, ub: &#34;double&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34; Sets both the lower and upper bounds.&#34;&#34;&#34;
         return _pywraplp.Variable_SetBounds(self, lb, ub)
 
     def reduced_cost(self) -&gt; &#34;double&#34;:
+        r&#34;&#34;&#34;
+        Advanced usage: returns the reduced cost of the variable in the current
+        solution (only available for continuous problems).
+        &#34;&#34;&#34;
         return _pywraplp.Variable_reduced_cost(self)
 
     def basis_status(self) -&gt; &#34;operations_research::MPSolver::BasisStatus&#34;:
+        r&#34;&#34;&#34;
+        Advanced usage: returns the basis status of the variable in the current
+        solution (only available for continuous problems).
+
+        See also: MPSolver::BasisStatus.
+        &#34;&#34;&#34;
         return _pywraplp.Variable_basis_status(self)
 
     def __str__(self) -&gt; &#34;std::string&#34;:
@@ -2147,10 +3432,11 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">SetBounds</span></span>(<span>self, lb, ub)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Sets both the lower and upper bounds.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def SetBounds(self, lb: &#34;double&#34;, ub: &#34;double&#34;) -&gt; &#34;void&#34;:
+    r&#34;&#34;&#34; Sets both the lower and upper bounds.&#34;&#34;&#34;
     return _pywraplp.Variable_SetBounds(self, lb, ub)</code></pre>
 </details>
 </dd>
@@ -2202,10 +3488,18 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">basis_status</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Advanced usage: returns the basis status of the variable in the current
+solution (only available for continuous problems).</p>
+<p>See also: MPSolver::BasisStatus.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def basis_status(self) -&gt; &#34;operations_research::MPSolver::BasisStatus&#34;:
+    r&#34;&#34;&#34;
+    Advanced usage: returns the basis status of the variable in the current
+    solution (only available for continuous problems).
+
+    See also: MPSolver::BasisStatus.
+    &#34;&#34;&#34;
     return _pywraplp.Variable_basis_status(self)</code></pre>
 </details>
 </dd>
@@ -2213,10 +3507,11 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">index</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Returns the index of the variable in the MPSolver::variables_.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def index(self) -&gt; &#34;int&#34;:
+    r&#34;&#34;&#34; Returns the index of the variable in the MPSolver::variables_.&#34;&#34;&#34;
     return _pywraplp.Variable_index(self)</code></pre>
 </details>
 </dd>
@@ -2224,10 +3519,11 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">integer</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Returns the integrality requirement of the variable.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def integer(self) -&gt; &#34;bool&#34;:
+    r&#34;&#34;&#34; Returns the integrality requirement of the variable.&#34;&#34;&#34;
     return _pywraplp.Variable_integer(self)</code></pre>
 </details>
 </dd>
@@ -2235,10 +3531,11 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">lb</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Returns the lower bound.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def lb(self) -&gt; &#34;double&#34;:
+    r&#34;&#34;&#34; Returns the lower bound.&#34;&#34;&#34;
     return _pywraplp.Variable_lb(self)</code></pre>
 </details>
 </dd>
@@ -2246,10 +3543,11 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">name</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Returns the name of the variable.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def name(self) -&gt; &#34;std::string const &amp;&#34;:
+    r&#34;&#34;&#34; Returns the name of the variable.&#34;&#34;&#34;
     return _pywraplp.Variable_name(self)</code></pre>
 </details>
 </dd>
@@ -2257,10 +3555,15 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">reduced_cost</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Advanced usage: returns the reduced cost of the variable in the current
+solution (only available for continuous problems).</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def reduced_cost(self) -&gt; &#34;double&#34;:
+    r&#34;&#34;&#34;
+    Advanced usage: returns the reduced cost of the variable in the current
+    solution (only available for continuous problems).
+    &#34;&#34;&#34;
     return _pywraplp.Variable_reduced_cost(self)</code></pre>
 </details>
 </dd>
@@ -2268,10 +3571,20 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">solution_value</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Returns the value of the variable in the current solution.</p>
+<p>If the variable is integer, then the value will always be an integer (the
+underlying solver handles floating-point values only, but this function
+automatically rounds it to the nearest integer; see: man 3 round).</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def solution_value(self) -&gt; &#34;double&#34;:
+    r&#34;&#34;&#34;
+    Returns the value of the variable in the current solution.
+
+    If the variable is integer, then the value will always be an integer (the
+    underlying solver handles floating-point values only, but this function
+    automatically rounds it to the nearest integer; see: man 3 round).
+    &#34;&#34;&#34;
     return _pywraplp.Variable_solution_value(self)</code></pre>
 </details>
 </dd>
@@ -2279,10 +3592,11 @@ def infinity() -&gt; &#34;double&#34;:
 <span>def <span class="ident">ub</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Returns the upper bound.</p></section>
 <details class="source">
 <summary>Source code</summary>
 <pre><code class="python">def ub(self) -&gt; &#34;double&#34;:
+    r&#34;&#34;&#34; Returns the upper bound.&#34;&#34;&#34;
     return _pywraplp.Variable_ub(self)</code></pre>
 </details>
 </dd>

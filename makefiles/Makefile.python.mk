@@ -49,6 +49,14 @@ SWIG_PY_DOXYGEN = -doxygen
   endif
 endif
 
+ifeq ("$(SWIG_VERSION)","4.0.1")
+  ifneq ("$(PYTHON_EXECUTABLE)","")
+    ifeq ($(shell "$(PYTHON_EXECUTABLE)" -c "from sys import version_info as v; print (str(v[0]))"),3)
+SWIG_PY_DOXYGEN = -doxygen
+    endif
+  endif
+endif
+
 # All libraries and dependecies
 PYALGORITHMS_LIBS = $(LIB_DIR)/_pywrapknapsack_solver.$(SWIG_PYTHON_LIB_SUFFIX)
 PYGRAPH_LIBS = $(LIB_DIR)/_pywrapgraph.$(SWIG_PYTHON_LIB_SUFFIX)
@@ -1199,6 +1207,7 @@ endif
 	@echo SWIG_INC = $(SWIG_INC)
 	@echo SWIG_PYTHON3_FLAG = $(SWIG_PYTHON3_FLAG)
 	@echo SWIG_PYTHON_LIB_SUFFIX = $(SWIG_PYTHON_LIB_SUFFIX)
+	@echo SWIG_PY_DOXYGEN = $(SWIG_PY_DOXYGEN)
 	@echo SET_PYTHONPATH = "$(SET_PYTHONPATH)"
 	@echo MYPY_OUT = "$(MYPY_OUT)"
 ifeq ($(SYSTEM),win)
