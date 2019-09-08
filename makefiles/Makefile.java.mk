@@ -452,6 +452,7 @@ test_java_sat_samples: \
  rjava_SimpleSatProgram \
  rjava_SolveAndPrintIntermediateSolutionsSampleSat \
  rjava_SolveWithTimeLimitSampleSat \
+ rjava_SolutionHintingSampleSat \
  rjava_StepFunctionSampleSat \
  rjava_StopAfterNSolutionsSampleSat
 
