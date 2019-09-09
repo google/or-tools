@@ -15,13 +15,16 @@
 
 #include <cmath>
 #include <functional>
+#include <vector>
 
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
+#include "ortools/sat/probing.h"
 #include "ortools/sat/pseudo_costs.h"
 #include "ortools/sat/rins.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
 
 namespace operations_research {
@@ -607,16 +610,6 @@ std::vector<std::function<LiteralIndex()>> CompleteHeuristics(
   return complete_heuristics;
 }
 
-void SolutionDetails::LoadFromTrail(const IntegerTrail& integer_trail) {
-  const IntegerVariable num_vars = integer_trail.NumIntegerVariables();
-  best_solution.resize(num_vars.value());
-  // NOTE: There might be some variables which are not fixed.
-  for (IntegerVariable var(0); var < num_vars; ++var) {
-    best_solution[var] = integer_trail.LowerBound(var);
-  }
-  solution_count++;
-}
-
 SatSolver::Status SolveIntegerProblem(Model* model) {
   TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
   if (time_limit->LimitReached()) return SatSolver::LIMIT_REACHED;
@@ -678,12 +671,13 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
       }
     }
 
-    // Get next decision, try to enqueue.
     LiteralIndex decision = kNoLiteralIndex;
     while (true) {
       decision = heuristics.decision_policies[heuristics.policy_index]();
-      if (decision != kNoLiteralIndex &&
-          sat_solver->Assignment().LiteralIsAssigned(Literal(decision))) {
+
+      if (decision == kNoLiteralIndex) break;
+
+      if (sat_solver->Assignment().LiteralIsAssigned(Literal(decision))) {
         // TODO(user): It would be nicer if this can never happen. For now, it
         // does because of the Propagate() not reaching the fixed point as
         // mentionned in a TODO above. As a work-around, we display a message
@@ -691,6 +685,25 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
         VLOG(1) << "Trying to take a decision that is already assigned!"
                 << " Fix this. Continuing for now...";
         continue;
+      }
+
+      // Probing.
+      if (sat_solver->CurrentDecisionLevel() == 0 &&
+          model->GetOrCreate<SatParameters>()->probe_at_root()) {
+        // TODO(user): Be smarter about what variables we probe, we can also
+        // do more than one.
+
+        if (!ProbeBooleanVariables(0.1, {Literal(decision).Variable()},
+                                   model)) {
+          return SatSolver::INFEASIBLE;
+        }
+        DCHECK_EQ(sat_solver->CurrentDecisionLevel(), 0);
+
+        // We need to check after the probing that the literal is not fixed,
+        // otherwise we just go to the next decision.
+        if (sat_solver->Assignment().LiteralIsAssigned(Literal(decision))) {
+          continue;
+        }
       }
       break;
     }

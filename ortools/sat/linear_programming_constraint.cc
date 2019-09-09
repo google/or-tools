@@ -1092,11 +1092,8 @@ bool LinearProgrammingConstraint::Propagate() {
       // of the objective bound improvement in LP due to changes in the given
       // variable bounds.
       //
-      // NOTE: We also experimented using PseudoCosts as a metric but it
-      // doesn't give better results on benchmarks.
-      //
-      // TODO(user): Experiment using most recent reduced costs
-      // instead of average reduced costs.
+      // NOTE: We also experimented using PseudoCosts and most recent reduced
+      // cost as metrics but it doesn't give better results on benchmarks.
       const double cost_i = GetCostFromAverageReducedCosts(i);
       std::pair<double, IntegerVariable> branching_var =
           std::make_pair(-cost_i, positive_var);

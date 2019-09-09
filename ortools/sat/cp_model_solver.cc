@@ -2389,8 +2389,13 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   if (!observers.empty()) {
     shared_response_manager.AddSolutionCallback(
         [&model_proto, &observers, &wall_timer, &user_timer,
-         &postprocess_solution](
+         &postprocess_solution, &shared_time_limit](
             const CpSolverResponse& response_of_presolved_problem) {
+          // If we stopped (for instance because of stop_after_first_solution)
+          // then we don't want to report solutions that might just be in
+          // flight.
+          if (shared_time_limit.LimitReached()) return;
+
           CpSolverResponse response = response_of_presolved_problem;
           postprocess_solution(&response);
           if (!response.solution().empty()) {

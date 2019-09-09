@@ -297,7 +297,7 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
         return new_params;
       }
 
-      // Second strategy (fixed or lp branching).
+      // Second strategy (fixed or pseudo costs).
       if (cp_model.search_strategy_size() > 0) {
         if (--index == 0) {  // Use default parameters and fixed search.
           new_params.set_search_branching(SatParameters::FIXED_SEARCH);
@@ -305,7 +305,6 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
           return new_params;
         }
       } else {
-        // TODO(user): Disable lp_br if linear part is small or empty.
         if (--index == 0) {
           new_params.set_search_branching(SatParameters::PSEUDO_COST_SEARCH);
           new_params.set_exploit_best_solution(true);
@@ -314,7 +313,7 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
         }
       }
 
-      // Third strategy (core or no_lp).
+      // Third strategy (core or no lp).
       if (cp_model.objective().vars_size() > 1) {
         if (--index == 0) {  // Core based approach.
           new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);

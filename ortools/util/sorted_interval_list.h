@@ -144,14 +144,14 @@ class Domain {
   /**
    * Returns the min value of the domain.
    *
-   * This Checks that the domain is not empty.
+   * This checks that the domain is not empty.
    */
   int64 Min() const;
 
   /**
    * Returns the max value of the domain.
    *
-   * This Checks that the domain is not empty.
+   * This checks that the domain is not empty.
    */
   int64 Max() const;
 
@@ -179,12 +179,12 @@ class Domain {
   Domain Negation() const;
 
   /**
-   * Returns the set D ∩ domain.
+   * Returns the intersection of D and domain.
    */
   Domain IntersectionWith(const Domain& domain) const;
 
   /**
-   * Returns the set D ∪ domain.
+   * Returns the union of D and domain.
    */
   Domain UnionWith(const Domain& domain) const;
 
@@ -209,9 +209,9 @@ class Domain {
   Domain RelaxIfTooComplex() const;
 
   /**
-   * Returns a super-set of MultiplicationBy() to avoid the explosion in the
+   * Returns a superset of MultiplicationBy() to avoid the explosion in the
    * representation size. This behaves as if we replace the set D of
-   * non-adjacent integer intervals by the set of floating-point element in the
+   * non-adjacent integer intervals by the set of floating-point elements in the
    * same intervals.
    *
    * For instance, [1, 100] * 2 will be transformed in [2, 200] and not in
@@ -256,17 +256,17 @@ class Domain {
    *
    * More precisely, this will:
    *  - Take the intersection with implied_domain.
-   *  - Minimize the number of intervals. That is, if the
-   *    domain is like [1,2][4] and implied is [1][4], then the domain can be
+   *  - Minimize the number of intervals. For example, if the
+   *    domain is [1,2][4] and implied is [1][4], then the domain can be
    *    relaxed to [1, 4] to simplify its complexity without changing the set
    *    of admissible value assuming only implied values can be seen.
    *  - Restrict as much as possible the bounds of the remaining intervals.
-   *    I.e if the input is [1,2] and implied is [0,4], then the domain will
-   *    not be changed.
+   *    For example, if the input is [1,2] and implied is [0,4], then the domain
+   * will not be changed.
    *
    * Note that \b domain.SimplifyUsingImpliedDomain(domain) will just return
-   * [domain.Min(), domain.Max()]. This is meant to be applied to the rhs of a
-   * constraint to make its propagation more efficient.
+   * [domain.Min(), domain.Max()]. This is meant to be applied to the right-hand
+   * side of a constraint to make its propagation more efficient.
    */
   Domain SimplifyUsingImpliedDomain(const Domain& implied_domain) const;
 
@@ -333,8 +333,8 @@ std::ostream& operator<<(std::ostream& out, const Domain& domain);
 
 /**
  * This class represents a sorted list of disjoint, closed intervals.  When an
- * interval is inserted, all intervals that overlap it or that are even adjacent
- * to it are merged into one. I.e. [0,14] and [15,30] will be merged to [0,30].
+ * interval is inserted, all intervals that overlap it or are adjacent to it are
+ * merged into one. I.e. [0,14] and [15,30] will be merged to [0,30].
  *
  * Iterators returned by this class are invalidated by non-const operations.
  */
@@ -356,7 +356,7 @@ class SortedDisjointIntervalList {
   /**
    * Creates a SortedDisjointIntervalList and fills it with intervals
    * [starts[i]..ends[i]]. All intervals must be consistent (starts[i] <=
-   * ends[i]). There's two version, one for int64, one for int.
+   * ends[i]). There are two version, one for int64 and one for int.
    */
   // TODO(user): Explain why we favored this API to the more natural
   // input std::vector<ClosedInterval> or std::vector<std::pair<int, int>>.
@@ -412,7 +412,7 @@ class SortedDisjointIntervalList {
    * Returns an iterator to either:
    * - the first interval containing or above the given value, or
    * - the last interval containing or below the given value.
-   * Returns end() if no interval fulfils that condition.
+   * Returns end() if no interval fulfills that condition.
    *
    * If the value is within an interval, both functions will return it.
    */

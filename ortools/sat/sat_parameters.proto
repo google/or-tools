@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 142
+// NEXT TAG: 144
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -409,6 +409,9 @@ message SatParameters {
   // linear constraints of the form (index == i) => (element[i] == target).
   optional bool expand_element_constraints = 140 [default = true];
 
+  // If true, the automaton constraints are expanded.
+  optional bool expand_automaton_constraints = 143 [default = true];
+
   // ==========================================================================
   // Max-sat parameters
   // ==========================================================================
@@ -638,6 +641,9 @@ message SatParameters {
   // When branching an a variable that directly affect the objective,
   // branch on the value that lead to the best objective first.
   optional bool exploit_objective = 131 [default = true];
+
+  // If true, the solver attempts limited probing at root node.
+  optional bool probe_at_root = 142 [default = false];
 
   // The solver ignores the pseudo costs of variables with number of recordings
   // less than this threshold.

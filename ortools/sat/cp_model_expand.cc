@@ -18,10 +18,12 @@
 #include "absl/container/flat_hash_map.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_presolve.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/saturated_arithmetic.h"
+#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -535,6 +537,227 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
   ct->Clear();
 }
 
+// Adds clauses so that literals[i] true <=> encoding[value[i]] true.
+// This also implicitely use the fact that exactly one alternative is true.
+void LinkLiteralsAndValues(
+    const std::vector<int>& value_literals, const std::vector<int64>& values,
+    const absl::flat_hash_map<int64, int>& target_encoding,
+    PresolveContext* context) {
+  CHECK_EQ(value_literals.size(), values.size());
+
+  // TODO(user): Make sure this does not appear in the profile.
+  std::map<int, std::vector<int>> value_literals_per_target_value;
+
+  // If a value is false (i.e not possible), then the tuple with this
+  // value is false too (i.e not possible). Conversely, if the tuple is
+  // selected, the value must be selected.
+  for (int i = 0; i < values.size(); ++i) {
+    const int64 v = values[i];
+    CHECK(target_encoding.contains(v));
+    const int lit = gtl::FindOrDie(target_encoding, v);
+    value_literals_per_target_value[v].push_back(value_literals[i]);
+    context->AddImplication(value_literals[i], lit);
+  }
+
+  // If all tuples supporting a value are false, then this value must be
+  // false.
+  for (const auto& it : value_literals_per_target_value) {
+    BoolArgumentProto* const bool_or =
+        context->working_model->add_constraints()->mutable_bool_or();
+    const int lit = gtl::FindOrDie(target_encoding, it.first);
+    bool_or->add_literals(NegatedRef(lit));
+    for (const int lit : it.second) {
+      bool_or->add_literals(lit);
+    }
+  }
+}
+
+void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
+  AutomatonConstraintProto& proto = *ct->mutable_automaton();
+
+  if (proto.vars_size() == 0) {
+    const int64 initial_state = proto.starting_state();
+    for (const int64 final_state : proto.final_states()) {
+      if (initial_state == final_state) {
+        context->UpdateRuleStats("automaton: empty constraint");
+        ct->Clear();
+        return;
+      }
+    }
+    // The initial state is not in the final state. The model is unsat.
+    CHECK(context->NotifyThatModelIsUnsat());
+    return;
+  } else if (proto.transition_label_size() == 0) {
+    // Not transitions. The constraint is infeasible.
+    CHECK(context->NotifyThatModelIsUnsat());
+    return;
+  }
+
+  const int n = proto.vars_size();
+  const std::vector<int> vars = {proto.vars().begin(), proto.vars().end()};
+
+  // Compute the set of reachable state at each time point.
+  std::vector<absl::flat_hash_set<int64>> reachable_states(n + 1);
+  reachable_states[0].insert(proto.starting_state());
+  reachable_states[n] = {proto.final_states().begin(),
+                         proto.final_states().end()};
+
+  // Forward pass.
+  for (int time = 0; time + 1 < n; ++time) {
+    for (int t = 0; t < proto.transition_tail_size(); ++t) {
+      const int64 tail = proto.transition_tail(t);
+      const int64 label = proto.transition_label(t);
+      const int64 head = proto.transition_head(t);
+      if (!reachable_states[time].contains(tail)) continue;
+      if (!context->DomainContains(vars[time], label)) continue;
+      reachable_states[time + 1].insert(head);
+    }
+  }
+
+  // Backward pass.
+  for (int time = n - 1; time >= 0; --time) {
+    absl::flat_hash_set<int64> new_set;
+    for (int t = 0; t < proto.transition_tail_size(); ++t) {
+      const int64 tail = proto.transition_tail(t);
+      const int64 label = proto.transition_label(t);
+      const int64 head = proto.transition_head(t);
+
+      if (!reachable_states[time].contains(tail)) continue;
+      if (!context->DomainContains(vars[time], label)) continue;
+      if (!reachable_states[time + 1].contains(head)) continue;
+      new_set.insert(tail);
+    }
+    reachable_states[time].swap(new_set);
+  }
+
+  // We will model at each time step the current automaton state using Boolean
+  // variables. We will have n+1 time step. At time zero, we start in the
+  // initial state, and at time n we should be in one of the final states. We
+  // don't need to create Booleans at at time when there is just one possible
+  // state (like at time zero).
+  absl::flat_hash_map<int64, int> encoding;
+  absl::flat_hash_map<int64, int> in_encoding;
+  absl::flat_hash_map<int64, int> out_encoding;
+  bool removed_values = false;
+
+  for (int time = 0; time < n; ++time) {
+    // All these vector have the same size. We will use them to enforce a
+    // local table constraint representing one step of the automaton at the
+    // given time.
+    std::vector<int64> in_states;
+    std::vector<int64> transition_values;
+    std::vector<int64> out_states;
+    for (int i = 0; i < proto.transition_label_size(); ++i) {
+      const int64 tail = proto.transition_tail(i);
+      const int64 label = proto.transition_label(i);
+      const int64 head = proto.transition_head(i);
+
+      if (!reachable_states[time].contains(tail)) continue;
+      if (!reachable_states[time + 1].contains(head)) continue;
+      if (!context->DomainContains(vars[time], label)) continue;
+
+      // TODO(user): if this transition correspond to just one in-state or
+      // one-out state or one variable value, we could reuse the corresponding
+      // Boolean variable instead of creating a new one!
+      in_states.push_back(tail);
+      transition_values.push_back(label);
+
+      // On the last step we don't need to distinguish the output states, so
+      // we use zero.
+      out_states.push_back(time + 1 == n ? 0 : head);
+    }
+
+    std::vector<int> tuple_literals;
+    if (transition_values.size() == 1) {
+      bool tmp_removed_values = false;
+      tuple_literals.push_back(context->GetOrCreateConstantVar(1));
+      CHECK_EQ(reachable_states[time + 1].size(), 1);
+      if (!context->IntersectDomainWith(vars[time],
+                                        Domain(transition_values.front()),
+                                        &tmp_removed_values)) {
+        CHECK(context->NotifyThatModelIsUnsat());
+        return;
+      }
+      in_encoding.clear();
+      continue;
+    } else if (transition_values.size() == 2) {
+      const int bool_var = context->NewBoolVar();
+      tuple_literals.push_back(bool_var);
+      tuple_literals.push_back(NegatedRef(bool_var));
+    } else {
+      // Note that we do not need the ExactlyOneConstraint(tuple_literals)
+      // because it is already implicitely encoded since we have exactly one
+      // transition value.
+      LinearConstraintProto* const exactly_one =
+          context->working_model->add_constraints()->mutable_linear();
+      exactly_one->add_domain(1);
+      exactly_one->add_domain(1);
+      for (int i = 0; i < transition_values.size(); ++i) {
+        const int tuple_literal = context->NewBoolVar();
+        tuple_literals.push_back(tuple_literal);
+        exactly_one->add_vars(tuple_literal);
+        exactly_one->add_coeffs(1);
+      }
+    }
+
+    // Fully encode vars[time].
+    {
+      std::vector<int64> s = transition_values;
+      gtl::STLSortAndRemoveDuplicates(&s);
+
+      encoding.clear();
+      if (!context->IntersectDomainWith(vars[time], Domain::FromValues(s),
+                                        &removed_values)) {
+        CHECK(context->NotifyThatModelIsUnsat());
+        return;
+      }
+
+      // Fully encode the variable.
+      for (const ClosedInterval& interval : context->DomainOf(vars[time])) {
+        for (int64 v = interval.start; v <= interval.end; ++v) {
+          encoding[v] = context->GetOrCreateVarValueEncoding(vars[time], v);
+        }
+      }
+    }
+
+    // For each possible out states, create one Boolean variable.
+    {
+      std::vector<int64> s = out_states;
+      gtl::STLSortAndRemoveDuplicates(&s);
+
+      out_encoding.clear();
+      if (s.size() == 2) {
+        const int var = context->NewBoolVar();
+        out_encoding[s.front()] = var;
+        out_encoding[s.back()] = NegatedRef(var);
+      } else if (s.size() > 2) {
+        for (const int64 state : s) {
+          out_encoding[state] = context->NewBoolVar();
+        }
+      }
+    }
+
+    if (!in_encoding.empty()) {
+      LinkLiteralsAndValues(tuple_literals, in_states, in_encoding, context);
+    }
+    if (!encoding.empty()) {
+      LinkLiteralsAndValues(tuple_literals, transition_values, encoding,
+                            context);
+    }
+    if (!out_encoding.empty()) {
+      LinkLiteralsAndValues(tuple_literals, out_states, out_encoding, context);
+    }
+    in_encoding.swap(out_encoding);
+    out_encoding.clear();
+  }
+
+  if (removed_values) {
+    context->UpdateRuleStats("automaton: reduced variable domains");
+  }
+  context->UpdateRuleStats("automaton: expanded");
+  ct->Clear();
+}
+
 }  // namespace
 
 void ExpandCpModel(CpModelProto* working_model, PresolveOptions options) {
@@ -562,6 +785,11 @@ void ExpandCpModel(CpModelProto* working_model, PresolveOptions options) {
         break;
       case ConstraintProto::ConstraintCase::kInverse:
         ExpandInverse(ct, &context);
+        break;
+      case ConstraintProto::ConstraintCase::kAutomaton:
+        if (options.parameters.expand_automaton_constraints()) {
+          ExpandAutomaton(ct, &context);
+        }
         break;
       default:
         break;

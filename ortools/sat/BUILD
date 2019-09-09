@@ -128,6 +128,7 @@ cc_library(
         ":integer",
         ":integer_search",
         ":model",
+        ":probing",
         ":util",
         "//ortools/base",
         "//ortools/base:cleanup",
@@ -527,6 +528,7 @@ cc_library(
     deps = [
         ":integer",
         ":linear_programming_constraint",
+        ":probing",
         ":pseudo_costs",
         ":rins",
         ":sat_base",
