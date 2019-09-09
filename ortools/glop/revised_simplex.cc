@@ -1224,12 +1224,11 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
           // For the dual-simplex, we also perform a warm start if a couple of
           // new rows where added.
           InitializeVariableStatusesForWarmStart(solution_state_, ColIndex(0));
+          dual_edge_norms_.ResizeOnNewRows(num_rows_);
 
-          // TODO(user): Both the edge norms and the reduced costs do not really
-          // need to be recomputed. We just need to initialize the ones of the
-          // new slack variables to 1.0 for the norms and 0.0 for the reduced
-          // costs.
-          dual_edge_norms_.Clear();
+          // TODO(user): The reduced costs do not really need to be recomputed.
+          // We just need to initialize the ones of the new slack variables to
+          // 0.
           reduced_costs_.ClearAndRemoveCostShifts();
           dual_pricing_vector_.clear();
 
