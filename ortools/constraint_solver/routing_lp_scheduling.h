@@ -47,6 +47,8 @@ class CumulBoundsPropagator {
     return negated_upper_bound == kint64min ? kint64max : -negated_upper_bound;
   }
 
+  const RoutingDimension& dimension() const { return dimension_; }
+
  private:
   // An arc "tail --offset--> head" represents the relation
   // tail + offset <= head.

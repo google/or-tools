@@ -1887,26 +1887,32 @@ IntVarLocalSearchFilter* MakePathCumulFilter(const RoutingDimension& dimension,
 
 namespace {
 
-bool DimensionHasCumulConstraint(const RoutingDimension& dimension) {
+bool DimensionHasCumulCost(const RoutingDimension& dimension) {
   if (dimension.global_span_cost_coefficient() != 0) return true;
   if (dimension.HasSoftSpanUpperBounds()) return true;
+  for (const int64 coefficient : dimension.vehicle_span_cost_coefficients()) {
+    if (coefficient != 0) return true;
+  }
+  for (int i = 0; i < dimension.cumuls().size(); ++i) {
+    if (dimension.HasCumulVarSoftUpperBound(i)) return true;
+    if (dimension.HasCumulVarSoftLowerBound(i)) return true;
+    if (dimension.HasCumulVarPiecewiseLinearCost(i)) return true;
+  }
+  return false;
+}
+
+bool DimensionHasCumulConstraint(const RoutingDimension& dimension) {
   if (dimension.HasBreakConstraints()) return true;
   if (dimension.HasPickupToDeliveryLimits()) return true;
   if (!dimension.GetNodePrecedences().empty()) return true;
   for (const int64 upper_bound : dimension.vehicle_span_upper_bounds()) {
     if (upper_bound != kint64max) return true;
   }
-  for (const int64 coefficient : dimension.vehicle_span_cost_coefficients()) {
-    if (coefficient != 0) return true;
-  }
   for (const IntVar* const slack : dimension.slacks()) {
     if (slack->Min() > 0) return true;
   }
   const std::vector<IntVar*>& cumuls = dimension.cumuls();
   for (int i = 0; i < cumuls.size(); ++i) {
-    if (dimension.HasCumulVarSoftUpperBound(i)) return true;
-    if (dimension.HasCumulVarSoftLowerBound(i)) return true;
-    if (dimension.HasCumulVarPiecewiseLinearCost(i)) return true;
     IntVar* const cumul_var = cumuls[i];
     if (cumul_var->Min() > 0 && cumul_var->Max() < kint64max &&
         !dimension.model()->IsEnd(i)) {
@@ -1922,15 +1928,20 @@ bool DimensionHasCumulConstraint(const RoutingDimension& dimension) {
 std::vector<IntVarLocalSearchFilter*> MakeCumulFilters(
     const RoutingDimension& dimension, bool filter_objective_cost) {
   std::vector<IntVarLocalSearchFilter*> filters;
+  const bool has_cumul_cost = DimensionHasCumulCost(dimension);
+  const bool has_precedences = !dimension.GetNodePrecedences().empty();
+  const bool can_use_cumul_bounds_propagator_filter =
+      !dimension.HasBreakConstraints() &&
+      (!filter_objective_cost || !has_cumul_cost);
   // NOTE: We always add the PathCumulFilter to filter each route's feasibility
   // separately to try and cut bad decisions earlier in the search, but we don't
   // propagate the computed cost if the LPCumulFilter is already doing it.
   const bool use_global_lp_filter =
-      !dimension.GetNodePrecedences().empty() ||
+      (has_precedences && !can_use_cumul_bounds_propagator_filter) ||
       (filter_objective_cost && dimension.global_span_cost_coefficient() > 0);
 
   const RoutingModel& model = *dimension.model();
-  if (DimensionHasCumulConstraint(dimension)) {
+  if (has_cumul_cost || DimensionHasCumulConstraint(dimension)) {
     filters.push_back(MakePathCumulFilter(dimension, !use_global_lp_filter,
                                           filter_objective_cost));
   } else {
@@ -1942,6 +1953,9 @@ std::vector<IntVarLocalSearchFilter*> MakeCumulFilters(
     filters.push_back(
         MakeGlobalLPCumulFilter(model.GetMutableGlobalCumulOptimizer(dimension),
                                 filter_objective_cost));
+  } else if (has_precedences) {
+    DCHECK(can_use_cumul_bounds_propagator_filter);
+    filters.push_back(MakeCumulBoundsPropagatorFilter(dimension));
   }
   return filters;
 }
@@ -2228,6 +2242,65 @@ bool VehicleVarFilter::IsVehicleVariableConstrained(int index) const {
 IntVarLocalSearchFilter* MakeVehicleVarFilter(
     const RoutingModel& routing_model) {
   return routing_model.solver()->RevAlloc(new VehicleVarFilter(routing_model));
+}
+
+namespace {
+
+class CumulBoundsPropagatorFilter : public IntVarLocalSearchFilter {
+ public:
+  explicit CumulBoundsPropagatorFilter(const RoutingDimension& dimension);
+  bool Accept(const Assignment* delta, const Assignment* deltadelta,
+              int64 objective_min, int64 objective_max) override;
+  std::string DebugString() const override {
+    return "CumulBoundsPropagatorFilter(" + propagator_.dimension().name() +
+           ")";
+  }
+
+ private:
+  CumulBoundsPropagator propagator_;
+  const int64 cumul_offset_;
+  SparseBitset<int64> delta_touched_;
+  std::vector<int64> delta_nexts_;
+};
+
+CumulBoundsPropagatorFilter::CumulBoundsPropagatorFilter(
+    const RoutingDimension& dimension)
+    : IntVarLocalSearchFilter(dimension.model()->Nexts()),
+      propagator_(&dimension),
+      cumul_offset_(dimension.GetGlobalOptimizerOffset()),
+      delta_touched_(Size()),
+      delta_nexts_(Size()) {}
+
+bool CumulBoundsPropagatorFilter::Accept(const Assignment* delta,
+                                         const Assignment* deltadelta,
+                                         int64 objective_min,
+                                         int64 objective_max) {
+  delta_touched_.ClearAll();
+  for (const IntVarElement& delta_element :
+       delta->IntVarContainer().elements()) {
+    int64 index = -1;
+    if (FindIndex(delta_element.Var(), &index)) {
+      if (!delta_element.Bound()) {
+        // LNS detected
+        return true;
+      }
+      delta_touched_.Set(index);
+      delta_nexts_[index] = delta_element.Value();
+    }
+  }
+  const auto& next_accessor = [this](int64 index) {
+    return delta_touched_[index] ? delta_nexts_[index] : Value(index);
+  };
+
+  return propagator_.PropagateCumulBounds(next_accessor, cumul_offset_);
+}
+
+}  // namespace
+
+IntVarLocalSearchFilter* MakeCumulBoundsPropagatorFilter(
+    const RoutingDimension& dimension) {
+  return dimension.model()->solver()->RevAlloc(
+      new CumulBoundsPropagatorFilter(dimension));
 }
 
 namespace {

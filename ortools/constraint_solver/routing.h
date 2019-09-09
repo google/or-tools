@@ -3311,6 +3311,8 @@ std::vector<IntVarLocalSearchFilter*> MakeCumulFilters(
 IntVarLocalSearchFilter* MakePathCumulFilter(const RoutingDimension& dimension,
                                              bool propagate_own_objective_value,
                                              bool filter_objective_cost);
+IntVarLocalSearchFilter* MakeCumulBoundsPropagatorFilter(
+    const RoutingDimension& dimension);
 IntVarLocalSearchFilter* MakeGlobalLPCumulFilter(
     GlobalDimensionCumulOptimizer* optimizer, bool filter_objective_cost);
 IntVarLocalSearchFilter* MakePickupDeliveryFilter(
