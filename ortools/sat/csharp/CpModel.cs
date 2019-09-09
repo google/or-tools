@@ -635,6 +635,15 @@ namespace Google.OrTools.Sat
       model_.SearchStrategy.Add(ds);
     }
 
+    public void AddHint(IntVar var, long value)
+    {
+      if (model_.SolutionHint == null) {
+          model_.SolutionHint = new PartialVariableAssignment();
+      }
+      model_.SolutionHint.Vars.Add(var.GetIndex());
+      model_.SolutionHint.Values.Add(value);
+    }
+
     // Internal methods.
 
     void SetObjective(LinearExpr obj, bool minimize)

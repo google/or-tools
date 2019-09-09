@@ -798,6 +798,9 @@ class CpModelBuilder {
       DecisionStrategyProto::VariableSelectionStrategy var_strategy,
       DecisionStrategyProto::DomainReductionStrategy domain_strategy);
 
+  /// Adds hinting to a variable.
+  void AddHint(IntVar var, int64 value);
+
   // TODO(user) : add MapDomain?
 
   const CpModelProto& Build() const { return Proto(); }

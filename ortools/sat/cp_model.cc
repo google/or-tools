@@ -733,6 +733,11 @@ void CpModelBuilder::AddDecisionStrategy(
   proto->set_domain_reduction_strategy(domain_strategy);
 }
 
+void CpModelBuilder::AddHint(IntVar var, int64 value) {
+  cp_model_.mutable_solution_hint()->add_vars(GetOrCreateIntegerIndex(var.index_));
+  cp_model_.mutable_solution_hint()->add_values(value);
+}
+
 int64 SolutionIntegerValue(const CpSolverResponse& r, const LinearExpr& expr) {
   int64 result = expr.constant();
   for (int i = 0; i < expr.variables().size(); ++i) {

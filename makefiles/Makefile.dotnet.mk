@@ -520,6 +520,7 @@ test_dotnet_sat_samples:
 	$(MAKE) run SOURCE=ortools/sat/samples/ReifiedSampleSat.cs
 	$(MAKE) run SOURCE=ortools/sat/samples/SearchForAllSolutionsSampleSat.cs
 	$(MAKE) run SOURCE=ortools/sat/samples/SimpleSatProgram.cs
+	$(MAKE) run SOURCE=ortools/sat/samples/SolutionHintingSampleSat.cs
 	$(MAKE) run SOURCE=ortools/sat/samples/SolveAndPrintIntermediateSolutionsSampleSat.cs
 	$(MAKE) run SOURCE=ortools/sat/samples/SolveWithTimeLimitSampleSat.cs
 	$(MAKE) run SOURCE=ortools/sat/samples/StepFunctionSampleSat.cs
