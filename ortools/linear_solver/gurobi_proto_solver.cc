@@ -78,6 +78,39 @@ util::Status SetSolverSpecificParameters(const std::string& parameters,
   return util::OkStatus();
 }
 
+int AddIndicatorConstraint(const MPGeneralConstraintProto& gen_cst,
+                           GRBmodel* gurobi_model,
+                           std::vector<int>* tmp_variables,
+                           std::vector<double>* tmp_coefficients) {
+  CHECK(gurobi_model != nullptr);
+  CHECK(tmp_variables != nullptr);
+  CHECK(tmp_coefficients != nullptr);
+
+  const auto& ind_cst = gen_cst.indicator_constraint();
+  MPConstraintProto cst = ind_cst.constraint();
+  if (cst.lower_bound() > -std::numeric_limits<double>::infinity()) {
+    int status = GRBaddgenconstrIndicator(
+        gurobi_model, gen_cst.name().c_str(), ind_cst.var_index(),
+        ind_cst.var_value(), cst.var_index_size(),
+        cst.mutable_var_index()->mutable_data(),
+        cst.mutable_coefficient()->mutable_data(),
+        cst.upper_bound() == cst.lower_bound() ? GRB_EQUAL : GRB_GREATER_EQUAL,
+        cst.lower_bound());
+    if (status != GRB_OK) return status;
+  }
+  if (cst.upper_bound() < std::numeric_limits<double>::infinity() &&
+      cst.lower_bound() != cst.upper_bound()) {
+    return GRBaddgenconstrIndicator(gurobi_model, gen_cst.name().c_str(),
+                                    ind_cst.var_index(), ind_cst.var_value(),
+                                    cst.var_index_size(),
+                                    cst.mutable_var_index()->mutable_data(),
+                                    cst.mutable_coefficient()->mutable_data(),
+                                    GRB_LESS_EQUAL, cst.upper_bound());
+  }
+
+  return GRB_OK;
+}
+
 int AddSosConstraint(const MPSosConstraint& sos_cst, GRBmodel* gurobi_model,
                      std::vector<int>* tmp_variables,
                      std::vector<double>* tmp_weights) {
@@ -320,8 +353,11 @@ util::StatusOr<MPSolutionResponse> GurobiSolveProto(
 
     for (const auto& gen_cst : model.general_constraint()) {
       switch (gen_cst.general_constraint_case()) {
-        // TODO(user): Move indicator constraint logic from
-        // linear_solver.cc to this file.
+        case MPGeneralConstraintProto::kIndicatorConstraint: {
+          RETURN_IF_GUROBI_ERROR(AddIndicatorConstraint(
+              gen_cst, gurobi_model, &ct_variables, &ct_coefficients));
+          break;
+        }
         case MPGeneralConstraintProto::kSosConstraint: {
           RETURN_IF_GUROBI_ERROR(AddSosConstraint(gen_cst.sos_constraint(),
                                                   gurobi_model, &ct_variables,
