@@ -174,6 +174,10 @@ util::Status SCIPInterface::CreateSCIP() {
   }
   // Default clock type. We use wall clock time because getting CPU user seconds
   // involves calling times() which is very expensive.
+  // NOTE(user): Also, time limit based on CPU user seconds is *NOT* thread
+  // safe. We observed that different instances of SCIP running concurrently
+  // in different threads consume the time limit *together*. E.g., 2 threads
+  // running SCIP with time limit 10s each will both terminate after ~5s.
   RETURN_IF_SCIP_ERROR(
       SCIPsetIntParam(scip_, "timing/clocktype", SCIP_CLOCKTYPE_WALL));
   RETURN_IF_SCIP_ERROR(SCIPcreateProb(scip_, solver_->name_.c_str(), nullptr,

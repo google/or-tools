@@ -700,6 +700,14 @@ util::StatusOr<MPSolutionResponse> ScipSolveProto(
     response.set_status_str(parameters_status.error_message());
     return response;
   }
+  // Default clock type. We use wall clock time because getting CPU user seconds
+  // involves calling times() which is very expensive.
+  // NOTE(user): Also, time limit based on CPU user seconds is *NOT* thread
+  // safe. We observed that different instances of SCIP running concurrently
+  // in different threads consume the time limit *together*. E.g., 2 threads
+  // running SCIP with time limit 10s each will both terminate after ~5s.
+  RETURN_IF_SCIP_ERROR(
+      SCIPsetIntParam(scip, "timing/clocktype", SCIP_CLOCKTYPE_WALL));
   if (request.solver_time_limit_seconds() > 0 &&
       request.solver_time_limit_seconds() < 1e20) {
     RETURN_IF_SCIP_ERROR(SCIPsetRealParam(scip, "limits/time",
