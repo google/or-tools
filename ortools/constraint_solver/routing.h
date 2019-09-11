@@ -2810,9 +2810,9 @@ class GlobalCheapestInsertionFilteredDecisionBuilder
                        AdjustablePriorityQueue<NodeEntry>* priority_queue,
                        std::vector<NodeEntries>* node_entries);
 
-  /// Inserts neighbor_index in
-  /// node_index_to_[pickup|delivery|single]_neighbors_per_cost_class_
-  /// [node_index][cost_class] according to whether neighbor is a pickup,
+  /// Marks neighbor_index as visited in
+  /// node_index_to_[pickup|delivery|single]_neighbors_by_cost_class_
+  /// [node_index][cost_class] according to whether the neighbor is a pickup,
   /// a delivery, or neither.
   void AddNeighborForCostClass(int cost_class, int64 node_index,
                                int64 neighbor_index, bool neighbor_is_pickup,
@@ -2824,23 +2824,24 @@ class GlobalCheapestInsertionFilteredDecisionBuilder
                               int64 neighbor_index) const;
 
   /// Returns a reference to the set of pickup neighbors of node_index.
-  const absl::flat_hash_set<int64>& GetPickupNeighborsOfNodeForCostClass(
+  const std::vector<int64>& GetPickupNeighborsOfNodeForCostClass(
       int cost_class, int64 node_index) {
     if (neighbors_ratio_ == 1) {
       return pickup_nodes_;
     }
-    return node_index_to_pickup_neighbors_by_cost_class_[node_index]
-                                                        [cost_class];
+    return node_index_to_pickup_neighbors_by_cost_class_[node_index][cost_class]
+        ->PositionsSetAtLeastOnce();
   }
 
   /// Same as above for delivery neighbors.
-  const absl::flat_hash_set<int64>& GetDeliveryNeighborsOfNodeForCostClass(
+  const std::vector<int64>& GetDeliveryNeighborsOfNodeForCostClass(
       int cost_class, int64 node_index) {
     if (neighbors_ratio_ == 1) {
       return delivery_nodes_;
     }
-    return node_index_to_delivery_neighbors_by_cost_class_[node_index]
-                                                          [cost_class];
+    return node_index_to_delivery_neighbors_by_cost_class_
+        [node_index][cost_class]
+            ->PositionsSetAtLeastOnce();
   }
 
   const bool is_sequential_;
@@ -2848,19 +2849,19 @@ class GlobalCheapestInsertionFilteredDecisionBuilder
   const double neighbors_ratio_;
 
   // clang-format off
-  std::vector<std::vector<absl::flat_hash_set<int64> > >
+  std::vector<std::vector<std::unique_ptr<SparseBitset<int64> > > >
       node_index_to_single_neighbors_by_cost_class_;
-  std::vector<std::vector<absl::flat_hash_set<int64> > >
+  std::vector<std::vector<std::unique_ptr<SparseBitset<int64> > > >
       node_index_to_pickup_neighbors_by_cost_class_;
-  std::vector<std::vector<absl::flat_hash_set<int64> > >
+  std::vector<std::vector<std::unique_ptr<SparseBitset<int64> > > >
       node_index_to_delivery_neighbors_by_cost_class_;
   // clang-format on
 
   /// When neighbors_ratio is 1, we don't compute the neighborhood members
   /// above, and use the following sets in the code to avoid unnecessary
   /// computations and decrease the time and space complexities.
-  absl::flat_hash_set<int64> pickup_nodes_;
-  absl::flat_hash_set<int64> delivery_nodes_;
+  std::vector<int64> pickup_nodes_;
+  std::vector<int64> delivery_nodes_;
 };
 
 /// Filter-base decision builder which builds a solution by inserting

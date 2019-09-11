@@ -2854,10 +2854,10 @@ GlobalCheapestInsertionFilteredDecisionBuilder::
   if (neighbors_ratio == 1) {
     for (int64 node = 0; node < size; node++) {
       if (!model->GetPickupIndexPairs(node).empty()) {
-        pickup_nodes_.insert(node);
+        pickup_nodes_.push_back(node);
       }
       if (!model->GetDeliveryIndexPairs(node).empty()) {
-        delivery_nodes_.insert(node);
+        delivery_nodes_.push_back(node);
       }
     }
     return;
@@ -2875,6 +2875,14 @@ GlobalCheapestInsertionFilteredDecisionBuilder::
         num_cost_classes);
     node_index_to_delivery_neighbors_by_cost_class_[node_index].resize(
         num_cost_classes);
+    for (int cc = 0; cc < num_cost_classes; cc++) {
+      node_index_to_single_neighbors_by_cost_class_[node_index][cc] =
+          absl::make_unique<SparseBitset<int64>>(size);
+      node_index_to_pickup_neighbors_by_cost_class_[node_index][cc] =
+          absl::make_unique<SparseBitset<int64>>(size);
+      node_index_to_delivery_neighbors_by_cost_class_[node_index][cc] =
+          absl::make_unique<SparseBitset<int64>>(size);
+    }
   }
 
   const int64 num_neighbors = std::max(1.0, neighbors_ratio * size);
@@ -2929,16 +2937,16 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::AddNeighborForCostClass(
     int cost_class, int64 node_index, int64 neighbor_index,
     bool neighbor_is_pickup, bool neighbor_is_delivery) {
   if (neighbor_is_pickup) {
-    node_index_to_pickup_neighbors_by_cost_class_[node_index][cost_class]
-        .insert(neighbor_index);
+    node_index_to_pickup_neighbors_by_cost_class_[node_index][cost_class]->Set(
+        neighbor_index);
   }
   if (neighbor_is_delivery) {
     node_index_to_delivery_neighbors_by_cost_class_[node_index][cost_class]
-        .insert(neighbor_index);
+        ->Set(neighbor_index);
   }
   if (!neighbor_is_pickup && !neighbor_is_delivery) {
-    node_index_to_single_neighbors_by_cost_class_[node_index][cost_class]
-        .insert(neighbor_index);
+    node_index_to_single_neighbors_by_cost_class_[node_index][cost_class]->Set(
+        neighbor_index);
   }
 }
 
@@ -2947,19 +2955,21 @@ bool GlobalCheapestInsertionFilteredDecisionBuilder::IsNeighborForCostClass(
   if (neighbors_ratio_ == 1) {
     return true;
   }
+  const SparseBitset<int64>* neighbors;
   if (!model()->GetPickupIndexPairs(neighbor_index).empty()) {
-    return gtl::ContainsKey(
-        node_index_to_pickup_neighbors_by_cost_class_[node_index][cost_class],
-        neighbor_index);
+    neighbors =
+        node_index_to_pickup_neighbors_by_cost_class_[node_index][cost_class]
+            .get();
+  } else if (!model()->GetDeliveryIndexPairs(neighbor_index).empty()) {
+    neighbors =
+        node_index_to_delivery_neighbors_by_cost_class_[node_index][cost_class]
+            .get();
+  } else {
+    neighbors =
+        node_index_to_single_neighbors_by_cost_class_[node_index][cost_class]
+            .get();
   }
-  if (!model()->GetDeliveryIndexPairs(neighbor_index).empty()) {
-    return gtl::ContainsKey(
-        node_index_to_delivery_neighbors_by_cost_class_[node_index][cost_class],
-        neighbor_index);
-  }
-  return gtl::ContainsKey(
-      node_index_to_single_neighbors_by_cost_class_[node_index][cost_class],
-      neighbor_index);
+  return (*neighbors)[neighbor_index];
 }
 
 bool GlobalCheapestInsertionFilteredDecisionBuilder::BuildSolution() {
@@ -3390,12 +3400,8 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdatePickupPositions(
   // pickup_insert_after.
   const int cost_class = model()->GetCostClassIndexOfVehicle(vehicle).value();
   const int64 pickup_insert_before = Value(pickup_insert_after);
-  const absl::flat_hash_set<int64>& pickup_neighbors =
-      GetPickupNeighborsOfNodeForCostClass(cost_class, pickup_insert_after);
-  std::vector<int64> sorted_pickup_neighbors(pickup_neighbors.begin(),
-                                             pickup_neighbors.end());
-  std::sort(sorted_pickup_neighbors.begin(), sorted_pickup_neighbors.end());
-  for (int64 pickup : sorted_pickup_neighbors) {
+  for (int64 pickup :
+       GetPickupNeighborsOfNodeForCostClass(cost_class, pickup_insert_after)) {
     if (Contains(pickup)) {
       continue;
     }
@@ -3502,12 +3508,8 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdateDeliveryPositions(
   // delivery_insert_after.
   const int cost_class = model()->GetCostClassIndexOfVehicle(vehicle).value();
   const int64 delivery_insert_before = Value(delivery_insert_after);
-  const absl::flat_hash_set<int64>& delivery_neighbors =
-      GetDeliveryNeighborsOfNodeForCostClass(cost_class, delivery_insert_after);
-  std::vector<int64> sorted_delivery_neighbors(delivery_neighbors.begin(),
-                                               delivery_neighbors.end());
-  std::sort(sorted_delivery_neighbors.begin(), sorted_delivery_neighbors.end());
-  for (int64 delivery : sorted_delivery_neighbors) {
+  for (int64 delivery : GetDeliveryNeighborsOfNodeForCostClass(
+           cost_class, delivery_insert_after)) {
     if (Contains(delivery)) {
       continue;
     }
