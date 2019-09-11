@@ -120,6 +120,14 @@ struct PresolveContext {
   // create it, add the corresponding constraints and returns it.
   int GetOrCreateVarValueEncoding(int ref, int64 value);
 
+  // Insert the given literal to encode ref == value.
+  // If an encoding already exists, it adds the two implications between
+  // the previous encoding and the new encoding.
+  void InsertVarValueEncoding(int literal, int ref, int64 value);
+
+  // Scan the model to build var-value encoding.
+  void CollectVarValueEncoding();
+
   // This regroup all the affine relations between variables. Note that the
   // constraints used to detect such relations will not be removed from the
   // model at detection time (thus allowing proper domain propagation). However,

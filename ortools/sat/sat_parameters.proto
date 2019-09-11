@@ -642,8 +642,10 @@ message SatParameters {
   // branch on the value that lead to the best objective first.
   optional bool exploit_objective = 131 [default = true];
 
-  // If true, the solver attempts limited probing at root node.
-  optional bool probe_at_root = 142 [default = false];
+  // If set at zero (the default), it is disabled. Otherwise the solver attempts
+  // probing at every 'probing_period' root node. Period of 1 enables probing at
+  // every root node.
+  optional int64 probing_period_at_root = 142 [default = 0];
 
   // The solver ignores the pseudo costs of variables with number of recordings
   // less than this threshold.

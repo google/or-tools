@@ -37,9 +37,16 @@ namespace sat {
 //
 // TODO(user): Also use these "deductions" in the solver directly. This is done
 // in good MIP solvers, and we should exploit them more.
+//
+// TODO(user): Also propagate implicit clauses (lit, not(lit)). Maybe merge
+// that with probing code? it might be costly to store all deduction done by
+// probing though, but I think this is what MIP solver do.
 class DomainDeductions {
  public:
   // Adds the fact that enforcement => var \in domain.
+  //
+  // Important: No need to store any deductions where the domain is a superset
+  // of the current variable domain.
   void AddDeduction(int literal_ref, int var, Domain domain);
 
   // Returns list of (var, domain) that were deduced because:

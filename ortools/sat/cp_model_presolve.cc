@@ -374,6 +374,84 @@ void PresolveContext::InitializeNewDomains() {
   var_to_constraints.resize(domains.size());
 }
 
+struct EncodingInfo {
+  std::vector<int> positive_literals;
+  std::vector<int> negative_literals;
+};
+
+void PresolveContext::CollectVarValueEncoding() {
+  absl::flat_hash_map<std::pair<int, int64>, EncodingInfo> info;
+  int parsed_encoding_literals = 0;
+  for (const ConstraintProto& ct : working_model->constraints()) {
+    if (ct.constraint_case() != ConstraintProto::ConstraintCase::kLinear ||
+        ct.enforcement_literal_size() != 1 || ct.linear().vars_size() != 1 ||
+        ct.linear().coeffs(0) != 1) {
+      continue;
+    }
+
+    const int literal = ct.enforcement_literal(0);
+    const LinearConstraintProto& linear = ct.linear();
+    const int var = linear.vars(0);
+    if (linear.domain_size() == 2 && linear.domain(0) && linear.domain(1)) {
+      // Equality constraint.
+      const int ref = PositiveRef(var);
+      const int64 value =
+          RefIsPositive(var) ? linear.domain(0) : -linear.domain(0);
+      const std::pair<int, int64> key = {ref, value};
+      info[key].positive_literals.push_back(literal);
+    } else {
+      const Domain complement = DomainOf(var).IntersectionWith(
+          ReadDomainFromProto(linear).Complement());
+      if (complement.Size() == 1) {
+        const int ref = PositiveRef(var);
+        const int64 value =
+            RefIsPositive(var) ? complement.Min() : -complement.Min();
+        const std::pair<int, int64> key = {ref, value};
+        info[key].negative_literals.push_back(literal);
+      }
+    }
+  }
+
+  for (const auto& it : info) {
+    if (it.second.positive_literals.size() == 1 &&
+        it.second.negative_literals.size() == 1 &&
+        it.second.positive_literals.front() ==
+            NegatedRef(it.second.negative_literals.front())) {
+      VLOG(3) << "Literal " << it.second.positive_literals.front()
+              << " is an encoding for (var = " << it.first.first
+              << ", value = " << it.first.second << ")";
+      encoding[it.first] = it.second.positive_literals.front();
+      parsed_encoding_literals++;
+    }
+  }
+
+  // TODO(user): Recognize  a set of implication with a bool_or or an exactly
+  //                one constraint on top.
+
+  if (parsed_encoding_literals > 0) {
+    VLOG(2) << "Scanning the model has found " << parsed_encoding_literals
+            << " variable-value encoding literals";
+  }
+}
+
+void PresolveContext::InsertVarValueEncoding(int literal, int ref,
+                                             int64 value) {
+  const int var = PositiveRef(ref);
+  const int64 s_value = RefIsPositive(ref) ? value : -value;
+  std::pair<int, int64> key{var, s_value};
+  if (encoding.contains(key)) {
+    const int previous_literal = encoding[key];
+    if (literal != previous_literal) {
+      AddImplication(literal, previous_literal);
+      AddImplication(previous_literal, literal);
+    }
+  } else {
+    AddImplyInDomain(literal, var, Domain(s_value));
+    AddImplyInDomain(NegatedRef(literal), var, Domain(s_value).Complement());
+    encoding[key] = literal;
+  }
+}
+
 int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64 value) {
   // TODO(user,user): use affine relation here.
   const int var = PositiveRef(ref);

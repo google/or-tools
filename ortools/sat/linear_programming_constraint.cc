@@ -623,8 +623,8 @@ void LinearProgrammingConstraint::AddCutFromConstraints(
     cut.vars.push_back(first_slack + IntegerVariable(row.value()));
     cut.coeffs.push_back(coeff);
 
-    const IntegerValue diff(CapSub(integer_lp_[row.value()].ub.value(),
-                                   integer_lp_[row.value()].lb.value()));
+    const IntegerValue diff(
+        CapSub(integer_lp_[row].ub.value(), integer_lp_[row].lb.value()));
     if (status == glop::ConstraintStatus::AT_UPPER_BOUND) {
       var_lbs.push_back(IntegerValue(0));
       var_ubs.push_back(diff);
@@ -676,8 +676,8 @@ void LinearProgrammingConstraint::AddCutFromConstraints(
         // Update the constraint.
         const glop::RowIndex row(cut.vars[i].value() - first_slack.value());
         const IntegerValue multiplier = -cut.coeffs[i];
-        if (!AddLinearExpressionMultiple(
-                multiplier, integer_lp_[row.value()].terms, &dense_cut)) {
+        if (!AddLinearExpressionMultiple(multiplier, integer_lp_[row].terms,
+                                         &dense_cut)) {
           overflow = true;
           break;
         }
@@ -685,13 +685,13 @@ void LinearProgrammingConstraint::AddCutFromConstraints(
         // Update rhs.
         const auto status = simplex_.GetConstraintStatus(row);
         if (status == glop::ConstraintStatus::AT_LOWER_BOUND) {
-          if (!AddProductTo(multiplier, integer_lp_[row.value()].lb, &cut_ub)) {
+          if (!AddProductTo(multiplier, integer_lp_[row].lb, &cut_ub)) {
             overflow = true;
             break;
           }
         } else {
           CHECK_EQ(status, glop::ConstraintStatus::AT_UPPER_BOUND);
-          if (!AddProductTo(multiplier, integer_lp_[row.value()].ub, &cut_ub)) {
+          if (!AddProductTo(multiplier, integer_lp_[row].ub, &cut_ub)) {
             overflow = true;
             break;
           }
@@ -1267,10 +1267,10 @@ LinearProgrammingConstraint::ScaleLpMultiplier(
 
     // Remove trivial bad cases.
     if (!use_constraint_status) {
-      if (lp_multi > 0.0 && integer_lp_[row.value()].ub >= kMaxIntegerValue) {
+      if (lp_multi > 0.0 && integer_lp_[row].ub >= kMaxIntegerValue) {
         continue;
       }
-      if (lp_multi < 0.0 && integer_lp_[row.value()].lb <= kMinIntegerValue) {
+      if (lp_multi < 0.0 && integer_lp_[row].lb <= kMinIntegerValue) {
         continue;
       }
     }
@@ -1319,7 +1319,7 @@ bool LinearProgrammingConstraint::ComputeNewLinearConstraint(
     CHECK_LT(row, integer_lp_.size());
 
     // Update the constraint.
-    if (!AddLinearExpressionMultiple(multiplier, integer_lp_[row.value()].terms,
+    if (!AddLinearExpressionMultiple(multiplier, integer_lp_[row].terms,
                                      dense_terms)) {
       return false;
     }
@@ -1330,14 +1330,13 @@ bool LinearProgrammingConstraint::ComputeNewLinearConstraint(
       const auto status = simplex_.GetConstraintStatus(row);
       if (status == glop::ConstraintStatus::FIXED_VALUE ||
           status == glop::ConstraintStatus::AT_LOWER_BOUND) {
-        bound = integer_lp_[row.value()].lb;
+        bound = integer_lp_[row].lb;
       } else {
         CHECK_EQ(status, glop::ConstraintStatus::AT_UPPER_BOUND);
-        bound = integer_lp_[row.value()].ub;
+        bound = integer_lp_[row].ub;
       }
     } else {
-      bound = multiplier > 0 ? integer_lp_[row.value()].ub
-                             : integer_lp_[row.value()].lb;
+      bound = multiplier > 0 ? integer_lp_[row].ub : integer_lp_[row].lb;
     }
     if (!AddProductTo(multiplier, bound, upper_bound)) return false;
   }
@@ -1363,7 +1362,7 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
 
     // Make sure we never change the sign of the multiplier, except if the
     // row is an equality in which case we don't care.
-    if (integer_lp_[row.value()].ub != integer_lp_[row.value()].lb) {
+    if (integer_lp_[row].ub != integer_lp_[row].lb) {
       if (multiplier > 0) {
         negative_limit = std::min(negative_limit, multiplier);
       } else {
@@ -1372,8 +1371,8 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
     }
 
     // Make sure upper_bound + to_add * row_bound never overflow.
-    const IntegerValue row_bound = multiplier > 0 ? integer_lp_[row.value()].ub
-                                                  : integer_lp_[row.value()].lb;
+    const IntegerValue row_bound =
+        multiplier > 0 ? integer_lp_[row].ub : integer_lp_[row].lb;
     if (row_bound != 0) {
       const IntegerValue limit1 = FloorRatio(
           std::max(IntegerValue(0), kMaxWantedCoeff - IntTypeAbs(*upper_bound)),
@@ -1398,7 +1397,7 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
     // TODO(user): we could relax a bit some of the condition and allow a sign
     // change. It is just trickier to compute the diff when we allow such
     // changes.
-    for (const auto entry : integer_lp_[row.value()].terms) {
+    for (const auto entry : integer_lp_[row].terms) {
       const ColIndex col = entry.first;
       const IntegerValue coeff = entry.second;
       CHECK_NE(coeff, 0);
@@ -1468,7 +1467,7 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
     if (to_add != 0) {
       term.second += to_add;
       *upper_bound += to_add * row_bound;
-      for (const auto entry : integer_lp_[row.value()].terms) {
+      for (const auto entry : integer_lp_[row].terms) {
         const ColIndex col = entry.first;
         const IntegerValue coeff = entry.second;
         (*dense_terms)[col] += to_add * coeff;

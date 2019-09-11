@@ -556,15 +556,18 @@ void LinkLiteralsAndValues(
     CHECK(target_encoding.contains(v));
     const int lit = gtl::FindOrDie(target_encoding, v);
     value_literals_per_target_value[v].push_back(value_literals[i]);
-    context->AddImplication(value_literals[i], lit);
+    if (value_literals[i] != lit) {
+      context->AddImplication(value_literals[i], lit);
+    }
   }
 
   // If all tuples supporting a value are false, then this value must be
   // false.
   for (const auto& it : value_literals_per_target_value) {
+    const int lit = gtl::FindOrDie(target_encoding, it.first);
+    if (it.second.size() == 1 && it.second.front() == lit) continue;
     BoolArgumentProto* const bool_or =
         context->working_model->add_constraints()->mutable_bool_or();
-    const int lit = gtl::FindOrDie(target_encoding, it.first);
     bool_or->add_literals(NegatedRef(lit));
     for (const int lit : it.second) {
       bool_or->add_literals(lit);
@@ -635,10 +638,12 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
   // initial state, and at time n we should be in one of the final states. We
   // don't need to create Booleans at at time when there is just one possible
   // state (like at time zero).
-  absl::flat_hash_map<int64, int> encoding;
+  absl::flat_hash_map<int64, int> var_encoding;
   absl::flat_hash_map<int64, int> in_encoding;
   absl::flat_hash_map<int64, int> out_encoding;
   bool removed_values = false;
+  int reused_literals = 0;
+  int created_literals = 0;
 
   for (int time = 0; time < n; ++time) {
     // All these vector have the same size. We will use them to enforce a
@@ -647,6 +652,10 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
     std::vector<int64> in_states;
     std::vector<int64> transition_values;
     std::vector<int64> out_states;
+    absl::flat_hash_map<int64, std::vector<int>> tuples_per_in_state;
+    absl::flat_hash_map<int64, std::vector<int>> tuples_per_out_state;
+    absl::flat_hash_map<int64, std::vector<int>> tuples_per_value;
+
     for (int i = 0; i < proto.transition_label_size(); ++i) {
       const int64 tail = proto.transition_tail(i);
       const int64 label = proto.transition_label(i);
@@ -656,83 +665,140 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
       if (!reachable_states[time + 1].contains(head)) continue;
       if (!context->DomainContains(vars[time], label)) continue;
 
-      // TODO(user): if this transition correspond to just one in-state or
-      // one-out state or one variable value, we could reuse the corresponding
-      // Boolean variable instead of creating a new one!
+      const int index = in_states.size();
+
       in_states.push_back(tail);
       transition_values.push_back(label);
 
       // On the last step we don't need to distinguish the output states, so
       // we use zero.
       out_states.push_back(time + 1 == n ? 0 : head);
+
+      // Increase counters.
+      tuples_per_out_state[head].push_back(index);
+      tuples_per_value[label].push_back(index);
+      tuples_per_in_state[tail].push_back(index);
     }
 
+    const int num_valid_tuples = transition_values.size();
+
+    // Reduce the domain of the variable, before we start encoding it.
+    var_encoding.clear();
+    if (!context->IntersectDomainWith(vars[time],
+                                      Domain::FromValues(transition_values),
+                                      &removed_values)) {
+      CHECK(context->NotifyThatModelIsUnsat());
+      return;
+    }
+
+    // Create tuple literals.
+    //
+    // There are a few optimizations implemented:
+    // - if one tail value appears in only one tuple, then it's literal can
+    //   be used for this tuple.
+    // - if one transition value appears in only one tuple, then it's encoding
+    //   literal can be used for this tuple.
+    // - in case there are only two tuples, then the above two cases cover all
+    //   possibilities.
+    // - in case there is only one valid tuple, the domain of the variable is
+    //   already reduced. The out state is also fixed.
     std::vector<int> tuple_literals;
-    if (transition_values.size() == 1) {
-      bool tmp_removed_values = false;
-      tuple_literals.push_back(context->GetOrCreateConstantVar(1));
+    if (num_valid_tuples == 1) {
       CHECK_EQ(reachable_states[time + 1].size(), 1);
-      if (!context->IntersectDomainWith(vars[time],
-                                        Domain(transition_values.front()),
-                                        &tmp_removed_values)) {
-        CHECK(context->NotifyThatModelIsUnsat());
-        return;
-      }
       in_encoding.clear();
       continue;
-    } else if (transition_values.size() == 2) {
-      const int bool_var = context->NewBoolVar();
-      tuple_literals.push_back(bool_var);
-      tuple_literals.push_back(NegatedRef(bool_var));
+    } else if (num_valid_tuples == 2) {
+      if (in_states[0] != in_states[1]) {
+        // We can reuse the tuples from the in_encoding.
+        CHECK(!in_encoding.empty());
+        tuple_literals.push_back(in_encoding[in_states[0]]);
+        tuple_literals.push_back(in_encoding[in_states[1]]);
+        reused_literals += 2;
+      } else {
+        CHECK_EQ(in_states[0], in_states[1]);
+        CHECK_NE(transition_values[0], transition_values[1]);
+        // We can reuse the tuples from the var encoding.
+        tuple_literals.push_back(context->GetOrCreateVarValueEncoding(
+            vars[time], transition_values[0]));
+        tuple_literals.push_back(context->GetOrCreateVarValueEncoding(
+            vars[time], transition_values[1]));
+        reused_literals += 2;
+      }
     } else {
-      // Note that we do not need the ExactlyOneConstraint(tuple_literals)
-      // because it is already implicitely encoded since we have exactly one
-      // transition value.
-      LinearConstraintProto* const exactly_one =
-          context->working_model->add_constraints()->mutable_linear();
-      exactly_one->add_domain(1);
-      exactly_one->add_domain(1);
-      for (int i = 0; i < transition_values.size(); ++i) {
-        const int tuple_literal = context->NewBoolVar();
+      for (int i = 0; i < num_valid_tuples; ++i) {
+        int tuple_literal = kint32min;
+        const int64 tail = in_states[i];
+        const int64 label = transition_values[i];
+        if (tuples_per_in_state[tail].size() == 1) {
+          // Reuse the in_state encoding literal.
+          // The case with only one valid tuple is already covered.
+          CHECK(!in_encoding.empty());
+          tuple_literal = in_encoding[tail];
+          reused_literals++;
+        } else if (tuples_per_value[label].size() == 1) {
+          // Reuse the variable encoding literal.
+          tuple_literal =
+              context->GetOrCreateVarValueEncoding(vars[time], label);
+          reused_literals++;
+        } else {
+          tuple_literal = context->NewBoolVar();
+          created_literals++;
+        }
         tuple_literals.push_back(tuple_literal);
-        exactly_one->add_vars(tuple_literal);
-        exactly_one->add_coeffs(1);
       }
     }
 
-    // Fully encode vars[time].
-    {
-      std::vector<int64> s = transition_values;
-      gtl::STLSortAndRemoveDuplicates(&s);
-
-      encoding.clear();
-      if (!context->IntersectDomainWith(vars[time], Domain::FromValues(s),
-                                        &removed_values)) {
-        CHECK(context->NotifyThatModelIsUnsat());
-        return;
-      }
-
-      // Fully encode the variable.
-      for (const ClosedInterval& interval : context->DomainOf(vars[time])) {
-        for (int64 v = interval.start; v <= interval.end; ++v) {
-          encoding[v] = context->GetOrCreateVarValueEncoding(vars[time], v);
+    // Fully encode vars[time]. Reuse tuple literals if possible.
+    for (const ClosedInterval& interval : context->DomainOf(vars[time])) {
+      for (int64 v = interval.start; v <= interval.end; ++v) {
+        if (tuples_per_value[v].size() == 1) {
+          const int boolvar = tuple_literals[tuples_per_value[v].front()];
+          var_encoding[v] = boolvar;
+          context->InsertVarValueEncoding(boolvar, vars[time], v);
+          reused_literals++;
+        } else {
+          var_encoding[v] = context->GetOrCreateVarValueEncoding(vars[time], v);
+          created_literals++;
         }
       }
     }
 
     // For each possible out states, create one Boolean variable.
+    // Reuse tuple literals whenever possible.
     {
       std::vector<int64> s = out_states;
       gtl::STLSortAndRemoveDuplicates(&s);
 
       out_encoding.clear();
       if (s.size() == 2) {
-        const int var = context->NewBoolVar();
-        out_encoding[s.front()] = var;
-        out_encoding[s.back()] = NegatedRef(var);
+        const int64 out1 = s[0];
+        const int64 out2 = s[1];
+        if (tuples_per_out_state[out1].size() == 1) {
+          const int lit = tuple_literals[tuples_per_out_state[out1].front()];
+          out_encoding[out1] = lit;
+          out_encoding[out2] = NegatedRef(lit);
+          reused_literals += 2;
+        } else if (tuples_per_out_state[out2].size() == 1) {
+          const int lit = tuple_literals[tuples_per_out_state[out2].front()];
+          out_encoding[out2] = lit;
+          out_encoding[out1] = NegatedRef(lit);
+          reused_literals += 2;
+        } else {
+          const int lit = context->NewBoolVar();
+          out_encoding[out1] = lit;
+          out_encoding[out2] = NegatedRef(lit);
+          created_literals++;
+        }
       } else if (s.size() > 2) {
         for (const int64 state : s) {
-          out_encoding[state] = context->NewBoolVar();
+          if (tuples_per_out_state[state].size() == 1) {
+            out_encoding[state] =
+                tuple_literals[tuples_per_out_state[state].front()];
+            reused_literals++;
+          } else {
+            out_encoding[state] = context->NewBoolVar();
+            created_literals++;
+          }
         }
       }
     }
@@ -740,8 +806,8 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
     if (!in_encoding.empty()) {
       LinkLiteralsAndValues(tuple_literals, in_states, in_encoding, context);
     }
-    if (!encoding.empty()) {
-      LinkLiteralsAndValues(tuple_literals, transition_values, encoding,
+    if (!var_encoding.empty()) {
+      LinkLiteralsAndValues(tuple_literals, transition_values, var_encoding,
                             context);
     }
     if (!out_encoding.empty()) {
@@ -750,6 +816,9 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
     in_encoding.swap(out_encoding);
     out_encoding.clear();
   }
+
+  VLOG(2) << "Expanding the automaton has created " << created_literals
+          << " literals, and reused " << reused_literals;
 
   if (removed_values) {
     context->UpdateRuleStats("automaton: reduced variable domains");
@@ -764,6 +833,7 @@ void ExpandCpModel(CpModelProto* working_model, PresolveOptions options) {
   PresolveContext context;
   context.working_model = working_model;
   context.InitializeNewDomains();
+  context.CollectVarValueEncoding();
 
   const int num_constraints = context.working_model->constraints_size();
   for (int i = 0; i < num_constraints; ++i) {

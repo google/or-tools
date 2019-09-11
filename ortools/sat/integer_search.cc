@@ -646,11 +646,13 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
 
   IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
 
+  const SatParameters& sat_parameters = *(model->GetOrCreate<SatParameters>());
+
   // Main search loop.
   const int64 old_num_conflicts = sat_solver->num_failures();
-  const int64 conflict_limit =
-      model->GetOrCreate<SatParameters>()->max_number_of_conflicts();
+  const int64 conflict_limit = sat_parameters.max_number_of_conflicts();
   int64 num_decisions_without_rins = 0;
+  int64 num_decisions_without_probing = 0;
   while (!time_limit->LimitReached() &&
          (sat_solver->num_failures() - old_num_conflicts < conflict_limit)) {
     // If needed, restart and switch decision_policy.
@@ -689,7 +691,10 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
 
       // Probing.
       if (sat_solver->CurrentDecisionLevel() == 0 &&
-          model->GetOrCreate<SatParameters>()->probe_at_root()) {
+          sat_parameters.probing_period_at_root() > 0 &&
+          ++num_decisions_without_probing >=
+              sat_parameters.probing_period_at_root()) {
+        num_decisions_without_probing = 0;
         // TODO(user): Be smarter about what variables we probe, we can also
         // do more than one.
 

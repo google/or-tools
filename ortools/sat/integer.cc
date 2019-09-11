@@ -1557,7 +1557,10 @@ absl::Span<const Literal> IntegerTrail::Reason(const Trail& trail,
 // than variables!
 void IntegerTrail::AppendNewBounds(std::vector<IntegerLiteral>* output) const {
   tmp_marked_.ClearAndResize(IntegerVariable(vars_.size()));
-  for (int i = vars_.size(); i < integer_trail_.size(); ++i) {
+
+  // In order to push the best bound for each variable, we loop backward.
+  const int end = vars_.size();
+  for (int i = integer_trail_.size(); --i >= end;) {
     const TrailEntry& entry = integer_trail_[i];
     if (entry.var == kNoIntegerVariable) continue;
     if (tmp_marked_[entry.var]) continue;

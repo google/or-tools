@@ -327,7 +327,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   };
   LinearExpression integer_objective_;
   IntegerValue objective_infinity_norm_ = IntegerValue(0);
-  std::vector<LinearConstraintInternal> integer_lp_;
+  gtl::ITIVector<glop::RowIndex, LinearConstraintInternal> integer_lp_;
   gtl::ITIVector<glop::RowIndex, IntegerValue> infinity_norms_;
 
   // Underlying LP solver API.
