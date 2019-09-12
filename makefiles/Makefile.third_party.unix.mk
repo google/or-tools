@@ -765,6 +765,9 @@ SWIG_VERSION = $(shell $(SWIG_BINARY) -version | grep Version | cut -d " " -f 3)
 ifeq ("$(SWIG_VERSION)","4.0.0")
 SWIG_DOXYGEN = -doxygen
 endif
+ifeq ("$(SWIG_VERSION)","4.0.1")
+SWIG_DOXYGEN = -doxygen
+endif
 
 test_doxy:
 ifneq ("$(PYTHON_EXECUTABLE)","")
