@@ -207,7 +207,6 @@ void CpModelProtoWithMapping::FillAMinusBInDomain(
     }
     arg->add_vars(var_a);
     arg->add_coeffs(1);
-
   } else if (fz_ct.arguments[0].type == fz::Argument::INT_VALUE) {
     const int64 value = fz_ct.arguments[0].Value();
     const int var_b = LookupVar(fz_ct.arguments[1]);
