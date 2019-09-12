@@ -906,8 +906,8 @@ class CpModel(object):
     Args:
       variables: A list of variables.
       tuples_list: A list of forbidden tuples. Each tuple must have the same
-        length as the variables, and the *i*th value of a tuple corresponds
-        to the *i*th variable.
+        length as the variables, and the *i*th value of a tuple corresponds to
+        the *i*th variable.
 
     Returns:
       An instance of the `Constraint` class.

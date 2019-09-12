@@ -152,7 +152,8 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
       // Overflow.
       max_integral = kMaxIntegerValue;
     }
-    UpdatePrimalIntegral(/*max_integral=*/std::max(int64{0}, max_integral.value()));
+    UpdatePrimalIntegral(
+        /*max_integral=*/std::max(int64{0}, max_integral.value()));
   }
   if (lb > inner_objective_lower_bound_) {
     inner_objective_lower_bound_ = lb.value();

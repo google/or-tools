@@ -116,7 +116,7 @@ struct ConstraintScaler {
   double max_scaling_factor = 0.0;
 
   double wanted_precision = 1e-6;
-  int64 scaling_target = 1LL << 50;
+  int64 scaling_target = int64{1} << 50;
   std::vector<double> coefficients;
   std::vector<double> lower_bounds;
   std::vector<double> upper_bounds;
@@ -313,7 +313,7 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
       << kSmallDomainSize << " values.";
 
   ConstraintScaler scaler;
-  const int64 kScalingTarget = 1LL << params.mip_max_activity_exponent();
+  const int64 kScalingTarget = int64{1} << params.mip_max_activity_exponent();
   scaler.wanted_precision = kWantedPrecision;
   scaler.scaling_target = kScalingTarget;
 

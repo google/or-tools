@@ -734,7 +734,8 @@ void CpModelBuilder::AddDecisionStrategy(
 }
 
 void CpModelBuilder::AddHint(IntVar var, int64 value) {
-  cp_model_.mutable_solution_hint()->add_vars(GetOrCreateIntegerIndex(var.index_));
+  cp_model_.mutable_solution_hint()->add_vars(
+      GetOrCreateIntegerIndex(var.index_));
   cp_model_.mutable_solution_hint()->add_values(value);
 }
 

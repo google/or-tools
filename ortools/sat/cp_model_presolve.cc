@@ -99,18 +99,18 @@ bool PresolveContext::IsFixed(int ref) const {
 bool PresolveContext::LiteralIsTrue(int lit) const {
   if (!IsFixed(lit)) return false;
   if (RefIsPositive(lit)) {
-    return domains[lit].Min() == 1ll;
+    return domains[lit].Min() == 1;
   } else {
-    return domains[PositiveRef(lit)].Max() == 0ll;
+    return domains[PositiveRef(lit)].Max() == 0;
   }
 }
 
 bool PresolveContext::LiteralIsFalse(int lit) const {
   if (!IsFixed(lit)) return false;
   if (RefIsPositive(lit)) {
-    return domains[lit].Max() == 0ll;
+    return domains[lit].Max() == 0;
   } else {
-    return domains[PositiveRef(lit)].Min() == 1ll;
+    return domains[PositiveRef(lit)].Min() == 1;
   }
 }
 
@@ -182,7 +182,7 @@ ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWith(
 
 ABSL_MUST_USE_RESULT bool PresolveContext::SetLiteralToFalse(int lit) {
   const int var = PositiveRef(lit);
-  const int64 value = RefIsPositive(lit) ? 0ll : 1ll;
+  const int64 value = RefIsPositive(lit) ? 0 : 1;
   return IntersectDomainWith(var, Domain(value));
 }
 
@@ -4016,7 +4016,7 @@ bool CpModelPresolver::ProcessSetPPC() {
       uint64 signature = 0;
       for (const int literal : constraint_literals.back()) {
         const int positive_literal = PositiveRef(literal);
-        signature |= (1LL << (positive_literal % 64));
+        signature |= (int64{1} << (positive_literal % 64));
         DCHECK_GE(positive_literal, 0);
         if (positive_literal >= literals_to_constraints.size()) {
           literals_to_constraints.resize(positive_literal + 1);

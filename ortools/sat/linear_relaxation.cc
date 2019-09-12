@@ -18,6 +18,7 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_expr.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/sat_base.h"
@@ -496,6 +497,7 @@ void AppendMaxRelaxation(IntegerVariable target,
 
   // Part 2: Encode upper bound on X.
   if (linearization_level < 2) return;
+  GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
   // For size = 2, we do this with 1 less variable.
   IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
   if (vars.size() == 2) {
@@ -503,8 +505,21 @@ void AppendMaxRelaxation(IntegerVariable target,
     const Literal y_lit =
         encoder->GetOrCreateLiteralAssociatedToEquality(y, IntegerValue(1));
     AppendEnforcedUpperBound(y_lit, target, vars[0], model, relaxation);
+
+    // TODO(user,user): It makes more sense to use ConditionalLowerOrEqual()
+    // here, but that degrades perf on the road*.fzn problem. Understand why.
+    IntegerSumLE* upper_bound1 = new IntegerSumLE(
+        {y_lit}, {target, vars[0]}, {IntegerValue(1), IntegerValue(-1)},
+        IntegerValue(0), model);
+    upper_bound1->RegisterWith(watcher);
+    model->TakeOwnership(upper_bound1);
     AppendEnforcedUpperBound(y_lit.Negated(), target, vars[1], model,
                              relaxation);
+    IntegerSumLE* upper_bound2 = new IntegerSumLE(
+        {y_lit.Negated()}, {target, vars[1]},
+        {IntegerValue(1), IntegerValue(-1)}, IntegerValue(0), model);
+    upper_bound2->RegisterWith(watcher);
+    model->TakeOwnership(upper_bound2);
     return;
   }
   // For each X_i, we encode y_i => X <= X_i. And at least one of the y_i is
@@ -513,6 +528,8 @@ void AppendMaxRelaxation(IntegerVariable target,
   // TODO(user): Only lower bound is needed, experiment.
   LinearConstraintBuilder lc_exactly_one(model, IntegerValue(1),
                                          IntegerValue(1));
+  std::vector<Literal> exactly_one_literals;
+  exactly_one_literals.reserve(vars.size());
   for (const IntegerVariable var : vars) {
     if (target == var) continue;
     // y => X <= X_i.
@@ -521,10 +538,18 @@ void AppendMaxRelaxation(IntegerVariable target,
     IntegerVariable y = model->Add(NewIntegerVariable(0, 1));
     const Literal y_lit =
         encoder->GetOrCreateLiteralAssociatedToEquality(y, IntegerValue(1));
+
     AppendEnforcedUpperBound(y_lit, target, var, model, relaxation);
+    IntegerSumLE* upper_bound_constraint = new IntegerSumLE(
+        {y_lit}, {target, var}, {IntegerValue(1), IntegerValue(-1)},
+        IntegerValue(0), model);
+    upper_bound_constraint->RegisterWith(watcher);
+    model->TakeOwnership(upper_bound_constraint);
+    exactly_one_literals.push_back(y_lit);
 
     CHECK(lc_exactly_one.AddLiteralTerm(y_lit, IntegerValue(1)));
   }
+  model->Add(ExactlyOneConstraint(exactly_one_literals));
   relaxation->linear_constraints.push_back(lc_exactly_one.Build());
 }
 
