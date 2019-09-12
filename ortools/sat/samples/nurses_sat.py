@@ -78,8 +78,8 @@ def main():
     for n in all_nurses:
         for d in all_days:
             for s in all_shifts:
-                shifts[(n, d, s)] = model.NewBoolVar('shift_n%id%is%i' % (n, d,
-                                                                          s))
+                shifts[(n, d,
+                        s)] = model.NewBoolVar('shift_n%id%is%i' % (n, d, s))
     # [END variables]
 
     # Each shift is assigned to exactly one nurse in the schedule period.

@@ -52,17 +52,17 @@ def RankTasks(model, starts, presences, ranks):
             if presences[i] != 1:
                 tmp_array.append(presences[i].Not())
                 # Makes sure that if i is not performed, all precedences are false.
-                model.AddImplication(presences[i].Not(),
-                                     precedences[(i, j)].Not())
-                model.AddImplication(presences[i].Not(),
-                                     precedences[(j, i)].Not())
+                model.AddImplication(presences[i].Not(), precedences[(i,
+                                                                      j)].Not())
+                model.AddImplication(presences[i].Not(), precedences[(j,
+                                                                      i)].Not())
             if presences[j] != 1:
                 tmp_array.append(presences[j].Not())
                 # Makes sure that if j is not performed, all precedences are false.
-                model.AddImplication(presences[j].Not(),
-                                     precedences[(i, j)].Not())
-                model.AddImplication(presences[j].Not(),
-                                     precedences[(j, i)].Not())
+                model.AddImplication(presences[j].Not(), precedences[(i,
+                                                                      j)].Not())
+                model.AddImplication(presences[j].Not(), precedences[(j,
+                                                                      i)].Not())
             # The following bool_or will enforce that for any two intervals:
             #    i precedes j or j precedes i or at least one interval is not
             #        performed.
@@ -102,9 +102,8 @@ def RankingSampleSat():
             presence = True
         else:
             presence = model.NewBoolVar('presence_%i' % t)
-            interval = model.NewOptionalIntervalVar(start, duration, end,
-                                                    presence,
-                                                    'o_interval_%i' % t)
+            interval = model.NewOptionalIntervalVar(
+                start, duration, end, presence, 'o_interval_%i' % t)
         starts.append(start)
         ends.append(end)
         intervals.append(interval)
