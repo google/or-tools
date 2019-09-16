@@ -54,7 +54,6 @@
 #include "ortools/sat/clause.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
-#include "ortools/sat/cp_model_expand.h"
 #include "ortools/sat/cp_model_lns.h"
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_presolve.h"
@@ -1969,8 +1968,12 @@ class LnsSolver : public SubSolver {
       options.log_info = VLOG_IS_ON(3);
       options.parameters = *local_model.GetOrCreate<SatParameters>();
       options.time_limit = local_model.GetOrCreate<TimeLimit>();
-      PresolveCpModel(options, &neighborhood.cp_model, &mapping_proto,
-                      &postsolve_mapping);
+      auto context = absl::make_unique<PresolveContext>(&neighborhood.cp_model,
+                                                        &mapping_proto);
+      PresolveCpModel(options, context.get(), &postsolve_mapping);
+
+      // Release the context
+      context.reset(nullptr);
 
       // TODO(user): Depending on the problem, we should probably use the
       // parameters that work bests (core, linearization_level, etc...) or
@@ -1992,7 +1995,6 @@ class LnsSolver : public SubSolver {
                         &local_response);
 
       local_response_manager.BestSolutionInnerObjectiveValue();
-
       if (local_response.solution_info().empty()) {
         local_response.set_solution_info(solution_info);
       } else {
@@ -2302,40 +2304,34 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     }
   }
 
-  // Starts by expanding some constraints if needed.
+  // Presolve and expansions
   LOG_IF(INFO, log_search) << absl::StrFormat(
-      "*** starting model expansion at %.2fs", wall_timer.Get());
+      "*** starting model presolve at %.2fs", wall_timer.Get());
   CpModelProto new_cp_model_proto = model_proto;  // Copy.
+  CpModelProto mapping_proto;
   PresolveOptions options;
   options.log_info = log_search;
   options.parameters = *model->GetOrCreate<SatParameters>();
-  ExpandCpModel(&new_cp_model_proto, options);
+  options.time_limit = model->GetOrCreate<TimeLimit>();
+  auto context =
+      absl::make_unique<PresolveContext>(&new_cp_model_proto, &mapping_proto);
 
   // This function will be called before any CpSolverResponse is returned
   // to the user (at the end and in callbacks).
   std::function<void(CpSolverResponse * response)> postprocess_solution;
 
-  // Presolve?
+  // Do the actual presolve.
+  std::vector<int> postsolve_mapping;
+  const bool ok = PresolveCpModel(options, context.get(), &postsolve_mapping);
+  if (!ok) {
+    LOG(ERROR) << "Error while presolving, likely due to integer overflow.";
+    CpSolverResponse response;
+    response.set_status(CpSolverStatus::MODEL_INVALID);
+    LOG_IF(INFO, log_search) << CpSolverResponseStats(response);
+    return response;
+  }
+  LOG_IF(INFO, log_search) << CpModelStats(new_cp_model_proto);
   if (params.cp_model_presolve()) {
-    LOG_IF(INFO, log_search) << absl::StrFormat(
-        "*** starting model presolve at %.2fs", wall_timer.Get());
-    // Do the actual presolve.
-    CpModelProto mapping_proto;
-    std::vector<int> postsolve_mapping;
-    PresolveOptions options;
-    options.log_info = log_search;
-    options.parameters = *model->GetOrCreate<SatParameters>();
-    options.time_limit = model->GetOrCreate<TimeLimit>();
-    const bool ok = PresolveCpModel(options, &new_cp_model_proto,
-                                    &mapping_proto, &postsolve_mapping);
-    if (!ok) {
-      LOG(ERROR) << "Error while presolving, likely due to integer overflow.";
-      CpSolverResponse response;
-      response.set_status(CpSolverStatus::MODEL_INVALID);
-      LOG_IF(INFO, log_search) << CpSolverResponseStats(response);
-      return response;
-    }
-    LOG_IF(INFO, log_search) << CpModelStats(new_cp_model_proto);
     postprocess_solution = [&model_proto, &params, mapping_proto,
                             &shared_time_limit, postsolve_mapping, &wall_timer,
                             &user_timer](CpSolverResponse* response) {
@@ -2381,6 +2377,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
           shared_time_limit.GetElapsedDeterministicTime());
     };
   }
+
+  // Delete the context.
+  context.reset(nullptr);
 
   SharedResponseManager shared_response_manager(
       log_search, params.enumerate_all_solutions(), &new_cp_model_proto,

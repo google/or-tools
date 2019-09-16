@@ -17,6 +17,7 @@
 
 #include "ortools/base/timer.h"
 #include "ortools/sat/clause.h"
+#include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
@@ -66,6 +67,7 @@ bool ProbeBooleanVariables(const double deterministic_time_limit,
   int num_new_holes = 0;
   int num_new_integer_bounds = 0;
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* implied_bounds = model->GetOrCreate<ImpliedBounds>();
   std::vector<IntegerLiteral> new_integer_bounds;
 
   // To detect literal x that must be true because b => x and not(b) => x.
@@ -104,6 +106,7 @@ bool ProbeBooleanVariables(const double deterministic_time_limit,
       if (sat_solver->IsModelUnsat()) return false;
       if (sat_solver->CurrentDecisionLevel() == 0) continue;
 
+      implied_bounds->ProcessIntegerTrail(decision);
       integer_trail->AppendNewBounds(&new_integer_bounds);
       for (int i = saved_index + 1; i < trail.Index(); ++i) {
         const Literal l = trail[i];

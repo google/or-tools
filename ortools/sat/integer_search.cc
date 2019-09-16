@@ -17,6 +17,7 @@
 #include <functional>
 #include <vector>
 
+#include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/probing.h"
@@ -644,7 +645,8 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
   // execute the code when pseudo costs are not needed.
   PseudoCosts* pseudo_costs = model->GetOrCreate<PseudoCosts>();
 
-  IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* implied_bounds = model->GetOrCreate<ImpliedBounds>();
 
   const SatParameters& sat_parameters = *(model->GetOrCreate<SatParameters>());
 
@@ -664,6 +666,10 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
     }
 
     if (sat_solver->CurrentDecisionLevel() == 0) {
+      if (!implied_bounds->EnqueueNewDeductions()) {
+        return SatSolver::INFEASIBLE;
+      }
+
       auto* level_zero_callbacks =
           model->GetOrCreate<LevelZeroCallbackHelper>();
       for (const auto& cb : level_zero_callbacks->callbacks) {
@@ -753,6 +759,12 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
     // TODO(user): on some problems, this function can be quite long. Expand
     // so that we can check the time limit at each step?
     sat_solver->EnqueueDecisionAndBackjumpOnConflict(Literal(decision));
+
+    // Update the implied bounds each time we enqueue a literal at level zero.
+    // This is "almost free", so we might as well do it.
+    if (old_level == 0 && sat_solver->CurrentDecisionLevel() == 1) {
+      implied_bounds->ProcessIntegerTrail(Literal(decision));
+    }
 
     // Update the pseudo costs.
     if (sat_solver->CurrentDecisionLevel() > old_level &&

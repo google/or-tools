@@ -219,6 +219,7 @@ cc_library(
         ":cumulative",
         ":diffn",
         ":disjunctive",
+        ":implied_bounds",
         ":integer",
         ":integer_expr",
         ":intervals",
@@ -260,15 +261,39 @@ cc_library(
 )
 
 cc_library(
+    name = "presolve_context",
+    srcs = ["presolve_context.cc"],
+    hdrs = ["presolve_context.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:int_type",
+        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:map_util",
+        "//ortools/port:proto_utils",
+        "//ortools/util:affine_relation",
+        "//ortools/util:bitset",
+        "//ortools/util:sorted_interval_list",
+        "//ortools/util:time_limit",
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+        ":presolve_util",
+        ":sat_parameters_cc_proto",
+        "@com_google_absl//absl/container:flat_hash_map",
+    ],
+)
+
+cc_library(
     name = "cp_model_presolve",
     srcs = ["cp_model_presolve.cc"],
     hdrs = ["cp_model_presolve.h"],
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_checker",
+        ":cp_model_expand",
         ":cp_model_loader",
         ":cp_model_objective",
         ":cp_model_utils",
+        ":presolve_context",
         ":presolve_util",
         ":probing",
         ":sat_base",
@@ -297,8 +322,8 @@ cc_library(
     hdrs = ["cp_model_expand.h"],
     deps = [
         ":cp_model_cc_proto",
-        ":cp_model_presolve",
         ":cp_model_utils",
+        ":presolve_context",
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:map_util",
@@ -382,6 +407,7 @@ cc_library(
     hdrs = ["probing.h"],
     deps = [
         ":clause",
+        ":implied_bounds",
         ":integer",
         ":model",
         ":sat_solver",
@@ -584,6 +610,23 @@ cc_library(
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
         "//ortools/base:stl_util",
+        "//ortools/util:bitset",
+        "@com_google_absl//absl/container:inlined_vector",
+    ],
+)
+
+cc_library(
+    name = "implied_bounds",
+    srcs = ["implied_bounds.cc"],
+    hdrs = ["implied_bounds.h"],
+    deps = [
+        ":integer",
+        ":model",
+        ":sat_base",
+        "//ortools/base",
+        "//ortools/base:int_type",
+        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:map_util",
         "//ortools/util:bitset",
         "@com_google_absl//absl/container:inlined_vector",
     ],

@@ -536,9 +536,13 @@ bool DisjunctiveOverloadChecker::PropagateSubwindow(
             task_by_increasing_end_max_.end());
   for (const auto task_time : task_by_increasing_end_max_) {
     const int current_task = task_time.task_index;
-    DCHECK_NE(task_to_event_[current_task], -1);
-    DCHECK(!helper_->IsAbsent(current_task));
 
+    // We filtered absent task while constructing the subwindow, but it is
+    // possible that as we propagate task absence below, other task also become
+    // absent (if they share the same presence Boolean).
+    if (helper_->IsAbsent(current_task)) continue;
+
+    DCHECK_NE(task_to_event_[current_task], -1);
     {
       const int current_event = task_to_event_[current_task];
       const IntegerValue energy_min = helper_->DurationMin(current_task);

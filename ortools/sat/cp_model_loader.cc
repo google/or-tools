@@ -34,6 +34,7 @@
 #include "ortools/sat/cumulative.h"
 #include "ortools/sat/diffn.h"
 #include "ortools/sat/disjunctive.h"
+#include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_expr.h"
 #include "ortools/sat/intervals.h"
@@ -281,6 +282,12 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
   std::vector<std::vector<EqualityDetectionHelper>> var_to_equalities(
       model_proto.variables_size());
 
+  // TODO(user): We will re-add the same implied bounds during probing, so
+  // it might not be necessary to do that here. Also, it might be too early
+  // if some of the literal view used in the LP are created later, but that
+  // should be fixable via calls to implied_bounds->NotifyNewIntegerView().
+  auto* implied_bounds = m->GetOrCreate<ImpliedBounds>();
+
   // Detection of literal equivalent to (i_var >= bound). We also collect
   // all the half-refied part and we will sort the vector for detection of the
   // equivalence.
@@ -325,12 +332,14 @@ void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
             {&ct, enforcement_literal,
              IntegerLiteral::GreaterOrEqual(
                  Integer(var), IntegerValue(domain_if_enforced.Min()))});
+        implied_bounds->Add(enforcement_literal, inequalities.back().i_lit);
       } else if (domain_if_enforced.Min() <= domain.Min() &&
                  domain_if_enforced.Max() < domain.Max()) {
         inequalities.push_back(
             {&ct, enforcement_literal,
              IntegerLiteral::LowerOrEqual(
                  Integer(var), IntegerValue(domain_if_enforced.Max()))});
+        implied_bounds->Add(enforcement_literal, inequalities.back().i_lit);
       }
     }
 
