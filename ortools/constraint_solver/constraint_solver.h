@@ -2709,6 +2709,8 @@ class Solver {
       const std::vector<LocalSearchFilter*>& filters);
 
   /// Local Search Filters
+  LocalSearchFilter* MakeAcceptFilter();
+  LocalSearchFilter* MakeRejectFilter();
   LocalSearchFilter* MakeVariableDomainFilter();
   IntVarLocalSearchFilter* MakeSumObjectiveFilter(
       const std::vector<IntVar*>& vars, IndexEvaluator2 values,

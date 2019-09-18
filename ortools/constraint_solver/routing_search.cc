@@ -25,6 +25,8 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/small_map.h"
 #include "ortools/base/small_ordered_set.h"
@@ -228,6 +230,21 @@ LocalSearchFilterManager::LocalSearchFilterManager(
   // TODO(user): static reordering should take place here.
 }
 
+void LocalSearchFilterManager::Relax(const Assignment* delta,
+                                     const Assignment* deltadelta) {
+  for (LocalSearchFilter* filter : filters_) {
+    filter->Relax(delta, deltadelta);
+  }
+}
+
+// Filters' Revert() must be called in the reverse order in which their
+// Accept() was called.
+void LocalSearchFilterManager::Revert() {
+  for (LocalSearchFilter* filter : ::gtl::reversed_view(filters_)) {
+    filter->Revert();
+  }
+}
+
 // TODO(user): the behaviour of Accept relies on the initial order of
 // filters having at most one filter with negative objective values,
 // this could be fixed by having filters return their general bounds.
@@ -350,7 +367,8 @@ bool BasePathFilter::Accept(const Assignment* delta,
     }
   }
   // Order is important: FinalizeAcceptPath() must always be called.
-  return FinalizeAcceptPath(delta, objective_min, objective_max) && accept;
+  return FinalizeAcceptPath(delta, objective_min, objective_max, accept) &&
+         accept;
 }
 
 void BasePathFilter::ComputePathStarts(std::vector<int64>* path_starts,
@@ -523,7 +541,8 @@ class VehicleAmortizedCostFilter : public BasePathFilter {
   bool AcceptPath(int64 path_start, int64 chain_start,
                   int64 chain_end) override;
   bool FinalizeAcceptPath(const Assignment* delta, int64 objective_min,
-                          int64 objective_max) override;
+                          int64 objective_max,
+                          bool all_paths_accepted) override;
 
   int64 current_vehicle_cost_;
   int64 delta_vehicle_cost_;
@@ -643,7 +662,8 @@ bool VehicleAmortizedCostFilter::AcceptPath(int64 path_start, int64 chain_start,
 
 bool VehicleAmortizedCostFilter::FinalizeAcceptPath(const Assignment* delta,
                                                     int64 objective_min,
-                                                    int64 objective_max) {
+                                                    int64 objective_max,
+                                                    bool all_paths_accepted) {
   return delta_vehicle_cost_ <= objective_max;
 }
 
@@ -1024,7 +1044,8 @@ class PathCumulFilter : public BasePathFilter {
   bool AcceptPath(int64 path_start, int64 chain_start,
                   int64 chain_end) override;
   bool FinalizeAcceptPath(const Assignment* delta, int64 objective_min,
-                          int64 objective_max) override;
+                          int64 objective_max,
+                          bool all_paths_accepted) override;
   void OnBeforeSynchronizePaths() override;
 
   bool FilterSpanCost() const { return global_span_cost_coefficient_ != 0; }
@@ -1137,6 +1158,8 @@ class PathCumulFilter : public BasePathFilter {
   // by the index of the start node of the path.
   absl::flat_hash_map<int64, int64> current_cumul_cost_values_;
   int64 cumul_cost_delta_;
+  // Cumul cost values for paths in delta, indexed by vehicle.
+  std::vector<int64> delta_path_cumul_cost_values_;
   const int64 global_span_cost_coefficient_;
   std::vector<SoftBound> cumul_soft_bounds_;
   std::vector<SoftBound> cumul_soft_lower_bounds_;
@@ -1193,6 +1216,7 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
       accepted_objective_value_(0),
       current_cumul_cost_values_(),
       cumul_cost_delta_(0),
+      delta_path_cumul_cost_values_(routing_model.vehicles(), kint64min),
       global_span_cost_coefficient_(dimension.global_span_cost_coefficient()),
       vehicle_span_cost_coefficients_(
           dimension.vehicle_span_cost_coefficients()),
@@ -1368,9 +1392,6 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
     for (int r = 0; r < NumPaths(); ++r) {
       int64 node = Start(r);
       const int vehicle = start_to_vehicle_[Start(r)];
-      bool filter_with_optimizer =
-          FilterWithDimensionCumulOptimizerForVehicle(vehicle);
-
       // First pass: evaluating route length to reserve memory to store route
       // information.
       int number_of_route_arcs = 0;
@@ -1385,24 +1406,11 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
       std::vector<int64> min_path_cumuls;
       min_path_cumuls.reserve(number_of_route_arcs + 1);
       min_path_cumuls.push_back(cumul);
-      int64 current_cumul_cost_value = 0;
-      if (filter_with_optimizer) {
-        // NOTE(user): If for some reason the optimizer did not manage to
-        // compute the optimized cumul values for this solution, we do the rest
-        // of the synchronization without the optimizer.
-        // TODO(user): Return a status from the optimizer to detect the
-        // reason behind the failure. The only admissible failures here are
-        // because of LP timeout.
-        filter_with_optimizer =
-            optimizer_->ComputeRouteCumulCostWithoutFixedTransits(
-                vehicle, [this](int64 node) { return Value(node); },
-                &current_cumul_cost_value);
-      }
-      if (!filter_with_optimizer) {
-        current_cumul_cost_value = GetCumulSoftCost(node, cumul);
-        current_cumul_cost_value = CapAdd(
-            current_cumul_cost_value, GetCumulPiecewiseLinearCost(node, cumul));
-      }
+
+      int64 current_cumul_cost_value = GetCumulSoftCost(node, cumul);
+      current_cumul_cost_value = CapAdd(
+          current_cumul_cost_value, GetCumulPiecewiseLinearCost(node, cumul));
+
       int64 total_transit = 0;
       while (node < Size()) {
         const int64 next = Value(node);
@@ -1416,13 +1424,10 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
         cumul = std::max(cumuls_[next]->Min(), cumul);
         min_path_cumuls.push_back(cumul);
         node = next;
-        if (!filter_with_optimizer) {
-          current_cumul_cost_value =
-              CapAdd(current_cumul_cost_value, GetCumulSoftCost(node, cumul));
-          current_cumul_cost_value =
-              CapAdd(current_cumul_cost_value,
-                     GetCumulPiecewiseLinearCost(node, cumul));
-        }
+        current_cumul_cost_value =
+            CapAdd(current_cumul_cost_value, GetCumulSoftCost(node, cumul));
+        current_cumul_cost_value = CapAdd(
+            current_cumul_cost_value, GetCumulPiecewiseLinearCost(node, cumul));
       }
       if (FilterPrecedences()) {
         StoreMinMaxCumulOfNodesOnPath(/*path=*/r, min_path_cumuls,
@@ -1436,8 +1441,7 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
         current_path_transits_.ClearPath(r);
         continue;
       }
-      if (!filter_with_optimizer &&
-          (FilterSlackCost() || FilterSoftSpanCost())) {
+      if (FilterSlackCost() || FilterSoftSpanCost()) {
         const int64 start =
             ComputePathMaxStartFromEndCumul(current_path_transits_, r, cumul);
         const int64 span_lower_bound = CapSub(cumul, start);
@@ -1457,10 +1461,22 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
           }
         }
       }
-      if (FilterCumulSoftLowerBounds() && !filter_with_optimizer) {
+      if (FilterCumulSoftLowerBounds()) {
         current_cumul_cost_value =
             CapAdd(current_cumul_cost_value,
                    GetPathCumulSoftLowerBoundCost(current_path_transits_, r));
+      }
+      if (FilterWithDimensionCumulOptimizerForVehicle(vehicle)) {
+        // TODO(user): Return a status from the optimizer to detect failures
+        // The only admissible failures here are because of LP timeout.
+        int64 lp_cumul_cost_value = 0;
+        if (!optimizer_->ComputeRouteCumulCostWithoutFixedTransits(
+                vehicle, [this](int64 node) { return Value(node); },
+                &lp_cumul_cost_value)) {
+          lp_cumul_cost_value = 0;
+        }
+        current_cumul_cost_value =
+            std::max(current_cumul_cost_value, lp_cumul_cost_value);
       }
       current_cumul_cost_values_[Start(r)] = current_cumul_cost_value;
       current_max_end_.path_values[r] = cumul;
@@ -1510,12 +1526,10 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
   const int path = delta_path_transits_.AddPaths(1);
   const int vehicle = start_to_vehicle_[path_start];
   const int64 capacity = vehicle_capacities_[vehicle];
-  const bool filter_with_optimizer =
-      FilterWithDimensionCumulOptimizerForVehicle(vehicle);
   const bool filter_vehicle_costs =
       !routing_model_.IsEnd(GetNext(node)) ||
       routing_model_.AreEmptyRouteCostsConsideredForVehicle(vehicle);
-  if (!filter_with_optimizer && filter_vehicle_costs) {
+  if (filter_vehicle_costs) {
     cumul_cost_delta = CapAdd(GetCumulSoftCost(node, cumul),
                               GetCumulPiecewiseLinearCost(node, cumul));
   }
@@ -1556,7 +1570,7 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
     cumul = std::max(cumuls_[next]->Min(), cumul);
     min_path_cumuls.push_back(cumul);
     node = next;
-    if (!filter_with_optimizer && filter_vehicle_costs) {
+    if (filter_vehicle_costs) {
       cumul_cost_delta =
           CapAdd(cumul_cost_delta, GetCumulSoftCost(node, cumul));
       cumul_cost_delta =
@@ -1575,37 +1589,36 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
         ComputePathMaxStartFromEndCumul(delta_path_transits_, path, min_end);
     int64 min_total_slack =
         CapSub(CapSub(min_end, max_start_from_min_end), total_transit);
-    if (!filter_with_optimizer) {
-      if (FilterBreakCost(vehicle)) {
-        // Compute a lower bound of the amount of break that must be made inside
-        // the route. We compute a mandatory interval (might be empty)
-        // [max_start, min_end[ during which the route will have to happen,
-        // then the duration of break that must happen during this interval.
-        int64 min_total_break = 0;
-        int64 max_path_end = cumuls_[routing_model_.End(vehicle)]->Max();
-        const int64 max_start = ComputePathMaxStartFromEndCumul(
-            delta_path_transits_, path, max_path_end);
-        for (const IntervalVar* br :
-             dimension_.GetBreakIntervalsOfVehicle(vehicle)) {
-          if (max_start < br->EndMin() && br->StartMax() < min_end) {
-            min_total_break = CapAdd(min_total_break, br->DurationMin());
-          }
+    if (FilterBreakCost(vehicle)) {
+      // Compute a lower bound of the amount of break that must be made inside
+      // the route. We compute a mandatory interval (might be empty)
+      // [max_start, min_end[ during which the route will have to happen,
+      // then the duration of break that must happen during this interval.
+      int64 min_total_break = 0;
+      int64 max_path_end = cumuls_[routing_model_.End(vehicle)]->Max();
+      const int64 max_start = ComputePathMaxStartFromEndCumul(
+          delta_path_transits_, path, max_path_end);
+      for (const IntervalVar* br :
+           dimension_.GetBreakIntervalsOfVehicle(vehicle)) {
+        if (!br->MustBePerformed()) continue;
+        if (max_start < br->EndMin() && br->StartMax() < min_end) {
+          min_total_break = CapAdd(min_total_break, br->DurationMin());
         }
-        min_total_slack = std::max(min_total_slack, min_total_break);
       }
-      if (filter_vehicle_costs) {
-        cumul_cost_delta = CapAdd(
-            cumul_cost_delta,
-            CapProd(vehicle_span_cost_coefficients_[vehicle], min_total_slack));
-        const int64 span_lower_bound = CapAdd(total_transit, min_total_slack);
-        if (FilterSoftSpanCost()) {
-          const SimpleBoundCosts::BoundCost bound_cost =
-              dimension_.GetSoftSpanUpperBoundForVehicle(vehicle);
-          if (bound_cost.bound < span_lower_bound) {
-            const int64 violation = CapSub(span_lower_bound, bound_cost.bound);
-            cumul_cost_delta =
-                CapAdd(cumul_cost_delta, CapProd(bound_cost.cost, violation));
-          }
+      min_total_slack = std::max(min_total_slack, min_total_break);
+    }
+    if (filter_vehicle_costs) {
+      cumul_cost_delta = CapAdd(
+          cumul_cost_delta,
+          CapProd(vehicle_span_cost_coefficients_[vehicle], min_total_slack));
+      const int64 span_lower_bound = CapAdd(total_transit, min_total_slack);
+      if (FilterSoftSpanCost()) {
+        const SimpleBoundCosts::BoundCost bound_cost =
+            dimension_.GetSoftSpanUpperBoundForVehicle(vehicle);
+        if (bound_cost.bound < span_lower_bound) {
+          const int64 violation = CapSub(span_lower_bound, bound_cost.bound);
+          cumul_cost_delta =
+              CapAdd(cumul_cost_delta, CapProd(bound_cost.cost, violation));
         }
       }
     }
@@ -1614,17 +1627,10 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
       return false;
     }
   }
-  if (FilterCumulSoftLowerBounds() && !filter_with_optimizer &&
-      filter_vehicle_costs) {
+  if (FilterCumulSoftLowerBounds() && filter_vehicle_costs) {
     cumul_cost_delta =
         CapAdd(cumul_cost_delta,
                GetPathCumulSoftLowerBoundCost(delta_path_transits_, path));
-  }
-  if (filter_with_optimizer &&
-      !optimizer_->ComputeRouteCumulCostWithoutFixedTransits(
-          vehicle, [this](int64 node) { return GetNext(node); },
-          &cumul_cost_delta)) {
-    return false;
   }
   if (FilterPrecedences()) {
     StoreMinMaxCumulOfNodesOnPath(path, min_path_cumuls, /*is_delta=*/true);
@@ -1639,6 +1645,7 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
       FilterCumulSoftLowerBounds() || FilterCumulPiecewiseLinearCosts() ||
       FilterSoftSpanCost(vehicle)) {
     delta_paths_.insert(GetPath(path_start));
+    delta_path_cumul_cost_values_[vehicle] = cumul_cost_delta;
     cumul_cost_delta =
         CapSub(cumul_cost_delta, current_cumul_cost_values_[path_start]);
     if (filter_vehicle_costs) {
@@ -1651,7 +1658,8 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
 
 bool PathCumulFilter::FinalizeAcceptPath(const Assignment* delta,
                                          int64 objective_min,
-                                         int64 objective_max) {
+                                         int64 objective_max,
+                                         bool all_paths_accepted) {
   if ((!FilterSpanCost() && !FilterCumulSoftBounds() && !FilterSlackCost() &&
        !FilterCumulSoftLowerBounds() && !FilterCumulPiecewiseLinearCosts() &&
        !FilterPrecedences() && !FilterSoftSpanCost()) ||
@@ -1752,10 +1760,37 @@ bool PathCumulFilter::FinalizeAcceptPath(const Assignment* delta,
       }
     }
   }
-  // Filtering on objective value, including the injected part of it.
+
+  // Filtering on objective value, calling LPs if needed..
   accepted_objective_value_ =
       CapAdd(cumul_cost_delta_, CapProd(global_span_cost_coefficient_,
                                         CapSub(new_max_end, new_min_start)));
+  if (all_paths_accepted && filter_objective_cost_ &&
+      accepted_objective_value_ <= objective_max) {
+    for (int64 start : GetTouchedPathStarts()) {
+      const int vehicle = start_to_vehicle_[start];
+      if (!FilterWithDimensionCumulOptimizerForVehicle(vehicle)) {
+        continue;
+      }
+      int64 path_delta_cost_with_lp = 0;
+      if (!optimizer_->ComputeRouteCumulCostWithoutFixedTransits(
+              vehicle, [this](int64 node) { return GetNext(node); },
+              &path_delta_cost_with_lp)) {
+        return false;
+      }
+      DCHECK(gtl::ContainsKey(delta_paths_, GetPath(start)));
+      const int64 path_cost_diff_with_lp = CapSub(
+          path_delta_cost_with_lp, delta_path_cumul_cost_values_[vehicle]);
+      if (path_cost_diff_with_lp > 0) {
+        accepted_objective_value_ =
+            CapAdd(accepted_objective_value_, path_cost_diff_with_lp);
+        if (accepted_objective_value_ > objective_max) {
+          return false;
+        }
+      }
+    }
+  }
+
   return accepted_objective_value_ <= objective_max;
 }
 

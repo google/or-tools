@@ -1793,6 +1793,9 @@ void FillPathEvaluation(const std::vector<int64>& path,
 class GlobalVehicleBreaksConstraint : public Constraint {
  public:
   explicit GlobalVehicleBreaksConstraint(const RoutingDimension* dimension);
+  std::string DebugString() const override {
+    return "GlobalVehicleBreaksConstraint";
+  }
 
   void Post() override;
   void InitialPropagate() override;
@@ -3230,6 +3233,9 @@ class BasePathFilter : public IntVarLocalSearchFilter {
   int GetPath(int64 node) const { return paths_[node]; }
   int Rank(int64 node) const { return ranks_[node]; }
   bool IsDisabled() const { return status_ == DISABLED; }
+  const std::vector<int64>& GetTouchedPathStarts() const {
+    return touched_paths_.PositionsSetAtLeastOnce();
+  }
   const std::vector<int64>& GetNewSynchronizedUnperformedNodes() const {
     return new_synchronized_unperformed_nodes_.PositionsSetAtLeastOnce();
   }
@@ -3245,7 +3251,8 @@ class BasePathFilter : public IntVarLocalSearchFilter {
   virtual bool AcceptPath(int64 path_start, int64 chain_start,
                           int64 chain_end) = 0;
   virtual bool FinalizeAcceptPath(const Assignment* delta, int64 objective_min,
-                                  int64 objective_max) {
+                                  int64 objective_max,
+                                  bool all_paths_accepted) {
     return true;
   }
   /// Detects path starts, used to track which node belongs to which path.

@@ -28,6 +28,7 @@
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
+#include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
@@ -35,6 +36,7 @@
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/graph/hamiltonian_path.h"
+#include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 DEFINE_int32(cp_local_search_sync_frequency, 16,
@@ -2355,6 +2357,42 @@ class MaxOperation {
   std::set<int64> values_set_;
 };
 
+// Always accepts deltas, cost 0.
+class AcceptFilter : public LocalSearchFilter {
+ public:
+  std::string DebugString() const override { return "AcceptFilter"; }
+  bool Accept(const Assignment* delta, const Assignment* deltadelta,
+              int64 obj_min, int64 obj_max) override {
+    return true;
+  }
+  void Synchronize(const Assignment* assignment,
+                   const Assignment* delta) override {}
+};
+}  // namespace
+
+LocalSearchFilter* Solver::MakeAcceptFilter() {
+  return RevAlloc(new AcceptFilter());
+}
+
+namespace {
+// Never accepts deltas, cost 0.
+class RejectFilter : public LocalSearchFilter {
+ public:
+  std::string DebugString() const override { return "RejectFilter"; }
+  bool Accept(const Assignment* delta, const Assignment* deltadelta,
+              int64 obj_min, int64 obj_max) override {
+    return false;
+  }
+  void Synchronize(const Assignment* assignment,
+                   const Assignment* delta) override {}
+};
+}  // namespace
+
+LocalSearchFilter* Solver::MakeRejectFilter() {
+  return RevAlloc(new RejectFilter());
+}
+
+namespace {
 // ----- Variable domain filter -----
 // Rejects assignments to values outside the domain of variables
 
@@ -2892,6 +2930,7 @@ class FindOneNeighbor : public DecisionBuilder {
                     int64 objective_min, int64 objective_max);
   void SynchronizeAll(Solver* solver, bool synchronize_filters = true);
   void SynchronizeFilters(const Assignment* assignment);
+  void RevertFilters();
 
   Assignment* const assignment_;
   IntVar* const objective_;
@@ -3037,65 +3076,69 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
                                               objective_min, objective_max);
         solver->GetLocalSearchMonitor()->EndFilterNeighbor(
             ls_operator_, mh_filter && move_filter);
-        if (mh_filter && move_filter) {
-          solver->filtered_neighbors_ += 1;
-          if (delta->HasObjective()) {
-            if (!assignment_copy->HasObjective()) {
-              assignment_copy->AddObjective(delta->Objective());
-            }
-            if (!assignment_->HasObjective()) {
-              assignment_->AddObjective(delta->Objective());
-              last_checked_assignment_.AddObjective(delta->Objective());
-            }
+        if (!mh_filter || !move_filter) {
+          RevertFilters();
+          continue;
+        }
+        solver->filtered_neighbors_ += 1;
+        if (delta->HasObjective()) {
+          if (!assignment_copy->HasObjective()) {
+            assignment_copy->AddObjective(delta->Objective());
           }
-          assignment_copy->CopyIntersection(reference_assignment_.get());
-          assignment_copy->CopyIntersection(delta);
-          solver->GetLocalSearchMonitor()->BeginAcceptNeighbor(ls_operator_);
-          const bool check_solution = (solutions_since_last_check_ == 0) ||
-                                      !solver->UseFastLocalSearch() ||
-                                      // LNS deltas need to be restored
-                                      !delta->AreAllElementsBound();
-          if (has_checked_assignment_) solutions_since_last_check_++;
-          if (solutions_since_last_check_ >= check_period_) {
-            solutions_since_last_check_ = 0;
+          if (!assignment_->HasObjective()) {
+            assignment_->AddObjective(delta->Objective());
+            last_checked_assignment_.AddObjective(delta->Objective());
           }
-          const bool accept =
-              !check_solution || solver->SolveAndCommit(restore);
-          solver->GetLocalSearchMonitor()->EndAcceptNeighbor(ls_operator_,
-                                                             accept);
-          if (accept) {
-            solver->accepted_neighbors_ += 1;
-            if (check_solution) {
-              solver->SetSearchContext(solver->ParentSearch(),
-                                       ls_operator_->DebugString());
-              assignment_->Store();
-              last_checked_assignment_.CopyIntersection(assignment_);
-              neighbor_found_ = true;
-              has_checked_assignment_ = true;
-              return nullptr;
-            } else {
-              solver->SetSearchContext(solver->ActiveSearch(),
-                                       ls_operator_->DebugString());
-              assignment_->CopyIntersection(assignment_copy);
-              int64 objective_value = 0;
-              for (const LocalSearchFilter* filter : filters_) {
-                objective_value = CapAdd(objective_value,
-                                         filter->GetAcceptedObjectiveValue());
-              }
-              assignment_->SetObjectiveValue(objective_value);
-              // Advancing local search to the current solution without
-              // checking.
-              // TODO(user): support the case were limit_ accepts more than
-              // one solution (e.g. best accept).
-              AcceptUncheckedNeighbor(solver->ParentSearch());
-              solver->IncrementUncheckedSolutionCounter();
-              pool_->RegisterNewSolution(assignment_);
-              SynchronizeAll(solver);
-              // NOTE: SynchronizeAll() sets neighbor_found_ to false, force it
-              // back to true when skipping checks.
-              neighbor_found_ = true;
+        }
+        assignment_copy->CopyIntersection(reference_assignment_.get());
+        assignment_copy->CopyIntersection(delta);
+        solver->GetLocalSearchMonitor()->BeginAcceptNeighbor(ls_operator_);
+        const bool check_solution = (solutions_since_last_check_ == 0) ||
+                                    !solver->UseFastLocalSearch() ||
+                                    // LNS deltas need to be restored
+                                    !delta->AreAllElementsBound();
+        if (has_checked_assignment_) solutions_since_last_check_++;
+        if (solutions_since_last_check_ >= check_period_) {
+          solutions_since_last_check_ = 0;
+        }
+        const bool accept = !check_solution || solver->SolveAndCommit(restore);
+        solver->GetLocalSearchMonitor()->EndAcceptNeighbor(ls_operator_,
+                                                           accept);
+        if (accept) {
+          solver->accepted_neighbors_ += 1;
+          if (check_solution) {
+            solver->SetSearchContext(solver->ParentSearch(),
+                                     ls_operator_->DebugString());
+            assignment_->Store();
+            last_checked_assignment_.CopyIntersection(assignment_);
+            neighbor_found_ = true;
+            has_checked_assignment_ = true;
+            return nullptr;
+          } else {
+            solver->SetSearchContext(solver->ActiveSearch(),
+                                     ls_operator_->DebugString());
+            assignment_->CopyIntersection(assignment_copy);
+            int64 objective_value = 0;
+            for (const LocalSearchFilter* filter : filters_) {
+              objective_value =
+                  CapAdd(objective_value, filter->GetAcceptedObjectiveValue());
             }
-          } else if (check_period_ > 1 && has_checked_assignment_) {
+            assignment_->SetObjectiveValue(objective_value);
+            // Advancing local search to the current solution without
+            // checking.
+            // TODO(user): support the case were limit_ accepts more than
+            // one solution (e.g. best accept).
+            AcceptUncheckedNeighbor(solver->ParentSearch());
+            solver->IncrementUncheckedSolutionCounter();
+            pool_->RegisterNewSolution(assignment_);
+            SynchronizeAll(solver);
+            // NOTE: SynchronizeAll() sets neighbor_found_ to false, force it
+            // back to true when skipping checks.
+            neighbor_found_ = true;
+          }
+        } else {
+          RevertFilters();
+          if (check_period_ > 1 && has_checked_assignment_) {
             // Filtering is not perfect, disabling fast local search and
             // resynchronizing with the last checked solution.
             // TODO(user): Restore state of local search operators to
@@ -3149,6 +3192,9 @@ bool FindOneNeighbor::FilterAccept(Solver* solver, Assignment* delta,
   LocalSearchMonitor* const monitor = solver->GetLocalSearchMonitor();
   int64 total_objective = 0;
   for (LocalSearchFilter* filter : filters_) {
+    filter->Relax(delta, deltadelta);
+  }
+  for (LocalSearchFilter* filter : filters_) {
     if (!ok && !filter->IsIncremental()) continue;
     monitor->BeginFiltering(filter);
     const bool accept = filter->Accept(delta, deltadelta,
@@ -3180,6 +3226,14 @@ void FindOneNeighbor::SynchronizeAll(Solver* solver, bool synchronize_filters) {
 void FindOneNeighbor::SynchronizeFilters(const Assignment* assignment) {
   for (LocalSearchFilter* filter : filters_) {
     filter->Synchronize(assignment, nullptr);
+  }
+}
+
+// Filters' Revert() must be called in the reverse order in which their
+// Accept() was called.
+void FindOneNeighbor::RevertFilters() {
+  for (LocalSearchFilter* filter : ::gtl::reversed_view(filters_)) {
+    filter->Revert();
   }
 }
 

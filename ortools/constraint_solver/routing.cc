@@ -5556,7 +5556,8 @@ void RoutingDimension::InitializeTransitVariables(int64 slack_max) {
   const std::string transit_name = name_ + " fixed transit";
 
   for (int64 i = 0; i < size; ++i) {
-    fixed_transits_[i] = solver->MakeIntVar(kint64min, kint64max, transit_name);
+    fixed_transits_[i] =
+        solver->MakeIntVar(kint64min, kint64max, absl::StrCat(transit_name, i));
     // Setting dependent_transits_[i].
     if (base_dimension_ != nullptr) {
       if (state_dependent_class_evaluators_.size() == 1) {
@@ -5615,7 +5616,8 @@ void RoutingDimension::InitializeTransitVariables(int64 slack_max) {
     if (slack_max == 0) {
       slacks_[i] = solver->MakeIntConst(0);
     } else {
-      slacks_[i] = solver->MakeIntVar(0, slack_max, slack_name);
+      slacks_[i] =
+          solver->MakeIntVar(0, slack_max, absl::StrCat(slack_name, i));
       transit_expr = solver->MakeSum(slacks_[i], transit_expr);
     }
     transits_[i] = transit_expr->Var();
@@ -5948,6 +5950,17 @@ bool DisjunctivePropagator::DistanceDuration(Tasks* tasks) {
     const int64 max_distance = tasks->distance_duration[i].first;
     const int64 minimum_break_duration = tasks->distance_duration[i].second;
 
+    // Special case: no breaks.
+    if (tasks->num_chain_tasks == num_tasks) {
+      tasks->end_min[route_start] =
+          std::max(tasks->end_min[route_start],
+                   CapSub(tasks->start_min[route_end], max_distance));
+      tasks->start_max[route_end] =
+          std::min(tasks->start_max[route_end],
+                   CapAdd(tasks->end_max[route_start], max_distance));
+      continue;
+    }
+
     // This is a sweeping algorithm that looks whether the union of intervals
     // defined by breaks and route start/end is (-infty, +infty).
     // Those intervals are:
@@ -5979,7 +5992,8 @@ bool DisjunctivePropagator::DistanceDuration(Tasks* tasks) {
     int64 xor_active_tasks = route_start;
     int num_active_tasks = 1;
     int64 previous_time = kint64min;
-    const int64 route_start_time = tasks->end_max[route_start] + max_distance;
+    const int64 route_start_time =
+        CapAdd(tasks->end_max[route_start], max_distance);
     const int64 route_end_time = tasks->start_min[route_end];
     int index_break_by_smin = tasks->num_chain_tasks;
     int index_break_by_emax = tasks->num_chain_tasks;
@@ -6003,13 +6017,15 @@ bool DisjunctivePropagator::DistanceDuration(Tasks* tasks) {
         // xor_active_tasks is the unique task that can cover [previous_time,
         // current_time).
         if (xor_active_tasks != route_end) {
-          tasks->end_min[xor_active_tasks] = std::max(
-              tasks->end_min[xor_active_tasks], current_time - max_distance);
+          tasks->end_min[xor_active_tasks] =
+              std::max(tasks->end_min[xor_active_tasks],
+                       CapSub(current_time, max_distance));
           if (xor_active_tasks != route_start) {
-            tasks->duration_min[xor_active_tasks] =
-                std::max(tasks->duration_min[xor_active_tasks],
-                         std::max(minimum_break_duration,
-                                  current_time - max_distance - previous_time));
+            tasks->duration_min[xor_active_tasks] = std::max(
+                tasks->duration_min[xor_active_tasks],
+                std::max(
+                    minimum_break_duration,
+                    CapSub(CapSub(current_time, max_distance), previous_time)));
           }
         }
       }
