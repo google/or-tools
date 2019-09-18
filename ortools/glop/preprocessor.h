@@ -954,6 +954,8 @@ class ShiftVariableBoundsPreprocessor : public Preprocessor {
   bool Run(LinearProgram* lp) final;
   void RecoverSolution(ProblemSolution* solution) const final;
 
+  const DenseRow& offsets() const { return offsets_; }
+
  private:
   // Contains for each variable by how much its bounds where shifted during
   // presolve. Note that the shift was negative (new bound = initial bound -
