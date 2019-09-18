@@ -134,6 +134,7 @@ cc_library(
         "//ortools/base:bitmap",
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:iterator_adaptors",
         "//ortools/base:map_util",
         "//ortools/base:stl_util",
 #        "//util/gzip:gzipstring",

@@ -891,6 +891,7 @@ cc_library(
     srcs = ["cuts.cc"],
     hdrs = ["cuts.h"],
     deps = [
+        ":implied_bounds",
         ":integer",
         ":linear_constraint",
         ":linear_constraint_manager",
