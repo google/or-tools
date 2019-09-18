@@ -84,6 +84,54 @@
     <Error Text="You must locally 'dotnet pack' at least one Google.OrTools.runtime.{rid} Project." Condition="!Exists('@(RuntimeLinux)') AND !Exists('@(RuntimeOsx)') AND !Exists('@(RuntimeWin)')"/>
   </Target>
 
+  <!-- Copy all .proto file(s) -->
+  <ItemGroup>
+    <Content Include="../../algorithms/*.proto">
+      <PackagePath>content/algorithms</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="../../bop/*.proto">
+      <PackagePath>content/bop</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="../../constraint_solver/*.proto">
+      <PackagePath>content/constraint_solver</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="../../data/*.proto">
+      <PackagePath>content/data</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="../../glop/*.proto">
+      <PackagePath>content/glop</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="../../graph/*.proto">
+      <PackagePath>content/graph</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="../../linear_solver/*.proto">
+      <PackagePath>content/linear_solver</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="../../sat/*.proto">
+      <PackagePath>content/sat</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="../../util/*.proto">
+      <PackagePath>content/util</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Google.Protobuf" Version="3.9.1"/>
