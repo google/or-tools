@@ -139,6 +139,15 @@ void RemoveZeroTerms(LinearConstraint* constraint);
 // Makes all coefficients positive by transforming a variable to its negation.
 void MakeAllCoefficientsPositive(LinearConstraint* constraint);
 
+// Makes all variables "positive" by transforming a variable to its negation.
+void MakeAllVariablesPositive(LinearConstraint* constraint);
+
+// Sorts and merges duplicate IntegerVariable in the given "terms".
+// Fills the given LinearConstraint with the result.
+void CleanTermsAndFillConstraint(
+    std::vector<std::pair<IntegerVariable, IntegerValue>>* terms,
+    LinearConstraint* constraint);
+
 }  // namespace sat
 }  // namespace operations_research
 

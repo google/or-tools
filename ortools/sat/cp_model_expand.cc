@@ -419,6 +419,7 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
   const int index_ref = element.index();
   const int target_ref = element.target();
   const int size = element.vars_size();
+
   if (!context->IntersectDomainWith(index_ref, Domain(0, size - 1))) {
     VLOG(1) << "Empty domain for the index variable in ExpandElement()";
     CHECK(!context->NotifyThatModelIsUnsat());
@@ -426,7 +427,8 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
   }
 
   bool all_constants = true;
-  absl::flat_hash_set<int64> constant_var_values;
+  absl::flat_hash_map<int64, int> constant_var_values_usage;
+  std::vector<int64> constant_var_values;
   std::vector<int64> invalid_indices;
   Domain index_domain = context->DomainOf(index_ref);
   Domain target_domain = context->DomainOf(target_ref);
@@ -442,11 +444,18 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
         all_constants = false;
         break;
       }
-      constant_var_values.insert(var_domain.Min());
+
+      const int64 value = var_domain.Min();
+
+      if (!gtl::ContainsKey(constant_var_values_usage, value)) {
+        constant_var_values.push_back(value);
+      }
+
+      constant_var_values_usage[value]++;
     }
   }
 
-  if (!invalid_indices.empty()) {
+  if (!invalid_indices.empty() && target_ref != index_ref) {
     if (!context->IntersectDomainWith(
             index_ref, Domain::FromValues(invalid_indices).Complement())) {
       VLOG(1) << "No compatible variable domains in ExpandElement()";
@@ -460,13 +469,13 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
 
   // This BoolOrs implements the deduction that if all index literals pointing
   // to the same values in the constant array are false, then this value is no
-  // no longer valid for the target variable.
+  // no longer valid for the target variable. They are created only for values
+  // that have multiples literals supporting them.
   // Order is not important.
   absl::flat_hash_map<int64, BoolArgumentProto*> supports;
   if (all_constants && target_ref != index_ref) {
     if (!context->IntersectDomainWith(
-            target_ref, Domain::FromValues({constant_var_values.begin(),
-                                            constant_var_values.end()}))) {
+            target_ref, Domain::FromValues(constant_var_values))) {
       VLOG(1) << "Empty domain for the target variable in ExpandElement()";
       return;
     }
@@ -478,15 +487,15 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
       return;
     }
 
-    // TODO(user): only create 1 literal if the value has only one support.
-
     for (const ClosedInterval& interval : target_domain) {
       for (int64 v = interval.start; v <= interval.end; ++v) {
-        const int lit = context->GetOrCreateVarValueEncoding(target_ref, v);
-        CHECK(constant_var_values.contains(v));
-        supports[v] =
-            context->working_model->add_constraints()->mutable_bool_or();
-        supports[v]->add_literals(NegatedRef(lit));
+        if (constant_var_values_usage[v] > 1) {
+          const int lit = context->GetOrCreateVarValueEncoding(target_ref, v);
+          CHECK(gtl::ContainsKey(constant_var_values_usage, v));
+          supports[v] =
+              context->working_model->add_constraints()->mutable_bool_or();
+          supports[v]->add_literals(NegatedRef(lit));
+        }
       }
     }
   }
@@ -508,13 +517,26 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
         // and hard to retrieve once lost.
         context->AddImplyInDomain(index_lit, var, Domain(v));
       } else if (target_domain.Size() == 1) {
+        // TODO(user): If we know all variables are different, then this
+        //     becomes an equivalence.
         context->AddImplyInDomain(index_lit, var, target_domain);
       } else if (var_domain.Size() == 1) {
-        context->AddImplyInDomain(index_lit, target_ref, var_domain);
         if (all_constants) {
-          BoolArgumentProto* const support =
-              gtl::FindOrDie(supports, var_domain.Min());
-          support->add_literals(index_lit);
+          const int64 value = var_domain.Min();
+          if (constant_var_values_usage[value] > 1) {
+            // The encoding literal for 'value' of the target_ref has been
+            // created before.
+            const int target_lit =
+                context->GetOrCreateVarValueEncoding(target_ref, value);
+            context->AddImplication(index_lit, target_lit);
+            BoolArgumentProto* const support = gtl::FindOrDie(supports, value);
+            support->add_literals(index_lit);
+          } else {
+            // Try to reuse the literal of the index.
+            context->InsertVarValueEncoding(index_lit, target_ref, value);
+          }
+        } else {
+          context->AddImplyInDomain(index_lit, target_ref, var_domain);
         }
       } else {
         ConstraintProto* const ct = context->working_model->add_constraints();
@@ -530,6 +552,53 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
   }
 
   if (all_constants) {
+    const int64 var_min = target_domain.Min();
+
+    // Scan all values to find the one with the most literals attached.
+    int64 value = kint64max;
+    int usage = -1;
+    for (const auto it : constant_var_values_usage) {
+      if (it.second > usage || (it.second == usage && it.first < value)) {
+        usage = it.second;
+        value = it.first;
+      }
+    }
+
+    if (value != var_min) {
+      VLOG(3) << "expand element: choose " << value << " with usage " << usage
+              << " over " << var_min << " among " << size << " values.";
+    }
+
+    // Add a linear constraint. This helps the linear relaxation.
+    //
+    // We try to minimize the size of the linear constraint (if the gain is
+    // meaningful compared to using the min that has the advantage that all
+    // coefficients are positive).
+    const int64 base = usage > 2 && usage > size / 10 ? value : var_min;
+    LinearConstraintProto* const linear =
+        context->working_model->add_constraints()->mutable_linear();
+    int64 rhs = -base;
+    linear->add_vars(target_ref);
+    linear->add_coeffs(-1);
+    for (const ClosedInterval& interval : index_domain) {
+      for (int64 v = interval.start; v <= interval.end; ++v) {
+        const int var = element.vars(v);
+        const int index_lit =
+            context->GetOrCreateVarValueEncoding(index_ref, v);
+        const int64 delta = context->DomainOf(var).Min() - base;
+        if (index_lit >= 0) {
+          linear->add_vars(index_lit);
+          linear->add_coeffs(delta);
+        } else {
+          linear->add_vars(NegatedRef(index_lit));
+          linear->add_coeffs(-delta);
+          rhs -= delta;
+        }
+      }
+    }
+    linear->add_domain(rhs);
+    linear->add_domain(rhs);
+
     context->UpdateRuleStats("element: expanded value element");
   } else {
     context->UpdateRuleStats("element: expanded");

@@ -348,6 +348,24 @@ void PresolveContext::InitializeNewDomains() {
   var_to_constraints.resize(domains.size());
 }
 
+void PresolveContext::InsertVarValueEncoding(int literal, int ref,
+                                             int64 value) {
+  const int var = PositiveRef(ref);
+  const int64 s_value = RefIsPositive(ref) ? value : -value;
+  std::pair<int, int64> key{var, s_value};
+  if (encoding.contains(key)) {
+    const int previous_literal = encoding[key];
+    if (literal != previous_literal) {
+      AddImplication(literal, previous_literal);
+      AddImplication(previous_literal, literal);
+    }
+  } else {
+    AddImplyInDomain(literal, var, Domain(s_value));
+    AddImplyInDomain(NegatedRef(literal), var, Domain(s_value).Complement());
+    encoding[key] = literal;
+  }
+}
+
 int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64 value) {
   // TODO(user,user): use affine relation here.
   const int var = PositiveRef(ref);

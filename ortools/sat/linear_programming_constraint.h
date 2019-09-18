@@ -25,6 +25,7 @@
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/matrix_scaler.h"
 #include "ortools/sat/cuts.h"
+#include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_expr.h"
 #include "ortools/sat/linear_constraint.h"
@@ -81,6 +82,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   typedef glop::RowIndex ConstraintIndex;
 
   explicit LinearProgrammingConstraint(Model* model);
+  ~LinearProgrammingConstraint() override;
 
   // Add a new linear constraint to this LP.
   void AddLinearConstraint(const LinearConstraint& ct);
@@ -360,6 +362,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   SearchHeuristicsVector* model_heuristics_;
   IntegerEncoder* integer_encoder_;
 
+  // Used while deriving cuts.
+  ImpliedBoundsProcessor implied_bounds_processor_;
+
   // The dispatcher for all LP propagators of the model, allows to find which
   // LinearProgrammingConstraint has a given IntegerVariable.
   LinearProgrammingDispatcher* dispatcher_;
@@ -418,6 +423,10 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Used by the strong branching heuristic.
   int branching_frequency_ = 1;
   int64 count_since_last_branching_ = 0;
+
+  // Sum of all simplex iterations performed by this class. This is useful to
+  // test the incrementality and compare to other solvers.
+  int64 total_num_simplex_iterations_ = 0;
 };
 
 // A class that stores which LP propagator is associated to each variable.

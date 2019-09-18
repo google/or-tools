@@ -407,6 +407,7 @@ std::function<LiteralIndex()> RandomizeOnRestartHeuristic(Model* model) {
   };
 }
 
+// TODO(user): Avoid the quadratic algorithm!!
 std::function<LiteralIndex()> FollowHint(
     const std::vector<BooleanOrIntegerVariable>& vars,
     const std::vector<IntegerValue>& values, Model* model) {

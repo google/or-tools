@@ -1704,68 +1704,6 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
     return RemoveConstraint(ct);
   }
 
-  if (!options_.parameters.expand_element_constraints()) {
-    const AffineRelation::Relation r_target =
-        context_->GetAffineRelation(target_ref);
-    if (r_target.representative != target_ref) {
-      if (all_constants &&
-          context_->DomainOf(target_ref).Size() ==
-              context_->DomainOf(r_target.representative).Size()) {
-        // Eventually, domain sizes will be synchronized.
-        bool changed_values = false;
-        std::vector<int64> valid_index_values;
-        const Domain& index_domain = context_->DomainOf(index_ref);
-        for (const ClosedInterval interval : index_domain) {
-          for (int i = interval.start; i <= interval.end; ++i) {
-            const int64 value = context_->MinOf(ct->element().vars(i));
-            const int64 inverse = (value - r_target.offset) / r_target.coeff;
-            if (inverse * r_target.coeff + r_target.offset == value) {
-              valid_index_values.push_back(i);
-              if (inverse != value) {
-                const int cst_ref = context_->GetOrCreateConstantVar(inverse);
-                ct->mutable_element()->set_vars(i, cst_ref);
-                changed_values = true;
-              }
-            }
-          }
-        }
-        ct->mutable_element()->set_target(r_target.representative);
-        if (changed_values) {
-          context_->UpdateRuleStats(
-              "element: unscaled values from affine target");
-        }
-        if (index_domain.Size() > valid_index_values.size()) {
-          const Domain new_domain = Domain::FromValues(valid_index_values);
-          if (!context_->IntersectDomainWith(index_ref, new_domain)) {
-            return true;
-          }
-          context_->UpdateRuleStats(
-              "CHECK element: reduce index domain from affine target");
-        }
-        return true;
-      } else {
-        context_->UpdateRuleStats(
-            "TODO element: target has affine representative");
-      }
-    }
-
-    if (context_->IsFixed(target_ref)) {
-      const int64 target_value = context_->MinOf(target_ref);
-      for (const ClosedInterval& interval : context_->DomainOf(index_ref)) {
-        for (int64 v = interval.start; v <= interval.end; ++v) {
-          const int var = ct->element().vars(v);
-          const int index_lit =
-              context_->GetOrCreateVarValueEncoding(index_ref, v);
-          const int var_lit =
-              context_->GetOrCreateVarValueEncoding(var, target_value);
-          context_->AddImplication(index_lit, var_lit);
-        }
-      }
-      context_->UpdateRuleStats("element: expand fixed target element");
-      return RemoveConstraint(ct);
-    }
-  }
-
   if (target_ref == index_ref) {
     // Filter impossible index values.
     std::vector<int64> possible_indices;
@@ -1788,56 +1726,6 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
         "element: reduce index domain when target equals index");
 
     return true;
-  }
-
-  if (all_constants && !options_.parameters.expand_element_constraints()) {
-    absl::flat_hash_map<int, std::vector<int>> supports;
-
-    // Help linearization.
-    LinearConstraintProto* const lin =
-        context_->working_model->add_constraints()->mutable_linear();
-    lin->add_vars(target_ref);
-    lin->add_coeffs(-1);
-    int64 rhs = 0;
-
-    for (const ClosedInterval& interval : context_->DomainOf(index_ref)) {
-      for (int64 v = interval.start; v <= interval.end; ++v) {
-        const int64 value = context_->MinOf(ct->element().vars(v));
-        const int index_lit =
-            context_->GetOrCreateVarValueEncoding(index_ref, v);
-
-        CHECK(context_->DomainContains(target_ref, value));
-        const int target_lit =
-            context_->GetOrCreateVarValueEncoding(target_ref, value);
-        context_->AddImplication(index_lit, target_lit);
-        supports[target_lit].push_back(index_lit);
-        if (value != 0) {
-          if (!RefIsPositive(index_lit)) {
-            lin->add_vars(PositiveRef(index_lit));
-            lin->add_coeffs(-value);
-            rhs -= value;
-          } else {
-            lin->add_vars(index_lit);
-            lin->add_coeffs(value);
-          }
-        }
-      }
-    }
-
-    lin->add_domain(rhs);
-    lin->add_domain(rhs);
-
-    for (const auto& it : supports) {
-      BoolArgumentProto* const bool_or =
-          context_->working_model->add_constraints()->mutable_bool_or();
-      bool_or->add_literals(NegatedRef(it.first));
-      for (const int lit : it.second) {
-        bool_or->add_literals(lit);
-      }
-    }
-
-    context_->UpdateRuleStats("element: expand fixed array element");
-    return RemoveConstraint(ct);
   }
 
   if (unique_target && !context_->IsFixed(target_ref)) {
@@ -3290,7 +3178,8 @@ void CpModelPresolver::MergeNoOverlapConstraints() {
     CHECK(graph->AddAtMostOne(clique));
   }
   CHECK(graph->DetectEquivalences());
-  graph->TransformIntoMaxCliques(&cliques, /*max_num_explored_nodes=*/1e10);
+  graph->TransformIntoMaxCliques(
+      &cliques, options_.parameters.merge_no_overlap_work_limit());
 
   // Replace each no-overlap with an extended version, or remove if empty.
   int new_num_no_overlaps = 0;
@@ -3370,7 +3259,8 @@ void CpModelPresolver::TransformIntoMaxCliques() {
   if (!graph->DetectEquivalences()) {
     return (void)context_->NotifyThatModelIsUnsat();
   }
-  graph->TransformIntoMaxCliques(&cliques);
+  graph->TransformIntoMaxCliques(
+      &cliques, options_.parameters.merge_at_most_one_work_limit());
 
   // Add the Boolean variable equivalence detected by DetectEquivalences().
   // Those are needed because TransformIntoMaxCliques() will replace all

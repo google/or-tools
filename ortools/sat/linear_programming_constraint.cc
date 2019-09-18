@@ -33,6 +33,7 @@
 #include "ortools/glop/status.h"
 #include "ortools/graph/strongly_connected_components.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/util/saturated_arithmetic.h"
 
@@ -57,6 +58,8 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(Model* model)
       trail_(model->GetOrCreate<Trail>()),
       model_heuristics_(model->GetOrCreate<SearchHeuristicsVector>()),
       integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
+      implied_bounds_processor_({}, integer_trail_,
+                                model->GetOrCreate<ImpliedBounds>()),
       dispatcher_(model->GetOrCreate<LinearProgrammingDispatcher>()),
       expanded_lp_solution_(
           *model->GetOrCreate<LinearProgrammingConstraintLpSolution>()) {
@@ -68,6 +71,11 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(Model* model)
       sat_parameters_.search_branching() == SatParameters::LP_SEARCH) {
     compute_reduced_cost_averages_ = true;
   }
+}
+
+LinearProgrammingConstraint::~LinearProgrammingConstraint() {
+  VLOG(1) << "Total number of simplex iterations: "
+          << total_num_simplex_iterations_;
 }
 
 void LinearProgrammingConstraint::AddLinearConstraint(
@@ -91,6 +99,7 @@ glop::ColIndex LinearProgrammingConstraint::GetOrCreateMirrorVariable(
   const auto it = mirror_lp_variable_.find(positive_variable);
   if (it == mirror_lp_variable_.end()) {
     const glop::ColIndex col(integer_variables_.size());
+    implied_bounds_processor_.AddLpVariable(positive_variable);
     mirror_lp_variable_[positive_variable] = col;
     integer_variables_.push_back(positive_variable);
     lp_solution_.push_back(std::numeric_limits<double>::infinity());
@@ -214,6 +223,7 @@ LPSolveInfo LinearProgrammingConstraint::SolveLpForBranching() {
   glop::BasisState basis_state = simplex_.GetState();
 
   const auto status = simplex_.Solve(lp_data_, time_limit_);
+  total_num_simplex_iterations_ += simplex_.GetNumberOfIterations();
   simplex_.LoadStateForNextSolve(basis_state);
   if (!status.ok()) {
     VLOG(1) << "The LP solver encountered an error: " << status.error_message();
@@ -494,6 +504,7 @@ bool LinearProgrammingConstraint::SolveLp() {
   }
 
   const auto status = simplex_.Solve(lp_data_, time_limit_);
+  total_num_simplex_iterations_ += simplex_.GetNumberOfIterations();
   if (!status.ok()) {
     VLOG(1) << "The LP solver encountered an error: " << status.error_message();
     simplex_.ClearStateForNextSolve();
@@ -501,7 +512,7 @@ bool LinearProgrammingConstraint::SolveLp() {
   }
   average_degeneracy_.AddData(CalculateDegeneracy());
   if (average_degeneracy_.CurrentAverage() >= 1000.0) {
-    VLOG(1) << "High average degeneracy: "
+    VLOG(2) << "High average degeneracy: "
             << average_degeneracy_.CurrentAverage();
   }
 
@@ -593,6 +604,17 @@ void LinearProgrammingConstraint::AddCutFromConstraints(
             << " " << ToDouble(cut.ub);
     return;
   }
+
+  // Unlike for the knapsack cuts, it might not be always beneficial to
+  // process the implied bounds even though it seems to be better in average.
+  //
+  // TODO(user): Understand & investigate more.
+  implied_bounds_processor_.ProcessUpperBoundedConstraint(expanded_lp_solution_,
+                                                          &cut);
+
+  // TODO(user): Might be cleaner to only do that in the functions that needs
+  // this precondition below.
+  MakeAllVariablesPositive(&cut);
 
   // Fills data for IntegerRoundingCut().
   //

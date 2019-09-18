@@ -103,7 +103,7 @@ void ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
     }
     ++num_enqueued_in_var_to_bounds_;
     var_to_bounds_[var].push_back({integer_encoder_->GetLiteralView(literal),
-            integer_literal.bound, true});
+                                   integer_literal.bound, true});
   } else if (integer_encoder_->GetLiteralView(literal.Negated()) !=
              kNoIntegerVariable) {
     if (var_to_bounds_.size() <= var) {

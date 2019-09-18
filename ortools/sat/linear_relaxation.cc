@@ -32,18 +32,30 @@ bool AppendFullEncodingRelaxation(IntegerVariable var, const Model& model,
   if (encoder == nullptr) return false;
   if (!encoder->VariableIsFullyEncoded(var)) return false;
 
+  const auto& encoding = encoder->FullDomainEncoding(var);
+  // Compute min_value
+  IntegerValue var_min(kint64max);
+  for (const auto value_literal : encoding) {
+    var_min = std::min(var_min, value_literal.value);
+  }
+
   LinearConstraintBuilder at_least_one(&model, IntegerValue(1),
                                        kMaxIntegerValue);
-  LinearConstraintBuilder encoding_ct(&model, IntegerValue(0), IntegerValue(0));
+  LinearConstraintBuilder encoding_ct(&model, var_min, var_min);
   encoding_ct.AddTerm(var, IntegerValue(1));
 
   // Create the constraint if all literal have a view.
   std::vector<Literal> at_most_one;
-  for (const auto value_literal : encoder->FullDomainEncoding(var)) {
+
+  for (const auto value_literal : encoding) {
     const Literal lit = value_literal.literal;
+    const IntegerValue delta = value_literal.value - var_min;
+    CHECK_GE(delta, IntegerValue(0));
     at_most_one.push_back(lit);
     if (!at_least_one.AddLiteralTerm(lit, IntegerValue(1))) return false;
-    if (!encoding_ct.AddLiteralTerm(lit, -value_literal.value)) return false;
+    if (delta != IntegerValue(0)) {
+      if (!encoding_ct.AddLiteralTerm(lit, -delta)) return false;
+    }
   }
 
   relaxation->linear_constraints.push_back(at_least_one.Build());
