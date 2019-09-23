@@ -27,10 +27,10 @@ def LinearProgrammingExample():
                              pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
     # [END solver]
 
-    # Create the two variables and let them take on any value.
+    # Create the two variables and let them take on any non-negative value.
     # [START variables]
-    x = solver.NumVar(-solver.infinity(), solver.infinity(), 'x')
-    y = solver.NumVar(-solver.infinity(), solver.infinity(), 'y')
+    x = solver.NumVar(0, solver.infinity(), 'x')
+    y = solver.NumVar(0, solver.infinity(), 'y')
     # [END variables]
 
     # [START constraints]
