@@ -324,6 +324,9 @@ namespace Google.OrTools.Sat
       }
 
       ct.Proto.Reservoir = res;
+      res.MinLevel = min_level;
+      res.MaxLevel = max_level;
+  
       return ct;
     }
 
@@ -347,6 +350,8 @@ namespace Google.OrTools.Sat
       {
         res.Actives.Add(var.Index);
       }
+      res.MinLevel = min_level;
+      res.MaxLevel = max_level;
 
       ct.Proto.Reservoir = res;
       return ct;
