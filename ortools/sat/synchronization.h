@@ -227,8 +227,10 @@ class SharedResponseManager {
   SharedSolutionRepository* MutableSolutionsRepository() { return &solutions_; }
 
  private:
-  void FillObjectiveValuesInBestResponse() EXCLUSIVE_LOCKS_REQUIRED(mutex_);
-  void SetStatsFromModelInternal(Model* model) EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  void FillObjectiveValuesInBestResponse()
+      EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  void SetStatsFromModelInternal(Model* model)
+      EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   // Updates the primal integral using the old bounds on the objective. If the
   // old bounds are not finite, it uses the 'max_integral' value instead of gap.

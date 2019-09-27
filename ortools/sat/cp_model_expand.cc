@@ -446,12 +446,9 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
       }
 
       const int64 value = var_domain.Min();
-
-      if (!gtl::ContainsKey(constant_var_values_usage, value)) {
+      if (constant_var_values_usage[value]++ == 0) {
         constant_var_values.push_back(value);
       }
-
-      constant_var_values_usage[value]++;
     }
   }
 
@@ -489,12 +486,13 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
 
     for (const ClosedInterval& interval : target_domain) {
       for (int64 v = interval.start; v <= interval.end; ++v) {
-        if (constant_var_values_usage[v] > 1) {
+        const int usage = gtl::FindOrDie(constant_var_values_usage, v);
+        if (usage > 1) {
           const int lit = context->GetOrCreateVarValueEncoding(target_ref, v);
-          CHECK(gtl::ContainsKey(constant_var_values_usage, v));
-          supports[v] =
+          BoolArgumentProto* const support =
               context->working_model->add_constraints()->mutable_bool_or();
-          supports[v]->add_literals(NegatedRef(lit));
+          supports[v] = support;
+          support->add_literals(NegatedRef(lit));
         }
       }
     }
@@ -518,7 +516,7 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
         context->AddImplyInDomain(index_lit, var, Domain(v));
       } else if (target_domain.Size() == 1) {
         // TODO(user): If we know all variables are different, then this
-        //     becomes an equivalence.
+        // becomes an equivalence.
         context->AddImplyInDomain(index_lit, var, target_domain);
       } else if (var_domain.Size() == 1) {
         if (all_constants) {
@@ -529,8 +527,7 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
             const int target_lit =
                 context->GetOrCreateVarValueEncoding(target_ref, value);
             context->AddImplication(index_lit, target_lit);
-            BoolArgumentProto* const support = gtl::FindOrDie(supports, value);
-            support->add_literals(index_lit);
+            gtl::FindOrDie(supports, value)->add_literals(index_lit);
           } else {
             // Try to reuse the literal of the index.
             context->InsertVarValueEncoding(index_lit, target_ref, value);
@@ -555,18 +552,14 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
     const int64 var_min = target_domain.Min();
 
     // Scan all values to find the one with the most literals attached.
-    int64 value = kint64max;
+    int64 most_frequent_value = kint64max;
     int usage = -1;
     for (const auto it : constant_var_values_usage) {
-      if (it.second > usage || (it.second == usage && it.first < value)) {
+      if (it.second > usage ||
+          (it.second == usage && it.first < most_frequent_value)) {
         usage = it.second;
-        value = it.first;
+        most_frequent_value = it.first;
       }
-    }
-
-    if (value != var_min) {
-      VLOG(3) << "expand element: choose " << value << " with usage " << usage
-              << " over " << var_min << " among " << size << " values.";
     }
 
     // Add a linear constraint. This helps the linear relaxation.
@@ -574,7 +567,15 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
     // We try to minimize the size of the linear constraint (if the gain is
     // meaningful compared to using the min that has the advantage that all
     // coefficients are positive).
-    const int64 base = usage > 2 && usage > size / 10 ? value : var_min;
+    // TODO(user): Benchmark if using base is always beneficial.
+    // TODO(user): Try not to create this if max_usage == 1.
+    const int64 base =
+        usage > 2 && usage > size / 10 ? most_frequent_value : var_min;
+    if (base != var_min) {
+      VLOG(3) << "expand element: choose " << base << " with usage " << usage
+              << " over " << var_min << " among " << size << " values.";
+    }
+
     LinearConstraintProto* const linear =
         context->working_model->add_constraints()->mutable_linear();
     int64 rhs = -base;
@@ -582,11 +583,11 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
     linear->add_coeffs(-1);
     for (const ClosedInterval& interval : index_domain) {
       for (int64 v = interval.start; v <= interval.end; ++v) {
-        const int var = element.vars(v);
+        const int ref = element.vars(v);
         const int index_lit =
             context->GetOrCreateVarValueEncoding(index_ref, v);
-        const int64 delta = context->DomainOf(var).Min() - base;
-        if (index_lit >= 0) {
+        const int64 delta = context->DomainOf(ref).Min() - base;
+        if (RefIsPositive(index_lit)) {
           linear->add_vars(index_lit);
           linear->add_coeffs(delta);
         } else {

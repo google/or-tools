@@ -1858,7 +1858,8 @@ class FullProblemSolver : public SubSolver {
   bool solving_first_chunk_ = true;
 
   absl::Mutex mutex_;
-  double deterministic_time_since_last_synchronize_ GUARDED_BY(mutex_) = 0.0;
+  double deterministic_time_since_last_synchronize_ GUARDED_BY(mutex_) =
+      0.0;
   bool previous_task_is_completed_ GUARDED_BY(mutex_) = true;
 };
 

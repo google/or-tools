@@ -33,11 +33,7 @@ bool AppendFullEncodingRelaxation(IntegerVariable var, const Model& model,
   if (!encoder->VariableIsFullyEncoded(var)) return false;
 
   const auto& encoding = encoder->FullDomainEncoding(var);
-  // Compute min_value
-  IntegerValue var_min(kint64max);
-  for (const auto value_literal : encoding) {
-    var_min = std::min(var_min, value_literal.value);
-  }
+  const IntegerValue var_min = model.Get<IntegerTrail>()->LowerBound(var);
 
   LinearConstraintBuilder at_least_one(&model, IntegerValue(1),
                                        kMaxIntegerValue);
@@ -50,7 +46,7 @@ bool AppendFullEncodingRelaxation(IntegerVariable var, const Model& model,
   for (const auto value_literal : encoding) {
     const Literal lit = value_literal.literal;
     const IntegerValue delta = value_literal.value - var_min;
-    CHECK_GE(delta, IntegerValue(0));
+    DCHECK_GE(delta, IntegerValue(0));
     at_most_one.push_back(lit);
     if (!at_least_one.AddLiteralTerm(lit, IntegerValue(1))) return false;
     if (delta != IntegerValue(0)) {

@@ -43,10 +43,20 @@ void IntegerEncoder::FullyEncodeVariable(IntegerVariable var) {
 
   // TODO(user): Maybe we can optimize the literal creation order and their
   // polarity as our default SAT heuristics initially depends on this.
+  //
+  // TODO(user): Currently, in some corner cases,
+  // GetOrCreateLiteralAssociatedToEquality() might trigger some propagation
+  // that update the domain of var, so we need to cache the values to not read
+  // garbage. Note that it is okay to call the function on values no longer
+  // reachable, as this will just do nothing.
+  tmp_values_.clear();
   for (const ClosedInterval interval : (*domains_)[var]) {
     for (IntegerValue v(interval.start); v <= interval.end; ++v) {
-      GetOrCreateLiteralAssociatedToEquality(var, v);
+      tmp_values_.push_back(v);
     }
+  }
+  for (const IntegerValue v : tmp_values_) {
+    GetOrCreateLiteralAssociatedToEquality(var, v);
   }
 
   // Mark var and Negation(var) as fully encoded.

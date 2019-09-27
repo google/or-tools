@@ -1010,6 +1010,8 @@ bool CpModelPresolver::PresolveLinear(ConstraintProto* ct) {
   }
   FillDomainInProto(rhs, ct->mutable_linear());
 
+  const bool was_affine = context_->affine_constraints.contains(ct);
+
   // Propagate the variable bounds.
   if (ct->enforcement_literal().size() <= 1) {
     bool new_bounds = false;
@@ -1017,11 +1019,12 @@ bool CpModelPresolver::PresolveLinear(ConstraintProto* ct) {
     Domain right_domain(0, 0);
     term_domains[num_vars] = rhs.Negation();
     for (int i = num_vars - 1; i >= 0; --i) {
+      const int64 var_coeff = ct->linear().coeffs(i);
       right_domain =
           right_domain.AdditionWith(term_domains[i + 1]).RelaxIfTooComplex();
       new_domain = left_domains[i]
                        .AdditionWith(right_domain)
-                       .InverseMultiplicationBy(-ct->linear().coeffs(i));
+                       .InverseMultiplicationBy(-var_coeff);
 
       if (ct->enforcement_literal().size() == 1) {
         // We cannot push the new domain, but we can add some deduction.
@@ -1042,6 +1045,94 @@ bool CpModelPresolver::PresolveLinear(ConstraintProto* ct) {
       if (domain_modified) {
         new_bounds = true;
       }
+
+      // Can we perform some substitution?
+      //
+      // TODO(user): there is no guarante we will not miss some since we might
+      // not reprocess a constraint once other have been deleted.
+
+      // Skip affine constraint. Note however that we are before the affine
+      // detection for this constraint. If this variable only appear in linear
+      // constraints, the final result should be the same though. It should be
+      // even better since we don't need to track any affine relations because
+      // we remove the variable usage right away.
+      if (was_affine) continue;
+
+      // TODO(user): We actually do not need a strict equality when
+      // keep_all_feasible_solutions is false, but that simplifies things as the
+      // SubstituteVariable() function cannot fail this way.
+      if (rhs.Min() != rhs.Max()) continue;
+
+      // Only consider "implied free" variables. Note that the coefficient of
+      // magnitude 1 is important otherwise we can't easily remove the
+      // constraint since the fact that the sum of the other terms must be a
+      // multiple of coeff will not be enforced anymore.
+      const int var = ct->linear().vars(i);
+      if (context_->DomainOf(var) != new_domain) continue;
+      if (std::abs(var_coeff) != 1) continue;
+
+      // Skip if the variable is in the objective.
+      if (context_->var_to_constraints[var].contains(-1)) continue;
+
+      // Only consider low degree columns.
+      if (context_->var_to_constraints[var].size() < 2) continue;
+      if (context_->var_to_constraints[var].size() >
+          options_.parameters.presolve_substitution_level()) {
+        continue;
+      }
+
+      // Check pre-conditions on all the constraints in which this variable
+      // appear. Basically they must all be linear and not already used for
+      // affine relation.
+      std::vector<int> others;
+      for (const int c : context_->var_to_constraints[var]) {
+        if (context_->working_model->mutable_constraints(c) == ct) continue;
+        others.push_back(c);
+      }
+      bool abort = false;
+      for (const int c : others) {
+        if (context_->working_model->constraints(c).constraint_case() !=
+            ConstraintProto::ConstraintCase::kLinear) {
+          abort = true;
+          break;
+        }
+        if (context_->affine_constraints.contains(
+                &context_->working_model->constraints(c))) {
+          abort = true;
+          break;
+        }
+        for (const int ref :
+             context_->working_model->constraints(c).enforcement_literal()) {
+          if (PositiveRef(ref) == var) {
+            abort = true;
+            break;
+          }
+        }
+        if (abort) break;
+      }
+      if (abort) continue;
+
+      // Do the actual substitution.
+      for (const int c : others) {
+        // TODO(user): In some corner cases, this might create integer overflow
+        // issues. The danger is limited since the range of the linear
+        // expression used in the definition do not exceed the domain of the
+        // variable we substitute.
+        SubstituteVariable(var, var_coeff, *ct,
+                           context_->working_model->mutable_constraints(c));
+
+        // TODO(user): We should re-enqueue these constraints for presolve.
+        context_->UpdateConstraintVariableUsage(c);
+      }
+
+      context_->UpdateRuleStats(
+          absl::StrCat("linear: variable substitution ", others.size()));
+
+      // The variable now only appear in its definition and we can remove it
+      // because it was implied free.
+      CHECK_EQ(context_->var_to_constraints[var].size(), 1);
+      *context_->mapping_model->add_constraints() = *ct;
+      return RemoveConstraint(ct);
     }
     if (new_bounds) {
       context_->UpdateRuleStats("linear: reduced variable domains");
@@ -1052,7 +1143,6 @@ bool CpModelPresolver::PresolveLinear(ConstraintProto* ct) {
   //
   // TODO(user): it might be better to first add only the affine relation with
   // a coefficient of magnitude 1, and later the one with larger coeffs.
-  const bool was_affine = gtl::ContainsKey(context_->affine_constraints, ct);
   if (!was_affine && !HasEnforcementLiteral(*ct)) {
     const LinearConstraintProto& arg = ct->linear();
     const int64 rhs_min = rhs.Min();
@@ -3653,6 +3743,22 @@ void CpModelPresolver::TryToSimplifyDomains() {
   context_->UpdateNewConstraintsVariableUsage();
 }
 
+int ScoreConstraint(PresolveContext* context, int c) {
+  const int num_constraints = context->working_model->constraints_size();
+  const ConstraintProto& ct = context->working_model->constraints(c);
+  if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
+    if (ct.enforcement_literal_size() == 0 && ct.linear().vars_size() == 2 &&
+        ct.linear().domain_size() == 2 &&
+        ct.linear().domain(0) == ct.linear().domain(1)) {
+      return c;
+    } else if (ct.enforcement_literal_size() == 1 &&
+               ct.linear().vars_size() == 1) {
+      return num_constraints + c;
+    }
+  }
+  return num_constraints * 2 + c;
+}
+
 void CpModelPresolver::PresolveToFixPoint() {
   if (context_->ModelIsUnsat()) return;
 
@@ -3666,6 +3772,9 @@ void CpModelPresolver::PresolveToFixPoint() {
   std::vector<bool> in_queue(context_->working_model->constraints_size(), true);
   std::deque<int> queue(context_->working_model->constraints_size());
   std::iota(queue.begin(), queue.end(), 0);
+  std::sort(queue.begin(), queue.end(), [this](int a, int b) {
+    return ScoreConstraint(context_, a) < ScoreConstraint(context_, b);
+  });
   while (!queue.empty() && !context_->ModelIsUnsat()) {
     if (time_limit != nullptr && time_limit->LimitReached()) break;
     while (!queue.empty() && !context_->ModelIsUnsat()) {
@@ -3864,6 +3973,8 @@ void CpModelPresolver::RemoveUnusedEquivalentVariables() {
     arg->add_domain(r.offset);
     arg->add_domain(r.offset);
   }
+
+  VLOG(1) << "num_affine_relations kept = " << num_affine_relations;
 
   // Update the variable usage.
   context_->UpdateNewConstraintsVariableUsage();

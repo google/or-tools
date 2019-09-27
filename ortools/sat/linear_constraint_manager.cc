@@ -192,8 +192,9 @@ void LinearConstraintManager::AddCut(
 
   // Add the constraint. We only mark the constraint as a cut if it is not an
   // update of an already existing one.
+  const int64 prev_size = constraint_infos_.size();
   const ConstraintIndex ct_index = Add(std::move(ct));
-  if (ct_index + 1 == constraint_infos_.size()) {
+  if (prev_size + 1 == constraint_infos_.size()) {
     num_cuts_++;
     type_to_num_cuts_[type_name]++;
     constraint_infos_[ct_index].is_cut = true;

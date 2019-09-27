@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 147
+// NEXT TAG: 148
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -419,6 +419,15 @@ message SatParameters {
   // simplify manual input.
   optional double merge_no_overlap_work_limit = 145 [default = 1e12];
   optional double merge_at_most_one_work_limit = 146 [default = 1e8];
+
+  // How much substitution (also called free variable aggregation in MIP
+  // litterature) should we perform at presolve. This currently only concerns
+  // variable appearing only in linear constraints.
+  //
+  // TODO(user): Implement a proper heuristic, maybe in term of non-zero
+  // created. Right now, we basically substitute all variables than can be
+  // easily substitued and that appear in at most this number of constraints.
+  optional int32 presolve_substitution_level = 147 [default = 0];
 
   // ==========================================================================
   // Max-sat parameters

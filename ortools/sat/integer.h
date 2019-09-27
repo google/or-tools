@@ -473,6 +473,9 @@ class IntegerEncoder {
   // This will be lazily created when needed.
   LiteralIndex literal_index_true_ = kNoLiteralIndex;
 
+  // Temporary memory used by FullyEncodeVariable().
+  std::vector<IntegerValue> tmp_values_;
+
   DISALLOW_COPY_AND_ASSIGN(IntegerEncoder);
 };
 

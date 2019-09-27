@@ -351,70 +351,106 @@ void PresolveContext::InitializeNewDomains() {
 void PresolveContext::InsertVarValueEncoding(int literal, int ref,
                                              int64 value) {
   const int var = PositiveRef(ref);
-  const int64 s_value = RefIsPositive(ref) ? value : -value;
-  std::pair<int, int64> key{var, s_value};
-  if (encoding.contains(key)) {
-    const int previous_literal = encoding[key];
+  const int64 var_value = RefIsPositive(ref) ? value : -value;
+  const std::pair<std::pair<int, int64>, int> key =
+      std::make_pair(std::make_pair(var, var_value), literal);
+  const auto& insert = encoding.insert(key);
+  if (insert.second) {
+    if (DomainOf(var).Size() == 2) {
+      // Encode the other literal.
+      const int64 var_min = MinOf(var);
+      const int64 var_max = MaxOf(var);
+      const int64 other_value = value == var_min ? var_max : var_min;
+      const std::pair<int, int64> other_key{var, other_value};
+      auto other_it = encoding.find(other_key);
+      if (other_it != encoding.end()) {
+        // Other value in the domain was already encoded.
+        const int previous_other_literal = other_it->second;
+        if (previous_other_literal != NegatedRef(literal)) {
+          AddImplication(NegatedRef(literal), previous_other_literal);
+          AddImplication(previous_other_literal, NegatedRef(literal));
+        }
+      } else {
+        encoding[other_key] = NegatedRef(literal);
+        // Add affine relation.
+        if (var_min != 0 || var_max != 1) {
+          ConstraintProto* const ct = working_model->add_constraints();
+          LinearConstraintProto* const lin = ct->mutable_linear();
+          lin->add_vars(var);
+          lin->add_coeffs(1);
+          lin->add_vars(literal);
+          lin->add_coeffs(var_min - var_max);
+          lin->add_domain(var_min);
+          lin->add_domain(var_min);
+          StoreAffineRelation(*ct, var, literal, var_max - var_min, var_min);
+        }
+      }
+    } else {
+      AddImplyInDomain(literal, var, Domain(var_value));
+      AddImplyInDomain(NegatedRef(literal), var,
+                       Domain(var_value).Complement());
+    }
+
+  } else {
+    const int previous_literal = insert.first->second;
     if (literal != previous_literal) {
       AddImplication(literal, previous_literal);
       AddImplication(previous_literal, literal);
     }
-  } else {
-    AddImplyInDomain(literal, var, Domain(s_value));
-    AddImplyInDomain(NegatedRef(literal), var, Domain(s_value).Complement());
-    encoding[key] = literal;
   }
 }
 
 int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64 value) {
   // TODO(user,user): use affine relation here.
   const int var = PositiveRef(ref);
-  const int64 s_value = RefIsPositive(ref) ? value : -value;
-  if (!domains[var].Contains(s_value)) {
+  const int64 var_value = RefIsPositive(ref) ? value : -value;
+
+  // Returns the false literal if the value is not in the domain.
+  if (!domains[var].Contains(var_value)) {
     return GetOrCreateConstantVar(0);
   }
-  std::pair<int, int64> key{var, s_value};
 
+  // Returns the associated literal if already present.
+  const std::pair<int, int64> key{var, var_value};
   auto it = encoding.find(key);
-  if (it != encoding.end()) return it->second;
+  if (it != encoding.end()) {
+    return it->second;
+  }
 
+  // Special case for fixed domains.
   if (domains[var].Size() == 1) {
     const int true_literal = GetOrCreateConstantVar(1);
     encoding[key] = true_literal;
     return true_literal;
   }
 
+  // Special case for domains of size 2.
+  const int64 var_min = MinOf(var);
+  const int64 var_max = MaxOf(var);
   if (domains[var].Size() == 2) {
-    const int64 var_min = MinOf(var);
-    const int64 var_max = MaxOf(var);
-
-    if (var_min == 0 && var_max == 1) {
-      encoding[std::make_pair(var, 0)] = NegatedRef(var);
-      encoding[std::make_pair(var, 1)] = var;
-    } else {
-      const int literal = NewBoolVar();
-      encoding[std::make_pair(var, var_min)] = NegatedRef(literal);
-      encoding[std::make_pair(var, var_max)] = literal;
-
-      ConstraintProto* const ct = working_model->add_constraints();
-      LinearConstraintProto* const lin = ct->mutable_linear();
-      lin->add_vars(var);
-      lin->add_coeffs(1);
-      lin->add_vars(literal);
-      lin->add_coeffs(var_min - var_max);
-      lin->add_domain(var_min);
-      lin->add_domain(var_min);
-      StoreAffineRelation(*ct, var, literal, var_max - var_min, var_min);
+    // Checks if the other value is already encoded.
+    const int64 other_value = var_value == var_min ? var_max : var_min;
+    const std::pair<int, int64> other_key{var, other_value};
+    auto other_it = encoding.find(other_key);
+    if (other_it != encoding.end()) {
+      // Fill in other value.
+      encoding[key] = NegatedRef(other_it->second);
+      return NegatedRef(other_it->second);
     }
 
-    return gtl::FindOrDieNoPrint(encoding, key);
+    if (var_min == 0 && var_max == 1) {
+      encoding[{var, 1}] = var;
+      encoding[{var, 0}] = NegatedRef(var);
+      return value == 1 ? var : NegatedRef(var);
+    } else {
+      const int literal = NewBoolVar();
+      InsertVarValueEncoding(literal, var, var_max);
+      return var_value == var_max ? literal : NegatedRef(literal);
+    }
   }
 
   const int literal = NewBoolVar();
-  AddImplyInDomain(literal, var, Domain(s_value));
-  AddImplyInDomain(NegatedRef(literal), var, Domain(s_value).Complement());
-  encoding[key] = literal;
-
+  InsertVarValueEncoding(literal, var, var_value);
   return literal;
 }
 

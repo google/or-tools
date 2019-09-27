@@ -22,6 +22,7 @@
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -80,6 +81,11 @@ class DomainDeductions {
   gtl::ITIVector<Index, std::vector<int>> enforcement_to_vars_;
   absl::flat_hash_map<std::pair<Index, int>, Domain> deductions_;
 };
+
+// Replaces the variable var in ct using the definition constraint.
+// Currently the coefficient in the definition must be 1 or -1.
+void SubstituteVariable(int var, int64 var_coeff_in_definition,
+                        const ConstraintProto& definition, ConstraintProto* ct);
 
 }  // namespace sat
 }  // namespace operations_research

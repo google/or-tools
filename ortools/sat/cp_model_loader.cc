@@ -1050,6 +1050,14 @@ void LoadEquivalenceNeqAC(const std::vector<Literal> enforcement_literal,
 }  // namespace
 
 void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
+  if (ct.linear().vars().empty()) {
+    const Domain rhs = ReadDomainFromProto(ct.linear());
+    if (rhs.Contains(0)) return;
+    VLOG(1) << "Trivially UNSAT constraint: " << ct.DebugString();
+    m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+    return;
+  }
+
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   auto* encoder = m->GetOrCreate<IntegerEncoder>();

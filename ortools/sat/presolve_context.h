@@ -121,7 +121,7 @@ struct PresolveContext {
   // Clears the "rules" statistics.
   void ClearStats();
 
-  // Insert the given literal to encode ref == value.
+  // Inserts the given literal to encode ref == value.
   // If an encoding already exists, it adds the two implications between
   // the previous encoding and the new encoding.
   void InsertVarValueEncoding(int literal, int ref, int64 value);
