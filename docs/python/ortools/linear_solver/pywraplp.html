@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.6.3" />
+<meta name="generator" content="pdoc 0.7.0" />
 <title>pywraplp API documentation</title>
 <meta name="description" content="" />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
-<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase;cursor:pointer}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 <style type="text/css">
@@ -26,7 +26,9 @@ a:link { color: #46641e; text-decoration: none}
 </header>
 <section id="section-intro">
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python"># This file was automatically generated by SWIG (http://www.swig.org).
 # Version 4.0.1
 #
@@ -1003,7 +1005,9 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def ExportModelAsLpFormat(*args) -&gt; &#34;std::string&#34;:
     return _pywraplp.ExportModelAsLpFormat(*args)</code></pre>
 </details>
@@ -1014,7 +1018,9 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def ExportModelAsMpsFormat(*args) -&gt; &#34;std::string&#34;:
     return _pywraplp.ExportModelAsMpsFormat(*args)</code></pre>
 </details>
@@ -1032,7 +1038,9 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <section class="desc"><p>The class for constraints of a Mathematical Programming (MP) model.</p>
 <p>A constraint is represented as a linear equation or inequality.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">class Constraint(object):
     r&#34;&#34;&#34;
     The class for constraints of a Mathematical Programming (MP) model.
@@ -1144,7 +1152,9 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def DualValue(self) -&gt; &#34;double&#34;:
     return _pywraplp.Constraint_DualValue(self)</code></pre>
 </details>
@@ -1156,7 +1166,9 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
 <section class="desc"><p>Gets the coefficient of a given variable on the constraint (which is 0 if
 the variable does not appear in the constraint).</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def GetCoefficient(self, var: &#34;Variable&#34;) -&gt; &#34;double&#34;:
     r&#34;&#34;&#34;
     Gets the coefficient of a given variable on the constraint (which is 0 if
@@ -1171,7 +1183,9 @@ the variable does not appear in the constraint).</p></section>
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Lb(self) -&gt; &#34;double&#34;:
     return _pywraplp.Constraint_Lb(self)</code></pre>
 </details>
@@ -1182,7 +1196,9 @@ the variable does not appear in the constraint).</p></section>
 <dd>
 <section class="desc"><p>Sets both the lower and upper bounds.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def SetBounds(self, lb: &#34;double&#34;, ub: &#34;double&#34;) -&gt; &#34;void&#34;:
     r&#34;&#34;&#34; Sets both the lower and upper bounds.&#34;&#34;&#34;
     return _pywraplp.Constraint_SetBounds(self, lb, ub)</code></pre>
@@ -1196,7 +1212,9 @@ the variable does not appear in the constraint).</p></section>
 <p>If the variable does not belong to the solver, the function just returns,
 or crashes in non-opt mode.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def SetCoefficient(self, var: &#34;Variable&#34;, coeff: &#34;double&#34;) -&gt; &#34;void&#34;:
     r&#34;&#34;&#34;
     Sets the coefficient of the variable on the constraint.
@@ -1213,7 +1231,9 @@ or crashes in non-opt mode.</p></section>
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def SetLb(self, x: &#34;double&#34;) -&gt; &#34;void&#34;:
     return _pywraplp.Constraint_SetLb(self, x)</code></pre>
 </details>
@@ -1224,7 +1244,9 @@ or crashes in non-opt mode.</p></section>
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def SetUb(self, x: &#34;double&#34;) -&gt; &#34;void&#34;:
     return _pywraplp.Constraint_SetUb(self, x)</code></pre>
 </details>
@@ -1235,7 +1257,9 @@ or crashes in non-opt mode.</p></section>
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Ub(self) -&gt; &#34;double&#34;:
     return _pywraplp.Constraint_Ub(self)</code></pre>
 </details>
@@ -1252,7 +1276,9 @@ status is the same as the status of the slack variable with AT_UPPER_BOUND
 and AT_LOWER_BOUND swapped.</p>
 <p>See also: MPSolver::BasisStatus.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def basis_status(self) -&gt; &#34;operations_research::MPSolver::BasisStatus&#34;:
     r&#34;&#34;&#34;
     Advanced usage: returns the basis status of the constraint.
@@ -1276,7 +1302,9 @@ and AT_LOWER_BOUND swapped.</p>
 <section class="desc"><p>Advanced usage: returns the dual value of the constraint in the current
 solution (only available for continuous problems).</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def dual_value(self) -&gt; &#34;double&#34;:
     r&#34;&#34;&#34;
     Advanced usage: returns the dual value of the constraint in the current
@@ -1291,7 +1319,9 @@ solution (only available for continuous problems).</p></section>
 <dd>
 <section class="desc"><p>Returns the index of the constraint in the MPSolver::constraints_.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def index(self) -&gt; &#34;int&#34;:
     r&#34;&#34;&#34; Returns the index of the constraint in the MPSolver::constraints_.&#34;&#34;&#34;
     return _pywraplp.Constraint_index(self)</code></pre>
@@ -1303,7 +1333,9 @@ solution (only available for continuous problems).</p></section>
 <dd>
 <section class="desc"><p>Returns the lower bound.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def lb(self) -&gt; &#34;double&#34;:
     r&#34;&#34;&#34; Returns the lower bound.&#34;&#34;&#34;
     return _pywraplp.Constraint_lb(self)</code></pre>
@@ -1315,7 +1347,9 @@ solution (only available for continuous problems).</p></section>
 <dd>
 <section class="desc"><p>Returns the name of the constraint.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def name(self) -&gt; &#34;std::string const &amp;&#34;:
     r&#34;&#34;&#34; Returns the name of the constraint.&#34;&#34;&#34;
     return _pywraplp.Constraint_name(self)</code></pre>
@@ -1334,7 +1368,9 @@ case, the constraint is definitively added to the problem. This may be
 useful in some MIP problems, and may have a dramatic impact on performance.</p>
 <p>For more info see: <a href="http://tinyurl.com/lazy-constraints.">http://tinyurl.com/lazy-constraints.</a></p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def set_is_lazy(self, laziness: &#34;bool&#34;) -&gt; &#34;void&#34;:
     r&#34;&#34;&#34;
     Advanced usage: sets the constraint &#34;laziness&#34;.
@@ -1358,7 +1394,9 @@ useful in some MIP problems, and may have a dramatic impact on performance.</p>
 <dd>
 <section class="desc"><p>Returns the upper bound.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def ub(self) -&gt; &#34;double&#34;:
     r&#34;&#34;&#34; Returns the upper bound.&#34;&#34;&#34;
     return _pywraplp.Constraint_ub(self)</code></pre>
@@ -1394,7 +1432,9 @@ instead. We need to figure out how to deal with the subtleties of
 the default values.</p>
 <p>The constructor sets all parameters to their default value.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">class MPSolverParameters(object):
     r&#34;&#34;&#34;
     This class stores parameter settings for LP and MIP solvers. Some parameters
@@ -1558,23 +1598,57 @@ solutions for MIP or the tolerance used during presolve.</p></section>
 </dd>
 <dt id="pywraplp.MPSolverParameters.kDefaultDualTolerance"><code class="name">var <span class="ident">kDefaultDualTolerance</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Convert a string or number to a floating point number, if possible.</p></section>
 </dd>
 <dt id="pywraplp.MPSolverParameters.kDefaultIncrementality"><code class="name">var <span class="ident">kDefaultIncrementality</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>int([x]) -&gt; integer
+int(x, base=10) -&gt; integer</p>
+<p>Convert a number or string to an integer, or return 0 if no arguments
+are given.
+If x is a number, return x.<strong>int</strong>().
+For floating point
+numbers, this truncates towards zero.</p>
+<p>If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.
+The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.
+The base defaults to 10.
+Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.</p>
+<pre><code>&gt;&gt;&gt; int('0b100', base=0)
+4
+</code></pre></section>
 </dd>
 <dt id="pywraplp.MPSolverParameters.kDefaultPresolve"><code class="name">var <span class="ident">kDefaultPresolve</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>int([x]) -&gt; integer
+int(x, base=10) -&gt; integer</p>
+<p>Convert a number or string to an integer, or return 0 if no arguments
+are given.
+If x is a number, return x.<strong>int</strong>().
+For floating point
+numbers, this truncates towards zero.</p>
+<p>If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.
+The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.
+The base defaults to 10.
+Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.</p>
+<pre><code>&gt;&gt;&gt; int('0b100', base=0)
+4
+</code></pre></section>
 </dd>
 <dt id="pywraplp.MPSolverParameters.kDefaultPrimalTolerance"><code class="name">var <span class="ident">kDefaultPrimalTolerance</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Convert a string or number to a floating point number, if possible.</p></section>
 </dd>
 <dt id="pywraplp.MPSolverParameters.kDefaultRelativeMipGap"><code class="name">var <span class="ident">kDefaultRelativeMipGap</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>Convert a string or number to a floating point number, if possible.</p></section>
 </dd>
 </dl>
 <h3>Methods</h3>
@@ -1585,7 +1659,9 @@ solutions for MIP or the tolerance used during presolve.</p></section>
 <dd>
 <section class="desc"><p>Returns the value of a double parameter.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def GetDoubleParam(self, param: &#34;operations_research::MPSolverParameters::DoubleParam&#34;) -&gt; &#34;double&#34;:
     r&#34;&#34;&#34; Returns the value of a double parameter.&#34;&#34;&#34;
     return _pywraplp.MPSolverParameters_GetDoubleParam(self, param)</code></pre>
@@ -1597,7 +1673,9 @@ solutions for MIP or the tolerance used during presolve.</p></section>
 <dd>
 <section class="desc"><p>Returns the value of an integer parameter.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def GetIntegerParam(self, param: &#34;operations_research::MPSolverParameters::IntegerParam&#34;) -&gt; &#34;int&#34;:
     r&#34;&#34;&#34; Returns the value of an integer parameter.&#34;&#34;&#34;
     return _pywraplp.MPSolverParameters_GetIntegerParam(self, param)</code></pre>
@@ -1609,7 +1687,9 @@ solutions for MIP or the tolerance used during presolve.</p></section>
 <dd>
 <section class="desc"><p>Sets a double parameter to a specific value.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def SetDoubleParam(self, param: &#34;operations_research::MPSolverParameters::DoubleParam&#34;, value: &#34;double&#34;) -&gt; &#34;void&#34;:
     r&#34;&#34;&#34; Sets a double parameter to a specific value.&#34;&#34;&#34;
     return _pywraplp.MPSolverParameters_SetDoubleParam(self, param, value)</code></pre>
@@ -1621,7 +1701,9 @@ solutions for MIP or the tolerance used during presolve.</p></section>
 <dd>
 <section class="desc"><p>Sets a integer parameter to a specific value.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def SetIntegerParam(self, param: &#34;operations_research::MPSolverParameters::IntegerParam&#34;, value: &#34;int&#34;) -&gt; &#34;void&#34;:
     r&#34;&#34;&#34; Sets a integer parameter to a specific value.&#34;&#34;&#34;
     return _pywraplp.MPSolverParameters_SetIntegerParam(self, param, value)</code></pre>
@@ -1635,7 +1717,9 @@ solutions for MIP or the tolerance used during presolve.</p></section>
 <dd>
 <section class="desc"><p>Export options.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">class ModelExportOptions(object):
     r&#34;&#34;&#34; Export options.&#34;&#34;&#34;
 
@@ -1654,7 +1738,9 @@ solutions for MIP or the tolerance used during presolve.</p></section>
 <dd>
 <section class="desc"><p>A class to express a linear objective.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">class Objective(object):
     r&#34;&#34;&#34; A class to express a linear objective.&#34;&#34;&#34;
 
@@ -1753,7 +1839,9 @@ solutions for MIP or the tolerance used during presolve.</p></section>
 <p>In case of minimization, it is a lower bound on the objective value of the
 optimal integer solution. Only available for discrete problems.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def BestBound(self) -&gt; &#34;double&#34;:
     r&#34;&#34;&#34;
     Returns the best objective bound.
@@ -1771,7 +1859,9 @@ optimal integer solution. Only available for discrete problems.</p></section>
 <section class="desc"><p>Clears the offset, all variables and coefficients, and the optimization
 direction.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Clear(self) -&gt; &#34;void&#34;:
     r&#34;&#34;&#34;
      Clears the offset, all variables and coefficients, and the optimization
@@ -1787,7 +1877,9 @@ direction.</p></section>
 <section class="desc"><p>Gets the coefficient of a given variable in the objective</p>
 <p>It returns 0 if the variable does not appear in the objective).</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def GetCoefficient(self, var: &#34;Variable&#34;) -&gt; &#34;double&#34;:
     r&#34;&#34;&#34;
      Gets the coefficient of a given variable in the objective
@@ -1803,7 +1895,9 @@ direction.</p></section>
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Offset(self) -&gt; &#34;double&#34;:
     return _pywraplp.Objective_Offset(self)</code></pre>
 </details>
@@ -1816,7 +1910,9 @@ direction.</p></section>
 <p>If the variable does not belong to the solver, the function just returns,
 or crashes in non-opt mode.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def SetCoefficient(self, var: &#34;Variable&#34;, coeff: &#34;double&#34;) -&gt; &#34;void&#34;:
     r&#34;&#34;&#34;
     Sets the coefficient of the variable in the objective.
@@ -1833,7 +1929,9 @@ or crashes in non-opt mode.</p></section>
 <dd>
 <section class="desc"><p>Sets the optimization direction to maximize.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def SetMaximization(self) -&gt; &#34;void&#34;:
     r&#34;&#34;&#34; Sets the optimization direction to maximize.&#34;&#34;&#34;
     return _pywraplp.Objective_SetMaximization(self)</code></pre>
@@ -1845,7 +1943,9 @@ or crashes in non-opt mode.</p></section>
 <dd>
 <section class="desc"><p>Sets the optimization direction to minimize.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def SetMinimization(self) -&gt; &#34;void&#34;:
     r&#34;&#34;&#34; Sets the optimization direction to minimize.&#34;&#34;&#34;
     return _pywraplp.Objective_SetMinimization(self)</code></pre>
@@ -1857,7 +1957,9 @@ or crashes in non-opt mode.</p></section>
 <dd>
 <section class="desc"><p>Sets the constant term in the objective.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def SetOffset(self, value: &#34;double&#34;) -&gt; &#34;void&#34;:
     r&#34;&#34;&#34; Sets the constant term in the objective.&#34;&#34;&#34;
     return _pywraplp.Objective_SetOffset(self, value)</code></pre>
@@ -1869,7 +1971,9 @@ or crashes in non-opt mode.</p></section>
 <dd>
 <section class="desc"><p>Sets the optimization direction (maximize: true or minimize: false).</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def SetOptimizationDirection(self, maximize: &#34;bool&#34;) -&gt; &#34;void&#34;:
     r&#34;&#34;&#34; Sets the optimization direction (maximize: true or minimize: false).&#34;&#34;&#34;
     return _pywraplp.Objective_SetOptimizationDirection(self, maximize)</code></pre>
@@ -1887,7 +1991,9 @@ compute yourself using <code>MPVariable::solution_value();</code> please use the
 &ndash;verify_solution flag to gain confidence about the numerical stability of
 your solution.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Value(self) -&gt; &#34;double&#34;:
     r&#34;&#34;&#34;
     Returns the objective value of the best solution found so far.
@@ -1909,7 +2015,9 @@ your solution.</p></section>
 <dd>
 <section class="desc"><p>Is the optimization direction set to maximize?</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def maximization(self) -&gt; &#34;bool&#34;:
     r&#34;&#34;&#34; Is the optimization direction set to maximize?&#34;&#34;&#34;
     return _pywraplp.Objective_maximization(self)</code></pre>
@@ -1921,7 +2029,9 @@ your solution.</p></section>
 <dd>
 <section class="desc"><p>Is the optimization direction set to minimize?</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def minimization(self) -&gt; &#34;bool&#34;:
     r&#34;&#34;&#34; Is the optimization direction set to minimize?&#34;&#34;&#34;
     return _pywraplp.Objective_minimization(self)</code></pre>
@@ -1933,7 +2043,9 @@ your solution.</p></section>
 <dd>
 <section class="desc"><p>Gets the constant term in the objective.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def offset(self) -&gt; &#34;double&#34;:
     r&#34;&#34;&#34; Gets the constant term in the objective.&#34;&#34;&#34;
     return _pywraplp.Objective_offset(self)</code></pre>
@@ -1950,7 +2062,9 @@ your solution.</p></section>
 though which users build and solve problems.</p>
 <p>Create a solver with the given name and underlying solver backend.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">class Solver(object):
     r&#34;&#34;&#34;
     This mathematical programming (MP) solver class is the main class
@@ -2377,15 +2491,66 @@ though which users build and solve problems.</p>
 </dd>
 <dt id="pywraplp.Solver.AT_LOWER_BOUND"><code class="name">var <span class="ident">AT_LOWER_BOUND</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>int([x]) -&gt; integer
+int(x, base=10) -&gt; integer</p>
+<p>Convert a number or string to an integer, or return 0 if no arguments
+are given.
+If x is a number, return x.<strong>int</strong>().
+For floating point
+numbers, this truncates towards zero.</p>
+<p>If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.
+The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.
+The base defaults to 10.
+Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.</p>
+<pre><code>&gt;&gt;&gt; int('0b100', base=0)
+4
+</code></pre></section>
 </dd>
 <dt id="pywraplp.Solver.AT_UPPER_BOUND"><code class="name">var <span class="ident">AT_UPPER_BOUND</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>int([x]) -&gt; integer
+int(x, base=10) -&gt; integer</p>
+<p>Convert a number or string to an integer, or return 0 if no arguments
+are given.
+If x is a number, return x.<strong>int</strong>().
+For floating point
+numbers, this truncates towards zero.</p>
+<p>If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.
+The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.
+The base defaults to 10.
+Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.</p>
+<pre><code>&gt;&gt;&gt; int('0b100', base=0)
+4
+</code></pre></section>
 </dd>
 <dt id="pywraplp.Solver.BASIC"><code class="name">var <span class="ident">BASIC</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>int([x]) -&gt; integer
+int(x, base=10) -&gt; integer</p>
+<p>Convert a number or string to an integer, or return 0 if no arguments
+are given.
+If x is a number, return x.<strong>int</strong>().
+For floating point
+numbers, this truncates towards zero.</p>
+<p>If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.
+The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.
+The base defaults to 10.
+Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.</p>
+<pre><code>&gt;&gt;&gt; int('0b100', base=0)
+4
+</code></pre></section>
 </dd>
 <dt id="pywraplp.Solver.BOP_INTEGER_PROGRAMMING"><code class="name">var <span class="ident">BOP_INTEGER_PROGRAMMING</span></code></dt>
 <dd>
@@ -2405,11 +2570,45 @@ though which users build and solve problems.</p>
 </dd>
 <dt id="pywraplp.Solver.FIXED_VALUE"><code class="name">var <span class="ident">FIXED_VALUE</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>int([x]) -&gt; integer
+int(x, base=10) -&gt; integer</p>
+<p>Convert a number or string to an integer, or return 0 if no arguments
+are given.
+If x is a number, return x.<strong>int</strong>().
+For floating point
+numbers, this truncates towards zero.</p>
+<p>If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.
+The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.
+The base defaults to 10.
+Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.</p>
+<pre><code>&gt;&gt;&gt; int('0b100', base=0)
+4
+</code></pre></section>
 </dd>
 <dt id="pywraplp.Solver.FREE"><code class="name">var <span class="ident">FREE</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>int([x]) -&gt; integer
+int(x, base=10) -&gt; integer</p>
+<p>Convert a number or string to an integer, or return 0 if no arguments
+are given.
+If x is a number, return x.<strong>int</strong>().
+For floating point
+numbers, this truncates towards zero.</p>
+<p>If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.
+The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.
+The base defaults to 10.
+Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.</p>
+<pre><code>&gt;&gt;&gt; int('0b100', base=0)
+4
+</code></pre></section>
 </dd>
 <dt id="pywraplp.Solver.GLOP_LINEAR_PROGRAMMING"><code class="name">var <span class="ident">GLOP_LINEAR_PROGRAMMING</span></code></dt>
 <dd>
@@ -2440,7 +2639,9 @@ though which users build and solve problems.</p>
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">@staticmethod
 def Infinity() -&gt; &#34;double&#34;:
     return _pywraplp.Solver_Infinity()</code></pre>
@@ -2457,7 +2658,9 @@ If you want to keep the MPSolver alive (for debugging, or for incremental
 solving), you should write another version of this function that creates
 the MPSolver object on the heap and returns it.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">@staticmethod
 def SolveWithProto(model_request: &#34;operations_research::MPModelRequest const &amp;&#34;, response: &#34;operations_research::MPSolutionResponse *&#34;) -&gt; &#34;operations_research::MPSolutionResponse *&#34;:
     r&#34;&#34;&#34;
@@ -2479,7 +2682,9 @@ def SolveWithProto(model_request: &#34;operations_research::MPModelRequest const
 <section class="desc"><p>Whether the given problem type is supported (this will depend on the
 targets that you linked).</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">@staticmethod
 def SupportsProblemType(problem_type: &#34;operations_research::MPSolver::OptimizationProblemType&#34;) -&gt; &#34;bool&#34;:
     r&#34;&#34;&#34;
@@ -2496,7 +2701,9 @@ def SupportsProblemType(problem_type: &#34;operations_research::MPSolver::Optimi
 <section class="desc"><p>Infinity.</p>
 <p>You can use -MPSolver::infinity() for negative infinity.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">@staticmethod
 def infinity() -&gt; &#34;double&#34;:
     r&#34;&#34;&#34;
@@ -2511,12 +2718,14 @@ def infinity() -&gt; &#34;double&#34;:
 <h3>Methods</h3>
 <dl>
 <dt id="pywraplp.Solver.Add"><code class="name flex">
-<span>def <span class="ident">Add</span></span>(<span>self, constraint, name='')</span>
+<span>def <span class="ident">Add</span></span>(<span>self, constraint, name=&#39;&#39;)</span>
 </code></dt>
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Add(self, constraint, name=&#39;&#39;):
   if isinstance(constraint, bool):
     if constraint:
@@ -2533,7 +2742,9 @@ def infinity() -&gt; &#34;double&#34;:
 <dd>
 <section class="desc"><p>Creates a boolean variable.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def BoolVar(self, name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPVariable *&#34;:
     r&#34;&#34;&#34; Creates a boolean variable.&#34;&#34;&#34;
     return _pywraplp.Solver_BoolVar(self, name)</code></pre>
@@ -2547,7 +2758,9 @@ def infinity() -&gt; &#34;double&#34;:
 and constraints. All the other properties of the MPSolver (like the time
 limit) are kept untouched.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Clear(self) -&gt; &#34;void&#34;:
     r&#34;&#34;&#34;
     Clears the objective (including the optimization direction), all variables
@@ -2566,7 +2779,9 @@ sums of their linear terms. The activities are returned in the same order
 as constraints(), which is the order in which constraints were added; but
 you can also use MPConstraint::index() to get a constraint's index.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def ComputeConstraintActivities(self) -&gt; &#34;std::vector&lt; double &gt;&#34;:
     r&#34;&#34;&#34;
     Advanced usage: compute the &#34;activities&#34; of all constraints, which are the
@@ -2600,7 +2815,9 @@ constraints, the resolution is slow because of repeated singularities.</p>
 decomposition, so it is not very accurate when the matrix is ill
 conditioned.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def ComputeExactConditionNumber(self) -&gt; &#34;double&#34;:
     r&#34;&#34;&#34;
      Advanced usage: computes the exact condition number of the current scaled
@@ -2649,7 +2866,9 @@ Creates a named constraint with given bounds.</p>
 <p><em>Overload 4:</em>
 Creates a named constraint with -infinity and +infinity bounds.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Constraint(self, *args) -&gt; &#34;operations_research::MPConstraint *&#34;:
     r&#34;&#34;&#34;
     *Overload 1:*
@@ -2686,7 +2905,9 @@ Creates a named constraint with -infinity and +infinity bounds.</p></section>
 <dd>
 <section class="desc"><p>Enables solver logging.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def EnableOutput(self) -&gt; &#34;void&#34;:
     r&#34;&#34;&#34; Enables solver logging.&#34;&#34;&#34;
     return _pywraplp.Solver_EnableOutput(self)</code></pre>
@@ -2698,7 +2919,9 @@ Creates a named constraint with -infinity and +infinity bounds.</p></section>
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def ExportModelAsLpFormat(self, obfuscated: &#34;bool&#34;) -&gt; &#34;std::string&#34;:
     return _pywraplp.Solver_ExportModelAsLpFormat(self, obfuscated)</code></pre>
 </details>
@@ -2709,7 +2932,9 @@ Creates a named constraint with -infinity and +infinity bounds.</p></section>
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def ExportModelAsMpsFormat(self, fixed_format: &#34;bool&#34;, obfuscated: &#34;bool&#34;) -&gt; &#34;std::string&#34;:
     return _pywraplp.Solver_ExportModelAsMpsFormat(self, fixed_format, obfuscated)</code></pre>
 </details>
@@ -2720,7 +2945,9 @@ Creates a named constraint with -infinity and +infinity bounds.</p></section>
 <dd>
 <section class="desc"><p>Exports model to protocol buffer.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def ExportModelToProto(self, output_model: &#34;operations_research::MPModelProto *&#34;) -&gt; &#34;void&#34;:
     r&#34;&#34;&#34; Exports model to protocol buffer.&#34;&#34;&#34;
     return _pywraplp.Solver_ExportModelToProto(self, output_model)</code></pre>
@@ -2732,7 +2959,9 @@ Creates a named constraint with -infinity and +infinity bounds.</p></section>
 <dd>
 <section class="desc"><p>Encodes the current solution in a solution response protocol buffer.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def FillSolutionResponseProto(self, response: &#34;operations_research::MPSolutionResponse *&#34;) -&gt; &#34;void&#34;:
     r&#34;&#34;&#34; Encodes the current solution in a solution response protocol buffer.&#34;&#34;&#34;
     return _pywraplp.Solver_FillSolutionResponseProto(self, response)</code></pre>
@@ -2744,7 +2973,9 @@ Creates a named constraint with -infinity and +infinity bounds.</p></section>
 <dd>
 <section class="desc"><p>Creates an integer variable.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def IntVar(self, lb: &#34;double&#34;, ub: &#34;double&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPVariable *&#34;:
     r&#34;&#34;&#34; Creates an integer variable.&#34;&#34;&#34;
     return _pywraplp.Solver_IntVar(self, lb, ub, name)</code></pre>
@@ -2761,7 +2992,9 @@ call may still linger for a while depending on the conditions.
 If
 interruption is not supported; returns false and does nothing.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def InterruptSolve(self) -&gt; &#34;bool&#34;:
     r&#34;&#34;&#34;
      Interrupts the Solve() execution to terminate processing if possible.
@@ -2780,7 +3013,9 @@ interruption is not supported; returns false and does nothing.</p></section>
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Iterations(self) -&gt; &#34;int64&#34;:
     return _pywraplp.Solver_Iterations(self)</code></pre>
 </details>
@@ -2791,7 +3026,9 @@ interruption is not supported; returns false and does nothing.</p></section>
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def LoadModelFromProto(self, input_model: &#34;operations_research::MPModelProto const &amp;&#34;) -&gt; &#34;std::string&#34;:
     return _pywraplp.Solver_LoadModelFromProto(self, input_model)</code></pre>
 </details>
@@ -2825,7 +3062,9 @@ current variables
 <p>Note: the objective value isn't checked. You can use VerifySolution() for
 that.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def LoadSolutionFromProto(self, *args) -&gt; &#34;util::Status&#34;:
     r&#34;&#34;&#34;
     Load a solution encoded in a protocol buffer onto this solver for easy
@@ -2870,7 +3109,9 @@ that.</p></section>
 lazily created upon first use. Will crash if constraint names are not
 unique.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def LookupConstraint(self, constraint_name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPConstraint *&#34;:
     r&#34;&#34;&#34;
      Looks up a constraint by name, and returns nullptr if it does not exist.
@@ -2890,7 +3131,9 @@ unique.</p></section>
 first call has a O(n) complexity, as the variable name index is lazily
 created upon first use. Will crash if variable names are not unique.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def LookupVariable(self, var_name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPVariable *&#34;:
     r&#34;&#34;&#34;
     Looks up a variable by name, and returns nullptr if it does not exist. The
@@ -2906,7 +3149,9 @@ created upon first use. Will crash if variable names are not unique.</p></sectio
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Maximize(self, expr):
   objective = self.Objective()
   objective.Clear()
@@ -2926,7 +3171,9 @@ created upon first use. Will crash if variable names are not unique.</p></sectio
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Minimize(self, expr):
   objective = self.Objective()
   objective.Clear()
@@ -2955,7 +3202,9 @@ is solver specific.</p>
 linear_solver_underlying_gurobi_test for an example of how to configure
 Gurobi for this purpose. The other solvers return false unconditionally.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def NextSolution(self) -&gt; &#34;bool&#34;:
     r&#34;&#34;&#34;
     Some solvers (MIP only, not LP) can produce multiple solutions to the
@@ -2980,7 +3229,9 @@ Gurobi for this purpose. The other solvers return false unconditionally.</p></se
 <dd>
 <section class="desc"><p>Returns the number of constraints.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def NumConstraints(self) -&gt; &#34;int&#34;:
     r&#34;&#34;&#34; Returns the number of constraints.&#34;&#34;&#34;
     return _pywraplp.Solver_NumConstraints(self)</code></pre>
@@ -2992,7 +3243,9 @@ Gurobi for this purpose. The other solvers return false unconditionally.</p></se
 <dd>
 <section class="desc"><p>Creates a continuous variable.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def NumVar(self, lb: &#34;double&#34;, ub: &#34;double&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPVariable *&#34;:
     r&#34;&#34;&#34; Creates a continuous variable.&#34;&#34;&#34;
     return _pywraplp.Solver_NumVar(self, lb, ub, name)</code></pre>
@@ -3004,7 +3257,9 @@ Gurobi for this purpose. The other solvers return false unconditionally.</p></se
 <dd>
 <section class="desc"><p>Returns the number of variables.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def NumVariables(self) -&gt; &#34;int&#34;:
     r&#34;&#34;&#34; Returns the number of variables.&#34;&#34;&#34;
     return _pywraplp.Solver_NumVariables(self)</code></pre>
@@ -3016,7 +3271,9 @@ Gurobi for this purpose. The other solvers return false unconditionally.</p></se
 <dd>
 <section class="desc"><p>Returns the mutable objective object.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Objective(self) -&gt; &#34;operations_research::MPObjective *&#34;:
     r&#34;&#34;&#34; Returns the mutable objective object.&#34;&#34;&#34;
     return _pywraplp.Solver_Objective(self)</code></pre>
@@ -3028,7 +3285,9 @@ Gurobi for this purpose. The other solvers return false unconditionally.</p></se
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def RowConstraint(self, *args):
   return self.Constraint(*args)</code></pre>
 </details>
@@ -3039,7 +3298,9 @@ Gurobi for this purpose. The other solvers return false unconditionally.</p></se
 <dd>
 <section class="desc"><p>Set a hint for solution. If a feasible or almost-feasible solution to the problem is already known, it may be helpful to pass it to the solver so that it can be used. A solver that supports this feature will try to use this information to create its initial feasible solution. Note that it may not always be faster to give a hint like this to the solver. There is also no guarantee that the solver will use this hint or try to return a solution "close" to this assignment in case of multiple optimal solutions.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def SetHint(self, variables: &#34;std::vector&lt; operations_research::MPVariable * &gt; const &amp;&#34;, values: &#34;std::vector&lt; double &gt; const &amp;&#34;) -&gt; &#34;void&#34;:
     r&#34;&#34;&#34; Set a hint for solution. If a feasible or almost-feasible solution to the problem is already known, it may be helpful to pass it to the solver so that it can be used. A solver that supports this feature will try to use this information to create its initial feasible solution. Note that it may not always be faster to give a hint like this to the solver. There is also no guarantee that the solver will use this hint or try to return a solution &#34;close&#34; to this assignment in case of multiple optimal solutions.&#34;&#34;&#34;
     return _pywraplp.Solver_SetHint(self, variables, values)</code></pre>
@@ -3051,7 +3312,9 @@ Gurobi for this purpose. The other solvers return false unconditionally.</p></se
 <dd>
 <section class="desc"><p>Sets the number of threads to be used by the solver.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def SetNumThreads(self, num_theads: &#34;int&#34;) -&gt; &#34;bool&#34;:
     r&#34;&#34;&#34; Sets the number of threads to be used by the solver.&#34;&#34;&#34;
     return _pywraplp.Solver_SetNumThreads(self, num_theads)</code></pre>
@@ -3065,7 +3328,9 @@ Gurobi for this purpose. The other solvers return false unconditionally.</p></se
 <p>The format is solver-specific and is the same as the corresponding solver
 configuration file format. Returns true if the operation was successful.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def SetSolverSpecificParametersAsString(self, parameters: &#34;std::string const &amp;&#34;) -&gt; &#34;bool&#34;:
     r&#34;&#34;&#34;
     Advanced usage: pass solver specific parameters in text format.
@@ -3082,7 +3347,9 @@ configuration file format. Returns true if the operation was successful.</p></se
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def SetTimeLimit(self, x: &#34;int64&#34;) -&gt; &#34;void&#34;:
     return _pywraplp.Solver_SetTimeLimit(self, x)</code></pre>
 </details>
@@ -3097,7 +3364,9 @@ Solves the problem using default parameter values.</p>
 <p><em>Overload 2:</em>
 Solves the problem using the specified parameter values.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Solve(self, *args) -&gt; &#34;operations_research::MPSolver::ResultStatus&#34;:
     r&#34;&#34;&#34;
     *Overload 1:*
@@ -3117,7 +3386,9 @@ Solves the problem using the specified parameter values.</p></section>
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Sum(self, expr_array):
   result = SumArray(expr_array)
   return result</code></pre>
@@ -3129,7 +3400,9 @@ Solves the problem using the specified parameter values.</p></section>
 <dd>
 <section class="desc"><p>Suppresses solver logging.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def SuppressOutput(self) -&gt; &#34;void&#34;:
     r&#34;&#34;&#34; Suppresses solver logging.&#34;&#34;&#34;
     return _pywraplp.Solver_SuppressOutput(self)</code></pre>
@@ -3145,7 +3418,9 @@ the variable (i.e. the returned pointer is borrowed). Variable names are
 optional. If you give an empty name, name() will auto-generate one for you
 upon request.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Var(self, lb: &#34;double&#34;, ub: &#34;double&#34;, integer: &#34;bool&#34;, name: &#34;std::string const &amp;&#34;) -&gt; &#34;operations_research::MPVariable *&#34;:
     r&#34;&#34;&#34;
     Creates a variable with the given bounds, integrality requirement and
@@ -3175,7 +3450,9 @@ the tolerance is interpreted as a relative error threshold instead.
 <p>Most users should just set the &ndash;verify_solution flag and not bother using
 this method directly.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def VerifySolution(self, tolerance: &#34;double&#34;, log_errors: &#34;bool&#34;) -&gt; &#34;bool&#34;:
     r&#34;&#34;&#34;
     Advanced usage: Verifies the *correctness* of the solution.
@@ -3204,7 +3481,9 @@ this method directly.</p></section>
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def WallTime(self) -&gt; &#34;int64&#34;:
     return _pywraplp.Solver_WallTime(self)</code></pre>
 </details>
@@ -3216,7 +3495,9 @@ this method directly.</p></section>
 <section class="desc"><p>Returns the array of constraints handled by the MPSolver.</p>
 <p>They are listed in the order in which they were created.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def constraints(self) -&gt; &#34;std::vector&lt; operations_research::MPConstraint * &gt; const &amp;&#34;:
     r&#34;&#34;&#34;
     Returns the array of constraints handled by the MPSolver.
@@ -3232,7 +3513,9 @@ this method directly.</p></section>
 <dd>
 <section class="desc"><p>Returns the number of simplex iterations.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def iterations(self) -&gt; &#34;int64&#34;:
     r&#34;&#34;&#34; Returns the number of simplex iterations.&#34;&#34;&#34;
     return _pywraplp.Solver_iterations(self)</code></pre>
@@ -3245,7 +3528,9 @@ this method directly.</p></section>
 <section class="desc"><p>Returns the number of branch-and-bound nodes evaluated during the solve.</p>
 <p>Only available for discrete problems.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def nodes(self) -&gt; &#34;int64&#34;:
     r&#34;&#34;&#34;
     Returns the number of branch-and-bound nodes evaluated during the solve.
@@ -3261,7 +3546,9 @@ this method directly.</p></section>
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def set_time_limit(self, time_limit_milliseconds: &#34;int64&#34;) -&gt; &#34;void&#34;:
     return _pywraplp.Solver_set_time_limit(self, time_limit_milliseconds)</code></pre>
 </details>
@@ -3273,7 +3560,9 @@ this method directly.</p></section>
 <section class="desc"><p>Returns the array of variables handled by the MPSolver. (They are listed in
 the order in which they were created.)</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def variables(self) -&gt; &#34;std::vector&lt; operations_research::MPVariable * &gt; const &amp;&#34;:
     r&#34;&#34;&#34;
     Returns the array of variables handled by the MPSolver. (They are listed in
@@ -3288,7 +3577,9 @@ the order in which they were created.)</p></section>
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def wall_time(self) -&gt; &#34;int64&#34;:
     return _pywraplp.Solver_wall_time(self)</code></pre>
 </details>
@@ -3302,7 +3593,9 @@ the order in which they were created.)</p></section>
 <dd>
 <section class="desc"><p>The class for variables of a Mathematical Programming (MP) model.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">class Variable(object):
     r&#34;&#34;&#34; The class for variables of a Mathematical Programming (MP) model.&#34;&#34;&#34;
 
@@ -3401,7 +3694,9 @@ the order in which they were created.)</p></section>
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Integer(self) -&gt; &#34;bool&#34;:
     return _pywraplp.Variable_Integer(self)</code></pre>
 </details>
@@ -3412,7 +3707,9 @@ the order in which they were created.)</p></section>
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Lb(self) -&gt; &#34;double&#34;:
     return _pywraplp.Variable_Lb(self)</code></pre>
 </details>
@@ -3423,7 +3720,9 @@ the order in which they were created.)</p></section>
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def ReducedCost(self) -&gt; &#34;double&#34;:
     return _pywraplp.Variable_ReducedCost(self)</code></pre>
 </details>
@@ -3434,7 +3733,9 @@ the order in which they were created.)</p></section>
 <dd>
 <section class="desc"><p>Sets both the lower and upper bounds.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def SetBounds(self, lb: &#34;double&#34;, ub: &#34;double&#34;) -&gt; &#34;void&#34;:
     r&#34;&#34;&#34; Sets both the lower and upper bounds.&#34;&#34;&#34;
     return _pywraplp.Variable_SetBounds(self, lb, ub)</code></pre>
@@ -3446,7 +3747,9 @@ the order in which they were created.)</p></section>
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def SetLb(self, x: &#34;double&#34;) -&gt; &#34;void&#34;:
     return _pywraplp.Variable_SetLb(self, x)</code></pre>
 </details>
@@ -3457,7 +3760,9 @@ the order in which they were created.)</p></section>
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def SetUb(self, x: &#34;double&#34;) -&gt; &#34;void&#34;:
     return _pywraplp.Variable_SetUb(self, x)</code></pre>
 </details>
@@ -3468,7 +3773,9 @@ the order in which they were created.)</p></section>
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def SolutionValue(self) -&gt; &#34;double&#34;:
     return _pywraplp.Variable_SolutionValue(self)</code></pre>
 </details>
@@ -3479,7 +3786,9 @@ the order in which they were created.)</p></section>
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Ub(self) -&gt; &#34;double&#34;:
     return _pywraplp.Variable_Ub(self)</code></pre>
 </details>
@@ -3492,7 +3801,9 @@ the order in which they were created.)</p></section>
 solution (only available for continuous problems).</p>
 <p>See also: MPSolver::BasisStatus.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def basis_status(self) -&gt; &#34;operations_research::MPSolver::BasisStatus&#34;:
     r&#34;&#34;&#34;
     Advanced usage: returns the basis status of the variable in the current
@@ -3509,7 +3820,9 @@ solution (only available for continuous problems).</p>
 <dd>
 <section class="desc"><p>Returns the index of the variable in the MPSolver::variables_.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def index(self) -&gt; &#34;int&#34;:
     r&#34;&#34;&#34; Returns the index of the variable in the MPSolver::variables_.&#34;&#34;&#34;
     return _pywraplp.Variable_index(self)</code></pre>
@@ -3521,7 +3834,9 @@ solution (only available for continuous problems).</p>
 <dd>
 <section class="desc"><p>Returns the integrality requirement of the variable.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def integer(self) -&gt; &#34;bool&#34;:
     r&#34;&#34;&#34; Returns the integrality requirement of the variable.&#34;&#34;&#34;
     return _pywraplp.Variable_integer(self)</code></pre>
@@ -3533,7 +3848,9 @@ solution (only available for continuous problems).</p>
 <dd>
 <section class="desc"><p>Returns the lower bound.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def lb(self) -&gt; &#34;double&#34;:
     r&#34;&#34;&#34; Returns the lower bound.&#34;&#34;&#34;
     return _pywraplp.Variable_lb(self)</code></pre>
@@ -3545,7 +3862,9 @@ solution (only available for continuous problems).</p>
 <dd>
 <section class="desc"><p>Returns the name of the variable.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def name(self) -&gt; &#34;std::string const &amp;&#34;:
     r&#34;&#34;&#34; Returns the name of the variable.&#34;&#34;&#34;
     return _pywraplp.Variable_name(self)</code></pre>
@@ -3558,7 +3877,9 @@ solution (only available for continuous problems).</p>
 <section class="desc"><p>Advanced usage: returns the reduced cost of the variable in the current
 solution (only available for continuous problems).</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def reduced_cost(self) -&gt; &#34;double&#34;:
     r&#34;&#34;&#34;
     Advanced usage: returns the reduced cost of the variable in the current
@@ -3576,7 +3897,9 @@ solution (only available for continuous problems).</p></section>
 underlying solver handles floating-point values only, but this function
 automatically rounds it to the nearest integer; see: man 3 round).</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def solution_value(self) -&gt; &#34;double&#34;:
     r&#34;&#34;&#34;
     Returns the value of the variable in the current solution.
@@ -3594,7 +3917,9 @@ automatically rounds it to the nearest integer; see: man 3 round).</p></section>
 <dd>
 <section class="desc"><p>Returns the upper bound.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def ub(self) -&gt; &#34;double&#34;:
     r&#34;&#34;&#34; Returns the upper bound.&#34;&#34;&#34;
     return _pywraplp.Variable_ub(self)</code></pre>
@@ -3789,7 +4114,7 @@ automatically rounds it to the nearest integer; see: man 3 round).</p></section>
 </main>
 <footer id="footer">
 <p><span style="color:#ddd">&#21328;</span></p>
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.6.3</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.7.0</a>.</p>
 </footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
 <script>hljs.initHighlightingOnLoad()</script>
