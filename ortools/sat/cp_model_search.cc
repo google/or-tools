@@ -154,6 +154,10 @@ const std::function<LiteralIndex()> ConstructSearchStrategyInternal(
           literal = IntegerLiteral::GreaterOrEqual(
               candidate, candidate_ub - (candidate_ub - candidate_lb) / 2);
           break;
+        case DecisionStrategyProto::SELECT_MEDIAN_VALUE:
+          // TODO(user): Implement the correct method.
+          literal = IntegerLiteral::LowerOrEqual(candidate, candidate_lb);
+          break;
         default:
           LOG(FATAL) << "Unknown DomainReductionStrategy "
                      << strategy.domain_strategy;

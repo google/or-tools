@@ -1155,7 +1155,7 @@ Fractional LinearProgram::ScaleBounds() {
                            &max_magnitude);
   UpdateMinAndMaxMagnitude(constraint_lower_bounds(), &min_magnitude,
                            &max_magnitude);
-  UpdateMinAndMaxMagnitude(constraint_lower_bounds(), &min_magnitude,
+  UpdateMinAndMaxMagnitude(constraint_upper_bounds(), &min_magnitude,
                            &max_magnitude);
   const Fractional bound_scaling_factor =
       ComputeDivisorSoThatRangeContainsOne(min_magnitude, max_magnitude);

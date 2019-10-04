@@ -331,6 +331,12 @@ class Domain {
 
 std::ostream& operator<<(std::ostream& out, const Domain& domain);
 
+// Returns the sum of smallest k values in the domain.
+int64 SumOfKMinValueInDomain(const Domain& domain, int k);
+
+// Returns the sum of largest k values in the domain.
+int64 SumOfKMaxValueInDomain(const Domain& domain, int k);
+
 /**
  * This class represents a sorted list of disjoint, closed intervals.  When an
  * interval is inserted, all intervals that overlap it or are adjacent to it are

@@ -196,20 +196,22 @@ void LinearProgrammingConstraint::CreateLpFromConstraintManager() {
   }
   lp_data_.NotifyThatColumnsAreClean();
 
-  // Scale lp_data_.
-  scaler_.Clear();
-  Scale(&lp_data_, &scaler_, glop::GlopParameters::DEFAULT);
-  lp_data_.ScaleObjective();
-
-  // ScaleBounds() looks at both the constraints and variable bounds, so we
-  // initialize the LP variable bounds before scaling them.
+  // We scale the LP using the level zero bounds that we later override
+  // with the current ones.
   //
   // TODO(user): As part of the scaling, we may also want to shift the initial
   // variable bounds so that each variable contain the value zero in their
   // domain. Maybe just once and for all at the beginning.
-  bound_scaling_factor_ = 1.0;
+  const int num_vars = integer_variables_.size();
+  for (int i = 0; i < num_vars; i++) {
+    const IntegerVariable cp_var = integer_variables_[i];
+    const double lb = ToDouble(integer_trail_->LevelZeroLowerBound(cp_var));
+    const double ub = ToDouble(integer_trail_->LevelZeroUpperBound(cp_var));
+    lp_data_.SetVariableBounds(glop::ColIndex(i), lb, ub);
+  }
+
+  scaler_.Scale(&lp_data_);
   UpdateBoundsOfLpVariables();
-  bound_scaling_factor_ = lp_data_.ScaleBounds();
 
   lp_data_.NotifyThatColumnsAreClean();
   lp_data_.AddSlackVariablesWhereNecessary(false);
@@ -280,7 +282,7 @@ bool LinearProgrammingConstraint::BranchOnVar(IntegerVariable positive_var) {
   const glop::ColIndex lp_var = GetOrCreateMirrorVariable(positive_var);
   const double current_lb = ToDouble(integer_trail_->LowerBound(positive_var));
   const double current_ub = ToDouble(integer_trail_->UpperBound(positive_var));
-  const double factor = CpToLpScalingFactor(lp_var);
+  const double factor = scaler_.VariableScalingFactor(lp_var);
   if (current_value < current_lb || current_value > current_ub) {
     return false;
   }
@@ -462,18 +464,9 @@ bool LinearProgrammingConstraint::IncrementalPropagate(
   return true;
 }
 
-glop::Fractional LinearProgrammingConstraint::CpToLpScalingFactor(
-    glop::ColIndex col) const {
-  return scaler_.col_scale(col) / bound_scaling_factor_;
-}
-glop::Fractional LinearProgrammingConstraint::LpToCpScalingFactor(
-    glop::ColIndex col) const {
-  return bound_scaling_factor_ / scaler_.col_scale(col);
-}
-
 glop::Fractional LinearProgrammingConstraint::GetVariableValueAtCpScale(
     glop::ColIndex var) {
-  return simplex_.GetVariableValue(var) * LpToCpScalingFactor(var);
+  return scaler_.UnscaleVariableValue(var, simplex_.GetVariableValue(var));
 }
 
 double LinearProgrammingConstraint::GetSolutionValue(
@@ -493,7 +486,7 @@ void LinearProgrammingConstraint::UpdateBoundsOfLpVariables() {
     const IntegerVariable cp_var = integer_variables_[i];
     const double lb = ToDouble(integer_trail_->LowerBound(cp_var));
     const double ub = ToDouble(integer_trail_->UpperBound(cp_var));
-    const double factor = CpToLpScalingFactor(glop::ColIndex(i));
+    const double factor = scaler_.VariableScalingFactor(glop::ColIndex(i));
     lp_data_.SetVariableBounds(glop::ColIndex(i), lb * factor, ub * factor);
   }
 }
@@ -1019,12 +1012,9 @@ bool LinearProgrammingConstraint::Propagate() {
     lp_objective_ = simplex_.GetObjectiveValue();
     lp_solution_is_integer_ = true;
     const int num_vars = integer_variables_.size();
-    const double objective_scale = lp_data_.objective_scaling_factor();
     for (int i = 0; i < num_vars; i++) {
-      // The reduced cost need to be divided by LpToCpScalingFactor().
-      lp_reduced_cost_[i] = simplex_.GetReducedCost(glop::ColIndex(i)) *
-                            CpToLpScalingFactor(glop::ColIndex(i)) *
-                            objective_scale;
+      lp_reduced_cost_[i] = scaler_.UnscaleReducedCost(
+          glop::ColIndex(i), simplex_.GetReducedCost(glop::ColIndex(i)));
       if (std::abs(lp_solution_[i] - std::round(lp_solution_[i])) >
           kCpEpsilon) {
         lp_solution_is_integer_ = false;
@@ -1278,9 +1268,6 @@ LinearProgrammingConstraint::ScaleLpMultiplier(
     bool take_objective_into_account, bool use_constraint_status,
     const glop::DenseColumn& dense_lp_multipliers, Fractional* scaling,
     int max_pow) const {
-  const Fractional global_scaling =
-      bound_scaling_factor_ / lp_data_.objective_scaling_factor();
-
   double max_sum = 0.0;
   std::vector<std::pair<RowIndex, Fractional>> cp_multipliers;
   for (RowIndex row(0); row < dense_lp_multipliers.size(); ++row) {
@@ -1297,8 +1284,7 @@ LinearProgrammingConstraint::ScaleLpMultiplier(
       }
     }
 
-    const Fractional cp_multi =
-        lp_multi / scaler_.row_scale(row) / global_scaling;
+    const Fractional cp_multi = scaler_.UnscaleDualValue(row, lp_multi);
     cp_multipliers.push_back({row, cp_multi});
     max_sum += ToDouble(infinity_norms_[row]) * std::abs(cp_multi);
   }
@@ -1643,7 +1629,8 @@ void LinearProgrammingConstraint::ReducedCostStrengtheningDeductions(
 
     if (rc == 0.0) continue;
     const double lp_other_bound = value + lp_objective_delta / rc;
-    const double cp_other_bound = lp_other_bound * LpToCpScalingFactor(lp_var);
+    const double cp_other_bound =
+        scaler_.UnscaleVariableValue(lp_var, lp_other_bound);
 
     if (rc > kLpEpsilon) {
       const double ub = ToDouble(integer_trail_->UpperBound(cp_var));

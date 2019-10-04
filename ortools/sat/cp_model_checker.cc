@@ -501,7 +501,10 @@ class ConstraintChecker {
       for (int i = 0; i < num_intervals; ++i) {
         const ConstraintProto& x = model.constraints(arg.x_intervals(i));
         const ConstraintProto& y = model.constraints(arg.y_intervals(i));
-        if (ConstraintIsEnforced(x) && ConstraintIsEnforced(y)) {
+        if (ConstraintIsEnforced(x) && ConstraintIsEnforced(y) &&
+            (!arg.boxes_with_null_area_can_overlap() ||
+             (!IntervalIsEmpty(x.interval()) &&
+              !IntervalIsEmpty(y.interval())))) {
           enforced_intervals_xy.push_back({&x.interval(), &y.interval()});
         }
       }

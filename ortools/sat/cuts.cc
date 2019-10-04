@@ -17,6 +17,7 @@
 #include <cmath>
 #include <functional>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "ortools/algorithms/knapsack_solver_for_cuts.h"
@@ -533,7 +534,7 @@ CutGenerator CreateKnapsackCoverCutGenerator(
       // TODO(user): Consider providing lower bound threshold as
       // sum_variable_profit - 1.0 + kMinCutViolation.
       // TODO(user): Set node limit for knapsack solver.
-      std::unique_ptr<TimeLimit> time_limit_for_solver =
+      auto time_limit_for_solver =
           absl::make_unique<TimeLimit>(time_limit_for_knapsack_solver);
       const double sum_of_distance_to_ub_for_vars_in_cover =
           sum_variable_profit -
@@ -1064,6 +1065,81 @@ void ImpliedBoundsProcessor::ProcessUpperBoundedConstraint(
   cut->lb = kMinIntegerValue;  // Not relevant.
   cut->ub = new_ub;
   CleanTermsAndFillConstraint(&tmp_terms_, cut);
+}
+
+namespace {
+
+void TryToGenerateAllDiffCut(
+    const std::vector<std::pair<double, IntegerVariable>>& sorted_vars_lp,
+    const IntegerTrail& integer_trail,
+    const gtl::ITIVector<IntegerVariable, double>& lp_values,
+    LinearConstraintManager* manager) {
+  Domain current_union;
+  std::vector<IntegerVariable> current_set_vars;
+  double sum = 0.0;
+  for (auto value_var : sorted_vars_lp) {
+    sum += value_var.first;
+    const IntegerVariable var = value_var.second;
+    Domain var_domain = integer_trail.InitialVariableDomain(var);
+    // TODO(user): The union of the domain of the variable being considered
+    // does not give the tightest bounds, try to get better bounds.
+    current_union = current_union.UnionWith(var_domain);
+    current_set_vars.push_back(var);
+    const int64 required_min_sum =
+        SumOfKMinValueInDomain(current_union, current_set_vars.size());
+    const int64 required_max_sum =
+        SumOfKMaxValueInDomain(current_union, current_set_vars.size());
+    if (sum < required_min_sum || sum > required_max_sum) {
+      LinearConstraint cut;
+      for (IntegerVariable var : current_set_vars) {
+        cut.AddTerm(var, IntegerValue(1));
+      }
+      cut.lb = IntegerValue(required_min_sum);
+      cut.ub = IntegerValue(required_max_sum);
+      manager->AddCut(cut, "all_diff", lp_values);
+      // NOTE: We can extend the current set but it is more helpful to generate
+      // the cut on a different set of variables so we reset the counters.
+      sum = 0.0;
+      current_set_vars.clear();
+      current_union = Domain();
+    }
+  }
+}
+
+}  // namespace
+
+CutGenerator CreateAllDifferentCutGenerator(
+    const std::vector<IntegerVariable>& vars, Model* model) {
+  CutGenerator result;
+  result.vars = vars;
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  Trail* trail = model->GetOrCreate<Trail>();
+  result.generate_cuts =
+      [vars, integer_trail, trail](
+          const gtl::ITIVector<IntegerVariable, double>& lp_values,
+          LinearConstraintManager* manager) {
+        // These cuts work at all levels but the generator adds too many cuts on
+        // some instances and degrade the performance so we only use it at level
+        // 0.
+        if (trail->CurrentDecisionLevel() > 0) return;
+        std::vector<std::pair<double, IntegerVariable>> sorted_vars;
+        for (const IntegerVariable var : vars) {
+          if (integer_trail->LevelZeroLowerBound(var) ==
+              integer_trail->LevelZeroUpperBound(var)) {
+            continue;
+          }
+          sorted_vars.push_back(std::make_pair(lp_values[var], var));
+        }
+        std::sort(sorted_vars.begin(), sorted_vars.end());
+        TryToGenerateAllDiffCut(sorted_vars, *integer_trail, lp_values,
+                                manager);
+        // Other direction.
+        std::reverse(sorted_vars.begin(), sorted_vars.end());
+        TryToGenerateAllDiffCut(sorted_vars, *integer_trail, lp_values,
+                                manager);
+      };
+  VLOG(1) << "Created all_diff cut generator of size: " << vars.size();
+  return result;
 }
 
 }  // namespace sat

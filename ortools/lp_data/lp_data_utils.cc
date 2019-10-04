@@ -73,5 +73,75 @@ void Scale(LinearProgram* lp, SparseMatrixScaler* scaler,
   lp->transpose_matrix_is_consistent_ = false;
 }
 
+void LpScalingHelper::Scale(LinearProgram* lp) {
+  scaler_.Clear();
+  ::operations_research::glop::Scale(
+      lp, &scaler_, operations_research::glop::GlopParameters::DEFAULT);
+  bound_scaling_factor_ = 1.0 / lp->ScaleBounds();
+  objective_scaling_factor_ = 1.0 / lp->ScaleObjective();
+}
+
+void LpScalingHelper::Clear() {
+  scaler_.Clear();
+  bound_scaling_factor_ = 1.0;
+  objective_scaling_factor_ = 1.0;
+}
+
+Fractional LpScalingHelper::VariableScalingFactor(ColIndex col) const {
+  // During scaling a col was multiplied by ColScalingFactor() and the variable
+  // bounds divided by it.
+  return scaler_.ColUnscalingFactor(col) * bound_scaling_factor_;
+}
+
+Fractional LpScalingHelper::UnscaleVariableValue(ColIndex col,
+                                                 Fractional value) const {
+  // Just the opposite of ScaleVariableValue().
+  return value / (scaler_.ColUnscalingFactor(col) * bound_scaling_factor_);
+}
+
+Fractional LpScalingHelper::UnscaleReducedCost(ColIndex col,
+                                               Fractional value) const {
+  // The reduced cost move like the objective and the col scale.
+  return value * scaler_.ColUnscalingFactor(col) / objective_scaling_factor_;
+}
+
+Fractional LpScalingHelper::UnscaleDualValue(RowIndex row,
+                                             Fractional value) const {
+  // The dual value move like the objective and the inverse of the row scale.
+  return value / (scaler_.RowUnscalingFactor(row) * objective_scaling_factor_);
+}
+
+Fractional LpScalingHelper::UnscaleConstraintActivity(RowIndex row,
+                                                      Fractional value) const {
+  // The activity move with the row_scale and the bound_scaling_factor.
+  return value * scaler_.RowUnscalingFactor(row) / bound_scaling_factor_;
+}
+
+void LpScalingHelper::UnscaleUnitRowLeftSolve(
+    ColIndex basis_col, ScatteredRow* left_inverse) const {
+  const Fractional global_factor = scaler_.ColUnscalingFactor(basis_col);
+
+  // We have left_inverse * [RowScale * B * ColScale] = unit_row.
+  const ColIndex num_rows = left_inverse->values.size();
+  for (ColIndex col(0); col < num_rows; ++col) {
+    left_inverse->values[col] /=
+        scaler_.RowUnscalingFactor(ColToRowIndex(col)) * global_factor;
+  }
+}
+
+void LpScalingHelper::UnscaleColumnRightSolve(
+    const RowToColMapping& basis, ColIndex col,
+    ScatteredColumn* right_inverse) const {
+  const Fractional global_factor = scaler_.ColScalingFactor(col);
+
+  // [RowScale * B * BColScale] * inverse = RowScale * column * ColScale.
+  // That is B * (BColScale * inverse) = columm * ColScale[col].
+  const RowIndex num_rows = right_inverse->values.size();
+  for (RowIndex row(0); row < num_rows; ++row) {
+    right_inverse->values[row] /=
+        scaler_.ColUnscalingFactor(basis[row]) * global_factor;
+  }
+}
+
 }  // namespace glop
 }  // namespace operations_research

@@ -304,6 +304,15 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
 CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
                                       Model* model);
 
+// A cut generator for all_diff(xi). Let the united domain of all xi be D. Sum
+// of any k-sized subset of xi need to be greater or equal to the sum of
+// smallest k values in D and lesser or equal to the sum of largest k values in
+// D. The cut generator first sorts the variables based on LP values and adds
+// cuts of the form described above if they are violated by lp solution. Note
+// that all the fixed variables are ignored while generating cuts.
+CutGenerator CreateAllDifferentCutGenerator(
+    const std::vector<IntegerVariable>& vars, Model* model);
+
 }  // namespace sat
 }  // namespace operations_research
 

@@ -22,8 +22,8 @@
 #include "ortools/base/int_type.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/lp_data/lp_data.h"
+#include "ortools/lp_data/lp_data_utils.h"
 #include "ortools/lp_data/lp_types.h"
-#include "ortools/lp_data/matrix_scaler.h"
 #include "ortools/sat/cuts.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
@@ -199,10 +199,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // This can currently only be called at the root node.
   void AddMirCuts();
 
-  // The factor to multiply a CP variable value to get the value in the LP side.
-  glop::Fractional CpToLpScalingFactor(glop::ColIndex col) const;
-  glop::Fractional LpToCpScalingFactor(glop::ColIndex col) const;
-
   // Updates the bounds of the LP variables from the CP bounds.
   void UpdateBoundsOfLpVariables();
 
@@ -338,8 +334,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   int64 next_simplex_iter_ = 500;
 
   // For the scaling.
-  glop::SparseMatrixScaler scaler_;
-  double bound_scaling_factor_;
+  glop::LpScalingHelper scaler_;
 
   // Structures used for mirroring IntegerVariables inside the underlying LP
   // solver: an integer variable var is mirrored by mirror_lp_variable_[var].

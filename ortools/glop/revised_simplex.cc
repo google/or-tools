@@ -194,22 +194,27 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
     variables_info_.MakeBoxedVariableRelevant(false);
     GLOP_RETURN_IF_ERROR(DualMinimize(time_limit));
     DisplayIterationInfo();
-    variables_info_.MakeBoxedVariableRelevant(true);
-    reduced_costs_.MakeReducedCostsPrecise();
 
-    // This is needed to display errors properly.
-    MakeBoxedVariableDualFeasible(variables_info_.GetNonBasicBoxedVariables(),
-                                  /*update_basic_values=*/false);
-    variable_values_.RecomputeBasicVariableValues();
-    variable_values_.ResetPrimalInfeasibilityInformation();
+    if (problem_status_ != ProblemStatus::DUAL_INFEASIBLE) {
+      variables_info_.MakeBoxedVariableRelevant(true);
+      reduced_costs_.MakeReducedCostsPrecise();
+
+      // This is needed to display errors properly.
+      MakeBoxedVariableDualFeasible(variables_info_.GetNonBasicBoxedVariables(),
+                                    /*update_basic_values=*/false);
+      variable_values_.RecomputeBasicVariableValues();
+      variable_values_.ResetPrimalInfeasibilityInformation();
+    }
   } else {
     reduced_costs_.MaintainDualInfeasiblePositions(true);
     GLOP_RETURN_IF_ERROR(Minimize(time_limit));
     DisplayIterationInfo();
 
     // After the primal phase I, we need to restore the objective.
-    InitializeObjectiveAndTestIfUnchanged(lp);
-    reduced_costs_.ResetForNewObjective();
+    if (problem_status_ != ProblemStatus::PRIMAL_INFEASIBLE) {
+      InitializeObjectiveAndTestIfUnchanged(lp);
+      reduced_costs_.ResetForNewObjective();
+    }
   }
 
   // Reduced costs must be explicitly recomputed because DisplayErrors() is
@@ -339,6 +344,31 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
           VLOG(1) << "Re-optimizing with primal simplex ... ";
           problem_status_ = ProblemStatus::PRIMAL_FEASIBLE;
         }
+      }
+    }
+  }
+
+  // Check that the return status is "precise".
+  //
+  // TODO(user): we curretnly skip the DUAL_INFEASIBLE status because the
+  // quantities are not up to date in this case.
+  if (parameters_.change_status_to_imprecise() &&
+      problem_status_ != ProblemStatus::DUAL_INFEASIBLE) {
+    const Fractional tolerance = parameters_.solution_feasibility_tolerance();
+    if (variable_values_.ComputeMaximumPrimalResidual() > tolerance ||
+        reduced_costs_.ComputeMaximumDualResidual() > tolerance) {
+      problem_status_ = ProblemStatus::IMPRECISE;
+    } else if (problem_status_ == ProblemStatus::DUAL_FEASIBLE ||
+               problem_status_ == ProblemStatus::DUAL_UNBOUNDED ||
+               problem_status_ == ProblemStatus::PRIMAL_INFEASIBLE) {
+      if (reduced_costs_.ComputeMaximumDualInfeasibility() > tolerance) {
+        problem_status_ = ProblemStatus::IMPRECISE;
+      }
+    } else if (problem_status_ == ProblemStatus::PRIMAL_FEASIBLE ||
+               problem_status_ == ProblemStatus::PRIMAL_UNBOUNDED ||
+               problem_status_ == ProblemStatus::DUAL_INFEASIBLE) {
+      if (variable_values_.ComputeMaximumPrimalInfeasibility() > tolerance) {
+        problem_status_ = ProblemStatus::IMPRECISE;
       }
     }
   }

@@ -31,57 +31,6 @@
 namespace operations_research {
 namespace sat {
 
-// Wrapper around TimeLimit to make it thread safe and add Stop() support.
-class SharedTimeLimit {
- public:
-  explicit SharedTimeLimit(TimeLimit* time_limit)
-      : time_limit_(time_limit), stopped_boolean_(false) {
-    // We use the one already registered if present or ours otherwise.
-    stopped_ = time_limit->ExternalBooleanAsLimit();
-    if (stopped_ == nullptr) {
-      stopped_ = &stopped_boolean_;
-      time_limit->RegisterExternalBooleanAsLimit(stopped_);
-    }
-  }
-
-  ~SharedTimeLimit() {
-    if (stopped_ == &stopped_boolean_) {
-      time_limit_->RegisterExternalBooleanAsLimit(nullptr);
-    }
-  }
-
-  bool LimitReached() const {
-    absl::MutexLock mutex_lock(&mutex_);
-    return time_limit_->LimitReached();
-  }
-
-  void Stop() {
-    absl::MutexLock mutex_lock(&mutex_);
-    *stopped_ = true;
-  }
-
-  void UpdateLocalLimit(TimeLimit* local_limit) {
-    absl::MutexLock mutex_lock(&mutex_);
-    local_limit->MergeWithGlobalTimeLimit(time_limit_);
-  }
-
-  void AdvanceDeterministicTime(double deterministic_duration) {
-    absl::MutexLock mutex_lock(&mutex_);
-    time_limit_->AdvanceDeterministicTime(deterministic_duration);
-  }
-
-  double GetElapsedDeterministicTime() const {
-    absl::MutexLock mutex_lock(&mutex_);
-    return time_limit_->GetElapsedDeterministicTime();
-  }
-
- private:
-  mutable absl::Mutex mutex_;
-  TimeLimit* time_limit_ GUARDED_BY(mutex_);
-  std::atomic<bool> stopped_boolean_ GUARDED_BY(mutex_);
-  std::atomic<bool>* stopped_ GUARDED_BY(mutex_);
-};
-
 // Thread-safe. Keeps a set of n unique best solution found so far.
 //
 // TODO(user): Maybe add some criteria to only keep solution with an objective

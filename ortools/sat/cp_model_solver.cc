@@ -505,6 +505,17 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
           CreatePositiveMultiplicationCutGenerator(z, x, y, m));
     }
   }
+  if (ct.constraint_case() == ConstraintProto::ConstraintCase::kAllDiff) {
+    if (linearization_level < 2) return;
+    if (HasEnforcementLiteral(ct)) return;
+    const int num_vars = ct.all_diff().vars_size();
+    if (num_vars <= m->GetOrCreate<SatParameters>()->max_all_diff_cut_size()) {
+      std::vector<IntegerVariable> vars =
+          mapping->Integers(ct.all_diff().vars());
+      relaxation->cut_generators.push_back(
+          CreateAllDifferentCutGenerator(vars, m));
+    }
+  }
 }
 
 }  // namespace

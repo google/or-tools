@@ -23,6 +23,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/memory/memory.h"
+#include "absl/synchronization/mutex.h"
 #include "absl/time/clock.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
@@ -334,6 +335,64 @@ class TimeLimit {
 
   friend class NestedTimeLimit;
   friend class ParallelTimeLimit;
+};
+
+// Wrapper around TimeLimit to make it thread safe and add Stop() support.
+class SharedTimeLimit {
+ public:
+  explicit SharedTimeLimit(TimeLimit* time_limit)
+      : time_limit_(time_limit), stopped_boolean_(false) {
+    // We use the one already registered if present or ours otherwise.
+    stopped_ = time_limit->ExternalBooleanAsLimit();
+    if (stopped_ == nullptr) {
+      stopped_ = &stopped_boolean_;
+      time_limit->RegisterExternalBooleanAsLimit(stopped_);
+    }
+  }
+
+  ~SharedTimeLimit() {
+    if (stopped_ == &stopped_boolean_) {
+      time_limit_->RegisterExternalBooleanAsLimit(nullptr);
+    }
+  }
+
+  bool LimitReached() const {
+    // Note, time_limit_->LimitReached() is not const, and changes internal
+    // state of time_limit_, hence we need a writer's lock.
+    absl::MutexLock lock(&mutex_);
+    return time_limit_->LimitReached();
+  }
+
+  void Stop() {
+    absl::MutexLock lock(&mutex_);
+    *stopped_ = true;
+  }
+
+  void UpdateLocalLimit(TimeLimit* local_limit) {
+    absl::MutexLock lock(&mutex_);
+    local_limit->MergeWithGlobalTimeLimit(time_limit_);
+  }
+
+  void AdvanceDeterministicTime(double deterministic_duration) {
+    absl::MutexLock lock(&mutex_);
+    time_limit_->AdvanceDeterministicTime(deterministic_duration);
+  }
+
+  double GetTimeLeft() const {
+    absl::ReaderMutexLock lock(&mutex_);
+    return time_limit_->GetTimeLeft();
+  }
+
+  double GetElapsedDeterministicTime() const {
+    absl::ReaderMutexLock lock(&mutex_);
+    return time_limit_->GetElapsedDeterministicTime();
+  }
+
+ private:
+  mutable absl::Mutex mutex_;
+  TimeLimit* time_limit_ GUARDED_BY(mutex_);
+  std::atomic<bool> stopped_boolean_ GUARDED_BY(mutex_);
+  std::atomic<bool>* stopped_ GUARDED_BY(mutex_);
 };
 
 /**

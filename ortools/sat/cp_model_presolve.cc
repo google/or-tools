@@ -3743,22 +3743,6 @@ void CpModelPresolver::TryToSimplifyDomains() {
   context_->UpdateNewConstraintsVariableUsage();
 }
 
-int ScoreConstraint(PresolveContext* context, int c) {
-  const int num_constraints = context->working_model->constraints_size();
-  const ConstraintProto& ct = context->working_model->constraints(c);
-  if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
-    if (ct.enforcement_literal_size() == 0 && ct.linear().vars_size() == 2 &&
-        ct.linear().domain_size() == 2 &&
-        ct.linear().domain(0) == ct.linear().domain(1)) {
-      return c;
-    } else if (ct.enforcement_literal_size() == 1 &&
-               ct.linear().vars_size() == 1) {
-      return num_constraints + c;
-    }
-  }
-  return num_constraints * 2 + c;
-}
-
 void CpModelPresolver::PresolveToFixPoint() {
   if (context_->ModelIsUnsat()) return;
 
@@ -3772,8 +3756,15 @@ void CpModelPresolver::PresolveToFixPoint() {
   std::vector<bool> in_queue(context_->working_model->constraints_size(), true);
   std::deque<int> queue(context_->working_model->constraints_size());
   std::iota(queue.begin(), queue.end(), 0);
+  // When thinking about how the presolve works, it seems like a good idea to
+  // process the "simple" constraints first in order to be more efficient.
+  // In September 2019, experiment on the flatzinc problems shows no changes in
+  // the results.
+  // We should actually count the number of rules triggered.
   std::sort(queue.begin(), queue.end(), [this](int a, int b) {
-    return ScoreConstraint(context_, a) < ScoreConstraint(context_, b);
+    const int score_a = context_->constraint_to_vars[a].size();
+    const int score_b = context_->constraint_to_vars[b].size();
+    return score_a < score_b || (score_a == score_b && a < b);
   });
   while (!queue.empty() && !context_->ModelIsUnsat()) {
     if (time_limit != nullptr && time_limit->LimitReached()) break;

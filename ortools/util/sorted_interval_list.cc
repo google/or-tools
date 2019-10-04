@@ -16,6 +16,7 @@
 #include <algorithm>
 
 #include "absl/strings/str_format.h"
+#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/util/saturated_arithmetic.h"
 
@@ -491,6 +492,24 @@ bool Domain::operator<(const Domain& other) const {
 }
 
 std::string Domain::ToString() const { return IntervalsAsString(intervals_); }
+
+int64 SumOfKMinValueInDomain(const Domain& domain, int k) {
+  int64 current_sum = 0.0;
+  int current_index = 0;
+  for (const ClosedInterval interval : domain) {
+    if (current_index >= k) break;
+    for (int v(interval.start); v <= interval.end; ++v) {
+      if (current_index >= k) break;
+      current_index++;
+      current_sum += v;
+    }
+  }
+  return current_sum;
+}
+
+int64 SumOfKMaxValueInDomain(const Domain& domain, int k) {
+  return -SumOfKMinValueInDomain(domain.Negation(), k);
+}
 
 SortedDisjointIntervalList::SortedDisjointIntervalList() {}
 
