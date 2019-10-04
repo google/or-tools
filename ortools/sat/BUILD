@@ -250,6 +250,8 @@ cc_library(
     srcs = ["presolve_util.cc"],
     hdrs = ["presolve_util.h"],
     deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
         "//ortools/base",
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
