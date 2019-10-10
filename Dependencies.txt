@@ -1,4 +1,4 @@
-Protobuf=3.8.0
+Protobuf=3.10.0
 gflags=2.2.2
 glog=0.4.0
 Cbc=2.10.3
