@@ -128,7 +128,7 @@ export/python: | export
 #################
 
 # Currently supported distro
-DISTROS = centos-7 debian-9 ubuntu-19.04 ubuntu-18.04 ubuntu-16.04
+DISTROS = centos-7 debian-9 ubuntu-19.10 ubuntu-18.04 ubuntu-16.04
 
 # Create build docker images with OR-Tools built
 targets = $(addprefix docker_, $(DISTROS))
