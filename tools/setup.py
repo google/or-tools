@@ -50,13 +50,13 @@ setup(
         'six >= 1.10',
     ],
     package_data={
-        'ortools.constraint_solver' : ['_pywrapcp.dll'],
-        'ortools.data' : ['_pywraprcpsp.dll'],
-        'ortools.linear_solver' : ['_pywraplp.dll'],
+        'ortools.constraint_solver' : ['_pywrapcp.dll', '*.pyi'],
+        'ortools.data' : ['_pywraprcpsp.dll', '*.pyi'],
+        'ortools.linear_solver' : ['_pywraplp.dll', '*.pyi'],
         'ortools.graph' : ['_pywrapgraph.dll'],
         'ortools.algorithms' : ['_pywrapknapsack_solver.dll'],
-        'ortools.sat' : ['_pywrapsat.dll', '*.md'],
-        'ortools.util' : ['_sorted_interval_list.dll'],
+        'ortools.sat' : ['_pywrapsat.dll', '*.md', '*.pyi'],
+        'ortools.util' : ['_sorted_interval_list.dll', '*.pyi'],
         DELETEWIN 'ortools' : ['.libs/*' DDDD]
     },
     include_package_data=True,
