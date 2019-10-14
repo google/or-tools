@@ -1099,7 +1099,7 @@ class MPVariable {
         solution_value_(0.0),
         reduced_cost_(0.0),
         interface_(interface_in),
-	integer_(integer){}
+        integer_(integer){}
 
   void set_solution_value(double value) { solution_value_ = value; }
   void set_reduced_cost(double reduced_cost) { reduced_cost_ = reduced_cost; }
