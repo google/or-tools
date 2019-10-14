@@ -134,9 +134,9 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywrapcp.RoutingIndexManager(
-        len(data['distance_matrix']), data['num_vehicles'], data['starts'],
-        data['ends'])
+    manager = pywrapcp.RoutingIndexManager(len(data['distance_matrix']),
+                                           data['num_vehicles'], data['starts'],
+                                           data['ends'])
     # [END index_manager]
 
     # Create Routing Model.

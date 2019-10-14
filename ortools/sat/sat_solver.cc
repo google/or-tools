@@ -115,16 +115,6 @@ void SatSolver::SetParameters(const SatParameters& parameters) {
   time_limit_->ResetLimitFromParameters(parameters);
 }
 
-std::string SatSolver::Indent() const {
-  SCOPED_TIME_STAT(&stats_);
-  const int level = CurrentDecisionLevel();
-  std::string result;
-  for (int i = 0; i < level; ++i) {
-    result.append("|   ");
-  }
-  return result;
-}
-
 bool SatSolver::IsMemoryLimitReached() const {
   const int64 memory_usage =
       ::operations_research::sysinfo::MemoryUsageProcess();
@@ -1385,7 +1375,6 @@ int SatSolver::ComputeBacktrackLevel(const std::vector<Literal>& literals) {
     const int level = DecisionLevel(literals[i].Variable());
     backtrack_level = std::max(backtrack_level, level);
   }
-  VLOG(2) << Indent() << "backtrack_level: " << backtrack_level;
   DCHECK_LT(backtrack_level, DecisionLevel(literals[0].Variable()));
   DCHECK_LE(DecisionLevel(literals[0].Variable()), CurrentDecisionLevel());
   return backtrack_level;

@@ -1,5 +1,5 @@
-<map id="Google.OrTools.ConstraintSolver.IntervalVarVector.IntervalVarVectorEnumerator" name="Google.OrTools.ConstraintSolver.IntervalVarVector.IntervalVarVectorEnumerator">
-<area shape="rect" id="node1" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="227,33,437,85"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,179,44"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,68,179,120"/>
+<map id="IntervalVarVector.IntervalVarVectorEnumerator" name="IntervalVarVector.IntervalVarVectorEnumerator">
+<area shape="rect" id="node1" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="48,79,217,117"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,100,31"/>
+<area shape="rect" id="node3" title=" " alt="" coords="123,5,305,31"/>
 </map>

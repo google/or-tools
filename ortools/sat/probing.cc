@@ -17,13 +17,33 @@
 
 #include "ortools/base/timer.h"
 #include "ortools/sat/clause.h"
+#include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 
 namespace operations_research {
 namespace sat {
 
-bool ProbeBooleanVariables(double deterministic_time_limit, Model* model) {
+bool ProbeBooleanVariables(const double deterministic_time_limit,
+                           Model* model) {
+  auto* sat_solver = model->GetOrCreate<SatSolver>();
+  const int num_variables = sat_solver->NumVariables();
+  auto* implication_graph = model->GetOrCreate<BinaryImplicationGraph>();
+  std::vector<BooleanVariable> bool_vars;
+  for (BooleanVariable b(0); b < num_variables; ++b) {
+    const Literal literal(b, true);
+    if (implication_graph->RepresentativeOf(literal) != literal) {
+      continue;
+    }
+    bool_vars.push_back(b);
+  }
+  return ProbeBooleanVariables(deterministic_time_limit, bool_vars, model);
+}
+
+bool ProbeBooleanVariables(const double deterministic_time_limit,
+                           absl::Span<const BooleanVariable> bool_vars,
+                           Model* model) {
   WallTimer wall_timer;
   wall_timer.Start();
 
@@ -47,6 +67,7 @@ bool ProbeBooleanVariables(double deterministic_time_limit, Model* model) {
   int num_new_holes = 0;
   int num_new_integer_bounds = 0;
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* implied_bounds = model->GetOrCreate<ImpliedBounds>();
   std::vector<IntegerLiteral> new_integer_bounds;
 
   // To detect literal x that must be true because b => x and not(b) => x.
@@ -59,7 +80,7 @@ bool ProbeBooleanVariables(double deterministic_time_limit, Model* model) {
   bool limit_reached = false;
   int num_probed = 0;
   const auto& trail = *(model->Get<Trail>());
-  for (BooleanVariable b(0); b < num_variables; ++b) {
+  for (const BooleanVariable b : bool_vars) {
     const Literal literal(b, true);
     if (implication_graph->RepresentativeOf(literal) != literal) {
       continue;
@@ -85,6 +106,7 @@ bool ProbeBooleanVariables(double deterministic_time_limit, Model* model) {
       if (sat_solver->IsModelUnsat()) return false;
       if (sat_solver->CurrentDecisionLevel() == 0) continue;
 
+      implied_bounds->ProcessIntegerTrail(decision);
       integer_trail->AppendNewBounds(&new_integer_bounds);
       for (int i = saved_index + 1; i < trail.Index(); ++i) {
         const Literal l = trail[i];

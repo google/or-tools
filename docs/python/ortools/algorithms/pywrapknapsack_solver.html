@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.6.3" />
+<meta name="generator" content="pdoc 0.7.0" />
 <title>pywrapknapsack_solver API documentation</title>
 <meta name="description" content="" />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
-<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase;cursor:pointer}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 <style type="text/css">
@@ -26,19 +26,21 @@ a:link { color: #46641e; text-decoration: none}
 </header>
 <section id="section-intro">
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python"># This file was automatically generated by SWIG (http://www.swig.org).
-# Version 4.0.0
+# Version 4.0.1
 #
 # Do not make changes to this file unless you know what you are doing--modify
 # the SWIG interface file instead.
 
 from sys import version_info as _swig_python_version_info
 if _swig_python_version_info &lt; (2, 7, 0):
-    raise RuntimeError(&#39;Python 2.7 or later required&#39;)
+    raise RuntimeError(&#34;Python 2.7 or later required&#34;)
 
 # Import the low-level C/C++ module
-if __package__ or &#39;.&#39; in __name__:
+if __package__ or &#34;.&#34; in __name__:
     from . import _pywrapknapsack_solver
 else:
     import _pywrapknapsack_solver
@@ -47,35 +49,6 @@ try:
     import builtins as __builtin__
 except ImportError:
     import __builtin__
-
-def _swig_setattr_nondynamic(self, class_type, name, value, static=1):
-    if name == &#34;thisown&#34;:
-        return self.this.own(value)
-    if name == &#34;this&#34;:
-        if type(value).__name__ == &#39;SwigPyObject&#39;:
-            self.__dict__[name] = value
-            return
-    method = class_type.__swig_setmethods__.get(name, None)
-    if method:
-        return method(self, value)
-    if not static:
-        object.__setattr__(self, name, value)
-    else:
-        raise AttributeError(&#34;You cannot add attributes to %s&#34; % self)
-
-
-def _swig_setattr(self, class_type, name, value):
-    return _swig_setattr_nondynamic(self, class_type, name, value, 0)
-
-
-def _swig_getattr(self, class_type, name):
-    if name == &#34;thisown&#34;:
-        return self.this.own()
-    method = class_type.__swig_getmethods__.get(name, None)
-    if method:
-        return method(self)
-    raise AttributeError(&#34;&#39;%s&#39; object has no attribute &#39;%s&#39;&#34; % (class_type.__name__, name))
-
 
 def _swig_repr(self):
     try:
@@ -160,64 +133,54 @@ class KnapsackSolver(object):
 
       **Python**:
 
-
       .. code-block:: c++
 
+              profits = [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+              weights = [ [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ],
+                          [ 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
+                        ]
+              capacities = [ 34, 4 ]
 
-                profits = [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
-                weights = [ [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ],
-                            [ 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
-                          ]
-                capacities = [ 34, 4 ]
-
-                solver = pywrapknapsack_solver.KnapsackSolver(
-                    pywrapknapsack_solver.KnapsackSolver
-                        .KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
-                    &#39;Multi-dimensional solver&#39;)
-                solver.Init(profits, weights, capacities)
-                profit = solver.Solve()
-
+              solver = pywrapknapsack_solver.KnapsackSolver(
+                  pywrapknapsack_solver.KnapsackSolver
+                      .KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+                  &#39;Multi-dimensional solver&#39;)
+              solver.Init(profits, weights, capacities)
+              profit = solver.Solve()
 
       **C++**:
 
-
       .. code-block:: c++
 
+             const std::vectorint64 profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+             const std::vectorstd::vector&lt;int64 weights =
+                 { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
+                   { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+             const std::vectorint64 capacities = { 34, 4 };
 
-               const std::vectorint64 profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-               const std::vectorstd::vector&lt;int64 weights =
-                   { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-                     { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
-               const std::vectorint64 capacities = { 34, 4 };
-
-               KnapsackSolver solver(
-                   KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
-                   &#34;Multi-dimensional solver&#34;);
-               solver.Init(profits, weights, capacities);
-               const int64 profit = solver.Solve();
-
+             KnapsackSolver solver(
+                 KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+                 &#34;Multi-dimensional solver&#34;);
+             solver.Init(profits, weights, capacities);
+             const int64 profit = solver.Solve();
 
       **Java**:
 
-
       .. code-block:: c++
 
+            final long[] profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            final long[][] weights = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
+                   { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+            final long[] capacities = { 34, 4 };
 
-              final long[] profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-              final long[][] weights = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-                     { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
-              final long[] capacities = { 34, 4 };
-
-              KnapsackSolver solver = new KnapsackSolver(
-                  KnapsackSolver.SolverType.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
-                  &#34;Multi-dimensional solver&#34;);
-              solver.init(profits, weights, capacities);
-              final long profit = solver.solve();
-
-
+            KnapsackSolver solver = new KnapsackSolver(
+                KnapsackSolver.SolverType.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+                &#34;Multi-dimensional solver&#34;);
+            solver.init(profits, weights, capacities);
+            final long profit = solver.solve();
     &#34;&#34;&#34;
 
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
     __repr__ = _swig_repr
     KNAPSACK_BRUTE_FORCE_SOLVER = _pywrapknapsack_solver.KnapsackSolver_KNAPSACK_BRUTE_FORCE_SOLVER
     r&#34;&#34;&#34;
@@ -263,31 +226,22 @@ class KnapsackSolver(object):
         _pywrapknapsack_solver.KnapsackSolver_swiginit(self, _pywrapknapsack_solver.new_KnapsackSolver(*args))
     __swig_destroy__ = _pywrapknapsack_solver.delete_KnapsackSolver
 
-    def Init(self, profits: &#39;std::vector&lt; int64 &gt; const &amp;&#39;, weights: &#39;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#39;, capacities: &#39;std::vector&lt; int64 &gt; const &amp;&#39;) -&gt; &#34;void&#34;:
-        r&#34;&#34;&#34;
-
-        Initializes the solver and enters the problem to be solved.
-        &#34;&#34;&#34;
+    def Init(self, profits: &#34;std::vector&lt; int64 &gt; const &amp;&#34;, weights: &#34;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#34;, capacities: &#34;std::vector&lt; int64 &gt; const &amp;&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34;Initializes the solver and enters the problem to be solved.&#34;&#34;&#34;
         return _pywrapknapsack_solver.KnapsackSolver_Init(self, profits, weights, capacities)
 
     def Solve(self) -&gt; &#34;int64&#34;:
-        r&#34;&#34;&#34;
-
-        Solves the problem and returns the profit of the optimal solution.
-        &#34;&#34;&#34;
+        r&#34;&#34;&#34;Solves the problem and returns the profit of the optimal solution.&#34;&#34;&#34;
         return _pywrapknapsack_solver.KnapsackSolver_Solve(self)
 
-    def BestSolutionContains(self, item_id: &#39;int&#39;) -&gt; &#34;bool&#34;:
-        r&#34;&#34;&#34;
-
-        Returns true if the item &#39;item_id&#39; is packed in the optimal knapsack.
-        &#34;&#34;&#34;
+    def BestSolutionContains(self, item_id: &#34;int&#34;) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34;Returns true if the item &#39;item_id&#39; is packed in the optimal knapsack.&#34;&#34;&#34;
         return _pywrapknapsack_solver.KnapsackSolver_BestSolutionContains(self, item_id)
 
-    def set_use_reduction(self, use_reduction: &#39;bool&#39;) -&gt; &#34;void&#34;:
+    def set_use_reduction(self, use_reduction: &#34;bool&#34;) -&gt; &#34;void&#34;:
         return _pywrapknapsack_solver.KnapsackSolver_set_use_reduction(self, use_reduction)
 
-    def set_time_limit(self, time_limit_seconds: &#39;double&#39;) -&gt; &#34;void&#34;:
+    def set_time_limit(self, time_limit_seconds: &#34;double&#34;) -&gt; &#34;void&#34;:
         r&#34;&#34;&#34;
          Time limit in seconds.
 
@@ -346,48 +300,50 @@ vectors for weights, and a vector of capacities.
 E.g.:</p>
 <p><strong>Python</strong>:</p>
 <p>.. code-block:: c++</p>
-<pre><code>        profits = [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
-        weights = [ [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ],
-                    [ 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
-                  ]
-        capacities = [ 34, 4 ]
+<pre><code>      profits = [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+      weights = [ [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ],
+                  [ 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
+                ]
+      capacities = [ 34, 4 ]
 
-        solver = pywrapknapsack_solver.KnapsackSolver(
-            pywrapknapsack_solver.KnapsackSolver
-                .KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
-            'Multi-dimensional solver')
-        solver.Init(profits, weights, capacities)
-        profit = solver.Solve()
+      solver = pywrapknapsack_solver.KnapsackSolver(
+          pywrapknapsack_solver.KnapsackSolver
+              .KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+          'Multi-dimensional solver')
+      solver.Init(profits, weights, capacities)
+      profit = solver.Solve()
 </code></pre>
 <p><strong>C++</strong>:</p>
 <p>.. code-block:: c++</p>
-<pre><code>       const std::vectorint64 profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-       const std::vectorstd::vector&lt;int64 weights =
-           { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-             { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
-       const std::vectorint64 capacities = { 34, 4 };
+<pre><code>     const std::vectorint64 profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+     const std::vectorstd::vector&lt;int64 weights =
+         { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
+           { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+     const std::vectorint64 capacities = { 34, 4 };
 
-       KnapsackSolver solver(
-           KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
-           "Multi-dimensional solver");
-       solver.Init(profits, weights, capacities);
-       const int64 profit = solver.Solve();
+     KnapsackSolver solver(
+         KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+         "Multi-dimensional solver");
+     solver.Init(profits, weights, capacities);
+     const int64 profit = solver.Solve();
 </code></pre>
 <p><strong>Java</strong>:</p>
 <p>.. code-block:: c++</p>
-<pre><code>      final long[] profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-      final long[][] weights = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-             { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
-      final long[] capacities = { 34, 4 };
+<pre><code>    final long[] profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    final long[][] weights = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
+           { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+    final long[] capacities = { 34, 4 };
 
-      KnapsackSolver solver = new KnapsackSolver(
-          KnapsackSolver.SolverType.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
-          "Multi-dimensional solver");
-      solver.init(profits, weights, capacities);
-      final long profit = solver.solve();
+    KnapsackSolver solver = new KnapsackSolver(
+        KnapsackSolver.SolverType.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+        "Multi-dimensional solver");
+    solver.init(profits, weights, capacities);
+    final long profit = solver.solve();
 </code></pre></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">class KnapsackSolver(object):
     r&#34;&#34;&#34;
      This library solves knapsack problems.
@@ -429,64 +385,54 @@ E.g.:</p>
 
       **Python**:
 
-
       .. code-block:: c++
 
+              profits = [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+              weights = [ [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ],
+                          [ 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
+                        ]
+              capacities = [ 34, 4 ]
 
-                profits = [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
-                weights = [ [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ],
-                            [ 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
-                          ]
-                capacities = [ 34, 4 ]
-
-                solver = pywrapknapsack_solver.KnapsackSolver(
-                    pywrapknapsack_solver.KnapsackSolver
-                        .KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
-                    &#39;Multi-dimensional solver&#39;)
-                solver.Init(profits, weights, capacities)
-                profit = solver.Solve()
-
+              solver = pywrapknapsack_solver.KnapsackSolver(
+                  pywrapknapsack_solver.KnapsackSolver
+                      .KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+                  &#39;Multi-dimensional solver&#39;)
+              solver.Init(profits, weights, capacities)
+              profit = solver.Solve()
 
       **C++**:
 
-
       .. code-block:: c++
 
+             const std::vectorint64 profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+             const std::vectorstd::vector&lt;int64 weights =
+                 { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
+                   { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+             const std::vectorint64 capacities = { 34, 4 };
 
-               const std::vectorint64 profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-               const std::vectorstd::vector&lt;int64 weights =
-                   { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-                     { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
-               const std::vectorint64 capacities = { 34, 4 };
-
-               KnapsackSolver solver(
-                   KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
-                   &#34;Multi-dimensional solver&#34;);
-               solver.Init(profits, weights, capacities);
-               const int64 profit = solver.Solve();
-
+             KnapsackSolver solver(
+                 KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+                 &#34;Multi-dimensional solver&#34;);
+             solver.Init(profits, weights, capacities);
+             const int64 profit = solver.Solve();
 
       **Java**:
 
-
       .. code-block:: c++
 
+            final long[] profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            final long[][] weights = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
+                   { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+            final long[] capacities = { 34, 4 };
 
-              final long[] profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-              final long[][] weights = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-                     { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
-              final long[] capacities = { 34, 4 };
-
-              KnapsackSolver solver = new KnapsackSolver(
-                  KnapsackSolver.SolverType.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
-                  &#34;Multi-dimensional solver&#34;);
-              solver.init(profits, weights, capacities);
-              final long profit = solver.solve();
-
-
+            KnapsackSolver solver = new KnapsackSolver(
+                KnapsackSolver.SolverType.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+                &#34;Multi-dimensional solver&#34;);
+            solver.init(profits, weights, capacities);
+            final long profit = solver.solve();
     &#34;&#34;&#34;
 
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
     __repr__ = _swig_repr
     KNAPSACK_BRUTE_FORCE_SOLVER = _pywrapknapsack_solver.KnapsackSolver_KNAPSACK_BRUTE_FORCE_SOLVER
     r&#34;&#34;&#34;
@@ -532,31 +478,22 @@ E.g.:</p>
         _pywrapknapsack_solver.KnapsackSolver_swiginit(self, _pywrapknapsack_solver.new_KnapsackSolver(*args))
     __swig_destroy__ = _pywrapknapsack_solver.delete_KnapsackSolver
 
-    def Init(self, profits: &#39;std::vector&lt; int64 &gt; const &amp;&#39;, weights: &#39;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#39;, capacities: &#39;std::vector&lt; int64 &gt; const &amp;&#39;) -&gt; &#34;void&#34;:
-        r&#34;&#34;&#34;
-
-        Initializes the solver and enters the problem to be solved.
-        &#34;&#34;&#34;
+    def Init(self, profits: &#34;std::vector&lt; int64 &gt; const &amp;&#34;, weights: &#34;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#34;, capacities: &#34;std::vector&lt; int64 &gt; const &amp;&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34;Initializes the solver and enters the problem to be solved.&#34;&#34;&#34;
         return _pywrapknapsack_solver.KnapsackSolver_Init(self, profits, weights, capacities)
 
     def Solve(self) -&gt; &#34;int64&#34;:
-        r&#34;&#34;&#34;
-
-        Solves the problem and returns the profit of the optimal solution.
-        &#34;&#34;&#34;
+        r&#34;&#34;&#34;Solves the problem and returns the profit of the optimal solution.&#34;&#34;&#34;
         return _pywrapknapsack_solver.KnapsackSolver_Solve(self)
 
-    def BestSolutionContains(self, item_id: &#39;int&#39;) -&gt; &#34;bool&#34;:
-        r&#34;&#34;&#34;
-
-        Returns true if the item &#39;item_id&#39; is packed in the optimal knapsack.
-        &#34;&#34;&#34;
+    def BestSolutionContains(self, item_id: &#34;int&#34;) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34;Returns true if the item &#39;item_id&#39; is packed in the optimal knapsack.&#34;&#34;&#34;
         return _pywrapknapsack_solver.KnapsackSolver_BestSolutionContains(self, item_id)
 
-    def set_use_reduction(self, use_reduction: &#39;bool&#39;) -&gt; &#34;void&#34;:
+    def set_use_reduction(self, use_reduction: &#34;bool&#34;) -&gt; &#34;void&#34;:
         return _pywrapknapsack_solver.KnapsackSolver_set_use_reduction(self, use_reduction)
 
-    def set_time_limit(self, time_limit_seconds: &#39;double&#39;) -&gt; &#34;void&#34;:
+    def set_time_limit(self, time_limit_seconds: &#34;double&#34;) -&gt; &#34;void&#34;:
         r&#34;&#34;&#34;
          Time limit in seconds.
 
@@ -608,8 +545,10 @@ dimensions. This solver is based on Integer Programming solver CBC.</p></section
 <dd>
 <section class="desc"><p>The membership flag</p></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)</code></pre>
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)</code></pre>
 </details>
 </dd>
 </dl>
@@ -621,12 +560,11 @@ dimensions. This solver is based on Integer Programming solver CBC.</p></section
 <dd>
 <section class="desc"><p>Returns true if the item 'item_id' is packed in the optimal knapsack.</p></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def BestSolutionContains(self, item_id: &#39;int&#39;) -&gt; &#34;bool&#34;:
-    r&#34;&#34;&#34;
-
-    Returns true if the item &#39;item_id&#39; is packed in the optimal knapsack.
-    &#34;&#34;&#34;
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def BestSolutionContains(self, item_id: &#34;int&#34;) -&gt; &#34;bool&#34;:
+    r&#34;&#34;&#34;Returns true if the item &#39;item_id&#39; is packed in the optimal knapsack.&#34;&#34;&#34;
     return _pywrapknapsack_solver.KnapsackSolver_BestSolutionContains(self, item_id)</code></pre>
 </details>
 </dd>
@@ -636,12 +574,11 @@ dimensions. This solver is based on Integer Programming solver CBC.</p></section
 <dd>
 <section class="desc"><p>Initializes the solver and enters the problem to be solved.</p></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def Init(self, profits: &#39;std::vector&lt; int64 &gt; const &amp;&#39;, weights: &#39;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#39;, capacities: &#39;std::vector&lt; int64 &gt; const &amp;&#39;) -&gt; &#34;void&#34;:
-    r&#34;&#34;&#34;
-
-    Initializes the solver and enters the problem to be solved.
-    &#34;&#34;&#34;
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def Init(self, profits: &#34;std::vector&lt; int64 &gt; const &amp;&#34;, weights: &#34;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#34;, capacities: &#34;std::vector&lt; int64 &gt; const &amp;&#34;) -&gt; &#34;void&#34;:
+    r&#34;&#34;&#34;Initializes the solver and enters the problem to be solved.&#34;&#34;&#34;
     return _pywrapknapsack_solver.KnapsackSolver_Init(self, profits, weights, capacities)</code></pre>
 </details>
 </dd>
@@ -651,12 +588,11 @@ dimensions. This solver is based on Integer Programming solver CBC.</p></section
 <dd>
 <section class="desc"><p>Solves the problem and returns the profit of the optimal solution.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Solve(self) -&gt; &#34;int64&#34;:
-    r&#34;&#34;&#34;
-
-    Solves the problem and returns the profit of the optimal solution.
-    &#34;&#34;&#34;
+    r&#34;&#34;&#34;Solves the problem and returns the profit of the optimal solution.&#34;&#34;&#34;
     return _pywrapknapsack_solver.KnapsackSolver_Solve(self)</code></pre>
 </details>
 </dd>
@@ -668,8 +604,10 @@ dimensions. This solver is based on Integer Programming solver CBC.</p></section
 <p>When a finite time limit is set the solution obtained might not be optimal
 if the limit is reached.</p></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def set_time_limit(self, time_limit_seconds: &#39;double&#39;) -&gt; &#34;void&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_time_limit(self, time_limit_seconds: &#34;double&#34;) -&gt; &#34;void&#34;:
     r&#34;&#34;&#34;
      Time limit in seconds.
 
@@ -685,8 +623,10 @@ if the limit is reached.</p></section>
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def set_use_reduction(self, use_reduction: &#39;bool&#39;) -&gt; &#34;void&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_use_reduction(self, use_reduction: &#34;bool&#34;) -&gt; &#34;void&#34;:
     return _pywrapknapsack_solver.KnapsackSolver_set_use_reduction(self, use_reduction)</code></pre>
 </details>
 </dd>
@@ -731,7 +671,7 @@ if the limit is reached.</p></section>
 </main>
 <footer id="footer">
 <p><span style="color:#ddd">&#21328;</span></p>
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.6.3</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.7.0</a>.</p>
 </footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
 <script>hljs.initHighlightingOnLoad()</script>

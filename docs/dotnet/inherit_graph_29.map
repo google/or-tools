@@ -1,3 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SolverParametersReflection.html" title="Holder for reflection information generated from ortools/constraint_solver/solver_parameters...." alt="" coords="5,5,233,44"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,5,119,32"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1NetDecisionBuilder.html" title="This class acts as a intermediate step between a c++ decision builder and a .Net one." alt="" coords="167,5,301,32"/>
 </map>

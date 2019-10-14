@@ -61,6 +61,15 @@ class CpModelMapping {
   // as already loaded.
   void ExtractEncoding(const CpModelProto& model_proto, Model* m);
 
+  // Process all affine relations of the form a*X + b*Y == cte. For each
+  // literals associated to (X >= bound) or (X == value) associate it to its
+  // corresponding relation on Y. Also do the other side.
+  //
+  // TODO(user): In an ideal world, all affine relations like this should be
+  // removed in the presolve.
+  void PropagateEncodingFromEquivalenceRelations(
+      const CpModelProto& model_proto, Model* m);
+
   // Returns true if the given CpModelProto variable reference refers to a
   // Boolean varaible. Such variable will always have an associated Literal(),
   // but not always an associated Integer().
@@ -160,6 +169,18 @@ class CpModelMapping {
     return result;
   }
 
+  // Returns a heuristic set of values that could be created for the given
+  // variable when the constraints will be loaded.
+  // Note that the pointer is not stable across calls.
+  // It returns nullptr if the set is empty.
+  const absl::flat_hash_set<int64>& PotentialEncodedValues(int var) {
+    const auto& it = variables_to_encoded_values_.find(var);
+    if (it != variables_to_encoded_values_.end()) {
+      return it->second;
+    }
+    return empty_set_;
+  }
+
  private:
   // Note that only the variables used by at least one constraint will be
   // created, the other will have a kNo[Integer,Interval,Boolean]VariableValue.
@@ -177,6 +198,10 @@ class CpModelMapping {
   // ExtractEncoding().
   absl::flat_hash_set<const ConstraintProto*> already_loaded_ct_;
   absl::flat_hash_set<const ConstraintProto*> is_half_encoding_ct_;
+
+  absl::flat_hash_map<int, absl::flat_hash_set<int64>>
+      variables_to_encoded_values_;
+  const absl::flat_hash_set<int64> empty_set_;
 };
 
 // Inspects the model and use some heuristic to decide which variable, if any,

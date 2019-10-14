@@ -90,6 +90,7 @@ class Preprocessor {
   ProblemStatus status_;
   const GlopParameters& parameters_;
   bool in_mip_context_;
+  std::unique_ptr<TimeLimit> infinite_time_limit_;
   TimeLimit* time_limit_;
 };
 
@@ -952,6 +953,8 @@ class ShiftVariableBoundsPreprocessor : public Preprocessor {
   ~ShiftVariableBoundsPreprocessor() final {}
   bool Run(LinearProgram* lp) final;
   void RecoverSolution(ProblemSolution* solution) const final;
+
+  const DenseRow& offsets() const { return offsets_; }
 
  private:
   // Contains for each variable by how much its bounds where shifted during

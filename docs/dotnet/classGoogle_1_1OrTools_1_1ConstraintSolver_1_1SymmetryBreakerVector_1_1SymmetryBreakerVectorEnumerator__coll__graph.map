@@ -1,5 +1,5 @@
-<map id="Google.OrTools.ConstraintSolver.SymmetryBreakerVector.SymmetryBreakerVectorEnumerator" name="Google.OrTools.ConstraintSolver.SymmetryBreakerVector.SymmetryBreakerVectorEnumerator">
-<area shape="rect" id="node1" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="227,33,497,85"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,179,44"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,68,179,120"/>
+<map id="SymmetryBreakerVector.SymmetryBreakerVectorEnumerator" name="SymmetryBreakerVector.SymmetryBreakerVectorEnumerator">
+<area shape="rect" id="node1" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="30,79,259,117"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,100,31"/>
+<area shape="rect" id="node3" title=" " alt="" coords="124,5,349,31"/>
 </map>

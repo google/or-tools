@@ -17,6 +17,6 @@
 
   <ItemGroup>
     <Compile Include="regex.cs" />
-    <PackageReference Include="Google.OrTools" Version="7.3.*" />
+    <PackageReference Include="Google.OrTools" Version="7.4.*" />
   </ItemGroup>
 </Project>

@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_LP_SCHEDULING_H_
 #define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_LP_SCHEDULING_H_
 
+#include "absl/memory/memory.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/glop/lp_solver.h"
 
@@ -32,12 +33,21 @@ class CumulBoundsPropagator {
   // and propagating the precedences resulting from the next_accessor, and the
   // dimension's precedence rules.
   // Returns false iff the precedences are infeasible with the given routes.
-  // Otherwise, for each node index n, propagated_bounds[2*n] and
-  // -propagated_bounds[2*n+1] are respectively the propagated lower and upper
-  // bounds of n's cumul variable.
+  // Otherwise, the user can call CumulMin() and CumulMax() to retrieve the new
+  // bounds of an index.
   bool PropagateCumulBounds(const std::function<int64(int64)>& next_accessor,
-                            int64 cumul_offset,
-                            std::vector<int64>* propagated_bounds);
+                            int64 cumul_offset);
+
+  int64 CumulMin(int index) const {
+    return propagated_bounds_[PositiveNode(index)];
+  }
+
+  int64 CumulMax(int index) const {
+    const int64 negated_upper_bound = propagated_bounds_[NegativeNode(index)];
+    return negated_upper_bound == kint64min ? kint64max : -negated_upper_bound;
+  }
+
+  const RoutingDimension& dimension() const { return dimension_; }
 
  private:
   // An arc "tail --offset--> head" represents the relation
@@ -52,8 +62,8 @@ class CumulBoundsPropagator {
 
   // Return the node corresponding to the lower bound of the cumul of index and
   // -index respectively.
-  int PositiveNode(int index) { return 2 * index; }
-  int NegativeNode(int index) { return 2 * index + 1; }
+  int PositiveNode(int index) const { return 2 * index; }
+  int NegativeNode(int index) const { return 2 * index + 1; }
 
   void AddNodeToQueue(int node) {
     if (!node_in_queue_[node]) {
@@ -68,11 +78,9 @@ class CumulBoundsPropagator {
   void AddArcs(int first_index, int second_index, int64 offset);
 
   bool InitializeArcsAndBounds(const std::function<int64(int64)>& next_accessor,
-                               int64 cumul_offset,
-                               std::vector<int64>* initial_lower_bounds);
+                               int64 cumul_offset);
 
-  bool UpdateCurrentLowerBoundOfNode(int node, int64 new_lb,
-                                     std::vector<int64>* current_lower_bounds);
+  bool UpdateCurrentLowerBoundOfNode(int node, int64 new_lb);
 
   bool DisassembleSubtree(int source, int target);
 
@@ -96,19 +104,32 @@ class CumulBoundsPropagator {
   std::deque<int> bf_queue_;
   std::vector<bool> node_in_queue_;
   std::vector<int> tree_parent_node_of_;
+  // After calling PropagateCumulBounds(), for each node index n,
+  // propagated_bounds_[2*n] and -propagated_bounds_[2*n+1] respectively contain
+  // the propagated lower and upper bounds of n's cumul variable.
+  std::vector<int64> propagated_bounds_;
 
   // Vector used in DisassembleSubtree() to avoid memory reallocation.
   std::vector<int> tmp_dfs_stack_;
+
+  // Used to store the pickup/delivery pairs encountered on the routes.
+  std::vector<std::pair<int64, int64>>
+      visited_pickup_delivery_indices_for_pair_;
 };
 
 // Utility class used in Local/GlobalDimensionCumulOptimizer to set the LP
 // constraints and solve the problem.
 class DimensionCumulOptimizerCore {
  public:
-  explicit DimensionCumulOptimizerCore(const RoutingDimension* dimension)
+  DimensionCumulOptimizerCore(const RoutingDimension* dimension,
+                              bool use_precedence_propagator)
       : dimension_(dimension),
-        visited_pickup_index_for_pair_(
-            dimension->model()->GetPickupAndDeliveryPairs().size(), -1) {}
+        visited_pickup_delivery_indices_for_pair_(
+            dimension->model()->GetPickupAndDeliveryPairs().size(), {-1, -1}) {
+    if (use_precedence_propagator) {
+      propagator_ = absl::make_unique<CumulBoundsPropagator>(dimension);
+    }
+  }
 
   // In the OptimizeSingleRoute() and Optimize() methods, if both "cumul_values"
   // and "cost" parameters are null, we don't optimize the cost and stop at the
@@ -142,6 +163,16 @@ class DimensionCumulOptimizerCore {
   // Initializes the containers and given linear program. Must be called prior
   // to setting any contraints and solving.
   void InitOptimizer(glop::LinearProgram* linear_program);
+
+  // Computes the minimum/maximum of cumuls for nodes on "route", and sets them
+  // in current_route_[min|max]_cumuls_ respectively.
+  // If the propagator_ is not null, uses the bounds tightened by the
+  // propagator.
+  // Otherwise, the bounds are computed by going over the nodes on the route
+  // using the CP bounds, and the fixed transits are used to tighten them.
+  bool ComputeRouteCumulBounds(const std::vector<int64>& route,
+                               const std::vector<int64>& fixed_transits,
+                               int64 cumul_offset);
 
   // Sets the constraints for all nodes on "vehicle"'s route according to
   // "next_accessor". If optimize_costs is true, also sets the objective
@@ -179,12 +210,16 @@ class DimensionCumulOptimizerCore {
                   glop::LinearProgram* linear_program,
                   glop::LPSolver* lp_solver);
 
+  std::unique_ptr<CumulBoundsPropagator> propagator_;
+  std::vector<int64> current_route_min_cumuls_;
+  std::vector<int64> current_route_max_cumuls_;
   const RoutingDimension* const dimension_;
   std::vector<glop::ColIndex> current_route_cumul_variables_;
   std::vector<glop::ColIndex> index_to_cumul_variable_;
   glop::ColIndex max_end_cumul_;
   glop::ColIndex min_start_cumul_;
-  std::vector<int64> visited_pickup_index_for_pair_;
+  std::vector<std::pair<int64, int64>>
+      visited_pickup_delivery_indices_for_pair_;
 };
 
 // Class used to compute optimal values for dimension cumuls of routes,

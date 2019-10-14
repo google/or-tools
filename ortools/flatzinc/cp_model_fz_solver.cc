@@ -24,11 +24,13 @@
 #include "absl/strings/str_split.h"
 #include "absl/synchronization/mutex.h"
 #include "google/protobuf/text_format.h"
+#include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/base/timer.h"
 #include "ortools/flatzinc/checker.h"
 #include "ortools/flatzinc/logging.h"
+#include "ortools/flatzinc/model.h"
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_search.h"
@@ -193,11 +195,39 @@ void CpModelProtoWithMapping::FillAMinusBInDomain(
     const std::vector<int64>& domain, const fz::Constraint& fz_ct,
     ConstraintProto* ct) {
   auto* arg = ct->mutable_linear();
-  for (const int64 domain_bound : domain) arg->add_domain(domain_bound);
-  arg->add_vars(LookupVar(fz_ct.arguments[0]));
-  arg->add_coeffs(1);
-  arg->add_vars(LookupVar(fz_ct.arguments[1]));
-  arg->add_coeffs(-1);
+  if (fz_ct.arguments[1].type == fz::Argument::INT_VALUE) {
+    const int64 value = fz_ct.arguments[1].Value();
+    const int var_a = LookupVar(fz_ct.arguments[0]);
+    for (const int64 domain_bound : domain) {
+      if (domain_bound == kint64min || domain_bound == kint64max) {
+        arg->add_domain(domain_bound);
+      } else {
+        arg->add_domain(domain_bound + value);
+      }
+    }
+    arg->add_vars(var_a);
+    arg->add_coeffs(1);
+  } else if (fz_ct.arguments[0].type == fz::Argument::INT_VALUE) {
+    const int64 value = fz_ct.arguments[0].Value();
+    const int var_b = LookupVar(fz_ct.arguments[1]);
+    for (int64 domain_bound : gtl::reversed_view(domain)) {
+      if (domain_bound == kint64min) {
+        arg->add_domain(kint64max);
+      } else if (domain_bound == kint64max) {
+        arg->add_domain(kint64min);
+      } else {
+        arg->add_domain(value - domain_bound);
+      }
+    }
+    arg->add_vars(var_b);
+    arg->add_coeffs(1);
+  } else {
+    for (const int64 domain_bound : domain) arg->add_domain(domain_bound);
+    arg->add_vars(LookupVar(fz_ct.arguments[0]));
+    arg->add_coeffs(1);
+    arg->add_vars(LookupVar(fz_ct.arguments[1]));
+    arg->add_coeffs(-1);
+  }
 }
 
 void CpModelProtoWithMapping::FillLinearConstraintWithGivenDomain(
@@ -691,8 +721,6 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
 void CpModelProtoWithMapping::FillReifOrImpliedConstraint(
     const fz::Constraint& fz_ct, ConstraintProto* ct) {
   // Start by adding a non-reified version of the same constraint.
-  const bool is_implication = absl::EndsWith(fz_ct.type, "_imp");
-
   std::string simplified_type;
   if (absl::EndsWith(fz_ct.type, "_reif")) {
     // Remove _reif.
@@ -766,7 +794,7 @@ void CpModelProtoWithMapping::FillReifOrImpliedConstraint(
   }
 
   // One way implication. We can stop here.
-  if (is_implication) return;
+  if (absl::EndsWith(fz_ct.type, "_imp")) return;
 
   // Add the other side of the reification because CpModelProto only support
   // half reification.
@@ -1000,6 +1028,10 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   }
   if (p.use_free_search) {
     m.parameters.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+    if (p.number_of_threads <= 1) {
+      m.parameters.set_interleave_search(true);
+      m.parameters.set_reduce_memory_usage_in_interleave_mode(true);
+    }
   } else {
     m.parameters.set_search_branching(SatParameters::FIXED_SEARCH);
   }

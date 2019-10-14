@@ -115,7 +115,7 @@ public class TestConstraintSolver {
     DecisionBuilder db =
         solver.makePhase(vars, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MAX_VALUE);
     MoveOneVar moveOneVar = new MoveOneVar(vars);
-    LocalSearchPhaseParameters lsParams = solver.makeLocalSearchPhaseParameters(moveOneVar, db);
+    LocalSearchPhaseParameters lsParams = solver.makeLocalSearchPhaseParameters(sumVar, moveOneVar, db);
     DecisionBuilder ls = solver.makeLocalSearchPhase(vars, db, lsParams);
     SolutionCollector collector = solver.makeLastSolutionCollector();
     collector.addObjective(sumVar);
@@ -139,7 +139,8 @@ public class TestConstraintSolver {
     }
 
     @Override
-    public boolean accept(Assignment delta, Assignment unusedDeltadelta) {
+    public boolean accept(Assignment delta, Assignment unusedDeltadelta, long unusedObjectiveMin,
+			  long unusedObjectiveMax) {
       AssignmentIntContainer solutionDelta = delta.intVarContainer();
       int solutionDeltaSize = solutionDelta.size();
 
@@ -173,7 +174,7 @@ public class TestConstraintSolver {
     IntVarLocalSearchFilter[] filters = new IntVarLocalSearchFilter[1];
     filters[0] = filter;
     LocalSearchPhaseParameters lsParams =
-        solver.makeLocalSearchPhaseParameters(moveOneVar, db, null, filters);
+        solver.makeLocalSearchPhaseParameters(sumVar, moveOneVar, db, null, filters);
     DecisionBuilder ls = solver.makeLocalSearchPhase(vars, db, lsParams);
     SolutionCollector collector = solver.makeLastSolutionCollector();
     collector.addObjective(sumVar);
@@ -215,7 +216,8 @@ public class TestConstraintSolver {
     DecisionBuilder db =
         solver.makePhase(vars, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MAX_VALUE);
     OneVarLns oneVarLns = new OneVarLns(vars);
-    LocalSearchPhaseParameters lsParams = solver.makeLocalSearchPhaseParameters(oneVarLns, db);
+    LocalSearchPhaseParameters lsParams =
+	solver.makeLocalSearchPhaseParameters(sumVar, oneVarLns, db);
     DecisionBuilder ls = solver.makeLocalSearchPhase(vars, db, lsParams);
     SolutionCollector collector = solver.makeLastSolutionCollector();
     collector.addObjective(sumVar);

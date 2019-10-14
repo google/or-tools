@@ -119,13 +119,10 @@ message NoOverlapConstraintProto {
 }
 
 // The boxes defined by [start_x, end_x) * [start_y, end_y) cannot overlap.
-//
-// TODO(user): Currently, this constraint will ignore a box if one of its
-// dimension is zero. Add parameter to specify the behavior with boxes with
-// zero area.
 message NoOverlap2DConstraintProto {
   repeated int32 x_intervals = 1;
   repeated int32 y_intervals = 2;  // Same size as x_intervals.
+  bool boxes_with_null_area_can_overlap = 3;
 }
 
 // The sum of the demands of the intervals at each interval point cannot exceed
@@ -433,6 +430,7 @@ message DecisionStrategyProto {
     SELECT_MAX_VALUE = 1;
     SELECT_LOWER_HALF = 2;
     SELECT_UPPER_HALF = 3;
+    SELECT_MEDIAN_VALUE = 4;
   }
   DomainReductionStrategy domain_reduction_strategy = 3;
 
@@ -521,6 +519,7 @@ enum CpSolverStatus {
 //
 // TODO(user): support returning multiple solutions. Look at the Stubby
 // streaming API as we probably wants to get them as they are found.
+// Next id: 23
 message CpSolverResponse {
   // The status of the solve.
   CpSolverStatus status = 1;
@@ -582,6 +581,7 @@ message CpSolverResponse {
   double wall_time = 15;
   double user_time = 16;
   double deterministic_time = 17;
+  double primal_integral = 22;
 
   // Additional information about how the solution was found.
   string solution_info = 20;

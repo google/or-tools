@@ -1,0 +1,5 @@
+<map id="IntVarFilteredDecisionBuilder" name="IntVarFilteredDecisionBuilder">
+<area shape="rect" id="node1" title="Decision builders building a solution using local search filters to evaluate its feasibility." alt="" coords="5,152,198,177"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1DecisionBuilder.html" title="A DecisionBuilder is responsible for creating the search tree." alt="" coords="45,79,159,104"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="57,5,147,31"/>
+</map>

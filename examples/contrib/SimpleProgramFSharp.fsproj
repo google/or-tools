@@ -17,6 +17,6 @@
 
   <ItemGroup>
     <Compile Include="SimpleProgramFSharp.fs" />
-    <PackageReference Include="Google.OrTools.FSharp" Version="7.3.*" />
+    <PackageReference Include="Google.OrTools.FSharp" Version="7.4.*" />
   </ItemGroup>
 </Project>

@@ -63,9 +63,14 @@ namespace Google.OrTools.Sat
     {
       return new SumArray(vars, coeffs);
     }
+
     public static LinearExpr ScalProd(IEnumerable<IntVar> vars, IEnumerable<long> coeffs)
     {
       return new SumArray(vars, coeffs);
+    }
+
+    public static LinearExpr Term(IntVar var, long coeff) {
+      return Prod(var, coeff);
     }
 
     public int Index

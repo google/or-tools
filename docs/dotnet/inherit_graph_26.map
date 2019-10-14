@@ -1,3 +1,8 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingParametersReflection.html" title="Holder for reflection information generated from ortools/constraint_solver/routing_parameters...." alt="" coords="5,5,242,44"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,72,99,99"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarEnumerator.html" title=" " alt="" coords="197,5,321,32"/>
+<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1MPConstraintVector_1_1MPConstraintVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="147,57,371,98"/>
+<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1MpDoubleVector_1_1MpDoubleVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="149,122,369,163"/>
+<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector_1_1MPVariableVectorEnumerator.html" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="159,187,358,229"/>
+<area shape="rect" id="node6" title=" " alt="" coords="5,129,99,156"/>
 </map>

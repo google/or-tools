@@ -39,11 +39,7 @@ if [ "${BUILDER}" == make ]; then
       installswig
       echo 'travis_fold:end:swig'
     fi
-    if [ "${LANGUAGE}" == python2 ]; then
-      echo 'travis_fold:start:python2'
-      python2.7 -m pip install -q virtualenv wheel six;
-      echo 'travis_fold:end:python2'
-    elif [ "${LANGUAGE}" == python3 ]; then
+    if [ "${LANGUAGE}" == python3 ]; then
       echo 'travis_fold:start:python3'
       pyenv global system 3.7
       python3.7 -m pip install -q virtualenv wheel six

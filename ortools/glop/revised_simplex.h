@@ -190,6 +190,7 @@ class RevisedSimplex {
   int64 GetNumberOfIterations() const;
   Fractional GetVariableValue(ColIndex col) const;
   Fractional GetReducedCost(ColIndex col) const;
+  const DenseRow& GetReducedCosts() const;
   Fractional GetDualValue(RowIndex row) const;
   Fractional GetConstraintActivity(RowIndex row) const;
   VariableStatus GetVariableStatus(ColIndex col) const;
@@ -247,8 +248,8 @@ class RevisedSimplex {
   // Propagates parameters_ to all the other classes that need it.
   //
   // TODO(user): Maybe a better design is for them to have a reference to a
-  // unique parameters object? it will clutter a bit more these classes
-  // contructor though.
+  // unique parameters object? It will clutter a bit more these classes'
+  // constructor though.
   void PropagateParameters();
 
   // Returns a std::string containing the same information as with

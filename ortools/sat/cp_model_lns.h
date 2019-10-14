@@ -52,7 +52,7 @@ struct Neighborhood {
 // the bounds of the base problem with the external world.
 class NeighborhoodGeneratorHelper : public SubSolver {
  public:
-  NeighborhoodGeneratorHelper(int id, const CpModelProto& model_proto,
+  NeighborhoodGeneratorHelper(int id, CpModelProto const* model_proto,
                               SatParameters const* parameters,
                               SharedResponseManager* shared_response,
                               SharedTimeLimit* shared_time_limit = nullptr,
@@ -130,13 +130,18 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   // Indicates if a variable is fixed in the model.
   bool IsConstant(int var) const;
 
-  // TODO(user): To reduce memory, take a const proto and keep the updated
-  // variable bounds separated.
-  CpModelProto model_proto_;
   const SatParameters& parameters_;
+  const CpModelProto& model_proto_;
   SharedTimeLimit* shared_time_limit_;
   SharedBoundsManager* shared_bounds_;
   SharedResponseManager* shared_response_;
+
+  // This proto will only contain the field variables() with an updated version
+  // of the domains compared to model_proto_.variables(). We do it like this to
+  // reduce the memory footprint of the helper when the model is large.
+  //
+  // TODO(user): Use custom domain repository rather than a proto?
+  CpModelProto model_proto_with_only_variables_;
 
   mutable absl::Mutex mutex_;
 

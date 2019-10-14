@@ -17,6 +17,6 @@
 
   <ItemGroup>
     <Compile Include="alldifferent_except_0.cs" />
-    <PackageReference Include="Google.OrTools" Version="7.3.*" />
+    <PackageReference Include="Google.OrTools" Version="7.4.*" />
   </ItemGroup>
 </Project>

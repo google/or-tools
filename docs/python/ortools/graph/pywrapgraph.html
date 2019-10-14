@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.6.3" />
+<meta name="generator" content="pdoc 0.7.0" />
 <title>pywrapgraph API documentation</title>
 <meta name="description" content="" />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
-<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase;cursor:pointer}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 <style type="text/css">
@@ -26,19 +26,21 @@ a:link { color: #46641e; text-decoration: none}
 </header>
 <section id="section-intro">
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python"># This file was automatically generated by SWIG (http://www.swig.org).
-# Version 4.0.0
+# Version 4.0.1
 #
 # Do not make changes to this file unless you know what you are doing--modify
 # the SWIG interface file instead.
 
 from sys import version_info as _swig_python_version_info
 if _swig_python_version_info &lt; (2, 7, 0):
-    raise RuntimeError(&#39;Python 2.7 or later required&#39;)
+    raise RuntimeError(&#34;Python 2.7 or later required&#34;)
 
 # Import the low-level C/C++ module
-if __package__ or &#39;.&#39; in __name__:
+if __package__ or &#34;.&#34; in __name__:
     from . import _pywrapgraph
 else:
     import _pywrapgraph
@@ -47,35 +49,6 @@ try:
     import builtins as __builtin__
 except ImportError:
     import __builtin__
-
-def _swig_setattr_nondynamic(self, class_type, name, value, static=1):
-    if name == &#34;thisown&#34;:
-        return self.this.own(value)
-    if name == &#34;this&#34;:
-        if type(value).__name__ == &#39;SwigPyObject&#39;:
-            self.__dict__[name] = value
-            return
-    method = class_type.__swig_setmethods__.get(name, None)
-    if method:
-        return method(self, value)
-    if not static:
-        object.__setattr__(self, name, value)
-    else:
-        raise AttributeError(&#34;You cannot add attributes to %s&#34; % self)
-
-
-def _swig_setattr(self, class_type, name, value):
-    return _swig_setattr_nondynamic(self, class_type, name, value, 0)
-
-
-def _swig_getattr(self, class_type, name):
-    if name == &#34;thisown&#34;:
-        return self.this.own()
-    method = class_type.__swig_getmethods__.get(name, None)
-    if method:
-        return method(self)
-    raise AttributeError(&#34;&#39;%s&#39; object has no attribute &#39;%s&#39;&#34; % (class_type.__name__, name))
-
 
 def _swig_repr(self):
     try:
@@ -120,13 +93,13 @@ class _SwigNonDynamicMeta(type):
 
 
 class SimpleMaxFlow(object):
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
     __repr__ = _swig_repr
 
     def __init__(self):
         _pywrapgraph.SimpleMaxFlow_swiginit(self, _pywrapgraph.new_SimpleMaxFlow())
 
-    def AddArcWithCapacity(self, tail: &#39;operations_research::NodeIndex&#39;, head: &#39;operations_research::NodeIndex&#39;, capacity: &#39;operations_research::FlowQuantity&#39;) -&gt; &#34;operations_research::ArcIndex&#34;:
+    def AddArcWithCapacity(self, tail: &#34;operations_research::NodeIndex&#34;, head: &#34;operations_research::NodeIndex&#34;, capacity: &#34;operations_research::FlowQuantity&#34;) -&gt; &#34;operations_research::ArcIndex&#34;:
         return _pywrapgraph.SimpleMaxFlow_AddArcWithCapacity(self, tail, head, capacity)
 
     def NumNodes(self) -&gt; &#34;operations_research::NodeIndex&#34;:
@@ -135,26 +108,26 @@ class SimpleMaxFlow(object):
     def NumArcs(self) -&gt; &#34;operations_research::ArcIndex&#34;:
         return _pywrapgraph.SimpleMaxFlow_NumArcs(self)
 
-    def Tail(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::NodeIndex&#34;:
+    def Tail(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::NodeIndex&#34;:
         return _pywrapgraph.SimpleMaxFlow_Tail(self, arc)
 
-    def Head(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::NodeIndex&#34;:
+    def Head(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::NodeIndex&#34;:
         return _pywrapgraph.SimpleMaxFlow_Head(self, arc)
 
-    def Capacity(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::FlowQuantity&#34;:
+    def Capacity(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::FlowQuantity&#34;:
         return _pywrapgraph.SimpleMaxFlow_Capacity(self, arc)
     OPTIMAL = _pywrapgraph.SimpleMaxFlow_OPTIMAL
     POSSIBLE_OVERFLOW = _pywrapgraph.SimpleMaxFlow_POSSIBLE_OVERFLOW
     BAD_INPUT = _pywrapgraph.SimpleMaxFlow_BAD_INPUT
     BAD_RESULT = _pywrapgraph.SimpleMaxFlow_BAD_RESULT
 
-    def Solve(self, source: &#39;operations_research::NodeIndex&#39;, sink: &#39;operations_research::NodeIndex&#39;) -&gt; &#34;operations_research::SimpleMaxFlow::Status&#34;:
+    def Solve(self, source: &#34;operations_research::NodeIndex&#34;, sink: &#34;operations_research::NodeIndex&#34;) -&gt; &#34;operations_research::SimpleMaxFlow::Status&#34;:
         return _pywrapgraph.SimpleMaxFlow_Solve(self, source, sink)
 
     def OptimalFlow(self) -&gt; &#34;operations_research::FlowQuantity&#34;:
         return _pywrapgraph.SimpleMaxFlow_OptimalFlow(self)
 
-    def Flow(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::FlowQuantity&#34;:
+    def Flow(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::FlowQuantity&#34;:
         return _pywrapgraph.SimpleMaxFlow_Flow(self, arc)
 
     def GetSourceSideMinCut(self) -&gt; &#34;void&#34;:
@@ -163,7 +136,7 @@ class SimpleMaxFlow(object):
     def GetSinkSideMinCut(self) -&gt; &#34;void&#34;:
         return _pywrapgraph.SimpleMaxFlow_GetSinkSideMinCut(self)
 
-    def SetArcCapacity(self, arc: &#39;operations_research::ArcIndex&#39;, capacity: &#39;operations_research::FlowQuantity&#39;) -&gt; &#34;void&#34;:
+    def SetArcCapacity(self, arc: &#34;operations_research::ArcIndex&#34;, capacity: &#34;operations_research::FlowQuantity&#34;) -&gt; &#34;void&#34;:
         return _pywrapgraph.SimpleMaxFlow_SetArcCapacity(self, arc, capacity)
     __swig_destroy__ = _pywrapgraph.delete_SimpleMaxFlow
 
@@ -171,7 +144,7 @@ class SimpleMaxFlow(object):
 _pywrapgraph.SimpleMaxFlow_swigregister(SimpleMaxFlow)
 
 class MinCostFlowBase(object):
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
     __repr__ = _swig_repr
     NOT_SOLVED = _pywrapgraph.MinCostFlowBase_NOT_SOLVED
     OPTIMAL = _pywrapgraph.MinCostFlowBase_OPTIMAL
@@ -189,16 +162,16 @@ class MinCostFlowBase(object):
 _pywrapgraph.MinCostFlowBase_swigregister(MinCostFlowBase)
 
 class SimpleMinCostFlow(MinCostFlowBase):
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
     __repr__ = _swig_repr
 
     def __init__(self):
         _pywrapgraph.SimpleMinCostFlow_swiginit(self, _pywrapgraph.new_SimpleMinCostFlow())
 
-    def AddArcWithCapacityAndUnitCost(self, tail: &#39;operations_research::NodeIndex&#39;, head: &#39;operations_research::NodeIndex&#39;, capacity: &#39;operations_research::FlowQuantity&#39;, unit_cost: &#39;operations_research::CostValue&#39;) -&gt; &#34;operations_research::ArcIndex&#34;:
+    def AddArcWithCapacityAndUnitCost(self, tail: &#34;operations_research::NodeIndex&#34;, head: &#34;operations_research::NodeIndex&#34;, capacity: &#34;operations_research::FlowQuantity&#34;, unit_cost: &#34;operations_research::CostValue&#34;) -&gt; &#34;operations_research::ArcIndex&#34;:
         return _pywrapgraph.SimpleMinCostFlow_AddArcWithCapacityAndUnitCost(self, tail, head, capacity, unit_cost)
 
-    def SetNodeSupply(self, node: &#39;operations_research::NodeIndex&#39;, supply: &#39;operations_research::FlowQuantity&#39;) -&gt; &#34;void&#34;:
+    def SetNodeSupply(self, node: &#34;operations_research::NodeIndex&#34;, supply: &#34;operations_research::FlowQuantity&#34;) -&gt; &#34;void&#34;:
         return _pywrapgraph.SimpleMinCostFlow_SetNodeSupply(self, node, supply)
 
     def Solve(self) -&gt; &#34;operations_research::MinCostFlowBase::Status&#34;:
@@ -213,7 +186,7 @@ class SimpleMinCostFlow(MinCostFlowBase):
     def MaximumFlow(self) -&gt; &#34;operations_research::FlowQuantity&#34;:
         return _pywrapgraph.SimpleMinCostFlow_MaximumFlow(self)
 
-    def Flow(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::FlowQuantity&#34;:
+    def Flow(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::FlowQuantity&#34;:
         return _pywrapgraph.SimpleMinCostFlow_Flow(self, arc)
 
     def NumNodes(self) -&gt; &#34;operations_research::NodeIndex&#34;:
@@ -222,19 +195,19 @@ class SimpleMinCostFlow(MinCostFlowBase):
     def NumArcs(self) -&gt; &#34;operations_research::ArcIndex&#34;:
         return _pywrapgraph.SimpleMinCostFlow_NumArcs(self)
 
-    def Tail(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::NodeIndex&#34;:
+    def Tail(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::NodeIndex&#34;:
         return _pywrapgraph.SimpleMinCostFlow_Tail(self, arc)
 
-    def Head(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::NodeIndex&#34;:
+    def Head(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::NodeIndex&#34;:
         return _pywrapgraph.SimpleMinCostFlow_Head(self, arc)
 
-    def Capacity(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::FlowQuantity&#34;:
+    def Capacity(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::FlowQuantity&#34;:
         return _pywrapgraph.SimpleMinCostFlow_Capacity(self, arc)
 
-    def Supply(self, node: &#39;operations_research::NodeIndex&#39;) -&gt; &#34;operations_research::FlowQuantity&#34;:
+    def Supply(self, node: &#34;operations_research::NodeIndex&#34;) -&gt; &#34;operations_research::FlowQuantity&#34;:
         return _pywrapgraph.SimpleMinCostFlow_Supply(self, node)
 
-    def UnitCost(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::CostValue&#34;:
+    def UnitCost(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::CostValue&#34;:
         return _pywrapgraph.SimpleMinCostFlow_UnitCost(self, arc)
     __swig_destroy__ = _pywrapgraph.delete_SimpleMinCostFlow
 
@@ -242,13 +215,13 @@ class SimpleMinCostFlow(MinCostFlowBase):
 _pywrapgraph.SimpleMinCostFlow_swigregister(SimpleMinCostFlow)
 
 class LinearSumAssignment(object):
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
     __repr__ = _swig_repr
 
     def __init__(self):
         _pywrapgraph.LinearSumAssignment_swiginit(self, _pywrapgraph.new_LinearSumAssignment())
 
-    def AddArcWithCost(self, left_node: &#39;operations_research::NodeIndex&#39;, right_node: &#39;operations_research::NodeIndex&#39;, cost: &#39;operations_research::CostValue&#39;) -&gt; &#34;operations_research::ArcIndex&#34;:
+    def AddArcWithCost(self, left_node: &#34;operations_research::NodeIndex&#34;, right_node: &#34;operations_research::NodeIndex&#34;, cost: &#34;operations_research::CostValue&#34;) -&gt; &#34;operations_research::ArcIndex&#34;:
         return _pywrapgraph.LinearSumAssignment_AddArcWithCost(self, left_node, right_node, cost)
 
     def NumNodes(self) -&gt; &#34;operations_research::NodeIndex&#34;:
@@ -257,13 +230,13 @@ class LinearSumAssignment(object):
     def NumArcs(self) -&gt; &#34;operations_research::ArcIndex&#34;:
         return _pywrapgraph.LinearSumAssignment_NumArcs(self)
 
-    def LeftNode(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::NodeIndex&#34;:
+    def LeftNode(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::NodeIndex&#34;:
         return _pywrapgraph.LinearSumAssignment_LeftNode(self, arc)
 
-    def RightNode(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::NodeIndex&#34;:
+    def RightNode(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::NodeIndex&#34;:
         return _pywrapgraph.LinearSumAssignment_RightNode(self, arc)
 
-    def Cost(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::CostValue&#34;:
+    def Cost(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::CostValue&#34;:
         return _pywrapgraph.LinearSumAssignment_Cost(self, arc)
     OPTIMAL = _pywrapgraph.LinearSumAssignment_OPTIMAL
     INFEASIBLE = _pywrapgraph.LinearSumAssignment_INFEASIBLE
@@ -275,10 +248,10 @@ class LinearSumAssignment(object):
     def OptimalCost(self) -&gt; &#34;operations_research::CostValue&#34;:
         return _pywrapgraph.LinearSumAssignment_OptimalCost(self)
 
-    def RightMate(self, left_node: &#39;operations_research::NodeIndex&#39;) -&gt; &#34;operations_research::NodeIndex&#34;:
+    def RightMate(self, left_node: &#34;operations_research::NodeIndex&#34;) -&gt; &#34;operations_research::NodeIndex&#34;:
         return _pywrapgraph.LinearSumAssignment_RightMate(self, left_node)
 
-    def AssignmentCost(self, left_node: &#39;operations_research::NodeIndex&#39;) -&gt; &#34;operations_research::CostValue&#34;:
+    def AssignmentCost(self, left_node: &#34;operations_research::NodeIndex&#34;) -&gt; &#34;operations_research::CostValue&#34;:
         return _pywrapgraph.LinearSumAssignment_AssignmentCost(self, left_node)
     __swig_destroy__ = _pywrapgraph.delete_LinearSumAssignment
 
@@ -286,13 +259,13 @@ class LinearSumAssignment(object):
 _pywrapgraph.LinearSumAssignment_swigregister(LinearSumAssignment)
 
 
-def DijkstraShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_node: &#39;int&#39;, graph: &#39;std::function&lt; int64 (int,int) &gt;&#39;, disconnected_distance: &#39;int64&#39;) -&gt; &#34;std::vector&lt; int &gt; *&#34;:
+def DijkstraShortestPath(node_count: &#34;int&#34;, start_node: &#34;int&#34;, end_node: &#34;int&#34;, graph: &#34;std::function&lt; int64 (int,int) &gt;&#34;, disconnected_distance: &#34;int64&#34;) -&gt; &#34;std::vector&lt; int &gt; *&#34;:
     return _pywrapgraph.DijkstraShortestPath(node_count, start_node, end_node, graph, disconnected_distance)
 
-def BellmanFordShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_node: &#39;int&#39;, graph: &#39;std::function&lt; int64 (int,int) &gt;&#39;, disconnected_distance: &#39;int64&#39;) -&gt; &#34;std::vector&lt; int &gt; *&#34;:
+def BellmanFordShortestPath(node_count: &#34;int&#34;, start_node: &#34;int&#34;, end_node: &#34;int&#34;, graph: &#34;std::function&lt; int64 (int,int) &gt;&#34;, disconnected_distance: &#34;int64&#34;) -&gt; &#34;std::vector&lt; int &gt; *&#34;:
     return _pywrapgraph.BellmanFordShortestPath(node_count, start_node, end_node, graph, disconnected_distance)
 
-def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_node: &#39;int&#39;, graph: &#39;std::function&lt; int64 (int,int) &gt;&#39;, heuristic: &#39;std::function&lt; int64 (int) &gt;&#39;, disconnected_distance: &#39;int64&#39;) -&gt; &#34;std::vector&lt; int &gt; *&#34;:
+def AStarShortestPath(node_count: &#34;int&#34;, start_node: &#34;int&#34;, end_node: &#34;int&#34;, graph: &#34;std::function&lt; int64 (int,int) &gt;&#34;, heuristic: &#34;std::function&lt; int64 (int) &gt;&#34;, disconnected_distance: &#34;int64&#34;) -&gt; &#34;std::vector&lt; int &gt; *&#34;:
     return _pywrapgraph.AStarShortestPath(node_count, start_node, end_node, graph, heuristic, disconnected_distance)</code></pre>
 </details>
 </section>
@@ -309,8 +282,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_node: &#39;int&#39;, graph: &#39;std::function&lt; int64 (int,int) &gt;&#39;, heuristic: &#39;std::function&lt; int64 (int) &gt;&#39;, disconnected_distance: &#39;int64&#39;) -&gt; &#34;std::vector&lt; int &gt; *&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def AStarShortestPath(node_count: &#34;int&#34;, start_node: &#34;int&#34;, end_node: &#34;int&#34;, graph: &#34;std::function&lt; int64 (int,int) &gt;&#34;, heuristic: &#34;std::function&lt; int64 (int) &gt;&#34;, disconnected_distance: &#34;int64&#34;) -&gt; &#34;std::vector&lt; int &gt; *&#34;:
     return _pywrapgraph.AStarShortestPath(node_count, start_node, end_node, graph, heuristic, disconnected_distance)</code></pre>
 </details>
 </dd>
@@ -320,8 +295,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def BellmanFordShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_node: &#39;int&#39;, graph: &#39;std::function&lt; int64 (int,int) &gt;&#39;, disconnected_distance: &#39;int64&#39;) -&gt; &#34;std::vector&lt; int &gt; *&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def BellmanFordShortestPath(node_count: &#34;int&#34;, start_node: &#34;int&#34;, end_node: &#34;int&#34;, graph: &#34;std::function&lt; int64 (int,int) &gt;&#34;, disconnected_distance: &#34;int64&#34;) -&gt; &#34;std::vector&lt; int &gt; *&#34;:
     return _pywrapgraph.BellmanFordShortestPath(node_count, start_node, end_node, graph, disconnected_distance)</code></pre>
 </details>
 </dd>
@@ -331,8 +308,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def DijkstraShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_node: &#39;int&#39;, graph: &#39;std::function&lt; int64 (int,int) &gt;&#39;, disconnected_distance: &#39;int64&#39;) -&gt; &#34;std::vector&lt; int &gt; *&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def DijkstraShortestPath(node_count: &#34;int&#34;, start_node: &#34;int&#34;, end_node: &#34;int&#34;, graph: &#34;std::function&lt; int64 (int,int) &gt;&#34;, disconnected_distance: &#34;int64&#34;) -&gt; &#34;std::vector&lt; int &gt; *&#34;:
     return _pywrapgraph.DijkstraShortestPath(node_count, start_node, end_node, graph, disconnected_distance)</code></pre>
 </details>
 </dd>
@@ -347,15 +326,17 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">class LinearSumAssignment(object):
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
     __repr__ = _swig_repr
 
     def __init__(self):
         _pywrapgraph.LinearSumAssignment_swiginit(self, _pywrapgraph.new_LinearSumAssignment())
 
-    def AddArcWithCost(self, left_node: &#39;operations_research::NodeIndex&#39;, right_node: &#39;operations_research::NodeIndex&#39;, cost: &#39;operations_research::CostValue&#39;) -&gt; &#34;operations_research::ArcIndex&#34;:
+    def AddArcWithCost(self, left_node: &#34;operations_research::NodeIndex&#34;, right_node: &#34;operations_research::NodeIndex&#34;, cost: &#34;operations_research::CostValue&#34;) -&gt; &#34;operations_research::ArcIndex&#34;:
         return _pywrapgraph.LinearSumAssignment_AddArcWithCost(self, left_node, right_node, cost)
 
     def NumNodes(self) -&gt; &#34;operations_research::NodeIndex&#34;:
@@ -364,13 +345,13 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
     def NumArcs(self) -&gt; &#34;operations_research::ArcIndex&#34;:
         return _pywrapgraph.LinearSumAssignment_NumArcs(self)
 
-    def LeftNode(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::NodeIndex&#34;:
+    def LeftNode(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::NodeIndex&#34;:
         return _pywrapgraph.LinearSumAssignment_LeftNode(self, arc)
 
-    def RightNode(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::NodeIndex&#34;:
+    def RightNode(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::NodeIndex&#34;:
         return _pywrapgraph.LinearSumAssignment_RightNode(self, arc)
 
-    def Cost(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::CostValue&#34;:
+    def Cost(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::CostValue&#34;:
         return _pywrapgraph.LinearSumAssignment_Cost(self, arc)
     OPTIMAL = _pywrapgraph.LinearSumAssignment_OPTIMAL
     INFEASIBLE = _pywrapgraph.LinearSumAssignment_INFEASIBLE
@@ -382,10 +363,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
     def OptimalCost(self) -&gt; &#34;operations_research::CostValue&#34;:
         return _pywrapgraph.LinearSumAssignment_OptimalCost(self)
 
-    def RightMate(self, left_node: &#39;operations_research::NodeIndex&#39;) -&gt; &#34;operations_research::NodeIndex&#34;:
+    def RightMate(self, left_node: &#34;operations_research::NodeIndex&#34;) -&gt; &#34;operations_research::NodeIndex&#34;:
         return _pywrapgraph.LinearSumAssignment_RightMate(self, left_node)
 
-    def AssignmentCost(self, left_node: &#39;operations_research::NodeIndex&#39;) -&gt; &#34;operations_research::CostValue&#34;:
+    def AssignmentCost(self, left_node: &#34;operations_research::NodeIndex&#34;) -&gt; &#34;operations_research::CostValue&#34;:
         return _pywrapgraph.LinearSumAssignment_AssignmentCost(self, left_node)
     __swig_destroy__ = _pywrapgraph.delete_LinearSumAssignment</code></pre>
 </details>
@@ -393,15 +374,66 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dl>
 <dt id="pywrapgraph.LinearSumAssignment.INFEASIBLE"><code class="name">var <span class="ident">INFEASIBLE</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>int([x]) -&gt; integer
+int(x, base=10) -&gt; integer</p>
+<p>Convert a number or string to an integer, or return 0 if no arguments
+are given.
+If x is a number, return x.<strong>int</strong>().
+For floating point
+numbers, this truncates towards zero.</p>
+<p>If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.
+The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.
+The base defaults to 10.
+Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.</p>
+<pre><code>&gt;&gt;&gt; int('0b100', base=0)
+4
+</code></pre></section>
 </dd>
 <dt id="pywrapgraph.LinearSumAssignment.OPTIMAL"><code class="name">var <span class="ident">OPTIMAL</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>int([x]) -&gt; integer
+int(x, base=10) -&gt; integer</p>
+<p>Convert a number or string to an integer, or return 0 if no arguments
+are given.
+If x is a number, return x.<strong>int</strong>().
+For floating point
+numbers, this truncates towards zero.</p>
+<p>If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.
+The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.
+The base defaults to 10.
+Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.</p>
+<pre><code>&gt;&gt;&gt; int('0b100', base=0)
+4
+</code></pre></section>
 </dd>
 <dt id="pywrapgraph.LinearSumAssignment.POSSIBLE_OVERFLOW"><code class="name">var <span class="ident">POSSIBLE_OVERFLOW</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>int([x]) -&gt; integer
+int(x, base=10) -&gt; integer</p>
+<p>Convert a number or string to an integer, or return 0 if no arguments
+are given.
+If x is a number, return x.<strong>int</strong>().
+For floating point
+numbers, this truncates towards zero.</p>
+<p>If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.
+The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.
+The base defaults to 10.
+Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.</p>
+<pre><code>&gt;&gt;&gt; int('0b100', base=0)
+4
+</code></pre></section>
 </dd>
 </dl>
 <h3>Instance variables</h3>
@@ -410,8 +442,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"><p>The membership flag</p></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)</code></pre>
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)</code></pre>
 </details>
 </dd>
 </dl>
@@ -423,8 +457,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def AddArcWithCost(self, left_node: &#39;operations_research::NodeIndex&#39;, right_node: &#39;operations_research::NodeIndex&#39;, cost: &#39;operations_research::CostValue&#39;) -&gt; &#34;operations_research::ArcIndex&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def AddArcWithCost(self, left_node: &#34;operations_research::NodeIndex&#34;, right_node: &#34;operations_research::NodeIndex&#34;, cost: &#34;operations_research::CostValue&#34;) -&gt; &#34;operations_research::ArcIndex&#34;:
     return _pywrapgraph.LinearSumAssignment_AddArcWithCost(self, left_node, right_node, cost)</code></pre>
 </details>
 </dd>
@@ -434,8 +470,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def AssignmentCost(self, left_node: &#39;operations_research::NodeIndex&#39;) -&gt; &#34;operations_research::CostValue&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def AssignmentCost(self, left_node: &#34;operations_research::NodeIndex&#34;) -&gt; &#34;operations_research::CostValue&#34;:
     return _pywrapgraph.LinearSumAssignment_AssignmentCost(self, left_node)</code></pre>
 </details>
 </dd>
@@ -445,8 +483,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def Cost(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::CostValue&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def Cost(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::CostValue&#34;:
     return _pywrapgraph.LinearSumAssignment_Cost(self, arc)</code></pre>
 </details>
 </dd>
@@ -456,8 +496,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def LeftNode(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::NodeIndex&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def LeftNode(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::NodeIndex&#34;:
     return _pywrapgraph.LinearSumAssignment_LeftNode(self, arc)</code></pre>
 </details>
 </dd>
@@ -467,7 +509,9 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def NumArcs(self) -&gt; &#34;operations_research::ArcIndex&#34;:
     return _pywrapgraph.LinearSumAssignment_NumArcs(self)</code></pre>
 </details>
@@ -478,7 +522,9 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def NumNodes(self) -&gt; &#34;operations_research::NodeIndex&#34;:
     return _pywrapgraph.LinearSumAssignment_NumNodes(self)</code></pre>
 </details>
@@ -489,7 +535,9 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def OptimalCost(self) -&gt; &#34;operations_research::CostValue&#34;:
     return _pywrapgraph.LinearSumAssignment_OptimalCost(self)</code></pre>
 </details>
@@ -500,8 +548,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def RightMate(self, left_node: &#39;operations_research::NodeIndex&#39;) -&gt; &#34;operations_research::NodeIndex&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def RightMate(self, left_node: &#34;operations_research::NodeIndex&#34;) -&gt; &#34;operations_research::NodeIndex&#34;:
     return _pywrapgraph.LinearSumAssignment_RightMate(self, left_node)</code></pre>
 </details>
 </dd>
@@ -511,8 +561,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def RightNode(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::NodeIndex&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def RightNode(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::NodeIndex&#34;:
     return _pywrapgraph.LinearSumAssignment_RightNode(self, arc)</code></pre>
 </details>
 </dd>
@@ -522,7 +574,9 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Solve(self) -&gt; &#34;operations_research::SimpleLinearSumAssignment::Status&#34;:
     return _pywrapgraph.LinearSumAssignment_Solve(self)</code></pre>
 </details>
@@ -535,9 +589,11 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">class MinCostFlowBase(object):
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
     __repr__ = _swig_repr
     NOT_SOLVED = _pywrapgraph.MinCostFlowBase_NOT_SOLVED
     OPTIMAL = _pywrapgraph.MinCostFlowBase_OPTIMAL
@@ -559,31 +615,150 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dl>
 <dt id="pywrapgraph.MinCostFlowBase.BAD_COST_RANGE"><code class="name">var <span class="ident">BAD_COST_RANGE</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>int([x]) -&gt; integer
+int(x, base=10) -&gt; integer</p>
+<p>Convert a number or string to an integer, or return 0 if no arguments
+are given.
+If x is a number, return x.<strong>int</strong>().
+For floating point
+numbers, this truncates towards zero.</p>
+<p>If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.
+The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.
+The base defaults to 10.
+Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.</p>
+<pre><code>&gt;&gt;&gt; int('0b100', base=0)
+4
+</code></pre></section>
 </dd>
 <dt id="pywrapgraph.MinCostFlowBase.BAD_RESULT"><code class="name">var <span class="ident">BAD_RESULT</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>int([x]) -&gt; integer
+int(x, base=10) -&gt; integer</p>
+<p>Convert a number or string to an integer, or return 0 if no arguments
+are given.
+If x is a number, return x.<strong>int</strong>().
+For floating point
+numbers, this truncates towards zero.</p>
+<p>If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.
+The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.
+The base defaults to 10.
+Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.</p>
+<pre><code>&gt;&gt;&gt; int('0b100', base=0)
+4
+</code></pre></section>
 </dd>
 <dt id="pywrapgraph.MinCostFlowBase.FEASIBLE"><code class="name">var <span class="ident">FEASIBLE</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>int([x]) -&gt; integer
+int(x, base=10) -&gt; integer</p>
+<p>Convert a number or string to an integer, or return 0 if no arguments
+are given.
+If x is a number, return x.<strong>int</strong>().
+For floating point
+numbers, this truncates towards zero.</p>
+<p>If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.
+The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.
+The base defaults to 10.
+Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.</p>
+<pre><code>&gt;&gt;&gt; int('0b100', base=0)
+4
+</code></pre></section>
 </dd>
 <dt id="pywrapgraph.MinCostFlowBase.INFEASIBLE"><code class="name">var <span class="ident">INFEASIBLE</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>int([x]) -&gt; integer
+int(x, base=10) -&gt; integer</p>
+<p>Convert a number or string to an integer, or return 0 if no arguments
+are given.
+If x is a number, return x.<strong>int</strong>().
+For floating point
+numbers, this truncates towards zero.</p>
+<p>If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.
+The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.
+The base defaults to 10.
+Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.</p>
+<pre><code>&gt;&gt;&gt; int('0b100', base=0)
+4
+</code></pre></section>
 </dd>
 <dt id="pywrapgraph.MinCostFlowBase.NOT_SOLVED"><code class="name">var <span class="ident">NOT_SOLVED</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>int([x]) -&gt; integer
+int(x, base=10) -&gt; integer</p>
+<p>Convert a number or string to an integer, or return 0 if no arguments
+are given.
+If x is a number, return x.<strong>int</strong>().
+For floating point
+numbers, this truncates towards zero.</p>
+<p>If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.
+The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.
+The base defaults to 10.
+Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.</p>
+<pre><code>&gt;&gt;&gt; int('0b100', base=0)
+4
+</code></pre></section>
 </dd>
 <dt id="pywrapgraph.MinCostFlowBase.OPTIMAL"><code class="name">var <span class="ident">OPTIMAL</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>int([x]) -&gt; integer
+int(x, base=10) -&gt; integer</p>
+<p>Convert a number or string to an integer, or return 0 if no arguments
+are given.
+If x is a number, return x.<strong>int</strong>().
+For floating point
+numbers, this truncates towards zero.</p>
+<p>If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.
+The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.
+The base defaults to 10.
+Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.</p>
+<pre><code>&gt;&gt;&gt; int('0b100', base=0)
+4
+</code></pre></section>
 </dd>
 <dt id="pywrapgraph.MinCostFlowBase.UNBALANCED"><code class="name">var <span class="ident">UNBALANCED</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>int([x]) -&gt; integer
+int(x, base=10) -&gt; integer</p>
+<p>Convert a number or string to an integer, or return 0 if no arguments
+are given.
+If x is a number, return x.<strong>int</strong>().
+For floating point
+numbers, this truncates towards zero.</p>
+<p>If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.
+The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.
+The base defaults to 10.
+Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.</p>
+<pre><code>&gt;&gt;&gt; int('0b100', base=0)
+4
+</code></pre></section>
 </dd>
 </dl>
 <h3>Instance variables</h3>
@@ -592,8 +767,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"><p>The membership flag</p></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)</code></pre>
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)</code></pre>
 </details>
 </dd>
 </dl>
@@ -604,15 +781,17 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">class SimpleMaxFlow(object):
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
     __repr__ = _swig_repr
 
     def __init__(self):
         _pywrapgraph.SimpleMaxFlow_swiginit(self, _pywrapgraph.new_SimpleMaxFlow())
 
-    def AddArcWithCapacity(self, tail: &#39;operations_research::NodeIndex&#39;, head: &#39;operations_research::NodeIndex&#39;, capacity: &#39;operations_research::FlowQuantity&#39;) -&gt; &#34;operations_research::ArcIndex&#34;:
+    def AddArcWithCapacity(self, tail: &#34;operations_research::NodeIndex&#34;, head: &#34;operations_research::NodeIndex&#34;, capacity: &#34;operations_research::FlowQuantity&#34;) -&gt; &#34;operations_research::ArcIndex&#34;:
         return _pywrapgraph.SimpleMaxFlow_AddArcWithCapacity(self, tail, head, capacity)
 
     def NumNodes(self) -&gt; &#34;operations_research::NodeIndex&#34;:
@@ -621,26 +800,26 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
     def NumArcs(self) -&gt; &#34;operations_research::ArcIndex&#34;:
         return _pywrapgraph.SimpleMaxFlow_NumArcs(self)
 
-    def Tail(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::NodeIndex&#34;:
+    def Tail(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::NodeIndex&#34;:
         return _pywrapgraph.SimpleMaxFlow_Tail(self, arc)
 
-    def Head(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::NodeIndex&#34;:
+    def Head(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::NodeIndex&#34;:
         return _pywrapgraph.SimpleMaxFlow_Head(self, arc)
 
-    def Capacity(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::FlowQuantity&#34;:
+    def Capacity(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::FlowQuantity&#34;:
         return _pywrapgraph.SimpleMaxFlow_Capacity(self, arc)
     OPTIMAL = _pywrapgraph.SimpleMaxFlow_OPTIMAL
     POSSIBLE_OVERFLOW = _pywrapgraph.SimpleMaxFlow_POSSIBLE_OVERFLOW
     BAD_INPUT = _pywrapgraph.SimpleMaxFlow_BAD_INPUT
     BAD_RESULT = _pywrapgraph.SimpleMaxFlow_BAD_RESULT
 
-    def Solve(self, source: &#39;operations_research::NodeIndex&#39;, sink: &#39;operations_research::NodeIndex&#39;) -&gt; &#34;operations_research::SimpleMaxFlow::Status&#34;:
+    def Solve(self, source: &#34;operations_research::NodeIndex&#34;, sink: &#34;operations_research::NodeIndex&#34;) -&gt; &#34;operations_research::SimpleMaxFlow::Status&#34;:
         return _pywrapgraph.SimpleMaxFlow_Solve(self, source, sink)
 
     def OptimalFlow(self) -&gt; &#34;operations_research::FlowQuantity&#34;:
         return _pywrapgraph.SimpleMaxFlow_OptimalFlow(self)
 
-    def Flow(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::FlowQuantity&#34;:
+    def Flow(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::FlowQuantity&#34;:
         return _pywrapgraph.SimpleMaxFlow_Flow(self, arc)
 
     def GetSourceSideMinCut(self) -&gt; &#34;void&#34;:
@@ -649,7 +828,7 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
     def GetSinkSideMinCut(self) -&gt; &#34;void&#34;:
         return _pywrapgraph.SimpleMaxFlow_GetSinkSideMinCut(self)
 
-    def SetArcCapacity(self, arc: &#39;operations_research::ArcIndex&#39;, capacity: &#39;operations_research::FlowQuantity&#39;) -&gt; &#34;void&#34;:
+    def SetArcCapacity(self, arc: &#34;operations_research::ArcIndex&#34;, capacity: &#34;operations_research::FlowQuantity&#34;) -&gt; &#34;void&#34;:
         return _pywrapgraph.SimpleMaxFlow_SetArcCapacity(self, arc, capacity)
     __swig_destroy__ = _pywrapgraph.delete_SimpleMaxFlow</code></pre>
 </details>
@@ -657,19 +836,87 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dl>
 <dt id="pywrapgraph.SimpleMaxFlow.BAD_INPUT"><code class="name">var <span class="ident">BAD_INPUT</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>int([x]) -&gt; integer
+int(x, base=10) -&gt; integer</p>
+<p>Convert a number or string to an integer, or return 0 if no arguments
+are given.
+If x is a number, return x.<strong>int</strong>().
+For floating point
+numbers, this truncates towards zero.</p>
+<p>If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.
+The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.
+The base defaults to 10.
+Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.</p>
+<pre><code>&gt;&gt;&gt; int('0b100', base=0)
+4
+</code></pre></section>
 </dd>
 <dt id="pywrapgraph.SimpleMaxFlow.BAD_RESULT"><code class="name">var <span class="ident">BAD_RESULT</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>int([x]) -&gt; integer
+int(x, base=10) -&gt; integer</p>
+<p>Convert a number or string to an integer, or return 0 if no arguments
+are given.
+If x is a number, return x.<strong>int</strong>().
+For floating point
+numbers, this truncates towards zero.</p>
+<p>If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.
+The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.
+The base defaults to 10.
+Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.</p>
+<pre><code>&gt;&gt;&gt; int('0b100', base=0)
+4
+</code></pre></section>
 </dd>
 <dt id="pywrapgraph.SimpleMaxFlow.OPTIMAL"><code class="name">var <span class="ident">OPTIMAL</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>int([x]) -&gt; integer
+int(x, base=10) -&gt; integer</p>
+<p>Convert a number or string to an integer, or return 0 if no arguments
+are given.
+If x is a number, return x.<strong>int</strong>().
+For floating point
+numbers, this truncates towards zero.</p>
+<p>If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.
+The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.
+The base defaults to 10.
+Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.</p>
+<pre><code>&gt;&gt;&gt; int('0b100', base=0)
+4
+</code></pre></section>
 </dd>
 <dt id="pywrapgraph.SimpleMaxFlow.POSSIBLE_OVERFLOW"><code class="name">var <span class="ident">POSSIBLE_OVERFLOW</span></code></dt>
 <dd>
-<section class="desc"></section>
+<section class="desc"><p>int([x]) -&gt; integer
+int(x, base=10) -&gt; integer</p>
+<p>Convert a number or string to an integer, or return 0 if no arguments
+are given.
+If x is a number, return x.<strong>int</strong>().
+For floating point
+numbers, this truncates towards zero.</p>
+<p>If x is not a number or if base is given, then x must be a string,
+bytes, or bytearray instance representing an integer literal in the
+given base.
+The literal can be preceded by '+' or '-' and be surrounded
+by whitespace.
+The base defaults to 10.
+Valid bases are 0 and 2-36.
+Base 0 means to interpret the base from the string as an integer literal.</p>
+<pre><code>&gt;&gt;&gt; int('0b100', base=0)
+4
+</code></pre></section>
 </dd>
 </dl>
 <h3>Instance variables</h3>
@@ -678,8 +925,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"><p>The membership flag</p></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)</code></pre>
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)</code></pre>
 </details>
 </dd>
 </dl>
@@ -691,8 +940,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def AddArcWithCapacity(self, tail: &#39;operations_research::NodeIndex&#39;, head: &#39;operations_research::NodeIndex&#39;, capacity: &#39;operations_research::FlowQuantity&#39;) -&gt; &#34;operations_research::ArcIndex&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def AddArcWithCapacity(self, tail: &#34;operations_research::NodeIndex&#34;, head: &#34;operations_research::NodeIndex&#34;, capacity: &#34;operations_research::FlowQuantity&#34;) -&gt; &#34;operations_research::ArcIndex&#34;:
     return _pywrapgraph.SimpleMaxFlow_AddArcWithCapacity(self, tail, head, capacity)</code></pre>
 </details>
 </dd>
@@ -702,8 +953,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def Capacity(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::FlowQuantity&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def Capacity(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::FlowQuantity&#34;:
     return _pywrapgraph.SimpleMaxFlow_Capacity(self, arc)</code></pre>
 </details>
 </dd>
@@ -713,8 +966,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def Flow(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::FlowQuantity&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def Flow(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::FlowQuantity&#34;:
     return _pywrapgraph.SimpleMaxFlow_Flow(self, arc)</code></pre>
 </details>
 </dd>
@@ -724,7 +979,9 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def GetSinkSideMinCut(self) -&gt; &#34;void&#34;:
     return _pywrapgraph.SimpleMaxFlow_GetSinkSideMinCut(self)</code></pre>
 </details>
@@ -735,7 +992,9 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def GetSourceSideMinCut(self) -&gt; &#34;void&#34;:
     return _pywrapgraph.SimpleMaxFlow_GetSourceSideMinCut(self)</code></pre>
 </details>
@@ -746,8 +1005,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def Head(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::NodeIndex&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def Head(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::NodeIndex&#34;:
     return _pywrapgraph.SimpleMaxFlow_Head(self, arc)</code></pre>
 </details>
 </dd>
@@ -757,7 +1018,9 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def NumArcs(self) -&gt; &#34;operations_research::ArcIndex&#34;:
     return _pywrapgraph.SimpleMaxFlow_NumArcs(self)</code></pre>
 </details>
@@ -768,7 +1031,9 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def NumNodes(self) -&gt; &#34;operations_research::NodeIndex&#34;:
     return _pywrapgraph.SimpleMaxFlow_NumNodes(self)</code></pre>
 </details>
@@ -779,7 +1044,9 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def OptimalFlow(self) -&gt; &#34;operations_research::FlowQuantity&#34;:
     return _pywrapgraph.SimpleMaxFlow_OptimalFlow(self)</code></pre>
 </details>
@@ -790,8 +1057,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def SetArcCapacity(self, arc: &#39;operations_research::ArcIndex&#39;, capacity: &#39;operations_research::FlowQuantity&#39;) -&gt; &#34;void&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def SetArcCapacity(self, arc: &#34;operations_research::ArcIndex&#34;, capacity: &#34;operations_research::FlowQuantity&#34;) -&gt; &#34;void&#34;:
     return _pywrapgraph.SimpleMaxFlow_SetArcCapacity(self, arc, capacity)</code></pre>
 </details>
 </dd>
@@ -801,8 +1070,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def Solve(self, source: &#39;operations_research::NodeIndex&#39;, sink: &#39;operations_research::NodeIndex&#39;) -&gt; &#34;operations_research::SimpleMaxFlow::Status&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def Solve(self, source: &#34;operations_research::NodeIndex&#34;, sink: &#34;operations_research::NodeIndex&#34;) -&gt; &#34;operations_research::SimpleMaxFlow::Status&#34;:
     return _pywrapgraph.SimpleMaxFlow_Solve(self, source, sink)</code></pre>
 </details>
 </dd>
@@ -812,8 +1083,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def Tail(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::NodeIndex&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def Tail(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::NodeIndex&#34;:
     return _pywrapgraph.SimpleMaxFlow_Tail(self, arc)</code></pre>
 </details>
 </dd>
@@ -825,18 +1098,20 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">class SimpleMinCostFlow(MinCostFlowBase):
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#39;The membership flag&#39;)
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
     __repr__ = _swig_repr
 
     def __init__(self):
         _pywrapgraph.SimpleMinCostFlow_swiginit(self, _pywrapgraph.new_SimpleMinCostFlow())
 
-    def AddArcWithCapacityAndUnitCost(self, tail: &#39;operations_research::NodeIndex&#39;, head: &#39;operations_research::NodeIndex&#39;, capacity: &#39;operations_research::FlowQuantity&#39;, unit_cost: &#39;operations_research::CostValue&#39;) -&gt; &#34;operations_research::ArcIndex&#34;:
+    def AddArcWithCapacityAndUnitCost(self, tail: &#34;operations_research::NodeIndex&#34;, head: &#34;operations_research::NodeIndex&#34;, capacity: &#34;operations_research::FlowQuantity&#34;, unit_cost: &#34;operations_research::CostValue&#34;) -&gt; &#34;operations_research::ArcIndex&#34;:
         return _pywrapgraph.SimpleMinCostFlow_AddArcWithCapacityAndUnitCost(self, tail, head, capacity, unit_cost)
 
-    def SetNodeSupply(self, node: &#39;operations_research::NodeIndex&#39;, supply: &#39;operations_research::FlowQuantity&#39;) -&gt; &#34;void&#34;:
+    def SetNodeSupply(self, node: &#34;operations_research::NodeIndex&#34;, supply: &#34;operations_research::FlowQuantity&#34;) -&gt; &#34;void&#34;:
         return _pywrapgraph.SimpleMinCostFlow_SetNodeSupply(self, node, supply)
 
     def Solve(self) -&gt; &#34;operations_research::MinCostFlowBase::Status&#34;:
@@ -851,7 +1126,7 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
     def MaximumFlow(self) -&gt; &#34;operations_research::FlowQuantity&#34;:
         return _pywrapgraph.SimpleMinCostFlow_MaximumFlow(self)
 
-    def Flow(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::FlowQuantity&#34;:
+    def Flow(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::FlowQuantity&#34;:
         return _pywrapgraph.SimpleMinCostFlow_Flow(self, arc)
 
     def NumNodes(self) -&gt; &#34;operations_research::NodeIndex&#34;:
@@ -860,19 +1135,19 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
     def NumArcs(self) -&gt; &#34;operations_research::ArcIndex&#34;:
         return _pywrapgraph.SimpleMinCostFlow_NumArcs(self)
 
-    def Tail(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::NodeIndex&#34;:
+    def Tail(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::NodeIndex&#34;:
         return _pywrapgraph.SimpleMinCostFlow_Tail(self, arc)
 
-    def Head(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::NodeIndex&#34;:
+    def Head(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::NodeIndex&#34;:
         return _pywrapgraph.SimpleMinCostFlow_Head(self, arc)
 
-    def Capacity(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::FlowQuantity&#34;:
+    def Capacity(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::FlowQuantity&#34;:
         return _pywrapgraph.SimpleMinCostFlow_Capacity(self, arc)
 
-    def Supply(self, node: &#39;operations_research::NodeIndex&#39;) -&gt; &#34;operations_research::FlowQuantity&#34;:
+    def Supply(self, node: &#34;operations_research::NodeIndex&#34;) -&gt; &#34;operations_research::FlowQuantity&#34;:
         return _pywrapgraph.SimpleMinCostFlow_Supply(self, node)
 
-    def UnitCost(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::CostValue&#34;:
+    def UnitCost(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::CostValue&#34;:
         return _pywrapgraph.SimpleMinCostFlow_UnitCost(self, arc)
     __swig_destroy__ = _pywrapgraph.delete_SimpleMinCostFlow</code></pre>
 </details>
@@ -888,8 +1163,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def AddArcWithCapacityAndUnitCost(self, tail: &#39;operations_research::NodeIndex&#39;, head: &#39;operations_research::NodeIndex&#39;, capacity: &#39;operations_research::FlowQuantity&#39;, unit_cost: &#39;operations_research::CostValue&#39;) -&gt; &#34;operations_research::ArcIndex&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def AddArcWithCapacityAndUnitCost(self, tail: &#34;operations_research::NodeIndex&#34;, head: &#34;operations_research::NodeIndex&#34;, capacity: &#34;operations_research::FlowQuantity&#34;, unit_cost: &#34;operations_research::CostValue&#34;) -&gt; &#34;operations_research::ArcIndex&#34;:
     return _pywrapgraph.SimpleMinCostFlow_AddArcWithCapacityAndUnitCost(self, tail, head, capacity, unit_cost)</code></pre>
 </details>
 </dd>
@@ -899,8 +1176,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def Capacity(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::FlowQuantity&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def Capacity(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::FlowQuantity&#34;:
     return _pywrapgraph.SimpleMinCostFlow_Capacity(self, arc)</code></pre>
 </details>
 </dd>
@@ -910,8 +1189,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def Flow(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::FlowQuantity&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def Flow(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::FlowQuantity&#34;:
     return _pywrapgraph.SimpleMinCostFlow_Flow(self, arc)</code></pre>
 </details>
 </dd>
@@ -921,8 +1202,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def Head(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::NodeIndex&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def Head(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::NodeIndex&#34;:
     return _pywrapgraph.SimpleMinCostFlow_Head(self, arc)</code></pre>
 </details>
 </dd>
@@ -932,7 +1215,9 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def MaximumFlow(self) -&gt; &#34;operations_research::FlowQuantity&#34;:
     return _pywrapgraph.SimpleMinCostFlow_MaximumFlow(self)</code></pre>
 </details>
@@ -943,7 +1228,9 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def NumArcs(self) -&gt; &#34;operations_research::ArcIndex&#34;:
     return _pywrapgraph.SimpleMinCostFlow_NumArcs(self)</code></pre>
 </details>
@@ -954,7 +1241,9 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def NumNodes(self) -&gt; &#34;operations_research::NodeIndex&#34;:
     return _pywrapgraph.SimpleMinCostFlow_NumNodes(self)</code></pre>
 </details>
@@ -965,7 +1254,9 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def OptimalCost(self) -&gt; &#34;operations_research::CostValue&#34;:
     return _pywrapgraph.SimpleMinCostFlow_OptimalCost(self)</code></pre>
 </details>
@@ -976,8 +1267,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def SetNodeSupply(self, node: &#39;operations_research::NodeIndex&#39;, supply: &#39;operations_research::FlowQuantity&#39;) -&gt; &#34;void&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def SetNodeSupply(self, node: &#34;operations_research::NodeIndex&#34;, supply: &#34;operations_research::FlowQuantity&#34;) -&gt; &#34;void&#34;:
     return _pywrapgraph.SimpleMinCostFlow_SetNodeSupply(self, node, supply)</code></pre>
 </details>
 </dd>
@@ -987,7 +1280,9 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Solve(self) -&gt; &#34;operations_research::MinCostFlowBase::Status&#34;:
     return _pywrapgraph.SimpleMinCostFlow_Solve(self)</code></pre>
 </details>
@@ -998,7 +1293,9 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def SolveMaxFlowWithMinCost(self) -&gt; &#34;operations_research::MinCostFlowBase::Status&#34;:
     return _pywrapgraph.SimpleMinCostFlow_SolveMaxFlowWithMinCost(self)</code></pre>
 </details>
@@ -1009,8 +1306,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def Supply(self, node: &#39;operations_research::NodeIndex&#39;) -&gt; &#34;operations_research::FlowQuantity&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def Supply(self, node: &#34;operations_research::NodeIndex&#34;) -&gt; &#34;operations_research::FlowQuantity&#34;:
     return _pywrapgraph.SimpleMinCostFlow_Supply(self, node)</code></pre>
 </details>
 </dd>
@@ -1020,8 +1319,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def Tail(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::NodeIndex&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def Tail(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::NodeIndex&#34;:
     return _pywrapgraph.SimpleMinCostFlow_Tail(self, arc)</code></pre>
 </details>
 </dd>
@@ -1031,8 +1332,10 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
-<pre><code class="python">def UnitCost(self, arc: &#39;operations_research::ArcIndex&#39;) -&gt; &#34;operations_research::CostValue&#34;:
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def UnitCost(self, arc: &#34;operations_research::ArcIndex&#34;) -&gt; &#34;operations_research::CostValue&#34;:
     return _pywrapgraph.SimpleMinCostFlow_UnitCost(self, arc)</code></pre>
 </details>
 </dd>
@@ -1041,6 +1344,13 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 <ul class="hlist">
 <li><code><b><a title="pywrapgraph.MinCostFlowBase" href="#pywrapgraph.MinCostFlowBase">MinCostFlowBase</a></b></code>:
 <ul class="hlist">
+<li><code><a title="pywrapgraph.MinCostFlowBase.BAD_COST_RANGE" href="#pywrapgraph.MinCostFlowBase.BAD_COST_RANGE">BAD_COST_RANGE</a></code></li>
+<li><code><a title="pywrapgraph.MinCostFlowBase.BAD_RESULT" href="#pywrapgraph.MinCostFlowBase.BAD_RESULT">BAD_RESULT</a></code></li>
+<li><code><a title="pywrapgraph.MinCostFlowBase.FEASIBLE" href="#pywrapgraph.MinCostFlowBase.FEASIBLE">FEASIBLE</a></code></li>
+<li><code><a title="pywrapgraph.MinCostFlowBase.INFEASIBLE" href="#pywrapgraph.MinCostFlowBase.INFEASIBLE">INFEASIBLE</a></code></li>
+<li><code><a title="pywrapgraph.MinCostFlowBase.NOT_SOLVED" href="#pywrapgraph.MinCostFlowBase.NOT_SOLVED">NOT_SOLVED</a></code></li>
+<li><code><a title="pywrapgraph.MinCostFlowBase.OPTIMAL" href="#pywrapgraph.MinCostFlowBase.OPTIMAL">OPTIMAL</a></code></li>
+<li><code><a title="pywrapgraph.MinCostFlowBase.UNBALANCED" href="#pywrapgraph.MinCostFlowBase.UNBALANCED">UNBALANCED</a></code></li>
 <li><code><a title="pywrapgraph.MinCostFlowBase.thisown" href="#pywrapgraph.MinCostFlowBase.thisown">thisown</a></code></li>
 </ul>
 </li>
@@ -1149,7 +1459,7 @@ def AStarShortestPath(node_count: &#39;int&#39;, start_node: &#39;int&#39;, end_
 </main>
 <footer id="footer">
 <p><span style="color:#ddd">&#21328;</span></p>
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.6.3</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.7.0</a>.</p>
 </footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
 <script>hljs.initHighlightingOnLoad()</script>

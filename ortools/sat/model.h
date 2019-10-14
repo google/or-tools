@@ -28,55 +28,65 @@
 namespace operations_research {
 namespace sat {
 
-// Class that owns everything related to a particular optimization model.
-//
-// This class is actually a fully generic wrapper that can hold any type of
-// constraints, watchers, solvers and provide a mecanism to wire them together.
+/**
+ * Class that owns everything related to a particular optimization model.
+ *
+ * This class is actually a fully generic wrapper that can hold any type of
+ * constraints, watchers, solvers and provide a mecanism to wire them together.
+ */
 class Model {
  public:
   Model() {}
 
-  // This allows to have a nicer API on the client side, and it allows both of
-  // these forms:
-  //   - ConstraintCreationFunction(contraint_args, &model);
-  //   - model.Add(ConstraintCreationFunction(contraint_args));
-  //
-  // The second form is a bit nicer for the client and it also allows to store
-  // constraints and add them later. However, the function creating the
-  // constraint is slighly more involved:
-  //
-  // std::function<void(Model*)> ConstraintCreationFunction(contraint_args) {
-  //   return [=] (Model* model) {
-  //      ... the same code ...
-  //   };
-  // }
-  //
-  // We also have a templated return value for the functions that need it like
-  // const BooleanVariable b = model.Add(NewBooleanVariable());
-  // const IntegerVariable i = model.Add(NewWeightedSum(weigths, variables));
+  /**
+   * This makes it possible  to have a nicer API on the client side, and it
+   * allows both of these forms:
+   *   - ConstraintCreationFunction(contraint_args, &model);
+   *   - model.Add(ConstraintCreationFunction(contraint_args));
+   *
+   * The second form is a bit nicer for the client and it also allows to store
+   * constraints and add them later. However, the function creating the
+   * constraint is slighly more involved.
+   *
+   * \code
+   std::function<void(Model*)> ConstraintCreationFunction(contraint_args) {
+     return [=] (Model* model) {
+        ... the same code ...
+     };
+   }
+   \endcode
+   *
+   * We also have a templated return value for the functions that need it like
+   * \code
+   const BooleanVariable b = model.Add(NewBooleanVariable());
+   const IntegerVariable i = model.Add(NewWeightedSum(weights, variables));
+   \endcode
+   */
   template <typename T>
   T Add(std::function<T(Model*)> f) {
     return f(this);
   }
 
-  // Similar to Add() but this is const.
+  /// Similar to Add() but this is const.
   template <typename T>
   T Get(std::function<T(const Model&)> f) const {
     return f(*this);
   }
 
-  // Returns an object of type T that is unique to this model (like a "local"
-  // singleton). This returns an already created instance or create a new one if
-  // needed using the T(Model* model) constructor if it exist or T() otherwise.
-  //
-  // This works a bit like in a dependency injection framework and allows to
-  // really easily wire all the classes that make up a solver together. For
-  // instance a constraint can depends on the LiteralTrail, or the IntegerTrail
-  // or both, it can depend on a Watcher class to register itself in order to
-  // be called when needed and so on.
-  //
-  // IMPORTANT: the Model* constructors function shouldn't form a cycle between
-  // each other, otherwise this will crash the program.
+  /**
+   * Returns an object of type T that is unique to this model (like a "local"
+   * singleton). This returns an already created instance or create a new one if
+   * needed using the T(Model* model) constructor if it exist or T() otherwise.
+   *
+   * This works a bit like in a dependency injection framework and allows to
+   * really easily wire all the classes that make up a solver together. For
+   * instance a constraint can depends on the LiteralTrail, or the IntegerTrail
+   * or both, it can depend on a Watcher class to register itself in order to
+   * be called when needed and so on.
+   *
+   * IMPORTANT: the Model* constructor functions shouldn't form a cycle between
+   * each other, otherwise this will crash the program.
+   */
   template <typename T>
   T* GetOrCreate() {
     const size_t type_id = gtl::FastTypeId<T>();
@@ -90,31 +100,41 @@ class Model {
     return static_cast<T*>(gtl::FindOrDie(singletons_, type_id));
   }
 
-  // Likes GetOrCreate() but do not create the object if it is non-existing.
-  // This returns a const version of the object.
+  /**
+   * Likes GetOrCreate() but do not create the object if it is non-existing.
+   *
+   * This returns a const version of the object.
+   */
   template <typename T>
   const T* Get() const {
     return static_cast<const T*>(
         gtl::FindWithDefault(singletons_, gtl::FastTypeId<T>(), nullptr));
   }
 
-  // Same as Get(), but returns a mutable version of the object.
+  /**
+   * Same as Get(), but returns a mutable version of the object.
+   */
   template <typename T>
   T* Mutable() const {
     return static_cast<T*>(
         gtl::FindWithDefault(singletons_, gtl::FastTypeId<T>(), nullptr));
   }
 
-  // Gives ownership of a pointer to this model.
-  // It will be destroyed when the model is.
+  /**
+   * Gives ownership of a pointer to this model.
+   *
+   * It will be destroyed when the model is.
+   */
   template <typename T>
   void TakeOwnership(T* t) {
     cleanup_list_.emplace_back(new Delete<T>(t));
   }
 
-  // This returns a non-singleton object owned by the model and created with the
-  // T(Model* model) constructor if it exist or the T() constructor otherwise.
-  // It is just a shortcut to new + TakeOwnership().
+  /**
+   * This returns a non-singleton object owned by the model and created with the
+   * T(Model* model) constructor if it exist or the T() constructor otherwise.
+   * It is just a shortcut to new + TakeOwnership().
+   */
   template <typename T>
   T* Create() {
     T* new_t = MyNew<T>(0);
@@ -122,8 +142,11 @@ class Model {
     return new_t;
   }
 
-  // Register a non-owned class that will be "singleton" in the model.
-  // It is an error to call this on an already registered class.
+  /**
+   * Register a non-owned class that will be "singleton" in the model.
+   *
+   * It is an error to call this on an already registered class.
+   */
   template <typename T>
   void Register(T* non_owned_class) {
     const size_t type_id = gtl::FastTypeId<T>();

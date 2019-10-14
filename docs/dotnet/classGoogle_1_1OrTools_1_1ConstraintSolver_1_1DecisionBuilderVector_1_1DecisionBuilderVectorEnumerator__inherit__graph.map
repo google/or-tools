@@ -1,5 +1,5 @@
-<map id="Google.OrTools.ConstraintSolver.DecisionBuilderVector.DecisionBuilderVectorEnumerator" name="Google.OrTools.ConstraintSolver.DecisionBuilderVector.DecisionBuilderVectorEnumerator">
-<area shape="rect" id="node1" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="227,33,474,85"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,179,44"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,68,179,120"/>
+<map id="DecisionBuilderVector.DecisionBuilderVectorEnumerator" name="DecisionBuilderVector.DecisionBuilderVectorEnumerator">
+<area shape="rect" id="node1" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="38,79,244,117"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,100,31"/>
+<area shape="rect" id="node3" title=" " alt="" coords="124,5,334,31"/>
 </map>

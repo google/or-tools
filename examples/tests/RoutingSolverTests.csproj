@@ -20,6 +20,6 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.7.0" />
     <PackageReference Include="xunit" Version="2.3.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
-    <PackageReference Include="Google.OrTools" Version="7.3.*" />
+    <PackageReference Include="Google.OrTools" Version="7.4.*" />
   </ItemGroup>
 </Project>

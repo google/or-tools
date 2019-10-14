@@ -1,17 +1,9 @@
 # Generate documentation
 
-cpp-doc:
-	doxygen tools/doc/cpp_algorithms.doxy
-	doxygen tools/doc/cpp_graph.doxy
-	doxygen tools/doc/cpp_linear.doxy
-	doxygen tools/doc/cpp_routing.doxy
-	doxygen tools/doc/cpp_sat.doxy
+doc: doxy-doc python-doc
 
-dotnet-doc:
-	doxygen tools/doc/dotnet.doxy
-
-java-doc:
-	doxygen tools/doc/java.doxy
+doxy-doc:
+	python3 tools/doc/gen_ref_doc.py
 
 python-doc:
 	$(SET_PYTHONPATH) pdoc3 --force --html --template-dir tools/doc/templates -o docs/python/ortools/sat/python/ ortools/sat/python/cp_model.py

@@ -952,6 +952,12 @@ public final class CpModel {
     return addCumulative(intervals, toLongArray(demands), capacity);
   }
 
+  /** Adds hinting to a variable */
+  public void addHint(IntVar var, long value) {
+    modelBuilder.getSolutionHintBuilder().addVars(var.getIndex());
+    modelBuilder.getSolutionHintBuilder().addValues(value);
+  }
+
   // Objective.
 
   /** Adds a minimization objective of a linear expression. */

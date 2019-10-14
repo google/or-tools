@@ -115,6 +115,7 @@ cc_library(
         "//ortools/port:file",
         "//ortools/port:proto_utils",
         "//ortools/util:fp_utils",
+        "//ortools/util:lazy_mutable_copy",
     ] + select({
         ":with_bop": [
             "//ortools/bop:bop_parameters_cc_proto",

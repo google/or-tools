@@ -19,8 +19,8 @@ help:
 	@echo -e "\t${BOLD}archives${RESET}: Build all OR-Tools archives in export."
 	@echo -e "\t${BOLD}test_archives${RESET}: Test each OR-Tools archives for all ${BOLD}<distro>${RESET} and ${BOLD}<lang>${RESET}."
 	@echo
-	@echo -e "\t${BOLD}python${RESET}: Build manylinux2010 python 'ortools' wheel packages (2.7, 3.5, 3.6, 3.7)."
-	@echo -e "\t${BOLD}test_python${RESET}: Test manylinux2010 python 'ortools' wheel packages (2.7, 3.5, 3.6, 3.7)."
+	@echo -e "\t${BOLD}python${RESET}: Build manylinux2010 python 'ortools' wheel packages (3.5, 3.6, 3.7)."
+	@echo -e "\t${BOLD}test_python${RESET}: Test manylinux2010 python 'ortools' wheel packages (3.5, 3.6, 3.7)."
 	@echo
 	@echo -e "\t${BOLD}docker_<distro>${RESET}: Build an image container with or-tools sources and third parties already prebuilt."
 	@echo -e "\t${BOLD}bash_<distro>${RESET}: Run a container using the ${BOLD}docker_<distro>${RESET} image."
@@ -128,7 +128,7 @@ export/python: | export
 #################
 
 # Currently supported distro
-DISTROS = centos-7 debian-9 ubuntu-19.04 ubuntu-18.04 ubuntu-16.04
+DISTROS = centos-7 debian-9 ubuntu-19.10 ubuntu-18.04 ubuntu-16.04
 
 # Create build docker images with OR-Tools built
 targets = $(addprefix docker_, $(DISTROS))
@@ -307,7 +307,7 @@ distclean_python: clean_python
 ##########################
 ##  MINIZINC CHALLENGE  ##
 ##########################
-MZN_TAG=or-tools-minizinc-challenge:2019v2
+MZN_TAG=or-tools-minizinc-challenge:2019v3
 
 minizinc-challenge-image:
 	docker build -f minizinc-challenge.Dockerfile -t $(MZN_TAG) .

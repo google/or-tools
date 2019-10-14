@@ -1,3 +1,9 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1operations__research__constraint__solverPINVOKE.html" title=" " alt="" coords="5,5,194,57"/>
+<area shape="rect" id="node1" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1LinearExpr.html" title=" " alt="" coords="5,132,89,159"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1ProductCst.html" title=" " alt="" coords="143,5,231,32"/>
+<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1Sum.html" title=" " alt="" coords="163,56,212,83"/>
+<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1SumArray.html" title=" " alt="" coords="147,107,227,133"/>
+<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1SumCst.html" title=" " alt="" coords="152,157,223,184"/>
+<area shape="rect" id="node6" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1SumVarArray.html" title=" " alt="" coords="137,208,237,235"/>
+<area shape="rect" id="node7" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1VarWrapper.html" title=" " alt="" coords="142,259,233,285"/>
 </map>

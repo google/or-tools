@@ -17,6 +17,7 @@
 #include <cmath>
 #include <functional>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "ortools/algorithms/knapsack_solver_for_cuts.h"
@@ -76,11 +77,18 @@ bool SolutionSatisfiesConstraint(
              : false;
 }
 
-bool AllCoefficientsMagnitudeAreTheSame(const LinearConstraint& constraint) {
-  if (constraint.vars.size() <= 1) return true;
+bool SmallRangeAndAllCoefficientsMagnitudeAreTheSame(
+    const LinearConstraint& constraint, IntegerTrail* integer_trail) {
+  if (constraint.vars.empty()) return true;
 
   const int64 magnitude = std::abs(constraint.coeffs[0].value());
   for (int i = 1; i < constraint.coeffs.size(); ++i) {
+    const IntegerVariable var = constraint.vars[i];
+    if (integer_trail->LevelZeroUpperBound(var) -
+            integer_trail->LevelZeroLowerBound(var) >
+        1) {
+      return false;
+    }
     if (std::abs(constraint.coeffs[i].value()) != magnitude) {
       return false;
     }
@@ -359,12 +367,15 @@ bool CanFormValidKnapsackCover(
   return true;
 }
 
-void ConvertToKnapsackForm(
-    const LinearConstraint& constraint,
-    std::vector<LinearConstraint>* knapsack_constraints) {
-  if (AllCoefficientsMagnitudeAreTheSame(constraint)) {
-    // The knapsack cut generated on such constraints can not be stronger than
-    // the constraint themselves.
+void ConvertToKnapsackForm(const LinearConstraint& constraint,
+                           std::vector<LinearConstraint>* knapsack_constraints,
+                           IntegerTrail* integer_trail) {
+  // If all coefficient are the same, the generated knapsack cuts cannot be
+  // stronger than the constraint itself. However, when we substitute variables
+  // using the implication graph, this is not longer true. So we only skip
+  // constraints with same coeff and no substitutions.
+  if (SmallRangeAndAllCoefficientsMagnitudeAreTheSame(constraint,
+                                                      integer_trail)) {
     return;
   }
   if (constraint.ub < kMaxIntegerValue) {
@@ -414,28 +425,56 @@ CutGenerator CreateKnapsackCoverCutGenerator(
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   std::vector<LinearConstraint> knapsack_constraints;
   for (const LinearConstraint& constraint : base_constraints) {
-    if (constraint.vars.empty()) continue;
-    ConvertToKnapsackForm(constraint, &knapsack_constraints);
+    // There is often a lot of small linear base constraints and it doesn't seem
+    // super useful to generate cuts for constraints of size 2. Any valid cut
+    // of size 1 should be already infered by the propagation.
+    //
+    // TODO(user): The case of size 2 is a bit less clear. investigate more if
+    // it is useful.
+    if (constraint.vars.size() <= 2) continue;
+
+    ConvertToKnapsackForm(constraint, &knapsack_constraints, integer_trail);
   }
   VLOG(1) << "#knapsack constraints: " << knapsack_constraints.size();
+
+  // Note(user): for Knapsack cuts, it seems always advantageous to replace a
+  // variable X by a TIGHT lower bound of the form "coeff * binary + lb". This
+  // will not change "covers" but can only result in more violation by the
+  // current LP solution.
+  ImpliedBoundsProcessor implied_bounds_processor(
+      vars, integer_trail, model->GetOrCreate<ImpliedBounds>());
+
   // TODO(user): do not add generator if there are no knapsack constraints.
-  result.generate_cuts = [knapsack_constraints, vars, model, integer_trail](
+  result.generate_cuts = [implied_bounds_processor, knapsack_constraints, vars,
+                          model, integer_trail](
                              const gtl::ITIVector<IntegerVariable, double>&
                                  lp_values,
                              LinearConstraintManager* manager) {
+    // TODO(user): When we use implied-bound substitution, we might still infer
+    // an interesting cut even if all variables are integer. See if we still
+    // want to skip all such constraints.
     if (AllVarsTakeIntegerValue(vars, lp_values)) return;
 
     KnapsackSolverForCuts knapsack_solver(
         "Knapsack on demand cover cut generator");
     int64 skipped_constraints = 0;
+    LinearConstraint mutable_constraint;
 
     // Iterate through all knapsack constraints.
     for (const LinearConstraint& constraint : knapsack_constraints) {
       if (model->GetOrCreate<TimeLimit>()->LimitReached()) break;
       VLOG(2) << "Processing constraint: " << constraint.DebugString();
+
+      mutable_constraint = constraint;
+      implied_bounds_processor.ProcessUpperBoundedConstraint(
+          lp_values, &mutable_constraint);
+      MakeAllCoefficientsPositive(&mutable_constraint);
+
       const LinearConstraint preprocessed_constraint =
-          GetPreprocessedLinearConstraint(constraint, lp_values,
+          GetPreprocessedLinearConstraint(mutable_constraint, lp_values,
                                           *integer_trail);
+      if (preprocessed_constraint.vars.empty()) continue;
+
       if (!CanFormValidKnapsackCover(preprocessed_constraint, lp_values,
                                      *integer_trail)) {
         skipped_constraints++;
@@ -495,7 +534,7 @@ CutGenerator CreateKnapsackCoverCutGenerator(
       // TODO(user): Consider providing lower bound threshold as
       // sum_variable_profit - 1.0 + kMinCutViolation.
       // TODO(user): Set node limit for knapsack solver.
-      std::unique_ptr<TimeLimit> time_limit_for_solver =
+      auto time_limit_for_solver =
           absl::make_unique<TimeLimit>(time_limit_for_knapsack_solver);
       const double sum_of_distance_to_ub_for_vars_in_cover =
           sum_variable_profit -
@@ -531,7 +570,7 @@ CutGenerator CreateKnapsackCoverCutGenerator(
         // Check if the constraint has only binary variables.
         bool is_lifted = false;
         if (ConstraintIsEligibleForLifting(cut, *integer_trail)) {
-          if (LiftKnapsackCut(constraint, lp_values,
+          if (LiftKnapsackCut(mutable_constraint, lp_values,
                               cut_vars_original_coefficients, *integer_trail,
                               model->GetOrCreate<TimeLimit>(), &cut)) {
             is_lifted = true;
@@ -650,10 +689,8 @@ void IntegerRoundingCut(RoundingOptions options, std::vector<double> lp_values,
         change_sign_at_postprocessing[i] = true;
         cut->coeffs[i] = -cut->coeffs[i];
         lp_values[i] = -lp_values[i];
-
-        std::swap(lower_bounds[i], upper_bounds[i]);
-        lower_bounds[i] = -lower_bounds[i];
-        upper_bounds[i] = -upper_bounds[i];
+        lower_bounds[i] = -ub;
+        upper_bounds[i] = -lb;
       }
     }
 
@@ -946,5 +983,164 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
 
   return result;
 }
+
+void ImpliedBoundsProcessor::ProcessUpperBoundedConstraint(
+    const gtl::ITIVector<IntegerVariable, double>& lp_values,
+    LinearConstraint* cut) const {
+  tmp_terms_.clear();
+  IntegerValue new_ub = cut->ub;
+  bool changed = false;
+
+  const int size = cut->vars.size();
+  for (int i = 0; i < size; ++i) {
+    // Make sure we have a positive coefficient.
+    IntegerVariable var = cut->vars[i];
+    IntegerValue coeff = cut->coeffs[i];
+    if (coeff < 0) {
+      coeff = -coeff;
+      var = NegationOf(var);
+    }
+
+    // Skip variable at their Lower bound in the relaxation.
+    const IntegerValue lb = integer_trail_->LevelZeroLowerBound(var);
+    if (lp_values[var] < lb.value() + 1e-6) {
+      tmp_terms_.push_back({var, coeff});
+      continue;
+    }
+
+    bool keep_original_term = true;
+    for (const ImpliedBoundEntry& entry :
+         implied_bounds_->GetImpliedBounds(var)) {
+      // Only process entries with a Boolean variable currently part of the LP
+      // we are considering for this cut.
+      //
+      // TODO(user): the more we use cuts, the less it make sense to have a lot
+      // of small independent LPs.
+      if (!lp_vars_.contains(PositiveVariable(entry.literal_view))) {
+        continue;
+      }
+
+      const IntegerValue diff = entry.lower_bound - lb;
+      const double lp_value = entry.is_positive
+                                  ? lp_values[entry.literal_view]
+                                  : 1.0 - lp_values[entry.literal_view];
+
+      // Only consider "tight" implied bounds. The implied bound could be above
+      // if the relaxation of the implied relation wasn't added to the LP.
+      //
+      // TODO(user): Just generate an implied cut then?
+      if (lb.value() + lp_value * diff.value() + 1e-6 < lp_values[var]) {
+        continue;
+      }
+
+      if (entry.is_positive) {
+        // X >= Indicator * (bound - lb) + lb
+        tmp_terms_.push_back({entry.literal_view, coeff * diff});
+        new_ub -= coeff * lb;
+      } else {
+        // X >= (1 - Indicator) * (bound - lb) + lb
+        // X >= -Indicator * (bound - lb) + bound
+        tmp_terms_.push_back({entry.literal_view, -coeff * diff});
+        new_ub -= coeff * entry.lower_bound;
+      }
+
+      changed = true;
+      keep_original_term = false;
+      VLOG(2) << "var = " << var << " (" << lp_values[var] << ") "
+              << entry.literal_view << " (" << lp_values[entry.literal_view]
+              << " == " << (entry.is_positive ? 1 : 0)
+              << ") => var >=" << entry.lower_bound << " "
+              << integer_trail_->InitialVariableDomain(var);
+      break;
+    }
+
+    if (keep_original_term) {
+      tmp_terms_.push_back({var, coeff});
+    }
+  }
+
+  if (!changed) return;
+
+  // Update the cut.
+  cut->lb = kMinIntegerValue;  // Not relevant.
+  cut->ub = new_ub;
+  CleanTermsAndFillConstraint(&tmp_terms_, cut);
+}
+
+namespace {
+
+void TryToGenerateAllDiffCut(
+    const std::vector<std::pair<double, IntegerVariable>>& sorted_vars_lp,
+    const IntegerTrail& integer_trail,
+    const gtl::ITIVector<IntegerVariable, double>& lp_values,
+    LinearConstraintManager* manager) {
+  Domain current_union;
+  std::vector<IntegerVariable> current_set_vars;
+  double sum = 0.0;
+  for (auto value_var : sorted_vars_lp) {
+    sum += value_var.first;
+    const IntegerVariable var = value_var.second;
+    Domain var_domain = integer_trail.InitialVariableDomain(var);
+    // TODO(user): The union of the domain of the variable being considered
+    // does not give the tightest bounds, try to get better bounds.
+    current_union = current_union.UnionWith(var_domain);
+    current_set_vars.push_back(var);
+    const int64 required_min_sum =
+        SumOfKMinValueInDomain(current_union, current_set_vars.size());
+    const int64 required_max_sum =
+        SumOfKMaxValueInDomain(current_union, current_set_vars.size());
+    if (sum < required_min_sum || sum > required_max_sum) {
+      LinearConstraint cut;
+      for (IntegerVariable var : current_set_vars) {
+        cut.AddTerm(var, IntegerValue(1));
+      }
+      cut.lb = IntegerValue(required_min_sum);
+      cut.ub = IntegerValue(required_max_sum);
+      manager->AddCut(cut, "all_diff", lp_values);
+      // NOTE: We can extend the current set but it is more helpful to generate
+      // the cut on a different set of variables so we reset the counters.
+      sum = 0.0;
+      current_set_vars.clear();
+      current_union = Domain();
+    }
+  }
+}
+
+}  // namespace
+
+CutGenerator CreateAllDifferentCutGenerator(
+    const std::vector<IntegerVariable>& vars, Model* model) {
+  CutGenerator result;
+  result.vars = vars;
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  Trail* trail = model->GetOrCreate<Trail>();
+  result.generate_cuts =
+      [vars, integer_trail, trail](
+          const gtl::ITIVector<IntegerVariable, double>& lp_values,
+          LinearConstraintManager* manager) {
+        // These cuts work at all levels but the generator adds too many cuts on
+        // some instances and degrade the performance so we only use it at level
+        // 0.
+        if (trail->CurrentDecisionLevel() > 0) return;
+        std::vector<std::pair<double, IntegerVariable>> sorted_vars;
+        for (const IntegerVariable var : vars) {
+          if (integer_trail->LevelZeroLowerBound(var) ==
+              integer_trail->LevelZeroUpperBound(var)) {
+            continue;
+          }
+          sorted_vars.push_back(std::make_pair(lp_values[var], var));
+        }
+        std::sort(sorted_vars.begin(), sorted_vars.end());
+        TryToGenerateAllDiffCut(sorted_vars, *integer_trail, lp_values,
+                                manager);
+        // Other direction.
+        std::reverse(sorted_vars.begin(), sorted_vars.end());
+        TryToGenerateAllDiffCut(sorted_vars, *integer_trail, lp_values,
+                                manager);
+      };
+  VLOG(1) << "Created all_diff cut generator of size: " << vars.size();
+  return result;
+}
+
 }  // namespace sat
 }  // namespace operations_research

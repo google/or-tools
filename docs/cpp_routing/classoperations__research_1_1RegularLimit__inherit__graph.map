@@ -1,0 +1,6 @@
+<map id="RegularLimit" name="RegularLimit">
+<area shape="rect" id="node1" title="Usual limit based on wall_time, number of explored branches and number of failures in the search tree..." alt="" coords="11,225,107,251"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1SearchLimit.html" title="Base class of all search limits." alt="" coords="13,152,105,177"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events." alt="" coords="5,79,113,104"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="14,5,104,31"/>
+</map>

@@ -1,39 +1,28 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <AssemblyName>Google.OrTools.FSharp</AssemblyName>
     <Version>@PROJECT_VERSION@</Version>
 
     <!-- Nuget Properties -->
-    <MinClientVersion>4.1.0</MinClientVersion>
     <Description>.NET F# wrapper for the Operations Research Tools project</Description>
-    <NeutralLanguage>en-US</NeutralLanguage>
-    <Authors>Laurent Perron</Authors>
-    <Company>Google LLC</Company>
-    <Copyright>Copyright 2018 Google LLC</Copyright>
+
     <!-- Pack Option -->
     <Title>Google.OrTools.FSharp v@PROJECT_VERSION@</Title>
     <PackageId>Google.OrTools.FSharp</PackageId>
-    <PackageTags>native;math;LinearSolver;LinearProgramming;ConstraintSolver;ConstraintProgramming</PackageTags>
-    <PackageIconUrl>https://developers.google.com/optimization/images/orLogo.png</PackageIconUrl>
-    <PackageProjectUrl>https://developers.google.com/optimization</PackageProjectUrl>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <PackageOutputPath>../../../packages</PackageOutputPath>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/google/or-tools</RepositoryUrl>
 
+    <!-- Signing -->
     <AssemblyKeyFileAttribute>../../../bin/or-tools.snk</AssemblyKeyFileAttribute>
     <SignAssembly>true</SignAssembly>
     <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
+  </PropertyGroup>
 
-    <!-- Build Properties -->
-    <IncludeBuildOutput>true</IncludeBuildOutput>
-    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
-    <UseSharedCompilation>false</UseSharedCompilation>
-    <EnableDefaultItems>false</EnableDefaultItems>
+  <!-- On windows we can build cross-platform netstandard and windows-only netframework.-->
+  <PropertyGroup Condition=" '$(OS)' != 'Windows_NT' And '$(OS)' != 'Windows' ">
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' Or '$(OS)' == 'Windows' ">
+    <TargetFrameworks>netstandard2.0;net452</TargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

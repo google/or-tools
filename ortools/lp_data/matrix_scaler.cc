@@ -43,14 +43,22 @@ void SparseMatrixScaler::Clear() {
   col_scale_.clear();
 }
 
-Fractional SparseMatrixScaler::row_scale(RowIndex row) const {
+Fractional SparseMatrixScaler::RowUnscalingFactor(RowIndex row) const {
   DCHECK_GE(row, 0);
   return row < row_scale_.size() ? row_scale_[row] : 1.0;
 }
 
-Fractional SparseMatrixScaler::col_scale(ColIndex col) const {
+Fractional SparseMatrixScaler::ColUnscalingFactor(ColIndex col) const {
   DCHECK_GE(col, 0);
   return col < col_scale_.size() ? col_scale_[col] : 1.0;
+}
+
+Fractional SparseMatrixScaler::RowScalingFactor(RowIndex row) const {
+  return 1.0 / RowUnscalingFactor(row);
+}
+
+Fractional SparseMatrixScaler::ColScalingFactor(ColIndex col) const {
+  return 1.0 / ColUnscalingFactor(col);
 }
 
 std::string SparseMatrixScaler::DebugInformationString() const {

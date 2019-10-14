@@ -26,17 +26,18 @@ namespace operations_research {
 namespace sat {
 
 NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
-    int id, const CpModelProto& model_proto, SatParameters const* parameters,
-    SharedResponseManager* shared_response,
-    class SharedTimeLimit* shared_time_limit,
+    int id, CpModelProto const* model_proto, SatParameters const* parameters,
+    SharedResponseManager* shared_response, SharedTimeLimit* shared_time_limit,
     SharedBoundsManager* shared_bounds)
     : SubSolver(id, "helper"),
-      model_proto_(model_proto),
       parameters_(*parameters),
+      model_proto_(*model_proto),
       shared_time_limit_(shared_time_limit),
       shared_bounds_(shared_bounds),
       shared_response_(shared_response) {
   CHECK(shared_response_ != nullptr);
+  *model_proto_with_only_variables_.mutable_variables() =
+      model_proto_.variables();
   RecomputeHelperData();
   Synchronize();
 }
@@ -55,7 +56,8 @@ void NeighborhoodGeneratorHelper::Synchronize() {
       const int64 new_lb = new_lower_bounds[i];
       const int64 new_ub = new_upper_bounds[i];
       if (VLOG_IS_ON(3)) {
-        const auto& domain = model_proto_.variables(var).domain();
+        const auto& domain =
+            model_proto_with_only_variables_.variables(var).domain();
         const int64 old_lb = domain.Get(0);
         const int64 old_ub = domain.Get(domain.size() - 1);
         VLOG(3) << "Variable: " << var << " old domain: [" << old_lb << ", "
@@ -63,7 +65,7 @@ void NeighborhoodGeneratorHelper::Synchronize() {
                 << "]";
       }
       const Domain old_domain =
-          ReadDomainFromProto(model_proto_.variables(var));
+          ReadDomainFromProto(model_proto_with_only_variables_.variables(var));
       const Domain new_domain =
           old_domain.IntersectionWith(Domain(new_lb, new_ub));
       if (new_domain.IsEmpty()) {
@@ -72,7 +74,8 @@ void NeighborhoodGeneratorHelper::Synchronize() {
         if (shared_time_limit_ != nullptr) shared_time_limit_->Stop();
         return;
       }
-      FillDomainInProto(new_domain, model_proto_.mutable_variables(var));
+      FillDomainInProto(
+          new_domain, model_proto_with_only_variables_.mutable_variables(var));
     }
 
     // Only trigger the computation if needed.
@@ -139,9 +142,9 @@ bool NeighborhoodGeneratorHelper::IsActive(int var) const {
 }
 
 bool NeighborhoodGeneratorHelper::IsConstant(int var) const {
-  return model_proto_.variables(var).domain_size() == 2 &&
-         model_proto_.variables(var).domain(0) ==
-             model_proto_.variables(var).domain(1);
+  return model_proto_with_only_variables_.variables(var).domain_size() == 2 &&
+         model_proto_with_only_variables_.variables(var).domain(0) ==
+             model_proto_with_only_variables_.variables(var).domain(1);
 }
 
 Neighborhood NeighborhoodGeneratorHelper::FullNeighborhood() const {
@@ -149,6 +152,8 @@ Neighborhood NeighborhoodGeneratorHelper::FullNeighborhood() const {
   neighborhood.is_reduced = false;
   neighborhood.is_generated = true;
   neighborhood.cp_model = model_proto_;
+  *neighborhood.cp_model.mutable_variables() =
+      model_proto_with_only_variables_.variables();
   return neighborhood;
 }
 

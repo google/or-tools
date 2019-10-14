@@ -1,7 +1,7 @@
-<map id="Google.OrTools.Sat.LinearExpr" name="Google.OrTools.Sat.LinearExpr">
-<area shape="rect" id="node1" title=" " alt="" coords="5,89,211,115"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html" title=" " alt="" coords="277,5,453,31"/>
-<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1Sat_1_1NotBooleanVariable.html" title=" " alt="" coords="259,55,470,93"/>
-<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1Sat_1_1ProductCst.html" title=" " alt="" coords="261,117,468,143"/>
-<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1Sat_1_1SumArray.html" title=" " alt="" coords="264,167,465,192"/>
+<map id="LinearExpr" name="LinearExpr">
+<area shape="rect" id="node1" title=" " alt="" coords="180,5,266,31"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html" title=" " alt="" coords="5,79,61,104"/>
+<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1Sat_1_1NotBooleanVariable.html" title=" " alt="" coords="85,79,224,104"/>
+<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1Sat_1_1ProductCst.html" title=" " alt="" coords="248,79,336,104"/>
+<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1Sat_1_1SumArray.html" title=" " alt="" coords="360,79,440,104"/>
 </map>

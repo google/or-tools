@@ -44,7 +44,8 @@ Preprocessor::Preprocessor(const GlopParameters* parameters)
     : status_(ProblemStatus::INIT),
       parameters_(*parameters),
       in_mip_context_(false),
-      time_limit_(TimeLimit::Infinite().get()) {}
+      infinite_time_limit_(TimeLimit::Infinite()),
+      time_limit_(infinite_time_limit_.get()) {}
 Preprocessor::~Preprocessor() {}
 
 // --------------------------------------------------------
@@ -3289,11 +3290,10 @@ void DualizerPreprocessor::RecoverSolution(ProblemSolution* solution) const {
     if (solution->constraint_statuses[row] != ConstraintStatus::BASIC) {
       new_variable_statuses[col] = VariableStatus::BASIC;
     } else {
-      // Otherwise, the dual value must be zero, and the variable is at an exact
-      // bound or zero if it is VariableStatus::FREE. Note that this works
-      // because the bounds
-      // are shifted to 0.0 in the presolve!
-      DCHECK_EQ(solution->dual_values[row], 0.0);
+      // Otherwise, the dual value must be zero (if the solution is feasible),
+      // and the variable is at an exact bound or zero if it is
+      // VariableStatus::FREE. Note that this works because the bounds are
+      // shifted to 0.0 in the presolve!
       new_variable_statuses[col] = ComputeVariableStatus(shift, lower, upper);
     }
   }

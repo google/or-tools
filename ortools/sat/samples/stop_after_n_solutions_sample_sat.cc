@@ -13,6 +13,7 @@
 
 
 #include <atomic>
+
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"

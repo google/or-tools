@@ -349,6 +349,10 @@ extern MPSolverInterface* BuildCplexInterface(bool mip, MPSolver* const solver);
 
 extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
 #endif
+#if defined(USE_XPRESS)
+extern MPSolverInterface* BuildXpressInterface(bool mip,
+                                               MPSolver* const solver);
+#endif
 
 namespace {
 MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
@@ -391,6 +395,12 @@ MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
       return BuildCplexInterface(false, solver);
     case MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING:
       return BuildCplexInterface(true, solver);
+#endif
+#if defined(USE_XPRESS)
+    case MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING:
+      return BuildXpressInterface(true, solver);
+    case MPSolver::XPRESS_LINEAR_PROGRAMMING:
+      return BuildXpressInterface(false, solver);
 #endif
     default:
       // TODO(user): Revert to the best *available* interface.
@@ -456,6 +466,14 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
 #ifdef USE_CBC
   if (problem_type == CBC_MIXED_INTEGER_PROGRAMMING) return true;
 #endif
+#ifdef USE_XPRESS
+  if (problem_type == XPRESS_MIXED_INTEGER_PROGRAMMING) return true;
+  if (problem_type == XPRESS_LINEAR_PROGRAMMING) return true;
+#endif
+#ifdef USE_CPLEX
+  if (problem_type == CPLEX_LINEAR_PROGRAMMING) return true;
+  if (problem_type == CPLEX_MIXED_INTEGER_PROGRAMMING) return true;
+#endif
   return false;
 }
 
@@ -485,6 +503,9 @@ constexpr
 #if defined(USE_GUROBI)
         {MPSolver::GUROBI_LINEAR_PROGRAMMING, "gurobi_lp"},
 #endif
+#if defined(USE_XPRESS)
+        {MPSolver::XPRESS_LINEAR_PROGRAMMING, "xpress_lp"},
+#endif
 #if defined(USE_SCIP)
         {MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING, "scip"},
 #endif
@@ -499,6 +520,9 @@ constexpr
 #endif
 #if defined(USE_GUROBI)
         {MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING, "gurobi_mip"},
+#endif
+#if defined(USE_XPRESS)
+        {MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING, "xpress_mip"},
 #endif
 };
 
@@ -565,6 +589,7 @@ MPSolverResponseStatus MPSolver::LoadModelFromProto(
   // unlike the MPSolver C++ API which crashes if there are duplicate names.
   // Clearing the names makes the MPSolver generate unique names.
   return LoadModelFromProtoInternal(input_model, /*clear_names=*/true,
+                                    /*check_model_validity=*/true,
                                     error_message);
 }
 
@@ -575,26 +600,29 @@ MPSolverResponseStatus MPSolver::LoadModelFromProtoWithUniqueNamesOrDie(
   GenerateConstraintNameIndex();
 
   return LoadModelFromProtoInternal(input_model, /*clear_names=*/false,
+                                    /*check_model_validity=*/true,
                                     error_message);
 }
 
 MPSolverResponseStatus MPSolver::LoadModelFromProtoInternal(
     const MPModelProto& input_model, bool clear_names,
-    std::string* error_message) {
+    bool check_model_validity, std::string* error_message) {
   CHECK(error_message != nullptr);
-  const std::string error = FindErrorInMPModelProto(input_model);
-  if (!error.empty()) {
-    *error_message = error;
-    LOG_IF(INFO, OutputIsEnabled())
-        << "Invalid model given to LoadModelFromProto(): " << error;
-    if (FLAGS_mpsolver_bypass_model_validation) {
+  if (check_model_validity) {
+    const std::string error = FindErrorInMPModelProto(input_model);
+    if (!error.empty()) {
+      *error_message = error;
       LOG_IF(INFO, OutputIsEnabled())
-          << "Ignoring the model error(s) because of"
-          << " --mpsolver_bypass_model_validation.";
-    } else {
-      return error.find("Infeasible") == std::string::npos
-                 ? MPSOLVER_MODEL_INVALID
-                 : MPSOLVER_INFEASIBLE;
+          << "Invalid model given to LoadModelFromProto(): " << error;
+      if (FLAGS_mpsolver_bypass_model_validation) {
+        LOG_IF(INFO, OutputIsEnabled())
+            << "Ignoring the model error(s) because of"
+            << " --mpsolver_bypass_model_validation.";
+      } else {
+        return error.find("Infeasible") == std::string::npos
+                   ? MPSOLVER_MODEL_INVALID
+                   : MPSOLVER_INFEASIBLE;
+      }
     }
   }
 
@@ -678,9 +706,11 @@ MPSolverResponseStatus MPSolver::LoadModelFromProtoInternal(
         break;
       }
       default:
-        *error_message =
-            absl::StrCat("Solver doesn't support general constraints of type ",
-                         general_constraint.general_constraint_case());
+        *error_message = absl::StrFormat(
+            "Optimizing general constraints of type %i is only supported "
+            "through direct proto solves. Please use MPSolver::SolveWithProto, "
+            "or the solver's direct proto solve function.",
+            general_constraint.general_constraint_case());
         return MPSOLVER_MODEL_INVALID;
     }
   }
@@ -754,9 +784,9 @@ void MPSolver::FillSolutionResponseProto(MPSolutionResponse* response) const {
 void MPSolver::SolveWithProto(const MPModelRequest& model_request,
                               MPSolutionResponse* response) {
   CHECK(response != nullptr);
-  const MPModelProto& model = model_request.model();
-  MPSolver solver(model.name(), static_cast<MPSolver::OptimizationProblemType>(
-                                    model_request.solver_type()));
+  MPSolver solver(model_request.model().name(),
+                  static_cast<MPSolver::OptimizationProblemType>(
+                      model_request.solver_type()));
   if (model_request.enable_internal_solver_output()) {
     solver.EnableOutput();
   }
@@ -767,12 +797,26 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
     return;
   }
 
+  const absl::optional<LazyMutableCopy<MPModelProto>> optional_model =
+      ExtractValidMPModelOrPopulateResponseStatus(model_request, response);
+  if (!optional_model) {
+    LOG_IF(WARNING, model_request.enable_internal_solver_output())
+        << "Failed to extract a valid model from protocol buffer. Status: "
+        << ProtoEnumToString<MPSolverResponseStatus>(response->status()) << " ("
+        << response->status() << "): " << response->status_str();
+    return;
+  }
   std::string error_message;
-  response->set_status(solver.LoadModelFromProto(model, &error_message));
+  response->set_status(solver.LoadModelFromProtoInternal(
+      optional_model->get(), /*clear_names=*/true,
+      /*check_model_validity=*/false, &error_message));
+  // Even though we don't re-check model validity here, there can be some
+  // problems found by LoadModelFromProto, eg. unsupported features.
   if (response->status() != MPSOLVER_MODEL_IS_VALID) {
     response->set_status_str(error_message);
     LOG_IF(WARNING, model_request.enable_internal_solver_output())
-        << "Loading model from protocol buffer failed, load status = "
+        << "LoadModelFromProtoInternal() failed even though the model was "
+        << "valid! Status: "
         << ProtoEnumToString<MPSolverResponseStatus>(response->status()) << " ("
         << response->status() << "); Error: " << error_message;
     return;
@@ -845,7 +889,7 @@ void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
     constraint_proto->set_is_lazy(constraint->is_lazy());
     // Vector linear_term will contain pairs (variable index, coeff), that will
     // be sorted by variable index.
-    std::vector<std::pair<int, double> > linear_term;
+    std::vector<std::pair<int, double>> linear_term;
     for (const auto& entry : constraint->coefficients_) {
       const MPVariable* const var = entry.first;
       const int var_index = gtl::FindWithDefault(var_to_index, var, -1);
@@ -1433,8 +1477,7 @@ bool MPSolver::ExportModelAsMpsFormat(bool fixed_format, bool obfuscate,
   return status_or.ok();
 }
 
-void MPSolver::SetHint(
-    std::vector<std::pair<const MPVariable*, double> > hint) {
+void MPSolver::SetHint(std::vector<std::pair<const MPVariable*, double>> hint) {
   for (const auto& var_value_pair : hint) {
     CHECK(OwnsVariable(var_value_pair.first))
         << "hint variable does not belong to this solver";

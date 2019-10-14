@@ -32,9 +32,9 @@ struct DataModel {
   const RoutingIndexManager::NodeIndex depot{0};
   DataModel() {
     // Convert locations in meters using a city block dimension of 114m x 80m.
-    for (auto& it : locations) {
-      const_cast<std::vector<int>&>(it)[0] *= 114;
-      const_cast<std::vector<int>&>(it)[1] *= 80;
+    for (auto& it : const_cast<std::vector<std::vector<int>>&>(locations)) {
+      it[0] *= 114;
+      it[1] *= 80;
     }
   }
 };
@@ -77,8 +77,7 @@ void PrintSolution(const RoutingIndexManager& manager,
     route << manager.IndexToNode(index).value() << " -> ";
     int64 previous_index = index;
     index = solution.Value(routing.NextVar(index));
-    distance += const_cast<RoutingModel&>(routing).GetArcCostForVehicle(
-        previous_index, index, int64{0});
+    distance += routing.GetArcCostForVehicle(previous_index, index, int64{0});
   }
   LOG(INFO) << route.str() << manager.IndexToNode(index).value();
   LOG(INFO) << "Distance of the route: " << distance << "m";

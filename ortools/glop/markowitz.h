@@ -347,6 +347,11 @@ class Markowitz {
       const CompactSparseMatrixView& basis_matrix, RowPermutation* row_perm,
       ColumnPermutation* col_perm, int* index);
 
+  // Helper function for determining if a column is a residual singleton column.
+  // If it is, RowIndex* row contains the index of the single residual edge.
+  bool IsResidualSingletonColumn(const ColumnView& column,
+                                 const RowPermutation& row_perm, RowIndex* row);
+
   // Returns the column of the current residual matrix with an index 'col' in
   // the initial matrix. We compute it by solving a linear system with the
   // current lower_ and the last computed column 'col' of a previous residual

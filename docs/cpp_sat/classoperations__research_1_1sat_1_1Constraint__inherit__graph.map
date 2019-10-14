@@ -1,0 +1,9 @@
+<map id="Constraint" name="Constraint">
+<area shape="rect" id="node1" title="A constraint." alt="" coords="5,129,87,155"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1sat_1_1AutomatonConstraint.html" title="Specialized automaton constraint." alt="" coords="144,5,290,31"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1sat_1_1CircuitConstraint.html" title="Specialized circuit constraint." alt="" coords="157,55,277,80"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1sat_1_1CumulativeConstraint.html" title="Specialized cumulative constraint." alt="" coords="142,104,291,129"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1sat_1_1NoOverlap2DConstraint.html" title="Specialized no_overlap2D constraint." alt="" coords="135,153,298,179"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1sat_1_1ReservoirConstraint.html" title="Specialized reservoir constraint." alt="" coords="147,203,286,228"/>
+<area shape="rect" id="node7" href="$classoperations__research_1_1sat_1_1TableConstraint.html" title="Specialized assignment constraint." alt="" coords="160,252,274,277"/>
+</map>

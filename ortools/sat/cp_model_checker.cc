@@ -256,13 +256,23 @@ std::string ValidateCpModel(const CpModelProto& model) {
   for (int c = 0; c < model.constraints_size(); ++c) {
     RETURN_IF_NOT_EMPTY(ValidateArgumentReferencesInConstraint(model, c));
 
+    // By default, a constraint does not support enforcement literals except if
+    // explicitly stated by setting this to true below.
+    bool support_enforcement = false;
+
     // Other non-generic validations.
     // TODO(user): validate all constraints.
-    // TODO(user): Make sure enforcement literals are only set when supported.
     const ConstraintProto& ct = model.constraints(c);
     const ConstraintProto::ConstraintCase type = ct.constraint_case();
     switch (type) {
+      case ConstraintProto::ConstraintCase::kBoolOr:
+        support_enforcement = true;
+        break;
+      case ConstraintProto::ConstraintCase::kBoolAnd:
+        support_enforcement = true;
+        break;
       case ConstraintProto::ConstraintCase::kLinear:
+        support_enforcement = true;
         if (!DomainInProtoIsValid(ct.linear())) {
           return absl::StrCat("Invalid domain in constraint #", c, " : ",
                               ProtobufShortDebugString(ct));
@@ -272,6 +282,9 @@ std::string ValidateCpModel(const CpModelProto& model) {
                               " : ", ProtobufShortDebugString(ct));
         }
         RETURN_IF_NOT_EMPTY(ValidateLinearConstraint(model, ct));
+        break;
+      case ConstraintProto::ConstraintCase::kInterval:
+        support_enforcement = true;
         break;
       case ConstraintProto::ConstraintCase::kCumulative:
         if (ct.cumulative().intervals_size() !=
@@ -289,6 +302,21 @@ std::string ValidateCpModel(const CpModelProto& model) {
         break;
       default:
         break;
+    }
+
+    // Because some client set fixed enforcement literal which are supported
+    // in the presolve for all constraints, we just check that there is no
+    // non-fixed enforcement.
+    if (!support_enforcement && !ct.enforcement_literal().empty()) {
+      for (const int ref : ct.enforcement_literal()) {
+        const int var = PositiveRef(ref);
+        const Domain domain = ReadDomainFromProto(model.variables(var));
+        if (domain.Size() != 1) {
+          return absl::StrCat(
+              "Enforcement literal not supported in constraint: ",
+              ProtobufShortDebugString(ct));
+        }
+      }
     }
   }
   if (model.has_objective()) {
@@ -473,7 +501,10 @@ class ConstraintChecker {
       for (int i = 0; i < num_intervals; ++i) {
         const ConstraintProto& x = model.constraints(arg.x_intervals(i));
         const ConstraintProto& y = model.constraints(arg.y_intervals(i));
-        if (ConstraintIsEnforced(x) && ConstraintIsEnforced(y)) {
+        if (ConstraintIsEnforced(x) && ConstraintIsEnforced(y) &&
+            (!arg.boxes_with_null_area_can_overlap() ||
+             (!IntervalIsEmpty(x.interval()) &&
+              !IntervalIsEmpty(y.interval())))) {
           enforced_intervals_xy.push_back({&x.interval(), &y.interval()});
         }
       }

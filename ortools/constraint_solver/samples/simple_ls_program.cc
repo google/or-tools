@@ -98,7 +98,8 @@ class SumFilter : public IntVarLocalSearchFilter {
     }
   }
 
-  bool Accept(Assignment* delta, Assignment* unused_deltadelta) override {
+  bool Accept(const Assignment* delta, const Assignment* unused_deltadelta,
+	      int64 objective_min, int64 objective_max) override {
     const Assignment::IntContainer& solution_delta = delta->IntVarContainer();
     const int solution_delta_size = solution_delta.Size();
 
@@ -162,7 +163,7 @@ void SolveProblem(SolveType solve_type) {
       LOG(INFO) << "Large Neighborhood Search";
       OneVarLns* const one_var_lns = s.RevAlloc(new OneVarLns(vars));
       LocalSearchPhaseParameters* const ls_params =
-          s.MakeLocalSearchPhaseParameters(one_var_lns, db);
+          s.MakeLocalSearchPhaseParameters(sum_var, one_var_lns, db);
       ls = s.MakeLocalSearchPhase(vars, db, ls_params);
       break;
     }
@@ -170,7 +171,7 @@ void SolveProblem(SolveType solve_type) {
       LOG(INFO) << "Local Search";
       MoveOneVar* const one_var_ls = s.RevAlloc(new MoveOneVar(vars));
       LocalSearchPhaseParameters* const ls_params =
-          s.MakeLocalSearchPhaseParameters(one_var_ls, db);
+	s.MakeLocalSearchPhaseParameters(sum_var, one_var_ls, db);
       ls = s.MakeLocalSearchPhase(vars, db, ls_params);
       break;
     }
@@ -181,7 +182,8 @@ void SolveProblem(SolveType solve_type) {
       filters.push_back(s.RevAlloc(new SumFilter(vars)));
 
       LocalSearchPhaseParameters* const ls_params =
-          s.MakeLocalSearchPhaseParameters(one_var_ls, db, nullptr, filters);
+          s.MakeLocalSearchPhaseParameters(sum_var, one_var_ls, db,
+					   nullptr, filters);
       ls = s.MakeLocalSearchPhase(vars, db, ls_params);
       break;
     }

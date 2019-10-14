@@ -1,0 +1,5 @@
+<map id="TypeRegulationsChecker" name="TypeRegulationsChecker">
+<area shape="rect" id="node1" title=" " alt="" coords="114,5,284,31"/>
+<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1TypeIncompatibilityChecker.html" title="Checker for type incompatibilities." alt="" coords="5,79,190,104"/>
+<area shape="rect" id="node3" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1TypeRequirementChecker.html" title="Checker for type requirements." alt="" coords="213,79,390,104"/>
+</map>

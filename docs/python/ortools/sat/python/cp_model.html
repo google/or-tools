@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.6.3" />
+<meta name="generator" content="pdoc 0.7.0" />
 <title>cp_model API documentation</title>
 <meta name="description" content="Methods for building and solving CP-SAT models …" />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
-<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase;cursor:pointer}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
 <style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 <style type="text/css">
@@ -57,7 +57,9 @@ and the objective from large arrays of coefficients.</li>
 <p>Other methods and functions listed are primarily used for developing OR-Tools,
 rather than for solving specific optimization problems.</p>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python"># Copyright 2010-2018 Google LLC
 # Licensed under the Apache License, Version 2.0 (the &#34;License&#34;);
 # you may not use this file except in compliance with the License.
@@ -220,16 +222,21 @@ class LinearExpr(object):
 
     @classmethod
     def Sum(cls, expressions):
-        &#34;&#34;&#34;Create the expression sum(expressions).&#34;&#34;&#34;
+        &#34;&#34;&#34;Creates the expression sum(expressions).&#34;&#34;&#34;
         return _SumArray(expressions)
 
     @classmethod
     def ScalProd(cls, expressions, coefficients):
-        &#34;&#34;&#34;Create the expression sum(expressions[i] * coefficients[i]).&#34;&#34;&#34;
+        &#34;&#34;&#34;Creates the expression sum(expressions[i] * coefficients[i]).&#34;&#34;&#34;
         return _ScalProd(expressions, coefficients)
 
+    @classmethod
+    def Term(cls, expression, coefficient):
+        &#34;&#34;&#34;Creates `expression * coefficient`.&#34;&#34;&#34;
+        return expression * coefficient
+
     def GetVarValueMap(self):
-        &#34;&#34;&#34;Scan the expression, and return a list of (var_coef_map, constant).&#34;&#34;&#34;
+        &#34;&#34;&#34;Scans the expression, and return a list of (var_coef_map, constant).&#34;&#34;&#34;
         coeffs = collections.defaultdict(int)
         constant = 0
         to_process = [(self, 1)]
@@ -961,8 +968,8 @@ class CpModel(object):
     Args:
       variables: A list of variables.
       tuples_list: A list of forbidden tuples. Each tuple must have the same
-        length as the variables, and the *i*th value of a tuple corresponds
-        to the *i*th variable.
+        length as the variables, and the *i*th value of a tuple corresponds to
+        the *i*th variable.
 
     Returns:
       An instance of the `Constraint` class.
@@ -1569,6 +1576,10 @@ class CpModel(object):
         elif not isinstance(x, _NotBooleanVariable):
             raise TypeError(&#39;TypeError: &#39; + str(x) +
                             &#39; is not a boolean variable&#39;)
+
+    def AddHint(self, var, value):
+        self.__model.solution_hint.vars.append(self.GetOrMakeIndex(var))
+        self.__model.solution_hint.values.append(value)
 
 
 def EvaluateLinearExpr(expression, solution):
@@ -1910,7 +1921,9 @@ class VarArraySolutionPrinter(CpSolverSolutionCallback):
 <pre><code>model.Add(x + 2 * y -1 &gt;= z)
 </code></pre></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">class BoundedLinearExpression(object):
     &#34;&#34;&#34;Represents a linear constraint: `lb &lt;= linear expression &lt;= ub`.
 
@@ -1958,7 +1971,9 @@ class VarArraySolutionPrinter(CpSolverSolutionCallback):
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Bounds(self):
     return self.__bounds</code></pre>
 </details>
@@ -1969,7 +1984,9 @@ class VarArraySolutionPrinter(CpSolverSolutionCallback):
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Expression(self):
     return self.__expr</code></pre>
 </details>
@@ -1993,7 +2010,9 @@ y = model.IntVar(0, 10, 'y')
 model.Add(x + 2 * y == 5).OnlyEnforceIf(b.Not())
 </code></pre></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">class Constraint(object):
     &#34;&#34;&#34;Base class for constraints.
 
@@ -2060,7 +2079,9 @@ model.Add(x + 2 * y == 5).OnlyEnforceIf(b.Not())
 <dd>
 <section class="desc"><p>Returns the index of the constraint in the model.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Index(self):
     &#34;&#34;&#34;Returns the index of the constraint in the model.&#34;&#34;&#34;
     return self.__index</code></pre>
@@ -2085,7 +2106,9 @@ must be enforced. If it is false, then the constraint is ignored.</p>
 <h2 id="returns">Returns</h2>
 <p>self.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def OnlyEnforceIf(self, boolvar):
     &#34;&#34;&#34;Adds an enforcement literal to the constraint.
 
@@ -2124,7 +2147,9 @@ Returns:
 <dd>
 <section class="desc"><p>Returns the constraint protobuf.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Proto(self):
     &#34;&#34;&#34;Returns the constraint protobuf.&#34;&#34;&#34;
     return self.__constraint</code></pre>
@@ -2143,7 +2168,9 @@ Returns:
 <li><code>Add</code> create new constraints and add them to the model.</li>
 </ul></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">class CpModel(object):
     &#34;&#34;&#34;Methods for building a CP model.
 
@@ -2369,8 +2396,8 @@ Returns:
     Args:
       variables: A list of variables.
       tuples_list: A list of forbidden tuples. Each tuple must have the same
-        length as the variables, and the *i*th value of a tuple corresponds
-        to the *i*th variable.
+        length as the variables, and the *i*th value of a tuple corresponds to
+        the *i*th variable.
 
     Returns:
       An instance of the `Constraint` class.
@@ -2976,7 +3003,11 @@ Returns:
                                 &#39; is not a boolean variable&#39;)
         elif not isinstance(x, _NotBooleanVariable):
             raise TypeError(&#39;TypeError: &#39; + str(x) +
-                            &#39; is not a boolean variable&#39;)</code></pre>
+                            &#39; is not a boolean variable&#39;)
+
+    def AddHint(self, var, value):
+        self.__model.solution_hint.vars.append(self.GetOrMakeIndex(var))
+        self.__model.solution_hint.values.append(value)</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
@@ -2993,7 +3024,9 @@ Returns:
 <h2 id="returns">Returns</h2>
 <p>An instance of the <a title="cp_model.Constraint" href="#cp_model.Constraint"><code>Constraint</code></a> class.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Add(self, ct):
     &#34;&#34;&#34;Adds a `BoundedLinearExpression` to the model.
 
@@ -3020,7 +3053,9 @@ Returns:
 <dd>
 <section class="desc"><p>Adds <code>target == Abs(var)</code>.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddAbsEquality(self, target, var):
     &#34;&#34;&#34;Adds `target == Abs(var)`.&#34;&#34;&#34;
     ct = Constraint(self.__model.constraints)
@@ -3045,7 +3080,9 @@ Returns:
 <h2 id="returns">Returns</h2>
 <p>An instance of the <a title="cp_model.Constraint" href="#cp_model.Constraint"><code>Constraint</code></a> class.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddAllDifferent(self, variables):
     &#34;&#34;&#34;Adds AllDifferent(variables).
 
@@ -3093,7 +3130,9 @@ variables.</dd>
 <dd>If the array of variables is empty.</dd>
 </dl></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddAllowedAssignments(self, variables, tuples_list):
     &#34;&#34;&#34;Adds AllowedAssignments(variables, tuples_list).
 
@@ -3179,7 +3218,9 @@ following format (current_state, variable_value, next_state).</dd>
 <code>transition_triples</code> are empty.</dd>
 </dl></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddAutomaton(self, transition_variables, starting_state, final_states,
                  transition_triples):
     &#34;&#34;&#34;Adds an automaton constraint.
@@ -3260,7 +3301,9 @@ Raises:
 <dd>
 <section class="desc"><p>Adds <code>And(literals) == true</code>.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddBoolAnd(self, literals):
     &#34;&#34;&#34;Adds `And(literals) == true`.&#34;&#34;&#34;
     ct = Constraint(self.__model.constraints)
@@ -3276,7 +3319,9 @@ Raises:
 <dd>
 <section class="desc"><p>Adds <code>Or(literals) == true</code>.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddBoolOr(self, literals):
     &#34;&#34;&#34;Adds `Or(literals) == true`.&#34;&#34;&#34;
     ct = Constraint(self.__model.constraints)
@@ -3292,7 +3337,9 @@ Raises:
 <dd>
 <section class="desc"><p>Adds <code>XOr(literals) == true</code>.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddBoolXOr(self, literals):
     &#34;&#34;&#34;Adds `XOr(literals) == true`.&#34;&#34;&#34;
     ct = Constraint(self.__model.constraints)
@@ -3328,7 +3375,9 @@ number of nodes - 1.</dd>
 <dd>If the list of arcs is empty.</dd>
 </dl></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddCircuit(self, arcs):
     &#34;&#34;&#34;Adds Circuit(arcs).
 
@@ -3390,7 +3439,9 @@ positive integer value or variable.</dd>
 <h2 id="returns">Returns</h2>
 <p>An instance of the <a title="cp_model.Constraint" href="#cp_model.Constraint"><code>Constraint</code></a> class.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddCumulative(self, intervals, demands, capacity):
     &#34;&#34;&#34;Adds Cumulative(intervals, demands, capacity).
 
@@ -3439,7 +3490,9 @@ the model must be complete, i.e. instantiates all variables.
 Otherwise, Solve() will fail.</dd>
 </dl></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddDecisionStrategy(self, variables, var_strategy, domain_strategy):
     &#34;&#34;&#34;Adds a search strategy to the model.
 
@@ -3465,7 +3518,9 @@ Args:
 <dd>
 <section class="desc"><p>Adds <code>target == num // denom</code> (integer division rounded towards 0).</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddDivisionEquality(self, target, num, denom):
     &#34;&#34;&#34;Adds `target == num // denom` (integer division rounded towards 0).&#34;&#34;&#34;
     ct = Constraint(self.__model.constraints)
@@ -3483,7 +3538,9 @@ Args:
 <dd>
 <section class="desc"><p>Adds the element constraint: <code>variables[index] == target</code>.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddElement(self, index, variables, target):
     &#34;&#34;&#34;Adds the element constraint: `variables[index] == target`.&#34;&#34;&#34;
 
@@ -3512,8 +3569,8 @@ where the list of impossible combinations is provided in the tuples list.</p>
 <dd>A list of variables.</dd>
 <dt><strong><code>tuples_list</code></strong></dt>
 <dd>A list of forbidden tuples. Each tuple must have the same
-length as the variables, and the <em>i</em>th value of a tuple corresponds
-to the <em>i</em>th variable.</dd>
+length as the variables, and the <em>i</em>th value of a tuple corresponds to
+the <em>i</em>th variable.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <p>An instance of the <a title="cp_model.Constraint" href="#cp_model.Constraint"><code>Constraint</code></a> class.</p>
@@ -3526,7 +3583,9 @@ variables.</dd>
 <dd>If the array of variables is empty.</dd>
 </dl></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddForbiddenAssignments(self, variables, tuples_list):
     &#34;&#34;&#34;Adds AddForbiddenAssignments(variables, [tuples_list]).
 
@@ -3536,8 +3595,8 @@ where the list of impossible combinations is provided in the tuples list.
 Args:
   variables: A list of variables.
   tuples_list: A list of forbidden tuples. Each tuple must have the same
-    length as the variables, and the *i*th value of a tuple corresponds
-    to the *i*th variable.
+    length as the variables, and the *i*th value of a tuple corresponds to
+    the *i*th variable.
 
 Returns:
   An instance of the `Constraint` class.
@@ -3559,13 +3618,29 @@ Raises:
     return ct</code></pre>
 </details>
 </dd>
+<dt id="cp_model.CpModel.AddHint"><code class="name flex">
+<span>def <span class="ident">AddHint</span></span>(<span>self, var, value)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def AddHint(self, var, value):
+    self.__model.solution_hint.vars.append(self.GetOrMakeIndex(var))
+    self.__model.solution_hint.values.append(value)</code></pre>
+</details>
+</dd>
 <dt id="cp_model.CpModel.AddImplication"><code class="name flex">
 <span>def <span class="ident">AddImplication</span></span>(<span>self, a, b)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>Adds <code>a =&gt; b</code> (<code>a</code> implies <code>b</code>).</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddImplication(self, a, b):
     &#34;&#34;&#34;Adds `a =&gt; b` (`a` implies `b`).&#34;&#34;&#34;
     ct = Constraint(self.__model.constraints)
@@ -3598,7 +3673,9 @@ Raises:
 if they are empty.</dd>
 </dl></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddInverse(self, variables, inverse_variables):
     &#34;&#34;&#34;Adds Inverse(variables, inverse_variables).
 
@@ -3639,7 +3716,9 @@ Raises:
 <dd>
 <section class="desc"><p>Adds the constraint: <code>lb &lt;= linear_expr &lt;= ub</code>.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddLinearConstraint(self, linear_expr, lb, ub):
     &#34;&#34;&#34;Adds the constraint: `lb &lt;= linear_expr &lt;= ub`.&#34;&#34;&#34;
     return self.AddLinearExpressionInDomain(linear_expr, Domain(lb, ub))</code></pre>
@@ -3651,7 +3730,9 @@ Raises:
 <dd>
 <section class="desc"><p>Adds the constraint: <code>linear_expr</code> in <code>domain</code>.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddLinearExpressionInDomain(self, linear_expr, domain):
     &#34;&#34;&#34;Adds the constraint: `linear_expr` in `domain`.&#34;&#34;&#34;
     if isinstance(linear_expr, LinearExpr):
@@ -3685,7 +3766,9 @@ Raises:
 <dd>
 <section class="desc"><p>Adds <code>var == i + offset &lt;=&gt; bool_var_array[i] == true for all i</code>.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddMapDomain(self, var, bool_var_array, offset=0):
     &#34;&#34;&#34;Adds `var == i + offset &lt;=&gt; bool_var_array[i] == true for all i`.&#34;&#34;&#34;
 
@@ -3714,7 +3797,9 @@ Raises:
 <dd>
 <section class="desc"><p>Adds <code>target == Max(variables)</code>.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddMaxEquality(self, target, variables):
     &#34;&#34;&#34;Adds `target == Max(variables)`.&#34;&#34;&#34;
     ct = Constraint(self.__model.constraints)
@@ -3731,7 +3816,9 @@ Raises:
 <dd>
 <section class="desc"><p>Adds <code>target == Min(variables)</code>.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddMinEquality(self, target, variables):
     &#34;&#34;&#34;Adds `target == Min(variables)`.&#34;&#34;&#34;
     ct = Constraint(self.__model.constraints)
@@ -3748,7 +3835,9 @@ Raises:
 <dd>
 <section class="desc"><p>Adds <code>target = var % mod</code>.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddModuloEquality(self, target, var, mod):
     &#34;&#34;&#34;Adds `target = var % mod`.&#34;&#34;&#34;
     ct = Constraint(self.__model.constraints)
@@ -3766,7 +3855,9 @@ Raises:
 <dd>
 <section class="desc"><p>Adds <code>target == variables[0] * .. * variables[n]</code>.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddMultiplicationEquality(self, target, variables):
     &#34;&#34;&#34;Adds `target == variables[0] * .. * variables[n]`.&#34;&#34;&#34;
     ct = Constraint(self.__model.constraints)
@@ -3792,7 +3883,9 @@ in time.</p>
 <h2 id="returns">Returns</h2>
 <p>An instance of the <a title="cp_model.Constraint" href="#cp_model.Constraint"><code>Constraint</code></a> class.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddNoOverlap(self, interval_vars):
     &#34;&#34;&#34;Adds NoOverlap(interval_vars).
 
@@ -3830,7 +3923,9 @@ by two intervals which represent its projection onto the X and Y axis.</p>
 <h2 id="returns">Returns</h2>
 <p>An instance of the <a title="cp_model.Constraint" href="#cp_model.Constraint"><code>Constraint</code></a> class.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddNoOverlap2D(self, x_intervals, y_intervals):
     &#34;&#34;&#34;Adds NoOverlap2D(x_intervals, y_intervals).
 
@@ -3860,7 +3955,9 @@ Returns:
 <dd>
 <section class="desc"><p>Deprecated, use AddMultiplicationEquality.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddProdEquality(self, target, variables):
     &#34;&#34;&#34;Deprecated, use AddMultiplicationEquality.&#34;&#34;&#34;
     return self.AddMultiplicationEquality(target, variables)</code></pre>
@@ -3904,7 +4001,9 @@ equal than the max level.</dd>
 <dd>if max_level &lt; min_level.</dd>
 </dl></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddReservoirConstraint(self, times, demands, min_level, max_level):
     &#34;&#34;&#34;Adds Reservoir(times, demands, min_level, max_level).
 
@@ -3995,7 +4094,9 @@ equal than the max level.</dd>
 <dd>if max_level &lt; min_level.</dd>
 </dl></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AddReservoirConstraintWithActive(self, times, demands, actives,
                                      min_level, max_level):
     &#34;&#34;&#34;Adds Reservoir(times, demands, actives, min_level, max_level).
@@ -4057,7 +4158,9 @@ Raises:
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def AssertIsBooleanVariable(self, x):
     if isinstance(x, IntVar):
         var = self.__model.variables[x.Index()]
@@ -4075,7 +4178,9 @@ Raises:
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def GetIntervalIndex(self, arg):
     if not isinstance(arg, IntervalVar):
         raise TypeError(&#39;NotSupported: model.GetIntervalIndex(%s)&#39; % arg)
@@ -4088,7 +4193,9 @@ Raises:
 <dd>
 <section class="desc"><p>Returns an index from a boolean expression.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def GetOrMakeBooleanIndex(self, arg):
     &#34;&#34;&#34;Returns an index from a boolean expression.&#34;&#34;&#34;
     if isinstance(arg, IntVar):
@@ -4111,7 +4218,9 @@ Raises:
 <dd>
 <section class="desc"><p>Returns the index of a variable, its negation, or a number.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def GetOrMakeIndex(self, arg):
     &#34;&#34;&#34;Returns the index of a variable, its negation, or a number.&#34;&#34;&#34;
     if isinstance(arg, IntVar):
@@ -4133,7 +4242,9 @@ Raises:
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def GetOrMakeIndexFromConstant(self, value):
     if value in self.__constant_map:
         return self.__constant_map[value]
@@ -4150,7 +4261,9 @@ Raises:
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def HasObjective(self):
     return self.__model.HasField(&#39;objective&#39;)</code></pre>
 </details>
@@ -4161,7 +4274,9 @@ Raises:
 <dd>
 <section class="desc"><p>Sets the objective of the model to maximize(obj).</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Maximize(self, obj):
     &#34;&#34;&#34;Sets the objective of the model to maximize(obj).&#34;&#34;&#34;
     self._SetObjective(obj, minimize=False)</code></pre>
@@ -4173,7 +4288,9 @@ Raises:
 <dd>
 <section class="desc"><p>Sets the objective of the model to minimize(obj).</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Minimize(self, obj):
     &#34;&#34;&#34;Sets the objective of the model to minimize(obj).&#34;&#34;&#34;
     self._SetObjective(obj, minimize=True)</code></pre>
@@ -4185,7 +4302,9 @@ Raises:
 <dd>
 <section class="desc"><p>Returns a string containing some model statistics.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def ModelStats(self):
     &#34;&#34;&#34;Returns a string containing some model statistics.&#34;&#34;&#34;
     return pywrapsat.SatHelper.ModelStats(self.__model)</code></pre>
@@ -4197,7 +4316,9 @@ Raises:
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Negated(self, index):
     return -index - 1</code></pre>
 </details>
@@ -4208,7 +4329,9 @@ Raises:
 <dd>
 <section class="desc"><p>Creates a 0-1 variable with the given name.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def NewBoolVar(self, name):
     &#34;&#34;&#34;Creates a 0-1 variable with the given name.&#34;&#34;&#34;
     return IntVar(self.__model, Domain(0, 1), name)</code></pre>
@@ -4220,7 +4343,9 @@ Raises:
 <dd>
 <section class="desc"><p>Declares a constant integer.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def NewConstant(self, value):
     &#34;&#34;&#34;Declares a constant integer.&#34;&#34;&#34;
     return IntVar(self.__model, Domain(value, value), &#39;&#39;)</code></pre>
@@ -4246,7 +4371,9 @@ encode them as integers.</p>
 <h2 id="returns">Returns</h2>
 <p>a variable whose domain is [lb, ub].</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def NewIntVar(self, lb, ub, name):
     &#34;&#34;&#34;Create an integer variable with domain [lb, ub].
 
@@ -4284,7 +4411,9 @@ Domain.FromIntervals([[1, 2], [4, 6]]), 'x')</code></p>
 <h2 id="returns">Returns</h2>
 <p>a variable whose domain is the given domain.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def NewIntVarFromDomain(self, domain, name):
     &#34;&#34;&#34;Create an integer variable from a domain.
 
@@ -4327,7 +4456,9 @@ variable.</dd>
 <h2 id="returns">Returns</h2>
 <p>An <a title="cp_model.IntervalVar" href="#cp_model.IntervalVar"><code>IntervalVar</code></a> object.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def NewIntervalVar(self, start, size, end, name):
     &#34;&#34;&#34;Creates an interval variable from start, size, and end.
 
@@ -4385,7 +4516,9 @@ inactive interval is simply ignored by all constraints.</dd>
 <h2 id="returns">Returns</h2>
 <p>An <a title="cp_model.IntervalVar" href="#cp_model.IntervalVar"><code>IntervalVar</code></a> object.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def NewOptionalIntervalVar(self, start, size, end, is_present, name):
     &#34;&#34;&#34;Creates an optional interval var from start, size, end, and is_present.
 
@@ -4423,7 +4556,9 @@ Returns:
 <dd>
 <section class="desc"><p>Returns the underlying CpModelProto.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Proto(self):
     &#34;&#34;&#34;Returns the underlying CpModelProto.&#34;&#34;&#34;
     return self.__model</code></pre>
@@ -4435,7 +4570,9 @@ Returns:
 <dd>
 <section class="desc"><p>Returns a string indicating that the model is invalid.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Validate(self):
     &#34;&#34;&#34;Returns a string indicating that the model is invalid.&#34;&#34;&#34;
     return pywrapsat.SatHelper.ValidateModel(self.__model)</code></pre>
@@ -4447,7 +4584,9 @@ Returns:
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def VarIndexToVarProto(self, var_index):
     if var_index &gt; 0:
         return self.__model.variables[var_index]
@@ -4468,7 +4607,9 @@ to the Solve() method.</p>
 with the Value() and BooleanValue() methods, as well as general statistics
 about the solve procedure.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">class CpSolver(object):
     &#34;&#34;&#34;Main solver class.
 
@@ -4590,7 +4731,9 @@ about the solve procedure.</p></section>
 <dd>
 <section class="desc"><p>Returns the best lower (upper) bound found when min(max)imizing.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def BestObjectiveBound(self):
     &#34;&#34;&#34;Returns the best lower (upper) bound found when min(max)imizing.&#34;&#34;&#34;
     return self.__solution.best_objective_bound</code></pre>
@@ -4602,7 +4745,9 @@ about the solve procedure.</p></section>
 <dd>
 <section class="desc"><p>Returns the boolean value of a literal after solve.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def BooleanValue(self, literal):
     &#34;&#34;&#34;Returns the boolean value of a literal after solve.&#34;&#34;&#34;
     if not self.__solution:
@@ -4616,7 +4761,9 @@ about the solve procedure.</p></section>
 <dd>
 <section class="desc"><p>Returns the number of boolean variables managed by the SAT solver.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def NumBooleans(self):
     &#34;&#34;&#34;Returns the number of boolean variables managed by the SAT solver.&#34;&#34;&#34;
     return self.__solution.num_booleans</code></pre>
@@ -4628,7 +4775,9 @@ about the solve procedure.</p></section>
 <dd>
 <section class="desc"><p>Returns the number of search branches explored by the solver.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def NumBranches(self):
     &#34;&#34;&#34;Returns the number of search branches explored by the solver.&#34;&#34;&#34;
     return self.__solution.num_branches</code></pre>
@@ -4640,7 +4789,9 @@ about the solve procedure.</p></section>
 <dd>
 <section class="desc"><p>Returns the number of conflicts since the creation of the solver.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def NumConflicts(self):
     &#34;&#34;&#34;Returns the number of conflicts since the creation of the solver.&#34;&#34;&#34;
     return self.__solution.num_conflicts</code></pre>
@@ -4652,7 +4803,9 @@ about the solve procedure.</p></section>
 <dd>
 <section class="desc"><p>Returns the value of the objective after solve.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def ObjectiveValue(self):
     &#34;&#34;&#34;Returns the value of the objective after solve.&#34;&#34;&#34;
     return self.__solution.objective_value</code></pre>
@@ -4664,7 +4817,9 @@ about the solve procedure.</p></section>
 <dd>
 <section class="desc"><p>Returns the response object.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def ResponseProto(self):
     &#34;&#34;&#34;Returns the response object.&#34;&#34;&#34;
     return self.__solution</code></pre>
@@ -4676,7 +4831,9 @@ about the solve procedure.</p></section>
 <dd>
 <section class="desc"><p>Returns some statistics on the solution found as a string.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def ResponseStats(self):
     &#34;&#34;&#34;Returns some statistics on the solution found as a string.&#34;&#34;&#34;
     return pywrapsat.SatHelper.SolverResponseStats(self.__solution)</code></pre>
@@ -4708,7 +4865,9 @@ Then it feeds the solution to the callback.</p>
 <li><em>OPTIMAL</em> if all solutions have been found</li>
 </ul></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def SearchForAllSolutions(self, model, callback):
     &#34;&#34;&#34;Search for all solutions of a satisfiability problem.
 
@@ -4748,7 +4907,9 @@ Returns:
 <dd>
 <section class="desc"><p>Solves the given model and returns the solve status.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Solve(self, model):
     &#34;&#34;&#34;Solves the given model and returns the solve status.&#34;&#34;&#34;
     self.__solution = pywrapsat.SatHelper.SolveWithParameters(
@@ -4762,7 +4923,9 @@ Returns:
 <dd>
 <section class="desc"><p>Solves a problem and passes each solution found to the callback.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def SolveWithSolutionCallback(self, model, callback):
     &#34;&#34;&#34;Solves a problem and passes each solution found to the callback.&#34;&#34;&#34;
     self.__solution = (
@@ -4777,7 +4940,9 @@ Returns:
 <dd>
 <section class="desc"><p>Returns the name of the status returned by Solve().</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def StatusName(self, status):
     &#34;&#34;&#34;Returns the name of the status returned by Solve().&#34;&#34;&#34;
     return cp_model_pb2.CpSolverStatus.Name(status)</code></pre>
@@ -4789,7 +4954,9 @@ Returns:
 <dd>
 <section class="desc"><p>Returns the user time in seconds since the creation of the solver.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def UserTime(self):
     &#34;&#34;&#34;Returns the user time in seconds since the creation of the solver.&#34;&#34;&#34;
     return self.__solution.user_time</code></pre>
@@ -4801,7 +4968,9 @@ Returns:
 <dd>
 <section class="desc"><p>Returns the value of a linear expression after solve.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Value(self, expression):
     &#34;&#34;&#34;Returns the value of a linear expression after solve.&#34;&#34;&#34;
     if not self.__solution:
@@ -4815,7 +4984,9 @@ Returns:
 <dd>
 <section class="desc"><p>Returns the wall time in seconds since the creation of the solver.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def WallTime(self):
     &#34;&#34;&#34;Returns the wall time in seconds since the creation of the solver.&#34;&#34;&#34;
     return self.__solution.wall_time</code></pre>
@@ -4846,7 +5017,9 @@ and Value() methods.</p>
 <p>These methods returns the same information as their counterpart in the
 <a title="cp_model.CpSolver" href="#cp_model.CpSolver"><code>CpSolver</code></a> class.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
     &#34;&#34;&#34;Solution callback.
 
@@ -4970,7 +5143,9 @@ and Value() methods.</p>
 <dd>if <code>lit</code> is not a boolean variable or its negation.</dd>
 </dl></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def BooleanValue(self, lit):
     &#34;&#34;&#34;Returns the boolean value of a boolean literal.
 
@@ -5001,7 +5176,9 @@ Raises:
 <dd>
 <section class="desc"><p>Proxy for the same method in snake case.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def OnSolutionCallback(self):
     &#34;&#34;&#34;Proxy for the same method in snake case.&#34;&#34;&#34;
     self.on_solution_callback()</code></pre>
@@ -5029,7 +5206,9 @@ Raises:
 <dd>if 'expression' is not a LinearExpr.</dd>
 </dl></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Value(self, expression):
     &#34;&#34;&#34;Evaluates an linear expression in the current solution.
 
@@ -5088,7 +5267,9 @@ from the set of initial values (called the initial domain), such that the
 model is feasible, or optimal if you provided an objective function.</p>
 <p>See CpModel.NewIntVar below.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">class IntVar(LinearExpr):
     &#34;&#34;&#34;An integer variable.
 
@@ -5165,7 +5346,9 @@ model is feasible, or optimal if you provided an objective function.</p>
 <dd>
 <section class="desc"><p>Returns the index of the variable in the model.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Index(self):
     &#34;&#34;&#34;Returns the index of the variable in the model.&#34;&#34;&#34;
     return self.__index</code></pre>
@@ -5177,7 +5360,9 @@ model is feasible, or optimal if you provided an objective function.</p>
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Name(self):
     return self.__var.name</code></pre>
 </details>
@@ -5191,7 +5376,9 @@ model is feasible, or optimal if you provided an objective function.</p>
 It is only valid if the variable has a Boolean domain (0 or 1).</p>
 <p>Note that this method is nilpotent: <code>x.Not().Not() == x</code>.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Not(self):
     &#34;&#34;&#34;Returns the negation of a Boolean variable.
 
@@ -5216,7 +5403,9 @@ Note that this method is nilpotent: `x.Not().Not() == x`.
 <dd>
 <section class="desc"><p>Returns the variable protobuf.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Proto(self):
     &#34;&#34;&#34;Returns the variable protobuf.&#34;&#34;&#34;
     return self.__var</code></pre>
@@ -5230,6 +5419,7 @@ Note that this method is nilpotent: `x.Not().Not() == x`.
 <li><code><a title="cp_model.LinearExpr.GetVarValueMap" href="#cp_model.LinearExpr.GetVarValueMap">GetVarValueMap</a></code></li>
 <li><code><a title="cp_model.LinearExpr.ScalProd" href="#cp_model.LinearExpr.ScalProd">ScalProd</a></code></li>
 <li><code><a title="cp_model.LinearExpr.Sum" href="#cp_model.LinearExpr.Sum">Sum</a></code></li>
+<li><code><a title="cp_model.LinearExpr.Term" href="#cp_model.LinearExpr.Term">Term</a></code></li>
 </ul>
 </li>
 </ul>
@@ -5251,7 +5441,9 @@ enforcement literals assigned to false. Conversely, these constraints will
 also set these enforcement literals to false if they cannot fit these
 intervals into the schedule.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">class IntervalVar(object):
     &#34;&#34;&#34;Represents an Interval variable.
 
@@ -5319,7 +5511,9 @@ intervals into the schedule.</p></section>
 <dd>
 <section class="desc"><p>Returns the index of the interval constraint in the model.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Index(self):
     &#34;&#34;&#34;Returns the index of the interval constraint in the model.&#34;&#34;&#34;
     return self.__index</code></pre>
@@ -5331,7 +5525,9 @@ intervals into the schedule.</p></section>
 <dd>
 <section class="desc"></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Name(self):
     return self.__ct.name</code></pre>
 </details>
@@ -5342,7 +5538,9 @@ intervals into the schedule.</p></section>
 <dd>
 <section class="desc"><p>Returns the interval protobuf.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def Proto(self):
     &#34;&#34;&#34;Returns the interval protobuf.&#34;&#34;&#34;
     return self.__ct.interval</code></pre>
@@ -5376,7 +5574,9 @@ from lists of linear expressions or coefficients as follows:</p>
 model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) &gt;= 0)
 </code></pre></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">class LinearExpr(object):
     &#34;&#34;&#34;Holds an integer linear expression.
 
@@ -5403,16 +5603,21 @@ model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) &gt;= 0)
 
     @classmethod
     def Sum(cls, expressions):
-        &#34;&#34;&#34;Create the expression sum(expressions).&#34;&#34;&#34;
+        &#34;&#34;&#34;Creates the expression sum(expressions).&#34;&#34;&#34;
         return _SumArray(expressions)
 
     @classmethod
     def ScalProd(cls, expressions, coefficients):
-        &#34;&#34;&#34;Create the expression sum(expressions[i] * coefficients[i]).&#34;&#34;&#34;
+        &#34;&#34;&#34;Creates the expression sum(expressions[i] * coefficients[i]).&#34;&#34;&#34;
         return _ScalProd(expressions, coefficients)
 
+    @classmethod
+    def Term(cls, expression, coefficient):
+        &#34;&#34;&#34;Creates `expression * coefficient`.&#34;&#34;&#34;
+        return expression * coefficient
+
     def GetVarValueMap(self):
-        &#34;&#34;&#34;Scan the expression, and return a list of (var_coef_map, constant).&#34;&#34;&#34;
+        &#34;&#34;&#34;Scans the expression, and return a list of (var_coef_map, constant).&#34;&#34;&#34;
         coeffs = collections.defaultdict(int)
         constant = 0
         to_process = [(self, 1)]
@@ -5568,12 +5773,14 @@ model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) &gt;= 0)
 <span>def <span class="ident">ScalProd</span></span>(<span>expressions, coefficients)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Create the expression sum(expressions[i] * coefficients[i]).</p></section>
+<section class="desc"><p>Creates the expression sum(expressions[i] * coefficients[i]).</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">@classmethod
 def ScalProd(cls, expressions, coefficients):
-    &#34;&#34;&#34;Create the expression sum(expressions[i] * coefficients[i]).&#34;&#34;&#34;
+    &#34;&#34;&#34;Creates the expression sum(expressions[i] * coefficients[i]).&#34;&#34;&#34;
     return _ScalProd(expressions, coefficients)</code></pre>
 </details>
 </dd>
@@ -5581,13 +5788,30 @@ def ScalProd(cls, expressions, coefficients):
 <span>def <span class="ident">Sum</span></span>(<span>expressions)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Create the expression sum(expressions).</p></section>
+<section class="desc"><p>Creates the expression sum(expressions).</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">@classmethod
 def Sum(cls, expressions):
-    &#34;&#34;&#34;Create the expression sum(expressions).&#34;&#34;&#34;
+    &#34;&#34;&#34;Creates the expression sum(expressions).&#34;&#34;&#34;
     return _SumArray(expressions)</code></pre>
+</details>
+</dd>
+<dt id="cp_model.LinearExpr.Term"><code class="name flex">
+<span>def <span class="ident">Term</span></span>(<span>expression, coefficient)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Creates <code>expression * coefficient</code>.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@classmethod
+def Term(cls, expression, coefficient):
+    &#34;&#34;&#34;Creates `expression * coefficient`.&#34;&#34;&#34;
+    return expression * coefficient</code></pre>
 </details>
 </dd>
 </dl>
@@ -5597,11 +5821,13 @@ def Sum(cls, expressions):
 <span>def <span class="ident">GetVarValueMap</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Scan the expression, and return a list of (var_coef_map, constant).</p></section>
+<section class="desc"><p>Scans the expression, and return a list of (var_coef_map, constant).</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def GetVarValueMap(self):
-    &#34;&#34;&#34;Scan the expression, and return a list of (var_coef_map, constant).&#34;&#34;&#34;
+    &#34;&#34;&#34;Scans the expression, and return a list of (var_coef_map, constant).&#34;&#34;&#34;
     coeffs = collections.defaultdict(int)
     constant = 0
     to_process = [(self, 1)]
@@ -5637,7 +5863,9 @@ def Sum(cls, expressions):
 <dd>
 <section class="desc"><p>Display the objective value and time of intermediate solutions.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">class ObjectiveSolutionPrinter(CpSolverSolutionCallback):
     &#34;&#34;&#34;Display the objective value and time of intermediate solutions.&#34;&#34;&#34;
 
@@ -5671,7 +5899,9 @@ def Sum(cls, expressions):
 <dd>
 <section class="desc"><p>Called on each new solution.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def on_solution_callback(self):
     &#34;&#34;&#34;Called on each new solution.&#34;&#34;&#34;
     current_time = time.time()
@@ -5687,7 +5917,9 @@ def Sum(cls, expressions):
 <dd>
 <section class="desc"><p>Returns the number of solutions found.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def solution_count(self):
     &#34;&#34;&#34;Returns the number of solutions found.&#34;&#34;&#34;
     return self.__solution_count</code></pre>
@@ -5712,7 +5944,9 @@ def Sum(cls, expressions):
 <dd>
 <section class="desc"><p>Print intermediate solutions (objective, variable values, time).</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">class VarArrayAndObjectiveSolutionPrinter(CpSolverSolutionCallback):
     &#34;&#34;&#34;Print intermediate solutions (objective, variable values, time).&#34;&#34;&#34;
 
@@ -5750,7 +5984,9 @@ def Sum(cls, expressions):
 <dd>
 <section class="desc"><p>Called on each new solution.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def on_solution_callback(self):
     &#34;&#34;&#34;Called on each new solution.&#34;&#34;&#34;
     current_time = time.time()
@@ -5769,7 +6005,9 @@ def Sum(cls, expressions):
 <dd>
 <section class="desc"><p>Returns the number of solutions found.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def solution_count(self):
     &#34;&#34;&#34;Returns the number of solutions found.&#34;&#34;&#34;
     return self.__solution_count</code></pre>
@@ -5794,7 +6032,9 @@ def Sum(cls, expressions):
 <dd>
 <section class="desc"><p>Print intermediate solutions (variable values, time).</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">class VarArraySolutionPrinter(CpSolverSolutionCallback):
     &#34;&#34;&#34;Print intermediate solutions (variable values, time).&#34;&#34;&#34;
 
@@ -5831,7 +6071,9 @@ def Sum(cls, expressions):
 <dd>
 <section class="desc"><p>Called on each new solution.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def on_solution_callback(self):
     &#34;&#34;&#34;Called on each new solution.&#34;&#34;&#34;
     current_time = time.time()
@@ -5849,7 +6091,9 @@ def Sum(cls, expressions):
 <dd>
 <section class="desc"><p>Returns the number of solutions found.</p></section>
 <details class="source">
-<summary>Source code</summary>
+<summary>
+<span>Expand source code</span>
+</summary>
 <pre><code class="python">def solution_count(self):
     &#34;&#34;&#34;Returns the number of solutions found.&#34;&#34;&#34;
     return self.__solution_count</code></pre>
@@ -5915,6 +6159,7 @@ def Sum(cls, expressions):
 <li><code><a title="cp_model.CpModel.AddDivisionEquality" href="#cp_model.CpModel.AddDivisionEquality">AddDivisionEquality</a></code></li>
 <li><code><a title="cp_model.CpModel.AddElement" href="#cp_model.CpModel.AddElement">AddElement</a></code></li>
 <li><code><a title="cp_model.CpModel.AddForbiddenAssignments" href="#cp_model.CpModel.AddForbiddenAssignments">AddForbiddenAssignments</a></code></li>
+<li><code><a title="cp_model.CpModel.AddHint" href="#cp_model.CpModel.AddHint">AddHint</a></code></li>
 <li><code><a title="cp_model.CpModel.AddImplication" href="#cp_model.CpModel.AddImplication">AddImplication</a></code></li>
 <li><code><a title="cp_model.CpModel.AddInverse" href="#cp_model.CpModel.AddInverse">AddInverse</a></code></li>
 <li><code><a title="cp_model.CpModel.AddLinearConstraint" href="#cp_model.CpModel.AddLinearConstraint">AddLinearConstraint</a></code></li>
@@ -6001,6 +6246,7 @@ def Sum(cls, expressions):
 <li><code><a title="cp_model.LinearExpr.GetVarValueMap" href="#cp_model.LinearExpr.GetVarValueMap">GetVarValueMap</a></code></li>
 <li><code><a title="cp_model.LinearExpr.ScalProd" href="#cp_model.LinearExpr.ScalProd">ScalProd</a></code></li>
 <li><code><a title="cp_model.LinearExpr.Sum" href="#cp_model.LinearExpr.Sum">Sum</a></code></li>
+<li><code><a title="cp_model.LinearExpr.Term" href="#cp_model.LinearExpr.Term">Term</a></code></li>
 </ul>
 </li>
 <li>
@@ -6031,7 +6277,7 @@ def Sum(cls, expressions):
 </main>
 <footer id="footer">
 <p><span style="color:#ddd">&#21328;</span></p>
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.6.3</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.7.0</a>.</p>
 </footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
 <script>hljs.initHighlightingOnLoad()</script>

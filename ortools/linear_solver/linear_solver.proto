@@ -110,6 +110,17 @@ message MPGeneralConstraintProto {
     MPIndicatorConstraint indicator_constraint = 2;
     MPSosConstraint sos_constraint = 3;
     MPQuadraticConstraint quadratic_constraint = 4;
+    MPAbsConstraint abs_constraint = 5;
+    // All variables in "and" constraints must be Boolean.
+    // resultant_var = and(var_1, var_2... var_n)
+    MPArrayConstraint and_constraint = 6;
+    // All variables in "or" constraints must be Boolean.
+    // resultant_var = or(var_1, var_2... var_n)
+    MPArrayConstraint or_constraint = 7;
+    // resultant_var = min(var_1, var_2, ..., constant)
+    MPArrayWithConstantConstraint min_constraint = 8;
+    // resultant_var = max(var_1, var_2, ..., constant)
+    MPArrayWithConstantConstraint max_constraint = 9;
   }
 }
 
@@ -139,7 +150,7 @@ message MPSosConstraint {
   enum Type {
     // At most one variable in `var_index` must be non-zero.
     SOS1_DEFAULT = 0;
-    // At most two consecutive variables from `var_index` must be non-zero (i.e.
+    // At most two consecutive variables from `var_index` can be non-zero (i.e.
     // for some i, var_index[i] and var_index[i+1]). See
     // http://www.eudoxus.com/lp-training/5/5-6-special-ordered-sets-of-type-2
     SOS2 = 1;
@@ -192,6 +203,31 @@ message MPQuadraticConstraint {
   // lower_bound must be <= upper_bound.
   optional double lower_bound = 6 [default = -inf];
   optional double upper_bound = 7 [default = inf];
+}
+
+// Sets a variable's value to the absolute value of another variable.
+message MPAbsConstraint {
+  // Variable indices are relative to the "variable" field in MPModelProto.
+  // resultant_var = abs(var)
+  optional int32 var_index = 1;
+  optional int32 resultant_var_index = 2;
+}
+
+// Sets a variable's value equal to a function on a set of variables.
+message MPArrayConstraint {
+  // Variable indices are relative to the "variable" field in MPModelProto.
+  repeated int32 var_index = 1;
+  optional int32 resultant_var_index = 2;
+}
+
+// Sets a variable's value equal to a function on a set of variables and,
+// optionally, a constant.
+message MPArrayWithConstantConstraint {
+  // Variable indices are relative to the "variable" field in MPModelProto.
+  // resultant_var = f(var_1, var_2, ..., constant)
+  repeated int32 var_index = 1;
+  optional double constant = 2;
+  optional int32 resultant_var_index = 3;
 }
 
 // Quadratic part of a model's objective. Added with other objectives (such as
@@ -365,7 +401,8 @@ message MPModelRequest {
     GLOP_LINEAR_PROGRAMMING = 2;  // Recommended default for LP models.
     CLP_LINEAR_PROGRAMMING = 0;
     GLPK_LINEAR_PROGRAMMING = 1;
-    GUROBI_LINEAR_PROGRAMMING = 6;  // Commercial, needs a valid license.
+    GUROBI_LINEAR_PROGRAMMING = 6;    // Commercial, needs a valid license.
+    XPRESS_LINEAR_PROGRAMMING = 101;  // Commercial, needs a valid license.
     CPLEX_LINEAR_PROGRAMMING = 10;  // Commercial, needs a valid
     // license.
 
@@ -373,6 +410,8 @@ message MPModelRequest {
     GLPK_MIXED_INTEGER_PROGRAMMING = 4;
     CBC_MIXED_INTEGER_PROGRAMMING = 5;
     GUROBI_MIXED_INTEGER_PROGRAMMING = 7;  // Commercial, needs a valid license.
+    XPRESS_MIXED_INTEGER_PROGRAMMING =
+        102;  // Commercial, needs a valid license.
     CPLEX_MIXED_INTEGER_PROGRAMMING = 11;  // Commercial, needs a
     // valid license.
     BOP_INTEGER_PROGRAMMING = 12;
@@ -417,6 +456,11 @@ message MPModelRequest {
   // rejected and yield an RPC Application error with code
   // MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS.
   optional string solver_specific_parameters = 5;
+
+
+  // Advanced usage: model "delta". If used, "model" must be unset. See the
+  // definition of MPModelDeltaProto.
+  optional MPModelDeltaProto model_delta = 8;
 
 }
 

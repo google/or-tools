@@ -1,0 +1,5 @@
+<map id="ModelParser" name="ModelParser">
+<area shape="rect" id="node1" title="Model Parser." alt="" coords="5,152,102,177"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1ModelVisitor.html" title="Model visitor." alt="" coords="7,79,101,104"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="9,5,99,31"/>
+</map>

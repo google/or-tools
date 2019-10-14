@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "ortools/base/int_type.h"
+#include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
@@ -40,6 +41,42 @@ struct CutGenerator {
   std::function<void(const gtl::ITIVector<IntegerVariable, double>& lp_values,
                      LinearConstraintManager* manager)>
       generate_cuts;
+};
+
+// Given an upper-bounded linear relation (sum terms <= ub), this algorithm
+// inspects the integer variable appearing in the sum and try to replace each of
+// them by a tight lower bound (>= coeff * binary + lb) using the implied bound
+// repository. By tight, we mean that it will take the same value under the
+// current LP solution.
+//
+// We use a class to reuse memory of the tmp terms.
+class ImpliedBoundsProcessor {
+ public:
+  // We will only replace IntegerVariable appearing in lp_vars_.
+  ImpliedBoundsProcessor(absl::Span<const IntegerVariable> lp_vars_,
+                         IntegerTrail* integer_trail,
+                         ImpliedBounds* implied_bounds)
+      : lp_vars_(lp_vars_.begin(), lp_vars_.end()),
+        integer_trail_(integer_trail),
+        implied_bounds_(implied_bounds) {}
+
+  // Processes and updates the given cut.
+  void ProcessUpperBoundedConstraint(
+      const gtl::ITIVector<IntegerVariable, double>& lp_values,
+      LinearConstraint* cut) const;
+
+  // Add a new variable that could be used in the new cuts.
+  void AddLpVariable(IntegerVariable var) { lp_vars_.insert(var); }
+
+ private:
+  absl::flat_hash_set<IntegerVariable> lp_vars_;
+
+  // Data from the constructor.
+  IntegerTrail* integer_trail_;
+  ImpliedBounds* implied_bounds_;
+
+  // Temporary memory used by ProcessUpperBoundedConstraint().
+  mutable std::vector<std::pair<IntegerVariable, IntegerValue>> tmp_terms_;
 };
 
 // Visible for testing. Returns a function f on integers such that:
@@ -183,7 +220,8 @@ bool CanFormValidKnapsackCover(
 // For constraint with finite lower bound, this method also adds the negation of
 // the given constraint after converting it to canonical knapsack form.
 void ConvertToKnapsackForm(const LinearConstraint& constraint,
-                           std::vector<LinearConstraint>* knapsack_constraints);
+                           std::vector<LinearConstraint>* knapsack_constraints,
+                           IntegerTrail* integer_trail);
 
 // Returns true if the cut is lifted. Lifting procedure is described below.
 //
@@ -265,6 +303,15 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
 // It will dynamically add a linear inequality to push y closer to the parabola.
 CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
                                       Model* model);
+
+// A cut generator for all_diff(xi). Let the united domain of all xi be D. Sum
+// of any k-sized subset of xi need to be greater or equal to the sum of
+// smallest k values in D and lesser or equal to the sum of largest k values in
+// D. The cut generator first sorts the variables based on LP values and adds
+// cuts of the form described above if they are violated by lp solution. Note
+// that all the fixed variables are ignored while generating cuts.
+CutGenerator CreateAllDifferentCutGenerator(
+    const std::vector<IntegerVariable>& vars, Model* model);
 
 }  // namespace sat
 }  // namespace operations_research

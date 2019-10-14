@@ -419,7 +419,10 @@ void GlobalVehicleBreaksConstraint::PropagateVehicle(int vehicle) {
   // that arc's slack must be large enough to accommodate for those.
   // TODO(user): Make a version more efficient than O(n^2).
   if (dimension_->GetBreakIntervalsOfVehicle(vehicle).empty()) return;
-  for (int i = 0; i < num_nodes - 1; ++i) {
+  // If the last arc of the path was not bound, do not change slack.
+  const int64 last_bound_arc =
+      num_nodes - 2 - (model_->NextVar(path_[num_nodes - 2])->Bound() ? 0 : 1);
+  for (int i = 0; i <= last_bound_arc; ++i) {
     const int64 arc_start_max = CapSub(dimension_->CumulVar(path_[i])->Max(),
                                        i > 0 ? post_travel_[i - 1] : 0);
     const int64 arc_end_min =
@@ -558,7 +561,7 @@ class VehicleBreaksFilter : public BasePathFilter {
 VehicleBreaksFilter::VehicleBreaksFilter(const RoutingModel& routing_model,
                                          const RoutingDimension& dimension)
     : BasePathFilter(routing_model.Nexts(),
-                     routing_model.Size() + routing_model.vehicles(), nullptr),
+                     routing_model.Size() + routing_model.vehicles()),
       model_(routing_model),
       dimension_(dimension) {
   DCHECK(dimension_.HasBreakConstraints());

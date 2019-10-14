@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 139
+// NEXT TAG: 149
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -396,6 +396,39 @@ message SatParameters {
   // presolve iterations.
   optional int32 max_presolve_iterations = 138 [default = 3];
 
+  // Whether we presolve the cp_model before solving it.
+  optional bool cp_model_presolve = 86 [default = true];
+
+  // How much effort do we spend on probing. 0 disables it completely.
+  optional int32 cp_model_probing_level = 110 [default = 2];
+
+  // Whether we also use the sat presolve when cp_model_presolve is true.
+  optional bool cp_model_use_sat_presolve = 93 [default = true];
+
+  // If true, the element constraints are expanded into many
+  // linear constraints of the form (index == i) => (element[i] == target).
+  optional bool expand_element_constraints = 140 [default = true];
+
+  // If true, the automaton constraints are expanded.
+  optional bool expand_automaton_constraints = 143 [default = true];
+
+  // During presolve, we use a maximum clique heuristic to merge together
+  // no-overlap constraints or at most one constraints. This code can be slow,
+  // so we have a limit in place on the number of explored nodes in the
+  // underlying graph. The internal limit is an int64, but we use double here to
+  // simplify manual input.
+  optional double merge_no_overlap_work_limit = 145 [default = 1e12];
+  optional double merge_at_most_one_work_limit = 146 [default = 1e8];
+
+  // How much substitution (also called free variable aggregation in MIP
+  // litterature) should we perform at presolve. This currently only concerns
+  // variable appearing only in linear constraints.
+  //
+  // TODO(user): Implement a proper heuristic, maybe in term of non-zero
+  // created. Right now, we basically substitute all variables than can be
+  // easily substitued and that appear in at most this number of constraints.
+  optional int32 presolve_substitution_level = 147 [default = 0];
+
   // ==========================================================================
   // Max-sat parameters
   // ==========================================================================
@@ -530,6 +563,11 @@ message SatParameters {
   // Note that for now, this is not heavily tunned.
   optional bool add_mir_cuts = 120 [default = true];
 
+  // Cut generator for all diffs can add too many cuts for large all_diff
+  // constraints. This parameter restricts the large all_diff constraints to
+  // have a cut generator.
+  optional int32 max_all_diff_cut_size = 148 [default = 7];
+
   // Whether we use the classical MIR rounding function when computing a cut
   // using integer rounding. If false we use our own variant based on the strong
   // fractional rouding of Letchford and Lodi.
@@ -626,6 +664,11 @@ message SatParameters {
   // branch on the value that lead to the best objective first.
   optional bool exploit_objective = 131 [default = true];
 
+  // If set at zero (the default), it is disabled. Otherwise the solver attempts
+  // probing at every 'probing_period' root node. Period of 1 enables probing at
+  // every root node.
+  optional int64 probing_period_at_root = 142 [default = 0];
+
   // The solver ignores the pseudo costs of variables with number of recordings
   // less than this threshold.
   optional int64 pseudo_cost_reliability_threshold = 123 [default = 100];
@@ -649,15 +692,6 @@ message SatParameters {
   // "Automatic Logic-Based Benders Decomposition with MiniZinc"
   // http://aaai.org/ocs/index.php/AAAI/AAAI17/paper/view/14489
   optional bool optimize_with_max_hs = 85 [default = false];
-
-  // Whether we presolve the cp_model before solving it.
-  optional bool cp_model_presolve = 86 [default = true];
-
-  // How much effort do we spend on probing. 0 disables it completely.
-  optional int32 cp_model_probing_level = 110 [default = 2];
-
-  // Whether we also use the sat presolve when cp_model_presolve is true.
-  optional bool cp_model_use_sat_presolve = 93 [default = true];
 
   // Whether we enumerate all solutions of a problem without objective. Note
   // that setting this to true automatically disable the presolve. This is
@@ -697,6 +731,9 @@ message SatParameters {
   // work with just one worker, in which case the solver is deterministic even
   // if deterministic_parallel_search is false.
   optional bool interleave_search = 136 [default = false];
+
+  // Temporary parameter until the memory usage is more optimized.
+  optional bool reduce_memory_usage_in_interleave_mode = 141 [default = true];
 
   // Make the parallelization deterministic. Currently, this only work with
   // use_lns_only().
@@ -743,10 +780,25 @@ message SatParameters {
   // numerical imprecision issues.
   optional bool use_exact_lp_reason = 109 [default = true];
 
+  // If true, the solver attemts to generate more info inside lp propagator by
+  // branching on some variables if certain criteria are met during the search
+  // tree exploration.
+  optional bool use_branching_in_lp = 139 [default = false];
+
   // This can be beneficial if there is a lot of no-overlap constraints but a
   // relatively low number of different intervals in the problem. Like 1000
   // intervals, but 1M intervals in the no-overlap constraints covering them.
   optional bool use_combined_no_overlap = 133 [default = false];
+
+  // Indicates if the CP-SAT layer should catch Control-C (SIGINT) signals
+  // when calling solve. If set, catching the SIGINT signal will terminate the
+  // search gracefully, as if a time limit was reached.
+  optional bool catch_sigint_signal = 135 [default = true];
+
+  // Stores and exploits "implied-bounds" in the solver. That is, relations of
+  // the form literal => (var >= bound). Off by default because the
+  // implementation is still at an early stage.
+  optional bool use_implied_bounds = 144 [default = false];
 
   // ==========================================================================
   // MIP -> CP-SAT (i.e. IP with integer coeff) conversion parameters that are
@@ -795,9 +847,4 @@ message SatParameters {
   // cannot, we will report MODEL_INVALID if the relative preicision is larger
   // than this parameter.
   optional double mip_check_precision = 128 [default = 1e-4];
-
-  // Indicates if the CP-SAT layer should catch Control-C (SIGINT) signals
-  // when calling solve. If set, catching the SIGINT signal will terminate the
-  // search gracefully, as if a time limit was reached.
-  optional bool catch_sigint_signal = 135 [default = true];
 }

@@ -401,6 +401,7 @@ test_cc_sat_samples: \
  rcc_reified_sample_sat \
  rcc_search_for_all_solutions_sample_sat \
  rcc_simple_sat_program \
+ rcc_solution_hinting_sample_sat \
  rcc_solve_and_print_intermediate_solutions_sample_sat \
  rcc_solve_with_time_limit_sample_sat \
  rcc_step_function_sample_sat \

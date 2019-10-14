@@ -144,6 +144,12 @@ LinearExpr LinearExpr::ScalProd(absl::Span<const IntVar> vars,
   return result;
 }
 
+LinearExpr LinearExpr::Term(IntVar var, int64 coefficient) {
+  LinearExpr result;
+  result.AddTerm(var, coefficient);
+  return result;
+}
+
 LinearExpr LinearExpr::BooleanSum(absl::Span<const BoolVar> vars) {
   LinearExpr result;
   for (const IntVar& var : vars) {
@@ -725,6 +731,12 @@ void CpModelBuilder::AddDecisionStrategy(
   }
   proto->set_variable_selection_strategy(var_strategy);
   proto->set_domain_reduction_strategy(domain_strategy);
+}
+
+void CpModelBuilder::AddHint(IntVar var, int64 value) {
+  cp_model_.mutable_solution_hint()->add_vars(
+      GetOrCreateIntegerIndex(var.index_));
+  cp_model_.mutable_solution_hint()->add_values(value);
 }
 
 int64 SolutionIntegerValue(const CpSolverResponse& r, const LinearExpr& expr) {

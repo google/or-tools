@@ -1,0 +1,9 @@
+<map id="PairRelocateOperator" name="PairRelocateOperator">
+<area shape="rect" id="node1" title="Operator which moves a pair of nodes to another position where the first node of the pair must be bef..." alt="" coords="39,472,190,497"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1PathWithPreviousNodesOperator.html" title="Simple PathOperator wrapper that also stores the current previous nodes, and is thus able to provide ..." alt="" coords="5,399,224,424"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1PathOperator.html" title="Base class of the local search operators dedicated to path modifications (a path is a set of nodes li..." alt="" coords="64,325,165,351"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1IntVarLocalSearchOperator.html" title="Specialization of LocalSearchOperator built from an array of IntVars which specifies the scope of the..." alt="" coords="23,252,206,277"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1VarLocalSearchOperator.html" title=" " alt="" coords="26,152,203,204"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1LocalSearchOperator.html" title="The base class for all local search operators." alt="" coords="41,79,189,104"/>
+<area shape="rect" id="node7" href="$classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="69,5,160,31"/>
+</map>

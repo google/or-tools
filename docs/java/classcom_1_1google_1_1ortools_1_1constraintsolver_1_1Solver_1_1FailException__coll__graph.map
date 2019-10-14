@@ -1,0 +1,4 @@
+<map id="Solver.FailException" name="Solver.FailException">
+<area shape="rect" id="node1" title="This exceptions signal that a failure has been raised in the C++ world." alt="" coords="5,79,147,104"/>
+<area shape="rect" id="node2" title=" " alt="" coords="36,5,116,31"/>
+</map>

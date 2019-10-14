@@ -25,9 +25,6 @@ command -v make | xargs echo "make: " | tee -a build.log
 command -v swig
 command -v swig | xargs echo "swig: " | tee -a build.log
 # python
-command -v python2.7
-command -v python2.7 | xargs echo "python2.7: " | tee -a build.log
-python2.7 -c "import distutils.util as u; print(u.get_platform())" | tee -a build.log
 command -v python3.6
 command -v python3.6 | xargs echo "python3.6: " | tee -a build.log
 python3.6 -c "import distutils.util as u; print(u.get_platform())" | tee -a build.log
@@ -98,27 +95,6 @@ echo "DONE" | tee -a build.log
 echo -n "Make Python examples archive..." | tee -a build.log
 make python_examples_archive UNIX_PYTHON_VER=3.7
 echo "DONE" | tee -a build.log
-
-##################
-##  Python 2.7  ##
-##################
-echo -n "Cleaning Python..." | tee -a build.log
-make clean_python UNIX_PYTHON_VER=2.7
-echo "DONE" | tee -a build.log
-
-echo -n "Build Python 2.7..." | tee -a build.log
-make python -l 4 UNIX_PYTHON_VER=2.7
-echo "DONE" | tee -a build.log
-#make test_python UNIX_PYTHON_VER=2.7
-#echo "make test_python2.7: DONE" | tee -a build.log
-echo -n "Build Python 2.7 wheel archive..." | tee -a build.log
-make python_package UNIX_PYTHON_VER=2.7
-echo "DONE" | tee -a build.log
-echo -n "Test Python 2.7 wheel archive..." | tee -a build.log
-make test_python_package UNIX_PYTHON_VER=2.7
-echo "DONE" | tee -a build.log
-
-cp temp_python2.7/ortools/dist/*.whl .
 
 ##################
 ##  Python 3.6  ##

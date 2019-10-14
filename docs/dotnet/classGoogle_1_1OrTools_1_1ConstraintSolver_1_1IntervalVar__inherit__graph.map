@@ -1,6 +1,6 @@
-<map id="Google.OrTools.ConstraintSolver.IntervalVar" name="Google.OrTools.ConstraintSolver.IntervalVar">
-<area shape="rect" id="node1" title=" " alt="" coords="5,225,184,264"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PropagationBaseObject.html" title=" " alt="" coords="13,152,176,177"/>
-<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="49,79,140,104"/>
-<area shape="rect" id="node4" title=" " alt="" coords="5,5,184,31"/>
+<map id="IntervalVar" name="IntervalVar">
+<area shape="rect" id="node1" title=" " alt="" coords="44,225,129,251"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PropagationBaseObject.html" title=" " alt="" coords="5,152,168,177"/>
+<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="41,79,132,104"/>
+<area shape="rect" id="node4" title=" " alt="" coords="19,5,154,31"/>
 </map>

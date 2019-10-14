@@ -1,9 +1,9 @@
-<map id="Google.OrTools.ConstraintSolver.PathOperator" name="Google.OrTools.ConstraintSolver.PathOperator">
-<area shape="rect" id="node1" title=" " alt="" coords="46,385,224,424"/>
-<area shape="rect" id="node7" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PathWithPreviousNodesOperator.html" title=" " alt="" coords="5,472,265,511"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarLocalSearchOperator.html" title=" " alt="" coords="44,312,226,337"/>
-<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarLocalSearchOperatorTemplate.html" title=" " alt="" coords="44,225,226,264"/>
-<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchOperator.html" title=" " alt="" coords="61,152,209,177"/>
-<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="90,79,180,104"/>
-<area shape="rect" id="node6" title=" " alt="" coords="46,5,224,31"/>
+<map id="PathOperator" name="PathOperator">
+<area shape="rect" id="node1" title=" " alt="" coords="64,385,165,411"/>
+<area shape="rect" id="node7" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PathWithPreviousNodesOperator.html" title=" " alt="" coords="5,459,224,484"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarLocalSearchOperator.html" title=" " alt="" coords="23,312,206,337"/>
+<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarLocalSearchOperatorTemplate.html" title=" " alt="" coords="23,225,206,264"/>
+<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchOperator.html" title=" " alt="" coords="41,152,189,177"/>
+<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="69,79,160,104"/>
+<area shape="rect" id="node6" title=" " alt="" coords="47,5,182,31"/>
 </map>

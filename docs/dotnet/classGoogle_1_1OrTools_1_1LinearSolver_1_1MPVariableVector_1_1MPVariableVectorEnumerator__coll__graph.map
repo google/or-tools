@@ -1,5 +1,5 @@
-<map id="Google.OrTools.LinearSolver.MPVariableVector.MPVariableVectorEnumerator" name="Google.OrTools.LinearSolver.MPVariableVector.MPVariableVectorEnumerator">
-<area shape="rect" id="node1" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="227,33,463,85"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,179,44"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,68,179,120"/>
+<map id="MPVariableVector.MPVariableVectorEnumerator" name="MPVariableVector.MPVariableVectorEnumerator">
+<area shape="rect" id="node1" title="Note that the IEnumerator documentation requires an InvalidOperationException to be thrown whenever t..." alt="" coords="31,79,229,117"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,100,31"/>
+<area shape="rect" id="node3" title=" " alt="" coords="125,5,290,31"/>
 </map>

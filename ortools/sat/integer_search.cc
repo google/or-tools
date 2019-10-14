@@ -15,13 +15,17 @@
 
 #include <cmath>
 #include <functional>
+#include <vector>
 
+#include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
+#include "ortools/sat/probing.h"
 #include "ortools/sat/pseudo_costs.h"
 #include "ortools/sat/rins.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
 
 namespace operations_research {
@@ -403,6 +407,7 @@ std::function<LiteralIndex()> RandomizeOnRestartHeuristic(Model* model) {
   };
 }
 
+// TODO(user): Avoid the quadratic algorithm!!
 std::function<LiteralIndex()> FollowHint(
     const std::vector<BooleanOrIntegerVariable>& vars,
     const std::vector<IntegerValue>& values, Model* model) {
@@ -607,16 +612,6 @@ std::vector<std::function<LiteralIndex()>> CompleteHeuristics(
   return complete_heuristics;
 }
 
-void SolutionDetails::LoadFromTrail(const IntegerTrail& integer_trail) {
-  const IntegerVariable num_vars = integer_trail.NumIntegerVariables();
-  best_solution.resize(num_vars.value());
-  // NOTE: There might be some variables which are not fixed.
-  for (IntegerVariable var(0); var < num_vars; ++var) {
-    best_solution[var] = integer_trail.LowerBound(var);
-  }
-  solution_count++;
-}
-
 SatSolver::Status SolveIntegerProblem(Model* model) {
   TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
   if (time_limit->LimitReached()) return SatSolver::LIMIT_REACHED;
@@ -651,13 +646,16 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
   // execute the code when pseudo costs are not needed.
   PseudoCosts* pseudo_costs = model->GetOrCreate<PseudoCosts>();
 
-  IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* implied_bounds = model->GetOrCreate<ImpliedBounds>();
+
+  const SatParameters& sat_parameters = *(model->GetOrCreate<SatParameters>());
 
   // Main search loop.
   const int64 old_num_conflicts = sat_solver->num_failures();
-  const int64 conflict_limit =
-      model->GetOrCreate<SatParameters>()->max_number_of_conflicts();
+  const int64 conflict_limit = sat_parameters.max_number_of_conflicts();
   int64 num_decisions_without_rins = 0;
+  int64 num_decisions_without_probing = 0;
   while (!time_limit->LimitReached() &&
          (sat_solver->num_failures() - old_num_conflicts < conflict_limit)) {
     // If needed, restart and switch decision_policy.
@@ -669,6 +667,10 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
     }
 
     if (sat_solver->CurrentDecisionLevel() == 0) {
+      if (!implied_bounds->EnqueueNewDeductions()) {
+        return SatSolver::INFEASIBLE;
+      }
+
       auto* level_zero_callbacks =
           model->GetOrCreate<LevelZeroCallbackHelper>();
       for (const auto& cb : level_zero_callbacks->callbacks) {
@@ -678,12 +680,13 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
       }
     }
 
-    // Get next decision, try to enqueue.
     LiteralIndex decision = kNoLiteralIndex;
     while (true) {
       decision = heuristics.decision_policies[heuristics.policy_index]();
-      if (decision != kNoLiteralIndex &&
-          sat_solver->Assignment().LiteralIsAssigned(Literal(decision))) {
+
+      if (decision == kNoLiteralIndex) break;
+
+      if (sat_solver->Assignment().LiteralIsAssigned(Literal(decision))) {
         // TODO(user): It would be nicer if this can never happen. For now, it
         // does because of the Propagate() not reaching the fixed point as
         // mentionned in a TODO above. As a work-around, we display a message
@@ -691,6 +694,28 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
         VLOG(1) << "Trying to take a decision that is already assigned!"
                 << " Fix this. Continuing for now...";
         continue;
+      }
+
+      // Probing.
+      if (sat_solver->CurrentDecisionLevel() == 0 &&
+          sat_parameters.probing_period_at_root() > 0 &&
+          ++num_decisions_without_probing >=
+              sat_parameters.probing_period_at_root()) {
+        num_decisions_without_probing = 0;
+        // TODO(user): Be smarter about what variables we probe, we can also
+        // do more than one.
+
+        if (!ProbeBooleanVariables(0.1, {Literal(decision).Variable()},
+                                   model)) {
+          return SatSolver::INFEASIBLE;
+        }
+        DCHECK_EQ(sat_solver->CurrentDecisionLevel(), 0);
+
+        // We need to check after the probing that the literal is not fixed,
+        // otherwise we just go to the next decision.
+        if (sat_solver->Assignment().LiteralIsAssigned(Literal(decision))) {
+          continue;
+        }
       }
       break;
     }
@@ -735,6 +760,12 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
     // TODO(user): on some problems, this function can be quite long. Expand
     // so that we can check the time limit at each step?
     sat_solver->EnqueueDecisionAndBackjumpOnConflict(Literal(decision));
+
+    // Update the implied bounds each time we enqueue a literal at level zero.
+    // This is "almost free", so we might as well do it.
+    if (old_level == 0 && sat_solver->CurrentDecisionLevel() == 1) {
+      implied_bounds->ProcessIntegerTrail(Literal(decision));
+    }
 
     // Update the pseudo costs.
     if (sat_solver->CurrentDecisionLevel() > old_level &&

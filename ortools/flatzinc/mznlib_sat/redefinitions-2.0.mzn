@@ -44,6 +44,10 @@ include "nosets.mzn";
 % include "nostring.mzn"
 
 % Half-Reified constraints
+% Some of the predicated are commented out because:
+%  - we do not know if they are ever emited.
+%  - not sure they will improve the solver.
+% Keeping them for completeness sake.
 %predicate array_bool_and_imp(array [int] of var bool: as, var bool: r);
 %predicate array_bool_or_imp(array [int] of var bool: as, var bool: r);
 %predicate array_bool_xor_imp(array [int] of var bool: as, var bool: r);

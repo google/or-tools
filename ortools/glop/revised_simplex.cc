@@ -194,22 +194,27 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
     variables_info_.MakeBoxedVariableRelevant(false);
     GLOP_RETURN_IF_ERROR(DualMinimize(time_limit));
     DisplayIterationInfo();
-    variables_info_.MakeBoxedVariableRelevant(true);
-    reduced_costs_.MakeReducedCostsPrecise();
 
-    // This is needed to display errors properly.
-    MakeBoxedVariableDualFeasible(variables_info_.GetNonBasicBoxedVariables(),
-                                  /*update_basic_values=*/false);
-    variable_values_.RecomputeBasicVariableValues();
-    variable_values_.ResetPrimalInfeasibilityInformation();
+    if (problem_status_ != ProblemStatus::DUAL_INFEASIBLE) {
+      variables_info_.MakeBoxedVariableRelevant(true);
+      reduced_costs_.MakeReducedCostsPrecise();
+
+      // This is needed to display errors properly.
+      MakeBoxedVariableDualFeasible(variables_info_.GetNonBasicBoxedVariables(),
+                                    /*update_basic_values=*/false);
+      variable_values_.RecomputeBasicVariableValues();
+      variable_values_.ResetPrimalInfeasibilityInformation();
+    }
   } else {
     reduced_costs_.MaintainDualInfeasiblePositions(true);
     GLOP_RETURN_IF_ERROR(Minimize(time_limit));
     DisplayIterationInfo();
 
     // After the primal phase I, we need to restore the objective.
-    InitializeObjectiveAndTestIfUnchanged(lp);
-    reduced_costs_.ResetForNewObjective();
+    if (problem_status_ != ProblemStatus::PRIMAL_INFEASIBLE) {
+      InitializeObjectiveAndTestIfUnchanged(lp);
+      reduced_costs_.ResetForNewObjective();
+    }
   }
 
   // Reduced costs must be explicitly recomputed because DisplayErrors() is
@@ -343,6 +348,31 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
     }
   }
 
+  // Check that the return status is "precise".
+  //
+  // TODO(user): we curretnly skip the DUAL_INFEASIBLE status because the
+  // quantities are not up to date in this case.
+  if (parameters_.change_status_to_imprecise() &&
+      problem_status_ != ProblemStatus::DUAL_INFEASIBLE) {
+    const Fractional tolerance = parameters_.solution_feasibility_tolerance();
+    if (variable_values_.ComputeMaximumPrimalResidual() > tolerance ||
+        reduced_costs_.ComputeMaximumDualResidual() > tolerance) {
+      problem_status_ = ProblemStatus::IMPRECISE;
+    } else if (problem_status_ == ProblemStatus::DUAL_FEASIBLE ||
+               problem_status_ == ProblemStatus::DUAL_UNBOUNDED ||
+               problem_status_ == ProblemStatus::PRIMAL_INFEASIBLE) {
+      if (reduced_costs_.ComputeMaximumDualInfeasibility() > tolerance) {
+        problem_status_ = ProblemStatus::IMPRECISE;
+      }
+    } else if (problem_status_ == ProblemStatus::PRIMAL_FEASIBLE ||
+               problem_status_ == ProblemStatus::PRIMAL_UNBOUNDED ||
+               problem_status_ == ProblemStatus::DUAL_INFEASIBLE) {
+      if (variable_values_.ComputeMaximumPrimalInfeasibility() > tolerance) {
+        problem_status_ = ProblemStatus::IMPRECISE;
+      }
+    }
+  }
+
   // Store the result for the solution getters.
   SaveState();
   solution_objective_value_ = ComputeInitialProblemObjectiveValue();
@@ -392,6 +422,10 @@ Fractional RevisedSimplex::GetVariableValue(ColIndex col) const {
 
 Fractional RevisedSimplex::GetReducedCost(ColIndex col) const {
   return solution_reduced_costs_[col];
+}
+
+const DenseRow& RevisedSimplex::GetReducedCosts() const {
+  return solution_reduced_costs_;
 }
 
 Fractional RevisedSimplex::GetDualValue(RowIndex row) const {
@@ -1220,12 +1254,11 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
           // For the dual-simplex, we also perform a warm start if a couple of
           // new rows where added.
           InitializeVariableStatusesForWarmStart(solution_state_, ColIndex(0));
+          dual_edge_norms_.ResizeOnNewRows(num_rows_);
 
-          // TODO(user): Both the edge norms and the reduced costs do not really
-          // need to be recomputed. We just need to initialize the ones of the
-          // new slack variables to 1.0 for the norms and 0.0 for the reduced
-          // costs.
-          dual_edge_norms_.Clear();
+          // TODO(user): The reduced costs do not really need to be recomputed.
+          // We just need to initialize the ones of the new slack variables to
+          // 0.
           reduced_costs_.ClearAndRemoveCostShifts();
           dual_pricing_vector_.clear();
 
@@ -1994,8 +2027,9 @@ void RevisedSimplex::DualPhaseIUpdatePriceOnReducedCostChange(
         ++num_dual_infeasible_positions_;
       }
       if (!something_to_do) {
-        initially_all_zero_scratchpad_.is_non_zero.resize(num_rows_, false);
         initially_all_zero_scratchpad_.values.resize(num_rows_, 0.0);
+        initially_all_zero_scratchpad_.ClearSparseMask();
+        initially_all_zero_scratchpad_.non_zeros.clear();
         something_to_do = true;
       }
       compact_matrix_.ColumnAddMultipleToSparseScatteredColumn(
@@ -2005,16 +2039,8 @@ void RevisedSimplex::DualPhaseIUpdatePriceOnReducedCostChange(
     }
   }
   if (something_to_do) {
-    // TODO(user): This code is duplicated with UpdateGivenNonBasicVariables()
-    // and more generally with the one in RankOneUpdateFactorization. Fix.
-    if (initially_all_zero_scratchpad_.ShouldUseDenseIteration()) {
-      initially_all_zero_scratchpad_.non_zeros.clear();
-      initially_all_zero_scratchpad_.is_non_zero.assign(num_rows_, false);
-    } else {
-      for (const RowIndex row : initially_all_zero_scratchpad_.non_zeros) {
-        initially_all_zero_scratchpad_.is_non_zero[row] = false;
-      }
-    }
+    initially_all_zero_scratchpad_.ClearNonZerosIfTooDense();
+    initially_all_zero_scratchpad_.ClearSparseMask();
 
     const VariableTypeRow& variable_type = variables_info_.GetTypeRow();
     const Fractional threshold = parameters_.ratio_test_zero_threshold();

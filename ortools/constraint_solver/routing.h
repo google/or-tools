@@ -192,7 +192,9 @@
 
 namespace operations_research {
 
+class GlobalDimensionCumulOptimizer;
 class IntVarFilteredDecisionBuilder;
+class LocalDimensionCumulOptimizer;
 class LocalSearchOperator;
 class RoutingDimension;
 #ifndef SWIG
@@ -512,16 +514,26 @@ class RoutingModel {
   }
   /// Returns dimensions with soft or vehicle span costs.
   std::vector<RoutingDimension*> GetDimensionsWithSoftOrSpanCosts() const;
-  /// Returns dimensions_for_[global|local]_optimizer_ if the model has been
-  /// closed, and empty vectors otherwise.
-  const std::vector<RoutingDimension*>& GetDimensionsForGlobalCumulOptimizers()
-      const {
-    return dimensions_for_global_optimizer_;
+  // clang-format off
+  /// Returns [global|local]_dimension_optimizers_, which are empty if the model
+  /// has not been closed.
+  const std::vector<std::unique_ptr<GlobalDimensionCumulOptimizer> >&
+  GetGlobalDimensionCumulOptimizers() const {
+    return global_dimension_optimizers_;
   }
-  const std::vector<RoutingDimension*>& GetDimensionsForLocalCumulOptimizers()
-      const {
-    return dimensions_for_local_optimizer_;
+  const std::vector<std::unique_ptr<LocalDimensionCumulOptimizer> >&
+  GetLocalDimensionCumulOptimizers() const {
+    return local_dimension_optimizers_;
   }
+  // clang-format on
+
+  /// Returns the global/local dimension cumul optimizer for a given dimension,
+  /// or nullptr if there is none.
+  GlobalDimensionCumulOptimizer* GetMutableGlobalCumulOptimizer(
+      const RoutingDimension& dimension) const;
+  LocalDimensionCumulOptimizer* GetMutableLocalCumulOptimizer(
+      const RoutingDimension& dimension) const;
+
   /// Returns true if a dimension exists for a given dimension name.
   bool HasDimension(const std::string& dimension_name) const;
   /// Returns a dimension from its name. Dies if the dimension does not exist.
@@ -1017,8 +1029,9 @@ class RoutingModel {
   /// Adds an extra variable to the vehicle routing assignment.
   void AddToAssignment(IntVar* const var);
   void AddIntervalToAssignment(IntervalVar* const interval);
-  /// For every dimension in the model's dimensions_for_local/global_optimizer_,
-  /// this method tries to pack the cumul values of the dimension, such that:
+  /// For every dimension in the model with an optimizer in
+  /// local/global_dimension_optimizers_, this method tries to pack the cumul
+  /// values of the dimension, such that:
   /// - The cumul costs (span costs, soft lower and upper bound costs, etc) are
   ///   minimized.
   /// - The cumuls of the ends of the routes are minimized for this given
@@ -1338,8 +1351,9 @@ class RoutingModel {
       RoutingDimension* dimension);
   DimensionIndex GetDimensionIndex(const std::string& dimension_name) const;
 
-  /// Stores dimensions for which global and local cumul optimizers may be used
-  /// in the corresponding dimensions_for_[global|local]_optimizer_ vectors.
+  /// Creates global and local cumul optimizers for the dimensions needing them,
+  /// and stores them in the corresponding [local|global]_dimension_optimizers_
+  /// vectors.
   /// This function also computes and stores the "offsets" for these dimensions,
   /// used in the local/global optimizers to simplify LP computations.
   ///
@@ -1364,7 +1378,7 @@ class RoutingModel {
   /// On the other hand, when transits on a route can be negative, no assumption
   /// can be made on the cumuls of nodes wrt the start cumuls, and the offset is
   /// therefore set to 0.
-  void StoreDimensionsForDimensionCumulOptimizers();
+  void StoreDimensionCumulOptimizers();
 
   void ComputeCostClasses(const RoutingSearchParameters& parameters);
   void ComputeVehicleClasses();
@@ -1510,8 +1524,17 @@ class RoutingModel {
   /// Dimensions
   absl::flat_hash_map<std::string, DimensionIndex> dimension_name_to_index_;
   gtl::ITIVector<DimensionIndex, RoutingDimension*> dimensions_;
-  std::vector<RoutingDimension*> dimensions_for_global_optimizer_;
-  std::vector<RoutingDimension*> dimensions_for_local_optimizer_;
+  // clang-format off
+  /// TODO(user): Define a new Dimension[Global|Local]OptimizerIndex type
+  /// and use it to define ITIVectors and for the dimension to optimizer index
+  /// mappings below.
+  std::vector<std::unique_ptr<GlobalDimensionCumulOptimizer> >
+      global_dimension_optimizers_;
+  gtl::ITIVector<DimensionIndex, int> global_optimizer_index_;
+  std::vector<std::unique_ptr<LocalDimensionCumulOptimizer> >
+      local_dimension_optimizers_;
+  // clang-format off
+  gtl::ITIVector<DimensionIndex, int> local_optimizer_index_;
   std::string primary_constrained_dimension_;
   /// Costs
   IntVar* cost_ = nullptr;
@@ -1546,16 +1569,16 @@ class RoutingModel {
   std::function<int(int64)> vehicle_start_class_callback_;
   /// Disjunctions
   gtl::ITIVector<DisjunctionIndex, Disjunction> disjunctions_;
-  std::vector<std::vector<DisjunctionIndex>> index_to_disjunctions_;
+  std::vector<std::vector<DisjunctionIndex> > index_to_disjunctions_;
   /// Same vehicle costs
-  std::vector<ValuedNodes<int64>> same_vehicle_costs_;
+  std::vector<ValuedNodes<int64> > same_vehicle_costs_;
   /// Allowed vehicles
 #ifndef SWIG
   std::vector<std::unordered_set<int>> allowed_vehicles_;
 #endif  // SWIG
   /// Pickup and delivery
   IndexPairs pickup_delivery_pairs_;
-  std::vector<std::pair<DisjunctionIndex, DisjunctionIndex>>
+  std::vector<std::pair<DisjunctionIndex, DisjunctionIndex> >
       pickup_delivery_disjunctions_;
   // clang-format off
   // If node_index is a pickup, index_to_pickup_index_pairs_[node_index] is the
@@ -1770,6 +1793,9 @@ void FillPathEvaluation(const std::vector<int64>& path,
 class GlobalVehicleBreaksConstraint : public Constraint {
  public:
   explicit GlobalVehicleBreaksConstraint(const RoutingDimension* dimension);
+  std::string DebugString() const override {
+    return "GlobalVehicleBreaksConstraint";
+  }
 
   void Post() override;
   void InitialPropagate() override;
@@ -2787,9 +2813,9 @@ class GlobalCheapestInsertionFilteredDecisionBuilder
                        AdjustablePriorityQueue<NodeEntry>* priority_queue,
                        std::vector<NodeEntries>* node_entries);
 
-  /// Inserts neighbor_index in
-  /// node_index_to_[pickup|delivery|single]_neighbors_per_cost_class_
-  /// [node_index][cost_class] according to whether neighbor is a pickup,
+  /// Marks neighbor_index as visited in
+  /// node_index_to_[pickup|delivery|single]_neighbors_by_cost_class_
+  /// [node_index][cost_class] according to whether the neighbor is a pickup,
   /// a delivery, or neither.
   void AddNeighborForCostClass(int cost_class, int64 node_index,
                                int64 neighbor_index, bool neighbor_is_pickup,
@@ -2801,23 +2827,24 @@ class GlobalCheapestInsertionFilteredDecisionBuilder
                               int64 neighbor_index) const;
 
   /// Returns a reference to the set of pickup neighbors of node_index.
-  const absl::flat_hash_set<int64>& GetPickupNeighborsOfNodeForCostClass(
+  const std::vector<int64>& GetPickupNeighborsOfNodeForCostClass(
       int cost_class, int64 node_index) {
     if (neighbors_ratio_ == 1) {
       return pickup_nodes_;
     }
-    return node_index_to_pickup_neighbors_by_cost_class_[node_index]
-                                                        [cost_class];
+    return node_index_to_pickup_neighbors_by_cost_class_[node_index][cost_class]
+        ->PositionsSetAtLeastOnce();
   }
 
   /// Same as above for delivery neighbors.
-  const absl::flat_hash_set<int64>& GetDeliveryNeighborsOfNodeForCostClass(
+  const std::vector<int64>& GetDeliveryNeighborsOfNodeForCostClass(
       int cost_class, int64 node_index) {
     if (neighbors_ratio_ == 1) {
       return delivery_nodes_;
     }
-    return node_index_to_delivery_neighbors_by_cost_class_[node_index]
-                                                          [cost_class];
+    return node_index_to_delivery_neighbors_by_cost_class_
+        [node_index][cost_class]
+            ->PositionsSetAtLeastOnce();
   }
 
   const bool is_sequential_;
@@ -2825,19 +2852,19 @@ class GlobalCheapestInsertionFilteredDecisionBuilder
   const double neighbors_ratio_;
 
   // clang-format off
-  std::vector<std::vector<absl::flat_hash_set<int64> > >
+  std::vector<std::vector<std::unique_ptr<SparseBitset<int64> > > >
       node_index_to_single_neighbors_by_cost_class_;
-  std::vector<std::vector<absl::flat_hash_set<int64> > >
+  std::vector<std::vector<std::unique_ptr<SparseBitset<int64> > > >
       node_index_to_pickup_neighbors_by_cost_class_;
-  std::vector<std::vector<absl::flat_hash_set<int64> > >
+  std::vector<std::vector<std::unique_ptr<SparseBitset<int64> > > >
       node_index_to_delivery_neighbors_by_cost_class_;
   // clang-format on
 
   /// When neighbors_ratio is 1, we don't compute the neighborhood members
   /// above, and use the following sets in the code to avoid unnecessary
   /// computations and decrease the time and space complexities.
-  absl::flat_hash_set<int64> pickup_nodes_;
-  absl::flat_hash_set<int64> delivery_nodes_;
+  std::vector<int64> pickup_nodes_;
+  std::vector<int64> delivery_nodes_;
 };
 
 /// Filter-base decision builder which builds a solution by inserting
@@ -3187,10 +3214,10 @@ bool SolveModelWithSat(const RoutingModel& model,
 
 class BasePathFilter : public IntVarLocalSearchFilter {
  public:
-  BasePathFilter(const std::vector<IntVar*>& nexts, int next_domain_size,
-                 std::function<void(int64)> objective_callback);
+  BasePathFilter(const std::vector<IntVar*>& nexts, int next_domain_size);
   ~BasePathFilter() override {}
-  bool Accept(Assignment* delta, Assignment* deltadelta) override;
+  bool Accept(const Assignment* delta, const Assignment* deltadelta,
+              int64 objective_min, int64 objective_max) override;
   void OnSynchronize(const Assignment* delta) override;
 
  protected:
@@ -3206,6 +3233,9 @@ class BasePathFilter : public IntVarLocalSearchFilter {
   int GetPath(int64 node) const { return paths_[node]; }
   int Rank(int64 node) const { return ranks_[node]; }
   bool IsDisabled() const { return status_ == DISABLED; }
+  const std::vector<int64>& GetTouchedPathStarts() const {
+    return touched_paths_.PositionsSetAtLeastOnce();
+  }
   const std::vector<int64>& GetNewSynchronizedUnperformedNodes() const {
     return new_synchronized_unperformed_nodes_.PositionsSetAtLeastOnce();
   }
@@ -3220,7 +3250,11 @@ class BasePathFilter : public IntVarLocalSearchFilter {
   virtual void InitializeAcceptPath() {}
   virtual bool AcceptPath(int64 path_start, int64 chain_start,
                           int64 chain_end) = 0;
-  virtual bool FinalizeAcceptPath(Assignment* delta) { return true; }
+  virtual bool FinalizeAcceptPath(const Assignment* delta, int64 objective_min,
+                                  int64 objective_max,
+                                  bool all_paths_accepted) {
+    return true;
+  }
   /// Detects path starts, used to track which node belongs to which path.
   void ComputePathStarts(std::vector<int64>* path_starts,
                          std::vector<int>* index_to_path);
@@ -3258,7 +3292,8 @@ class CPFeasibilityFilter : public IntVarLocalSearchFilter {
   explicit CPFeasibilityFilter(const RoutingModel* routing_model);
   ~CPFeasibilityFilter() override {}
   std::string DebugString() const override { return "CPFeasibilityFilter"; }
-  bool Accept(Assignment* delta, Assignment* deltadelta) override;
+  bool Accept(const Assignment* delta, const Assignment* deltadelta,
+              int64 objective_min, int64 objective_max) override;
   void OnSynchronize(const Assignment* delta) override;
 
  private:
@@ -3274,23 +3309,20 @@ class CPFeasibilityFilter : public IntVarLocalSearchFilter {
 
 #if !defined(SWIG)
 IntVarLocalSearchFilter* MakeNodeDisjunctionFilter(
-    const RoutingModel& routing_model,
-    std::function<void(int64)> objective_callback);
+    const RoutingModel& routing_model);
 IntVarLocalSearchFilter* MakeVehicleAmortizedCostFilter(
-    const RoutingModel& routing_model,
-    Solver::ObjectiveWatcher objective_callback);
+    const RoutingModel& routing_model);
 IntVarLocalSearchFilter* MakeTypeRegulationsFilter(
     const RoutingModel& routing_model);
 std::vector<IntVarLocalSearchFilter*> MakeCumulFilters(
-    const RoutingDimension& dimension,
-    Solver::ObjectiveWatcher objective_callback, bool filter_objective_cost);
-IntVarLocalSearchFilter* MakePathCumulFilter(
-    const RoutingDimension& dimension,
-    Solver::ObjectiveWatcher objective_callback,
-    bool propagate_own_objective_value, bool filter_objective_cost);
+    const RoutingDimension& dimension, bool filter_objective_cost);
+IntVarLocalSearchFilter* MakePathCumulFilter(const RoutingDimension& dimension,
+                                             bool propagate_own_objective_value,
+                                             bool filter_objective_cost);
+IntVarLocalSearchFilter* MakeCumulBoundsPropagatorFilter(
+    const RoutingDimension& dimension);
 IntVarLocalSearchFilter* MakeGlobalLPCumulFilter(
-    const RoutingDimension& dimension,
-    Solver::ObjectiveWatcher objective_callback, bool filter_objective_cost);
+    GlobalDimensionCumulOptimizer* optimizer, bool filter_objective_cost);
 IntVarLocalSearchFilter* MakePickupDeliveryFilter(
     const RoutingModel& routing_model, const RoutingModel::IndexPairs& pairs,
     const std::vector<RoutingModel::PickupAndDeliveryPolicy>& vehicle_policies);

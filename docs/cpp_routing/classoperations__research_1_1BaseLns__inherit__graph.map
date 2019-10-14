@@ -1,0 +1,7 @@
+<map id="BaseLns" name="BaseLns">
+<area shape="rect" id="node1" title="This is the base class for building an Lns operator." alt="" coords="60,325,133,351"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1IntVarLocalSearchOperator.html" title="Specialization of LocalSearchOperator built from an array of IntVars which specifies the scope of the..." alt="" coords="5,252,188,277"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1VarLocalSearchOperator.html" title=" " alt="" coords="8,152,185,204"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1LocalSearchOperator.html" title="The base class for all local search operators." alt="" coords="23,79,171,104"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="52,5,142,31"/>
+</map>

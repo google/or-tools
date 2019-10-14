@@ -1,0 +1,5 @@
+<map id="DefaultPhaseParameters" name="DefaultPhaseParameters">
+<area shape="rect" id="node1" title="This struct holds all parameters for the default search." alt="" coords="5,167,176,192"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1DecisionBuilder.html" title="A DecisionBuilder is responsible for creating the search tree." alt="" coords="33,80,147,105"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="45,5,136,31"/>
+</map>

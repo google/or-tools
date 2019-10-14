@@ -4,22 +4,19 @@ set -e
 
 function checkenv() {
 	if [ "${BUILDER}" == make ];then
-		make --version
+	    make --version
 	fi
 	cmake --version
 	if [ "${BUILDER}" == cmake ] || [ "${LANGUAGE}" != cc ]; then
-		swig -version
+	    swig -version
 	fi
 	if [ "${BUILDER}" == cmake ] || [ "${LANGUAGE}" == python3 ];then
-    python3.7 --version
-    python3.7 -m pip --version
-	elif [ "${LANGUAGE}" == python2 ]; then
-		python2.7 --version
-		python2.7 -m pip --version
+            python3.7 --version
+            python3.7 -m pip --version
 	elif [ "${LANGUAGE}" == java ]; then
 		java -version
 	elif [ "${LANGUAGE}" == dotnet ]; then
-    dotnet --info
+            dotnet --info
 	fi
 }
 
@@ -35,8 +32,6 @@ if [ "${BUILDER}" == make ];then
     checkenv
     if [ "${LANGUAGE}" == cc ]; then
       make detect
-    elif [ "${LANGUAGE}" == python2 ]; then
-      make detect UNIX_PYTHON_VER=2.7
     elif [ "${LANGUAGE}" == python3 ]; then
       make detect UNIX_PYTHON_VER=3.7
     elif [ "${LANGUAGE}" == java ]; then
@@ -49,7 +44,7 @@ if [ "${BUILDER}" == make ];then
     echo 'travis_fold:start:third_party'
     make third_party --jobs=4
     echo 'travis_fold:end:third_party'
-    if [ "${LANGUAGE}" == python2 ] || [ "${LANGUAGE}"  == python3 ]; then
+    if [ "${LANGUAGE}"  == python3 ]; then
       echo 'travis_fold:start:python'
       make python --jobs=4
       echo 'travis_fold:end:python'
@@ -87,8 +82,6 @@ if [ "${BUILDER}" == make ];then
     checkenv
     if [ "${LANGUAGE}" == cc ]; then
       make detect
-    elif [ "${LANGUAGE}" == python2 ]; then
-      make detect UNIX_PYTHON_VER=2.7
     elif [ "${LANGUAGE}" == python3 ]; then
       make detect UNIX_PYTHON_VER=3.7
     elif [ "${LANGUAGE}" == java ] || [ "${LANGUAGE}" == dotnet ] ; then
@@ -99,7 +92,7 @@ if [ "${BUILDER}" == make ];then
     echo 'travis_fold:start:third_party'
     make third_party --jobs=4
     echo 'travis_fold:end:third_party'
-    if [ "${LANGUAGE}" == python2 ] || [ "${LANGUAGE}"  == python3 ]; then
+    if [ "${LANGUAGE}"  == python3 ]; then
       echo 'travis_fold:start:python'
       make python --jobs=4
       echo 'travis_fold:end:python'

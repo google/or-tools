@@ -136,6 +136,12 @@ inline IntegerVariable PositiveVariable(IntegerVariable i) {
   return IntegerVariable(i.value() & (~1));
 }
 
+// Special type for storing only one thing for var and NegationOf(var).
+DEFINE_INT_TYPE(PositiveOnlyIndex, int32);
+inline PositiveOnlyIndex GetPositiveOnlyIndex(IntegerVariable var) {
+  return PositiveOnlyIndex(var.value() / 2);
+}
+
 // Returns the vector of the negated variables.
 std::vector<IntegerVariable> NegationOf(
     const std::vector<IntegerVariable>& vars);
@@ -232,7 +238,7 @@ class IntegerEncoder {
   }
 
   // Fully encode a variable using its current initial domain.
-  // This can be called only once.
+  // If the variable is already fully encoded, this does nothing.
   //
   // This creates new Booleans variables as needed:
   // 1) num_values for the literals X == value. Except when there is just
@@ -249,15 +255,10 @@ class IntegerEncoder {
   // search (for now). This is Checked.
   void FullyEncodeVariable(IntegerVariable var);
 
-  // Returns true iff FullyEncodeVariable(var) has been called. Note that
-  // PartialDomainEncoding() may actually return a full domain encoding, but if
-  // FullyEncodeVariable() was not called, this will still return false.
-  //
-  // TODO(user): Detect this case and mark such variable as fully encoded?
-  bool VariableIsFullyEncoded(IntegerVariable var) const {
-    if (var >= is_fully_encoded_.size()) return false;
-    return is_fully_encoded_[var];
-  }
+  // Returns true if we know that PartialDomainEncoding(var) span the full
+  // domain of var. This is always true if FullyEncodeVariable(var) has been
+  // called.
+  bool VariableIsFullyEncoded(IntegerVariable var) const;
 
   // Computes the full encoding of a variable on which FullyEncodeVariable() has
   // been called. The returned elements are always sorted by increasing
@@ -324,7 +325,9 @@ class IntegerEncoder {
   // that this returns false even though GetOrCreateAssociatedLiteral() would
   // not create a new literal.
   bool LiteralIsAssociated(IntegerLiteral i_lit) const;
-  LiteralIndex GetAssociatedLiteral(IntegerLiteral i_lit);
+  LiteralIndex GetAssociatedLiteral(IntegerLiteral i_lit) const;
+  LiteralIndex GetAssociatedEqualityLiteral(IntegerVariable var,
+                                            IntegerValue value) const;
 
   // Advanced usage. It is more efficient to create the associated literals in
   // order, but it might be anoying to do so. Instead, you can first call
@@ -453,20 +456,25 @@ class IntegerEncoder {
   // Mapping (variable == value) -> associated literal. Note that even if
   // there is more than one literal associated to the same fact, we just keep
   // the first one that was added.
-  absl::flat_hash_map<std::pair<IntegerVariable, IntegerValue>, Literal>
+  //
+  // Note that we only keep positive IntegerVariable here to reduce memory
+  // usage.
+  absl::flat_hash_map<std::pair<PositiveOnlyIndex, IntegerValue>, Literal>
       equality_to_associated_literal_;
 
   // Mutable because this is lazily cleaned-up by PartialDomainEncoding().
-  const std::vector<ValueLiteralPair> empty_value_literal_vector_;
-  mutable gtl::ITIVector<IntegerVariable, std::vector<ValueLiteralPair>>
+  mutable gtl::ITIVector<PositiveOnlyIndex, std::vector<ValueLiteralPair>>
       equality_by_var_;
 
   // Variables that are fully encoded.
-  gtl::ITIVector<IntegerVariable, bool> is_fully_encoded_;
+  mutable gtl::ITIVector<PositiveOnlyIndex, bool> is_fully_encoded_;
 
   // A literal that is always true, convenient to encode trivial domains.
   // This will be lazily created when needed.
   LiteralIndex literal_index_true_ = kNoLiteralIndex;
+
+  // Temporary memory used by FullyEncodeVariable().
+  std::vector<IntegerValue> tmp_values_;
 
   DISALLOW_COPY_AND_ASSIGN(IntegerEncoder);
 };
@@ -573,6 +581,9 @@ class IntegerTrail : public SatPropagator {
   // Returns the current lower/upper bound of the given integer variable.
   IntegerValue LowerBound(IntegerVariable i) const;
   IntegerValue UpperBound(IntegerVariable i) const;
+
+  // Checks if the variable is fixed.
+  bool IsFixed(IntegerVariable i) const;
 
   // Returns the integer literal that represent the current lower/upper bound of
   // the given integer variable.
@@ -1149,6 +1160,10 @@ inline IntegerValue IntegerTrail::LowerBound(IntegerVariable i) const {
 
 inline IntegerValue IntegerTrail::UpperBound(IntegerVariable i) const {
   return -vars_[NegationOf(i)].current_bound;
+}
+
+inline bool IntegerTrail::IsFixed(IntegerVariable i) const {
+  return vars_[i].current_bound == -vars_[NegationOf(i)].current_bound;
 }
 
 inline IntegerLiteral IntegerTrail::LowerBoundAsLiteral(

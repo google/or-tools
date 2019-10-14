@@ -175,21 +175,19 @@ bool DimensionFixedTransitsEqualTransitEvaluators(
 class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
  public:
   SetCumulsFromLocalDimensionCosts(
-      const std::vector<RoutingDimension*>& dimensions_for_local_optimizer,
+      const std::vector<std::unique_ptr<LocalDimensionCumulOptimizer>>*
+          local_optimizers,
       SearchMonitor* monitor, bool optimize_and_pack = false)
-      : monitor_(monitor), optimize_and_pack_(optimize_and_pack) {
-    local_optimizers_.reserve(dimensions_for_local_optimizer.size());
-    for (RoutingDimension* const dimension : dimensions_for_local_optimizer) {
-      local_optimizers_.emplace_back(dimension);
-    }
-  }
+      : local_optimizers_(*local_optimizers),
+        monitor_(monitor),
+        optimize_and_pack_(optimize_and_pack) {}
   Decision* Next(Solver* const solver) override {
     // The following boolean variable indicates if the solver should fail, in
     // order to postpone the Fail() call until after the internal for loop, so
     // there are no memory leaks related to the cumul_values vector.
     bool should_fail = false;
-    for (LocalDimensionCumulOptimizer& optimizer : local_optimizers_) {
-      const RoutingDimension* const dimension = optimizer.dimension();
+    for (const auto& optimizer : local_optimizers_) {
+      const RoutingDimension* const dimension = optimizer->dimension();
       RoutingModel* const model = dimension->model();
       const auto next = [model](int64 i) { return model->NextVar(i)->Value(); };
       for (int vehicle = 0; vehicle < model->vehicles(); ++vehicle) {
@@ -199,9 +197,9 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
         std::vector<int64> cumul_values;
         const bool cumuls_optimized =
             optimize_and_pack_
-                ? optimizer.ComputePackedRouteCumuls(vehicle, next,
-                                                     &cumul_values)
-                : optimizer.ComputeRouteCumuls(vehicle, next, &cumul_values);
+                ? optimizer->ComputePackedRouteCumuls(vehicle, next,
+                                                      &cumul_values)
+                : optimizer->ComputeRouteCumuls(vehicle, next, &cumul_values);
         if (!cumuls_optimized) {
           should_fail = true;
           break;
@@ -216,6 +214,14 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
             break;
           }
         }
+        // Setting the cumuls of path start/end first is more efficient than
+        // setting the cumuls in order of path appearance, because setting start
+        // and end cumuls gives an opportunity to fix all cumuls with two
+        // decisions instead of |path| decisions.
+        // To this effect, we put end cumul just after the start cumul.
+        std::swap(cumuls[1], cumuls[cumuls.size() - 1]);
+        std::swap(cumul_values[1], cumul_values[cumuls.size() - 1]);
+
         // TODO(user): Use SetValuesFromTargets to return a Decision instead
         // of the nested Solve.
         if (!solver->SolveAndCommit(
@@ -234,7 +240,8 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
   }
 
  private:
-  std::vector<LocalDimensionCumulOptimizer> local_optimizers_;
+  const std::vector<std::unique_ptr<LocalDimensionCumulOptimizer>>&
+      local_optimizers_;
   SearchMonitor* const monitor_;
   const bool optimize_and_pack_;
 };
@@ -242,15 +249,12 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
 class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
  public:
   SetCumulsFromGlobalDimensionCosts(
-      const std::vector<RoutingDimension*>& dimensions_for_global_optimizer,
+      const std::vector<std::unique_ptr<GlobalDimensionCumulOptimizer>>*
+          global_optimizers,
       SearchMonitor* monitor, bool optimize_and_pack = false)
-      : monitor_(monitor), optimize_and_pack_(optimize_and_pack) {
-    global_optimizers_.reserve(dimensions_for_global_optimizer.size());
-    for (const RoutingDimension* dimension : dimensions_for_global_optimizer) {
-      global_optimizers_.emplace_back(
-          absl::make_unique<GlobalDimensionCumulOptimizer>(dimension));
-    }
-  }
+      : global_optimizers_(*global_optimizers),
+        monitor_(monitor),
+        optimize_and_pack_(optimize_and_pack) {}
   Decision* Next(Solver* const solver) override {
     // The following boolean variable indicates if the solver should fail, in
     // order to postpone the Fail() call until after the for loop, so there are
@@ -287,7 +291,7 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
   }
 
  private:
-  std::vector<std::unique_ptr<GlobalDimensionCumulOptimizer>>
+  const std::vector<std::unique_ptr<GlobalDimensionCumulOptimizer>>&
       global_optimizers_;
   SearchMonitor* const monitor_;
   const bool optimize_and_pack_;
@@ -303,8 +307,8 @@ const Assignment* RoutingModel::PackCumulsOfOptimizerDimensionsFromAssignment(
           ? kint64max
           : absl::ToInt64Milliseconds(duration_limit);
   if (time_limit_ms <= 0 || original_assignment == nullptr ||
-      (dimensions_for_global_optimizer_.empty() &&
-       dimensions_for_local_optimizer_.empty())) {
+      (global_dimension_optimizers_.empty() &&
+       local_dimension_optimizers_.empty())) {
     return original_assignment;
   }
 
@@ -323,12 +327,12 @@ const Assignment* RoutingModel::PackCumulsOfOptimizerDimensionsFromAssignment(
       solver_->MakeRestoreAssignment(packed_assignment));
   decision_builders.push_back(
       solver_->RevAlloc(new SetCumulsFromLocalDimensionCosts(
-          dimensions_for_local_optimizer_,
+          &local_dimension_optimizers_,
           GetOrCreateLargeNeighborhoodSearchLimit(),
           /*optimize_and_pack=*/true)));
   decision_builders.push_back(
       solver_->RevAlloc(new SetCumulsFromGlobalDimensionCosts(
-          dimensions_for_global_optimizer_,
+          &global_dimension_optimizers_,
           GetOrCreateLargeNeighborhoodSearchLimit(),
           /*optimize_and_pack=*/true)));
   decision_builders.push_back(
@@ -1134,6 +1138,30 @@ std::vector<std::string> RoutingModel::GetAllDimensionNames() const {
   }
   std::sort(dimension_names.begin(), dimension_names.end());
   return dimension_names;
+}
+
+GlobalDimensionCumulOptimizer* RoutingModel::GetMutableGlobalCumulOptimizer(
+    const RoutingDimension& dimension) const {
+  const DimensionIndex dim_index = GetDimensionIndex(dimension.name());
+  if (dim_index < 0 || dim_index >= global_optimizer_index_.size() ||
+      global_optimizer_index_[dim_index] < 0) {
+    return nullptr;
+  }
+  const int optimizer_index = global_optimizer_index_[dim_index];
+  DCHECK_LT(optimizer_index, global_dimension_optimizers_.size());
+  return global_dimension_optimizers_[optimizer_index].get();
+}
+
+LocalDimensionCumulOptimizer* RoutingModel::GetMutableLocalCumulOptimizer(
+    const RoutingDimension& dimension) const {
+  const DimensionIndex dim_index = GetDimensionIndex(dimension.name());
+  if (dim_index < 0 || dim_index >= local_optimizer_index_.size() ||
+      local_optimizer_index_[dim_index] < 0) {
+    return nullptr;
+  }
+  const int optimizer_index = local_optimizer_index_[dim_index];
+  DCHECK_LT(optimizer_index, local_dimension_optimizers_.size());
+  return local_dimension_optimizers_[optimizer_index].get();
 }
 
 bool RoutingModel::HasDimension(const std::string& dimension_name) const {
@@ -2144,9 +2172,8 @@ void RoutingModel::CloseModelWithParameters(
     }
   }
 
-  // Store the dimensions for local/global cumul optimizers, along with their
-  // offsets.
-  StoreDimensionsForDimensionCumulOptimizers();
+  // Store the local/global cumul optimizers, along with their offsets.
+  StoreDimensionCumulOptimizers();
 
   // Keep this out of SetupSearch as this contains static search objects.
   // This will allow calling SetupSearch multiple times with different search
@@ -2927,8 +2954,8 @@ const Assignment* RoutingModel::SolveFromAssignmentWithParameters(
   // We set this time limit based on whether local/global dimension optimizers
   // are used in the finalizer to avoid going over the general time limit.
   // TODO(user): Adapt this when absolute timeouts are given to the model.
-  const int time_limit_shares = 1 + !dimensions_for_global_optimizer_.empty() +
-                                !dimensions_for_local_optimizer_.empty();
+  const int time_limit_shares = 1 + !global_dimension_optimizers_.empty() +
+                                !local_dimension_optimizers_.empty();
   const int64 first_solution_lns_time_limit =
       std::max(GetTimeLimitMs(parameters) / time_limit_shares,
                GetLnsTimeLimitMs(parameters));
@@ -4240,7 +4267,6 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
 
 const std::vector<LocalSearchFilter*>&
 RoutingModel::GetOrCreateLocalSearchFilters() {
-  // Note on objective injection from one filter to another.
   // As of 2013/01, three filters evaluate sub-parts of the objective
   // function:
   // - NodeDisjunctionFilter: takes disjunction penalty costs into account,
@@ -4250,177 +4276,114 @@ RoutingModel::GetOrCreateLocalSearchFilters() {
   //       related to amortized linear and quadratic vehicle cost factors.
   //     - LocalSearchObjectiveFilter, which takes dimension "arc" costs into
   //       account.
-  // To be able to filter cost values properly, a filter needs to be aware of
-  // cost bounds computed by other filters before it (for the same delta).
-  // Communication of cost between filters is done through callbacks,
-  // VehicleAmortizedCostFilter sending the total "vehicle cost" to
-  // LocalSearchObjectiveFilter, itself sending this vehicle cost + total arc
-  // costs to NodeDisjunctionFilter, in turn sending this cost + total penalty
-  // cost to PathCumulFilters (if you have several of these, they send updated
-  // costs to each other too).
-  // Note that since the VehicleAmortizedCostFilter is the only filter with a
-  // possible negative contribution to the objective, it has to be the first
-  // filter called so it propagates this value to all other filters.
-  // Callbacks are called on OnSynchronize to send the cost of the current
-  // solution and on Accept to send the cost of solution deltas.
-  if (filters_.empty()) {
-    // NOTE: We first sort the dimensions by decreasing complexity of filtering:
-    // Dimensions with a global span cost coefficient and/or precedences will
-    // have a global LP created to filter feasibility and costs.
-    // We want these filters to be called last, hence putting them in the
-    // beginning of the vector, since it will be reversed.
-    std::vector<RoutingDimension*> sorted_dimensions = dimensions_.get();
-    std::sort(sorted_dimensions.begin(), sorted_dimensions.end(),
-              [](const RoutingDimension* d1, const RoutingDimension* d2) {
-                return (d1->global_span_cost_coefficient() >
-                        d2->global_span_cost_coefficient()) ||
-                       (d1->GetNodePrecedences().size() >
-                        d2->GetNodePrecedences().size());
-              });
+  if (!filters_.empty()) return filters_;
 
-    std::vector<IntVarLocalSearchFilter*> cumul_filters;
-    IntVarLocalSearchFilter* path_cumul_filter = nullptr;
-    for (const RoutingDimension* dimension : sorted_dimensions) {
-      Solver::ObjectiveWatcher objective_callback = nullptr;
-      if (path_cumul_filter != nullptr) {
-        objective_callback = [path_cumul_filter](int64 value) {
-          return path_cumul_filter->InjectObjectiveValue(value);
-        };
-      }
-      const std::vector<IntVarLocalSearchFilter*> dimension_cumul_filters =
-          MakeCumulFilters(*dimension, objective_callback,
-                           /*filtering_objective*/ true);
-      cumul_filters.insert(cumul_filters.end(), dimension_cumul_filters.begin(),
-                           dimension_cumul_filters.end());
-      // NOTE: We use the last element of cumul_filters to inject later costs
-      // because MakeCumulFilter() sets the internal injections between the
-      // LPCumulFilter and PathCumulFilter when necessary.
-      path_cumul_filter = cumul_filters.back();
-    }
-    // Due to the way cost injection is setup, path filters have to be
-    // called in reverse order.
-    std::reverse(cumul_filters.begin(), cumul_filters.end());
-    IntVarLocalSearchFilter* node_disjunction_filter = nullptr;
-    if (!disjunctions_.empty()) {
-      Solver::ObjectiveWatcher objective_callback = nullptr;
-      if (path_cumul_filter != nullptr) {
-        objective_callback = [path_cumul_filter](int64 value) {
-          return path_cumul_filter->InjectObjectiveValue(value);
-        };
-      }
-      node_disjunction_filter =
-          MakeNodeDisjunctionFilter(*this, objective_callback);
-    }
-    Solver::ObjectiveWatcher objective_callback = nullptr;
-    if (node_disjunction_filter != nullptr) {
-      objective_callback = [node_disjunction_filter](int64 value) {
-        return node_disjunction_filter->InjectObjectiveValue(value);
-      };
-    } else if (path_cumul_filter != nullptr) {
-      objective_callback = [path_cumul_filter](int64 value) {
-        return path_cumul_filter->InjectObjectiveValue(value);
-      };
-    }
-
-    IntVarLocalSearchFilter* local_search_objective_filter = nullptr;
-    if (CostsAreHomogeneousAcrossVehicles()) {
-      local_search_objective_filter = solver_->MakeSumObjectiveFilter(
-          nexts_, [this](int64 i, int64 j) { return GetHomogeneousCost(i, j); },
-          objective_callback, cost_, Solver::LE);
-    } else {
-      local_search_objective_filter = solver_->MakeSumObjectiveFilter(
-          nexts_, vehicle_vars_,
-          [this](int64 i, int64 j, int64 k) {
-            return GetArcCostForVehicle(i, j, k);
-          },
-          objective_callback, cost_, Solver::LE);
-    }
-
-    if (vehicle_amortized_cost_factors_set_) {
-      objective_callback = [local_search_objective_filter](int64 value) {
-        return local_search_objective_filter->InjectObjectiveValue(value);
-      };
-      filters_.push_back(
-          MakeVehicleAmortizedCostFilter(*this, objective_callback));
-    }
-
-    // Must be added after VehicleAmortizedCostFilter.
-    filters_.push_back(local_search_objective_filter);
-
-    filters_.push_back(solver_->MakeVariableDomainFilter());
-    if (node_disjunction_filter != nullptr) {
-      // Must be added after ObjectiveFilter.
-      filters_.push_back(node_disjunction_filter);
-    }
-    if (!pickup_delivery_pairs_.empty()) {
-      filters_.push_back(MakePickupDeliveryFilter(
-          *this, pickup_delivery_pairs_, vehicle_pickup_delivery_policy_));
-    }
-    if (HasTypeRegulations()) {
-      filters_.push_back(MakeTypeRegulationsFilter(*this));
-    }
-    filters_.push_back(MakeVehicleVarFilter(*this));
-
-    // Must be added after NodeDisjunctionFilter and ObjectiveFilter.
-    filters_.insert(filters_.end(), cumul_filters.begin(), cumul_filters.end());
-
-    for (const RoutingDimension* dimension : dimensions_) {
-      if (dimension->HasBreakConstraints()) {
-        IntVarLocalSearchFilter* breaks_filter =
-            MakeVehicleBreaksFilter(*this, *dimension);
-        filters_.push_back(breaks_filter);
-      }
-    }
-    filters_.insert(filters_.end(), extra_filters_.begin(),
-                    extra_filters_.end());
+  // VehicleAmortizedCostFilter can have a negative value, so it must be first.
+  if (vehicle_amortized_cost_factors_set_) {
+    filters_.push_back(MakeVehicleAmortizedCostFilter(*this));
   }
+
+  // The SumObjectiveFilter has the best reject/second ratio in practice,
+  // so it is the earliest.
+  if (CostsAreHomogeneousAcrossVehicles()) {
+    filters_.push_back(solver_->MakeSumObjectiveFilter(
+        nexts_, [this](int64 i, int64 j) { return GetHomogeneousCost(i, j); },
+        Solver::LE));
+  } else {
+    filters_.push_back(solver_->MakeSumObjectiveFilter(
+        nexts_, vehicle_vars_,
+        [this](int64 i, int64 j, int64 k) {
+          return GetArcCostForVehicle(i, j, k);
+        },
+        Solver::LE));
+  }
+
+  filters_.push_back(solver_->MakeVariableDomainFilter());
+
+  if (!disjunctions_.empty()) {
+    filters_.push_back(MakeNodeDisjunctionFilter(*this));
+  }
+
+  if (!pickup_delivery_pairs_.empty()) {
+    filters_.push_back(MakePickupDeliveryFilter(
+        *this, pickup_delivery_pairs_, vehicle_pickup_delivery_policy_));
+  }
+
+  if (HasTypeRegulations()) {
+    filters_.push_back(MakeTypeRegulationsFilter(*this));
+  }
+
+  filters_.push_back(MakeVehicleVarFilter(*this));
+
+  // NOTE: We first sort the dimensions by increasing complexity of filtering:
+  // Dimensions with a global span cost coefficient and/or precedences will
+  // have a global LP created to filter feasibility and costs.
+  std::vector<RoutingDimension*> sorted_dimensions = dimensions_.get();
+  std::sort(sorted_dimensions.begin(), sorted_dimensions.end(),
+            [](const RoutingDimension* d1, const RoutingDimension* d2) {
+              return (d1->global_span_cost_coefficient() <=
+                      d2->global_span_cost_coefficient()) &&
+                     (d1->GetNodePrecedences().size() <=
+                      d2->GetNodePrecedences().size());
+            });
+  for (const RoutingDimension* dimension : sorted_dimensions) {
+    const std::vector<IntVarLocalSearchFilter*> cumul_filters =
+        MakeCumulFilters(*dimension, /*filtering_objective*/ true);
+    filters_.insert(filters_.end(), cumul_filters.begin(), cumul_filters.end());
+  }
+
+  for (const RoutingDimension* dimension : dimensions_) {
+    if (!dimension->HasBreakConstraints()) continue;
+    filters_.push_back(MakeVehicleBreaksFilter(*this, *dimension));
+  }
+  filters_.insert(filters_.end(), extra_filters_.begin(), extra_filters_.end());
   return filters_;
 }
 
 const std::vector<LocalSearchFilter*>&
 RoutingModel::GetOrCreateFeasibilityFilters() {
-  if (feasibility_filters_.empty()) {
-    if (!disjunctions_.empty()) {
-      feasibility_filters_.push_back(MakeNodeDisjunctionFilter(*this, nullptr));
-    }
-    feasibility_filters_.push_back(solver_->MakeVariableDomainFilter());
-    if (!pickup_delivery_pairs_.empty()) {
-      feasibility_filters_.push_back(MakePickupDeliveryFilter(
-          *this, pickup_delivery_pairs_, vehicle_pickup_delivery_policy_));
-    }
-    if (HasTypeRegulations()) {
-      feasibility_filters_.push_back(MakeTypeRegulationsFilter(*this));
-    }
-    feasibility_filters_.push_back(MakeVehicleVarFilter(*this));
+  if (!feasibility_filters_.empty()) return feasibility_filters_;
 
-    // NOTE: We sort the dimensions by decreasing complexity of filtering:
-    // Dimensions with precedences will have a global LP created to filter
-    // feasibility, so we want these filters to be called last.
-    std::vector<RoutingDimension*> sorted_dimensions = dimensions_.get();
-    std::sort(sorted_dimensions.begin(), sorted_dimensions.end(),
-              [](const RoutingDimension* d1, const RoutingDimension* d2) {
-                return (d1->GetNodePrecedences().size() <
-                        d2->GetNodePrecedences().size());
-              });
-    for (const RoutingDimension* const dimension : sorted_dimensions) {
-      const std::vector<IntVarLocalSearchFilter*> dimension_cumul_filters =
-          MakeCumulFilters(*dimension, nullptr, /*filtering_objective*/ false);
-      feasibility_filters_.insert(feasibility_filters_.end(),
-                                  dimension_cumul_filters.begin(),
-                                  dimension_cumul_filters.end());
-    }
-
-    for (const RoutingDimension* dimension : dimensions_) {
-      if (dimension->HasBreakConstraints()) {
-        IntVarLocalSearchFilter* breaks_filter =
-            MakeVehicleBreaksFilter(*this, *dimension);
-        feasibility_filters_.push_back(breaks_filter);
-      }
-    }
-
-    feasibility_filters_.insert(feasibility_filters_.end(),
-                                extra_filters_.begin(), extra_filters_.end());
+  if (!disjunctions_.empty()) {
+    feasibility_filters_.push_back(MakeNodeDisjunctionFilter(*this));
   }
+  feasibility_filters_.push_back(solver_->MakeVariableDomainFilter());
+  if (!pickup_delivery_pairs_.empty()) {
+    feasibility_filters_.push_back(MakePickupDeliveryFilter(
+        *this, pickup_delivery_pairs_, vehicle_pickup_delivery_policy_));
+  }
+  if (HasTypeRegulations()) {
+    feasibility_filters_.push_back(MakeTypeRegulationsFilter(*this));
+  }
+  feasibility_filters_.push_back(MakeVehicleVarFilter(*this));
+
+  // NOTE: We sort the dimensions by decreasing complexity of filtering:
+  // Dimensions with precedences will have a global LP created to filter
+  // feasibility, so we want these filters to be called last.
+  std::vector<RoutingDimension*> sorted_dimensions = dimensions_.get();
+  std::sort(sorted_dimensions.begin(), sorted_dimensions.end(),
+            [](const RoutingDimension* d1, const RoutingDimension* d2) {
+              return (d1->GetNodePrecedences().size() <
+                      d2->GetNodePrecedences().size());
+            });
+  for (const RoutingDimension* const dimension : sorted_dimensions) {
+    const std::vector<IntVarLocalSearchFilter*> dimension_cumul_filters =
+        MakeCumulFilters(*dimension, /*filtering_objective*/ false);
+    feasibility_filters_.insert(feasibility_filters_.end(),
+                                dimension_cumul_filters.begin(),
+                                dimension_cumul_filters.end());
+  }
+
+  for (const RoutingDimension* dimension : dimensions_) {
+    if (dimension->HasBreakConstraints()) {
+      IntVarLocalSearchFilter* breaks_filter =
+          MakeVehicleBreaksFilter(*this, *dimension);
+      feasibility_filters_.push_back(breaks_filter);
+    }
+  }
+
+  feasibility_filters_.insert(feasibility_filters_.end(),
+                              extra_filters_.begin(), extra_filters_.end());
   return feasibility_filters_;
 }
 
@@ -4435,14 +4398,20 @@ bool AllTransitsPositive(const RoutingDimension& dimension) {
 }
 }  // namespace
 
-void RoutingModel::StoreDimensionsForDimensionCumulOptimizers() {
+void RoutingModel::StoreDimensionCumulOptimizers() {
   Assignment* packed_dimensions_collector_assignment =
       solver_->MakeAssignment();
-  for (RoutingDimension* dimension : dimensions_) {
+  const int num_dimensions = dimensions_.size();
+  local_optimizer_index_.resize(num_dimensions, -1);
+  global_optimizer_index_.resize(num_dimensions, -1);
+  for (DimensionIndex dim = DimensionIndex(0); dim < num_dimensions; dim++) {
+    RoutingDimension* dimension = dimensions_[dim];
     if (dimension->global_span_cost_coefficient() > 0 ||
         !dimension->GetNodePrecedences().empty()) {
       // Use global optimizer.
-      dimensions_for_global_optimizer_.push_back(dimension);
+      global_optimizer_index_[dim] = global_dimension_optimizers_.size();
+      global_dimension_optimizers_.push_back(
+          absl::make_unique<GlobalDimensionCumulOptimizer>(dimension));
       packed_dimensions_collector_assignment->Add(dimension->cumuls());
       if (!AllTransitsPositive(*dimension)) {
         dimension->SetOffsetForGlobalOptimizer(0);
@@ -4488,7 +4457,9 @@ void RoutingModel::StoreDimensionsForDimensionCumulOptimizers() {
       if (num_linear_constraints >= 2) {
         dimension->SetVehicleOffsetsForLocalOptimizer(
             std::move(vehicle_offsets));
-        dimensions_for_local_optimizer_.push_back(dimension);
+        local_optimizer_index_[dim] = local_dimension_optimizers_.size();
+        local_dimension_optimizers_.push_back(
+            absl::make_unique<LocalDimensionCumulOptimizer>(dimension));
         packed_dimensions_collector_assignment->Add(dimension->cumuls());
       }
     }
@@ -4564,15 +4535,15 @@ DecisionBuilder* RoutingModel::CreateSolutionFinalizer(SearchLimit* lns_limit) {
   decision_builders.push_back(solver_->MakePhase(
       nexts_, Solver::CHOOSE_FIRST_UNBOUND, Solver::ASSIGN_MIN_VALUE));
 
-  if (!dimensions_for_local_optimizer_.empty()) {
+  if (!local_dimension_optimizers_.empty()) {
     decision_builders.push_back(
         solver_->RevAlloc(new SetCumulsFromLocalDimensionCosts(
-            dimensions_for_local_optimizer_, lns_limit)));
+            &local_dimension_optimizers_, lns_limit)));
   }
-  if (!dimensions_for_global_optimizer_.empty()) {
+  if (!global_dimension_optimizers_.empty()) {
     decision_builders.push_back(
         solver_->RevAlloc(new SetCumulsFromGlobalDimensionCosts(
-            dimensions_for_global_optimizer_, lns_limit)));
+            &global_dimension_optimizers_, lns_limit)));
   }
   decision_builders.push_back(
       CreateFinalizerForMinimizedAndMaximizedVariables());
@@ -4660,9 +4631,9 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
   DecisionBuilder* const finalize = solver_->MakeSolveOnce(
       finalize_solution, GetOrCreateLargeNeighborhoodSearchLimit());
   LocalSearchPhaseParameters* const insertion_parameters =
-      solver_->MakeLocalSearchPhaseParameters(CreateInsertionOperator(),
-                                              finalize, ls_limit,
-                                              GetOrCreateLocalSearchFilters());
+      solver_->MakeLocalSearchPhaseParameters(
+          nullptr, CreateInsertionOperator(), finalize, ls_limit,
+          GetOrCreateLocalSearchFilters());
   std::vector<IntVar*> decision_vars = nexts_;
   if (!CostsAreHomogeneousAcrossVehicles()) {
     decision_vars.insert(decision_vars.end(), vehicle_vars_.begin(),
@@ -4830,11 +4801,11 @@ LocalSearchPhaseParameters* RoutingModel::CreateLocalSearchParameters(
     const RoutingSearchParameters& search_parameters) {
   SearchLimit* lns_limit = GetOrCreateLargeNeighborhoodSearchLimit();
   return solver_->MakeLocalSearchPhaseParameters(
-      GetNeighborhoodOperators(search_parameters),
+      CostVar(), GetNeighborhoodOperators(search_parameters),
       solver_->MakeSolveOnce(CreateSolutionFinalizer(lns_limit), lns_limit),
       GetOrCreateLocalSearchLimit(),
       {solver_->RevAlloc(new LocalSearchFilterManager(
-          solver_.get(), GetOrCreateLocalSearchFilters(), CostVar()))});
+          solver_.get(), GetOrCreateLocalSearchFilters()))});
 }
 
 DecisionBuilder* RoutingModel::CreateLocalSearchDecisionBuilder(
@@ -5585,7 +5556,8 @@ void RoutingDimension::InitializeTransitVariables(int64 slack_max) {
   const std::string transit_name = name_ + " fixed transit";
 
   for (int64 i = 0; i < size; ++i) {
-    fixed_transits_[i] = solver->MakeIntVar(kint64min, kint64max, transit_name);
+    fixed_transits_[i] =
+        solver->MakeIntVar(kint64min, kint64max, absl::StrCat(transit_name, i));
     // Setting dependent_transits_[i].
     if (base_dimension_ != nullptr) {
       if (state_dependent_class_evaluators_.size() == 1) {
@@ -5644,7 +5616,8 @@ void RoutingDimension::InitializeTransitVariables(int64 slack_max) {
     if (slack_max == 0) {
       slacks_[i] = solver->MakeIntConst(0);
     } else {
-      slacks_[i] = solver->MakeIntVar(0, slack_max, slack_name);
+      slacks_[i] =
+          solver->MakeIntVar(0, slack_max, absl::StrCat(slack_name, i));
       transit_expr = solver->MakeSum(slacks_[i], transit_expr);
     }
     transits_[i] = transit_expr->Var();
@@ -5977,6 +5950,17 @@ bool DisjunctivePropagator::DistanceDuration(Tasks* tasks) {
     const int64 max_distance = tasks->distance_duration[i].first;
     const int64 minimum_break_duration = tasks->distance_duration[i].second;
 
+    // Special case: no breaks.
+    if (tasks->num_chain_tasks == num_tasks) {
+      tasks->end_min[route_start] =
+          std::max(tasks->end_min[route_start],
+                   CapSub(tasks->start_min[route_end], max_distance));
+      tasks->start_max[route_end] =
+          std::min(tasks->start_max[route_end],
+                   CapAdd(tasks->end_max[route_start], max_distance));
+      continue;
+    }
+
     // This is a sweeping algorithm that looks whether the union of intervals
     // defined by breaks and route start/end is (-infty, +infty).
     // Those intervals are:
@@ -6008,7 +5992,8 @@ bool DisjunctivePropagator::DistanceDuration(Tasks* tasks) {
     int64 xor_active_tasks = route_start;
     int num_active_tasks = 1;
     int64 previous_time = kint64min;
-    const int64 route_start_time = tasks->end_max[route_start] + max_distance;
+    const int64 route_start_time =
+        CapAdd(tasks->end_max[route_start], max_distance);
     const int64 route_end_time = tasks->start_min[route_end];
     int index_break_by_smin = tasks->num_chain_tasks;
     int index_break_by_emax = tasks->num_chain_tasks;
@@ -6032,13 +6017,15 @@ bool DisjunctivePropagator::DistanceDuration(Tasks* tasks) {
         // xor_active_tasks is the unique task that can cover [previous_time,
         // current_time).
         if (xor_active_tasks != route_end) {
-          tasks->end_min[xor_active_tasks] = std::max(
-              tasks->end_min[xor_active_tasks], current_time - max_distance);
+          tasks->end_min[xor_active_tasks] =
+              std::max(tasks->end_min[xor_active_tasks],
+                       CapSub(current_time, max_distance));
           if (xor_active_tasks != route_start) {
-            tasks->duration_min[xor_active_tasks] =
-                std::max(tasks->duration_min[xor_active_tasks],
-                         std::max(minimum_break_duration,
-                                  current_time - max_distance - previous_time));
+            tasks->duration_min[xor_active_tasks] = std::max(
+                tasks->duration_min[xor_active_tasks],
+                std::max(
+                    minimum_break_duration,
+                    CapSub(CapSub(current_time, max_distance), previous_time)));
           }
         }
       }

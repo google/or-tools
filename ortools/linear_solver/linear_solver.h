@@ -225,6 +225,10 @@ class MPSolver {
     /// Linear Boolean Programming Solver.
     BOP_INTEGER_PROGRAMMING = 12,
 #endif
+#if defined(USE_XPRESS)
+    XPRESS_LINEAR_PROGRAMMING = 101,
+    XPRESS_MIXED_INTEGER_PROGRAMMING = 102,
+#endif
   };
 
   /// Create a solver with the given name and underlying solver backend.
@@ -757,6 +761,7 @@ class MPSolver {
   friend class SCIPInterface;
   friend class GurobiInterface;
   friend class CplexInterface;
+  friend class XpressInterface;
   friend class SLMInterface;
   friend class MPSolverInterface;
   friend class GLOPInterface;
@@ -835,7 +840,7 @@ class MPSolver {
 
   MPSolverResponseStatus LoadModelFromProtoInternal(
       const MPModelProto& input_model, bool clear_names,
-      std::string* error_message);
+      bool check_model_validity, std::string* error_message);
 
   DISALLOW_COPY_AND_ASSIGN(MPSolver);
 };
@@ -967,6 +972,7 @@ class MPObjective {
   friend class SLMInterface;
   friend class GurobiInterface;
   friend class CplexInterface;
+  friend class XpressInterface;
   friend class GLOPInterface;
   friend class BopInterface;
   friend class SatInterface;
@@ -1074,6 +1080,7 @@ class MPVariable {
   friend class SLMInterface;
   friend class GurobiInterface;
   friend class CplexInterface;
+  friend class XpressInterface;
   friend class GLOPInterface;
   friend class MPVariableSolutionValueTest;
   friend class BopInterface;
@@ -1088,25 +1095,25 @@ class MPVariable {
       : index_(index),
         lb_(lb),
         ub_(ub),
-        integer_(integer),
         name_(name.empty() ? absl::StrFormat("auto_v_%09d", index) : name),
         solution_value_(0.0),
         reduced_cost_(0.0),
-        interface_(interface_in) {}
+        interface_(interface_in),
+        integer_(integer){}
 
   void set_solution_value(double value) { solution_value_ = value; }
   void set_reduced_cost(double reduced_cost) { reduced_cost_ = reduced_cost; }
 
  private:
   const int index_;
+  int branching_priority_ = 0;
   double lb_;
   double ub_;
-  bool integer_;
   const std::string name_;
   double solution_value_;
   double reduced_cost_;
-  int branching_priority_ = 0;
   MPSolverInterface* const interface_;
+  bool integer_;
   DISALLOW_COPY_AND_ASSIGN(MPVariable);
 };
 
@@ -1215,6 +1222,7 @@ class MPConstraint {
   friend class SLMInterface;
   friend class GurobiInterface;
   friend class CplexInterface;
+  friend class XpressInterface;
   friend class GLOPInterface;
   friend class BopInterface;
   friend class SatInterface;
@@ -1230,8 +1238,8 @@ class MPConstraint {
         lb_(lb),
         ub_(ub),
         name_(name.empty() ? absl::StrFormat("auto_c_%09d", index) : name),
-        is_lazy_(false),
         indicator_variable_(nullptr),
+        is_lazy_(false),
         dual_value_(0.0),
         interface_(interface_in) {}
 
@@ -1256,15 +1264,15 @@ class MPConstraint {
   // Name.
   const std::string name_;
 
-  // True if the constraint is "lazy", i.e. the constraint is added to the
-  // underlying Linear Programming solver only if it is violated.
-  // By default this parameter is 'false'.
-  bool is_lazy_;
-
   // If given, this constraint is only active if `indicator_variable_`'s value
   // is equal to `indicator_value_`.
   const MPVariable* indicator_variable_;
   bool indicator_value_;
+
+  // True if the constraint is "lazy", i.e. the constraint is added to the
+  // underlying Linear Programming solver only if it is violated.
+  // By default this parameter is 'false'.
+  bool is_lazy_;
 
   double dual_value_;
   MPSolverInterface* const interface_;

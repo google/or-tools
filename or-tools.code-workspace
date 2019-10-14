@@ -93,7 +93,8 @@
       "*.tcc": "cpp",
       "hash_map": "cpp",
       "hash_set": "cpp",
-      "slist": "cpp"
+      "slist": "cpp",
+      "regex": "cpp"
     },
 		"C_Cpp.clang_format_fallbackStyle": "Google",
 		"C_Cpp.default.includePath": [
@@ -131,5 +132,6 @@
     },
     "java.configuration.updateBuildConfiguration": "interactive",
     "maven.view": "hierarchical",
+    "git.ignoreLimitWarning": true,
 	}
 }

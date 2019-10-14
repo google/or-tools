@@ -86,6 +86,7 @@ bool DomainInProtoContains(const ProtoWithDomain& proto, int64 value) {
 template <typename ProtoWithDomain>
 void FillDomainInProto(const Domain& domain, ProtoWithDomain* proto) {
   proto->clear_domain();
+  proto->mutable_domain()->Reserve(domain.NumIntervals());
   for (const ClosedInterval& interval : domain) {
     proto->add_domain(interval.start);
     proto->add_domain(interval.end);
@@ -95,11 +96,12 @@ void FillDomainInProto(const Domain& domain, ProtoWithDomain* proto) {
 // Reads a Domain from the domain field of a proto.
 template <typename ProtoWithDomain>
 Domain ReadDomainFromProto(const ProtoWithDomain& proto) {
-  std::vector<ClosedInterval> intervals;
-  for (int i = 0; i < proto.domain_size(); i += 2) {
-    intervals.push_back({proto.domain(i), proto.domain(i + 1)});
-  }
-  return Domain::FromIntervals(intervals);
+#if defined(__PORTABLE_PLATFORM__)
+  return Domain::FromFlatIntervals(
+      {proto.domain().begin(), proto.domain().end()});
+#else
+  return Domain::FromFlatSpanOfIntervals(proto.domain());
+#endif
 }
 
 // Returns the list of values in a given domain.

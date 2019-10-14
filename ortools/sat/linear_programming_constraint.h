@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_LINEAR_PROGRAMMING_CONSTRAINT_H_
 #define OR_TOOLS_SAT_LINEAR_PROGRAMMING_CONSTRAINT_H_
 
+#include <limits>
 #include <utility>
 #include <vector>
 
@@ -21,9 +22,10 @@
 #include "ortools/base/int_type.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/lp_data/lp_data.h"
+#include "ortools/lp_data/lp_data_utils.h"
 #include "ortools/lp_data/lp_types.h"
-#include "ortools/lp_data/matrix_scaler.h"
 #include "ortools/sat/cuts.h"
+#include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_expr.h"
 #include "ortools/sat/linear_constraint.h"
@@ -47,6 +49,13 @@ namespace sat {
 struct LinearProgrammingConstraintLpSolution
     : public gtl::ITIVector<IntegerVariable, double> {
   LinearProgrammingConstraintLpSolution() {}
+};
+
+// Helper struct to combine info generated from solving LP.
+struct LPSolveInfo {
+  glop::ProblemStatus status;
+  double lp_objective = -std::numeric_limits<double>::infinity();
+  IntegerValue new_obj_bound = kMinIntegerValue;
 };
 
 // A SAT constraint that enforces a set of linear inequality constraints on
@@ -73,6 +82,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   typedef glop::RowIndex ConstraintIndex;
 
   explicit LinearProgrammingConstraint(Model* model);
+  ~LinearProgrammingConstraint() override;
 
   // Add a new linear constraint to this LP.
   void AddLinearConstraint(const LinearConstraint& ct);
@@ -154,6 +164,18 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   }
 
  private:
+  // Helper methods for branching. Returns true if branching on the given
+  // variable helps with more propagation or finds a conflict.
+  bool BranchOnVar(IntegerVariable var);
+  LPSolveInfo SolveLpForBranching();
+
+  // Helper method to fill reduced cost / dual ray reason in 'integer_reason'.
+  // Generates a set of IntegerLiterals explaining why the best solution can not
+  // be improved using reduced costs. This is used to generate explanations for
+  // both infeasibility and bounds deductions.
+  void FillReducedCostReasonIn(const glop::DenseRow& reduced_costs,
+                               std::vector<IntegerLiteral>* integer_reason);
+
   // Reinitialize the LP from a potentially new set of constraints.
   // This fills all data structure and properly rescale the underlying LP.
   void CreateLpFromConstraintManager();
@@ -177,26 +199,13 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // This can currently only be called at the root node.
   void AddMirCuts();
 
-  // The factor to multiply a CP variable value to get the value in the LP side.
-  glop::Fractional CpToLpScalingFactor(glop::ColIndex col) const;
-  glop::Fractional LpToCpScalingFactor(glop::ColIndex col) const;
-
   // Updates the bounds of the LP variables from the CP bounds.
   void UpdateBoundsOfLpVariables();
-
-  // Generates a set of IntegerLiterals explaining why the best solution can not
-  // be improved using reduced costs. This is used to generate explanations for
-  // both infeasibility and bounds deductions.
-  void FillReducedCostsReason();
 
   // Use the dual optimal lp values to compute an EXACT lower bound on the
   // objective. Fills its reason and perform reduced cost strenghtening.
   // Returns false in case of conflict.
   bool ExactLpReasonning();
-
-  // Same as FillReducedCostReason() but for the case of a DUAL_UNBOUNDED
-  // problem. This exploit the dual ray as a reason for the primal infeasiblity.
-  void FillDualRayReason();
 
   // Same as FillDualRayReason() but perform the computation EXACTLY. Returns
   // false in the case that the problem is not provably infeasible with exact
@@ -204,7 +213,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   bool FillExactDualRayReason();
 
   // Returns number of non basic variables with zero reduced costs.
-  int64 CalculateDegeneracy() const;
+  int64 CalculateDegeneracy();
 
   // From a set of row multipliers (at LP scale), scale them back to the CP
   // world and then make them integer (eventually multiplying them by a new
@@ -280,6 +289,10 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // The variable should be a positive reference.
   glop::ColIndex GetOrCreateMirrorVariable(IntegerVariable positive_variable);
 
+  // Returns a "score" (higher is better) for the given LP variable using
+  // the average reduced costs as a signal.
+  double GetCostFromAverageReducedCosts(int position);
+
   // Callback underlying LPReducedCostAverageBranching().
   LiteralIndex LPReducedCostAverageDecision();
 
@@ -312,7 +325,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   };
   LinearExpression integer_objective_;
   IntegerValue objective_infinity_norm_ = IntegerValue(0);
-  std::vector<LinearConstraintInternal> integer_lp_;
+  gtl::ITIVector<glop::RowIndex, LinearConstraintInternal> integer_lp_;
   gtl::ITIVector<glop::RowIndex, IntegerValue> infinity_norms_;
 
   // Underlying LP solver API.
@@ -321,8 +334,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   int64 next_simplex_iter_ = 500;
 
   // For the scaling.
-  glop::SparseMatrixScaler scaler_;
-  double bound_scaling_factor_;
+  glop::LpScalingHelper scaler_;
 
   // Structures used for mirroring IntegerVariables inside the underlying LP
   // solver: an integer variable var is mirrored by mirror_lp_variable_[var].
@@ -344,6 +356,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   Trail* trail_;
   SearchHeuristicsVector* model_heuristics_;
   IntegerEncoder* integer_encoder_;
+
+  // Used while deriving cuts.
+  ImpliedBoundsProcessor implied_bounds_processor_;
 
   // The dispatcher for all LP propagators of the model, allows to find which
   // LinearProgrammingConstraint has a given IntegerVariable.
@@ -398,6 +413,15 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // Defined as average number of nonbasic variables with zero reduced costs.
   IncrementalAverage average_degeneracy_;
+  bool is_degenerate_ = false;
+
+  // Used by the strong branching heuristic.
+  int branching_frequency_ = 1;
+  int64 count_since_last_branching_ = 0;
+
+  // Sum of all simplex iterations performed by this class. This is useful to
+  // test the incrementality and compare to other solvers.
+  int64 total_num_simplex_iterations_ = 0;
 };
 
 // A class that stores which LP propagator is associated to each variable.

@@ -502,7 +502,7 @@ void SatPresolver::SimpleBva(LiteralIndex l) {
 uint64 SatPresolver::ComputeSignatureOfClauseVariables(ClauseIndex ci) {
   uint64 signature = 0;
   for (const Literal l : clauses_[ci]) {
-    signature |= (1ULL << (l.Variable().value() % 64));
+    signature |= (uint64{1} << (l.Variable().value() % 64));
   }
   DCHECK_EQ(signature == 0, clauses_[ci].empty());
   return signature;

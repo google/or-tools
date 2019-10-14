@@ -169,20 +169,19 @@ class RankOneUpdateFactorization {
     }
 
     // y->is_non_zero is always all false before and after this code.
-    y->is_non_zero.resize(y->values.size(), false);
     DCHECK(IsAllFalse(y->is_non_zero));
-    for (const ColIndex col : y->non_zeros) y->is_non_zero[col] = true;
-    const int hypersparse_threshold = static_cast<int>(
-        hypersparse_ratio_ * static_cast<double>(y->values.size().value()));
+    y->RepopulateSparseMask();
+    bool use_dense = y->ShouldUseDenseIteration(hypersparse_ratio_);
     for (int i = elementary_matrices_.size() - 1; i >= 0; --i) {
-      if (y->non_zeros.size() < hypersparse_threshold) {
-        elementary_matrices_[i].LeftSolveWithNonZeros(y);
-      } else {
+      if (use_dense) {
         elementary_matrices_[i].LeftSolve(&y->values);
+      } else {
+        elementary_matrices_[i].LeftSolveWithNonZeros(y);
+        use_dense = y->ShouldUseDenseIteration(hypersparse_ratio_);
       }
     }
-    for (const ColIndex col : y->non_zeros) y->is_non_zero[col] = false;
-    if (y->non_zeros.size() >= hypersparse_threshold) y->non_zeros.clear();
+    y->ClearSparseMask();
+    y->ClearNonZerosIfTooDense(hypersparse_ratio_);
   }
 
   // Right-solves all systems from left to right, i.e. T_i.d_{i+1} = d_i
@@ -195,7 +194,7 @@ class RankOneUpdateFactorization {
   }
 
   // Same as RightSolve(), but if the given non_zeros are not empty, then all
-  // the new non-zeros in the result are happended to it.
+  // the new non-zeros in the result are appended to it.
   void RightSolveWithNonZeros(ScatteredColumn* d) const {
     RETURN_IF_NULL(d);
     if (d->non_zeros.empty()) {
@@ -204,21 +203,20 @@ class RankOneUpdateFactorization {
     }
 
     // d->is_non_zero is always all false before and after this code.
-    d->is_non_zero.resize(d->values.size(), false);
     DCHECK(IsAllFalse(d->is_non_zero));
-    for (const RowIndex row : d->non_zeros) d->is_non_zero[row] = true;
+    d->RepopulateSparseMask();
+    bool use_dense = d->ShouldUseDenseIteration(hypersparse_ratio_);
     const size_t end = elementary_matrices_.size();
-    const int hypersparse_threshold = static_cast<int>(
-        hypersparse_ratio_ * static_cast<double>(d->values.size().value()));
     for (int i = 0; i < end; ++i) {
-      if (d->non_zeros.size() < hypersparse_threshold) {
-        elementary_matrices_[i].RightSolveWithNonZeros(d);
-      } else {
+      if (use_dense) {
         elementary_matrices_[i].RightSolve(&d->values);
+      } else {
+        elementary_matrices_[i].RightSolveWithNonZeros(d);
+        use_dense = d->ShouldUseDenseIteration(hypersparse_ratio_);
       }
     }
-    for (const RowIndex row : d->non_zeros) d->is_non_zero[row] = false;
-    if (d->non_zeros.size() >= hypersparse_threshold) d->non_zeros.clear();
+    d->ClearSparseMask();
+    d->ClearNonZerosIfTooDense(hypersparse_ratio_);
   }
 
   EntryIndex num_entries() const { return num_entries_; }
