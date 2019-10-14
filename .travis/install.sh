@@ -22,7 +22,7 @@ function installdotnetsdk(){
   sudo dpkg -i packages-microsoft-prod.deb
   # Install dotnet sdk 2.1
   sudo apt-get update -qq
-  sudo apt-get install -yqq dotnet-sdk-2.2
+  sudo apt-get install -yqq dotnet-sdk-2.2 dotnet-sdk-3.0
 }
 
 ################
@@ -73,7 +73,7 @@ if [ "${BUILDER}" == make ]; then
       echo 'travis_fold:end:python3'
     elif [ "${LANGUAGE}" == dotnet ]; then
       echo 'travis_fold:start:dotnet'
-      brew tap caskroom/cask
+      brew tap caskroom/cask-cask
       brew cask install dotnet-sdk
       echo 'travis_fold:end:dotnet'
     fi
