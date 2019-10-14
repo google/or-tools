@@ -102,7 +102,7 @@ if(BUILD_Protobuf)
     REPOSITORY
       "https://github.com/protocolbuffers/protobuf.git"
     TAG
-      "v3.9.1"
+      "v3.10.0"
     CMAKE_ARGS
 	  -Dprotobuf_MSVC_STATIC_RUNTIME:BOOL=OFF
       "SOURCE_SUBDIR cmake"
