@@ -73,8 +73,8 @@ if [ "${BUILDER}" == make ]; then
       echo 'travis_fold:end:python3'
     elif [ "${LANGUAGE}" == dotnet ]; then
       echo 'travis_fold:start:dotnet'
-      #brew tap caskroom/cask
-      brew cask install dotnet-sdk
+      brew tap isen-ng/dotnet-sdk-versions
+      brew cask install dotnet-sdk-2.2.400 dotnet-sdk-3.0.100
       echo 'travis_fold:end:dotnet'
     fi
   fi
