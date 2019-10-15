@@ -20,7 +20,7 @@ environment:
     BUILDER: make
     LANGUAGE: java
 
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
     BUILDER: make
     LANGUAGE: dotnet
 # CMake
@@ -63,4 +63,3 @@ build_script:
 
 test_script:
   - if "%BUILDER%"=="cmake" cmake --build build --config Release --target RUN_TESTS
-
