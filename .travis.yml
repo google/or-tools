@@ -80,6 +80,14 @@ matrix:
     - os: linux
       dist: xenial
       env: BUILDER=bazel
+    - os: linux-ppc64le
+      dist: xenial
+      compiler: gcc
+      env: BUILDER=make LANGUAGE=cc
+    - os: linux-ppc64le
+      dist: xenial
+      compiler: gcc
+      env: BUILDER=make LANGUAGE=python3
 
 install:
   - ./.travis/install.sh
