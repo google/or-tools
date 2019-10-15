@@ -71,6 +71,14 @@ matrix:
           packages:
             - bazel
       env: BUILDER=bazel
+    - os: linux-ppc64le
+      dist: bionic
+      compiler: gcc
+      env: BUILDER=make LANGUAGE=cc PPC64_LE=1
+    - os: linux-ppc64le
+      dist: bionic
+      compiler: gcc
+      env: BUILDER=make LANGUAGE=python3 PPC64_LE=1
   # Jobs too long
   allow_failures:
     - os: osx
@@ -78,16 +86,16 @@ matrix:
       compiler: clang
       env: BUILDER=make LANGUAGE=dotnet
     - os: linux
-      dist: xenial
+      dist: bionic
       env: BUILDER=bazel
     - os: linux-ppc64le
-      dist: xenial
+      dist: bionic
       compiler: gcc
-      env: BUILDER=make LANGUAGE=cc
+      env: BUILDER=make LANGUAGE=cc PPC64_LE=1
     - os: linux-ppc64le
-      dist: xenial
+      dist: bionic
       compiler: gcc
-      env: BUILDER=make LANGUAGE=python3
+      env: BUILDER=make LANGUAGE=python3 PPC64_LE=1
 
 install:
   - ./.travis/install.sh
