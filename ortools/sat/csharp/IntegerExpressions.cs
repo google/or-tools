@@ -45,7 +45,7 @@ namespace Google.OrTools.Sat
     int GetIndex();
   }
 
-  // Holds an linear expression.
+  // Holds a linear expression.
   public class LinearExpr
   {
 
