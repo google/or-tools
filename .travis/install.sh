@@ -29,6 +29,7 @@ function installdotnetsdk(){
 ##  MAKEFILE  ##
 ################
 if [ "${BUILDER}" == make ]; then
+  echo 'TRAVIS_OS_NAME = ${TRAVIS_OS_NAME}'
   if [ "${TRAVIS_OS_NAME}" == linux ]; then
     echo 'travis_fold:start:c++'
     sudo apt-get -qq update
