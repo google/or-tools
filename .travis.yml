@@ -71,14 +71,23 @@ matrix:
           packages:
             - bazel
       env: BUILDER=bazel
-    - os: linux-ppc64le
+    # Power architecture
+    - os: linux
+      arch: ppc64le
       dist: bionic
       compiler: gcc
       env: BUILDER=make LANGUAGE=cc PPC64_LE=1
-    - os: linux-ppc64le
+    - os: linux
+      arch: ppc64le
       dist: bionic
       compiler: gcc
       env: BUILDER=make LANGUAGE=python3 PPC64_LE=1
+    # Arm architecture
+    - os: linux
+      arch: arm64
+      dist: bionic
+      compiler: gcc
+      env: BUILDER=make LANGUAGE=cc ARM
   # Jobs too long
   allow_failures:
     - os: osx
@@ -96,6 +105,10 @@ matrix:
       dist: bionic
       compiler: gcc
       env: BUILDER=make LANGUAGE=python3 PPC64_LE=1
+    - os: arm64
+      dist: bionic
+      compiler: gcc
+      env: BUILDER=make LANGUAGE=cc
 
 install:
   - ./.travis/install.sh
