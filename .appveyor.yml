@@ -43,7 +43,8 @@ cache:
 before_build:
   - git config --global user.email "ci@appveyor.com"
   - git config --global user.name "CI"
-  - if "$call "C:\Program Files (x86)\Microsoft Visual Studio\%VS_VERSION%\Community\VC\Auxiliary\Build\vcvars64.bat"
+  - if "%VS_VERSION%"=="2017" "$call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
+  - if "%VS_VERSION%"=="2019" "$call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
   - set PATH=C:\Python36-x64;%PATH%
   - tools\win\which.exe python.exe
   - python -V
