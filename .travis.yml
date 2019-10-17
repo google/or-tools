@@ -76,18 +76,18 @@ matrix:
       arch: ppc64le
       dist: bionic
       compiler: gcc
-      env: BUILDER=make LANGUAGE=cc PPC64_LE=1
+      env: BUILDER=make LANGUAGE=cc
     - os: linux
       arch: ppc64le
       dist: bionic
       compiler: gcc
-      env: BUILDER=make LANGUAGE=python3 PPC64_LE=1
+      env: BUILDER=make LANGUAGE=python3
     # Arm architecture
     - os: linux
       arch: arm64
       dist: bionic
       compiler: gcc
-      env: BUILDER=make LANGUAGE=cc ARM
+      env: BUILDER=make LANGUAGE=cc
   # Jobs too long
   allow_failures:
     - os: osx
@@ -97,15 +97,22 @@ matrix:
     - os: linux
       dist: bionic
       env: BUILDER=bazel
-    - os: linux-ppc64le
+    - os: linux
       dist: bionic
       compiler: gcc
-      env: BUILDER=make LANGUAGE=cc PPC64_LE=1
-    - os: linux-ppc64le
+      env: BUILDER=make LANGUAGE=cc
+    - os: linux
+      arch: ppc64le
       dist: bionic
       compiler: gcc
-      env: BUILDER=make LANGUAGE=python3 PPC64_LE=1
-    - os: arm64
+      env: BUILDER=make LANGUAGE=cc
+    - os: linux
+      arch: ppc64le
+      dist: bionic
+      compiler: gcc
+      env: BUILDER=make LANGUAGE=python3
+    - os: linux
+      arch: arm64
       dist: bionic
       compiler: gcc
       env: BUILDER=make LANGUAGE=cc
