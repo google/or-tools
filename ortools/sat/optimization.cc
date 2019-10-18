@@ -35,7 +35,7 @@
 #include "ortools/base/random.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/timer.h"
-#if !defined(__PORTABLE_PLATFORM__)
+#if !defined(__PORTABLE_PLATFORM__) && (defined(USE_CBC) || defined(USE_SCIP))
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #endif  // __PORTABLE_PLATFORM__

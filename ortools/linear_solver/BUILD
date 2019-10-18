@@ -6,11 +6,6 @@ config_setting(
 )
 
 config_setting(
-    name = "with_bop",
-    values = {"define": "USE_BOP="},
-)
-
-config_setting(
     name = "with_cplex",
     values = {"define": "USE_CPLEX="},
 )
@@ -66,10 +61,11 @@ cc_library(
         "model_validator.cc",
         "glop_interface.cc",
         "glop_utils.cc",
-    ] + select({
-        ":with_bop": ["bop_interface.cc"],
-        "//conditions:default": [],
-    }) + select({
+	"bop_interface.cc",
+	"sat_interface.cc",
+	"sat_proto_solver.cc",
+	"sat_solver_utils.cc",
+	] + select({
         ":with_cbc": ["cbc_interface.cc"],
         "//conditions:default": [],
     }) + select({
@@ -92,9 +88,8 @@ cc_library(
         "linear_solver.h",
         "model_exporter.h",
         "model_validator.h",
-    ],
-    defines = [
-        "USE_GLOP=",
+	"sat_proto_solver.h",
+	"sat_solver_utils.h",
     ],
     deps = [
         ":linear_solver_cc_proto",
@@ -110,19 +105,18 @@ cc_library(
         "//ortools/base:stl_util",
         "@com_google_absl//absl/strings",
         "//ortools/base:timer",
+	"//ortools/bop:integral_solver",
         "//ortools/glop:lp_solver",
         "//ortools/glop:parameters_cc_proto",
         "//ortools/port:file",
         "//ortools/port:proto_utils",
         "//ortools/util:fp_utils",
         "//ortools/util:lazy_mutable_copy",
-    ] + select({
-        ":with_bop": [
-            "//ortools/bop:bop_parameters_cc_proto",
-            "//ortools/bop:integral_solver",
-        ],
-        "//conditions:default": [],
-    }) + select({
+	"//ortools/bop:bop_parameters_cc_proto",
+	"//ortools/sat:cp_model_cc_proto",
+	"//ortools/sat:cp_model_solver",
+	"//ortools/sat:lp_utils",
+	] + select({
         ":with_glpk": ["@glpk//:glpk"],
         "//conditions:default": [],
     }),

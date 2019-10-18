@@ -950,7 +950,6 @@ cc_library(
         "//ortools/base:int_type",
         "//ortools/base:map_util",
         "//ortools/base:random",
-        "//ortools/linear_solver",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/port:proto_utils",
         "//ortools/util:time_limit",
