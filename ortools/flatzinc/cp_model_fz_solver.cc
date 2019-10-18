@@ -655,7 +655,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
         arg->add_demands(demands[i]);
       }
     }
-  } else if (fz_ct.type == "diffn") {
+  } else if (fz_ct.type == "diffn" || fz_ct.type == "diffn_nonstrict") {
     const std::vector<int> x = LookupVars(fz_ct.arguments[0]);
     const std::vector<int> y = LookupVars(fz_ct.arguments[1]);
     const std::vector<int> dx = LookupVars(fz_ct.arguments[2]);
@@ -667,6 +667,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       arg->add_x_intervals(x_intervals[i]);
       arg->add_y_intervals(y_intervals[i]);
     }
+    arg->set_boxes_with_null_area_can_overlap(fz_ct.type == "diffn_nonstrict");
   } else if (fz_ct.type == "network_flow" ||
              fz_ct.type == "network_flow_cost") {
     // Note that we leave ct empty here (with just the name set).
@@ -858,6 +859,9 @@ void CpModelProtoWithMapping::TranslateSearchAnnotations(
       } else if (select.id == "indomain_reverse_split") {
         strategy->set_domain_reduction_strategy(
             DecisionStrategyProto::SELECT_UPPER_HALF);
+      } else if (select.id == "indomain_median") {
+        strategy->set_domain_reduction_strategy(
+            DecisionStrategyProto::SELECT_MEDIAN_VALUE);
       } else {
         LOG(FATAL) << "Unsupported select: " << select.id;
       }
