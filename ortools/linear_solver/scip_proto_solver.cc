@@ -138,14 +138,15 @@ util::Status ScipSetSolverSpecificParameters(const std::string& parameters,
 namespace {
 // This function will create a new constraint if the indicator constraint has
 // both a lower bound and an upper bound.
-util::Status AddIndicatorConstraint(
-    const MPGeneralConstraintProto& gen_cst,
-    const std::vector<SCIP_VAR*>& scip_variables, SCIP* scip,
-    SCIP_CONS** scip_cst, std::vector<SCIP_CONS*>* scip_constraints,
-    std::vector<SCIP_VAR*>* tmp_variables,
-    std::vector<double>* tmp_coefficients) {
+util::Status AddIndicatorConstraint(const MPGeneralConstraintProto& gen_cst,
+                                    SCIP* scip, SCIP_CONS** scip_cst,
+                                    std::vector<SCIP_VAR*>* scip_variables,
+                                    std::vector<SCIP_CONS*>* scip_constraints,
+                                    std::vector<SCIP_VAR*>* tmp_variables,
+                                    std::vector<double>* tmp_coefficients) {
   CHECK(scip != nullptr);
   CHECK(scip_cst != nullptr);
+  CHECK(scip_variables != nullptr);
   CHECK(scip_constraints != nullptr);
   CHECK(tmp_variables != nullptr);
   CHECK(tmp_coefficients != nullptr);
@@ -160,14 +161,14 @@ util::Status AddIndicatorConstraint(
   tmp_variables->resize(size, nullptr);
   tmp_coefficients->resize(size, 0);
   for (int i = 0; i < size; ++i) {
-    (*tmp_variables)[i] = scip_variables[constraint.var_index(i)];
+    (*tmp_variables)[i] = (*scip_variables)[constraint.var_index(i)];
     (*tmp_coefficients)[i] = constraint.coefficient(i);
   }
 
-  SCIP_VAR* ind_var = scip_variables[ind.var_index()];
+  SCIP_VAR* ind_var = (*scip_variables)[ind.var_index()];
   if (ind.var_value() == 0) {
     RETURN_IF_SCIP_ERROR(
-        SCIPgetNegatedVar(scip, scip_variables[ind.var_index()], &ind_var));
+        SCIPgetNegatedVar(scip, (*scip_variables)[ind.var_index()], &ind_var));
   }
 
   if (ind.constraint().upper_bound() < kInfinity) {
@@ -618,7 +619,7 @@ bool MPModelIsInvalidForScip(const MPModelProto& model, SCIP* scip,
     if (variable.upper_bound() <= -infinity) {
       response->set_status(MPSOLVER_MODEL_INVALID);
       response->set_status_str(absl::StrFormat(
-          "Variable %i's lower bound is considered -infinity", v));
+          "Variable %i's upper bound is considered -infinity", v));
       return true;
     }
     const double coeff = variable.objective_coefficient();
@@ -772,8 +773,9 @@ util::StatusOr<MPSolutionResponse> ScipSolveProto(
       switch (gen_cst.general_constraint_case()) {
         case MPGeneralConstraintProto::kIndicatorConstraint: {
           RETURN_IF_ERROR(AddIndicatorConstraint(
-              gen_cst, scip_variables, scip, &scip_constraints[lincst_size + c],
-              &scip_constraints, &ct_variables, &ct_coefficients));
+              gen_cst, scip, &scip_constraints[lincst_size + c],
+              &scip_variables, &scip_constraints, &ct_variables,
+              &ct_coefficients));
           break;
         }
         case MPGeneralConstraintProto::kSosConstraint: {
@@ -880,6 +882,8 @@ util::StatusOr<MPSolutionResponse> ScipSolveProto(
       break;
   }
 
+  VLOG(1) << "ScipSolveProto() status="
+          << MPSolverResponseStatus_Name(response.status()) << ".";
   return response;
 }
 

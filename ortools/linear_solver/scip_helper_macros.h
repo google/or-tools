@@ -17,6 +17,7 @@
 #include "absl/strings/str_format.h"
 #include "ortools/base/canonical_errors.h"
 #include "ortools/base/status.h"
+#include "ortools/base/status_macros.h"
 
 namespace operations_research {
 namespace internal {
