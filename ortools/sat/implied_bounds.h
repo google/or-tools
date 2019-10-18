@@ -40,8 +40,8 @@ struct ImpliedBoundEntry {
   // An integer variable in [0, 1]. When at 1, then the IntegerVariable
   // corresponding to this entry must be greater or equal to the given lower
   // bound.
-  IntegerVariable literal_view;
-  IntegerValue lower_bound;
+  IntegerVariable literal_view = kNoIntegerVariable;
+  IntegerValue lower_bound = IntegerValue(0);
 
   // If false, it is when the literal_view is zero that the lower bound is
   // valid.
@@ -52,7 +52,7 @@ struct ImpliedBoundEntry {
       : literal_view(lit), lower_bound(lb), is_positive(pos) {}
 
   ImpliedBoundEntry()
-      : literal_view(kNoIntegerVariable), lower_bound(0), is_positive(false) {}
+      : literal_view(kNoIntegerVariable), lower_bound(0), is_positive(true) {}
 };
 
 // Maintains all the implications of the form Literal => IntegerLiteral. We
