@@ -422,12 +422,9 @@ message SatParameters {
 
   // How much substitution (also called free variable aggregation in MIP
   // litterature) should we perform at presolve. This currently only concerns
-  // variable appearing only in linear constraints.
-  //
-  // TODO(user): Implement a proper heuristic, maybe in term of non-zero
-  // created. Right now, we basically substitute all variables than can be
-  // easily substitued and that appear in at most this number of constraints.
-  optional int32 presolve_substitution_level = 147 [default = 0];
+  // variable appearing only in linear constraints. For now the value 0 turns it
+  // off and any positive value performs substitution.
+  optional int32 presolve_substitution_level = 147 [default = 1];
 
   // ==========================================================================
   // Max-sat parameters

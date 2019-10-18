@@ -80,6 +80,9 @@ const std::function<LiteralIndex()> ConstructSearchStrategyInternal(
           offset = coeff_offset.second;
         }
         DCHECK_GT(coeff, 0);
+
+        // TODO(user): deal with integer overflow in case of wrongly specified
+        // coeff.
         switch (strategy.var_strategy) {
           case DecisionStrategyProto::CHOOSE_FIRST:
             break;

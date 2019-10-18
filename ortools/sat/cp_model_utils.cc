@@ -94,6 +94,7 @@ IndexReferences GetReferencesUsedByConstraint(const ConstraintProto& ct) {
       break;
     case ConstraintProto::ConstraintCase::kReservoir:
       AddIndices(ct.reservoir().times(), &output.variables);
+      AddIndices(ct.reservoir().actives(), &output.literals);
       break;
     case ConstraintProto::ConstraintCase::kTable:
       AddIndices(ct.table().vars(), &output.variables);
@@ -175,6 +176,7 @@ void ApplyToAllLiteralIndices(const std::function<void(int*)>& f,
     case ConstraintProto::ConstraintCase::kInverse:
       break;
     case ConstraintProto::ConstraintCase::kReservoir:
+      APPLY_TO_REPEATED_FIELD(reservoir, actives);
       break;
     case ConstraintProto::ConstraintCase::kTable:
       break;

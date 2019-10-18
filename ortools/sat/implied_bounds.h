@@ -47,11 +47,12 @@ struct ImpliedBoundEntry {
   // valid.
   bool is_positive = true;
 
+  // These constructors are needed for OR-Tools.
   ImpliedBoundEntry(IntegerVariable lit, IntegerValue lb, bool pos)
       : literal_view(lit), lower_bound(lb), is_positive(pos) {}
 
- ImpliedBoundEntry()
-     : literal_view(kNoIntegerVariable), lower_bound(0), is_positive(false) {}
+  ImpliedBoundEntry()
+      : literal_view(kNoIntegerVariable), lower_bound(0), is_positive(false) {}
 };
 
 // Maintains all the implications of the form Literal => IntegerLiteral. We

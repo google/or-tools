@@ -79,7 +79,10 @@ struct PresolveContext {
 
   // This function always return false. It is just a way to make a little bit
   // more sure that we abort right away when infeasibility is detected.
-  ABSL_MUST_USE_RESULT bool NotifyThatModelIsUnsat() {
+  ABSL_MUST_USE_RESULT bool NotifyThatModelIsUnsat(
+      const std::string& message = "") {
+    // TODO(user): Report any explanation for the client in a nicer way?
+    VLOG(1) << "INFEASIBLE: " << message;
     DCHECK(!is_unsat);
     is_unsat = true;
     return false;

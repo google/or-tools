@@ -23,6 +23,7 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -86,6 +87,15 @@ class DomainDeductions {
 // Currently the coefficient in the definition must be 1 or -1.
 void SubstituteVariable(int var, int64 var_coeff_in_definition,
                         const ConstraintProto& definition, ConstraintProto* ct);
+
+// Returns true if the variable is found in objective linear terms.
+bool VarFoundInObjective(int var, CpObjectiveProto* obj);
+
+// Replaces the variable var in objective using the definition constraint.
+// Currently the coefficient in the definition must be 1 or -1.
+void SubstituteVariableInObjective(int var, int64 var_coeff_in_definition,
+                                   const ConstraintProto& definition,
+                                   CpObjectiveProto* obj);
 
 }  // namespace sat
 }  // namespace operations_research

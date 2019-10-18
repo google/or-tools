@@ -45,6 +45,7 @@ namespace {
 
 template <typename ProtoWithDomain>
 bool DomainInProtoIsValid(const ProtoWithDomain& proto) {
+  if (proto.domain().size() % 2) return false;
   std::vector<ClosedInterval> domain;
   for (int i = 0; i < proto.domain_size(); i += 2) {
     domain.push_back({proto.domain(i), proto.domain(i + 1)});
@@ -53,13 +54,13 @@ bool DomainInProtoIsValid(const ProtoWithDomain& proto) {
 }
 
 bool VariableReferenceIsValid(const CpModelProto& model, int reference) {
-  return std::max(-reference - 1, reference) < model.variables_size();
+  // We do it this way to avoid overflow if reference is kint64min for instance.
+  if (reference >= model.variables_size()) return false;
+  return reference >= -static_cast<int>(model.variables_size());
 }
 
 bool LiteralReferenceIsValid(const CpModelProto& model, int reference) {
-  if (std::max(NegatedRef(reference), reference) >= model.variables_size()) {
-    return false;
-  }
+  if (!VariableReferenceIsValid(model, reference)) return false;
   const auto& var_proto = model.variables(PositiveRef(reference));
   const int64 min_domain = var_proto.domain(0);
   const int64 max_domain = var_proto.domain(var_proto.domain_size() - 1);
@@ -180,10 +181,36 @@ std::string ValidateLinearConstraint(const CpModelProto& model,
   return "";
 }
 
+std::string ValidateCircuitConstraint(const CpModelProto& model,
+                                      const ConstraintProto& ct) {
+  const int size = ct.circuit().tails().size();
+  if (ct.circuit().heads().size() != size ||
+      ct.circuit().literals().size() != size) {
+    return absl::StrCat("Wrong field sizes in circuit: ",
+                        ProtobufShortDebugString(ct));
+  }
+  return "";
+}
+
+std::string ValidateRoutesConstraint(const CpModelProto& model,
+                                     const ConstraintProto& ct) {
+  const int size = ct.routes().tails().size();
+  if (ct.routes().heads().size() != size ||
+      ct.routes().literals().size() != size) {
+    return absl::StrCat("Wrong field sizes in routes: ",
+                        ProtobufShortDebugString(ct));
+  }
+  return "";
+}
+
 std::string ValidateReservoirConstraint(const CpModelProto& model,
                                         const ConstraintProto& ct) {
   if (ct.enforcement_literal_size() > 0) {
     return "Reservoir does not support enforcement literals.";
+  }
+  if (ct.reservoir().times().size() != ct.reservoir().demands().size()) {
+    return absl::StrCat("Times and demands fields must be of the same size: ",
+                        ProtobufShortDebugString(ct));
   }
   for (const int t : ct.reservoir().times()) {
     const IntegerVariableProto& time = model.variables(t);
@@ -226,9 +253,46 @@ std::string ValidateCircuitCoveringConstraint(const ConstraintProto& ct) {
 
 std::string ValidateObjective(const CpModelProto& model,
                               const CpObjectiveProto& obj) {
+  if (!DomainInProtoIsValid(obj)) {
+    return absl::StrCat("The objective has and invalid domain() format: ",
+                        ProtobufShortDebugString(obj));
+  }
+  if (obj.vars().size() != obj.coeffs().size()) {
+    return absl::StrCat("vars and coeffs size do not match in objective: ",
+                        ProtobufShortDebugString(obj));
+  }
+  for (const int v : obj.vars()) {
+    if (!VariableReferenceIsValid(model, v)) {
+      return absl::StrCat("Out of bound integer variable ", v,
+                          " in objective: ", ProtobufShortDebugString(obj));
+    }
+  }
   if (PossibleIntegerOverflow(model, obj)) {
     return "Possible integer overflow in objective: " +
            ProtobufDebugString(obj);
+  }
+  return "";
+}
+
+std::string ValidateSearchStrategies(const CpModelProto& model) {
+  for (const DecisionStrategyProto& strategy : model.search_strategy()) {
+    for (const int ref : strategy.variables()) {
+      if (!VariableReferenceIsValid(model, ref)) {
+        return absl::StrCat("Invalid variable reference in strategy: ",
+                            ProtobufShortDebugString(strategy));
+      }
+    }
+    for (const auto& transformation : strategy.transformations()) {
+      if (transformation.positive_coeff() <= 0) {
+        return absl::StrCat("Affine transformation coeff should be positive: ",
+                            ProtobufShortDebugString(transformation));
+      }
+      if (!VariableReferenceIsValid(model, transformation.var())) {
+        return absl::StrCat(
+            "Invalid variable reference in affine transformation: ",
+            ProtobufShortDebugString(transformation));
+      }
+    }
   }
   return "";
 }
@@ -265,6 +329,20 @@ std::string ValidateCpModel(const CpModelProto& model) {
     const ConstraintProto& ct = model.constraints(c);
     const ConstraintProto::ConstraintCase type = ct.constraint_case();
     switch (type) {
+      case ConstraintProto::ConstraintCase::kIntDiv:
+        if (ct.int_div().vars().size() != 2) {
+          return absl::StrCat(
+              "An int_div constraint should have exactly 2 terms: ",
+              ProtobufShortDebugString(ct));
+        }
+        break;
+      case ConstraintProto::ConstraintCase::kIntMod:
+        if (ct.int_mod().vars().size() != 2) {
+          return absl::StrCat(
+              "An int_mod constraint should have exactly 2 terms: ",
+              ProtobufShortDebugString(ct));
+        }
+        break;
       case ConstraintProto::ConstraintCase::kBoolOr:
         support_enforcement = true;
         break;
@@ -294,6 +372,18 @@ std::string ValidateCpModel(const CpModelProto& model) {
               ProtobufShortDebugString(ct));
         }
         break;
+      case ConstraintProto::ConstraintCase::kInverse:
+        if (ct.inverse().f_direct().size() != ct.inverse().f_inverse().size()) {
+          return absl::StrCat("Non-matching fields size in inverse: ",
+                              ProtobufShortDebugString(ct));
+        }
+        break;
+      case ConstraintProto::ConstraintCase::kCircuit:
+        RETURN_IF_NOT_EMPTY(ValidateCircuitConstraint(model, ct));
+        break;
+      case ConstraintProto::ConstraintCase::kRoutes:
+        RETURN_IF_NOT_EMPTY(ValidateRoutesConstraint(model, ct));
+        break;
       case ConstraintProto::ConstraintCase::kReservoir:
         RETURN_IF_NOT_EMPTY(ValidateReservoirConstraint(model, ct));
         break;
@@ -320,15 +410,9 @@ std::string ValidateCpModel(const CpModelProto& model) {
     }
   }
   if (model.has_objective()) {
-    for (const int v : model.objective().vars()) {
-      if (!VariableReferenceIsValid(model, v)) {
-        return absl::StrCat("Out of bound objective variable ", v, " : ",
-                            ProtobufShortDebugString(model.objective()));
-      }
-    }
     RETURN_IF_NOT_EMPTY(ValidateObjective(model, model.objective()));
   }
-
+  RETURN_IF_NOT_EMPTY(ValidateSearchStrategies(model));
   RETURN_IF_NOT_EMPTY(ValidateSolutionHint(model));
   return "";
 }
@@ -673,6 +757,9 @@ class ConstraintChecker {
         }
       }
     }
+
+    // An empty constraint with no node to visit should be feasible.
+    if (num_nodes == 0) return true;
 
     // Make sure each routes from the depot go back to it, and count such arcs.
     int count = 0;

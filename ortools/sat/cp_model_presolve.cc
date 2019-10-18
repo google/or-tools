@@ -42,6 +42,7 @@
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_objective.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/presolve_util.h"
 #include "ortools/sat/probing.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -1010,8 +1011,6 @@ bool CpModelPresolver::PresolveLinear(ConstraintProto* ct) {
   }
   FillDomainInProto(rhs, ct->mutable_linear());
 
-  const bool was_affine = context_->affine_constraints.contains(ct);
-
   // Propagate the variable bounds.
   if (ct->enforcement_literal().size() <= 1) {
     bool new_bounds = false;
@@ -1051,12 +1050,11 @@ bool CpModelPresolver::PresolveLinear(ConstraintProto* ct) {
       // TODO(user): there is no guarante we will not miss some since we might
       // not reprocess a constraint once other have been deleted.
 
-      // Skip affine constraint. Note however that we are before the affine
-      // detection for this constraint. If this variable only appear in linear
-      // constraints, the final result should be the same though. It should be
-      // even better since we don't need to track any affine relations because
-      // we remove the variable usage right away.
-      if (was_affine) continue;
+      // Skip affine constraint. It is more efficient to substitute them lazily
+      // when we process other constraints. Note that if we relax the fact that
+      // we substitute only equalities, we can deal with inequality of size 2
+      // here.
+      if (ct->linear().vars().size() <= 2) continue;
 
       // TODO(user): We actually do not need a strict equality when
       // keep_all_feasible_solutions is false, but that simplifies things as the
@@ -1070,14 +1068,32 @@ bool CpModelPresolver::PresolveLinear(ConstraintProto* ct) {
       const int var = ct->linear().vars(i);
       if (context_->DomainOf(var) != new_domain) continue;
       if (std::abs(var_coeff) != 1) continue;
+      if (options_.parameters.presolve_substitution_level() <= 0) {
+        continue;
+      }
+      // NOTE: The mapping doesn't allow us to remove a variable if
+      // 'keep_all_feasible_solutions' is true.
+      if (context_->keep_all_feasible_solutions) continue;
 
-      // Skip if the variable is in the objective.
-      if (context_->var_to_constraints[var].contains(-1)) continue;
+      bool is_in_objective = false;
+      if (context_->var_to_constraints[var].contains(-1)) {
+        is_in_objective = true;
+        DCHECK(VarFoundInObjective(
+            var, context_->working_model->mutable_objective()));
+      }
 
       // Only consider low degree columns.
-      if (context_->var_to_constraints[var].size() < 2) continue;
-      if (context_->var_to_constraints[var].size() >
-          options_.parameters.presolve_substitution_level()) {
+      int col_size = context_->var_to_constraints[var].size();
+      if (is_in_objective) col_size--;
+      const int row_size = ct->linear().vars_size();
+      if (col_size < 2) continue;
+
+      // This is actually an upper bound on the number of entries added since
+      // some of them might already be present.
+      const int num_entries_added = (row_size - 1) * (col_size - 1);
+      const int num_entries_removed = col_size + row_size - 1;
+
+      if (num_entries_added > num_entries_removed) {
         continue;
       }
 
@@ -1086,6 +1102,7 @@ bool CpModelPresolver::PresolveLinear(ConstraintProto* ct) {
       // affine relation.
       std::vector<int> others;
       for (const int c : context_->var_to_constraints[var]) {
+        if (c == -1) continue;
         if (context_->working_model->mutable_constraints(c) == ct) continue;
         others.push_back(c);
       }
@@ -1125,6 +1142,26 @@ bool CpModelPresolver::PresolveLinear(ConstraintProto* ct) {
         context_->UpdateConstraintVariableUsage(c);
       }
 
+      // Substitute in objective.
+      if (is_in_objective) {
+        // Remove objective entry from var_to_constraint lists. The objective
+        // entries will be added back after the substitution.
+        const CpObjectiveProto& objective =
+            context_->working_model->objective();
+        for (int i = 0; i < objective.vars_size(); ++i) {
+          const int positive_ref = PositiveRef(objective.vars(i));
+          context_->var_to_constraints[positive_ref].erase(-1);
+        }
+        SubstituteVariableInObjective(
+            var, var_coeff, *ct, context_->working_model->mutable_objective());
+        // Add back the objective entry for the variables in objective in
+        // var_to_constraint lists.
+        for (int i = 0; i < objective.vars_size(); ++i) {
+          const int positive_ref = PositiveRef(objective.vars(i));
+          context_->var_to_constraints[positive_ref].insert(-1);
+        }
+      }
+
       context_->UpdateRuleStats(
           absl::StrCat("linear: variable substitution ", others.size()));
 
@@ -1143,6 +1180,7 @@ bool CpModelPresolver::PresolveLinear(ConstraintProto* ct) {
   //
   // TODO(user): it might be better to first add only the affine relation with
   // a coefficient of magnitude 1, and later the one with larger coeffs.
+  const bool was_affine = context_->affine_constraints.contains(ct);
   if (!was_affine && !HasEnforcementLiteral(*ct)) {
     const LinearConstraintProto& arg = ct->linear();
     const int64 rhs_min = rhs.Min();
@@ -2018,6 +2056,13 @@ bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
     }
     if (propagated) {
       context_->UpdateRuleStats("all_diff: propagated fixed variables");
+    }
+  }
+
+  std::sort(new_variables.begin(), new_variables.end());
+  for (int i = 1; i < new_variables.size(); ++i) {
+    if (new_variables[i] == new_variables[i - 1]) {
+      return context_->NotifyThatModelIsUnsat("Duplicate variable in all_diff");
     }
   }
 
@@ -3850,10 +3895,8 @@ void CpModelPresolver::PresolveToFixPoint() {
 
   if (context_->ModelIsUnsat()) return;
 
-  // Make sure we filter out absent intervals.
-  //
-  // Try to infer domain reductions from clauses and the saved "implies in
-  // domain" relations.
+  // Second "pass" for transformation better done after all of the above and
+  // that do not need a fix-point loop.
   //
   // TODO(user): Also add deductions achieved during probing!
   //
@@ -3865,6 +3908,7 @@ void CpModelPresolver::PresolveToFixPoint() {
     ConstraintProto* ct = context_->working_model->mutable_constraints(c);
     switch (ct->constraint_case()) {
       case ConstraintProto::ConstraintCase::kNoOverlap:
+        // Filter out absent intervals.
         if (PresolveNoOverlap(ct)) {
           context_->UpdateConstraintVariableUsage(c);
         }
@@ -3874,11 +3918,14 @@ void CpModelPresolver::PresolveToFixPoint() {
         // this constraint. Currently we do not.
         break;
       case ConstraintProto::ConstraintCase::kCumulative:
+        // Filter out absent intervals.
         if (PresolveCumulative(ct)) {
           context_->UpdateConstraintVariableUsage(c);
         }
         break;
       case ConstraintProto::ConstraintCase::kBoolOr: {
+        // Try to infer domain reductions from clauses and the saved "implies in
+        // domain" relations.
         for (const auto pair :
              context_->deductions.ProcessClause(ct->bool_or().literals())) {
           bool modified = false;

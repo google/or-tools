@@ -30,6 +30,11 @@ namespace sat {
 namespace {
 
 void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
+  if (ct->reservoir().min_level() > ct->reservoir().max_level()) {
+    VLOG(1) << "Empty level domain in reservoir constraint.";
+    return (void)context->NotifyThatModelIsUnsat();
+  }
+
   // TODO(user): Support sharing constraints in the model across constraints.
   absl::flat_hash_map<std::pair<int, int>, int> precedence_cache;
   const ReservoirConstraintProto& reservoir = ct->reservoir();
@@ -422,8 +427,7 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
 
   if (!context->IntersectDomainWith(index_ref, Domain(0, size - 1))) {
     VLOG(1) << "Empty domain for the index variable in ExpandElement()";
-    CHECK(!context->NotifyThatModelIsUnsat());
-    return;
+    return (void)context->NotifyThatModelIsUnsat();
   }
 
   bool all_constants = true;
@@ -456,8 +460,7 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
     if (!context->IntersectDomainWith(
             index_ref, Domain::FromValues(invalid_indices).Complement())) {
       VLOG(1) << "No compatible variable domains in ExpandElement()";
-      CHECK(!context->NotifyThatModelIsUnsat());
-      return;
+      return (void)context->NotifyThatModelIsUnsat();
     }
 
     // Re-read the domain.
@@ -655,12 +658,10 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
       }
     }
     // The initial state is not in the final state. The model is unsat.
-    CHECK(context->NotifyThatModelIsUnsat());
-    return;
+    return (void)context->NotifyThatModelIsUnsat();
   } else if (proto.transition_label_size() == 0) {
     // Not transitions. The constraint is infeasible.
-    CHECK(context->NotifyThatModelIsUnsat());
-    return;
+    return (void)context->NotifyThatModelIsUnsat();
   }
 
   const int n = proto.vars_size();
@@ -745,8 +746,7 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
       if (!context->IntersectDomainWith(vars[time],
                                         Domain(transition_values.front()),
                                         &tmp_removed_values)) {
-        CHECK(context->NotifyThatModelIsUnsat());
-        return;
+        return (void)context->NotifyThatModelIsUnsat();
       }
       in_encoding.clear();
       continue;
@@ -778,8 +778,7 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
       encoding.clear();
       if (!context->IntersectDomainWith(vars[time], Domain::FromValues(s),
                                         &removed_values)) {
-        CHECK(context->NotifyThatModelIsUnsat());
-        return;
+        return (void)context->NotifyThatModelIsUnsat();
       }
 
       // Fully encode the variable.
@@ -831,6 +830,8 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
 }  // namespace
 
 void ExpandCpModel(PresolveOptions options, PresolveContext* context) {
+  if (context->ModelIsUnsat()) return;
+
   // Make sure all domains are initialized.
   context->InitializeNewDomains();
 

@@ -1265,6 +1265,7 @@ void LoadNoOverlapConstraint(const ConstraintProto& ct, Model* m) {
 }
 
 void LoadNoOverlap2dConstraint(const ConstraintProto& ct, Model* m) {
+  if (ct.no_overlap_2d().x_intervals().empty()) return;
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   const std::vector<IntervalVariable> x_intervals =
       mapping->Intervals(ct.no_overlap_2d().x_intervals());

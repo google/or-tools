@@ -96,20 +96,19 @@ std::vector<std::pair<int, Domain>> DomainDeductions::ProcessClause(
   return result;
 }
 
-void SubstituteVariable(int var, int64 var_coeff_in_definition,
-                        const ConstraintProto& definition,
-                        ConstraintProto* ct) {
-  CHECK(RefIsPositive(var));
-  CHECK_EQ(std::abs(var_coeff_in_definition), 1);
-
-  // Copy all the terms (except the one refering to var).
-  std::vector<std::pair<int, int64>> terms;
+namespace {
+// Helper method for variable substitution. Returns the coefficient of 'var' in
+// 'proto' and copies other terms in 'terms'.
+template <typename ProtoWithVarsAndCoeffs>
+int64 GetVarCoeffAndCopyOtherTerms(const int var,
+                                   const ProtoWithVarsAndCoeffs& proto,
+                                   std::vector<std::pair<int, int64>>* terms) {
   bool found = false;
   int64 var_coeff = 0;
-  const int size = ct->linear().vars().size();
+  const int size = proto.vars().size();
   for (int i = 0; i < size; ++i) {
-    int ref = ct->linear().vars(i);
-    int64 coeff = ct->linear().coeffs(i);
+    int ref = proto.vars(i);
+    int64 coeff = proto.coeffs(i);
     if (!RefIsPositive(ref)) {
       ref = NegatedRef(ref);
       coeff = -coeff;
@@ -121,14 +120,47 @@ void SubstituteVariable(int var, int64 var_coeff_in_definition,
       var_coeff = coeff;
       continue;
     } else {
-      terms.push_back({ref, coeff});
+      terms->push_back({ref, coeff});
     }
   }
   CHECK(found);
+  return var_coeff;
+}
 
-  if (var_coeff_in_definition < 0) var_coeff *= -1;
+// Helper method for variable substituion. Sorts and merges the terms in 'terms'
+// and adds them to 'proto'.
+template <typename ProtoWithVarsAndCoeffs>
+void SortAndMergeTerms(std::vector<std::pair<int, int64>>* terms,
+                       ProtoWithVarsAndCoeffs* proto) {
+  proto->clear_vars();
+  proto->clear_coeffs();
+  std::sort(terms->begin(), terms->end());
+  int current_var = 0;
+  int64 current_coeff = 0;
+  for (const auto entry : *terms) {
+    CHECK(RefIsPositive(entry.first));
+    if (entry.first == current_var) {
+      current_coeff += entry.second;
+    } else {
+      if (current_coeff != 0) {
+        proto->add_vars(current_var);
+        proto->add_coeffs(current_coeff);
+      }
+      current_var = entry.first;
+      current_coeff = entry.second;
+    }
+  }
+  if (current_coeff != 0) {
+    proto->add_vars(current_var);
+    proto->add_coeffs(current_coeff);
+  }
+}
 
-  // Add all the terms in the definition of var.
+// Adds all the terms from the var definition constraint with given var
+// coefficient.
+void AddTermsFromVarDefinition(const int var, const int64 var_coeff,
+                               const ConstraintProto& definition,
+                               std::vector<std::pair<int, int64>>* terms) {
   const int definition_size = definition.linear().vars().size();
   for (int i = 0; i < definition_size; ++i) {
     int ref = definition.linear().vars(i);
@@ -139,11 +171,27 @@ void SubstituteVariable(int var, int64 var_coeff_in_definition,
     }
 
     if (ref == var) {
-      CHECK_EQ(coeff, var_coeff_in_definition);
+      continue;
     } else {
-      terms.push_back({ref, -coeff * var_coeff});
+      terms->push_back({ref, -coeff * var_coeff});
     }
   }
+}
+}  // namespace
+
+void SubstituteVariable(int var, int64 var_coeff_in_definition,
+                        const ConstraintProto& definition,
+                        ConstraintProto* ct) {
+  CHECK(RefIsPositive(var));
+  CHECK_EQ(std::abs(var_coeff_in_definition), 1);
+
+  // Copy all the terms (except the one refering to var).
+  std::vector<std::pair<int, int64>> terms;
+  int64 var_coeff = GetVarCoeffAndCopyOtherTerms(var, ct->linear(), &terms);
+
+  if (var_coeff_in_definition < 0) var_coeff *= -1;
+
+  AddTermsFromVarDefinition(var, var_coeff, definition, &terms);
 
   // The substitution is correct only if we don't loose information here.
   // But for a constant definition rhs that is always the case.
@@ -155,29 +203,43 @@ void SubstituteVariable(int var, int64 var_coeff_in_definition,
   const Domain rhs = ReadDomainFromProto(ct->linear());
   FillDomainInProto(rhs.AdditionWith(offset), ct->mutable_linear());
 
-  // Sort and merge terms refering to the same variable.
-  ct->mutable_linear()->clear_vars();
-  ct->mutable_linear()->clear_coeffs();
-  std::sort(terms.begin(), terms.end());
-  int current_var = 0;
-  int64 current_coeff = 0;
-  for (const auto entry : terms) {
-    CHECK(RefIsPositive(entry.first));
-    if (entry.first == current_var) {
-      current_coeff += entry.second;
-    } else {
-      if (current_coeff != 0) {
-        ct->mutable_linear()->add_vars(current_var);
-        ct->mutable_linear()->add_coeffs(current_coeff);
-      }
-      current_var = entry.first;
-      current_coeff = entry.second;
+  SortAndMergeTerms(&terms, ct->mutable_linear());
+}
+
+bool VarFoundInObjective(int var, CpObjectiveProto* obj) {
+  const int size = obj->vars_size();
+  for (int i = 0; i < size; ++i) {
+    if (PositiveRef(obj->vars(i)) == PositiveRef(var)) {
+      return true;
     }
   }
-  if (current_coeff != 0) {
-    ct->mutable_linear()->add_vars(current_var);
-    ct->mutable_linear()->add_coeffs(current_coeff);
-  }
+  return false;
+}
+
+void SubstituteVariableInObjective(int var, int64 var_coeff_in_definition,
+                                   const ConstraintProto& definition,
+                                   CpObjectiveProto* obj) {
+  CHECK(RefIsPositive(var));
+  CHECK_EQ(std::abs(var_coeff_in_definition), 1);
+
+  // Copy all the terms (except the one refering to var).
+  std::vector<std::pair<int, int64>> terms;
+  int64 var_coeff_in_obj = GetVarCoeffAndCopyOtherTerms(var, *obj, &terms);
+
+  if (var_coeff_in_definition < 0) var_coeff_in_obj *= -1;
+
+  AddTermsFromVarDefinition(var, var_coeff_in_obj, definition, &terms);
+
+  bool exact = false;
+  Domain offset = ReadDomainFromProto(definition.linear());
+  DCHECK_EQ(offset.Min(), offset.Max());
+  offset = offset.MultiplicationBy(var_coeff_in_obj, &exact);
+  CHECK(exact);
+
+  obj->set_offset(offset.Min() + obj->offset());
+
+  // Sort and merge terms refering to the same variable.
+  SortAndMergeTerms(&terms, obj);
 }
 
 }  // namespace sat

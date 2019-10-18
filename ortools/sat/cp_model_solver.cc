@@ -1869,8 +1869,7 @@ class FullProblemSolver : public SubSolver {
   bool solving_first_chunk_ = true;
 
   absl::Mutex mutex_;
-  double deterministic_time_since_last_synchronize_ GUARDED_BY(mutex_) =
-      0.0;
+  double deterministic_time_since_last_synchronize_ GUARDED_BY(mutex_) = 0.0;
   bool previous_task_is_completed_ GUARDED_BY(mutex_) = true;
 };
 
@@ -2316,7 +2315,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     }
   }
 
-  // Presolve and expansions
+  // Presolve and expansions.
   LOG_IF(INFO, log_search) << absl::StrFormat(
       "*** starting model presolve at %.2fs", wall_timer.Get());
   CpModelProto new_cp_model_proto = model_proto;  // Copy.
@@ -2421,6 +2420,12 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
             observer(response);
           }
         });
+  }
+
+  if (shared_time_limit.LimitReached()) {
+    CpSolverResponse response = shared_response_manager.GetResponse();
+    LOG_IF(INFO, log_search) << CpSolverResponseStats(response);
+    return response;
   }
 
   // Make sure everything stops when we have a first solution if requested.
