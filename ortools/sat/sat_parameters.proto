@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 149
+// NEXT TAG: 150
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -718,6 +718,10 @@ message SatParameters {
 
   // For an optimization problem, stop the solver as soon as we have a solution.
   optional bool stop_after_first_solution = 98 [default = false];
+
+  // Mainly used when improving the presolver. When true, stops the solver after
+  // the presolve is complete.
+  optional bool stop_after_presolve = 149 [default = false];
 
   // Specify the number of parallel workers to use during search.
   // A number <= 1 means no parallelism.

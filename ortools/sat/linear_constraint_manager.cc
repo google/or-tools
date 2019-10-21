@@ -402,6 +402,13 @@ bool LinearConstraintManager::ChangeLp(
   if (lp_constraints_.empty()) {
     constraint_limit = std::min(1000, static_cast<int>(new_constraints.size()));
   }
+
+  // TODO(user,user): on problem crossword_opt_grid-19.05_dict-80_sat with
+  //     linearization_level=2, new_constraint.size() > 1.5M. Improve
+  //     complexity of the following loop.
+
+  int skipped_checks = 0;
+  const int kCheckFrequency = 100;
   ConstraintIndex last_added_candidate = kInvalidConstraintIndex;
   for (int i = 0; i < constraint_limit; ++i) {
     // Iterate through all new constraints and select the one with the best
@@ -409,6 +416,12 @@ bool LinearConstraintManager::ChangeLp(
     double best_score = 0.0;
     ConstraintIndex best_candidate = kInvalidConstraintIndex;
     for (int j = 0; j < new_constraints.size(); ++j) {
+      // Checks the time limit, and returns not_changed if crossed.
+      if (++skipped_checks >= kCheckFrequency) {
+        if (time_limit_->LimitReached()) return false;
+        skipped_checks = 0;
+      }
+
       const ConstraintIndex new_constraint = new_constraints[j];
       if (constraint_infos_[new_constraint].permanently_removed) continue;
       if (constraint_infos_[new_constraint].is_in_lp) continue;

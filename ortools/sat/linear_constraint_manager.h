@@ -22,6 +22,7 @@
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -56,7 +57,8 @@ class LinearConstraintManager {
 
   explicit LinearConstraintManager(Model* model)
       : sat_parameters_(*model->GetOrCreate<SatParameters>()),
-        integer_trail_(*model->GetOrCreate<IntegerTrail>()) {}
+        integer_trail_(*model->GetOrCreate<IntegerTrail>()),
+        time_limit_(model->GetOrCreate<TimeLimit>()) {}
   ~LinearConstraintManager();
 
   // Add a new constraint to the manager. Note that we canonicalize constraints
@@ -153,6 +155,8 @@ class LinearConstraintManager {
   bool objective_norm_computed_ = false;
   LinearConstraint objective_;
   double objective_l2_norm_ = 0.0;
+
+  TimeLimit* time_limit_;
 };
 
 }  // namespace sat

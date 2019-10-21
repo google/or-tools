@@ -69,7 +69,8 @@ namespace Google.OrTools.Sat
       return new SumArray(vars, coeffs);
     }
 
-    public static LinearExpr Term(IntVar var, long coeff) {
+    public static LinearExpr Term(IntVar var, long coeff)
+    {
       return Prod(var, coeff);
     }
 

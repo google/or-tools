@@ -2422,8 +2422,21 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
         });
   }
 
-  if (shared_time_limit.LimitReached()) {
+  if (params.stop_after_presolve() || shared_time_limit.LimitReached()) {
+    int64 num_terms = 0;
+    for (const ConstraintProto& ct : new_cp_model_proto.constraints()) {
+      num_terms += UsedVariables(ct).size();
+    }
+    LOG_IF(INFO, log_search)
+        << "Stopped after presolve."
+        << "\nPresolvedNumVariables: " << new_cp_model_proto.variables().size()
+        << "\nPresolvedNumConstraints: "
+        << new_cp_model_proto.constraints().size()
+        << "\nPresolvedNumTerms: " << num_terms;
+
+    shared_response_manager.SetStatsFromModel(model);
     CpSolverResponse response = shared_response_manager.GetResponse();
+    response.set_user_time(user_timer.Get());
     LOG_IF(INFO, log_search) << CpSolverResponseStats(response);
     return response;
   }

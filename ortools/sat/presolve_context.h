@@ -133,6 +133,20 @@ struct PresolveContext {
   // create it, add the corresponding constraints and returns it.
   int GetOrCreateVarValueEncoding(int ref, int64 value);
 
+  // Given a variable defined by the given inequality that also appear in the
+  // objective, remove it from the objective by transferring its cost to other
+  // variables in the equality.
+  //
+  // TODO(user): Each time this is called, we do a linear scan of the objective
+  // that can sometimes be really large (millions of variables). It will be more
+  // efficient to just store the objective in a map at the beginning of the
+  // presolve so this can be done in O(equality_size) and re-encode the
+  // objective in the proto at the end. This code already exist in
+  // ExpandObjective() and can be factored out. Look at the "ivu*.mps" problems
+  // where the presolve is slow because of that.
+  void SubstituteVariableInObjective(int var, int64 coeff,
+                                     const ConstraintProto& equality);
+
   // This regroups all the affine relations between variables. Note that the
   // constraints used to detect such relations will not be removed from the
   // model at detection time (thus allowing proper domain propagation). However,

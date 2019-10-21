@@ -454,5 +454,24 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64 value) {
   return literal;
 }
 
+void PresolveContext::SubstituteVariableInObjective(
+    int var, int64 coeff, const ConstraintProto& equality) {
+  // Remove objective entry from var_to_constraint lists. The objective
+  // entries will be added back after the substitution.
+  const CpObjectiveProto& objective = working_model->objective();
+  for (const int ref : objective.vars()) {
+    var_to_constraints[PositiveRef(ref)].erase(-1);
+  }
+
+  ::operations_research::sat::SubstituteVariableInObjective(
+      var, coeff, equality, working_model->mutable_objective());
+
+  // Add back the objective entry for the variables in objective in
+  // var_to_constraint lists.
+  for (const int ref : objective.vars()) {
+    var_to_constraints[PositiveRef(ref)].insert(-1);
+  }
+}
+
 }  // namespace sat
 }  // namespace operations_research

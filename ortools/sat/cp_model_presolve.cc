@@ -897,9 +897,12 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
   std::set<int> index_to_erase;
   const int num_vars = ct->linear().vars().size();
   Domain rhs = ReadDomainFromProto(ct->linear());
+
+  // First pass. Process singleton column that are not in the objective.
   for (int i = 0; i < num_vars; ++i) {
     const int var = ct->linear().vars(i);
     const int64 coeff = ct->linear().coeffs(i);
+    CHECK(RefIsPositive(var));
     if (context_->VariableIsUniqueAndRemovable(var)) {
       bool exact;
       const auto term_domain =
@@ -913,15 +916,79 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
         // multiplication above because the new domain might not be as strict
         // as the initial constraint otherwise. TODO(user): because of the
         // addition, it might be possible to cover more cases though.
+        context_->UpdateRuleStats("linear: singleton column");
         index_to_erase.insert(i);
         rhs = new_rhs;
         continue;
       }
     }
   }
-  if (index_to_erase.empty()) return false;
 
-  context_->UpdateRuleStats("linear: singleton column");
+  // If we didn't find any, look for the one appearing in the objective.
+  if (index_to_erase.empty()) {
+    // Note that we only do that if we have a non-reified equality.
+    if (options_.parameters.presolve_substitution_level() <= 0) return false;
+    if (!ct->enforcement_literal().empty()) return false;
+    if (rhs.Min() != rhs.Max()) return false;
+
+    for (int i = 0; i < num_vars; ++i) {
+      const int var = ct->linear().vars(i);
+      const int64 coeff = ct->linear().coeffs(i);
+      CHECK(RefIsPositive(var));
+
+      // If the variable appear only in the objective and we have an equality,
+      // we can transfer the cost to the rest of the linear expression, and
+      // remove that variable.
+      //
+      // Note that is similar to the substitution code in PresolveLinear() but
+      // it doesn't require the variable to be implied free since we do not
+      // remove the constraints afterwards, just the variable.
+      if (context_->affine_relations.ClassSize(var) != 1) continue;
+      if (context_->var_to_constraints[var].size() != 2) continue;
+      if (!context_->var_to_constraints[var].contains(-1)) continue;
+      if (std::abs(coeff) != 1) continue;
+
+      // We do not do that if the domain of rhs becomes too complex.
+      bool exact;
+      const auto term_domain =
+          context_->DomainOf(var).MultiplicationBy(-coeff, &exact);
+      CHECK(exact);
+      const Domain new_rhs = rhs.AdditionWith(term_domain);
+      if (new_rhs.NumIntervals() > 100) continue;
+
+      // Special case: If the objective was a single variable, we can transfer
+      // the domain of var to the objective, and just completely remove this
+      // equality constraint like it is done in ExpandObjective().
+      //
+      // TODO(user): handle coeff other than one. Remove duplication with
+      // expand objective.
+      const CpObjectiveProto& obj = context_->working_model->objective();
+      if (obj.vars().size() == 1 && obj.vars(0) == var && obj.coeffs(0) == 1) {
+        if (!obj.domain().empty()) {
+          const Domain obj_domain = ReadDomainFromProto(obj);
+          if (!context_->IntersectDomainWith(var, obj_domain)) {
+            return true;
+          }
+        }
+        FillDomainInProto(context_->DomainOf(var),
+                          context_->working_model->mutable_objective());
+        context_->UpdateRuleStats("linear: singleton column define objective.");
+        context_->SubstituteVariableInObjective(var, coeff, *ct);
+        *(context_->mapping_model->add_constraints()) = *ct;
+        return RemoveConstraint(ct);
+      }
+
+      // Update the objective and remove the variable from its equality
+      // constraint by expanding its rhs.
+      context_->UpdateRuleStats(
+          "linear: singleton column in equality and in objective.");
+      context_->SubstituteVariableInObjective(var, coeff, *ct);
+      rhs = new_rhs;
+      index_to_erase.insert(i);
+      break;
+    }
+  }
+  if (index_to_erase.empty()) return false;
 
   // TODO(user): we could add the constraint to mapping_model only once
   // instead of adding a reduced version of it each time a new singleton
@@ -1068,9 +1135,8 @@ bool CpModelPresolver::PresolveLinear(ConstraintProto* ct) {
       const int var = ct->linear().vars(i);
       if (context_->DomainOf(var) != new_domain) continue;
       if (std::abs(var_coeff) != 1) continue;
-      if (options_.parameters.presolve_substitution_level() <= 0) {
-        continue;
-      }
+      if (options_.parameters.presolve_substitution_level() <= 0) continue;
+
       // NOTE: The mapping doesn't allow us to remove a variable if
       // 'keep_all_feasible_solutions' is true.
       if (context_->keep_all_feasible_solutions) continue;
@@ -1086,7 +1152,6 @@ bool CpModelPresolver::PresolveLinear(ConstraintProto* ct) {
       int col_size = context_->var_to_constraints[var].size();
       if (is_in_objective) col_size--;
       const int row_size = ct->linear().vars_size();
-      if (col_size < 2) continue;
 
       // This is actually an upper bound on the number of entries added since
       // some of them might already be present.
@@ -1144,22 +1209,7 @@ bool CpModelPresolver::PresolveLinear(ConstraintProto* ct) {
 
       // Substitute in objective.
       if (is_in_objective) {
-        // Remove objective entry from var_to_constraint lists. The objective
-        // entries will be added back after the substitution.
-        const CpObjectiveProto& objective =
-            context_->working_model->objective();
-        for (int i = 0; i < objective.vars_size(); ++i) {
-          const int positive_ref = PositiveRef(objective.vars(i));
-          context_->var_to_constraints[positive_ref].erase(-1);
-        }
-        SubstituteVariableInObjective(
-            var, var_coeff, *ct, context_->working_model->mutable_objective());
-        // Add back the objective entry for the variables in objective in
-        // var_to_constraint lists.
-        for (int i = 0; i < objective.vars_size(); ++i) {
-          const int positive_ref = PositiveRef(objective.vars(i));
-          context_->var_to_constraints[positive_ref].insert(-1);
-        }
+        context_->SubstituteVariableInObjective(var, var_coeff, *ct);
       }
 
       context_->UpdateRuleStats(

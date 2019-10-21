@@ -26,7 +26,7 @@
  cp_model.AddEquality(LinearExpr::Sum({rabbits, pheasants}), 20);
  cp_model.AddEquality(LinearExpr::ScalProd({rabbits, pheasants}, {4, 2}), 56);
 
- const CpSolverResponse response = Solve(cp_model);
+ const CpSolverResponse response = Solve(cp_model.Build());
  if (response.status() == CpSolverStatus::FEASIBLE) {
    LOG(INFO) << SolutionIntegerValue(response, rabbits)
              << " rabbits, and " << SolutionIntegerValue(response, pheasants)

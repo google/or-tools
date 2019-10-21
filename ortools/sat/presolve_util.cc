@@ -236,7 +236,12 @@ void SubstituteVariableInObjective(int var, int64 var_coeff_in_definition,
   offset = offset.MultiplicationBy(var_coeff_in_obj, &exact);
   CHECK(exact);
 
+  // Tricky: The objective domain is without the offset, so we need to shift it.
   obj->set_offset(offset.Min() + obj->offset());
+  if (!obj->domain().empty()) {
+    Domain old_domain = ReadDomainFromProto(*obj);
+    FillDomainInProto(old_domain.AdditionWith(Domain(-offset.Min())), obj);
+  }
 
   // Sort and merge terms refering to the same variable.
   SortAndMergeTerms(&terms, obj);
