@@ -223,7 +223,7 @@ class MPSolver {
     BOP_INTEGER_PROGRAMMING = 12,
     /// SAT based solver (requires only integer and Boolean variables).
     /// If you pass it mixed integer problems, it will scale coefficients to
-    /// integer values, and solver continuous variables as integral variables.
+    /// integer values, and solve continuous variables as integral variables.
     SAT_INTEGER_PROGRAMMING = 14,
 #if defined(USE_XPRESS)
     XPRESS_LINEAR_PROGRAMMING = 101,

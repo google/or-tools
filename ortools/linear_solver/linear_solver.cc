@@ -425,7 +425,7 @@ MPSolver::OptimizationProblemType DetourProblemType(
 MPSolver::MPSolver(const std::string& name,
                    OptimizationProblemType problem_type)
     : name_(name),
-      problem_type_(DetourProblemType(problem_type)),
+      problem_type_(problem_type),
       construction_time_(absl::Now()) {
   interface_.reset(BuildSolverInterface(this));
   if (FLAGS_linear_solver_enable_verbose_output) {

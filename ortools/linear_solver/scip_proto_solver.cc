@@ -602,32 +602,53 @@ util::Status AddSolutionHint(const MPModelProto& model, SCIP* scip,
   return util::OkStatus();
 }
 
-bool MPModelIsInvalidForScip(const MPModelProto& model, SCIP* scip,
-                             MPSolutionResponse* response) {
+// Returns "" iff the model seems valid for SCIP, else returns a human-readable
+// error message. Assumes that FindErrorInMPModelProto(model) found no error.
+std::string FindErrorInMPModelForScip(const MPModelProto& model, SCIP* scip) {
   CHECK(scip != nullptr);
-  CHECK(response != nullptr);
-
   const double infinity = SCIPinfinity(scip);
+
   for (int v = 0; v < model.variable_size(); ++v) {
     const MPVariableProto& variable = model.variable(v);
     if (variable.lower_bound() >= infinity) {
-      response->set_status(MPSOLVER_MODEL_INVALID);
-      response->set_status_str(absl::StrFormat(
-          "Variable %i's lower bound is considered +infinity", v));
-      return true;
+      return absl::StrFormat(
+          "Variable %i's lower bound is considered +infinity", v);
     }
     if (variable.upper_bound() <= -infinity) {
-      response->set_status(MPSOLVER_MODEL_INVALID);
-      response->set_status_str(absl::StrFormat(
-          "Variable %i's upper bound is considered -infinity", v));
-      return true;
+      return absl::StrFormat(
+          "Variable %i's upper bound is considered -infinity", v);
     }
     const double coeff = variable.objective_coefficient();
     if (coeff >= infinity || coeff <= -infinity) {
-      response->set_status(MPSOLVER_MODEL_INVALID);
-      response->set_status_str(absl::StrFormat(
-          "Variable %i's objective coefficient is considered infinite", v));
-      return true;
+      return absl::StrFormat(
+          "Variable %i's objective coefficient is considered infinite", v);
+    }
+  }
+
+  for (int c = 0; c < model.constraint_size(); ++c) {
+    const MPConstraintProto& cst = model.constraint(c);
+    if (cst.lower_bound() >= infinity) {
+      return absl::StrFormat(
+          "Constraint %d's lower_bound is considered +infinity", c);
+    }
+    if (cst.upper_bound() <= -infinity) {
+      return absl::StrFormat(
+          "Constraint %d's upper_bound is considered -infinity", c);
+    }
+    for (int i = 0; i < cst.coefficient_size(); ++i) {
+      if (std::abs(cst.coefficient(i)) >= infinity) {
+        return absl::StrFormat(
+            "Constraint %d's coefficient #%d is considered infinite", c, i);
+      }
+    }
+  }
+
+  const MPQuadraticObjective& quad_obj = model.quadratic_objective();
+  for (int i = 0; i < quad_obj.coefficient_size(); ++i) {
+    if (std::abs(quad_obj.coefficient(i)) >= infinity) {
+      return absl::StrFormat(
+          "Quadratic objective term #%d's coefficient is considered infinite",
+          i);
     }
   }
 
@@ -635,24 +656,19 @@ bool MPModelIsInvalidForScip(const MPModelProto& model, SCIP* scip,
     for (int i = 0; i < model.solution_hint().var_value_size(); ++i) {
       const double value = model.solution_hint().var_value(i);
       if (value >= infinity || value <= -infinity) {
-        response->set_status(MPSOLVER_MODEL_INVALID);
-        response->set_status_str(absl::StrFormat(
+        return absl::StrFormat(
             "Variable %i's solution hint is considered infinite",
-            model.solution_hint().var_index(i)));
-        return true;
+            model.solution_hint().var_index(i));
       }
     }
   }
 
   if (model.objective_offset() >= infinity ||
       model.objective_offset() <= -infinity) {
-    response->set_status(MPSOLVER_MODEL_INVALID);
-    response->set_status_str(
-        "Model's objective offset is considered infinite.");
-    return true;
+    return "Model's objective offset is considered infinite.";
   }
 
-  return false;
+  return "";
 }
 }  // namespace
 
@@ -692,7 +708,13 @@ util::StatusOr<MPSolutionResponse> ScipSolveProto(
 
   RETURN_IF_SCIP_ERROR(SCIPcreate(&scip));
   RETURN_IF_SCIP_ERROR(SCIPincludeDefaultPlugins(scip));
-  if (MPModelIsInvalidForScip(model, scip, &response)) return response;
+  const std::string scip_model_invalid_error =
+      FindErrorInMPModelForScip(model, scip);
+  if (!scip_model_invalid_error.empty()) {
+    response.set_status(MPSOLVER_MODEL_INVALID);
+    response.set_status_str(scip_model_invalid_error);
+    return response;
+  }
 
   const auto parameters_status = ScipSetSolverSpecificParameters(
       request.solver_specific_parameters(), scip);
