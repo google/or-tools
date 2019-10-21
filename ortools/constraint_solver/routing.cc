@@ -4128,8 +4128,12 @@ void RoutingModel::CreateNeighborhoodOperators(
            vehicle_start_class_callback_, pickup_delivery_pairs_)});
   const auto arc_cost_for_path_start =
       [this](int64 before_node, int64 after_node, int64 start_index) {
-        return GetArcCostForVehicle(before_node, after_node,
-                                    index_to_vehicle_[start_index]);
+        const int vehicle = index_to_vehicle_[start_index];
+        const int64 arc_cost =
+            GetArcCostForVehicle(before_node, after_node, vehicle);
+        return (before_node != start_index || IsEnd(after_node))
+                   ? arc_cost
+                   : CapSub(arc_cost, GetFixedCostOfVehicle(vehicle));
       };
   local_search_operators_[RELOCATE_EXPENSIVE_CHAIN] =
       solver_->RevAlloc(new RelocateExpensiveChain(
@@ -4178,6 +4182,7 @@ void RoutingModel::CreateNeighborhoodOperators(
 
 LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
     const RoutingSearchParameters& search_parameters) const {
+  std::vector<LocalSearchOperator*> operator_groups;
   std::vector<LocalSearchOperator*> operators = extra_operators_;
   if (!pickup_delivery_pairs_.empty()) {
     CP_ROUTING_PUSH_OPERATOR(RELOCATE_PAIR, relocate_pair, operators);
@@ -4239,8 +4244,10 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
     CP_ROUTING_PUSH_OPERATOR(EXTENDED_SWAP_ACTIVE, extended_swap_active,
                              operators);
   }
-  // TODO(user): move the following operators to a second local search
-  // loop.
+  operator_groups.push_back(solver_->ConcatenateOperators(operators));
+
+  // Second local search loop: Expensive LNS operators.
+  operators.clear();
   if (local_search_metaheuristic != LocalSearchMetaheuristic::TABU_SEARCH &&
       local_search_metaheuristic !=
           LocalSearchMetaheuristic::GENERIC_TABU_SEARCH &&
@@ -4260,7 +4267,9 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
   if (!disjunctions_.empty()) {
     CP_ROUTING_PUSH_OPERATOR(INACTIVE_LNS, inactive_lns, operators);
   }
-  return solver_->ConcatenateOperators(operators);
+  operator_groups.push_back(solver_->ConcatenateOperators(operators));
+
+  return solver_->ConcatenateOperators(operator_groups);
 }
 
 #undef CP_ROUTING_PUSH_OPERATOR
@@ -4579,13 +4588,14 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
       solver_->MakePhase(nexts_, Solver::CHOOSE_PATH, eval);
   if (!search_parameters.use_unfiltered_first_solution_strategy()) {
     first_solution_filtered_decision_builders_
-        [FirstSolutionStrategy::PATH_CHEAPEST_ARC] = solver_->RevAlloc(
-            new EvaluatorCheapestAdditionFilteredDecisionBuilder(
-                this,
-                [this](int64 i, int64 j) {
-                  return GetArcCostForFirstSolution(i, j);
-                },
-                GetOrCreateFeasibilityFilters()));
+        [FirstSolutionStrategy::PATH_CHEAPEST_ARC] =
+            solver_->RevAlloc(new IntVarFilteredDecisionBuilder(
+                absl::make_unique<EvaluatorCheapestAdditionFilteredHeuristic>(
+                    this,
+                    [this](int64 i, int64 j) {
+                      return GetArcCostForFirstSolution(i, j);
+                    },
+                    GetOrCreateFeasibilityFilters())));
     first_solution_decision_builders_
         [FirstSolutionStrategy::PATH_CHEAPEST_ARC] =
             solver_->Try(first_solution_filtered_decision_builders_
@@ -4603,9 +4613,10 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
           solver_->MakePhase(nexts_, Solver::CHOOSE_PATH, comp);
   if (!search_parameters.use_unfiltered_first_solution_strategy()) {
     first_solution_filtered_decision_builders_
-        [FirstSolutionStrategy::PATH_MOST_CONSTRAINED_ARC] = solver_->RevAlloc(
-            new ComparatorCheapestAdditionFilteredDecisionBuilder(
-                this, comp, GetOrCreateFeasibilityFilters()));
+        [FirstSolutionStrategy::PATH_MOST_CONSTRAINED_ARC] =
+            solver_->RevAlloc(new IntVarFilteredDecisionBuilder(
+                absl::make_unique<ComparatorCheapestAdditionFilteredHeuristic>(
+                    this, comp, GetOrCreateFeasibilityFilters())));
     first_solution_decision_builders_
         [FirstSolutionStrategy::PATH_MOST_CONSTRAINED_ARC] = solver_->Try(
             first_solution_filtered_decision_builders_
@@ -4652,17 +4663,22 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
                            [FirstSolutionStrategy::BEST_INSERTION],
                        finalize);
   // Global cheapest insertion
+  GlobalCheapestInsertionFilteredHeuristic::GlobalCheapestInsertionParameters
+      gci_parameters = {
+          /* is_sequential */ false,
+          search_parameters.cheapest_insertion_farthest_seeds_ratio(),
+          search_parameters.cheapest_insertion_neighbors_ratio(),
+          /* use_neighbors_ratio_for_initialization */ false};
   first_solution_filtered_decision_builders_
       [FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION] =
-          solver_->RevAlloc(new GlobalCheapestInsertionFilteredDecisionBuilder(
-              this,
-              [this](int64 i, int64 j, int64 vehicle) {
-                return GetArcCostForVehicle(i, j, vehicle);
-              },
-              [this](int64 i) { return UnperformedPenaltyOrValue(0, i); },
-              GetOrCreateFeasibilityFilters(), /* is_sequential */ false,
-              search_parameters.cheapest_insertion_farthest_seeds_ratio(),
-              search_parameters.cheapest_insertion_neighbors_ratio()));
+          solver_->RevAlloc(new IntVarFilteredDecisionBuilder(
+              absl::make_unique<GlobalCheapestInsertionFilteredHeuristic>(
+                  this,
+                  [this](int64 i, int64 j, int64 vehicle) {
+                    return GetArcCostForVehicle(i, j, vehicle);
+                  },
+                  [this](int64 i) { return UnperformedPenaltyOrValue(0, i); },
+                  GetOrCreateFeasibilityFilters(), gci_parameters)));
   first_solution_decision_builders_
       [FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION] =
           solver_->Try(first_solution_filtered_decision_builders_
@@ -4671,17 +4687,17 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
                            [FirstSolutionStrategy::BEST_INSERTION]);
 
   // Sequential global cheapest insertion
+  gci_parameters.is_sequential = true;
   first_solution_filtered_decision_builders_
       [FirstSolutionStrategy::SEQUENTIAL_CHEAPEST_INSERTION] =
-          solver_->RevAlloc(new GlobalCheapestInsertionFilteredDecisionBuilder(
-              this,
-              [this](int64 i, int64 j, int64 vehicle) {
-                return GetArcCostForVehicle(i, j, vehicle);
-              },
-              [this](int64 i) { return UnperformedPenaltyOrValue(0, i); },
-              GetOrCreateFeasibilityFilters(), /* is_sequential */ true,
-              search_parameters.cheapest_insertion_farthest_seeds_ratio(),
-              search_parameters.cheapest_insertion_neighbors_ratio()));
+          solver_->RevAlloc(new IntVarFilteredDecisionBuilder(
+              absl::make_unique<GlobalCheapestInsertionFilteredHeuristic>(
+                  this,
+                  [this](int64 i, int64 j, int64 vehicle) {
+                    return GetArcCostForVehicle(i, j, vehicle);
+                  },
+                  [this](int64 i) { return UnperformedPenaltyOrValue(0, i); },
+                  GetOrCreateFeasibilityFilters(), gci_parameters)));
   first_solution_decision_builders_
       [FirstSolutionStrategy::SEQUENTIAL_CHEAPEST_INSERTION] = solver_->Try(
           first_solution_filtered_decision_builders_
@@ -4692,12 +4708,13 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
   // Local cheapest insertion
   first_solution_filtered_decision_builders_
       [FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION] =
-          solver_->RevAlloc(new LocalCheapestInsertionFilteredDecisionBuilder(
-              this,
-              [this](int64 i, int64 j, int64 vehicle) {
-                return GetArcCostForVehicle(i, j, vehicle);
-              },
-              GetOrCreateFeasibilityFilters()));
+          solver_->RevAlloc(new IntVarFilteredDecisionBuilder(
+              absl::make_unique<LocalCheapestInsertionFilteredHeuristic>(
+                  this,
+                  [this](int64 i, int64 j, int64 vehicle) {
+                    return GetArcCostForVehicle(i, j, vehicle);
+                  },
+                  GetOrCreateFeasibilityFilters())));
   first_solution_decision_builders_
       [FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION] =
           solver_->Try(first_solution_filtered_decision_builders_
@@ -4705,7 +4722,7 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
                        first_solution_decision_builders_
                            [FirstSolutionStrategy::BEST_INSERTION]);
   // Savings
-  SavingsFilteredDecisionBuilder::SavingsParameters savings_parameters;
+  SavingsFilteredHeuristic::SavingsParameters savings_parameters;
   savings_parameters.neighbors_ratio =
       search_parameters.savings_neighbors_ratio();
   savings_parameters.max_memory_usage_bytes =
@@ -4721,8 +4738,9 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
 
   if (search_parameters.savings_parallel_routes()) {
     IntVarFilteredDecisionBuilder* savings_db =
-        solver_->RevAlloc(new ParallelSavingsFilteredDecisionBuilder(
-            this, &manager_, savings_parameters, filters));
+        solver_->RevAlloc(new IntVarFilteredDecisionBuilder(
+            absl::make_unique<ParallelSavingsFilteredHeuristic>(
+                this, &manager_, savings_parameters, filters)));
     if (!search_parameters.use_unfiltered_first_solution_strategy()) {
       first_solution_filtered_decision_builders_
           [FirstSolutionStrategy::SAVINGS] = savings_db;
@@ -4730,14 +4748,15 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
 
     filters.push_back(MakeCPFeasibilityFilter(this));
     first_solution_decision_builders_[FirstSolutionStrategy::SAVINGS] =
-        solver_->Try(
-            savings_db,
-            solver_->RevAlloc(new ParallelSavingsFilteredDecisionBuilder(
-                this, &manager_, savings_parameters, filters)));
+        solver_->Try(savings_db,
+                     solver_->RevAlloc(new IntVarFilteredDecisionBuilder(
+                         absl::make_unique<ParallelSavingsFilteredHeuristic>(
+                             this, &manager_, savings_parameters, filters))));
   } else {
     IntVarFilteredDecisionBuilder* savings_db =
-        solver_->RevAlloc(new SequentialSavingsFilteredDecisionBuilder(
-            this, &manager_, savings_parameters, filters));
+        solver_->RevAlloc(new IntVarFilteredDecisionBuilder(
+            absl::make_unique<SequentialSavingsFilteredHeuristic>(
+                this, &manager_, savings_parameters, filters)));
     if (!search_parameters.use_unfiltered_first_solution_strategy()) {
       first_solution_filtered_decision_builders_
           [FirstSolutionStrategy::SAVINGS] = savings_db;
@@ -4745,10 +4764,10 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
 
     filters.push_back(MakeCPFeasibilityFilter(this));
     first_solution_decision_builders_[FirstSolutionStrategy::SAVINGS] =
-        solver_->Try(
-            savings_db,
-            solver_->RevAlloc(new SequentialSavingsFilteredDecisionBuilder(
-                this, &manager_, savings_parameters, filters)));
+        solver_->Try(savings_db,
+                     solver_->RevAlloc(new IntVarFilteredDecisionBuilder(
+                         absl::make_unique<SequentialSavingsFilteredHeuristic>(
+                             this, &manager_, savings_parameters, filters))));
   }
   // Sweep
   first_solution_decision_builders_[FirstSolutionStrategy::SWEEP] =
@@ -4761,19 +4780,24 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
           first_solution_decision_builders_[FirstSolutionStrategy::SWEEP]);
   // Christofides
   first_solution_decision_builders_[FirstSolutionStrategy::CHRISTOFIDES] =
-      solver_->RevAlloc(new ChristofidesFilteredDecisionBuilder(
-          this, GetOrCreateFeasibilityFilters()));
+      solver_->RevAlloc(new IntVarFilteredDecisionBuilder(
+          absl::make_unique<ChristofidesFilteredHeuristic>(
+              this, GetOrCreateFeasibilityFilters(),
+              search_parameters.christofides_use_minimum_matching())));
   // Automatic
   // TODO(user): make this smarter.
-  if (pickup_delivery_pairs_.empty()) {
-    first_solution_decision_builders_[FirstSolutionStrategy::AUTOMATIC] =
-        first_solution_decision_builders_
-            [FirstSolutionStrategy::PATH_CHEAPEST_ARC];
+  const bool has_precedences = std::any_of(
+      dimensions_.begin(), dimensions_.end(),
+      [](RoutingDimension* dim) { return !dim->GetNodePrecedences().empty(); });
+  if (pickup_delivery_pairs_.empty() && !has_precedences) {
+    automatic_first_solution_strategy_ =
+        FirstSolutionStrategy::PATH_CHEAPEST_ARC;
   } else {
-    first_solution_decision_builders_[FirstSolutionStrategy::AUTOMATIC] =
-        first_solution_decision_builders_
-            [FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION];
+    automatic_first_solution_strategy_ =
+        FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION;
   }
+  first_solution_decision_builders_[FirstSolutionStrategy::AUTOMATIC] =
+      first_solution_decision_builders_[automatic_first_solution_strategy_];
   first_solution_decision_builders_[FirstSolutionStrategy::UNSET] =
       first_solution_decision_builders_[FirstSolutionStrategy::AUTOMATIC];
 }
@@ -6513,6 +6537,12 @@ void RoutingDimension::SetBreakDistanceDurationOfVehicle(int64 distance,
   DCHECK_LT(vehicle, model_->vehicles());
   if (!break_constraints_are_initialized_) InitializeBreaks();
   vehicle_break_distance_duration_[vehicle].emplace_back(distance, duration);
+  // When a vehicle has breaks, if its start and end are fixed,
+  // then propagation keeps the cumuls min and max on its path feasible.
+  model_->AddVariableTargetToFinalizer(CumulVar(model_->End(vehicle)),
+                                       kint64min);
+  model_->AddVariableTargetToFinalizer(CumulVar(model_->Start(vehicle)),
+                                       kint64max);
 }
 
 const std::vector<std::pair<int64, int64>>&

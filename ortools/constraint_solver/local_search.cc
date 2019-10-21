@@ -37,7 +37,6 @@
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/graph/hamiltonian_path.h"
 #include "ortools/util/saturated_arithmetic.h"
-#include "ortools/util/saturated_arithmetic.h"
 
 DEFINE_int32(cp_local_search_sync_frequency, 16,
              "Frequency of checks for better solutions in the solution pool.");
@@ -355,7 +354,8 @@ PathOperator::PathOperator(const std::vector<IntVar*>& next_vars,
       first_start_(true),
       start_empty_path_class_(std::move(start_empty_path_class)),
       skip_locally_optimal_paths_(skip_locally_optimal_paths),
-      optimal_paths_enabled_(false) {
+      optimal_paths_enabled_(false),
+      alternative_index_(next_vars.size(), -1) {
   DCHECK_GT(number_of_base_nodes, 0);
   if (!ignore_path_vars_) {
     AddVars(path_vars);
@@ -378,6 +378,7 @@ void PathOperator::Reset() { optimal_paths_.clear(); }
 void PathOperator::OnStart() {
   optimal_paths_enabled_ = false;
   InitializeBaseNodes();
+  InitializeAlternatives();
   OnNodeInitialization();
 }
 
@@ -748,6 +749,20 @@ void PathOperator::InitializeBaseNodes() {
     }
   }
   just_started_ = true;
+}
+
+void PathOperator::InitializeAlternatives() {
+  active_in_alternative_set_.resize(alternative_sets_.size(), -1);
+  for (int i = 0; i < alternative_sets_.size(); ++i) {
+    const int64 current_active = active_in_alternative_set_[i];
+    if (current_active >= 0 && !IsInactive(current_active)) continue;
+    for (int64 index : alternative_sets_[i]) {
+      if (!IsInactive(index)) {
+        active_in_alternative_set_[i] = index;
+        break;
+      }
+    }
+  }
 }
 
 bool PathOperator::OnSamePath(int64 node1, int64 node2) const {
@@ -1442,12 +1457,18 @@ class TSPLns : public PathOperator {
   bool MakeOneNeighbor() override;
 
  private:
+  void OnNodeInitialization() override {
+    // NOTE: Avoid any computations if there are no vars added.
+    has_long_enough_paths_ = Size() != 0;
+  }
+
   std::vector<std::vector<int64>> cost_;
   HamiltonianPathSolver<int64, std::vector<std::vector<int64>>>
       hamiltonian_path_solver_;
   Solver::IndexEvaluator3 evaluator_;
   const int tsp_size_;
   ACMRandom rand_;
+  bool has_long_enough_paths_;
 };
 
 TSPLns::TSPLns(const std::vector<IntVar*>& vars,
@@ -1457,7 +1478,8 @@ TSPLns::TSPLns(const std::vector<IntVar*>& vars,
       hamiltonian_path_solver_(cost_),
       evaluator_(std::move(evaluator)),
       tsp_size_(tsp_size),
-      rand_(ACMRandom::HostnamePidTimeSeed()) {
+      rand_(ACMRandom::HostnamePidTimeSeed()),
+      has_long_enough_paths_(true) {
   CHECK_GE(tsp_size_, 0);
   cost_.resize(tsp_size_);
   for (int i = 0; i < tsp_size_; ++i) {
@@ -1466,7 +1488,8 @@ TSPLns::TSPLns(const std::vector<IntVar*>& vars,
 }
 
 bool TSPLns::MakeOneNeighbor() {
-  while (Size() != 0) {
+  while (has_long_enough_paths_) {
+    has_long_enough_paths_ = false;
     if (PathOperator::MakeOneNeighbor()) {
       return true;
     }
@@ -1487,6 +1510,7 @@ bool TSPLns::MakeNeighbor() {
   if (nodes.size() <= tsp_size_) {
     return false;
   }
+  has_long_enough_paths_ = true;
   // Randomly select break nodes (final nodes of a meta-node, after which
   // an arc is relaxed.
   absl::flat_hash_set<int64> breaks_set;
@@ -2729,6 +2753,82 @@ IntVarLocalSearchFilter* Solver::MakeSumObjectiveFilter(
     Solver::LocalSearchFilterBound filter_enum) {
   return RevAlloc(new TernaryObjectiveFilter(vars, secondary_vars,
                                              std::move(values), filter_enum));
+}
+
+LocalSearchVariable LocalSearchState::AddVariable() {
+  DCHECK(state_is_valid_);
+  variable_bounds_.push_back({kint64min, kint64max});
+  variable_is_relaxed_.push_back(false);
+
+  const int variable_index = variable_bounds_.size() - 1;
+  return {this, variable_index};
+}
+
+void LocalSearchState::RelaxVariableBounds(int variable_index) {
+  DCHECK(state_is_valid_);
+  DCHECK(0 <= variable_index && variable_index < variable_is_relaxed_.size());
+  if (!variable_is_relaxed_[variable_index]) {
+    variable_is_relaxed_[variable_index] = true;
+    saved_variable_bounds_trail_.emplace_back(variable_bounds_[variable_index],
+                                              variable_index);
+    variable_bounds_[variable_index] = {kint64min, kint64max};
+  }
+}
+
+int64 LocalSearchState::VariableMin(int variable_index) const {
+  DCHECK(state_is_valid_);
+  DCHECK(0 <= variable_index && variable_index < variable_bounds_.size());
+  return variable_bounds_[variable_index].min;
+}
+
+int64 LocalSearchState::VariableMax(int variable_index) const {
+  DCHECK(state_is_valid_);
+  DCHECK(0 <= variable_index && variable_index < variable_bounds_.size());
+  return variable_bounds_[variable_index].max;
+}
+
+bool LocalSearchState::TightenVariableMin(int variable_index, int64 min_value) {
+  DCHECK(state_is_valid_);
+  DCHECK(variable_is_relaxed_[variable_index]);
+  DCHECK(0 <= variable_index && variable_index < variable_bounds_.size());
+  Bounds& bounds = variable_bounds_[variable_index];
+  if (bounds.max < min_value) {
+    state_is_valid_ = false;
+  }
+  bounds.min = std::max(bounds.min, min_value);
+  return state_is_valid_;
+}
+
+bool LocalSearchState::TightenVariableMax(int variable_index, int64 max_value) {
+  DCHECK(state_is_valid_);
+  DCHECK(variable_is_relaxed_[variable_index]);
+  DCHECK(0 <= variable_index && variable_index < variable_bounds_.size());
+  Bounds& bounds = variable_bounds_[variable_index];
+  if (bounds.min > max_value) {
+    state_is_valid_ = false;
+  }
+  bounds.max = std::min(bounds.max, max_value);
+  return state_is_valid_;
+}
+
+// TODO(user): When the class has more users, find a threshold ratio of
+// saved/total variables under which a sparse clear would be more efficient
+// for both Commit() and Revert().
+void LocalSearchState::Commit() {
+  DCHECK(state_is_valid_);
+  saved_variable_bounds_trail_.clear();
+  variable_is_relaxed_.assign(variable_is_relaxed_.size(), false);
+}
+
+void LocalSearchState::Revert() {
+  for (const auto [variable_bounds, variable_index] :
+       saved_variable_bounds_trail_) {
+    DCHECK(variable_is_relaxed_[variable_index]);
+    variable_bounds_[variable_index] = variable_bounds;
+  }
+  saved_variable_bounds_trail_.clear();
+  variable_is_relaxed_.assign(variable_is_relaxed_.size(), false);
+  state_is_valid_ = true;
 }
 
 // ----- LocalSearchProfiler -----

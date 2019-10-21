@@ -503,7 +503,7 @@ template <class Var, class Element, class Proto, class Container>
 void RealLoad(const AssignmentProto& assignment_proto,
               Container* const container,
               int (AssignmentProto::*GetSize)() const,
-              const Proto& (AssignmentProto::*GetElem)(int)const) {
+              const Proto& (AssignmentProto::*GetElem)(int) const) {
   bool fast_load = (container->Size() == (assignment_proto.*GetSize)());
   for (int i = 0; fast_load && i < (assignment_proto.*GetSize)(); ++i) {
     Element* const element = container->MutableElement(i);

@@ -77,6 +77,10 @@ message RoutingSearchParameters {
   // considered.
   double cheapest_insertion_neighbors_ratio = 21;
 
+  // If true use minimum matching instead of minimal matching in the
+  // Christofides algorithm.
+  bool christofides_use_minimum_matching = 30;
+
   // Local search neighborhood operators used to build a solutions neighborhood.
   // Next ID: 27
   message LocalSearchNeighborhoodOperators {

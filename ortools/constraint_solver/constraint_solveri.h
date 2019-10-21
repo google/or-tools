@@ -1123,7 +1123,7 @@ class SequenceVarLocalSearchOperator
  protected:
   friend class SequenceVarLocalSearchHandler;
 
-  std::vector<std::vector<int> > backward_values_;
+  std::vector<std::vector<int>> backward_values_;
 };
 
 inline void SequenceVarLocalSearchHandler::AddToAssignment(
@@ -1284,17 +1284,16 @@ class PathOperator : public IntVarLocalSearchOperator {
   // TODO(user): Make the following methods protected.
   bool SkipUnchanged(int index) const override;
 
-  /// Returns the index of the node after the node of index node_index in the
-  /// current assignment.
-  int64 Next(int64 node_index) const {
-    DCHECK(!IsPathEnd(node_index));
-    return Value(node_index);
+  /// Returns the node after node in the current delta.
+  int64 Next(int64 node) const {
+    DCHECK(!IsPathEnd(node));
+    return Value(node);
   }
 
-  /// Returns the index of the path to which the node of index node_index
-  /// belongs in the current assignment.
-  int64 Path(int64 node_index) const {
-    return ignore_path_vars_ ? 0LL : Value(node_index + number_of_nexts_);
+  /// Returns the index of the path to which node belongs in the current delta.
+  /// Only returns a valid value if path variables are taken into account.
+  int64 Path(int64 node) const {
+    return ignore_path_vars_ ? 0LL : Value(node + number_of_nexts_);
   }
 
   /// Number of next variables.
@@ -1304,14 +1303,13 @@ class PathOperator : public IntVarLocalSearchOperator {
   /// This method should not be overridden. Override MakeNeighbor() instead.
   bool MakeOneNeighbor() override;
 
-  /// Returns the index of the variable corresponding to the ith base node.
+  /// Returns the ith base node of the operator.
   int64 BaseNode(int i) const { return base_nodes_[i]; }
-  /// Returns the index of the variable corresponding to the current path
-  /// of the ith base node.
+  /// Returns the start node of the ith base node.
   int64 StartNode(int i) const { return path_starts_[base_paths_[i]]; }
   /// Returns the vector of path start nodes.
   const std::vector<int64>& path_starts() const { return path_starts_; }
-  /// Returns the class of the current path of the ith base node.
+  /// Returns the class of the path of the ith base node.
   int PathClass(int i) const {
     return start_empty_path_class_ != nullptr
                ? start_empty_path_class_(StartNode(i))
@@ -1346,13 +1344,13 @@ class PathOperator : public IntVarLocalSearchOperator {
     next_base_to_increment_ = base_index;
   }
 
-  int64 OldNext(int64 node_index) const {
-    DCHECK(!IsPathEnd(node_index));
-    return OldValue(node_index);
+  int64 OldNext(int64 node) const {
+    DCHECK(!IsPathEnd(node));
+    return OldValue(node);
   }
 
-  int64 OldPath(int64 node_index) const {
-    return ignore_path_vars_ ? 0LL : OldValue(node_index + number_of_nexts_);
+  int64 OldPath(int64 node) const {
+    return ignore_path_vars_ ? 0LL : OldValue(node + number_of_nexts_);
   }
 
   /// Moves the chain starting after the node before_chain and ending at the
@@ -1363,10 +1361,13 @@ class PathOperator : public IntVarLocalSearchOperator {
   /// after_chain
   bool ReverseChain(int64 before_chain, int64 after_chain, int64* chain_last);
 
+  /// Insert the inactive node after destination.
   bool MakeActive(int64 node, int64 destination);
+  /// Makes the nodes on the chain starting after before_chain and ending at
+  /// chain_end inactive.
   bool MakeChainInactive(int64 before_chain, int64 chain_end);
 
-  /// Sets the to to be the node after from
+  /// Sets 'to' to be the node after 'from' on the given path.
   void SetNext(int64 from, int64 to, int64 path) {
     DCHECK_LT(from, number_of_nexts_);
     SetValue(from, to);
@@ -1376,20 +1377,68 @@ class PathOperator : public IntVarLocalSearchOperator {
     }
   }
 
-  /// Returns true if i is the last node on the path; defined by the fact that
-  /// i outside the range of the variable array
-  bool IsPathEnd(int64 i) const { return i >= number_of_nexts_; }
+  /// Returns true if node is the last node on the path; defined by the fact
+  /// that node is outside the range of the variable array.
+  bool IsPathEnd(int64 node) const { return node >= number_of_nexts_; }
 
-  /// Returns true if node is inactive
-  bool IsInactive(int64 i) const { return !IsPathEnd(i) && inactives_[i]; }
+  /// Returns true if node is inactive.
+  bool IsInactive(int64 node) const {
+    return !IsPathEnd(node) && inactives_[node];
+  }
 
-  /// Returns true if operator needs to restart its initial position at each
+  /// Returns true if the operator needs to restart its initial position at each
   /// call to Start()
   virtual bool InitPosition() const { return false; }
   /// Reset the position of the operator to its position when Start() was last
   /// called; this can be used to let an operator iterate more than once over
   /// the paths.
   void ResetPosition() { just_started_ = true; }
+
+  /// Handling node alternatives.
+  /// Adds a set of node alternatives to the neighborhood. No node can be in
+  /// two altrnatives.
+  int AddAlternativeSet(const std::vector<int64>& alternative_set) {
+    const int alternative = alternative_sets_.size();
+    for (int64 node : alternative_set) {
+      DCHECK_EQ(-1, alternative_index_[node]);
+      alternative_index_[node] = alternative;
+    }
+    alternative_sets_.push_back(alternative_set);
+    sibling_alternative_.push_back(-1);
+    return alternative;
+  }
+#ifndef SWIG
+  /// Adds all sets of node alternatives of a vector of alternative pairs. No
+  /// node can be in two altrnatives.
+  void AddPairAlternativeSets(
+      const std::vector<std::pair<std::vector<int64>, std::vector<int64>>>&
+          pair_alternative_sets) {
+    for (const auto& pair_alternative_set : pair_alternative_sets) {
+      const int alternative = AddAlternativeSet(pair_alternative_set.first);
+      sibling_alternative_.back() = alternative + 1;
+      AddAlternativeSet(pair_alternative_set.second);
+    }
+  }
+#endif  // SWIG
+  /// Returns the active node in the given alternative set.
+  int64 GetActiveInAlternativeSet(int alternative_index) const {
+    return alternative_index >= 0
+               ? active_in_alternative_set_[alternative_index]
+               : -1;
+  }
+  /// Returns the active node in the alternative set of the given node.
+  int64 GetActiveAlternativeNode(int node) const {
+    return GetActiveInAlternativeSet(alternative_index_[node]);
+  }
+  /// Returns the active node in the alternative set of the sibling of the given
+  /// node.
+  int64 GetActiveAlternativeSibling(int node) const {
+    if (node >= alternative_index_.size()) return -1;
+    const int alternative = alternative_index_[node];
+    const int sibling_alternative =
+        alternative >= 0 ? sibling_alternative_[alternative] : -1;
+    return GetActiveInAlternativeSet(sibling_alternative);
+  }
 
   const int number_of_nexts_;
   const bool ignore_path_vars_;
@@ -1419,6 +1468,7 @@ class PathOperator : public IntVarLocalSearchOperator {
   void InitializePathStarts();
   void InitializeInactives();
   void InitializeBaseNodes();
+  void InitializeAlternatives();
   bool CheckChainValidity(int64 before_chain, int64 chain_end,
                           int64 exclude) const;
   void Synchronize();
@@ -1435,6 +1485,13 @@ class PathOperator : public IntVarLocalSearchOperator {
   bool optimal_paths_enabled_;
   std::vector<int> path_basis_;
   std::vector<bool> optimal_paths_;
+  /// Node alternative data.
+#ifndef SWIG
+  std::vector<std::vector<int64>> alternative_sets_;
+#endif  // SWIG
+  std::vector<int> alternative_index_;
+  std::vector<int64> active_in_alternative_set_;
+  std::vector<int> sibling_alternative_;
 };
 
 /// Simple PathOperator wrapper that also stores the current previous nodes,
@@ -1447,11 +1504,11 @@ class PathWithPreviousNodesOperator : public PathOperator {
       std::function<int(int64)> start_empty_path_class);
   ~PathWithPreviousNodesOperator() override {}
 
-  bool IsPathStart(int64 node_index) const { return prevs_[node_index] == -1; }
+  bool IsPathStart(int64 node) const { return prevs_[node] == -1; }
 
-  int64 Prev(int64 node_index) const {
-    DCHECK(!IsPathStart(node_index));
-    return prevs_[node_index];
+  int64 Prev(int64 node) const {
+    DCHECK(!IsPathStart(node));
+    return prevs_[node];
   }
 
   std::string DebugString() const override {
@@ -1486,6 +1543,74 @@ class ExtendedSwapActiveOperator;
 class MakeActiveAndRelocate;
 class RelocateAndMakeActiveOperator;
 class RelocateAndMakeInactiveOperator;
+
+#if !defined(SWIG)
+// A LocalSearchState is a container for variables with bounds that can be
+// relaxed and tightened, saved and restored. It represents the solution state
+// of a local search engine, and allows it to go from solution to solution by
+// relaxing some variables to form a new subproblem, then tightening those
+// variables to move to a new solution representation. That state may be saved
+// to an internal copy, or reverted to the last saved internal copy.
+// Tightening a variable's bounds may make its min larger than its max,
+// in that case, the tightening function will return false, and the state will
+// be marked as invalid. No other operations than Revert() can be called on an
+// invalid state: in particular, an invalid state cannot be saved.
+class LocalSearchVariable;
+class LocalSearchState {
+ public:
+  LocalSearchVariable AddVariable();
+  void Commit();
+  void Revert();
+  bool StateIsValid() const { return state_is_valid_; }
+
+ private:
+  friend class LocalSearchVariable;
+
+  struct Bounds {
+    int64 min;
+    int64 max;
+  };
+
+  void RelaxVariableBounds(int variable_index);
+  bool TightenVariableMin(int variable_index, int64 value);
+  bool TightenVariableMax(int variable_index, int64 value);
+  int64 VariableMin(int variable_index) const;
+  int64 VariableMax(int variable_index) const;
+
+  std::vector<Bounds> variable_bounds_;
+  std::vector<std::pair<Bounds, int>> saved_variable_bounds_trail_;
+  std::vector<bool> variable_is_relaxed_;
+  bool state_is_valid_ = true;
+};
+
+// A LocalSearchVariable can only be created by a LocalSearchState, then it is
+// meant to be passed by copy. If at some point the duplication of
+// LocalSearchState pointers is too expensive, we could switch to index only,
+// and the user would have to know the relevant state. The present setup allows
+// to ensure that variable users will not misuse the state.
+class LocalSearchVariable {
+ public:
+  int64 Min() const { return state_->VariableMin(variable_index_); }
+  int64 Max() const { return state_->VariableMax(variable_index_); }
+  bool SetMin(int64 new_min) {
+    return state_->TightenVariableMin(variable_index_, new_min);
+  }
+  bool SetMax(int64 new_max) {
+    return state_->TightenVariableMax(variable_index_, new_max);
+  }
+  void Relax() { state_->RelaxVariableBounds(variable_index_); }
+
+ private:
+  // Only LocalSearchState can construct LocalSearchVariables.
+  friend class LocalSearchState;
+
+  LocalSearchVariable(LocalSearchState* state, int variable_index)
+      : state_(state), variable_index_(variable_index) {}
+
+  LocalSearchState* const state_;
+  const int variable_index_;
+};
+#endif  // !defined(SWIG)
 
 /// Local Search Filters are used for fast neighbor pruning.
 /// Filtering a move is done in several phases:
@@ -2115,16 +2240,16 @@ class ArgumentHolder {
  private:
   std::string type_name_;
   absl::flat_hash_map<std::string, int64> integer_argument_;
-  absl::flat_hash_map<std::string, std::vector<int64> > integer_array_argument_;
+  absl::flat_hash_map<std::string, std::vector<int64>> integer_array_argument_;
   absl::flat_hash_map<std::string, IntTupleSet> matrix_argument_;
   absl::flat_hash_map<std::string, IntExpr*> integer_expression_argument_;
   absl::flat_hash_map<std::string, IntervalVar*> interval_argument_;
   absl::flat_hash_map<std::string, SequenceVar*> sequence_argument_;
-  absl::flat_hash_map<std::string, std::vector<IntVar*> >
+  absl::flat_hash_map<std::string, std::vector<IntVar*>>
       integer_variable_array_argument_;
-  absl::flat_hash_map<std::string, std::vector<IntervalVar*> >
+  absl::flat_hash_map<std::string, std::vector<IntervalVar*>>
       interval_array_argument_;
-  absl::flat_hash_map<std::string, std::vector<SequenceVar*> >
+  absl::flat_hash_map<std::string, std::vector<SequenceVar*>>
       sequence_array_argument_;
 };
 

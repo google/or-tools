@@ -178,6 +178,7 @@
 #include "ortools/base/macros.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 #include "ortools/constraint_solver/routing_types.h"
@@ -194,6 +195,7 @@ namespace operations_research {
 
 class GlobalDimensionCumulOptimizer;
 class IntVarFilteredDecisionBuilder;
+class IntVarFilteredHeuristic;
 class LocalDimensionCumulOptimizer;
 class LocalSearchOperator;
 class RoutingDimension;
@@ -1217,6 +1219,11 @@ class RoutingModel {
       const RoutingSearchParameters& search_parameters) const;
   int64 GetNumberOfRejectsInFirstSolution(
       const RoutingSearchParameters& search_parameters) const;
+  /// Returns the automatic first solution strategy selected.
+  operations_research::FirstSolutionStrategy::Value
+  GetAutomaticFirstSolutionStrategy() const {
+    return automatic_first_solution_strategy_;
+  }
 
   /// Returns true if a vehicle/node matching problem is detected.
   bool IsMatchingModel() const;
@@ -1634,6 +1641,8 @@ class RoutingModel {
   std::vector<IntVarFilteredDecisionBuilder*>
       first_solution_filtered_decision_builders_;
   Solver::IndexEvaluator2 first_solution_evaluator_;
+  FirstSolutionStrategy::Value automatic_first_solution_strategy_ =
+      FirstSolutionStrategy::UNSET;
   std::vector<LocalSearchOperator*> local_search_operators_;
   std::vector<SearchMonitor*> monitors_;
   SolutionCollector* collect_assignments_ = nullptr;
@@ -2506,9 +2515,11 @@ DecisionBuilder* MakeSetValuesFromTargets(Solver* solver,
                                           std::vector<IntVar*> variables,
                                           std::vector<int64> targets);
 
-/// Decision builders building a solution using local search filters to evaluate
-/// its feasibility. This is very fast but can eventually fail when the solution
-/// is restored if filters did not detect all infeasiblities.
+#ifndef SWIG
+/// Decision builder building a solution using heuristics with local search
+/// filters to evaluate its feasibility. This is very fast but can eventually
+/// fail when the solution is restored if filters did not detect all
+/// infeasiblities.
 /// More details:
 /// Using local search filters to build a solution. The approach is pretty
 /// straight-forward: have a general assignment storing the current solution,
@@ -2518,26 +2529,59 @@ DecisionBuilder* MakeSetValuesFromTargets(Solver* solver,
 /// which avoids the lazy creation of internal hash_maps between variables
 /// and indices.
 
-/// Generic filter-based decision builder applied to IntVars.
+/// Generic filter-based decision builder using an IntVarFilteredHeuristic.
 // TODO(user): Eventually move this to the core CP solver library
 /// when the code is mature enough.
 class IntVarFilteredDecisionBuilder : public DecisionBuilder {
  public:
-  IntVarFilteredDecisionBuilder(Solver* solver,
-                                const std::vector<IntVar*>& vars,
-                                const std::vector<LocalSearchFilter*>& filters);
+  explicit IntVarFilteredDecisionBuilder(
+      std::unique_ptr<IntVarFilteredHeuristic> heuristic);
+
   ~IntVarFilteredDecisionBuilder() override {}
+
   Decision* Next(Solver* solver) override;
-  /// Virtual method to redefine to build a solution.
-  virtual bool BuildSolution() = 0;
+
+  std::string DebugString() const override;
+
+  /// Returns statistics from its underlying heuristic.
+  int64 number_of_decisions() const;
+  int64 number_of_rejects() const;
+
+ private:
+  const std::unique_ptr<IntVarFilteredHeuristic> heuristic_;
+};
+
+/// Generic filter-based heuristic applied to IntVars.
+// TODO(user): Remove one level of indirection by getting rid of
+// IntVarFilteredHeuristic and putting everything in the
+// RoutingFilteredHeuristic?
+// In this case IntVarFilteredDecisionBuilder would also have to be renamed to
+// RoutingFilteredDecisionBuilder as it would no longer be generic.
+// TODO(user): Remove the inheritance from BaseObject as it's no longer
+// needed.
+class IntVarFilteredHeuristic : public BaseObject {
+ public:
+  IntVarFilteredHeuristic(Solver* solver, const std::vector<IntVar*>& vars,
+                          const std::vector<LocalSearchFilter*>& filters);
+
+  ~IntVarFilteredHeuristic() override {}
+
+  /// Builds a solution. Returns the resulting assignment if a solution was
+  /// found, and nullptr otherwise.
+  Assignment* const BuildSolution();
+
   /// Returns statistics on search, number of decisions sent to filters, number
   /// of decisions rejected by filters.
   int64 number_of_decisions() const { return number_of_decisions_; }
   int64 number_of_rejects() const { return number_of_rejects_; }
 
+  std::string DebugString() const override { return "IntVarFilteredHeuristic"; }
+
  protected:
   /// Virtual method to initialize the solution.
   virtual bool InitializeSolution() { return true; }
+  /// Virtual method to redefine how to build a solution.
+  virtual bool BuildSolutionInternal() = 0;
   /// Commits the modifications to the current solution if these modifications
   /// are "filter-feasible", returns false otherwise; in any case discards
   /// all modifications.
@@ -2589,12 +2633,12 @@ class IntVarFilteredDecisionBuilder : public DecisionBuilder {
   int64 number_of_rejects_;
 };
 
-/// Filter-based decision builder dedicated to routing.
-class RoutingFilteredDecisionBuilder : public IntVarFilteredDecisionBuilder {
+/// Filter-based heuristic dedicated to routing.
+class RoutingFilteredHeuristic : public IntVarFilteredHeuristic {
  public:
-  RoutingFilteredDecisionBuilder(
-      RoutingModel* model, const std::vector<LocalSearchFilter*>& filters);
-  ~RoutingFilteredDecisionBuilder() override {}
+  RoutingFilteredHeuristic(RoutingModel* model,
+                           const std::vector<LocalSearchFilter*>& filters);
+  ~RoutingFilteredHeuristic() override {}
   RoutingModel* model() const { return model_; }
   /// Returns the end of the start chain of vehicle,
   int GetStartChainEnd(int vehicle) const { return start_chain_ends_[vehicle]; }
@@ -2608,6 +2652,8 @@ class RoutingFilteredDecisionBuilder : public IntVarFilteredDecisionBuilder {
 
  protected:
   bool StopSearch() override { return model_->CheckLimit(); }
+  virtual void SetVehicleIndex(int64 node, int vehicle) {}
+  virtual void ResetVehicleIndices() {}
 
  private:
   /// Initializes the current solution with empty or partial vehicle routes.
@@ -2618,15 +2664,14 @@ class RoutingFilteredDecisionBuilder : public IntVarFilteredDecisionBuilder {
   std::vector<int64> end_chain_starts_;
 };
 
-class CheapestInsertionFilteredDecisionBuilder
-    : public RoutingFilteredDecisionBuilder {
+class CheapestInsertionFilteredHeuristic : public RoutingFilteredHeuristic {
  public:
   /// Takes ownership of evaluator.
-  CheapestInsertionFilteredDecisionBuilder(
+  CheapestInsertionFilteredHeuristic(
       RoutingModel* model, std::function<int64(int64, int64, int64)> evaluator,
       std::function<int64(int64)> penalty_evaluator,
       const std::vector<LocalSearchFilter*>& filters);
-  ~CheapestInsertionFilteredDecisionBuilder() override {}
+  ~CheapestInsertionFilteredHeuristic() override {}
 
  protected:
   typedef std::pair<int64, int64> ValuedPosition;
@@ -2672,6 +2717,14 @@ class CheapestInsertionFilteredDecisionBuilder
   void AppendEvaluatedPositionsAfter(
       int64 node_to_insert, int64 start, int64 next_after_start, int64 vehicle,
       std::vector<ValuedPosition>* valued_positions);
+  /// Returns the cost of inserting 'node_to_insert' between 'insert_after' and
+  /// 'insert_before' on the 'vehicle', i.e.
+  /// Cost(insert_after-->node) + Cost(node-->insert_before)
+  /// - Cost (insert_after-->insert_before).
+  int64 GetInsertionCostForNodeAtPosition(int64 node_to_insert,
+                                          int64 insert_after,
+                                          int64 insert_before,
+                                          int vehicle) const;
   /// Returns the cost of unperforming node 'node_to_insert'. Returns kint64max
   /// if penalty callback is null or if the node cannot be unperformed.
   int64 GetUnperformedValue(int64 node_to_insert) const;
@@ -2687,19 +2740,34 @@ class CheapestInsertionFilteredDecisionBuilder
 /// minimizes insertion cost. If a non null penalty evaluator is passed, making
 /// nodes unperformed is also taken into account with the corresponding penalty
 /// cost.
-class GlobalCheapestInsertionFilteredDecisionBuilder
-    : public CheapestInsertionFilteredDecisionBuilder {
+class GlobalCheapestInsertionFilteredHeuristic
+    : public CheapestInsertionFilteredHeuristic {
  public:
+  struct GlobalCheapestInsertionParameters {
+    /// Whether the routes are constructed sequentially or in parallel.
+    bool is_sequential;
+    /// The ratio of routes on which to insert farthest nodes as seeds before
+    /// starting the cheapest insertion.
+    double farthest_seeds_ratio;
+    /// If neighbors_ratio < 1 then for each node only this ratio of its
+    /// neighbors leading to the smallest arc costs are considered.
+    double neighbors_ratio;
+    /// If true, only closest neighbors (see neighbors_ratio) are considered
+    /// as insertion positions during initialization. Otherwise, all possible
+    /// insertion positions are considered.
+    bool use_neighbors_ratio_for_initialization;
+  };
+
   /// Takes ownership of evaluators.
-  GlobalCheapestInsertionFilteredDecisionBuilder(
+  GlobalCheapestInsertionFilteredHeuristic(
       RoutingModel* model, std::function<int64(int64, int64, int64)> evaluator,
       std::function<int64(int64)> penalty_evaluator,
-      const std::vector<LocalSearchFilter*>& filters, bool is_sequential,
-      double farthest_seeds_ratio, double neighbors_ratio);
-  ~GlobalCheapestInsertionFilteredDecisionBuilder() override {}
-  bool BuildSolution() override;
+      const std::vector<LocalSearchFilter*>& filters,
+      GlobalCheapestInsertionParameters parameters);
+  ~GlobalCheapestInsertionFilteredHeuristic() override {}
+  bool BuildSolutionInternal() override;
   std::string DebugString() const override {
-    return "GlobalCheapestInsertionFilteredDecisionBuilder";
+    return "GlobalCheapestInsertionFilteredHeuristic";
   }
 
  private:
@@ -2765,6 +2833,16 @@ class GlobalCheapestInsertionFilteredDecisionBuilder
       AdjustablePriorityQueue<PairEntry>* priority_queue,
       std::vector<PairEntries>* pickup_to_entries,
       std::vector<PairEntries>* delivery_to_entries);
+  /// Adds insertion entries performing the 'pickup' and 'delivery', and updates
+  /// 'priority_queue', pickup_to_entries and delivery_to_entries accordingly.
+  /// Based on gci_params_.use_neighbors_ratio_for_initialization, either all
+  /// contained nodes are considered as insertion positions, or only the
+  /// closest neighbors of 'pickup' and/or 'delivery'.
+  void InitializeInsertionEntriesPerformingPair(
+      int64 pickup, int64 delivery, int64 penalty,
+      AdjustablePriorityQueue<PairEntry>* priority_queue,
+      std::vector<PairEntries>* pickup_to_entries,
+      std::vector<PairEntries>* delivery_to_entries);
   /// Updates all pair entries inserting a node after node "insert_after" and
   /// updates the priority queue accordingly.
   void UpdatePairPositions(int vehicle, int64 insert_after,
@@ -2801,6 +2879,15 @@ class GlobalCheapestInsertionFilteredDecisionBuilder
                            AdjustablePriorityQueue<NodeEntry>* priority_queue,
                            std::vector<NodeEntries>* position_to_node_entries,
                            const std::vector<int>& vehicles);
+  /// Adds insertion entries performing 'node', and updates 'priority_queue' and
+  /// position_to_node_entries accordingly.
+  /// Based on gci_params_.use_neighbors_ratio_for_initialization, either all
+  /// contained nodes are considered as insertion positions, or only the
+  /// closest neighbors of 'node'.
+  void InitializeInsertionEntriesPerformingNode(
+      int64 node, int64 penalty, const std::vector<int>& vehicles,
+      AdjustablePriorityQueue<NodeEntry>* priority_queue,
+      std::vector<NodeEntries>* position_to_node_entries);
   /// Updates all node entries inserting a node after node "insert_after" and
   /// updates the priority queue accordingly.
   void UpdatePositions(const std::vector<int>& nodes, int vehicle,
@@ -2828,8 +2915,8 @@ class GlobalCheapestInsertionFilteredDecisionBuilder
 
   /// Returns a reference to the set of pickup neighbors of node_index.
   const std::vector<int64>& GetPickupNeighborsOfNodeForCostClass(
-      int cost_class, int64 node_index) {
-    if (neighbors_ratio_ == 1) {
+      int cost_class, int64 node_index) const {
+    if (gci_params_.neighbors_ratio == 1) {
       return pickup_nodes_;
     }
     return node_index_to_pickup_neighbors_by_cost_class_[node_index][cost_class]
@@ -2838,8 +2925,8 @@ class GlobalCheapestInsertionFilteredDecisionBuilder
 
   /// Same as above for delivery neighbors.
   const std::vector<int64>& GetDeliveryNeighborsOfNodeForCostClass(
-      int cost_class, int64 node_index) {
-    if (neighbors_ratio_ == 1) {
+      int cost_class, int64 node_index) const {
+    if (gci_params_.neighbors_ratio == 1) {
       return delivery_nodes_;
     }
     return node_index_to_delivery_neighbors_by_cost_class_
@@ -2847,9 +2934,40 @@ class GlobalCheapestInsertionFilteredDecisionBuilder
             ->PositionsSetAtLeastOnce();
   }
 
-  const bool is_sequential_;
-  const double farthest_seeds_ratio_;
-  const double neighbors_ratio_;
+  /// Same as above for non pickup/delivery neighbors.
+  const std::vector<int64>& GetSingleNeighborsOfNodeForCostClass(
+      int cost_class, int64 node_index) const {
+    if (gci_params_.neighbors_ratio == 1) {
+      return single_nodes_;
+    }
+    return node_index_to_single_neighbors_by_cost_class_[node_index][cost_class]
+        ->PositionsSetAtLeastOnce();
+  }
+
+  /// Returns an iterator to the concatenation of all neighbors.
+  std::vector<const std::vector<int64>*> GetNeighborsOfNodeForCostClass(
+      int cost_class, int64 node_index) const {
+    return {&GetSingleNeighborsOfNodeForCostClass(cost_class, node_index),
+            &GetPickupNeighborsOfNodeForCostClass(cost_class, node_index),
+            &GetDeliveryNeighborsOfNodeForCostClass(cost_class, node_index)};
+  }
+
+  void ResetVehicleIndices() override {
+    node_index_to_vehicle_.assign(node_index_to_vehicle_.size(), -1);
+  }
+
+  void SetVehicleIndex(int64 node, int vehicle) override {
+    DCHECK_LT(node, node_index_to_vehicle_.size());
+    node_index_to_vehicle_[node] = vehicle;
+  }
+
+  /// Function that verifies node_index_to_vehicle_ is correctly filled for all
+  /// nodes given the current routes.
+  bool CheckVehicleIndices() const;
+
+  GlobalCheapestInsertionParameters gci_params_;
+  /// Stores the vehicle index of each node in the current assignment.
+  std::vector<int> node_index_to_vehicle_;
 
   // clang-format off
   std::vector<std::vector<std::unique_ptr<SparseBitset<int64> > > >
@@ -2861,8 +2979,9 @@ class GlobalCheapestInsertionFilteredDecisionBuilder
   // clang-format on
 
   /// When neighbors_ratio is 1, we don't compute the neighborhood members
-  /// above, and use the following sets in the code to avoid unnecessary
+  /// above, and use the following vectors in the code to avoid unnecessary
   /// computations and decrease the time and space complexities.
+  std::vector<int64> single_nodes_;
   std::vector<int64> pickup_nodes_;
   std::vector<int64> delivery_nodes_;
 };
@@ -2872,17 +2991,17 @@ class GlobalCheapestInsertionFilteredDecisionBuilder
 /// an arc-based cost callback. Node selected for insertion are considered in
 /// decreasing order of distance to the start/ends of the routes, i.e. farthest
 /// nodes are inserted first.
-class LocalCheapestInsertionFilteredDecisionBuilder
-    : public CheapestInsertionFilteredDecisionBuilder {
+class LocalCheapestInsertionFilteredHeuristic
+    : public CheapestInsertionFilteredHeuristic {
  public:
   /// Takes ownership of evaluator.
-  LocalCheapestInsertionFilteredDecisionBuilder(
+  LocalCheapestInsertionFilteredHeuristic(
       RoutingModel* model, std::function<int64(int64, int64, int64)> evaluator,
       const std::vector<LocalSearchFilter*>& filters);
-  ~LocalCheapestInsertionFilteredDecisionBuilder() override {}
-  bool BuildSolution() override;
+  ~LocalCheapestInsertionFilteredHeuristic() override {}
+  bool BuildSolutionInternal() override;
   std::string DebugString() const override {
-    return "LocalCheapestInsertionFilteredDecisionBuilder";
+    return "LocalCheapestInsertionFilteredHeuristic";
   }
 
  private:
@@ -2904,24 +3023,23 @@ class LocalCheapestInsertionFilteredDecisionBuilder
 
 /// Filtered-base decision builder based on the addition heuristic, extending
 /// a path from its start node with the cheapest arc.
-class CheapestAdditionFilteredDecisionBuilder
-    : public RoutingFilteredDecisionBuilder {
+class CheapestAdditionFilteredHeuristic : public RoutingFilteredHeuristic {
  public:
-  CheapestAdditionFilteredDecisionBuilder(
+  CheapestAdditionFilteredHeuristic(
       RoutingModel* model, const std::vector<LocalSearchFilter*>& filters);
-  ~CheapestAdditionFilteredDecisionBuilder() override {}
-  bool BuildSolution() override;
+  ~CheapestAdditionFilteredHeuristic() override {}
+  bool BuildSolutionInternal() override;
 
  private:
   class PartialRoutesAndLargeVehicleIndicesFirst {
    public:
     explicit PartialRoutesAndLargeVehicleIndicesFirst(
-        const CheapestAdditionFilteredDecisionBuilder& builder)
+        const CheapestAdditionFilteredHeuristic& builder)
         : builder_(builder) {}
     bool operator()(int vehicle1, int vehicle2) const;
 
    private:
-    const CheapestAdditionFilteredDecisionBuilder& builder_;
+    const CheapestAdditionFilteredHeuristic& builder_;
   };
   /// Returns a vector of possible next indices of node from an iterator.
   template <typename Iterator>
@@ -2943,18 +3061,18 @@ class CheapestAdditionFilteredDecisionBuilder
                                  const std::vector<int64>& successors) = 0;
 };
 
-/// A CheapestAdditionFilteredDecisionBuilder where the notion of 'cheapest arc'
+/// A CheapestAdditionFilteredHeuristic where the notion of 'cheapest arc'
 /// comes from an arc evaluator.
-class EvaluatorCheapestAdditionFilteredDecisionBuilder
-    : public CheapestAdditionFilteredDecisionBuilder {
+class EvaluatorCheapestAdditionFilteredHeuristic
+    : public CheapestAdditionFilteredHeuristic {
  public:
   /// Takes ownership of evaluator.
-  EvaluatorCheapestAdditionFilteredDecisionBuilder(
+  EvaluatorCheapestAdditionFilteredHeuristic(
       RoutingModel* model, std::function<int64(int64, int64)> evaluator,
       const std::vector<LocalSearchFilter*>& filters);
-  ~EvaluatorCheapestAdditionFilteredDecisionBuilder() override {}
+  ~EvaluatorCheapestAdditionFilteredHeuristic() override {}
   std::string DebugString() const override {
-    return "EvaluatorCheapestAdditionFilteredDecisionBuilder";
+    return "EvaluatorCheapestAdditionFilteredHeuristic";
   }
 
  private:
@@ -2966,18 +3084,18 @@ class EvaluatorCheapestAdditionFilteredDecisionBuilder
   std::function<int64(int64, int64)> evaluator_;
 };
 
-/// A CheapestAdditionFilteredDecisionBuilder where the notion of 'cheapest arc'
+/// A CheapestAdditionFilteredHeuristic where the notion of 'cheapest arc'
 /// comes from an arc comparator.
-class ComparatorCheapestAdditionFilteredDecisionBuilder
-    : public CheapestAdditionFilteredDecisionBuilder {
+class ComparatorCheapestAdditionFilteredHeuristic
+    : public CheapestAdditionFilteredHeuristic {
  public:
   /// Takes ownership of evaluator.
-  ComparatorCheapestAdditionFilteredDecisionBuilder(
+  ComparatorCheapestAdditionFilteredHeuristic(
       RoutingModel* model, Solver::VariableValueComparator comparator,
       const std::vector<LocalSearchFilter*>& filters);
-  ~ComparatorCheapestAdditionFilteredDecisionBuilder() override {}
+  ~ComparatorCheapestAdditionFilteredHeuristic() override {}
   std::string DebugString() const override {
-    return "ComparatorCheapestAdditionFilteredDecisionBuilder";
+    return "ComparatorCheapestAdditionFilteredHeuristic";
   }
 
  private:
@@ -2997,7 +3115,7 @@ class ComparatorCheapestAdditionFilteredDecisionBuilder
 /// then extended by selecting the nodes with best savings on both ends of the
 /// partial route. Cost is based on the arc cost function of the routing model
 /// and cost classes are taken into account.
-class SavingsFilteredDecisionBuilder : public RoutingFilteredDecisionBuilder {
+class SavingsFilteredHeuristic : public RoutingFilteredHeuristic {
  public:
   struct SavingsParameters {
     /// If neighbors_ratio < 1 then for each node only this ratio of its
@@ -3014,12 +3132,11 @@ class SavingsFilteredDecisionBuilder : public RoutingFilteredDecisionBuilder {
     double arc_coefficient = 1.0;
   };
 
-  SavingsFilteredDecisionBuilder(
-      RoutingModel* model, RoutingIndexManager* manager,
-      SavingsParameters parameters,
-      const std::vector<LocalSearchFilter*>& filters);
-  ~SavingsFilteredDecisionBuilder() override;
-  bool BuildSolution() override;
+  SavingsFilteredHeuristic(RoutingModel* model, RoutingIndexManager* manager,
+                           SavingsParameters parameters,
+                           const std::vector<LocalSearchFilter*>& filters);
+  ~SavingsFilteredHeuristic() override;
+  bool BuildSolutionInternal() override;
 
  protected:
   typedef std::pair</*saving*/ int64, /*saving index*/ int64> Saving;
@@ -3079,9 +3196,10 @@ class SavingsFilteredDecisionBuilder : public RoutingFilteredDecisionBuilder {
   /// Used when add_reverse_arcs_ is true.
   /// Given the vector of adjacency lists of a graph, adds symetric arcs not
   /// already in the graph to the adjacencies (i.e. if n1-->n2 is present and
-  /// not n2-->n1, then n1 is added to adjacency_matrix[n2]. clang-format off
-  void AddSymetricArcsToAdjacencyLists(
-      std::vector<std::vector<int64>>* adjacency_lists);
+  /// not n2-->n1, then n1 is added to adjacency_matrix[n2].
+  // clang-format off
+  void AddSymmetricArcsToAdjacencyLists(
+      std::vector<std::vector<int64> >* adjacency_lists);
   // clang-format on
 
   /// Computes saving values for node pairs (see MaxNumNeighborsPerNode()) and
@@ -3116,20 +3234,19 @@ class SavingsFilteredDecisionBuilder : public RoutingFilteredDecisionBuilder {
   const SavingsParameters savings_params_;
   int64 size_squared_;
 
-  friend class SavingsFilteredDecisionBuilderTestPeer;
+  friend class SavingsFilteredHeuristicTestPeer;
 };
 
-class SequentialSavingsFilteredDecisionBuilder
-    : public SavingsFilteredDecisionBuilder {
+class SequentialSavingsFilteredHeuristic : public SavingsFilteredHeuristic {
  public:
-  SequentialSavingsFilteredDecisionBuilder(
+  SequentialSavingsFilteredHeuristic(
       RoutingModel* model, RoutingIndexManager* manager,
       SavingsParameters parameters,
       const std::vector<LocalSearchFilter*>& filters)
-      : SavingsFilteredDecisionBuilder(model, manager, parameters, filters) {}
-  ~SequentialSavingsFilteredDecisionBuilder() override{};
+      : SavingsFilteredHeuristic(model, manager, parameters, filters) {}
+  ~SequentialSavingsFilteredHeuristic() override{};
   std::string DebugString() const override {
-    return "SequentialSavingsFilteredDecisionBuilder";
+    return "SequentialSavingsFilteredHeuristic";
   }
 
  private:
@@ -3141,17 +3258,16 @@ class SequentialSavingsFilteredDecisionBuilder
   double ExtraSavingsMemoryMultiplicativeFactor() const override { return 1.0; }
 };
 
-class ParallelSavingsFilteredDecisionBuilder
-    : public SavingsFilteredDecisionBuilder {
+class ParallelSavingsFilteredHeuristic : public SavingsFilteredHeuristic {
  public:
-  ParallelSavingsFilteredDecisionBuilder(
+  ParallelSavingsFilteredHeuristic(
       RoutingModel* model, RoutingIndexManager* manager,
       SavingsParameters parameters,
       const std::vector<LocalSearchFilter*>& filters)
-      : SavingsFilteredDecisionBuilder(model, manager, parameters, filters) {}
-  ~ParallelSavingsFilteredDecisionBuilder() override{};
+      : SavingsFilteredHeuristic(model, manager, parameters, filters) {}
+  ~ParallelSavingsFilteredHeuristic() override{};
   std::string DebugString() const override {
-    return "ParallelSavingsFilteredDecisionBuilder";
+    return "ParallelSavingsFilteredHeuristic";
   }
 
  private:
@@ -3189,17 +3305,21 @@ class ParallelSavingsFilteredDecisionBuilder
 /// to support any model by extending routes as much as possible following the
 /// path found by the heuristic, before starting a new route.
 
-class ChristofidesFilteredDecisionBuilder
-    : public RoutingFilteredDecisionBuilder {
+class ChristofidesFilteredHeuristic : public RoutingFilteredHeuristic {
  public:
-  ChristofidesFilteredDecisionBuilder(
-      RoutingModel* model, const std::vector<LocalSearchFilter*>& filters);
-  ~ChristofidesFilteredDecisionBuilder() override {}
-  bool BuildSolution() override;
+  ChristofidesFilteredHeuristic(RoutingModel* model,
+                                const std::vector<LocalSearchFilter*>& filters,
+                                bool use_minimum_matching);
+  ~ChristofidesFilteredHeuristic() override {}
+  bool BuildSolutionInternal() override;
   std::string DebugString() const override {
-    return "ChristofidesFilteredDecisionBuilder";
+    return "ChristofidesFilteredHeuristic";
   }
+
+ private:
+  const bool use_minimum_matching_;
 };
+#endif  // SWIG
 
 /// Attempts to solve the model using the cp-sat solver. As of 5/2019, will
 /// solve the TSP corresponding to the model if it has a single vehicle.
