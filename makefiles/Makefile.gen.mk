@@ -892,6 +892,7 @@ GRAPH_DEPS = \
  $(SRC_DIR)/ortools/graph/min_cost_flow.h \
  $(SRC_DIR)/ortools/graph/minimum_spanning_tree.h \
  $(SRC_DIR)/ortools/graph/one_tree_lower_bound.h \
+ $(SRC_DIR)/ortools/graph/perfect_matching.h \
  $(SRC_DIR)/ortools/graph/shortestpaths.h \
  $(SRC_DIR)/ortools/graph/strongly_connected_components.h \
  $(SRC_DIR)/ortools/graph/util.h \
@@ -907,6 +908,7 @@ GRAPH_LIB_OBJS = \
  $(OBJ_DIR)/graph/linear_assignment.$O \
  $(OBJ_DIR)/graph/max_flow.$O \
  $(OBJ_DIR)/graph/min_cost_flow.$O \
+ $(OBJ_DIR)/graph/perfect_matching.$O \
  $(OBJ_DIR)/graph/shortestpaths.$O \
  $(OBJ_DIR)/graph/util.$O \
  $(OBJ_DIR)/graph/flow_problem.pb.$O
@@ -974,6 +976,16 @@ objs/graph/min_cost_flow.$O: ortools/graph/min_cost_flow.cc \
  ortools/base/mathutil.h ortools/graph/graphs.h ortools/graph/max_flow.h \
  ortools/gen/ortools/graph/flow_problem.pb.h | $(OBJ_DIR)/graph
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sgraph$Smin_cost_flow.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Smin_cost_flow.$O
+
+objs/graph/perfect_matching.$O: ortools/graph/perfect_matching.cc \
+ ortools/graph/perfect_matching.h \
+ ortools/base/adjustable_priority_queue-inl.h \
+ ortools/base/adjustable_priority_queue.h ortools/base/basictypes.h \
+ ortools/base/integral_types.h ortools/base/logging.h \
+ ortools/base/macros.h ortools/base/int_type.h \
+ ortools/base/int_type_indexed_vector.h \
+ ortools/util/saturated_arithmetic.h ortools/util/bitset.h | $(OBJ_DIR)/graph
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sgraph$Sperfect_matching.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Sperfect_matching.$O
 
 objs/graph/shortestpaths.$O: ortools/graph/shortestpaths.cc \
  ortools/graph/shortestpaths.h ortools/base/integral_types.h \
@@ -1052,7 +1064,8 @@ objs/algorithms/find_graph_symmetries.$O: \
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Salgorithms$Sfind_graph_symmetries.cc $(OBJ_OUT)$(OBJ_DIR)$Salgorithms$Sfind_graph_symmetries.$O
 
 objs/algorithms/hungarian.$O: ortools/algorithms/hungarian.cc \
- ortools/algorithms/hungarian.h | $(OBJ_DIR)/algorithms
+ ortools/algorithms/hungarian.h ortools/base/logging.h \
+ ortools/base/integral_types.h ortools/base/macros.h | $(OBJ_DIR)/algorithms
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Salgorithms$Shungarian.cc $(OBJ_OUT)$(OBJ_DIR)$Salgorithms$Shungarian.$O
 
 objs/algorithms/knapsack_solver.$O: ortools/algorithms/knapsack_solver.cc \
@@ -3439,10 +3452,10 @@ objs/constraint_solver/routing.$O: ortools/constraint_solver/routing.cc \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
  ortools/util/sorted_interval_list.h ortools/util/tuple_set.h \
  ortools/constraint_solver/constraint_solveri.h ortools/util/vector_map.h \
+ ortools/gen/ortools/constraint_solver/routing_enums.pb.h \
  ortools/constraint_solver/routing_index_manager.h \
  ortools/constraint_solver/routing_types.h \
  ortools/gen/ortools/constraint_solver/routing_parameters.pb.h \
- ortools/gen/ortools/constraint_solver/routing_enums.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h ortools/glop/lp_solver.h \
  ortools/gen/ortools/glop/parameters.pb.h ortools/glop/preprocessor.h \
  ortools/glop/revised_simplex.h ortools/glop/basis_representation.h \
@@ -3496,10 +3509,10 @@ objs/constraint_solver/routing_breaks.$O: \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
  ortools/util/sorted_interval_list.h ortools/util/tuple_set.h \
  ortools/constraint_solver/constraint_solveri.h ortools/util/vector_map.h \
+ ortools/gen/ortools/constraint_solver/routing_enums.pb.h \
  ortools/constraint_solver/routing_index_manager.h \
  ortools/constraint_solver/routing_types.h \
  ortools/gen/ortools/constraint_solver/routing_parameters.pb.h \
- ortools/gen/ortools/constraint_solver/routing_enums.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h ortools/glop/lp_solver.h \
  ortools/gen/ortools/glop/parameters.pb.h ortools/glop/preprocessor.h \
  ortools/glop/revised_simplex.h ortools/glop/basis_representation.h \
@@ -3564,10 +3577,10 @@ objs/constraint_solver/routing_flow.$O: \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
  ortools/util/sorted_interval_list.h ortools/util/tuple_set.h \
  ortools/constraint_solver/constraint_solveri.h ortools/util/vector_map.h \
+ ortools/gen/ortools/constraint_solver/routing_enums.pb.h \
  ortools/constraint_solver/routing_index_manager.h \
  ortools/constraint_solver/routing_types.h \
  ortools/gen/ortools/constraint_solver/routing_parameters.pb.h \
- ortools/gen/ortools/constraint_solver/routing_enums.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h ortools/glop/lp_solver.h \
  ortools/gen/ortools/glop/parameters.pb.h ortools/glop/preprocessor.h \
  ortools/glop/revised_simplex.h ortools/glop/basis_representation.h \
@@ -3626,10 +3639,10 @@ objs/constraint_solver/routing_lp_scheduling.$O: \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
  ortools/util/sorted_interval_list.h ortools/util/tuple_set.h \
  ortools/constraint_solver/constraint_solveri.h ortools/util/vector_map.h \
+ ortools/gen/ortools/constraint_solver/routing_enums.pb.h \
  ortools/constraint_solver/routing_index_manager.h \
  ortools/constraint_solver/routing_types.h \
  ortools/gen/ortools/constraint_solver/routing_parameters.pb.h \
- ortools/gen/ortools/constraint_solver/routing_enums.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h ortools/glop/lp_solver.h \
  ortools/gen/ortools/glop/parameters.pb.h ortools/glop/preprocessor.h \
  ortools/glop/revised_simplex.h ortools/glop/basis_representation.h \
@@ -3709,10 +3722,10 @@ objs/constraint_solver/routing_sat.$O: \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
  ortools/util/sorted_interval_list.h ortools/util/tuple_set.h \
  ortools/constraint_solver/constraint_solveri.h ortools/util/vector_map.h \
+ ortools/gen/ortools/constraint_solver/routing_enums.pb.h \
  ortools/constraint_solver/routing_index_manager.h \
  ortools/constraint_solver/routing_types.h \
  ortools/gen/ortools/constraint_solver/routing_parameters.pb.h \
- ortools/gen/ortools/constraint_solver/routing_enums.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h ortools/glop/lp_solver.h \
  ortools/gen/ortools/glop/parameters.pb.h ortools/glop/preprocessor.h \
  ortools/glop/revised_simplex.h ortools/glop/basis_representation.h \
@@ -3761,10 +3774,10 @@ objs/constraint_solver/routing_search.$O: \
  ortools/base/adjustable_priority_queue-inl.h \
  ortools/base/adjustable_priority_queue.h \
  ortools/base/int_type_indexed_vector.h ortools/base/int_type.h \
+ ortools/gen/ortools/constraint_solver/routing_enums.pb.h \
  ortools/constraint_solver/routing_index_manager.h \
  ortools/constraint_solver/routing_types.h \
  ortools/gen/ortools/constraint_solver/routing_parameters.pb.h \
- ortools/gen/ortools/constraint_solver/routing_enums.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h ortools/glop/lp_solver.h \
  ortools/gen/ortools/glop/parameters.pb.h ortools/glop/preprocessor.h \
  ortools/glop/revised_simplex.h ortools/glop/basis_representation.h \
@@ -3795,7 +3808,8 @@ objs/constraint_solver/routing_search.$O: \
  ortools/constraint_solver/routing_lp_scheduling.h \
  ortools/graph/christofides.h ortools/graph/eulerian_path.h \
  ortools/graph/minimum_spanning_tree.h ortools/graph/connectivity.h \
- ortools/util/vector_or_function.h ortools/linear_solver/linear_solver.h \
+ ortools/util/vector_or_function.h ortools/graph/perfect_matching.h \
+ ortools/linear_solver/linear_solver.h \
  ortools/linear_solver/linear_expr.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/port/proto_utils.h | $(OBJ_DIR)/constraint_solver
