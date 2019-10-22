@@ -11,8 +11,13 @@ function checkenv() {
 	    swig -version
 	fi
 	if [ "${BUILDER}" == cmake ] || [ "${LANGUAGE}" == python3 ];then
-            python3.7 --version
-            python3.7 -m pip --version
+	    if [ "${ARCH}" == "amd64" ]; then
+		python3.7 --version
+		python3.7 -m pip --version
+	    else
+		python3.6 --version
+		python3.6 -m pip --version
+	    fi
 	elif [ "${LANGUAGE}" == java ]; then
 		java -version
 	elif [ "${LANGUAGE}" == dotnet ]; then
@@ -33,7 +38,11 @@ if [ "${BUILDER}" == make ];then
     if [ "${LANGUAGE}" == cc ]; then
       make detect
     elif [ "${LANGUAGE}" == python3 ]; then
-      make detect UNIX_PYTHON_VER=3.7
+      if [ "${ARCH}" == "amd64" ]; then
+	  make detect UNIX_PYTHON_VER=3.7
+      else
+	  make detect UNIX_PYTHON_VER=3.6
+      fi
     elif [ "${LANGUAGE}" == java ]; then
       make detect JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
     elif [ "${LANGUAGE}" == dotnet ] ; then
@@ -186,7 +195,11 @@ if [ "${BUILDER}" == cmake ];then
       export CXXFLAGS="-Qunused-arguments $CXXFLAGS"
     fi
     export PATH="${HOME}/swig/bin:${PATH}"
-    pyenv global system 3.7
+    if [ "${ARCH}" == "amd64" ]; then
+        pyenv global system 3.7
+    else
+        pyenv global system 3.6
+    fi
     checkenv
     echo 'travis_fold:end:env'
   elif [ "${TRAVIS_OS_NAME}" == osx ];then
