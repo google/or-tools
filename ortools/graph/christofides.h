@@ -26,6 +26,7 @@
 #include "ortools/graph/eulerian_path.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/minimum_spanning_tree.h"
+#include "ortools/graph/perfect_matching.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -40,8 +41,9 @@ template <typename CostType, typename ArcIndex = int64,
 class ChristofidesPathSolver {
  public:
   enum class MatchingAlgorithm {
-#if defined(USE_CBC) || defined(USE_SCIP)
     MINIMUM_WEIGHT_MATCHING,
+#if defined(USE_CBC) || defined(USE_SCIP)
+    MINIMUM_WEIGHT_MATCHING_WITH_MIP,
 #endif  // defined(USE_CBC) || defined(USE_SCIP)
     MINIMAL_WEIGHT_MATCHING,
   };
@@ -97,6 +99,33 @@ class ChristofidesPathSolver {
   // True if the TSP has been solved, false otherwise.
   bool solved_;
 };
+
+// Computes a minimum weight perfect matching on an undirected graph.
+template <typename WeightFunctionType, typename GraphType>
+std::vector<typename GraphType::ArcIndex> ComputeMinimumWeightMatching(
+    const GraphType& graph, const WeightFunctionType& weight) {
+  using ArcIndex = typename GraphType::ArcIndex;
+  using NodeIndex = typename GraphType::NodeIndex;
+  MinCostPerfectMatching matching(graph.num_nodes());
+  absl::flat_hash_map<std::pair<NodeIndex, NodeIndex>, ArcIndex> arcs;
+  for (NodeIndex tail : graph.AllNodes()) {
+    for (const ArcIndex arc : graph.OutgoingArcs(tail)) {
+      const NodeIndex head = graph.Head(arc);
+      matching.AddEdgeWithCost(tail, head, weight(arc));
+      arcs[{tail, head}] = arc;
+    }
+  }
+  MinCostPerfectMatching::Status status = matching.Solve();
+  DCHECK_EQ(status, MinCostPerfectMatching::OPTIMAL);
+  std::vector<ArcIndex> match;
+  for (NodeIndex tail : graph.AllNodes()) {
+    const NodeIndex head = matching.Match(tail);
+    if (tail < head) {  // Both arcs are matched for a given edge, we keep one.
+      match.push_back(arcs[{tail, head}]);
+    }
+  }
+  return match;
+}
 
 #if defined(USE_CBC) || defined(USE_SCIP)
 // Computes a minimum weight perfect matching on an undirected graph using a
@@ -238,8 +267,17 @@ void ChristofidesPathSolver<CostType, ArcIndex, NodeIndex,
   CompleteGraph<NodeIndex, ArcIndex> reduced_graph(reduced_size);
   std::vector<ArcIndex> closure_arcs;
   switch (matching_) {
-#if defined(USE_CBC) || defined(USE_SCIP)
     case MatchingAlgorithm::MINIMUM_WEIGHT_MATCHING: {
+      closure_arcs = ComputeMinimumWeightMatching(
+          reduced_graph, [this, &reduced_graph,
+                          &odd_degree_nodes](CompleteGraph<>::ArcIndex arc) {
+            return costs_(odd_degree_nodes[reduced_graph.Tail(arc)],
+                          odd_degree_nodes[reduced_graph.Head(arc)]);
+          });
+      break;
+    }
+#if defined(USE_CBC) || defined(USE_SCIP)
+    case MatchingAlgorithm::MINIMUM_WEIGHT_MATCHING_WITH_MIP: {
       closure_arcs = ComputeMinimumWeightMatchingWithMIP(
           reduced_graph, [this, &reduced_graph,
                           &odd_degree_nodes](CompleteGraph<>::ArcIndex arc) {
