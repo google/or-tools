@@ -82,12 +82,22 @@ matrix:
       dist: bionic
       compiler: gcc
       env: BUILDER=make LANGUAGE=python3
+    - os: linux
+      arch: ppc64le
+      dist: bionic
+      compiler: gcc
+      env: BUILDER=cmake LANGUAGE=cc
     # Arm architecture
     - os: linux
       arch: arm64
       dist: bionic
       compiler: gcc
       env: BUILDER=make LANGUAGE=cc
+    - os: linux
+      arch: arm64
+      dist: bionic
+      compiler: gcc
+      env: BUILDER=cmake LANGUAGE=cc
   # Jobs too long
   allow_failures:
     - os: osx
@@ -112,10 +122,20 @@ matrix:
       compiler: gcc
       env: BUILDER=make LANGUAGE=python3
     - os: linux
+      arch: ppc64le
+      dist: bionic
+      compiler: gcc
+      env: BUILDER=cmake LANGUAGE=cc
+    - os: linux
       arch: arm64
       dist: bionic
       compiler: gcc
       env: BUILDER=make LANGUAGE=cc
+    - os: linux
+      arch: arm64
+      dist: bionic
+      compiler: gcc
+      env: BUILDER=cmake LANGUAGE=cc
 
 install:
   - ./.travis/install.sh
