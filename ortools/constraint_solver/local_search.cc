@@ -2821,10 +2821,9 @@ void LocalSearchState::Commit() {
 }
 
 void LocalSearchState::Revert() {
-  for (const auto [variable_bounds, variable_index] :
-       saved_variable_bounds_trail_) {
-    DCHECK(variable_is_relaxed_[variable_index]);
-    variable_bounds_[variable_index] = variable_bounds;
+  for (const auto& bounds_index : saved_variable_bounds_trail_) {
+    DCHECK(variable_is_relaxed_[bounds_index.second]);
+    variable_bounds_[bounds_index.second] = bounds_index.first;
   }
   saved_variable_bounds_trail_.clear();
   variable_is_relaxed_.assign(variable_is_relaxed_.size(), false);
