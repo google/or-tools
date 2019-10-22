@@ -5,61 +5,102 @@ cache:
 
 matrix:
   include:
-    # Makefile builder
-    - os: linux
-      dist: xenial
-      compiler: gcc
-      env: BUILDER=make LANGUAGE=cc
-    - os: linux
-      dist: xenial
-      compiler: gcc
-      env: BUILDER=make LANGUAGE=python3
-    - os: linux
-      dist: xenial
-      compiler: gcc
-      env: BUILDER=make LANGUAGE=java
-    - os: linux
-      dist: xenial
-      compiler: gcc
-      env: BUILDER=make LANGUAGE=dotnet
+    ## Makefile builder
 
+    # Linux, AMD64
+    - os: linux
+      dist: xenial
+      compiler: gcc
+      env: BUILDER=make LANGUAGE=cc ARCH=amd64
+    - os: linux
+      dist: xenial
+      compiler: gcc
+      env: BUILDER=make LANGUAGE=python3 ARCH=amd64
+    - os: linux
+      dist: xenial
+      compiler: gcc
+      env: BUILDER=make LANGUAGE=java ARCH=amd64
+    - os: linux
+      dist: xenial
+      compiler: gcc
+      env: BUILDER=make LANGUAGE=dotnet ARCH=amd64
+
+    # Mac OS X, AMD64
     - os: osx
       osx_image: xcode10.1
       compiler: clang
-      env: BUILDER=make LANGUAGE=cc
+      env: BUILDER=make LANGUAGE=cc ARCH=amd64
     - os: osx
       osx_image: xcode10.1
       compiler: clang
-      env: BUILDER=make LANGUAGE=python3
+      env: BUILDER=make LANGUAGE=python3 ARCH=amd64
     - os: osx
       # to get JDK 8
       # https://docs.travis-ci.com/user/reference/osx/#jdk-and-macos
       osx_image: xcode9.3
       compiler: clang
-      env: BUILDER=make LANGUAGE=java
+      env: BUILDER=make LANGUAGE=java ARCH=amd64
     - os: osx
       osx_image: xcode10.1
       compiler: clang
-      env: BUILDER=make LANGUAGE=dotnet
-    # CMake Build Generator
-    - os: linux
-      dist: xenial
-      compiler: gcc
-      env: BUILDER=cmake
-    - os: linux
-      dist: xenial
-      compiler: clang
-      env: BUILDER=cmake
+      env: BUILDER=make LANGUAGE=dotnet ARCH=amd64
 
+    # Linux, PPC64LE
+    - os: linux
+      arch: ppc64le
+      dist: bionic
+      compiler: gcc
+      env: BUILDER=make LANGUAGE=cc ARCH=ppc64le
+    - os: linux
+      arch: ppc64le
+      dist: bionic
+      compiler: gcc
+      env: BUILDER=make LANGUAGE=python3 ARCH=ppc64le
+
+    # Linux, ARM64
+    - os: linux
+      arch: arm64
+      dist: bionic
+      compiler: gcc
+      env: BUILDER=make LANGUAGE=cc ARCH=arm64
+
+    ## CMake Build Generator
+
+    # Linux, AMD64
+    - os: linux
+      dist: xenial
+      compiler: gcc
+      env: BUILDER=cmake ARCH=amd64
+    - os: linux
+      dist: xenial
+      compiler: clang
+      env: BUILDER=cmake ARCH=amd64
+
+    # Mac OS X, AMD64
     - os: osx
       osx_image: xcode10.1
       compiler: gcc
-      env: BUILDER=cmake
+      env: BUILDER=cmake ARCH=amd64
     - os: osx
       osx_image: xcode10.1
       compiler: clang
-      env: BUILDER=cmake
-    # Bazel builds and tests
+      env: BUILDER=cmake ARCH=amd64
+
+    # Linux, PPC64LE
+    - os: linux
+      arch: ppc64le
+      dist: bionic
+      compiler: gcc
+      env: BUILDER=cmake LANGUAGE=cc ARCH=ppc64le
+
+    # Linux, ARM64
+    - os: linux
+      arch: arm64
+      dist: bionic
+      compiler: gcc
+      env: BUILDER=cmake LANGUAGE=cc ARCH=arm64
+
+    ## Bazel builds and tests
     - os: linux
       dist: xenial
       cache: false
@@ -70,72 +111,43 @@ matrix:
               key_url: "https://bazel.build/bazel-release.pub.gpg"
           packages:
             - bazel
-      env: BUILDER=bazel
-    # Power architecture
-    - os: linux
-      arch: ppc64le
-      dist: bionic
-      compiler: gcc
-      env: BUILDER=make LANGUAGE=cc
-    - os: linux
-      arch: ppc64le
-      dist: bionic
-      compiler: gcc
-      env: BUILDER=make LANGUAGE=python3
-    - os: linux
-      arch: ppc64le
-      dist: bionic
-      compiler: gcc
-      env: BUILDER=cmake LANGUAGE=cc
-    # Arm architecture
-    - os: linux
-      arch: arm64
-      dist: bionic
-      compiler: gcc
-      env: BUILDER=make LANGUAGE=cc
-    - os: linux
-      arch: arm64
-      dist: bionic
-      compiler: gcc
-      env: BUILDER=cmake LANGUAGE=cc
-  # Jobs too long
+      env: BUILDER=bazel ARCH=amd64
+
+  # Jobs too long, or can fail as not yet supported
   allow_failures:
+
     - os: osx
       osx_image: xcode10.1
       compiler: clang
-      env: BUILDER=make LANGUAGE=dotnet
+      env: BUILDER=make LANGUAGE=dotnet ARCH=amd64
     - os: linux
       dist: bionic
-      env: BUILDER=bazel
-    - os: linux
-      dist: bionic
-      compiler: gcc
-      env: BUILDER=make LANGUAGE=cc
+      env: BUILDER=bazel ARCH=amd64
     - os: linux
       arch: ppc64le
       dist: bionic
       compiler: gcc
-      env: BUILDER=make LANGUAGE=cc
+      env: BUILDER=make LANGUAGE=cc ARCH=ppc64le
     - os: linux
       arch: ppc64le
       dist: bionic
       compiler: gcc
-      env: BUILDER=make LANGUAGE=python3
+      env: BUILDER=make LANGUAGE=python3 ARCH=ppc64le
     - os: linux
       arch: ppc64le
       dist: bionic
       compiler: gcc
-      env: BUILDER=cmake LANGUAGE=cc
+      env: BUILDER=cmake LANGUAGE=cc ARCH=ppc64le
     - os: linux
       arch: arm64
       dist: bionic
       compiler: gcc
-      env: BUILDER=make LANGUAGE=cc
+      env: BUILDER=make LANGUAGE=cc ARCH=arm64
     - os: linux
       arch: arm64
       dist: bionic
       compiler: gcc
-      env: BUILDER=cmake LANGUAGE=cc
+      env: BUILDER=cmake LANGUAGE=cc ARCH=arm64
 
 install:
   - ./.travis/install.sh
