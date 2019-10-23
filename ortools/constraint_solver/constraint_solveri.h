@@ -1551,6 +1551,7 @@ class RelocateAndMakeInactiveOperator;
 // relaxing some variables to form a new subproblem, then tightening those
 // variables to move to a new solution representation. That state may be saved
 // to an internal copy, or reverted to the last saved internal copy.
+// Relaxing a variable returns its bounds to their initial state.
 // Tightening a variable's bounds may make its min larger than its max,
 // in that case, the tightening function will return false, and the state will
 // be marked as invalid. No other operations than Revert() can be called on an
@@ -1558,7 +1559,7 @@ class RelocateAndMakeInactiveOperator;
 class LocalSearchVariable;
 class LocalSearchState {
  public:
-  LocalSearchVariable AddVariable();
+  LocalSearchVariable AddVariable(int64 initial_min, int64 initial_max);
   void Commit();
   void Revert();
   bool StateIsValid() const { return state_is_valid_; }
@@ -1577,6 +1578,7 @@ class LocalSearchState {
   int64 VariableMin(int variable_index) const;
   int64 VariableMax(int variable_index) const;
 
+  std::vector<Bounds> initial_variable_bounds_;
   std::vector<Bounds> variable_bounds_;
   std::vector<std::pair<Bounds, int>> saved_variable_bounds_trail_;
   std::vector<bool> variable_is_relaxed_;

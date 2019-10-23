@@ -2755,9 +2755,12 @@ IntVarLocalSearchFilter* Solver::MakeSumObjectiveFilter(
                                              std::move(values), filter_enum));
 }
 
-LocalSearchVariable LocalSearchState::AddVariable() {
+LocalSearchVariable LocalSearchState::AddVariable(int64 initial_min,
+                                                  int64 initial_max) {
   DCHECK(state_is_valid_);
-  variable_bounds_.push_back({kint64min, kint64max});
+  DCHECK_LE(initial_min, initial_max);
+  initial_variable_bounds_.push_back({initial_min, initial_max});
+  variable_bounds_.push_back({initial_min, initial_max});
   variable_is_relaxed_.push_back(false);
 
   const int variable_index = variable_bounds_.size() - 1;
@@ -2771,7 +2774,7 @@ void LocalSearchState::RelaxVariableBounds(int variable_index) {
     variable_is_relaxed_[variable_index] = true;
     saved_variable_bounds_trail_.emplace_back(variable_bounds_[variable_index],
                                               variable_index);
-    variable_bounds_[variable_index] = {kint64min, kint64max};
+    variable_bounds_[variable_index] = initial_variable_bounds_[variable_index];
   }
 }
 
