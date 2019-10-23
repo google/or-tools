@@ -143,17 +143,21 @@ class Domain {
 
   /**
    * Returns the min value of the domain.
-   *
-   * This checks that the domain is not empty.
+   * The domain must not be empty.
    */
   int64 Min() const;
 
   /**
    * Returns the max value of the domain.
-   *
-   * This checks that the domain is not empty.
+   * The domain must not be empty.
    */
   int64 Max() const;
+
+  /**
+   * Returns true iff the domain is reduced to a single value.
+   * The domain must not be empty.
+   */
+  bool IsFixed() const;
 
   /**
    * Returns true iff value is in Domain.

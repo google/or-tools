@@ -14,6 +14,7 @@
 #include "ortools/sat/presolve_context.h"
 
 #include "ortools/base/map_util.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/port/proto_utils.h"
 
 namespace operations_research {
@@ -66,8 +67,8 @@ bool PresolveContext::DomainIsEmpty(int ref) const {
 }
 
 bool PresolveContext::IsFixed(int ref) const {
-  CHECK(!DomainIsEmpty(ref));
-  return domains[PositiveRef(ref)].Min() == domains[PositiveRef(ref)].Max();
+  DCHECK(!DomainIsEmpty(ref));
+  return domains[PositiveRef(ref)].IsFixed();
 }
 
 bool PresolveContext::LiteralIsTrue(int lit) const {
@@ -263,10 +264,13 @@ void PresolveContext::StoreAffineRelation(const ConstraintProto& ct, int ref_x,
     added |= var_equiv_relations.TryAdd(x, y, c, o, allow_rep_x, allow_rep_y);
   }
   if (added) {
-    // The domain didn't change, but this notification allows to re-process
-    // any constraint containing these variables.
-    modified_domains.Set(x);
-    modified_domains.Set(y);
+    // The domain didn't change, but this notification allows to re-process any
+    // constraint containing these variables. Note that we do not need to
+    // retrigger a propagation of the constraint containing a variable whose
+    // representative didn't change.
+    const int new_rep = affine_relations.Get(rep_x).representative;
+    if (new_rep != rep_x) modified_domains.Set(x);
+    if (new_rep != rep_y) modified_domains.Set(y);
     affine_constraints.insert(&ct);
   }
 }
@@ -277,20 +281,6 @@ void PresolveContext::StoreBooleanEqualityRelation(int ref_a, int ref_b) {
     is_unsat = true;
     return;
   }
-  bool added = false;
-  if (RefIsPositive(ref_a) == RefIsPositive(ref_b)) {
-    added |=
-        affine_relations.TryAdd(PositiveRef(ref_a), PositiveRef(ref_b), 1, 0);
-    added |= var_equiv_relations.TryAdd(PositiveRef(ref_a), PositiveRef(ref_b),
-                                        1, 0);
-  } else {
-    added |=
-        affine_relations.TryAdd(PositiveRef(ref_a), PositiveRef(ref_b), -1, 1);
-  }
-  if (!added) return;
-
-  modified_domains.Set(PositiveRef(ref_a));
-  modified_domains.Set(PositiveRef(ref_b));
 
   // For now, we do need to add the relation ref_a == ref_b so we have a
   // proper variable usage count and propagation between ref_a and ref_b.
@@ -308,14 +298,17 @@ void PresolveContext::StoreBooleanEqualityRelation(int ref_a, int ref_b) {
     arg->add_coeffs(-1);
     arg->add_domain(0);
     arg->add_domain(0);
+    StoreAffineRelation(*ct, PositiveRef(ref_a), PositiveRef(ref_b), 1,
+                        /*offset=*/0);
   } else {
     // a = 1 - b
     arg->add_coeffs(1);
     arg->add_coeffs(1);
     arg->add_domain(1);
     arg->add_domain(1);
+    StoreAffineRelation(*ct, PositiveRef(ref_a), PositiveRef(ref_b), -1,
+                        /*offset=*/1);
   }
-  affine_constraints.insert(ct);
   UpdateNewConstraintsVariableUsage();
 }
 
@@ -454,22 +447,194 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64 value) {
   return literal;
 }
 
-void PresolveContext::SubstituteVariableInObjective(
-    int var, int64 coeff, const ConstraintProto& equality) {
-  // Remove objective entry from var_to_constraint lists. The objective
-  // entries will be added back after the substitution.
-  const CpObjectiveProto& objective = working_model->objective();
-  for (const int ref : objective.vars()) {
-    var_to_constraints[PositiveRef(ref)].erase(-1);
+void PresolveContext::ReadObjectiveFromProto() {
+  const CpObjectiveProto& obj = working_model->objective();
+
+  objective_offset = obj.offset();
+  objective_scaling_factor = obj.scaling_factor();
+  if (objective_scaling_factor == 0.0) {
+    objective_scaling_factor = 1.0;
+  }
+  if (!obj.domain().empty()) {
+    objective_domain = ReadDomainFromProto(obj);
+  } else {
+    objective_domain = Domain::AllValues();
   }
 
-  ::operations_research::sat::SubstituteVariableInObjective(
-      var, coeff, equality, working_model->mutable_objective());
+  objective_map.clear();
+  for (int i = 0; i < obj.vars_size(); ++i) {
+    const int ref = obj.vars(i);
+    int64 coeff = obj.coeffs(i);
+    if (!RefIsPositive(ref)) coeff = -coeff;
+    int var = PositiveRef(ref);
 
-  // Add back the objective entry for the variables in objective in
-  // var_to_constraint lists.
-  for (const int ref : objective.vars()) {
-    var_to_constraints[PositiveRef(ref)].insert(-1);
+    objective_map[var] += coeff;
+    if (objective_map[var] == 0) {
+      objective_map.erase(var);
+      var_to_constraints[var].erase(-1);
+    } else {
+      var_to_constraints[var].insert(-1);
+    }
+  }
+}
+
+void PresolveContext::CanonicalizeObjective() {
+  int64 offset_change = 0;
+
+  // We replace each entry by its affine representative.
+  // Note that the non-deterministic loop is fine.
+  //
+  // TODO(user): This is a bit dupplicated with the presolve linear code.
+  // We also do not propagate back any domain restriction from the objective to
+  // the variables if any.
+  for (const auto& entry : objective_map) {
+    const int var = entry.first;
+    const int64 coeff = entry.second;
+
+    if (IsFixed(var)) {
+      offset_change += coeff * MinOf(var);
+      var_to_constraints[var].erase(-1);
+      objective_map.erase(var);
+      continue;
+    }
+
+    const AffineRelation::Relation r = GetAffineRelation(var);
+    if (r.representative == var) continue;
+
+    objective_map.erase(var);
+    var_to_constraints[var].erase(-1);
+
+    // Do the substitution.
+    offset_change += coeff * r.offset;
+    const int64 new_coeff = objective_map[r.representative] += coeff * r.coeff;
+
+    // Process new term.
+    if (new_coeff == 0) {
+      objective_map.erase(r.representative);
+      var_to_constraints[r.representative].erase(-1);
+    } else {
+      var_to_constraints[r.representative].insert(-1);
+      if (IsFixed(r.representative)) {
+        offset_change += new_coeff * MinOf(r.representative);
+        var_to_constraints[r.representative].erase(-1);
+        objective_map.erase(r.representative);
+      }
+    }
+  }
+
+  Domain implied_domain(0);
+  int64 gcd(0);
+
+  // We need to sort the entries to be deterministic.
+  {
+    std::vector<std::pair<int, int64>> entries;
+    for (const auto& entry : objective_map) {
+      entries.push_back(entry);
+    }
+    std::sort(entries.begin(), entries.end());
+    for (const auto& entry : entries) {
+      const int var = entry.first;
+      const int64 coeff = entry.second;
+      gcd = MathUtil::GCD64(gcd, std::abs(coeff));
+      implied_domain =
+          implied_domain.AdditionWith(DomainOf(var).MultiplicationBy(coeff))
+              .RelaxIfTooComplex();
+    }
+  }
+
+  // This is the new domain.
+  // Note that the domain never include the offset.
+  objective_domain = objective_domain.AdditionWith(Domain(-offset_change))
+                         .IntersectionWith(implied_domain);
+  objective_domain =
+      objective_domain.SimplifyUsingImpliedDomain(implied_domain);
+
+  // Updat the offset.
+  objective_offset += offset_change;
+
+  // Maybe divide by GCD.
+  if (gcd > 1) {
+    for (auto& entry : objective_map) {
+      entry.second /= gcd;
+    }
+    objective_domain = objective_domain.InverseMultiplicationBy(gcd);
+    objective_offset /= static_cast<double>(gcd);
+    objective_scaling_factor *= static_cast<double>(gcd);
+  }
+}
+
+void PresolveContext::SubstituteVariableInObjective(
+    int var_in_equality, int64 coeff_in_equality,
+    const ConstraintProto& equality, std::vector<int>* new_vars_in_objective) {
+  CHECK(equality.enforcement_literal().empty());
+  CHECK(RefIsPositive(var_in_equality));
+  CHECK_EQ(std::abs(coeff_in_equality), 1);
+
+  if (new_vars_in_objective != nullptr) new_vars_in_objective->clear();
+
+  const int64 coeff_in_objective = gtl::FindOrDie(objective_map, var_in_equality);
+  for (int i = 0; i < equality.linear().vars().size(); ++i) {
+    int var = equality.linear().vars(i);
+    int64 coeff = equality.linear().coeffs(i);
+    if (!RefIsPositive(var)) {
+      var = NegatedRef(var);
+      coeff = -coeff;
+    }
+    if (var == var_in_equality) continue;
+
+    // We should divided by coeff_in_equality, but since its magnitude is one,
+    // multiplying is the same.
+    int64& map_ref = objective_map[var];
+    if (map_ref == 0 && new_vars_in_objective != nullptr) {
+      new_vars_in_objective->push_back(var);
+    }
+    map_ref -= coeff_in_objective * coeff * coeff_in_equality;
+
+    if (map_ref == 0) {
+      objective_map.erase(var);
+      var_to_constraints[var].erase(-1);
+    } else {
+      var_to_constraints[var].insert(-1);
+    }
+  }
+
+  objective_map.erase(var_in_equality);
+  var_to_constraints[var_in_equality].erase(-1);
+
+  // Deal with the offset.
+  Domain offset = ReadDomainFromProto(equality.linear());
+  DCHECK_EQ(offset.Min(), offset.Max());
+  bool exact = true;
+  offset =
+      offset.MultiplicationBy(coeff_in_objective * coeff_in_equality, &exact);
+  CHECK(exact);
+
+  // Tricky: The objective domain is without the offset, so we need to shift it
+  objective_offset += static_cast<double>(offset.Min());
+  objective_domain = objective_domain.AdditionWith(Domain(-offset.Min()));
+}
+
+void PresolveContext::WriteObjectiveToProto() {
+  if (objective_domain.IsEmpty()) {
+    return (void)NotifyThatModelIsUnsat();
+  }
+
+  // We need to sort the entries to be deterministic.
+  std::vector<std::pair<int, int64>> entries;
+  for (const auto& entry : objective_map) {
+    entries.push_back(entry);
+  }
+  std::sort(entries.begin(), entries.end());
+
+  CpObjectiveProto* mutable_obj = working_model->mutable_objective();
+  mutable_obj->set_offset(objective_offset);
+  mutable_obj->set_scaling_factor(objective_scaling_factor);
+  FillDomainInProto(objective_domain, mutable_obj);
+  mutable_obj->clear_vars();
+  mutable_obj->clear_coeffs();
+  for (const auto& entry : entries) {
+    mutable_obj->add_vars(entry.first);
+    mutable_obj->add_coeffs(entry.second);
   }
 }
 

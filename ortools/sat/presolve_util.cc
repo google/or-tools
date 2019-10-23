@@ -206,46 +206,5 @@ void SubstituteVariable(int var, int64 var_coeff_in_definition,
   SortAndMergeTerms(&terms, ct->mutable_linear());
 }
 
-bool VarFoundInObjective(int var, CpObjectiveProto* obj) {
-  const int size = obj->vars_size();
-  for (int i = 0; i < size; ++i) {
-    if (PositiveRef(obj->vars(i)) == PositiveRef(var)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-void SubstituteVariableInObjective(int var, int64 var_coeff_in_definition,
-                                   const ConstraintProto& definition,
-                                   CpObjectiveProto* obj) {
-  CHECK(RefIsPositive(var));
-  CHECK_EQ(std::abs(var_coeff_in_definition), 1);
-
-  // Copy all the terms (except the one refering to var).
-  std::vector<std::pair<int, int64>> terms;
-  int64 var_coeff_in_obj = GetVarCoeffAndCopyOtherTerms(var, *obj, &terms);
-
-  if (var_coeff_in_definition < 0) var_coeff_in_obj *= -1;
-
-  AddTermsFromVarDefinition(var, var_coeff_in_obj, definition, &terms);
-
-  bool exact = false;
-  Domain offset = ReadDomainFromProto(definition.linear());
-  DCHECK_EQ(offset.Min(), offset.Max());
-  offset = offset.MultiplicationBy(var_coeff_in_obj, &exact);
-  CHECK(exact);
-
-  // Tricky: The objective domain is without the offset, so we need to shift it.
-  obj->set_offset(offset.Min() + obj->offset());
-  if (!obj->domain().empty()) {
-    Domain old_domain = ReadDomainFromProto(*obj);
-    FillDomainInProto(old_domain.AdditionWith(Domain(-offset.Min())), obj);
-  }
-
-  // Sort and merge terms refering to the same variable.
-  SortAndMergeTerms(&terms, obj);
-}
-
 }  // namespace sat
 }  // namespace operations_research

@@ -163,8 +163,17 @@ void LinearConstraintManager::ComputeObjectiveParallelism(
     constraint_infos_[ct_index].objective_parallelism = 0.0;
     return;
   }
+
+  const LinearConstraint& lc = constraint_infos_[ct_index].constraint;
+  double unscaled_objective_parallelism = 0.0;
+  for (int i = 0; i < lc.vars.size(); ++i) {
+    if (lc.vars[i] < dense_objective_coeffs_.size()) {
+      unscaled_objective_parallelism +=
+          ToDouble(lc.coeffs[i]) * dense_objective_coeffs_[lc.vars[i]];
+    }
+  }
   const double objective_parallelism =
-      ScalarProduct(constraint_infos_[ct_index].constraint, objective_) /
+      unscaled_objective_parallelism /
       (constraint_infos_[ct_index].l2_norm * objective_l2_norm_);
   constraint_infos_[ct_index].objective_parallelism =
       std::abs(objective_parallelism);
@@ -335,6 +344,8 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
 
 bool LinearConstraintManager::ChangeLp(
     const gtl::ITIVector<IntegerVariable, double>& lp_solution) {
+  VLOG(3) << "Enter ChangeLP, scan " << constraint_infos_.size()
+          << " constraints";
   std::vector<ConstraintIndex> new_constraints;
   std::vector<double> new_constraints_efficacies;
   std::vector<double> new_constraints_orthogonalities;
@@ -346,6 +357,7 @@ bool LinearConstraintManager::ChangeLp(
   // We keep any constraints that is already present, and otherwise, we add the
   // ones that are currently not satisfied by at least "tolerance".
   const double tolerance = 1e-6;
+  FillDenseObjectiveCoeffs();
   for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
     if (constraint_infos_[i].permanently_removed) continue;
 
@@ -387,6 +399,17 @@ bool LinearConstraintManager::ChangeLp(
       new_constraints_efficacies.push_back(violation /
                                            constraint_infos_[i].l2_norm);
       new_constraints_orthogonalities.push_back(1.0);
+
+      if (objective_is_defined_ &&
+          !constraint_infos_[i].objective_parallelism_computed) {
+        ComputeObjectiveParallelism(i);
+      } else if (!objective_is_defined_) {
+        constraint_infos_[i].objective_parallelism = 0.0;
+      }
+
+      constraint_infos_[i].current_score =
+          new_constraints_efficacies.back() +
+          constraint_infos_[i].objective_parallelism;
     }
   }
 
@@ -396,18 +419,36 @@ bool LinearConstraintManager::ChangeLp(
     RemoveMarkedConstraints();
   }
 
-  // Note that the algo below is in O(limit * new_constraint), so this limit
-  // should stay low.
+  // Note that the algo below is in O(limit * new_constraint). In order to
+  // limit spending too much time on this, we first sort all the constraints
+  // with an imprecise score (no orthogonality), then limit the size of the
+  // vector of constraints to precisely score, then we do the actual scoring.
+  //
+  // On problem crossword_opt_grid-19.05_dict-80_sat with linearization_level=2,
+  // new_constraint.size() > 1.5M.
+  //
+  // TODO(user): This blowup factor could be adaptative w.r.t. the constraint
+  // limit.
+  const int kBlowupFactor = 4;
   int constraint_limit = std::min(50, static_cast<int>(new_constraints.size()));
   if (lp_constraints_.empty()) {
     constraint_limit = std::min(1000, static_cast<int>(new_constraints.size()));
   }
+  VLOG(3) << "   - size = " << new_constraints.size()
+          << ", limit = " << constraint_limit;
 
-  // TODO(user,user): on problem crossword_opt_grid-19.05_dict-80_sat with
-  //     linearization_level=2, new_constraint.size() > 1.5M. Improve
-  //     complexity of the following loop.
+  std::stable_sort(new_constraints.begin(), new_constraints.end(),
+                   [&](ConstraintIndex a, ConstraintIndex b) {
+                     return constraint_infos_[a].current_score >
+                            constraint_infos_[b].current_score;
+                   });
+  if (new_constraints.size() > kBlowupFactor * constraint_limit) {
+    VLOG(3) << "Resize candidate constraints from " << new_constraints.size()
+            << " down to " << kBlowupFactor * constraint_limit;
+    new_constraints.resize(kBlowupFactor * constraint_limit);
+  }
 
-  int skipped_checks = 0;
+  int num_skipped_checks = 0;
   const int kCheckFrequency = 100;
   ConstraintIndex last_added_candidate = kInvalidConstraintIndex;
   for (int i = 0; i < constraint_limit; ++i) {
@@ -416,10 +457,10 @@ bool LinearConstraintManager::ChangeLp(
     double best_score = 0.0;
     ConstraintIndex best_candidate = kInvalidConstraintIndex;
     for (int j = 0; j < new_constraints.size(); ++j) {
-      // Checks the time limit, and returns not_changed if crossed.
-      if (++skipped_checks >= kCheckFrequency) {
-        if (time_limit_->LimitReached()) return false;
-        skipped_checks = 0;
+      // Checks the time limit, and returns if the lp has changed.
+      if (++num_skipped_checks >= kCheckFrequency) {
+        if (time_limit_->LimitReached()) return current_lp_is_changed_;
+        num_skipped_checks = 0;
       }
 
       const ConstraintIndex new_constraint = new_constraints[j];
@@ -449,16 +490,10 @@ bool LinearConstraintManager::ChangeLp(
         continue;
       }
 
-      if (objective_is_defined_ &&
-          !constraint_infos_[new_constraint].objective_parallelism_computed) {
-        ComputeObjectiveParallelism(new_constraint);
-      }
-
       // TODO(user): Experiment with different weights or different
       // functions for computing score.
-      const double score =
-          new_constraints_orthogonalities[j] + new_constraints_efficacies[j] +
-          constraint_infos_[new_constraint].objective_parallelism;
+      const double score = new_constraints_orthogonalities[j] +
+                           constraint_infos_[new_constraint].current_score;
       CHECK_GE(score, 0.0);
       if (score > best_score || best_candidate == kInvalidConstraintIndex) {
         best_score = score;
@@ -478,6 +513,7 @@ bool LinearConstraintManager::ChangeLp(
     }
   }
 
+  VLOG(3) << "   - Exit ChangeLP";
   // The LP changed only if we added new constraints or if some constraints
   // already inside changed (simplification or tighter bounds).
   if (current_lp_is_changed_) {
@@ -492,6 +528,17 @@ void LinearConstraintManager::AddAllConstraintsToLp() {
     if (constraint_infos_[i].is_in_lp) continue;
     constraint_infos_[i].is_in_lp = true;
     lp_constraints_.push_back(i);
+  }
+}
+
+void LinearConstraintManager::FillDenseObjectiveCoeffs() {
+  if (objective_.vars.empty()) return;
+  DCHECK(std::is_sorted(objective_.vars.begin(), objective_.vars.end()));
+  const IntegerVariable last_var = objective_.vars.back();
+  dense_objective_coeffs_.assign(last_var.value() + 1, 0.0);
+  for (int i = 0; i < objective_.vars.size(); ++i) {
+    dense_objective_coeffs_[objective_.vars[i]] =
+        ToDouble(objective_.coeffs[i]);
   }
 }
 

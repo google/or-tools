@@ -53,6 +53,7 @@ class LinearConstraintManager {
     // parallel to one of the existing constraints in the LP.
     bool permanently_removed;
     size_t hash;
+    double current_score;
   };
 
   explicit LinearConstraintManager(Model* model)
@@ -114,6 +115,9 @@ class LinearConstraintManager {
   // Returns true if the terms of the constraint changed.
   bool SimplifyConstraint(LinearConstraint* ct);
 
+  // Helper method to fill in the objective_values_ vector.
+  void FillDenseObjectiveCoeffs();
+
   // Helper method to compute objective parallelism for a given constraint. This
   // also lazily computes objective norm.
   void ComputeObjectiveParallelism(const ConstraintIndex ct_index);
@@ -155,6 +159,9 @@ class LinearConstraintManager {
   bool objective_norm_computed_ = false;
   LinearConstraint objective_;
   double objective_l2_norm_ = 0.0;
+  // Dense representation of the objective coeffs indexed by variables indices.
+  // It contains 0.0 where the variables does not appear in the objective.
+  gtl::ITIVector<IntegerVariable, double> dense_objective_coeffs_;
 
   TimeLimit* time_limit_;
 };

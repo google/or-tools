@@ -133,19 +133,33 @@ struct PresolveContext {
   // create it, add the corresponding constraints and returns it.
   int GetOrCreateVarValueEncoding(int ref, int64 value);
 
+  // Objective handling functions. We load it at the beginning so that during
+  // presolve we can work on the more efficient hash_map representation.
+  //
+  // Note that ReadObjectiveFromProto() makes sure that var_to_constraints of
+  // all the variable that appear in the objective contains -1. This is later
+  // enforced by all the functions modifying the objective.
+  void ReadObjectiveFromProto();
+  void CanonicalizeObjective();
+  void WriteObjectiveToProto();
+
   // Given a variable defined by the given inequality that also appear in the
   // objective, remove it from the objective by transferring its cost to other
   // variables in the equality.
   //
-  // TODO(user): Each time this is called, we do a linear scan of the objective
-  // that can sometimes be really large (millions of variables). It will be more
-  // efficient to just store the objective in a map at the beginning of the
-  // presolve so this can be done in O(equality_size) and re-encode the
-  // objective in the proto at the end. This code already exist in
-  // ExpandObjective() and can be factored out. Look at the "ivu*.mps" problems
-  // where the presolve is slow because of that.
-  void SubstituteVariableInObjective(int var, int64 coeff,
-                                     const ConstraintProto& equality);
+  // If new_vars_in_objective is not nullptr, it will be filled with "new"
+  // variables that where not in the objective before and are after
+  // substitution.
+  void SubstituteVariableInObjective(
+      int var_in_equality, int64 coeff_in_equality,
+      const ConstraintProto& equality,
+      std::vector<int>* new_vars_in_objective = nullptr);
+
+  // Objective getters.
+  const Domain& ObjectiveDomain() const { return objective_domain; }
+  const absl::flat_hash_map<int, int64>& ObjectiveMap() const {
+    return objective_map;
+  }
 
   // This regroups all the affine relations between variables. Note that the
   // constraints used to detect such relations will not be removed from the
@@ -228,6 +242,15 @@ struct PresolveContext {
 
   // The current domain of each variables.
   std::vector<Domain> domains;
+
+  // Internal representation of the objective. During presolve, we first load
+  // the objective in this format in order to have more efficient substitution
+  // on large problems (also because the objective is often dense). At the end
+  // we re-convert it to its proto form.
+  absl::flat_hash_map<int, int64> objective_map;
+  Domain objective_domain;
+  double objective_offset;
+  double objective_scaling_factor;
 };
 
 }  // namespace sat

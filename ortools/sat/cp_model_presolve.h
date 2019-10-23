@@ -102,10 +102,6 @@ class CpModelPresolver {
   bool PresolveTable(ConstraintProto* ct);
   bool PresolveElement(ConstraintProto* ct);
   bool PresolveInterval(int c, ConstraintProto* ct);
-  bool PresolveLinear(ConstraintProto* ct);
-  bool PresolveLinearOnBooleans(ConstraintProto* ct);
-  bool CanonicalizeLinear(ConstraintProto* ct);
-  bool RemoveSingletonInLinear(ConstraintProto* ct);
   bool PresolveIntDiv(ConstraintProto* ct);
   bool PresolveIntProd(ConstraintProto* ct);
   bool PresolveIntMin(ConstraintProto* ct);
@@ -115,6 +111,13 @@ class CpModelPresolver {
   bool PresolveBoolAnd(ConstraintProto* ct);
   bool PresolveBoolOr(ConstraintProto* ct);
   bool PresolveEnforcementLiteral(ConstraintProto* ct);
+
+  // For the linear constraints, we have more than one function.
+  bool CanonicalizeLinear(ConstraintProto* ct);
+  bool PropagateDomainsInLinear(ConstraintProto* ct);
+  bool RemoveSingletonInLinear(ConstraintProto* ct);
+  bool PresolveSmallLinear(ConstraintProto* ct);
+  bool PresolveLinearOnBooleans(ConstraintProto* ct);
 
   // SetPPC is short for set packing, partitioning and covering constraints.
   // These are sum of booleans <=, = and >= 1 respectively.
@@ -144,7 +147,7 @@ class CpModelPresolver {
 
   void ExpandObjective();
 
-  void TryToSimplifyDomains();
+  void TryToSimplifyDomain(int var);
 
   void MergeNoOverlapConstraints();
 
@@ -161,6 +164,9 @@ class CpModelPresolver {
   const PresolveOptions& options_;
   std::vector<int>* postsolve_mapping_;
   PresolveContext* context_;
+
+  // Used by CanonicalizeLinear().
+  std::vector<std::pair<int, int64>> tmp_terms_;
 };
 
 // Convenient wrapper to call the full presolve.

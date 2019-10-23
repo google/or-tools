@@ -1243,7 +1243,10 @@ SatSolver::Status FindCores(std::vector<Literal> assumptions,
                             std::vector<std::vector<Literal>>* cores) {
   cores->clear();
   SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
+  TimeLimit* limit = model->GetOrCreate<TimeLimit>();
   do {
+    if (limit->LimitReached()) return SatSolver::LIMIT_REACHED;
+
     const SatSolver::Status result =
         ResetAndSolveIntegerProblem(assumptions, model);
     if (result != SatSolver::ASSUMPTIONS_UNSAT) return result;
