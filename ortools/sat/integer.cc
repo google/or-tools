@@ -1591,6 +1591,8 @@ GenericLiteralWatcher::GenericLiteralWatcher(Model* model)
   // this one.
   model->GetOrCreate<SatSolver>()->AddLastPropagator(this);
 
+  integer_trail_->RegisterReversibleClass(
+      &id_to_greatest_common_level_since_last_call_);
   integer_trail_->RegisterWatcher(&modified_vars_);
   queue_by_priority_.resize(2);  // Because default priority is 1.
 }
@@ -1769,11 +1771,6 @@ void GenericLiteralWatcher::Untrail(const Trail& trail, int trail_index) {
   propagation_trail_index_ = trail_index;
   modified_vars_.ClearAndResize(integer_trail_->NumIntegerVariables());
   in_queue_.assign(watchers_.size(), false);
-
-  const int level = trail.CurrentDecisionLevel();
-  for (int& ref : id_to_greatest_common_level_since_last_call_) {
-    ref = std::min(ref, level);
-  }
 }
 
 // Registers a propagator and returns its unique ids.
@@ -1781,7 +1778,7 @@ int GenericLiteralWatcher::Register(PropagatorInterface* propagator) {
   const int id = watchers_.size();
   watchers_.push_back(propagator);
   id_to_level_at_last_call_.push_back(0);
-  id_to_greatest_common_level_since_last_call_.push_back(0);
+  id_to_greatest_common_level_since_last_call_.GrowByOne();
   id_to_reversible_classes_.push_back(std::vector<ReversibleInterface*>());
   id_to_reversible_ints_.push_back(std::vector<int*>());
   id_to_watch_indices_.push_back(std::vector<int>());
