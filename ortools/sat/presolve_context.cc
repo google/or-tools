@@ -482,14 +482,22 @@ void PresolveContext::CanonicalizeObjective() {
   int64 offset_change = 0;
 
   // We replace each entry by its affine representative.
-  // Note that the non-deterministic loop is fine.
-  //
-  // TODO(user): This is a bit dupplicated with the presolve linear code.
+  // Note that the non-deterministic loop is fine, but because we iterate
+  // one the map while modifying it, it is safer to do a copy rather than to
+  // try to handle that in one pass.
+  std::vector<std::pair<int, int64>> entries;
+  for (const auto& entry : objective_map) {
+    entries.push_back(entry);
+  }
+
+  // TODO(user): This is a bit duplicated with the presolve linear code.
   // We also do not propagate back any domain restriction from the objective to
   // the variables if any.
-  for (const auto& entry : objective_map) {
+  for (const auto& entry : entries) {
     const int var = entry.first;
-    const int64 coeff = entry.second;
+    const auto it = objective_map.find(var);
+    if (it == objective_map.end()) continue;
+    const int64 coeff = it->second;
 
     if (IsFixed(var)) {
       offset_change += coeff * MinOf(var);
@@ -526,20 +534,18 @@ void PresolveContext::CanonicalizeObjective() {
   int64 gcd(0);
 
   // We need to sort the entries to be deterministic.
-  {
-    std::vector<std::pair<int, int64>> entries;
-    for (const auto& entry : objective_map) {
-      entries.push_back(entry);
-    }
-    std::sort(entries.begin(), entries.end());
-    for (const auto& entry : entries) {
-      const int var = entry.first;
-      const int64 coeff = entry.second;
-      gcd = MathUtil::GCD64(gcd, std::abs(coeff));
-      implied_domain =
-          implied_domain.AdditionWith(DomainOf(var).MultiplicationBy(coeff))
-              .RelaxIfTooComplex();
-    }
+  entries.clear();
+  for (const auto& entry : objective_map) {
+    entries.push_back(entry);
+  }
+  std::sort(entries.begin(), entries.end());
+  for (const auto& entry : entries) {
+    const int var = entry.first;
+    const int64 coeff = entry.second;
+    gcd = MathUtil::GCD64(gcd, std::abs(coeff));
+    implied_domain =
+        implied_domain.AdditionWith(DomainOf(var).MultiplicationBy(coeff))
+            .RelaxIfTooComplex();
   }
 
   // This is the new domain.

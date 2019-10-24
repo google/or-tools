@@ -2842,6 +2842,10 @@ void CpModelPresolver::Probe() {
   // equivalences, and use the newly learned binary clauses?
   auto* implication_graph = model.GetOrCreate<BinaryImplicationGraph>();
   ProbeBooleanVariables(/*deterministic_time_limit=*/1.0, &model);
+  if (options_.time_limit != nullptr) {
+    options_.time_limit->AdvanceDeterministicTime(
+        model.GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime());
+  }
   if (sat_solver->IsModelUnsat() || !implication_graph->DetectEquivalences()) {
     return (void)context_->NotifyThatModelIsUnsat();
   }
@@ -2892,6 +2896,7 @@ void CpModelPresolver::PresolvePureSatPart() {
   SatPostsolver sat_postsolver(num_variables);
   SatPresolver sat_presolver(&sat_postsolver);
   sat_presolver.SetNumVariables(num_variables);
+  sat_presolver.SetTimeLimit(options_.time_limit);
 
   SatParameters params;
 
@@ -2921,7 +2926,8 @@ void CpModelPresolver::PresolvePureSatPart() {
   // TODO(user): Add the "small" at most one constraints to the SAT presolver by
   // expanding them to implications? that could remove a lot of clauses. Do that
   // when we are sure we don't load duplicates at_most_one/implications in the
-  // solver.
+  // solver. Ideally, the pure sat presolve could be improved to handle at most
+  // one, and we could merge this with what the ProcessSetPPC() is doing.
   std::vector<Literal> clause;
   int num_removed_constraints = 0;
   for (int i = 0; i < context_->working_model->constraints_size(); ++i) {
@@ -2995,7 +3001,7 @@ void CpModelPresolver::PresolvePureSatPart() {
   // Add any new variables to our internal structure.
   const int new_num_variables = sat_presolver.NumVariables();
   if (new_num_variables > context_->working_model->variables_size()) {
-    LOG(INFO) << "New variables added by the SAT presolver.";
+    VLOG(1) << "New variables added by the SAT presolver.";
     for (int i = context_->working_model->variables_size();
          i < new_num_variables; ++i) {
       IntegerVariableProto* var_proto =
@@ -3248,6 +3254,7 @@ void CpModelPresolver::MergeNoOverlapConstraints() {
     old_num_no_overlaps++;
     old_num_intervals += clique.size();
   }
+  if (old_num_no_overlaps == 0) return;
 
   // We reuse the max-clique code from sat.
   Model local_model;
