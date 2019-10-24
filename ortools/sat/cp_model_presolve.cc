@@ -953,6 +953,7 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
       if (context_->var_to_constraints[var].size() != 2) continue;
       if (!context_->var_to_constraints[var].contains(-1)) continue;
       if (std::abs(coeff) != 1) continue;
+      DCHECK(context_->ObjectiveMap().contains(var));
 
       // We do not do that if the domain of rhs becomes too complex.
       bool exact;
@@ -974,8 +975,12 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
         }
 
         // This makes sure the domain of var is propagated back to the
-        // objective.
+        // objective. We have the DCHECK() below, because this code rely on the
+        // fact that var is neither fixed nor have a different representative
+        // otherwise CanonicalizeLinear() will remove it.
         context_->CanonicalizeObjective();
+        DCHECK(context_->ObjectiveMap().contains(var));
+
         context_->UpdateRuleStats("linear: singleton column define objective.");
         context_->SubstituteVariableInObjective(var, coeff, *ct);
         *(context_->mapping_model->add_constraints()) = *ct;
@@ -1121,10 +1126,12 @@ bool CpModelPresolver::PropagateDomainsInLinear(ConstraintProto* ct) {
   if (ct->enforcement_literal().size() > 1) return false;
 
   bool new_bounds = false;
+  bool recanonicalize = false;
   Domain new_domain;
   Domain right_domain(0, 0);
   term_domains[num_vars] = rhs.Negation();
   for (int i = num_vars - 1; i >= 0; --i) {
+    const int var = ct->linear().vars(i);
     const int64 var_coeff = ct->linear().coeffs(i);
     right_domain =
         right_domain.AdditionWith(term_domains[i + 1]).RelaxIfTooComplex();
@@ -1134,7 +1141,6 @@ bool CpModelPresolver::PropagateDomainsInLinear(ConstraintProto* ct) {
 
     if (ct->enforcement_literal().size() == 1) {
       // We cannot push the new domain, but we can add some deduction.
-      const int var = ct->linear().vars(i);
       CHECK(RefIsPositive(var));
       if (!context_->DomainOfVarIsIncludedIn(var, new_domain)) {
         context_->deductions.AddDeduction(ct->enforcement_literal(0), var,
@@ -1143,9 +1149,14 @@ bool CpModelPresolver::PropagateDomainsInLinear(ConstraintProto* ct) {
       continue;
     }
 
-    if (!context_->IntersectDomainWith(ct->linear().vars(i), new_domain,
-                                       &new_bounds)) {
+    if (!context_->IntersectDomainWith(var, new_domain, &new_bounds)) {
       return true;
+    }
+
+    if (context_->IsFixed(var)) {
+      // This will make sure we remove that fixed variable from the constraint.
+      recanonicalize = true;
+      continue;
     }
 
     // Can we perform some substitution?
@@ -1168,7 +1179,6 @@ bool CpModelPresolver::PropagateDomainsInLinear(ConstraintProto* ct) {
     // magnitude 1 is important otherwise we can't easily remove the
     // constraint since the fact that the sum of the other terms must be a
     // multiple of coeff will not be enforced anymore.
-    const int var = ct->linear().vars(i);
     if (context_->DomainOf(var) != new_domain) continue;
     if (std::abs(var_coeff) != 1) continue;
     if (options_.parameters.presolve_substitution_level() <= 0) continue;
@@ -1259,7 +1269,7 @@ bool CpModelPresolver::PropagateDomainsInLinear(ConstraintProto* ct) {
   if (new_bounds) {
     context_->UpdateRuleStats("linear: reduced variable domains");
   }
-
+  if (recanonicalize) return CanonicalizeLinear(ct);
   return false;
 }
 
@@ -3405,6 +3415,9 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
         context_->UpdateConstraintVariableUsage(c);
       }
       if (PropagateDomainsInLinear(ct)) {
+        context_->UpdateConstraintVariableUsage(c);
+      }
+      if (PresolveSmallLinear(ct)) {
         context_->UpdateConstraintVariableUsage(c);
       }
       // We first propagate the domains before calling this presolve rule.

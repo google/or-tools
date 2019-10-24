@@ -139,6 +139,13 @@ struct PresolveContext {
   // Note that ReadObjectiveFromProto() makes sure that var_to_constraints of
   // all the variable that appear in the objective contains -1. This is later
   // enforced by all the functions modifying the objective.
+  //
+  // Note(user): Because we process affine relation only on
+  // CanonicalizeObjective(), it is possible that when processing a
+  // canonicalized linear constraint, we don't detect that a variable in affine
+  // relation is in the objective. For now this is fine, because when this is
+  // the case, we also have an affine linear constraint, so we can't really do
+  // anything with that variable since it appear in at least two constraints.
   void ReadObjectiveFromProto();
   void CanonicalizeObjective();
   void WriteObjectiveToProto();
