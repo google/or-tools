@@ -108,9 +108,14 @@ if [ "${BUILDER}" == cmake ]; then
     if [ "${ARCH}" == "amd64" ]; then
 	pyenv global system 3.7
 	python3.7 -m pip install -q virtualenv wheel six
+    elif [ "${ARCH}" == "ppc64le" ]; then
+	sudo apt-get install python3-dev
+	pyenv global system 3.5
+	python3.5 -m pip install -q virtualenv wheel six
     else
-	pyenv global system 3.6
-	python3.6 -m pip install -q virtualenv wheel six
+	sudo apt-get install python3-dev
+	pyenv global system 3.5
+	python3.5 -m pip install -q virtualenv wheel six
     fi
     echo 'travis_fold:end:python3'
   elif [ "${TRAVIS_OS_NAME}" == osx ]; then
