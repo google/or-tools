@@ -14,9 +14,12 @@ function checkenv() {
 	    if [ "${ARCH}" == "amd64" ]; then
 		python3.7 --version
 		python3.7 -m pip --version
-	    else
-		python3.6 --version
-		python3.6 -m pip --version
+	    elif [ "${ARCH}" == "ppc64le" ]; then
+		python3.5 --version
+		python3.5 -m pip --version
+	    elif [ "${ARCH}" == "amd64" ]; then
+		python3.7 --version
+		python3.7 -m pip --version
 	    fi
 	elif [ "${LANGUAGE}" == java ]; then
 		java -version
@@ -197,8 +200,8 @@ if [ "${BUILDER}" == cmake ];then
     export PATH="${HOME}/swig/bin:${PATH}"
     if [ "${ARCH}" == "amd64" ]; then
         pyenv global system 3.7
-    else
-        pyenv global system 3.6
+	# PPC64LE -> 3.5 installed
+	# ARM64 -> 3.7 installed
     fi
     checkenv
     echo 'travis_fold:end:env'
