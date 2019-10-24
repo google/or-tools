@@ -271,6 +271,7 @@ cc_library(
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
         "//ortools/base:map_util",
+        "//ortools/base:mathutil",
         "//ortools/port:proto_utils",
         "//ortools/util:affine_relation",
         "//ortools/util:bitset",

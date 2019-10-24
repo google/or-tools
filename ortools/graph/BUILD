@@ -157,6 +157,7 @@ cc_library(
     deps = [
         ":eulerian_path",
         ":minimum_spanning_tree",
+        ":perfect_matching",
         "//ortools/base",
         "//ortools/linear_solver",
         "//ortools/linear_solver:linear_solver_cc_proto",
@@ -221,6 +222,22 @@ cc_library(
 #        "//ortools/util:zvector",
 #    ],
 #)
+
+cc_library(
+    name = "perfect_matching",
+    srcs = ["perfect_matching.cc"],
+    hdrs = ["perfect_matching.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/strings",
+        "//ortools/base",
+        "//ortools/base:adjustable_priority_queue",
+        "//ortools/base:int_type",
+        "//ortools/base:int_type_indexed_vector",
+        "//ortools/util:saturated_arithmetic",
+    ],
+)
 
 cc_library(
     name = "connectivity",
