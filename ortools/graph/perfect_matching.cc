@@ -106,6 +106,13 @@ MinCostPerfectMatching::Status MinCostPerfectMatching::Solve() {
 using NodeIndex = BlossomGraph::NodeIndex;
 using CostValue = BlossomGraph::CostValue;
 
+const BlossomGraph::NodeIndex BlossomGraph::kNoNodeIndex =
+			BlossomGraph::NodeIndex(-1);
+const BlossomGraph::EdgeIndex BlossomGraph::kNoEdgeIndex =
+			BlossomGraph::EdgeIndex(-1);
+const BlossomGraph::CostValue BlossomGraph::kMaxCostValue =
+			BlossomGraph::CostValue(kint64max);
+
 BlossomGraph::BlossomGraph(int num_nodes) {
   graph_.resize(num_nodes);
   nodes_.reserve(num_nodes);

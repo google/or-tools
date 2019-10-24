@@ -170,9 +170,9 @@ class BlossomGraph {
   DEFINE_INT_TYPE(CostValue, int64);
 
   // Basic constants.
-  static constexpr NodeIndex kNoNodeIndex = NodeIndex(-1);
-  static constexpr EdgeIndex kNoEdgeIndex = EdgeIndex(-1);
-  static constexpr CostValue kMaxCostValue = CostValue(kint64max);
+  static const NodeIndex kNoNodeIndex;
+  static const EdgeIndex kNoEdgeIndex;
+  static const CostValue kMaxCostValue;
 
   // Node related data.
   // We store the edges incident to a node separately in the graph_ member.
