@@ -7,10 +7,10 @@ function checkenv() {
 	    make --version
 	fi
 	cmake --version
-	if [ "${BUILDER}" == cmake ] || [ "${LANGUAGE}" != cc ]; then
+	if [ "${LANGUAGE}" != cc ]; then
 	    swig -version
 	fi
-	if [ "${BUILDER}" == cmake ] || [ "${LANGUAGE}" == python3 ];then
+	if [ "${LANGUAGE}" == python3 ];then
 	    if [ "${ARCH}" == "amd64" ]; then
 		python3.7 --version
 		python3.7 -m pip --version
