@@ -101,21 +101,23 @@ fi
 #############
 if [ "${BUILDER}" == cmake ]; then
   if [ "${TRAVIS_OS_NAME}" == linux ]; then
-    echo 'travis_fold:start:swig'
-    installswig
-    echo 'travis_fold:end:swig'
-    echo 'travis_fold:start:python3'
-    if [ "${ARCH}" == "amd64" ]; then
-	pyenv global system 3.7
+    if [ "${LANGUAGE}" != cc ]; then
+      echo 'travis_fold:start:swig'
+      installswig
+      echo 'travis_fold:end:swig'
+      echo 'travis_fold:start:python3'
+      if [ "${ARCH}" == "amd64" ]; then
+ 	pyenv global system 3.7
 	python3.7 -m pip install -q virtualenv wheel six
-    elif [ "${ARCH}" == "ppc64le" ]; then
-	sudo apt-get install python3-dev
+      elif [ "${ARCH}" == "ppc64le" ]; then
+	sudo apt-get install python3-dev python3-pip
 	python3.5 -m pip install -q virtualenv wheel six
-    elif [ "${ARCH}" == "amd64" ]; then
-	sudo apt-get install python3-dev pcre-dev
+      elif [ "${ARCH}" == "amd64" ]; then
+	sudo apt-get install python3-dev python3-pip pcre-dev
 	python3 -m pip install -q virtualenv wheel six
+      fi
+      echo 'travis_fold:end:python3'
     fi
-    echo 'travis_fold:end:python3'
   elif [ "${TRAVIS_OS_NAME}" == osx ]; then
     echo 'travis_fold:start:c++'
     brew update
