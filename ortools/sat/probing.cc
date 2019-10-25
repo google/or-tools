@@ -52,10 +52,11 @@ bool ProbeBooleanVariables(const double deterministic_time_limit,
   sat_solver->SetAssumptionLevel(0);
   if (!sat_solver->RestoreSolverToAssumptionLevel()) return false;
 
-  const int initial_num_fixed = sat_solver->LiteralTrail().Index();
-  const double initial_deterministic_time = sat_solver->deterministic_time();
-  const double limit = initial_deterministic_time + deterministic_time_limit;
   auto* time_limit = model->GetOrCreate<TimeLimit>();
+  const int initial_num_fixed = sat_solver->LiteralTrail().Index();
+  const double initial_deterministic_time =
+      time_limit->GetElapsedDeterministicTime();
+  const double limit = initial_deterministic_time + deterministic_time_limit;
 
   // For the new direct implication detected.
   int64 num_new_binary = 0;
@@ -85,8 +86,11 @@ bool ProbeBooleanVariables(const double deterministic_time_limit,
     if (implication_graph->RepresentativeOf(literal) != literal) {
       continue;
     }
+
+    // TODO(user): Instead of an hard deterministic limit, we should probably
+    // use a lower one, but reset it each time we have found something useful.
     if (time_limit->LimitReached() ||
-        sat_solver->deterministic_time() > limit) {
+        time_limit->GetElapsedDeterministicTime() > limit) {
       limit_reached = true;
       break;
     }
@@ -102,7 +106,17 @@ bool ProbeBooleanVariables(const double deterministic_time_limit,
       if (sat_solver->Assignment().LiteralIsAssigned(decision)) continue;
 
       const int saved_index = trail.Index();
+      const int64 saved_num_enqueues = integer_trail->num_enqueues();
       sat_solver->EnqueueDecisionAndBackjumpOnConflict(decision);
+
+      // Because we don't properly update the deterministic time in many integer
+      // propagators, we also use as a proxy the number of integer enqueues.
+      sat_solver->AdvanceDeterministicTime(time_limit);
+      time_limit->AdvanceDeterministicTime(
+          static_cast<double>(integer_trail->num_enqueues() -
+                              saved_num_enqueues) *
+          1e-7);
+
       if (sat_solver->IsModelUnsat()) return false;
       if (sat_solver->CurrentDecisionLevel() == 0) continue;
 
@@ -213,7 +227,7 @@ bool ProbeBooleanVariables(const double deterministic_time_limit,
 
   // Display stats.
   const double time_diff =
-      sat_solver->deterministic_time() - initial_deterministic_time;
+      time_limit->GetElapsedDeterministicTime() - initial_deterministic_time;
   const int num_fixed = sat_solver->LiteralTrail().Index();
   const int num_newly_fixed = num_fixed - initial_num_fixed;
   VLOG(1) << "Probing deterministic_time: " << time_diff
