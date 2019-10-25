@@ -31,6 +31,7 @@ IntegerSumLE::IntegerSumLE(const std::vector<Literal>& enforcement_literals,
       upper_bound_(upper),
       trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
       rev_integer_value_repository_(
           model->GetOrCreate<RevIntegerValueRepository>()),
       vars_(vars),
@@ -112,6 +113,8 @@ bool IntegerSumLE::Propagate() {
       rev_lb_fixed_vars_ += lb * coeff;
     }
   }
+  time_limit_->AdvanceDeterministicTime(
+      static_cast<double>(num_vars - rev_num_fixed_vars_) * 1e-9);
 
   // Conflict?
   const IntegerValue slack =

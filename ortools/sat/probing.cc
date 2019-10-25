@@ -106,16 +106,8 @@ bool ProbeBooleanVariables(const double deterministic_time_limit,
       if (sat_solver->Assignment().LiteralIsAssigned(decision)) continue;
 
       const int saved_index = trail.Index();
-      const int64 saved_num_enqueues = integer_trail->num_enqueues();
       sat_solver->EnqueueDecisionAndBackjumpOnConflict(decision);
-
-      // Because we don't properly update the deterministic time in many integer
-      // propagators, we also use as a proxy the number of integer enqueues.
       sat_solver->AdvanceDeterministicTime(time_limit);
-      time_limit->AdvanceDeterministicTime(
-          static_cast<double>(integer_trail->num_enqueues() -
-                              saved_num_enqueues) *
-          1e-7);
 
       if (sat_solver->IsModelUnsat()) return false;
       if (sat_solver->CurrentDecisionLevel() == 0) continue;

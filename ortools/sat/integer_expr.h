@@ -74,6 +74,7 @@ class IntegerSumLE : public PropagatorInterface {
 
   Trail* trail_;
   IntegerTrail* integer_trail_;
+  TimeLimit* time_limit_;
   RevIntegerValueRepository* rev_integer_value_repository_;
 
   // Reversible sum of the lower bound of the fixed variables.

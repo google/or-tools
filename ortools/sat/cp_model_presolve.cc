@@ -970,7 +970,7 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
           context_->ObjectiveMap().contains(var)) {
         if (!context_->IntersectDomainWith(
                 var, context_->ObjectiveDomain().InverseMultiplicationBy(
-		    gtl::FindOrDie(context_->ObjectiveMap(), var)))) {
+                         gtl::FindOrDie(context_->ObjectiveMap(), var)))) {
           return true;
         }
 

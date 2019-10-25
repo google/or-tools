@@ -578,7 +578,8 @@ void PresolveContext::SubstituteVariableInObjective(
 
   if (new_vars_in_objective != nullptr) new_vars_in_objective->clear();
 
-  const int64 coeff_in_objective = gtl::FindOrDie(objective_map, var_in_equality);
+  const int64 coeff_in_objective =
+      gtl::FindOrDie(objective_map, var_in_equality);
   for (int i = 0; i < equality.linear().vars().size(); ++i) {
     int var = equality.linear().vars(i);
     int64 coeff = equality.linear().coeffs(i);
