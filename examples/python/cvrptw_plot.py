@@ -133,7 +133,7 @@ class Customers():
         latest_time = self.time_horizon - time_windows
         start_times = [None for o in time_windows]
         stop_times = [None for o in time_windows]
-        # Make random timedeltas, nominaly from the start of the day.
+        # Make random timedeltas, nominally from the start of the day.
         for idx in range(self.number):
             stime = int(np.random.random_integers(0, latest_time[idx]))
             start_times[idx] = timedelta(seconds=stime)
