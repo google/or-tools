@@ -133,7 +133,7 @@ class Customers():
         latest_time = self.time_horizon - time_windows
         start_times = [None for o in time_windows]
         stop_times = [None for o in time_windows]
-        # Make random timedeltas, nominaly from the start of the day.
+        # Make random timedeltas, nominally from the start of the day.
         for idx in range(self.number):
             stime = int(np.random.random_integers(0, latest_time[idx]))
             start_times[idx] = timedelta(seconds=stime)
@@ -361,13 +361,13 @@ class Vehicles():
 
     Note:
         If numpy arrays are given for capacity and cost, then they must be of
-        the same length, and the number of vehicles are infered from them.
-        If scalars are given, the fleet is homogenious, and the number of
-        vehicles is determied by number.
+        the same length, and the number of vehicles are inferred from them.
+        If scalars are given, the fleet is homogeneous, and the number of
+        vehicles is determined by number.
 
     Args: capacity (scalar or numpy array): The integer capacity of demand
     units.  cost (scalar or numpy array): The fixed cost of the vehicle.  number
-    (Optional [int]): The number of vehicles in a homogenious fleet.
+    (Optional [int]): The number of vehicles in a homogeneous fleet.
   """
 
     def __init__(self, capacity=100, cost=100, number=None):
