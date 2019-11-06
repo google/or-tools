@@ -139,6 +139,9 @@ std::vector<int> CpModelProtoWithMapping::LookupVars(
     for (int64 value : argument.values) {
       result.push_back(LookupConstant(value));
     }
+
+  } else if (argument.type == fz::Argument::INT_VALUE) {
+    result.push_back(LookupConstant(argument.Value()));
   } else {
     CHECK_EQ(argument.type, fz::Argument::INT_VAR_REF_ARRAY);
     for (fz::IntegerVariable* var : argument.variables) {
@@ -256,9 +259,32 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       arg->add_literals(FalseLiteral(var));
     }
   } else if (fz_ct.type == "bool_xor") {
-    auto* arg = ct->mutable_bool_xor();
-    arg->add_literals(TrueLiteral(LookupVar(fz_ct.arguments[0])));
-    arg->add_literals(TrueLiteral(LookupVar(fz_ct.arguments[1])));
+    // This is not the same semantics as the array_bool_xor as this constraint
+    // is actually a fully reified xor(a, b) <==> x.
+    const int a = LookupVar(fz_ct.arguments[0]);
+    const int b = LookupVar(fz_ct.arguments[1]);
+    const int x = LookupVar(fz_ct.arguments[2]);
+
+    // not(x) => a == b
+    ct->add_enforcement_literal(NegatedRef(x));
+    auto* const refute = ct->mutable_linear();
+    refute->add_vars(a);
+    refute->add_coeffs(1);
+    refute->add_vars(b);
+    refute->add_coeffs(-1);
+    refute->add_domain(0);
+    refute->add_domain(0);
+
+    // x => a + b == 1
+    auto* ct2 = proto.add_constraints();
+    ct2->add_enforcement_literal(x);
+    auto* const enforce = ct2->mutable_linear();
+    enforce->add_vars(a);
+    enforce->add_coeffs(1);
+    enforce->add_vars(b);
+    enforce->add_coeffs(1);
+    enforce->add_domain(1);
+    enforce->add_domain(1);
   } else if (fz_ct.type == "array_bool_or") {
     auto* arg = ct->mutable_bool_or();
     for (const int var : LookupVars(fz_ct.arguments[0])) {
@@ -428,7 +454,8 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
              fz_ct.type == "array_var_int_element" ||
              fz_ct.type == "array_var_bool_element" ||
              fz_ct.type == "array_int_element_nonshifted") {
-    if (fz_ct.arguments[0].type == fz::Argument::INT_VAR_REF) {
+    if (fz_ct.arguments[0].type == fz::Argument::INT_VAR_REF ||
+        fz_ct.arguments[0].type == fz::Argument::INT_VALUE) {
       auto* arg = ct->mutable_element();
       arg->set_index(LookupVar(fz_ct.arguments[0]));
       arg->set_target(LookupVar(fz_ct.arguments[2]));

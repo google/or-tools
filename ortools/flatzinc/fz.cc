@@ -150,6 +150,12 @@ Model ParseFlatzincModel(const std::string& input, bool input_is_filename) {
     timer.Start();
     presolve.Run(&model);
     FZLOG << "  - done in " << timer.GetInMs() << " ms" << FZENDL;
+  } else {
+    FZLOG << "Presolve model using minimal rules" << FZENDL;
+    timer.Reset();
+    timer.Start();
+    presolve.RunMinimal(&model);
+    FZLOG << "  - done in " << timer.GetInMs() << " ms" << FZENDL;
   }
 
   // Print statistics.

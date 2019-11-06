@@ -48,6 +48,11 @@ class Presolver {
   // TODO(user): Returns the number of rules applied instead.
   bool Run(Model* model);
 
+  // Minimal version of the presolve.
+  // TODO(user): Currently, without this, the solver fails on a series of
+  // problems like hrc_exp1-1-945_sat.fzn. To investigate.
+  bool RunMinimal(Model* model);
+
   // Cleans the model for the CP solver.
   // In particular, it knows if we use a sat solver inside the CP
   // solver. In that case, for Boolean constraints, it remove the link

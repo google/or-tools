@@ -3644,6 +3644,50 @@ bool Presolver::RegroupDifferent(Model* model) {
   return killed > 0;
 }
 
+bool Presolver::RunMinimal(Model* model) {
+  auto constraint = [model](int index) { return model->constraints()[index]; };
+
+  // Rebuild var_constraint map if empty.
+  if (var_to_constraint_indices_.empty()) {
+    for (int i = 0; i < model->constraints().size(); ++i) {
+      AddConstraintToMapping(i, constraint(i));
+    }
+  }
+
+  bool changed = false;
+  // Let's presolve the bool2int predicates first.
+  for (int index = 0; index < model->constraints().size(); ++index) {
+    Constraint* const ct = constraint(index);
+    if (ct->active && ct->type == "bool2int") {
+      std::string log;
+      ApplyRule(index, ct, "PresolveBool2Int",
+                [this](Constraint* ct, std::string* log) {
+                  return PresolveBool2Int(ct, log);
+                });
+      changed = true;
+    }
+  }
+  if (!var_representative_map_.empty()) {
+    // Some new substitutions were introduced. Let's process them.
+    SubstituteEverywhere(model);
+    var_representative_map_.clear();
+    var_representative_vector_.clear();
+  }
+
+  // Report presolve rules statistics.
+  if (!successful_rules_.empty()) {
+    for (const auto& rule : successful_rules_) {
+      if (rule.second == 1) {
+        FZLOG << "  - rule " << rule.first << " was applied 1 time" << FZENDL;
+      } else {
+        FZLOG << "  - rule " << rule.first << " was applied " << rule.second
+              << " times" << FZENDL;
+      }
+    }
+  }
+  return changed;
+}
+
 bool Presolver::Run(Model* model) {
   // Check the validity of variable domains.
   for (const IntegerVariable* var : model->variables()) {
