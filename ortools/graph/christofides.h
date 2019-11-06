@@ -20,7 +20,6 @@
 #ifndef OR_TOOLS_GRAPH_CHRISTOFIDES_H_
 #define OR_TOOLS_GRAPH_CHRISTOFIDES_H_
 
-#include "absl/container/flat_hash_map.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/graph/eulerian_path.h"
@@ -58,6 +57,7 @@ class ChristofidesPathSolver {
   // By default, MINIMAL_WEIGHT_MATCHING is selected.
   // TODO(user): Change the default when minimum matching gets faster.
   void SetMatchingAlgorithm(MatchingAlgorithm matching) {
+    // TODO(user): Change the default when minimum matching gets faster.
     matching_ = matching;
   }
 
@@ -102,39 +102,46 @@ class ChristofidesPathSolver {
 
 // Computes a minimum weight perfect matching on an undirected graph.
 template <typename WeightFunctionType, typename GraphType>
-std::vector<typename GraphType::ArcIndex> ComputeMinimumWeightMatching(
-    const GraphType& graph, const WeightFunctionType& weight) {
+std::vector<
+    std::pair<typename GraphType::NodeIndex, typename GraphType::NodeIndex>>
+ComputeMinimumWeightMatching(const GraphType& graph,
+                             const WeightFunctionType& weight) {
   using ArcIndex = typename GraphType::ArcIndex;
   using NodeIndex = typename GraphType::NodeIndex;
   MinCostPerfectMatching matching(graph.num_nodes());
-  absl::flat_hash_map<std::pair<NodeIndex, NodeIndex>, ArcIndex> arcs;
   for (NodeIndex tail : graph.AllNodes()) {
     for (const ArcIndex arc : graph.OutgoingArcs(tail)) {
       const NodeIndex head = graph.Head(arc);
-      matching.AddEdgeWithCost(tail, head, weight(arc));
-      arcs[{tail, head}] = arc;
+      // Adding both arcs is redudant for MinCostPerfectMatching.
+      if (tail < head) {
+        matching.AddEdgeWithCost(tail, head, weight(arc));
+      }
     }
   }
   MinCostPerfectMatching::Status status = matching.Solve();
   DCHECK_EQ(status, MinCostPerfectMatching::OPTIMAL);
-  std::vector<ArcIndex> match;
+  std::vector<std::pair<NodeIndex, NodeIndex>> match;
   for (NodeIndex tail : graph.AllNodes()) {
     const NodeIndex head = matching.Match(tail);
     if (tail < head) {  // Both arcs are matched for a given edge, we keep one.
-      match.push_back(arcs[{tail, head}]);
+      match.emplace_back(tail, head);
     }
   }
   return match;
 }
 
 #if defined(USE_CBC) || defined(USE_SCIP)
-// Computes a minimum weight perfect matching on an undirected graph using a
-// Mixed Integer Programming model.
 // TODO(user): Handle infeasible cases if this algorithm is used outside of
 // Christofides.
+/**
+ * Computes a minimum weight perfect matching on an undirected graph using a
+ * Mixed Integer Programming model.
+ */
 template <typename WeightFunctionType, typename GraphType>
-std::vector<typename GraphType::ArcIndex> ComputeMinimumWeightMatchingWithMIP(
-    const GraphType& graph, const WeightFunctionType& weight) {
+std::vector<
+    std::pair<typename GraphType::NodeIndex, typename GraphType::NodeIndex>>
+ComputeMinimumWeightMatchingWithMIP(const GraphType& graph,
+                                    const WeightFunctionType& weight) {
   using ArcIndex = typename GraphType::ArcIndex;
   using NodeIndex = typename GraphType::NodeIndex;
   MPModelProto model;
@@ -143,7 +150,7 @@ std::vector<typename GraphType::ArcIndex> ComputeMinimumWeightMatchingWithMIP(
   // and constraints ensuring that each node appears in exactly one selected
   // arc. The objective is to minimize the sum of the weights of selected arcs.
   // It is assumed the graph is symmetrical.
-  absl::flat_hash_map<ArcIndex, ArcIndex> variable_indices;
+  std::vector<int> variable_indices(graph.num_arcs(), -1);
   for (NodeIndex node : graph.AllNodes()) {
     // Creating arc-selection Boolean variable.
     for (const ArcIndex arc : graph.OutgoingArcs(node)) {
@@ -167,11 +174,13 @@ std::vector<typename GraphType::ArcIndex> ComputeMinimumWeightMatchingWithMIP(
     for (const ArcIndex arc : graph.OutgoingArcs(node)) {
       const NodeIndex head = graph.Head(arc);
       if (node < head) {
+        const int arc_var = variable_indices[arc];
+        DCHECK_GE(arc_var, 0);
         MPConstraintProto* one_of_ct = model.mutable_constraint(node);
-        one_of_ct->add_var_index(variable_indices[arc]);
+        one_of_ct->add_var_index(arc_var);
         one_of_ct->add_coefficient(1);
         one_of_ct = model.mutable_constraint(head);
-        one_of_ct->add_var_index(variable_indices[arc]);
+        one_of_ct->add_var_index(arc_var);
         one_of_ct->add_coefficient(1);
       }
     }
@@ -189,11 +198,12 @@ std::vector<typename GraphType::ArcIndex> ComputeMinimumWeightMatchingWithMIP(
   CHECK_EQ(status, MPSolver::OPTIMAL);
   MPSolutionResponse response;
   mp_solver.FillSolutionResponseProto(&response);
-  std::vector<ArcIndex> matching;
-  for (auto arc : variable_indices) {
-    if (response.variable_value(arc.second) > .9) {
-      DCHECK_GE(response.variable_value(arc.second), 1.0 - 1e-4);
-      matching.push_back(arc.first);
+  std::vector<std::pair<NodeIndex, NodeIndex>> matching;
+  for (ArcIndex arc = 0; arc < variable_indices.size(); ++arc) {
+    const int arc_var = variable_indices[arc];
+    if (arc_var >= 0 && response.variable_value(arc_var) > .9) {
+      DCHECK_GE(response.variable_value(arc_var), 1.0 - 1e-4);
+      matching.emplace_back(graph.Tail(arc), graph.Head(arc));
     }
   }
   return matching;
@@ -265,7 +275,7 @@ void ChristofidesPathSolver<CostType, ArcIndex, NodeIndex,
   const NodeIndex reduced_size = odd_degree_nodes.size();
   DCHECK_NE(0, reduced_size);
   CompleteGraph<NodeIndex, ArcIndex> reduced_graph(reduced_size);
-  std::vector<ArcIndex> closure_arcs;
+  std::vector<std::pair<NodeIndex, NodeIndex>> closure_arcs;
   switch (matching_) {
     case MatchingAlgorithm::MINIMUM_WEIGHT_MATCHING: {
       closure_arcs = ComputeMinimumWeightMatching(
@@ -311,7 +321,7 @@ void ChristofidesPathSolver<CostType, ArcIndex, NodeIndex,
         if (head != tail && !touched_nodes[tail] && !touched_nodes[head]) {
           touched_nodes[tail] = true;
           touched_nodes[head] = true;
-          closure_arcs.push_back(arc);
+          closure_arcs.emplace_back(tail, head);
         }
       }
       break;
@@ -323,14 +333,10 @@ void ChristofidesPathSolver<CostType, ArcIndex, NodeIndex,
   ::util::ReverseArcListGraph<NodeIndex, ArcIndex> egraph(
       num_nodes, closure_arcs.size() + mst.size());
   for (ArcIndex arc : mst) {
-    const NodeIndex tail = graph_.Tail(arc);
-    const NodeIndex head = graph_.Head(arc);
-    egraph.AddArc(tail, head);
+    egraph.AddArc(graph_.Tail(arc), graph_.Head(arc));
   }
-  for (ArcIndex arc : closure_arcs) {
-    const NodeIndex tail = odd_degree_nodes[reduced_graph.Tail(arc)];
-    const NodeIndex head = odd_degree_nodes[reduced_graph.Head(arc)];
-    egraph.AddArc(tail, head);
+  for (const auto arc : closure_arcs) {
+    egraph.AddArc(odd_degree_nodes[arc.first], odd_degree_nodes[arc.second]);
   }
   std::vector<bool> touched(num_nodes, false);
   DCHECK(IsEulerianGraph(egraph));
