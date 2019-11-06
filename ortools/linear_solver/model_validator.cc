@@ -23,6 +23,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/types/optional.h"
 #include "ortools/base/accurate_sum.h"
+#include "ortools/base/commandlineflags.h"
 #include "ortools/base/status.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/port/file.h"
@@ -30,28 +31,44 @@
 #include "ortools/util/fp_utils.h"
 #include "ortools/util/lazy_mutable_copy.h"
 
+DEFINE_double(
+    model_validator_infinity, 1e100,
+    "Anything above or equal to this magnitude will be considered infinity.");
+
 namespace operations_research {
 namespace {
 
-static const double kInfinity = std::numeric_limits<double>::infinity();
+bool IsFinite(double value) {
+  return std::isfinite(value) && value < FLAGS_model_validator_infinity &&
+         value > -FLAGS_model_validator_infinity;
+}
+
+// Internal method to detect errors in bounds. The object passed as parameter
+// must have "lower_bound" and "upper_bound" fields.
+template <typename BoundedElement>
+std::string FindErrorInBounds(const BoundedElement& element) {
+  if (std::isnan(element.lower_bound()) || std::isnan(element.upper_bound()) ||
+      element.lower_bound() >= FLAGS_model_validator_infinity ||
+      element.upper_bound() <= -FLAGS_model_validator_infinity ||
+      element.lower_bound() > element.upper_bound()) {
+    return absl::StrFormat("Infeasible bounds: [%f, %f]", element.lower_bound(),
+                           element.upper_bound());
+  }
+  return "";
+}
 
 // Internal method to detect errors in a single variable.
 std::string FindErrorInMPVariable(const MPVariableProto& variable) {
-  if (std::isnan(variable.lower_bound()) ||
-      std::isnan(variable.upper_bound()) ||
-      variable.lower_bound() == kInfinity ||
-      variable.upper_bound() == -kInfinity ||
-      variable.lower_bound() > variable.upper_bound()) {
-    return absl::StrCat("Infeasible bounds: [", (variable.lower_bound()), ", ",
-                        (variable.upper_bound()), "]");
-  }
+  const std::string bound_error = FindErrorInBounds(variable);
+  if (!bound_error.empty()) return bound_error;
+
   if (variable.is_integer() &&
       ceil(variable.lower_bound()) > floor(variable.upper_bound())) {
     return absl::StrCat(
         "Infeasible bounds for integer variable: [", (variable.lower_bound()),
         ", ", (variable.upper_bound()), "]", " translate to the empty set");
   }
-  if (!std::isfinite(variable.objective_coefficient())) {
+  if (!IsFinite(variable.objective_coefficient())) {
     return absl::StrCat("Invalid objective_coefficient: ",
                         (variable.objective_coefficient()));
   }
@@ -83,14 +100,8 @@ std::string FindDuplicateVarIndex(const Iterable& var_indices,
 // the model, and it will be all set to false before and after the call.
 std::string FindErrorInMPConstraint(const MPConstraintProto& constraint,
                                     std::vector<bool>* var_mask) {
-  if (std::isnan(constraint.lower_bound()) ||
-      std::isnan(constraint.upper_bound()) ||
-      constraint.lower_bound() == kInfinity ||
-      constraint.upper_bound() == -kInfinity ||
-      constraint.lower_bound() > constraint.upper_bound()) {
-    return absl::StrCat("Infeasible bounds: [", (constraint.lower_bound()),
-                        ", ", (constraint.upper_bound()), "]");
-  }
+  const std::string bound_error = FindErrorInBounds(constraint);
+  if (!bound_error.empty()) return bound_error;
 
   // TODO(user): clarify explicitly, at least in a comment, whether we want
   // to accept empty constraints (i.e. without variables).
@@ -109,7 +120,7 @@ std::string FindErrorInMPConstraint(const MPConstraintProto& constraint,
                           " is out of bounds");
     }
     const double coeff = constraint.coefficient(i);
-    if (!std::isfinite(coeff)) {
+    if (!IsFinite(coeff)) {
       return absl::StrCat("coefficient(", i, ")=", (coeff), " is invalid");
     }
   }
@@ -188,7 +199,7 @@ std::string FindErrorInMPSosConstraint(const MPModelProto& model,
     }
   }
   for (int i = 0; i < sos.weight_size(); ++i) {
-    if (!std::isfinite(sos.weight(i))) {
+    if (!IsFinite(sos.weight(i))) {
       return absl::StrCat("Invalid weight: ", sos.weight(i));
     }
     if (i == 0) continue;
@@ -211,17 +222,24 @@ std::string FindErrorInMPQuadraticConstraint(const MPModelProto& model,
   if (qcst.var_index_size() != qcst.coefficient_size()) {
     return "var_index_size() != coefficient_size()";
   }
+
+  const std::string bound_error = FindErrorInBounds(qcst);
+  if (!bound_error.empty()) return bound_error;
+
   for (int i = 0; i < qcst.var_index_size(); ++i) {
     if (qcst.var_index(i) < 0 || qcst.var_index(i) >= num_vars) {
       return absl::StrCat("var_index(", i, ")=", qcst.var_index(i),
                           " is invalid.", " It must be in [0, ", num_vars, ")");
     }
 
-    if (!std::isfinite(qcst.coefficient(i))) {
+    if (!IsFinite(qcst.coefficient(i))) {
       return absl::StrCat("coefficient(", i, ")=", qcst.coefficient(i),
                           " is invalid");
     }
   }
+  const std::string duplicate_error =
+      FindDuplicateVarIndex(qcst.var_index(), var_mask);
+  if (!duplicate_error.empty()) return duplicate_error;
 
   if (qcst.qvar1_index_size() != qcst.qvar2_index_size() ||
       qcst.qvar1_index_size() != qcst.qcoefficient_size()) {
@@ -238,7 +256,7 @@ std::string FindErrorInMPQuadraticConstraint(const MPModelProto& model,
                           " is invalid.", " It must be in [0, ", num_vars, ")");
     }
 
-    if (!std::isfinite(qcst.qcoefficient(i))) {
+    if (!IsFinite(qcst.qcoefficient(i))) {
       return absl::StrCat("qcoefficient(", i, ")=", qcst.qcoefficient(i),
                           " is invalid");
     }
@@ -307,7 +325,7 @@ std::string FindErrorInMPMinMaxConstraint(
     return "resultant_var_index is required.";
   }
 
-  if (!std::isfinite(min_max.constant())) {
+  if (!IsFinite(min_max.constant())) {
     return absl::StrCat("Invalid constant: ", (min_max.constant()));
   }
 
@@ -344,7 +362,7 @@ std::string FindErrorInQuadraticObjective(const MPQuadraticObjective& qobj,
                           " is invalid.", " It must be in [0, ", num_vars, ")");
     }
 
-    if (!std::isfinite(qobj.coefficient(i))) {
+    if (!IsFinite(qobj.coefficient(i))) {
       return absl::StrCat("coefficient(", i, ")=", (qobj.coefficient(i)),
                           " is invalid");
     }
@@ -370,9 +388,9 @@ std::string FindErrorInSolutionHint(
       return absl::StrCat("Duplicate var_index = ", var_index);
     }
     var_in_hint[var_index] = true;
-    if (!std::isfinite(solution_hint.var_value(i))) {
+    if (!IsFinite(solution_hint.var_value(i))) {
       return absl::StrCat("var_value(", i, ")=", (solution_hint.var_value(i)),
-                          " is not a finite number");
+                          " is invalid");
     }
   }
   return std::string();
@@ -384,7 +402,7 @@ std::string FindErrorInMPModelProto(const MPModelProto& model) {
   // it is not clear whether MPSolver::Solve() will always respond in the same
   // way, depending on the solvers.
 
-  if (!std::isfinite(model.objective_offset())) {
+  if (!IsFinite(model.objective_offset())) {
     return absl::StrCat("Invalid objective_offset: ",
                         (model.objective_offset()));
   }
@@ -801,9 +819,9 @@ void ApplyVerifiedMPModelDelta(const MPModelDeltaProto& delta,
     MergeMPConstraintProtoExceptTerms(/*from=*/override_ct, /*to=*/baseline);
     // Special case: the override is neutralized.
     if (override_ct.has_lower_bound() &&
-        override_ct.lower_bound() == -kInfinity &&
+        override_ct.lower_bound() <= -FLAGS_model_validator_infinity &&
         override_ct.has_upper_bound() &&
-        override_ct.upper_bound() == kInfinity) {
+        override_ct.upper_bound() >= FLAGS_model_validator_infinity) {
       baseline->clear_var_index();
       baseline->clear_coefficient();
       continue;

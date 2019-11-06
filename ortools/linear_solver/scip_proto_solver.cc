@@ -30,6 +30,7 @@
 #include "absl/types/optional.h"
 #include "ortools/base/canonical_errors.h"
 #include "ortools/base/cleanup.h"
+#include "ortools/base/commandlineflags.h"
 #include "ortools/base/status.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -50,6 +51,10 @@
 #include "scip/type_paramset.h"
 #include "scip/type_var.h"
 
+DEFINE_string(scip_proto_solver_output_cip_file, "",
+              "If given, saves the generated CIP file here. Useful for "
+              "reporting bugs to SCIP.");
+
 namespace operations_research {
 
 util::Status ScipSetSolverSpecificParameters(const std::string& parameters,
@@ -69,6 +74,7 @@ util::Status ScipSetSolverSpecificParameters(const std::string& parameters,
     absl::RemoveExtraAsciiWhitespace(&name);
     std::string value = key_value[1];
     absl::RemoveExtraAsciiWhitespace(&value);
+    const double infinity = SCIPinfinity(scip);
 
     SCIP_PARAM* param = SCIPgetParam(scip, name.c_str());
     if (param == nullptr) {
@@ -106,6 +112,7 @@ util::Status ScipSetSolverSpecificParameters(const std::string& parameters,
       case SCIP_PARAMTYPE_REAL: {
         double parsed_value;
         if (absl::SimpleAtod(value, &parsed_value)) {
+          if (parsed_value > infinity) parsed_value = infinity;
           RETURN_IF_SCIP_ERROR(
               SCIPsetRealParam(scip, name.c_str(), parsed_value));
           continue;
@@ -643,6 +650,52 @@ std::string FindErrorInMPModelForScip(const MPModelProto& model, SCIP* scip) {
     }
   }
 
+  for (int c = 0; c < model.general_constraint_size(); ++c) {
+    const MPGeneralConstraintProto& cst = model.general_constraint(c);
+    switch (cst.general_constraint_case()) {
+      case MPGeneralConstraintProto::kQuadraticConstraint:
+        if (cst.quadratic_constraint().lower_bound() >= infinity) {
+          return absl::StrFormat(
+              "Quadratic constraint %d's lower_bound is considered +infinity",
+              c);
+        }
+        if (cst.quadratic_constraint().upper_bound() <= -infinity) {
+          return absl::StrFormat(
+              "Quadratic constraint %d's upper_bound is considered -infinity",
+              c);
+        }
+        for (int i = 0; i < cst.quadratic_constraint().coefficient_size();
+             ++i) {
+          const double coefficient = cst.quadratic_constraint().coefficient(i);
+          if (coefficient >= infinity || coefficient <= -infinity) {
+            return absl::StrFormat(
+                "Quadratic constraint %d's linear coefficient #%d considered "
+                "infinite",
+                c, i);
+          }
+        }
+        break;
+      case MPGeneralConstraintProto::kMinConstraint:
+        if (cst.min_constraint().constant() >= infinity ||
+            cst.min_constraint().constant() <= -infinity) {
+          return absl::StrFormat(
+              "Min constraint %d's coefficient constant considered infinite",
+              c);
+        }
+        break;
+      case MPGeneralConstraintProto::kMaxConstraint:
+        if (cst.max_constraint().constant() >= infinity ||
+            cst.max_constraint().constant() <= -infinity) {
+          return absl::StrFormat(
+              "Max constraint %d's coefficient constant considered infinite",
+              c);
+        }
+        break;
+      default:
+        continue;
+    }
+  }
+
   const MPQuadraticObjective& quad_obj = model.quadratic_objective();
   for (int i = 0; i < quad_obj.coefficient_size(); ++i) {
     if (std::abs(quad_obj.coefficient(i)) >= infinity) {
@@ -852,6 +905,10 @@ util::StatusOr<MPSolutionResponse> ScipSolveProto(
   RETURN_IF_SCIP_ERROR(SCIPaddOrigObjoffset(scip, model.objective_offset()));
   RETURN_IF_ERROR(AddSolutionHint(model, scip, scip_variables));
 
+  if (!FLAGS_scip_proto_solver_output_cip_file.empty()) {
+    SCIPwriteOrigProblem(scip, FLAGS_scip_proto_solver_output_cip_file.c_str(),
+                         nullptr, true);
+  }
   RETURN_IF_SCIP_ERROR(SCIPsolve(scip));
 
   SCIP_SOL* const solution = SCIPgetBestSol(scip);

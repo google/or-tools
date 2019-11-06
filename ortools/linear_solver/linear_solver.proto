@@ -185,7 +185,7 @@ message MPQuadraticConstraint {
   // Sparse representation of linear terms in the quadratic constraint, where
   // term i is var_index[i] * coefficient[i].
   // `var_index` are variable indices w.r.t the "variable" field in
-  // MPModelProto.
+  // MPModelProto, and should be unique.
   repeated int32 var_index = 1;
   repeated double coefficient = 2;  // Must be finite.
 
