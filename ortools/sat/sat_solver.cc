@@ -838,7 +838,7 @@ void SatSolver::Backtrack(int target_level) {
 
   // Do nothing if the CurrentDecisionLevel() is already correct.
   // This is needed, otherwise target_trail_index below will remain at zero and
-  // that will cause some problems. Note that we could forbid an user to call
+  // that will cause some problems. Note that we could forbid a user to call
   // Backtrack() with the current level, but that is annoying when you just
   // want to reset the solver with Backtrack(0).
   if (CurrentDecisionLevel() == target_level) return;
@@ -2061,7 +2061,7 @@ void SatSolver::MinimizeConflict(
 // other literals of the conflict. It is directly infered if the literals of its
 // reason clause are either from level 0 or from the conflict itself.
 //
-// Note that because of the assignement struture, there is no need to process
+// Note that because of the assignement structure, there is no need to process
 // the literals of the conflict in order. While exploring the reason for a
 // literal assignement, there will be no cycles.
 void SatSolver::MinimizeConflictSimple(std::vector<Literal>* conflict) {
@@ -2433,7 +2433,7 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
   int num_deleted_clauses = entries.size() - num_kept_clauses;
 
   // Tricky: Because the order of the clauses_info iteration is NOT
-  // deterministic (pointer keys), we also keep all the clauses wich have the
+  // deterministic (pointer keys), we also keep all the clauses which have the
   // same LBD and activity as the last one so the behavior is deterministic.
   while (num_deleted_clauses > 0) {
     const ClauseInfo& a = entries[num_deleted_clauses].second;

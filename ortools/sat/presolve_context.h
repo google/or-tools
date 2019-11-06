@@ -65,8 +65,16 @@ struct PresolveContext {
     return domains[var].IsIncludedIn(domain);
   }
 
+  // Returns true iff the variable is not the representative of an equivalence
+  // class of size at least 2.
+  bool VariableIsNotRepresentativeOfEquivalenceClass(int ref) const;
+
   // Returns true if this ref only appear in one constraint.
   bool VariableIsUniqueAndRemovable(int ref) const;
+
+  // Same as VariableIsUniqueAndRemovable() except that in this case the
+  // variable also appear in the objective in addition to a single constraint.
+  bool VariableWithCostIsUniqueAndRemovable(int ref) const;
 
   // Returns false if the new domain is empty. Sets 'domain_modified' (if
   // provided) to true iff the domain is modified otherwise does not change it.
@@ -116,7 +124,7 @@ struct PresolveContext {
 
   // This makes sure that the affine relation only uses one of the
   // representative from the var_equiv_relations.
-  AffineRelation::Relation GetAffineRelation(int ref);
+  AffineRelation::Relation GetAffineRelation(int ref) const;
 
   // Creates the internal structure for any new variables in working_model.
   void InitializeNewDomains();
@@ -133,6 +141,14 @@ struct PresolveContext {
   // create it, add the corresponding constraints and returns it.
   int GetOrCreateVarValueEncoding(int ref, int64 value);
 
+  // Stores the fact that literal implies var == value.
+  // It returns true if that information is new.
+  bool StoreLiteralImpliesVarEqValue(int literal, int var, int64 value);
+
+  // Stores the fact that literal implies var != value.
+  // It returns true if that information is new.
+  bool StoreLiteralImpliesVarNEqValue(int literal, int var, int64 value);
+
   // Objective handling functions. We load it at the beginning so that during
   // presolve we can work on the more efficient hash_map representation.
   //
@@ -147,7 +163,7 @@ struct PresolveContext {
   // the case, we also have an affine linear constraint, so we can't really do
   // anything with that variable since it appear in at least two constraints.
   void ReadObjectiveFromProto();
-  void CanonicalizeObjective();
+  ABSL_MUST_USE_RESULT bool CanonicalizeObjective();
   void WriteObjectiveToProto();
 
   // Given a variable defined by the given inequality that also appear in the
@@ -166,6 +182,9 @@ struct PresolveContext {
   const Domain& ObjectiveDomain() const { return objective_domain; }
   const absl::flat_hash_map<int, int64>& ObjectiveMap() const {
     return objective_map;
+  }
+  bool ObjectiveDomainIsConstraining() const {
+    return objective_domain_is_constraining;
   }
 
   // This regroups all the affine relations between variables. Note that the
@@ -194,6 +213,15 @@ struct PresolveContext {
   // value v of the variable i.
   absl::flat_hash_map<std::pair<int, int64>, int> encoding;
 
+  // Contains the currently collected half value encodings:
+  //   i.e.: literal => var ==/!= value
+  // The state is accumulated (adding x => var == value then !x => var != value)
+  // will deduce that x equivalent to var == value.
+  absl::flat_hash_map<std::pair<int, int64>, absl::flat_hash_set<int>>
+      eq_half_encoding;
+  absl::flat_hash_map<std::pair<int, int64>, absl::flat_hash_set<int>>
+      neq_half_encoding;
+
   // Variable <-> constraint graph.
   // The vector list is sorted and contains unique elements.
   //
@@ -204,6 +232,17 @@ struct PresolveContext {
   // TODO(user): Make this private?
   std::vector<std::vector<int>> constraint_to_vars;
   std::vector<absl::flat_hash_set<int>> var_to_constraints;
+
+  // For each variables, list the constraints that just enforce a lower bound
+  // (resp. upper bound) on that variable. If all the constraints in which a
+  // variable appear are in the same direction, then we can usually fix a
+  // variable to one of its bound (modulo its cost).
+  //
+  // TODO(user): Keeping these extra vector of hash_set seems inefficient. Come
+  // up with a better way to detect if a variable is only constrainted in one
+  // direction.
+  std::vector<absl::flat_hash_set<int>> var_to_ub_only_constraints;
+  std::vector<absl::flat_hash_set<int>> var_to_lb_only_constraints;
 
   // We maintain how many time each interval is used.
   std::vector<std::vector<int>> constraint_to_intervals;
@@ -244,6 +283,17 @@ struct PresolveContext {
  private:
   void AddVariableUsage(int c);
 
+  // Inserts an half reified var value encoding (literal => var ==/!= value).
+  // It returns true if the new state is different from the old state.
+  // Not that if imply_eq is false, the literal will be stored in its negated
+  // form.
+  //
+  // Thus, if you detect literal <=> var == value, then two calls must be made:
+  //     InsertHalfVarValueEncoding(literal, var, value, true);
+  //     InsertHalfVarValueEncoding(NegatedRef(literal), var, value, false);
+  bool InsertHalfVarValueEncoding(int literal, int var, int64 value,
+                                  bool imply_eq);
+
   // Initially false, and set to true on the first inconsistency.
   bool is_unsat = false;
 
@@ -255,6 +305,7 @@ struct PresolveContext {
   // on large problems (also because the objective is often dense). At the end
   // we re-convert it to its proto form.
   absl::flat_hash_map<int, int64> objective_map;
+  bool objective_domain_is_constraining = false;
   Domain objective_domain;
   double objective_offset;
   double objective_scaling_factor;

@@ -85,6 +85,9 @@ DEFINE_string(cp_model_dump_file, "",
               "SolveCpModel() will dump its model to this file. Note that the "
               "file will be ovewritten with the last such model. "
               "TODO(fdid): dump all model to a recordio file instead?");
+DEFINE_string(cp_model_dump_presolved_model, "",
+              "DEBUG ONLY. If non empty, dump the presolved cp_model.proto in "
+              "text format to this file.");
 DEFINE_string(cp_model_params, "",
               "This is interpreted as a text SatParameters proto. The "
               "specified fields will override the normal ones for all solves.");
@@ -1487,9 +1490,9 @@ void QuickSolveWithHint(const CpModelProto& model_proto,
 
 // TODO(user): If this ever shows up in the profile, we could avoid copying
 // the mapping_proto if we are careful about how we modify the variable domain
-// before postsolving it.
-void PostsolveResponse(const std::string& debug_info,
-                       const CpModelProto& model_proto,
+// before postsolving it. Note that 'num_variables_in_original_model' referes to
+// the model before presolve.
+void PostsolveResponse(const int64 num_variables_in_original_model,
                        CpModelProto mapping_proto,
                        const std::vector<int>& postsolve_mapping,
                        WallTimer* wall_timer, CpSolverResponse* response) {
@@ -1541,15 +1544,11 @@ void PostsolveResponse(const std::string& debug_info,
   response->clear_solution_lower_bounds();
   response->clear_solution_upper_bounds();
   if (!postsolve_response.solution().empty()) {
-    for (int i = 0; i < model_proto.variables_size(); ++i) {
+    for (int i = 0; i < num_variables_in_original_model; ++i) {
       response->add_solution(postsolve_response.solution(i));
     }
-    CHECK(SolutionIsFeasible(model_proto,
-                             std::vector<int64>(response->solution().begin(),
-                                                response->solution().end())))
-        << debug_info;
   } else {
-    for (int i = 0; i < model_proto.variables_size(); ++i) {
+    for (int i = 0; i < num_variables_in_original_model; ++i) {
       response->add_solution_lower_bounds(
           postsolve_response.solution_lower_bounds(i));
       response->add_solution_upper_bounds(
@@ -1873,6 +1872,18 @@ class FullProblemSolver : public SubSolver {
   bool previous_task_is_completed_ GUARDED_BY(mutex_) = true;
 };
 
+namespace {
+
+// Returns true if the offset and scaling factor of the given objectives are
+// same and false otherwise.
+bool CompareObjectiveScalingAndOffset(const CpObjectiveProto& objective1,
+                                      const CpObjectiveProto& objective2) {
+  if (objective1.offset() != objective2.offset()) return false;
+  if (objective1.scaling_factor() != objective2.scaling_factor()) return false;
+  return true;
+}
+}  // namespace
+
 // A Subsolver that generate LNS solve from a given neighborhood.
 class LnsSolver : public SubSolver {
  public:
@@ -1972,6 +1983,8 @@ class LnsSolver : public SubSolver {
       shared_->time_limit->UpdateLocalLimit(
           local_model.GetOrCreate<TimeLimit>());
 
+      const int64 num_neighborhood_model_vars =
+          neighborhood.cp_model.variables_size();
       // Presolve and solve the LNS fragment.
       CpModelProto mapping_proto;
       std::vector<int> postsolve_mapping;
@@ -2001,9 +2014,99 @@ class LnsSolver : public SubSolver {
 
       // TODO(user): we actually do not need to postsolve if the solution is
       // not going to be used...
-      PostsolveResponse(solution_info, *shared_->model_proto, mapping_proto,
+      PostsolveResponse(num_neighborhood_model_vars, mapping_proto,
                         postsolve_mapping, shared_->wall_timer,
                         &local_response);
+      if (generator_->IsRelaxationGenerator()) {
+        data.status = local_response.status();
+        data.deterministic_time = local_response.deterministic_time();
+        data.new_objective = data.base_objective;
+        // TODO(user): The objective value might not be a good signal to
+        // adjust difficulty. Use bounds instead.
+        bool has_feasible_solution = false;
+        if (local_response.status() == CpSolverStatus::OPTIMAL ||
+            local_response.status() == CpSolverStatus::FEASIBLE) {
+          data.new_objective = IntegerValue(ComputeInnerObjective(
+              shared_->model_proto->objective(), local_response));
+          has_feasible_solution = true;
+        }
+        generator_->AddSolveData(data);
+
+        if (local_response.status() == CpSolverStatus::INFEASIBLE) {
+          shared_->response->NotifyThatImprovingProblemIsInfeasible(
+              local_response.solution_info());
+        }
+
+        if (shared_->model_proto->has_objective()) {
+          const IntegerValue current_obj_lb =
+              shared_->response->GetInnerObjectiveLowerBound();
+
+          const IntegerValue local_obj_lb =
+              local_response_manager.GetInnerObjectiveLowerBound();
+
+          const bool is_maximization =
+              (shared_->model_proto->objective().scaling_factor() < 0);
+
+          const double scaled_current_obj_bound = ScaleObjectiveValue(
+              shared_->model_proto->objective(), current_obj_lb.value());
+          const double scaled_local_obj_bound = ScaleObjectiveValue(
+              neighborhood.cp_model.objective(), local_obj_lb.value());
+
+          // If the objective bounds are not improving, abort early.
+          if ((is_maximization &&
+               scaled_local_obj_bound > scaled_current_obj_bound) ||
+              (!is_maximization &&
+               scaled_local_obj_bound < scaled_current_obj_bound)) {
+            return;
+          }
+
+          // Update the bound.
+          const IntegerValue new_inner_obj_lb = IntegerValue(
+              std::ceil(UnscaleObjectiveValue(shared_->model_proto->objective(),
+                                              scaled_local_obj_bound) -
+                        1e-6));
+          if (new_inner_obj_lb > current_obj_lb) {
+            const IntegerValue current_obj_ub =
+                shared_->response->GetInnerObjectiveUpperBound();
+            shared_->response->UpdateInnerObjectiveBounds(
+                solution_info, new_inner_obj_lb, current_obj_ub);
+          }
+        }
+
+        if (local_response.solution_info().empty()) {
+          local_response.set_solution_info(solution_info);
+        } else {
+          local_response.set_solution_info(
+              absl::StrCat(local_response.solution_info(), " ", solution_info));
+        }
+
+        if (has_feasible_solution &&
+            SolutionIsFeasible(
+                *shared_->model_proto,
+                std::vector<int64>(local_response.solution().begin(),
+                                   local_response.solution().end()))) {
+          // If we have a solution of the relaxed problem, we check if it is
+          // also a valid solution of the non-relaxed one.
+          shared_->response->NewSolution(local_response,
+                                         /*model=*/nullptr);
+
+          // Mark the solution optimal if the relaxation status is optimal.
+          if (local_response.status() == CpSolverStatus::OPTIMAL) {
+            shared_->response->NotifyThatImprovingProblemIsInfeasible(
+                local_response.solution_info());
+            shared_->time_limit->Stop();
+          }
+        }
+        return;
+      }
+
+      if (!local_response.solution().empty()) {
+        CHECK(SolutionIsFeasible(
+            *shared_->model_proto,
+            std::vector<int64>(local_response.solution().begin(),
+                               local_response.solution().end())))
+            << solution_info;
+      }
 
       local_response_manager.BestSolutionInnerObjectiveValue();
       if (local_response.solution_info().empty()) {
@@ -2173,6 +2276,14 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
           absl::make_unique<ConstraintGraphNeighborhoodGenerator>(
               helper, absl::StrCat("cst_lns_", strategy_name)),
           local_params, helper, &shared));
+
+      if (parameters.use_relaxation_lns()) {
+        subsolvers.push_back(absl::make_unique<LnsSolver>(
+            /*id=*/subsolvers.size(),
+            absl::make_unique<RandomRelaxationNeighborhoodGenerator>(
+                helper, absl::StrCat("rnd_rel_lns_", strategy_name)),
+            local_params, helper, &shared));
+      }
 
       if (!helper->TypeToConstraints(ConstraintProto::kNoOverlap).empty()) {
         subsolvers.push_back(absl::make_unique<LnsSolver>(
@@ -2351,8 +2462,14 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       // because PostsolveResponse() only use the proto to known the number of
       // variables to fill in the response and to check the solution feasibility
       // of these variables.
-      PostsolveResponse("main solver", model_proto, mapping_proto,
+      PostsolveResponse(model_proto.variables_size(), mapping_proto,
                         postsolve_mapping, &wall_timer, response);
+      if (!response->solution().empty()) {
+        CHECK(SolutionIsFeasible(
+            model_proto, std::vector<int64>(response->solution().begin(),
+                                            response->solution().end())))
+            << "main solver";
+      }
       if (params.fill_tightened_domains_in_response()) {
         // TODO(user): for now, we just use the domain infered during presolve.
         if (mapping_proto.variables().size() >=
@@ -2421,6 +2538,15 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
           }
         });
   }
+
+#if !defined(__PORTABLE_PLATFORM__)
+  if (!FLAGS_cp_model_dump_presolved_model.empty()) {
+    LOG(INFO) << "Dumping presolved cp model proto to '"
+              << FLAGS_cp_model_dump_presolved_model << "'.";
+    CHECK_OK(file::SetTextProto(FLAGS_cp_model_dump_presolved_model,
+                                new_cp_model_proto, file::Defaults()));
+  }
+#endif  // __PORTABLE_PLATFORM__
 
   if (params.stop_after_presolve() || shared_time_limit.LimitReached()) {
     int64 num_terms = 0;

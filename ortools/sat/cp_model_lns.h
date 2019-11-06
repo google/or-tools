@@ -69,6 +69,10 @@ class NeighborhoodGeneratorHelper : public SubSolver {
       const CpSolverResponse& initial_solution,
       const std::vector<int>& variables_to_fix) const;
 
+  // Returns the neighborhood where the given constraints are removed.
+  Neighborhood RemoveMarkedConstraints(
+      const std::vector<int>& constraints_to_remove) const;
+
   // Returns the LNS fragment which will relax all inactive variables and all
   // variables in relaxed_variables.
   Neighborhood RelaxGivenVariables(
@@ -186,8 +190,12 @@ class NeighborhoodGenerator {
                                 double difficulty,
                                 random_engine_t* random) const = 0;
 
-  // Returns true if a neighborhood generator can generate a neighborhood.
+  // Returns true if the neighborhood generator can generate a neighborhood.
   virtual bool ReadyToGenerate() const;
+
+  // Returns true if the neighborhood generator generates relaxation of the
+  // given problem.
+  virtual bool IsRelaxationGenerator() const { return false; }
 
   // Uses UCB1 algorithm to compute the score (Multi armed bandit problem).
   // Details are at
@@ -395,6 +403,21 @@ class RelaxationInducedNeighborhoodGenerator : public NeighborhoodGenerator {
   bool ReadyToGenerate() const override;
 
   const Model* model_;
+};
+
+// Generates a relaxation of the original model by randomly removing some
+// constraints. The number of constraints removed is in sync with the difficulty
+// passed to the generator.
+class RandomRelaxationNeighborhoodGenerator : public NeighborhoodGenerator {
+ public:
+  explicit RandomRelaxationNeighborhoodGenerator(
+      NeighborhoodGeneratorHelper const* helper, const std::string& name)
+      : NeighborhoodGenerator(name, helper) {}
+  Neighborhood Generate(const CpSolverResponse& initial_solution,
+                        double difficulty, random_engine_t* random) const final;
+
+  bool IsRelaxationGenerator() const override { return true; }
+  bool ReadyToGenerate() const override { return true; }
 };
 
 }  // namespace sat

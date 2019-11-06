@@ -160,8 +160,8 @@ Neighborhood NeighborhoodGeneratorHelper::FullNeighborhood() const {
 Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
     const CpSolverResponse& initial_solution,
     const std::vector<int>& variables_to_fix) const {
-  // TODO(user): Do not include constraint with all fixed variables to save
-  // memory and speed-up LNS presolving.
+  // TODO(user,user): Do not include constraint with all fixed variables to
+  // save memory and speed-up LNS presolving.
   Neighborhood neighborhood = FullNeighborhood();
 
   neighborhood.is_reduced = !variables_to_fix.empty();
@@ -188,6 +188,21 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
   // hint above is successfully loaded (i.e. if it passes the presolve
   // correctly) since the solver will try to find better solution than the
   // current one.
+  return neighborhood;
+}
+
+Neighborhood NeighborhoodGeneratorHelper::RemoveMarkedConstraints(
+    const std::vector<int>& constraints_to_remove) const {
+  // TODO(user,user): Do not include constraint with all fixed variables to
+  // save memory and speed-up LNS presolving.
+  Neighborhood neighborhood = FullNeighborhood();
+
+  if (constraints_to_remove.empty()) return neighborhood;
+  neighborhood.is_reduced = false;
+  for (const int constraint : constraints_to_remove) {
+    neighborhood.cp_model.mutable_constraints(constraint)->Clear();
+  }
+
   return neighborhood;
 }
 
@@ -628,6 +643,26 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
   }
   neighborhood.is_generated = true;
   return neighborhood;
+}
+
+Neighborhood RandomRelaxationNeighborhoodGenerator::Generate(
+    const CpSolverResponse& initial_solution, double difficulty,
+    random_engine_t* random) const {
+  std::vector<int> removed_constraints;
+  const int num_constraints = helper_.ModelProto().constraints_size();
+  removed_constraints.reserve(num_constraints);
+  for (int c = 0; c < num_constraints; ++c) {
+    // Removing intervals is not easy because other constraint might require
+    // them, so for now, we don't remove them.
+    if (helper_.ModelProto().constraints(c).constraint_case() ==
+        ConstraintProto::kInterval) {
+      continue;
+    }
+    removed_constraints.push_back(c);
+  }
+
+  GetRandomSubset(1.0 - difficulty, &removed_constraints, random);
+  return helper_.RemoveMarkedConstraints(removed_constraints);
 }
 
 }  // namespace sat

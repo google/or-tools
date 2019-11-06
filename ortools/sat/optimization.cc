@@ -1428,7 +1428,7 @@ bool CoreBasedOptimizer::PropagateObjectiveBounds() {
 // that invalidate the current solution. But to avoid corner cases for
 // problem with a lot of terms all with different objective weights (in
 // which case we will kind of introduce only one assumption per loop
-// wich is little), we use an heuristic and take the 90% percentile of
+// which is little), we use an heuristic and take the 90% percentile of
 // the unique weights not yet included.
 //
 // TODO(user): There is many other possible heuristics here, and I

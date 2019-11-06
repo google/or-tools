@@ -905,7 +905,7 @@ bool SolutionIsFeasible(const CpModelProto& model,
         is_feasible = checker.AtMostOneConstraintIsFeasible(ct);
         break;
       case ConstraintProto::ConstraintCase::kBoolXor:
-        is_feasible = checker.BoolAndConstraintIsFeasible(ct);
+        is_feasible = checker.BoolXorConstraintIsFeasible(ct);
         break;
       case ConstraintProto::ConstraintCase::kLinear:
         is_feasible = checker.LinearConstraintIsFeasible(ct);

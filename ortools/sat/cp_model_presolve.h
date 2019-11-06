@@ -114,7 +114,7 @@ class CpModelPresolver {
 
   // For the linear constraints, we have more than one function.
   bool CanonicalizeLinear(ConstraintProto* ct);
-  bool PropagateDomainsInLinear(ConstraintProto* ct);
+  bool PropagateDomainsInLinear(int c, ConstraintProto* ct);
   bool RemoveSingletonInLinear(ConstraintProto* ct);
   bool PresolveSmallLinear(ConstraintProto* ct);
   bool PresolveLinearOnBooleans(ConstraintProto* ct);

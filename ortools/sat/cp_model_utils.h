@@ -130,6 +130,16 @@ inline double ScaleObjectiveValue(const CpObjectiveProto& proto, int64 value) {
   return proto.scaling_factor() * result;
 }
 
+// Removes the objective scaling and offset from the given value.
+inline double UnscaleObjectiveValue(const CpObjectiveProto& proto,
+                                    double value) {
+  double result = value;
+  if (proto.scaling_factor() != 0) {
+    result /= proto.scaling_factor();
+  }
+  return result - proto.offset();
+}
+
 // Computes the "inner" objective of a response that contains a solution.
 // This is the objective without offset and scaling. Call ScaleObjectiveValue()
 // to get the user facing objective.
