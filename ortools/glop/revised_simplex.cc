@@ -1118,7 +1118,7 @@ Status RevisedSimplex::InitializeFirstBasis(const RowToColMapping& basis) {
   // infinity upper bound.
   const Fractional condition_number_ub =
       basis_factorization_.ComputeInfinityNormConditionNumberUpperBound();
-  if (condition_number_ub > 1e25) {
+  if (condition_number_ub > parameters_.initial_condition_number_threshold()) {
     const std::string error_message =
         absl::StrCat("The matrix condition number upper bound is too high: ",
                      condition_number_ub);
@@ -1263,8 +1263,9 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
           dual_pricing_vector_.clear();
 
           // Note that this needs to be done after the Clear() calls above.
-          GLOP_RETURN_IF_ERROR(InitializeFirstBasis(basis_));
-          solve_from_scratch = false;
+          if (InitializeFirstBasis(basis_).ok()) {
+            solve_from_scratch = false;
+          }
         }
       }
     }
