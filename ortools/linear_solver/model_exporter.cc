@@ -160,6 +160,9 @@ class MPModelProtoExporter {
 
 util::StatusOr<std::string> ExportModelAsLpFormat(
     const MPModelProto& model, const MPModelExportOptions& options) {
+  if (model.general_constraint_size() > 0) {
+    return util::InvalidArgumentError("General constraints are not supported.");
+  }
   MPModelProtoExporter exporter(model);
   std::string output;
   if (!exporter.ExportModelAsLpFormat(options, &output)) {
@@ -170,6 +173,9 @@ util::StatusOr<std::string> ExportModelAsLpFormat(
 
 util::StatusOr<std::string> ExportModelAsMpsFormat(
     const MPModelProto& model, const MPModelExportOptions& options) {
+  if (model.general_constraint_size() > 0) {
+    return util::InvalidArgumentError("General constraints are not supported.");
+  }
   MPModelProtoExporter exporter(model);
   std::string output;
   if (!exporter.ExportModelAsMpsFormat(options, &output)) {

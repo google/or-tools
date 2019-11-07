@@ -970,7 +970,8 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
       //
       // TODO(user): If the objective is a single variable, we can actually
       // "absorb" any factor into the objective scaling.
-      const int64 objective_coeff = gtl::FindOrDie(context_->ObjectiveMap(), var);
+      const int64 objective_coeff =
+          gtl::FindOrDie(context_->ObjectiveMap(), var);
       CHECK_NE(coeff, 0);
       if (objective_coeff % coeff != 0) continue;
 
@@ -1317,7 +1318,7 @@ bool CpModelPresolver::PropagateDomainsInLinear(int c, ConstraintProto* ct) {
         const int size = context_->var_to_constraints[var].size() -
                          (is_in_objective ? 1 : 0);
         const int64 obj_coeff =
-  	    is_in_objective ? gtl::FindOrDie(context_->ObjectiveMap(), var) : 0;
+            is_in_objective ? gtl::FindOrDie(context_->ObjectiveMap(), var) : 0;
 
         // We cannot fix anything if the domain of the objective is excluding
         // some objective values.
@@ -1929,6 +1930,34 @@ bool CpModelPresolver::PresolveInterval(int c, ConstraintProto* ct) {
   const int start = ct->interval().start();
   const int end = ct->interval().end();
   const int size = ct->interval().size();
+
+  if (ct->enforcement_literal().empty()) {
+    bool changed = false;
+    const Domain start_domain = context_->DomainOf(start);
+    const Domain end_domain = context_->DomainOf(end);
+    const Domain size_domain = context_->DomainOf(size);
+    // Size can't be negative.
+    if (!context_->IntersectDomainWith(size, Domain(0, context_->MaxOf(size)),
+                                       &changed)) {
+      return false;
+    }
+    if (!context_->IntersectDomainWith(
+            end, start_domain.AdditionWith(size_domain), &changed)) {
+      return false;
+    }
+    if (!context_->IntersectDomainWith(
+            start, end_domain.AdditionWith(size_domain.Negation()), &changed)) {
+      return false;
+    }
+    if (!context_->IntersectDomainWith(
+            size, end_domain.AdditionWith(start_domain.Negation()), &changed)) {
+      return false;
+    }
+    if (changed) {
+      context_->UpdateRuleStats("interval: reduced domains");
+    }
+  }
+
   if (context_->interval_usage[c] == 0) {
     // Convert to linear.
     ConstraintProto* new_ct = context_->working_model->add_constraints();
@@ -1944,27 +1973,6 @@ bool CpModelPresolver::PresolveInterval(int c, ConstraintProto* ct) {
     context_->UpdateRuleStats("interval: unused, converted to linear");
 
     return RemoveConstraint(ct);
-  }
-
-  if (!ct->enforcement_literal().empty()) return false;
-  bool changed = false;
-  const Domain start_domain = context_->DomainOf(start);
-  const Domain end_domain = context_->DomainOf(end);
-  const Domain size_domain = context_->DomainOf(size);
-  if (!context_->IntersectDomainWith(
-          end, start_domain.AdditionWith(size_domain), &changed)) {
-    return false;
-  }
-  if (!context_->IntersectDomainWith(
-          start, end_domain.AdditionWith(size_domain.Negation()), &changed)) {
-    return false;
-  }
-  if (!context_->IntersectDomainWith(
-          size, end_domain.AdditionWith(start_domain.Negation()), &changed)) {
-    return false;
-  }
-  if (changed) {
-    context_->UpdateRuleStats("interval: reduced domains");
   }
 
   // TODO(user): This currently has a side effect that both the interval and

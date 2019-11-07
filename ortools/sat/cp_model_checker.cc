@@ -24,6 +24,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/port/proto_utils.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -169,6 +170,18 @@ bool PossibleIntegerOverflow(const CpModelProto& model,
     }
   }
   return false;
+}
+
+std::string ValidateIntervalConstraint(const CpModelProto& model,
+                                       const ConstraintProto& ct) {
+  const IntervalConstraintProto& arg = ct.interval();
+  const IntegerVariableProto& size_var_proto = model.variables(arg.size());
+  if (size_var_proto.domain(0) < 0) {
+    return absl::StrCat(
+        "Negative value in interval size domain: ", ProtobufDebugString(ct),
+        "size var: ", ProtobufDebugString(size_var_proto));
+  }
+  return "";
 }
 
 std::string ValidateLinearConstraint(const CpModelProto& model,
@@ -363,6 +376,7 @@ std::string ValidateCpModel(const CpModelProto& model) {
         break;
       case ConstraintProto::ConstraintCase::kInterval:
         support_enforcement = true;
+        RETURN_IF_NOT_EMPTY(ValidateIntervalConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kCumulative:
         if (ct.cumulative().intervals_size() !=

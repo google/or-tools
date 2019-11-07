@@ -121,10 +121,8 @@ $(FZ_INSTALL_DIR)$(ARCHIVE_EXT): fz | $(TEMP_FZ_DIR)
 	$(COPY) $(BIN_DIR)$Sfz$E $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sbin$S$(FZ_EXE)
 	$(COPY) $(BIN_DIR)$Sparser_main$E $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sbin$Sparser-or-tools$E
 	-$(MKDIR_P) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare
-	-$(MKDIR) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_cp
-	$(COPY) ortools$Sflatzinc$Smznlib_cp$S* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_cp
-	-$(MKDIR) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_sat
-	$(COPY) ortools$Sflatzinc$Smznlib_sat$S* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_sat
+	-$(MKDIR) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_
+	$(COPY) ortools$Sflatzinc$Smznlib$S* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc
 	-$(MKDIR_P) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sexamples
 	$(COPY) $(FZ_EX_PATH)$S* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sexamples
 ifeq ($(SYSTEM),win)

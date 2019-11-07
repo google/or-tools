@@ -204,7 +204,7 @@ class Presolver {
   // See http://en.wikipedia.org/wiki/Disjoint-set_data_structure.
   // Note that the equivalence is directed. We prefer to replace all instances
   // of 'from' with 'to', rather than the opposite.
-  void AddVariableSubstition(IntegerVariable* from, IntegerVariable* to);
+  void AddVariableSubstitution(IntegerVariable* from, IntegerVariable* to);
   IntegerVariable* FindRepresentativeOfVar(IntegerVariable* var);
   absl::flat_hash_map<const IntegerVariable*, IntegerVariable*>
       var_representative_map_;

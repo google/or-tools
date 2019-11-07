@@ -274,7 +274,7 @@ Presolver::RuleStatus Presolver::PresolveBool2Int(Constraint* ct,
     return CONSTRAINT_REWRITTEN;
   } else {
     // Rule 2.
-    AddVariableSubstition(ct->arguments[1].Var(), ct->arguments[0].Var());
+    AddVariableSubstitution(ct->arguments[1].Var(), ct->arguments[0].Var());
     return CONSTRAINT_ALWAYS_TRUE;
   }
   return NOT_CHANGED;
@@ -333,7 +333,7 @@ Presolver::RuleStatus Presolver::PresolveIntEq(Constraint* ct,
       return CONSTRAINT_ALWAYS_TRUE;
     } else if (ct->arguments[1].IsVariable()) {
       // Rule 3.
-      AddVariableSubstition(ct->arguments[0].Var(), ct->arguments[1].Var());
+      AddVariableSubstitution(ct->arguments[0].Var(), ct->arguments[1].Var());
       return CONSTRAINT_ALWAYS_TRUE;
     }
   } else if (ct->arguments[0].HasOneValue()) {  // Arg0 is an integer value.
@@ -3388,10 +3388,6 @@ void Presolver::PresolveOneConstraint(int index, Constraint* ct) {
   }
 }
 
-#undef CALL_TYPE
-#undef CALL_PREFIX
-#undef CALL_SUFFIX
-
 // Stores all pairs of variables appearing in an int_ne(x, y) constraint.
 void Presolver::StoreDifference(Constraint* ct) {
   if (ct->arguments[2].Value() == 0 && ct->arguments[0].values.size() == 3) {
@@ -3440,7 +3436,7 @@ void Presolver::MergeIntEqNe(Model* model) {
         } else {
           FZVLOG << "Merge " << ct->DebugString() << FZENDL;
           ct->MarkAsInactive();
-          AddVariableSubstition(stored, boolvar);
+          AddVariableSubstitution(stored, boolvar);
           successful_rules_["MergeIntEqNe"]++;
         }
       }
@@ -3468,7 +3464,7 @@ void Presolver::MergeIntEqNe(Model* model) {
         } else {
           FZVLOG << "Merge " << ct->DebugString() << FZENDL;
           ct->MarkAsInactive();
-          AddVariableSubstition(stored, boolvar);
+          AddVariableSubstitution(stored, boolvar);
           successful_rules_["MergeIntEqNe"]++;
         }
       }
@@ -3665,6 +3661,11 @@ bool Presolver::RunMinimal(Model* model) {
                   return PresolveBool2Int(ct, log);
                 });
       changed = true;
+    } else if (ct->active && ct->type == "int_lin_eq") {
+      ApplyRule(index, ct, "PresolveStoreMapping",
+                [this](Constraint* ct, std::string* log) {
+                  return PresolveStoreMapping(ct, log);
+                });
     }
   }
   if (!var_representative_map_.empty()) {
@@ -3672,6 +3673,14 @@ bool Presolver::RunMinimal(Model* model) {
     SubstituteEverywhere(model);
     var_representative_map_.clear();
     var_representative_vector_.clear();
+  }
+
+  for (int index = 0; index < model->constraints().size(); ++index) {
+    Constraint* const ct = constraint(index);
+    CALL_TYPE(index, ct, "array_int_element", PresolveSimplifyElement);
+    CALL_TYPE(index, ct, "array_bool_element", PresolveSimplifyElement);
+    CALL_TYPE(index, ct, "array_var_int_element", PresolveSimplifyExprElement);
+    CALL_TYPE(index, ct, "array_var_bool_element", PresolveSimplifyExprElement);
   }
 
   // Report presolve rules statistics.
@@ -3687,6 +3696,10 @@ bool Presolver::RunMinimal(Model* model) {
   }
   return changed;
 }
+
+#undef CALL_TYPE
+#undef CALL_PREFIX
+#undef CALL_SUFFIX
 
 bool Presolver::Run(Model* model) {
   // Check the validity of variable domains.
@@ -3843,8 +3856,8 @@ bool Presolver::Run(Model* model) {
 
 // ----- Substitution support -----
 
-void Presolver::AddVariableSubstition(IntegerVariable* from,
-                                      IntegerVariable* to) {
+void Presolver::AddVariableSubstitution(IntegerVariable* from,
+                                        IntegerVariable* to) {
   CHECK(from != nullptr);
   CHECK(to != nullptr);
   // Apply the substitutions, if any.

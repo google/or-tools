@@ -2045,7 +2045,7 @@ objs/sat/presolve_context.$O: ortools/sat/presolve_context.cc \
  ortools/util/time_limit.h ortools/base/commandlineflags.h \
  ortools/base/timer.h ortools/base/basictypes.h \
  ortools/util/running_stat.h ortools/base/map_util.h \
- ortools/port/proto_utils.h | $(OBJ_DIR)/sat
+ ortools/base/mathutil.h ortools/port/proto_utils.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Spresolve_context.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Spresolve_context.$O
 
 objs/sat/presolve_util.$O: ortools/sat/presolve_util.cc \
@@ -2918,9 +2918,10 @@ objs/linear_solver/model_validator.$O: \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
  ortools/util/lazy_mutable_copy.h ortools/base/accurate_sum.h \
- ortools/base/status.h ortools/base/logging.h \
- ortools/base/integral_types.h ortools/base/macros.h ortools/port/file.h \
- ortools/port/proto_utils.h ortools/util/fp_utils.h | $(OBJ_DIR)/linear_solver
+ ortools/base/commandlineflags.h ortools/base/status.h \
+ ortools/base/logging.h ortools/base/integral_types.h \
+ ortools/base/macros.h ortools/port/file.h ortools/port/proto_utils.h \
+ ortools/util/fp_utils.h | $(OBJ_DIR)/linear_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Smodel_validator.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Smodel_validator.$O
 
 objs/linear_solver/sat_interface.$O: \
