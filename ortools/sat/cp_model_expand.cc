@@ -43,11 +43,7 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
   auto is_optional = [&context, &reservoir](int index) {
     if (reservoir.actives_size() == 0) return false;
     const int literal = reservoir.actives(index);
-    const int ref = PositiveRef(literal);
-    const IntegerVariableProto& var_proto =
-        context->working_model->variables(ref);
-    return var_proto.domain_size() != 2 ||
-           var_proto.domain(0) != var_proto.domain(1);
+    return !context->DomainOf(PositiveRef(literal)).IsFixed();
   };
   const int true_literal = context->GetOrCreateConstantVar(1);
   auto active = [&reservoir, true_literal](int index) {
@@ -237,20 +233,18 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
 
 void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
   const IntegerArgumentProto& int_mod = ct->int_mod();
-  const IntegerVariableProto& var_proto =
-      context->working_model->variables(int_mod.vars(0));
-  const IntegerVariableProto& mod_proto =
-      context->working_model->variables(int_mod.vars(1));
+  const int var = int_mod.vars(0);
+  const int mod_var = int_mod.vars(1);
   const int target_var = int_mod.target();
 
-  const int64 mod_lb = mod_proto.domain(0);
+  const int64 mod_lb = context->MinOf(mod_var);
   CHECK_GE(mod_lb, 1);
-  const int64 mod_ub = mod_proto.domain(mod_proto.domain_size() - 1);
+  const int64 mod_ub = context->MaxOf(mod_var);
 
-  const int64 var_lb = var_proto.domain(0);
-  const int64 var_ub = var_proto.domain(var_proto.domain_size() - 1);
+  const int64 var_lb = context->MinOf(var);
+  const int64 var_ub = context->MaxOf(var);
 
-  // Compute domains of var / mod_proto.
+  // Compute domains of var / mod_var.
   const int div_var =
       context->NewIntVar(Domain(var_lb / mod_ub, var_ub / mod_lb));
 
@@ -266,8 +260,8 @@ void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
   IntegerArgumentProto* const div_proto =
       context->working_model->add_constraints()->mutable_int_div();
   div_proto->set_target(div_var);
-  div_proto->add_vars(int_mod.vars(0));
-  div_proto->add_vars(int_mod.vars(1));
+  div_proto->add_vars(var);
+  div_proto->add_vars(mod_var);
   add_enforcement_literal_if_needed();
 
   // Checks if mod is constant.
@@ -286,7 +280,6 @@ void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
     add_enforcement_literal_if_needed();
   } else {
     // Create prod_var = div_var * mod.
-    const int mod_var = int_mod.vars(1);
     const int prod_var = context->NewIntVar(
         Domain(var_lb * mod_lb / mod_ub, var_ub * mod_ub / mod_lb));
     IntegerArgumentProto* const int_prod =
@@ -299,7 +292,7 @@ void ExpandIntMod(ConstraintProto* ct, PresolveContext* context) {
     // var - prod_var = target.
     LinearConstraintProto* const lin =
         context->working_model->add_constraints()->mutable_linear();
-    lin->add_vars(int_mod.vars(0));
+    lin->add_vars(var);
     lin->add_coeffs(1);
     lin->add_vars(prod_var);
     lin->add_coeffs(-1);
@@ -338,15 +331,11 @@ void ExpandIntProd(ConstraintProto* ct, PresolveContext* context) {
   if (int_prod.vars_size() != 2) return;
   const int a = int_prod.vars(0);
   const int b = int_prod.vars(1);
-  const IntegerVariableProto& a_proto =
-      context->working_model->variables(PositiveRef(a));
-  const IntegerVariableProto& b_proto =
-      context->working_model->variables(PositiveRef(b));
   const int p = int_prod.target();
-  const bool a_is_boolean = RefIsPositive(a) && a_proto.domain_size() == 2 &&
-                            a_proto.domain(0) == 0 && a_proto.domain(1) == 1;
-  const bool b_is_boolean = RefIsPositive(b) && b_proto.domain_size() == 2 &&
-                            b_proto.domain(0) == 0 && b_proto.domain(1) == 1;
+  const bool a_is_boolean =
+      RefIsPositive(a) && context->MinOf(a) == 0 && context->MaxOf(a) == 1;
+  const bool b_is_boolean =
+      RefIsPositive(b) && context->MinOf(b) == 0 && context->MaxOf(b) == 1;
 
   // We expand if exactly one of {a, b} is Boolean. If both are Boolean, it
   // will be presolved into a better version.

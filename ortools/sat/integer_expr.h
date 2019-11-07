@@ -240,10 +240,13 @@ inline std::function<void(Model*)> WeightedSumLowerOrEqual(
     const int64 c = coefficients[0];
     CHECK_NE(c, 0);
     if (c > 0) {
-      return LowerOrEqual(vars[0], upper_bound / c);
+      return LowerOrEqual(
+          vars[0],
+          FloorRatio(IntegerValue(upper_bound), IntegerValue(c)).value());
     } else {
-      const int64 ceil_c = (upper_bound + c + 1) / c;
-      return GreaterOrEqual(vars[0], ceil_c);
+      return GreaterOrEqual(
+          vars[0],
+          CeilRatio(IntegerValue(-upper_bound), IntegerValue(-c)).value());
     }
   }
   if (vars.size() == 2 && (coefficients[0] == 1 || coefficients[0] == -1) &&

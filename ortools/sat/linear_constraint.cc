@@ -155,6 +155,7 @@ IntegerValue ComputeGcd(const std::vector<IntegerValue>& values) {
     gcd = MathUtil::GCD64(gcd, std::abs(value.value()));
     if (gcd == 1) break;
   }
+  if (gcd < 0) return IntegerValue(1);  // Can happen with kint64min.
   return IntegerValue(gcd);
 }
 

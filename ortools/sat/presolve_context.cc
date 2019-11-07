@@ -47,6 +47,7 @@ void PresolveContext::AddImplication(int a, int b) {
   ConstraintProto* const ct = working_model->add_constraints();
   ct->add_enforcement_literal(a);
   ct->mutable_bool_and()->add_literals(b);
+  UpdateNewConstraintsVariableUsage();
 }
 
 // b => x in [lb, ub].
@@ -60,6 +61,7 @@ void PresolveContext::AddImplyInDomain(int b, int x, const Domain& domain) {
   mutable_linear->mutable_vars()->Resize(1, x);
   mutable_linear->mutable_coeffs()->Resize(1, 1);
   FillDomainInProto(domain, mutable_linear);
+  UpdateNewConstraintsVariableUsage();
 }
 
 bool PresolveContext::DomainIsEmpty(int ref) const {
@@ -291,6 +293,9 @@ void PresolveContext::StoreAffineRelation(const ConstraintProto& ct, int ref_x,
   }
 }
 
+// TODO(user): When merging literals, experiments shows that adding 2
+// implications leads to less Boolean variables on the created model.
+// To investigate.
 void PresolveContext::StoreBooleanEqualityRelation(int ref_a, int ref_b) {
   if (ref_a == ref_b) return;
   if (ref_a == NegatedRef(ref_b)) {
@@ -380,7 +385,6 @@ void PresolveContext::InsertVarValueEncoding(int literal, int ref,
         if (previous_other_literal != NegatedRef(literal)) {
           AddImplication(literal, NegatedRef(previous_other_literal));
           AddImplication(NegatedRef(previous_other_literal), literal);
-          UpdateNewConstraintsVariableUsage();
         }
       } else {
         encoding[other_key] = NegatedRef(literal);
@@ -401,14 +405,12 @@ void PresolveContext::InsertVarValueEncoding(int literal, int ref,
       AddImplyInDomain(literal, var, Domain(var_value));
       AddImplyInDomain(NegatedRef(literal), var,
                        Domain(var_value).Complement());
-      UpdateNewConstraintsVariableUsage();
     }
   } else {
     const int previous_literal = insert.first->second;
     if (literal != previous_literal) {
       AddImplication(literal, previous_literal);
       AddImplication(previous_literal, literal);
-      UpdateNewConstraintsVariableUsage();
     }
   }
 }
@@ -443,7 +445,6 @@ bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
                 << previous_lit << ") <=> var(" << var << ") == " << value;
         AddImplication(previous_lit, ref_lit);
         AddImplication(ref_lit, previous_lit);
-        UpdateNewConstraintsVariableUsage();
         UpdateRuleStats(
             "variables: merge equivalent var value encoding literals");
       }

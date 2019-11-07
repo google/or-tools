@@ -261,6 +261,23 @@ std::string ValidateCircuitCoveringConstraint(const ConstraintProto& ct) {
                           ").");
     }
   }
+
+  return "";
+}
+
+std::string ValidateIntModConstraint(const CpModelProto& model,
+                                     const ConstraintProto& ct) {
+  LOG(INFO) << "Validate " << ct.DebugString();
+  if (ct.int_mod().vars().size() != 2) {
+    return absl::StrCat("An int_mod constraint should have exactly 2 terms: ",
+                        ProtobufShortDebugString(ct));
+  }
+  const IntegerVariableProto& mod_proto = model.variables(ct.int_mod().vars(1));
+  if (mod_proto.domain(0) <= 0) {
+    return absl::StrCat(
+        "An int_mod must have a strictly positive modulo argument: ",
+        ProtobufShortDebugString(ct));
+  }
   return "";
 }
 
@@ -350,11 +367,7 @@ std::string ValidateCpModel(const CpModelProto& model) {
         }
         break;
       case ConstraintProto::ConstraintCase::kIntMod:
-        if (ct.int_mod().vars().size() != 2) {
-          return absl::StrCat(
-              "An int_mod constraint should have exactly 2 terms: ",
-              ProtobufShortDebugString(ct));
-        }
+        RETURN_IF_NOT_EMPTY(ValidateIntModConstraint(model, ct));
         break;
       case ConstraintProto::ConstraintCase::kBoolOr:
         support_enforcement = true;
