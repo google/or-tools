@@ -75,7 +75,7 @@ if (USE_SIRIUS)
 	if(UNIX)
 		target_link_libraries(${NAME} PUBLIC ${SIRIUSDIR}/buildLinux/libbib_solveur.so)
 	elseif(MSVC)
-		target_link_libraries(${NAME} PUBLIC ${SIRIUSDIR}/build/Release/bib_solveur.lib)
+		target_link_libraries(${NAME} PUBLIC ${SIRIUSDIR}/lib/Release/bib_solveur.lib)
 	endif()
 endif(USE_SIRIUS)
 
