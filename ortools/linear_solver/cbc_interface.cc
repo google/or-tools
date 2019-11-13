@@ -421,8 +421,9 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
       } else if (model.isProvenInfeasible()) {
         result_status_ = MPSolver::INFEASIBLE;
       } else {
-        LOG(FATAL) << "Unknown solver status! Secondary status: "
-                   << model.secondaryStatus();
+        VLOG(1) << "Unknown solver status! Secondary status: "
+                << model.secondaryStatus();
+        result_status_ = MPSolver::ABNORMAL;
       }
       break;
     case 1:
