@@ -1,4 +1,4 @@
-| [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Reference manual](reference.md) |
+| [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Python API](https://google.github.io/or-tools/python/ortools/sat/python/cp_model.html) |
 | ----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | -------------------------------- |
 
 # Model manipulation
@@ -13,7 +13,7 @@
          * [Java code](#java-code)
          * [C# code](#c-code-1)
 
-<!-- Added by: lperron, at: Fri Jun  7 09:59:01 CEST 2019 -->
+<!-- Added by: lperron, at: Thu Nov 14 21:15:56 CET 2019 -->
 
 <!--te-->
 
@@ -61,13 +61,15 @@ The implementation of Boolean literals differs across languages.
 ## Solution hinting
 
 A solution is a partial assignment of variables to values that the search will
-try to stick to. It is meant to guide the search with external knowledge towards good solutions.
+try to stick to. It is meant to guide the search with external knowledge towards
+good solutions.
 
 The `CpModelProto` message has a `solution_hint` field. This field is a
-`PartialVariableAssignment` message that contains two parallel vectors (variable indices and hint values).
+`PartialVariableAssignment` message that contains two parallel vectors (variable
+indices and hint values).
 
-Adding solution hinting to a model implies filling these two fields.
-This is done by the `addHint` or `AddHint` methods.
+Adding solution hinting to a model implies filling these two fields. This is
+done by the `addHint` or `AddHint` methods.
 
 Some remarks:
 
@@ -304,4 +306,3 @@ public class SolutionHintingSampleSat
   }
 }
 ```
-

@@ -1,4 +1,4 @@
-| [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Reference manual](reference.md) |
+| [home](README.md) | [boolean logic](boolean_logic.md) | [integer arithmetic](integer_arithmetic.md) | [channeling constraints](channeling.md) | [scheduling](scheduling.md) | [Using the CP-SAT solver](solver.md) | [Model manipulation](model.md) | [Python API](https://google.github.io/or-tools/python/ortools/sat/python/cp_model.html) |
 | ----------------- | --------------------------------- | ------------------------------------------- | --------------------------------------- | --------------------------- | ------------------------------------ | ------------------------------ | -------------------------------- |
 
 # Scheduling recipes for the CP-SAT solver.
@@ -36,7 +36,7 @@
       * [Convex hull of a set of intervals](#convex-hull-of-a-set-of-intervals)
       * [Reservoir constraint](#reservoir-constraint)
 
-<!-- Added by: lperron, at: Fri Jun  7 09:58:43 CEST 2019 -->
+<!-- Added by: lperron, at: Thu Nov 14 21:15:57 CET 2019 -->
 
 <!--te-->
 
