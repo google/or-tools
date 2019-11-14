@@ -884,6 +884,7 @@ cc_library(
         ":linear_constraint",
         ":model",
         ":sat_parameters_cc_proto",
+        "//ortools/glop:revised_simplex",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
     ],
