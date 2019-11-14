@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.7.0" />
+<meta name="generator" content="pdoc 0.7.2" />
 <title>cp_model API documentation</title>
 <meta name="description" content="Methods for building and solving CP-SAT models …" />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
@@ -243,8 +243,8 @@ class LinearExpr(object):
         while to_process:  # Flatten to avoid recursion.
             expr, coef = to_process.pop()
             if isinstance(expr, _ProductCst):
-                to_process.append((expr.Expression(),
-                                   coef * expr.Coefficient()))
+                to_process.append(
+                    (expr.Expression(), coef * expr.Coefficient()))
             elif isinstance(expr, _SumArray):
                 for e in expr.Expressions():
                     to_process.append((e, coef))
@@ -287,6 +287,8 @@ class LinearExpr(object):
         if isinstance(arg, numbers.Integral):
             if arg == 1:
                 return self
+            elif arg == 0:
+                return 0
             cp_model_helper.AssertIsInt64(arg)
             return _ProductCst(self, arg)
         else:
@@ -490,8 +492,8 @@ class _ScalProd(LinearExpr):
 
     def __repr__(self):
         return &#39;ScalProd([{}], [{}], {})&#39;.format(
-            &#39;, &#39;.join(map(repr, self.__expressions)), &#39;, &#39;.join(
-                map(repr, self.__coefficients)), self.__constant)
+            &#39;, &#39;.join(map(repr, self.__expressions)),
+            &#39;, &#39;.join(map(repr, self.__coefficients)), self.__constant)
 
     def Expressions(self):
         return self.__expressions
@@ -730,14 +732,14 @@ class IntervalVar(object):
         if self.__ct.enforcement_literal:
             return &#39;%s(start = %s, size = %s, end = %s, is_present = %s)&#39; % (
                 self.__ct.name, ShortName(self.__model, interval.start),
-                ShortName(self.__model, interval.size),
-                ShortName(self.__model, interval.end),
+                ShortName(self.__model,
+                          interval.size), ShortName(self.__model, interval.end),
                 ShortName(self.__model, self.__ct.enforcement_literal[0]))
         else:
             return &#39;%s(start = %s, size = %s, end = %s)&#39; % (
                 self.__ct.name, ShortName(self.__model, interval.start),
-                ShortName(self.__model, interval.size),
-                ShortName(self.__model, interval.end))
+                ShortName(self.__model,
+                          interval.size), ShortName(self.__model, interval.end))
 
     def Name(self):
         return self.__ct.name
@@ -1619,8 +1621,8 @@ def EvaluateBooleanExpression(literal, solution):
         else:
             return not solution.solution[-index - 1]
     else:
-        raise TypeError(
-            &#39;Cannot interpret %s as a boolean expression.&#39; % literal)
+        raise TypeError(&#39;Cannot interpret %s as a boolean expression.&#39; %
+                        literal)
 
 
 class CpSolver(object):
@@ -1788,8 +1790,8 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
             index = lit.Index()
             return self.SolutionBooleanValue(index)
         else:
-            raise TypeError(
-                &#39;Cannot interpret %s as a boolean expression.&#39; % lit)
+            raise TypeError(&#39;Cannot interpret %s as a boolean expression.&#39; %
+                            lit)
 
     def Value(self, expression):
         &#34;&#34;&#34;Evaluates an linear expression in the current solution.
@@ -1813,8 +1815,8 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
         while to_process:
             expr, coef = to_process.pop()
             if isinstance(expr, _ProductCst):
-                to_process.append((expr.Expression(),
-                                   coef * expr.Coefficient()))
+                to_process.append(
+                    (expr.Expression(), coef * expr.Coefficient()))
             elif isinstance(expr, _SumArray):
                 for e in expr.Expressions():
                     to_process.append((e, coef))
@@ -1826,8 +1828,8 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
             elif isinstance(expr, IntVar):
                 value += coef * self.SolutionIntegerValue(expr.Index())
             elif isinstance(expr, _NotBooleanVariable):
-                value += coef * (
-                    1 - self.SolutionIntegerValue(expr.Not().Index()))
+                value += coef * (1 -
+                                 self.SolutionIntegerValue(expr.Not().Index()))
         return value
 
 
@@ -5071,8 +5073,8 @@ and Value() methods.</p>
             index = lit.Index()
             return self.SolutionBooleanValue(index)
         else:
-            raise TypeError(
-                &#39;Cannot interpret %s as a boolean expression.&#39; % lit)
+            raise TypeError(&#39;Cannot interpret %s as a boolean expression.&#39; %
+                            lit)
 
     def Value(self, expression):
         &#34;&#34;&#34;Evaluates an linear expression in the current solution.
@@ -5096,8 +5098,8 @@ and Value() methods.</p>
         while to_process:
             expr, coef = to_process.pop()
             if isinstance(expr, _ProductCst):
-                to_process.append((expr.Expression(),
-                                   coef * expr.Coefficient()))
+                to_process.append(
+                    (expr.Expression(), coef * expr.Coefficient()))
             elif isinstance(expr, _SumArray):
                 for e in expr.Expressions():
                     to_process.append((e, coef))
@@ -5109,8 +5111,8 @@ and Value() methods.</p>
             elif isinstance(expr, IntVar):
                 value += coef * self.SolutionIntegerValue(expr.Index())
             elif isinstance(expr, _NotBooleanVariable):
-                value += coef * (
-                    1 - self.SolutionIntegerValue(expr.Not().Index()))
+                value += coef * (1 -
+                                 self.SolutionIntegerValue(expr.Not().Index()))
         return value</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -5166,8 +5168,8 @@ Raises:
         index = lit.Index()
         return self.SolutionBooleanValue(index)
     else:
-        raise TypeError(
-            &#39;Cannot interpret %s as a boolean expression.&#39; % lit)</code></pre>
+        raise TypeError(&#39;Cannot interpret %s as a boolean expression.&#39; %
+                        lit)</code></pre>
 </details>
 </dd>
 <dt id="cp_model.CpSolverSolutionCallback.OnSolutionCallback"><code class="name flex">
@@ -5231,8 +5233,8 @@ Raises:
     while to_process:
         expr, coef = to_process.pop()
         if isinstance(expr, _ProductCst):
-            to_process.append((expr.Expression(),
-                               coef * expr.Coefficient()))
+            to_process.append(
+                (expr.Expression(), coef * expr.Coefficient()))
         elif isinstance(expr, _SumArray):
             for e in expr.Expressions():
                 to_process.append((e, coef))
@@ -5244,8 +5246,8 @@ Raises:
         elif isinstance(expr, IntVar):
             value += coef * self.SolutionIntegerValue(expr.Index())
         elif isinstance(expr, _NotBooleanVariable):
-            value += coef * (
-                1 - self.SolutionIntegerValue(expr.Not().Index()))
+            value += coef * (1 -
+                             self.SolutionIntegerValue(expr.Not().Index()))
     return value</code></pre>
 </details>
 </dd>
@@ -5491,14 +5493,14 @@ intervals into the schedule.</p></section>
         if self.__ct.enforcement_literal:
             return &#39;%s(start = %s, size = %s, end = %s, is_present = %s)&#39; % (
                 self.__ct.name, ShortName(self.__model, interval.start),
-                ShortName(self.__model, interval.size),
-                ShortName(self.__model, interval.end),
+                ShortName(self.__model,
+                          interval.size), ShortName(self.__model, interval.end),
                 ShortName(self.__model, self.__ct.enforcement_literal[0]))
         else:
             return &#39;%s(start = %s, size = %s, end = %s)&#39; % (
                 self.__ct.name, ShortName(self.__model, interval.start),
-                ShortName(self.__model, interval.size),
-                ShortName(self.__model, interval.end))
+                ShortName(self.__model,
+                          interval.size), ShortName(self.__model, interval.end))
 
     def Name(self):
         return self.__ct.name</code></pre>
@@ -5624,8 +5626,8 @@ model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) &gt;= 0)
         while to_process:  # Flatten to avoid recursion.
             expr, coef = to_process.pop()
             if isinstance(expr, _ProductCst):
-                to_process.append((expr.Expression(),
-                                   coef * expr.Coefficient()))
+                to_process.append(
+                    (expr.Expression(), coef * expr.Coefficient()))
             elif isinstance(expr, _SumArray):
                 for e in expr.Expressions():
                     to_process.append((e, coef))
@@ -5668,6 +5670,8 @@ model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) &gt;= 0)
         if isinstance(arg, numbers.Integral):
             if arg == 1:
                 return self
+            elif arg == 0:
+                return 0
             cp_model_helper.AssertIsInt64(arg)
             return _ProductCst(self, arg)
         else:
@@ -5834,8 +5838,8 @@ def Term(cls, expression, coefficient):
     while to_process:  # Flatten to avoid recursion.
         expr, coef = to_process.pop()
         if isinstance(expr, _ProductCst):
-            to_process.append((expr.Expression(),
-                               coef * expr.Coefficient()))
+            to_process.append(
+                (expr.Expression(), coef * expr.Coefficient()))
         elif isinstance(expr, _SumArray):
             for e in expr.Expressions():
                 to_process.append((e, coef))
@@ -6276,7 +6280,7 @@ def Term(cls, expression, coefficient):
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.7.0</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.7.2</a>.</p>
 </footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
 <script>hljs.initHighlightingOnLoad()</script>

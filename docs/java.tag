@@ -2,133 +2,105 @@
 <tagfile>
   <compound kind="file">
     <name>Assignment.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>Assignment_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::Assignment</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>AssignmentElement.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>AssignmentElement_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::AssignmentElement</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>AssignmentIntContainer.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>AssignmentIntContainer_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::AssignmentIntContainer</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>AssignmentIntervalContainer.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>AssignmentIntervalContainer_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::AssignmentIntervalContainer</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>AssignmentSequenceContainer.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>AssignmentSequenceContainer_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::AssignmentSequenceContainer</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>BaseIntExpr.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>BaseIntExpr_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::BaseIntExpr</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>BaseLns.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>BaseLns_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::BaseLns</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>BaseObject.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>BaseObject_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::BaseObject</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>BasePathFilter.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>BasePathFilter_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::BasePathFilter</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>BooleanVar.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>BooleanVar_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::BooleanVar</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>CastConstraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>CastConstraint_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::CastConstraint</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>ChangeValue.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>ChangeValue_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::ChangeValue</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
-    <name>CheapestAdditionFilteredDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
-    <filename>CheapestAdditionFilteredDecisionBuilder_8java</filename>
-    <class kind="class">com::google::ortools::constraintsolver::CheapestAdditionFilteredDecisionBuilder</class>
-    <namespace>com::google::ortools::constraintsolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>CheapestInsertionFilteredDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
-    <filename>CheapestInsertionFilteredDecisionBuilder_8java</filename>
-    <class kind="class">com::google::ortools::constraintsolver::CheapestInsertionFilteredDecisionBuilder</class>
-    <namespace>com::google::ortools::constraintsolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>ChristofidesFilteredDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
-    <filename>ChristofidesFilteredDecisionBuilder_8java</filename>
-    <class kind="class">com::google::ortools::constraintsolver::ChristofidesFilteredDecisionBuilder</class>
-    <namespace>com::google::ortools::constraintsolver</namespace>
-  </compound>
-  <compound kind="file">
-    <name>ComparatorCheapestAdditionFilteredDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
-    <filename>ComparatorCheapestAdditionFilteredDecisionBuilder_8java</filename>
-    <class kind="class">com::google::ortools::constraintsolver::ComparatorCheapestAdditionFilteredDecisionBuilder</class>
-    <namespace>com::google::ortools::constraintsolver</namespace>
-  </compound>
-  <compound kind="file">
     <name>com/google/ortools/sat/Constraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
     <filename>com_2google_2ortools_2sat_2Constraint_8java</filename>
     <class kind="class">com::google::ortools::sat::Constraint</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>gen/com/google/ortools/constraintsolver/Constraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>gen_2com_2google_2ortools_2constraintsolver_2Constraint_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::Constraint</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>ConstraintSolverParameters.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>ConstraintSolverParameters_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::ConstraintSolverParameters</class>
     <class kind="enum">com::google::ortools::constraintsolver::ConstraintSolverParameters::TrailCompression</class>
@@ -137,21 +109,21 @@
   </compound>
   <compound kind="file">
     <name>ConstraintSolverParametersOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>ConstraintSolverParametersOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::ConstraintSolverParametersOrBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>CPFeasibilityFilter.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>CPFeasibilityFilter_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::CPFeasibilityFilter</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>CpModel.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
     <filename>CpModel_8java</filename>
     <class kind="class">com::google::ortools::sat::CpModel</class>
     <class kind="class">com::google::ortools::sat::CpModel::MismatchedArrayLengths</class>
@@ -160,7 +132,7 @@
   </compound>
   <compound kind="file">
     <name>CpModelProto.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/sat/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/sat/</path>
     <filename>CpModelProto_8java</filename>
     <class kind="class">com::google::ortools::sat::CpModelProto</class>
     <class kind="class">com::google::ortools::sat::CpModelProto::Builder</class>
@@ -168,77 +140,70 @@
   </compound>
   <compound kind="file">
     <name>CpSolver.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
     <filename>CpSolver_8java</filename>
     <class kind="class">com::google::ortools::sat::CpSolver</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>CpSolverSolutionCallback.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
     <filename>CpSolverSolutionCallback_8java</filename>
     <class kind="class">com::google::ortools::sat::CpSolverSolutionCallback</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>Decision.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>Decision_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::Decision</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>DecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>DecisionBuilder_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::DecisionBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>DecisionVisitor.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>DecisionVisitor_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::DecisionVisitor</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>DefaultPhaseParameters.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>DefaultPhaseParameters_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::DefaultPhaseParameters</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>Demon.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>Demon_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::Demon</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>DisjunctiveConstraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>DisjunctiveConstraint_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::DisjunctiveConstraint</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>Domain.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/util/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/util/</path>
     <filename>Domain_8java</filename>
     <class kind="class">com::google::ortools::util::Domain</class>
     <namespace>com::google::ortools::util</namespace>
   </compound>
   <compound kind="file">
-    <name>EvaluatorCheapestAdditionFilteredDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
-    <filename>EvaluatorCheapestAdditionFilteredDecisionBuilder_8java</filename>
-    <class kind="class">com::google::ortools::constraintsolver::EvaluatorCheapestAdditionFilteredDecisionBuilder</class>
-    <namespace>com::google::ortools::constraintsolver</namespace>
-  </compound>
-  <compound kind="file">
     <name>FirstSolutionStrategy.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>FirstSolutionStrategy_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::FirstSolutionStrategy</class>
     <class kind="enum">com::google::ortools::constraintsolver::FirstSolutionStrategy::Value</class>
@@ -247,140 +212,126 @@
   </compound>
   <compound kind="file">
     <name>FirstSolutionStrategyOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>FirstSolutionStrategyOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::FirstSolutionStrategyOrBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
-    <name>GlobalCheapestInsertionFilteredDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
-    <filename>GlobalCheapestInsertionFilteredDecisionBuilder_8java</filename>
-    <class kind="class">com::google::ortools::constraintsolver::GlobalCheapestInsertionFilteredDecisionBuilder</class>
-    <namespace>com::google::ortools::constraintsolver</namespace>
-  </compound>
-  <compound kind="file">
     <name>GlobalVehicleBreaksConstraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>GlobalVehicleBreaksConstraint_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::GlobalVehicleBreaksConstraint</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>com/google/ortools/sat/IntervalVar.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
     <filename>com_2google_2ortools_2sat_2IntervalVar_8java</filename>
     <class kind="class">com::google::ortools::sat::IntervalVar</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>gen/com/google/ortools/constraintsolver/IntervalVar.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>gen_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntervalVar</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntervalVarElement.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>IntervalVarElement_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntervalVarElement</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntExpr.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>IntExpr_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntExpr</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntIntToLongFunction.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/com/google/ortools/constraintsolver/</path>
     <filename>IntIntToLongFunction_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::IntIntToLongFunction</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntTupleSet.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>IntTupleSet_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntTupleSet</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>com/google/ortools/sat/IntVar.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
     <filename>com_2google_2ortools_2sat_2IntVar_8java</filename>
     <class kind="class">com::google::ortools::sat::IntVar</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>gen/com/google/ortools/constraintsolver/IntVar.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>gen_2com_2google_2ortools_2constraintsolver_2IntVar_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVar</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntVarElement.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>IntVarElement_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVarElement</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
-    <name>IntVarFilteredDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
-    <filename>IntVarFilteredDecisionBuilder_8java</filename>
-    <class kind="class">com::google::ortools::constraintsolver::IntVarFilteredDecisionBuilder</class>
-    <namespace>com::google::ortools::constraintsolver</namespace>
-  </compound>
-  <compound kind="file">
     <name>IntVarIterator.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>IntVarIterator_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVarIterator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntVarLocalSearchFilter.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>IntVarLocalSearchFilter_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVarLocalSearchFilter</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntVarLocalSearchHandler.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>IntVarLocalSearchHandler_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVarLocalSearchHandler</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntVarLocalSearchOperator.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>IntVarLocalSearchOperator_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVarLocalSearchOperator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntVarLocalSearchOperatorTemplate.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>IntVarLocalSearchOperatorTemplate_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVarLocalSearchOperatorTemplate</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>JavaDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/com/google/ortools/constraintsolver/</path>
     <filename>JavaDecisionBuilder_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::JavaDecisionBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>KnapsackSolver.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/algorithms/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/algorithms/</path>
     <filename>KnapsackSolver_8java</filename>
     <class kind="class">com::google::ortools::algorithms::KnapsackSolver</class>
     <class kind="enum">com::google::ortools::algorithms::KnapsackSolver::SolverType</class>
@@ -388,21 +339,21 @@
   </compound>
   <compound kind="file">
     <name>LinearExpr.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
     <filename>LinearExpr_8java</filename>
     <class kind="interface">com::google::ortools::sat::LinearExpr</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>LinearSolver.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>LinearSolver_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::LinearSolver</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LinearSumAssignment.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/graph/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/graph/</path>
     <filename>LinearSumAssignment_8java</filename>
     <class kind="class">com::google::ortools::graph::LinearSumAssignment</class>
     <class kind="enum">com::google::ortools::graph::LinearSumAssignment::Status</class>
@@ -410,28 +361,21 @@
   </compound>
   <compound kind="file">
     <name>Literal.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/com/google/ortools/sat/</path>
     <filename>Literal_8java</filename>
     <class kind="interface">com::google::ortools::sat::Literal</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
-    <name>LocalCheapestInsertionFilteredDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
-    <filename>LocalCheapestInsertionFilteredDecisionBuilder_8java</filename>
-    <class kind="class">com::google::ortools::constraintsolver::LocalCheapestInsertionFilteredDecisionBuilder</class>
-    <namespace>com::google::ortools::constraintsolver</namespace>
-  </compound>
-  <compound kind="file">
     <name>LocalSearchFilter.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>LocalSearchFilter_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::LocalSearchFilter</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LocalSearchMetaheuristic.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>LocalSearchMetaheuristic_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::LocalSearchMetaheuristic</class>
     <class kind="enum">com::google::ortools::constraintsolver::LocalSearchMetaheuristic::Value</class>
@@ -440,56 +384,56 @@
   </compound>
   <compound kind="file">
     <name>LocalSearchMetaheuristicOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>LocalSearchMetaheuristicOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::LocalSearchMetaheuristicOrBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LocalSearchMonitor.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>LocalSearchMonitor_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::LocalSearchMonitor</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LocalSearchOperator.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>LocalSearchOperator_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::LocalSearchOperator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LocalSearchPhaseParameters.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>LocalSearchPhaseParameters_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::LocalSearchPhaseParameters</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LongTernaryOperator.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/com/google/ortools/constraintsolver/</path>
     <filename>LongTernaryOperator_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::LongTernaryOperator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LongTernaryPredicate.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/com/google/ortools/constraintsolver/</path>
     <filename>LongTernaryPredicate_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::LongTernaryPredicate</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>mainConstants.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>mainConstants_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::mainConstants</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MaxFlow.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/graph/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/graph/</path>
     <filename>MaxFlow_8java</filename>
     <class kind="class">com::google::ortools::graph::MaxFlow</class>
     <class kind="enum">com::google::ortools::graph::MaxFlow::Status</class>
@@ -497,14 +441,14 @@
   </compound>
   <compound kind="file">
     <name>MinCostFlow.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/graph/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/graph/</path>
     <filename>MinCostFlow_8java</filename>
     <class kind="class">com::google::ortools::graph::MinCostFlow</class>
     <namespace>com::google::ortools::graph</namespace>
   </compound>
   <compound kind="file">
     <name>MinCostFlowBase.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/graph/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/graph/</path>
     <filename>MinCostFlowBase_8java</filename>
     <class kind="class">com::google::ortools::graph::MinCostFlowBase</class>
     <class kind="enum">com::google::ortools::graph::MinCostFlowBase::Status</class>
@@ -512,21 +456,21 @@
   </compound>
   <compound kind="file">
     <name>ModelCache.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>ModelCache_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::ModelCache</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>ModelVisitor.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>ModelVisitor_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::ModelVisitor</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPAbsConstraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPAbsConstraint_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPAbsConstraint</class>
     <class kind="class">com::google::ortools::linearsolver::MPAbsConstraint::Builder</class>
@@ -534,14 +478,14 @@
   </compound>
   <compound kind="file">
     <name>MPAbsConstraintOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPAbsConstraintOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPAbsConstraintOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPArrayConstraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPArrayConstraint_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPArrayConstraint</class>
     <class kind="class">com::google::ortools::linearsolver::MPArrayConstraint::Builder</class>
@@ -549,14 +493,14 @@
   </compound>
   <compound kind="file">
     <name>MPArrayConstraintOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPArrayConstraintOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPArrayConstraintOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPArrayWithConstantConstraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPArrayWithConstantConstraint_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPArrayWithConstantConstraint</class>
     <class kind="class">com::google::ortools::linearsolver::MPArrayWithConstantConstraint::Builder</class>
@@ -564,21 +508,21 @@
   </compound>
   <compound kind="file">
     <name>MPArrayWithConstantConstraintOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPArrayWithConstantConstraintOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPArrayWithConstantConstraintOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPConstraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPConstraint_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPConstraint</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPConstraintProto.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPConstraintProto_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPConstraintProto</class>
     <class kind="class">com::google::ortools::linearsolver::MPConstraintProto::Builder</class>
@@ -586,14 +530,14 @@
   </compound>
   <compound kind="file">
     <name>MPConstraintProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPConstraintProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPGeneralConstraintProto.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPGeneralConstraintProto_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPGeneralConstraintProto</class>
     <class kind="enum">com::google::ortools::linearsolver::MPGeneralConstraintProto::GeneralConstraintCase</class>
@@ -602,14 +546,14 @@
   </compound>
   <compound kind="file">
     <name>MPGeneralConstraintProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPGeneralConstraintProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPGeneralConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPIndicatorConstraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPIndicatorConstraint_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPIndicatorConstraint</class>
     <class kind="class">com::google::ortools::linearsolver::MPIndicatorConstraint::Builder</class>
@@ -617,14 +561,14 @@
   </compound>
   <compound kind="file">
     <name>MPIndicatorConstraintOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPIndicatorConstraintOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPIndicatorConstraintOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPModelDeltaProto.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPModelDeltaProto_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPModelDeltaProto</class>
     <class kind="class">com::google::ortools::linearsolver::MPModelDeltaProto::Builder</class>
@@ -632,21 +576,21 @@
   </compound>
   <compound kind="file">
     <name>MPModelDeltaProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPModelDeltaProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPModelDeltaProtoOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPModelExportOptions.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPModelExportOptions_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPModelExportOptions</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPModelProto.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPModelProto_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPModelProto</class>
     <class kind="class">com::google::ortools::linearsolver::MPModelProto::Builder</class>
@@ -654,14 +598,14 @@
   </compound>
   <compound kind="file">
     <name>MPModelProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPModelProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPModelProtoOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPModelRequest.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPModelRequest_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPModelRequest</class>
     <class kind="enum">com::google::ortools::linearsolver::MPModelRequest::SolverType</class>
@@ -670,21 +614,21 @@
   </compound>
   <compound kind="file">
     <name>MPModelRequestOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPModelRequestOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPModelRequestOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPObjective.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPObjective_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPObjective</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPQuadraticConstraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPQuadraticConstraint_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPQuadraticConstraint</class>
     <class kind="class">com::google::ortools::linearsolver::MPQuadraticConstraint::Builder</class>
@@ -692,14 +636,14 @@
   </compound>
   <compound kind="file">
     <name>MPQuadraticConstraintOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPQuadraticConstraintOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPQuadraticConstraintOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPQuadraticObjective.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPQuadraticObjective_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPQuadraticObjective</class>
     <class kind="class">com::google::ortools::linearsolver::MPQuadraticObjective::Builder</class>
@@ -707,14 +651,14 @@
   </compound>
   <compound kind="file">
     <name>MPQuadraticObjectiveOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPQuadraticObjectiveOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPQuadraticObjectiveOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPSolutionResponse.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPSolutionResponse_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPSolutionResponse</class>
     <class kind="class">com::google::ortools::linearsolver::MPSolutionResponse::Builder</class>
@@ -722,14 +666,14 @@
   </compound>
   <compound kind="file">
     <name>MPSolutionResponseOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPSolutionResponseOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPSolutionResponseOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPSolver.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPSolver_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPSolver</class>
     <class kind="enum">com::google::ortools::linearsolver::MPSolver::OptimizationProblemType</class>
@@ -739,7 +683,7 @@
   </compound>
   <compound kind="file">
     <name>MPSolverCommonParameters.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPSolverCommonParameters_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPSolverCommonParameters</class>
     <class kind="enum">com::google::ortools::linearsolver::MPSolverCommonParameters::LPAlgorithmValues</class>
@@ -748,14 +692,14 @@
   </compound>
   <compound kind="file">
     <name>MPSolverCommonParametersOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPSolverCommonParametersOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPSolverCommonParametersOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPSolverParameters.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPSolverParameters_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPSolverParameters</class>
     <class kind="enum">com::google::ortools::linearsolver::MPSolverParameters::DoubleParam</class>
@@ -768,14 +712,14 @@
   </compound>
   <compound kind="file">
     <name>MPSolverResponseStatus.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPSolverResponseStatus_8java</filename>
     <class kind="enum">com::google::ortools::linearsolver::MPSolverResponseStatus</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPSosConstraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPSosConstraint_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPSosConstraint</class>
     <class kind="enum">com::google::ortools::linearsolver::MPSosConstraint::Type</class>
@@ -784,21 +728,21 @@
   </compound>
   <compound kind="file">
     <name>MPSosConstraintOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPSosConstraintOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPSosConstraintOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPVariable.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPVariable_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPVariable</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPVariableProto.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPVariableProto_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPVariableProto</class>
     <class kind="class">com::google::ortools::linearsolver::MPVariableProto::Builder</class>
@@ -806,35 +750,35 @@
   </compound>
   <compound kind="file">
     <name>MPVariableProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>MPVariableProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPVariableProtoOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>OptimizeVar.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>OptimizeVar_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::OptimizeVar</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>OptionalBoolean.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/util/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/util/</path>
     <filename>OptionalBoolean_8java</filename>
     <class kind="enum">com::google::ortools::util::OptionalBoolean</class>
     <namespace>com::google::ortools::util</namespace>
   </compound>
   <compound kind="file">
     <name>OptionalBooleanOuterClass.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/util/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/util/</path>
     <filename>OptionalBooleanOuterClass_8java</filename>
     <class kind="class">com::google::ortools::util::OptionalBooleanOuterClass</class>
     <namespace>com::google::ortools::util</namespace>
   </compound>
   <compound kind="file">
     <name>OptionalDouble.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>OptionalDouble_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::OptionalDouble</class>
     <class kind="class">com::google::ortools::linearsolver::OptionalDouble::Builder</class>
@@ -842,28 +786,21 @@
   </compound>
   <compound kind="file">
     <name>OptionalDoubleOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>OptionalDoubleOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::OptionalDoubleOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>Pack.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>Pack_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::Pack</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
-    <name>ParallelSavingsFilteredDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
-    <filename>ParallelSavingsFilteredDecisionBuilder_8java</filename>
-    <class kind="class">com::google::ortools::constraintsolver::ParallelSavingsFilteredDecisionBuilder</class>
-    <namespace>com::google::ortools::constraintsolver</namespace>
-  </compound>
-  <compound kind="file">
     <name>PartialVariableAssignment.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>PartialVariableAssignment_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::PartialVariableAssignment</class>
     <class kind="class">com::google::ortools::linearsolver::PartialVariableAssignment::Builder</class>
@@ -871,49 +808,49 @@
   </compound>
   <compound kind="file">
     <name>PartialVariableAssignmentOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/linearsolver/</path>
     <filename>PartialVariableAssignmentOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::PartialVariableAssignmentOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>PathOperator.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>PathOperator_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::PathOperator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>PathWithPreviousNodesOperator.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>PathWithPreviousNodesOperator_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::PathWithPreviousNodesOperator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>PropagationBaseObject.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>PropagationBaseObject_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::PropagationBaseObject</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>PropagationMonitor.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>PropagationMonitor_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::PropagationMonitor</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RegularLimit.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RegularLimit_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RegularLimit</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RegularLimitParameters.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RegularLimitParameters_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RegularLimitParameters</class>
     <class kind="class">com::google::ortools::constraintsolver::RegularLimitParameters::Builder</class>
@@ -921,77 +858,70 @@
   </compound>
   <compound kind="file">
     <name>RegularLimitParametersOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RegularLimitParametersOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::RegularLimitParametersOrBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RevBool.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RevBool_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RevBool</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RevInteger.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RevInteger_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RevInteger</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RevLong.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RevLong_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RevLong</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RevPartialSequence.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RevPartialSequence_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RevPartialSequence</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingDimension.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RoutingDimension_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingDimension</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingEnums.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RoutingEnums_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingEnums</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
-    <name>RoutingFilteredDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
-    <filename>RoutingFilteredDecisionBuilder_8java</filename>
-    <class kind="class">com::google::ortools::constraintsolver::RoutingFilteredDecisionBuilder</class>
-    <namespace>com::google::ortools::constraintsolver</namespace>
-  </compound>
-  <compound kind="file">
     <name>RoutingIndexManager.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RoutingIndexManager_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingIndexManager</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingModel.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RoutingModel_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingModel</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingModelParameters.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RoutingModelParameters_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingModelParameters</class>
     <class kind="class">com::google::ortools::constraintsolver::RoutingModelParameters::Builder</class>
@@ -999,28 +929,28 @@
   </compound>
   <compound kind="file">
     <name>RoutingModelParametersOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RoutingModelParametersOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::RoutingModelParametersOrBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingModelVisitor.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RoutingModelVisitor_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingModelVisitor</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingParameters.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RoutingParameters_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingParameters</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingSearchParameters.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RoutingSearchParameters_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingSearchParameters</class>
     <class kind="interface">com::google::ortools::constraintsolver::RoutingSearchParameters::LocalSearchNeighborhoodOperatorsOrBuilder</class>
@@ -1031,14 +961,14 @@
   </compound>
   <compound kind="file">
     <name>RoutingSearchParametersOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>RoutingSearchParametersOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::RoutingSearchParametersOrBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SatParameters.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/sat/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/sat/</path>
     <filename>SatParameters_8java</filename>
     <class kind="class">com::google::ortools::sat::SatParameters</class>
     <class kind="enum">com::google::ortools::sat::SatParameters::VariableOrder</class>
@@ -1056,106 +986,91 @@
   </compound>
   <compound kind="file">
     <name>SatParametersOrBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/sat/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/sat/</path>
     <filename>SatParametersOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::SatParametersOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
-    <name>SavingsFilteredDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
-    <filename>SavingsFilteredDecisionBuilder_8java</filename>
-    <class kind="class">com::google::ortools::constraintsolver::SavingsFilteredDecisionBuilder</class>
-    <class kind="class">com::google::ortools::constraintsolver::SavingsFilteredDecisionBuilder::SavingsParameters</class>
-    <namespace>com::google::ortools::constraintsolver</namespace>
-  </compound>
-  <compound kind="file">
     <name>SearchLimit.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SearchLimit_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SearchLimit</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SearchLimitProtobuf.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SearchLimitProtobuf_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SearchLimitProtobuf</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SearchLog.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SearchLog_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SearchLog</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SearchMonitor.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SearchMonitor_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SearchMonitor</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SequenceVar.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SequenceVar_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SequenceVar</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SequenceVarElement.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SequenceVarElement_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SequenceVarElement</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SequenceVarLocalSearchHandler.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SequenceVarLocalSearchHandler_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SequenceVarLocalSearchHandler</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SequenceVarLocalSearchOperator.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SequenceVarLocalSearchOperator_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SequenceVarLocalSearchOperator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SequenceVarLocalSearchOperatorTemplate.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SequenceVarLocalSearchOperatorTemplate_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SequenceVarLocalSearchOperatorTemplate</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
-    <name>SequentialSavingsFilteredDecisionBuilder.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
-    <filename>SequentialSavingsFilteredDecisionBuilder_8java</filename>
-    <class kind="class">com::google::ortools::constraintsolver::SequentialSavingsFilteredDecisionBuilder</class>
-    <namespace>com::google::ortools::constraintsolver</namespace>
-  </compound>
-  <compound kind="file">
     <name>SolutionCollector.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SolutionCollector_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SolutionCollector</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SolutionPool.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SolutionPool_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SolutionPool</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>Solver.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>Solver_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::Solver</class>
     <class kind="class">com::google::ortools::constraintsolver::Solver::FailException</class>
@@ -1164,49 +1079,49 @@
   </compound>
   <compound kind="file">
     <name>SolverParameters.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SolverParameters_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SolverParameters</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SortedDisjointIntervalList.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/util/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/util/</path>
     <filename>SortedDisjointIntervalList_8java</filename>
     <class kind="class">com::google::ortools::util::SortedDisjointIntervalList</class>
     <namespace>com::google::ortools::util</namespace>
   </compound>
   <compound kind="file">
     <name>SymmetryBreaker.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>SymmetryBreaker_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SymmetryBreaker</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>TypeIncompatibilityChecker.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>TypeIncompatibilityChecker_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::TypeIncompatibilityChecker</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>TypeRegulationsChecker.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>TypeRegulationsChecker_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::TypeRegulationsChecker</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>TypeRegulationsConstraint.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>TypeRegulationsConstraint_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::TypeRegulationsConstraint</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>TypeRequirementChecker.java</name>
-    <path>/usr/local/google/home/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
+    <path>/Users/lperron/Work/or-tools/ortools/gen/com/google/ortools/constraintsolver/</path>
     <filename>TypeRequirementChecker_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::TypeRequirementChecker</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
@@ -1720,21 +1635,21 @@
       <arglist>(SequenceVar var)</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>forwardSequence</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html</anchorfile>
       <anchor>a1cb98fc3db786f2c2900d20dcc26615a</anchor>
       <arglist>(SequenceVar var)</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>backwardSequence</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html</anchorfile>
       <anchor>a8356f9346309ad89f1968faf86550468</anchor>
       <arglist>(SequenceVar var)</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>unperformed</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html</anchorfile>
       <anchor>a986b02476febae65327a70cfb7bf64da</anchor>
@@ -3029,10 +2944,24 @@
       <arglist>(IntVar var)</arglist>
     </member>
     <member kind="function">
+      <type>void</type>
+      <name>Relax</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html</anchorfile>
+      <anchor>abc29e3675f4a7c35669bfa31de0f5f34</anchor>
+      <arglist>(Assignment delta, Assignment deltadelta)</arglist>
+    </member>
+    <member kind="function">
       <type>boolean</type>
       <name>isIncremental</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html</anchorfile>
       <anchor>a3ab3bfadc02b2c7882201e1e4ee2e02f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Revert</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html</anchorfile>
+      <anchor>ad415204991d6155dd37e84f3a306ccca</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -4357,144 +4286,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>com::google::ortools::constraintsolver::LocalSearchMetaheuristic::Builder</name>
-    <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</filename>
-    <base>com::google::ortools::constraintsolver::LocalSearchMetaheuristicOrBuilder</base>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>clear</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
-      <anchor>a542b6d7ba65ac8ab25e1a42debda37ab</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override com.google.protobuf.Descriptors.Descriptor</type>
-      <name>getDescriptorForType</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
-      <anchor>a5df599d114f2e2c14f929edc26c3c89e</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override com.google.ortools.constraintsolver.LocalSearchMetaheuristic</type>
-      <name>getDefaultInstanceForType</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
-      <anchor>a9c9e228744df136ec0bae31d7aa13afd</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override com.google.ortools.constraintsolver.LocalSearchMetaheuristic</type>
-      <name>build</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
-      <anchor>a90eae426303d050db482849ae4275391</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override com.google.ortools.constraintsolver.LocalSearchMetaheuristic</type>
-      <name>buildPartial</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
-      <anchor>ace3d82cd01ca871fa9938b708783e8bd</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>clone</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
-      <anchor>ad4c35acf2d13c654bdf4c231402d8e5b</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>setField</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
-      <anchor>a29cb2d6e078130bc33cbb0c4e4363843</anchor>
-      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, java.lang.Object value)</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>clearField</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
-      <anchor>af5d18ad987f46f34bc16e14dd69ad465</anchor>
-      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field)</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>clearOneof</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
-      <anchor>afed76e2d97b5f1b69aa4c2e32de27a64</anchor>
-      <arglist>(com.google.protobuf.Descriptors.OneofDescriptor oneof)</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>setRepeatedField</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
-      <anchor>a32247777d57d4e965b2e70efe3218510</anchor>
-      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, int index, java.lang.Object value)</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>addRepeatedField</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
-      <anchor>a4cccefa27c0c36e962ea460029b2e3d1</anchor>
-      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, java.lang.Object value)</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>mergeFrom</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
-      <anchor>a916dae08dfc215ec61d3721b0eed6631</anchor>
-      <arglist>(com.google.protobuf.Message other)</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>mergeFrom</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
-      <anchor>a1fac2d62e5e1c7184a6bf364b04f1fc2</anchor>
-      <arglist>(com.google.ortools.constraintsolver.LocalSearchMetaheuristic other)</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override final boolean</type>
-      <name>isInitialized</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
-      <anchor>a968cb605190759c690e5a97cdc0bb4a1</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>mergeFrom</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
-      <anchor>a290ae22f465e8996adf8f356426908c7</anchor>
-      <arglist>(com.google.protobuf.CodedInputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override final Builder</type>
-      <name>setUnknownFields</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
-      <anchor>ac316af0298e9645fc3e5159b0d4464e1</anchor>
-      <arglist>(final com.google.protobuf.UnknownFieldSet unknownFields)</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override final Builder</type>
-      <name>mergeUnknownFields</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
-      <anchor>a3e05e91aa90c10970a9aafb7b561e218</anchor>
-      <arglist>(final com.google.protobuf.UnknownFieldSet unknownFields)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final com.google.protobuf.Descriptors.Descriptor</type>
-      <name>getDescriptor</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
-      <anchor>ada120643f7710d9df7cad50d6ab2ac51</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>.lang.Override com.google.protobuf.GeneratedMessageV3.FieldAccessorTable</type>
-      <name>internalGetFieldAccessorTable</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
-      <anchor>a933d518fc16e760775083e723eb80b9a</anchor>
-      <arglist>()</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>com::google::ortools::linearsolver::MPAbsConstraint::Builder</name>
     <filename>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPAbsConstraint_1_1Builder.html</filename>
     <base>com::google::ortools::linearsolver::MPAbsConstraintOrBuilder</base>
@@ -5509,6 +5300,270 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>com::google::ortools::constraintsolver::RegularLimitParameters::Builder</name>
+    <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</filename>
+    <base>com::google::ortools::constraintsolver::RegularLimitParametersOrBuilder</base>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>clear</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>a542b6d7ba65ac8ab25e1a42debda37ab</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.protobuf.Descriptors.Descriptor</type>
+      <name>getDescriptorForType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>a5df599d114f2e2c14f929edc26c3c89e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.constraintsolver.RegularLimitParameters</type>
+      <name>getDefaultInstanceForType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>a8406eeeb591eeb62b25ebe4902def001</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.constraintsolver.RegularLimitParameters</type>
+      <name>build</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>abf7141d407fdf18e83e8b431d32923cb</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.constraintsolver.RegularLimitParameters</type>
+      <name>buildPartial</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>ad89144e6eac853a998302075af7ba168</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>clone</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>ad4c35acf2d13c654bdf4c231402d8e5b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>setField</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>a29cb2d6e078130bc33cbb0c4e4363843</anchor>
+      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, java.lang.Object value)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>clearField</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>af5d18ad987f46f34bc16e14dd69ad465</anchor>
+      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>clearOneof</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>afed76e2d97b5f1b69aa4c2e32de27a64</anchor>
+      <arglist>(com.google.protobuf.Descriptors.OneofDescriptor oneof)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>setRepeatedField</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>a32247777d57d4e965b2e70efe3218510</anchor>
+      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, int index, java.lang.Object value)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>addRepeatedField</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>a4cccefa27c0c36e962ea460029b2e3d1</anchor>
+      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, java.lang.Object value)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>mergeFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>a916dae08dfc215ec61d3721b0eed6631</anchor>
+      <arglist>(com.google.protobuf.Message other)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>mergeFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>a72e7f01cf18222a2a097d3d7d2dc7e26</anchor>
+      <arglist>(com.google.ortools.constraintsolver.RegularLimitParameters other)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override final boolean</type>
+      <name>isInitialized</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>a968cb605190759c690e5a97cdc0bb4a1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>mergeFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>a290ae22f465e8996adf8f356426908c7</anchor>
+      <arglist>(com.google.protobuf.CodedInputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
+    </member>
+    <member kind="function">
+      <type>long</type>
+      <name>getTime</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>ae8baa59527307a55bb987e3f078c264e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setTime</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>a6c5cb1ad8c842adf13d90e275aec96dc</anchor>
+      <arglist>(long value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearTime</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>adffe88eb5d96971dc4690f5edde8b44b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>long</type>
+      <name>getBranches</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>a696cba9329a3e6f62f1f187c95cd6be3</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setBranches</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>abb5981868205a895bd28ba9bc7cfd66f</anchor>
+      <arglist>(long value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearBranches</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>abfb948cb1fd5cae373ef2b9c597a3b29</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>long</type>
+      <name>getFailures</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>a27050c3ec48b2e903de54b0e886a9fd6</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setFailures</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>a3c0cbf4a5b03f9a678f6834563dd0aaf</anchor>
+      <arglist>(long value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearFailures</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>ac5de6d8b097e4bb7454af299c0416fb8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>long</type>
+      <name>getSolutions</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>a7c24b1c682cc7e88720f035d2f1f70ad</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setSolutions</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>ae9c90ae3857678fbdb56ad33b7ff070a</anchor>
+      <arglist>(long value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearSolutions</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>a9318c72e9c3e80a2f238d06a98d23f0c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getSmartTimeCheck</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>af2c09247fb1276395fbfe27e61f26f19</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setSmartTimeCheck</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>ad8017b45577911f9142cebd8d90f0523</anchor>
+      <arglist>(boolean value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearSmartTimeCheck</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>a1abfb25bb8145acf17b17d8075fbaa09</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getCumulative</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>a042db17d2cea3028cd60fbb8e33b01b5</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setCumulative</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>adb3e7eb02863d65b6bc31ee615cc0e38</anchor>
+      <arglist>(boolean value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearCumulative</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>a2b499e3bcdbeb2488fe15226b39cb9c0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override final Builder</type>
+      <name>setUnknownFields</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>ac316af0298e9645fc3e5159b0d4464e1</anchor>
+      <arglist>(final com.google.protobuf.UnknownFieldSet unknownFields)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override final Builder</type>
+      <name>mergeUnknownFields</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>a3e05e91aa90c10970a9aafb7b561e218</anchor>
+      <arglist>(final com.google.protobuf.UnknownFieldSet unknownFields)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static final com.google.protobuf.Descriptors.Descriptor</type>
+      <name>getDescriptor</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>ada120643f7710d9df7cad50d6ab2ac51</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>.lang.Override com.google.protobuf.GeneratedMessageV3.FieldAccessorTable</type>
+      <name>internalGetFieldAccessorTable</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
+      <anchor>a933d518fc16e760775083e723eb80b9a</anchor>
+      <arglist>()</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>com::google::ortools::linearsolver::MPGeneralConstraintProto::Builder</name>
     <filename>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPGeneralConstraintProto_1_1Builder.html</filename>
     <base>com::google::ortools::linearsolver::MPGeneralConstraintProtoOrBuilder</base>
@@ -6146,270 +6201,6 @@
       <type>.lang.Override com.google.protobuf.GeneratedMessageV3.FieldAccessorTable</type>
       <name>internalGetFieldAccessorTable</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPGeneralConstraintProto_1_1Builder.html</anchorfile>
-      <anchor>a933d518fc16e760775083e723eb80b9a</anchor>
-      <arglist>()</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>com::google::ortools::constraintsolver::RegularLimitParameters::Builder</name>
-    <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</filename>
-    <base>com::google::ortools::constraintsolver::RegularLimitParametersOrBuilder</base>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>clear</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>a542b6d7ba65ac8ab25e1a42debda37ab</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override com.google.protobuf.Descriptors.Descriptor</type>
-      <name>getDescriptorForType</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>a5df599d114f2e2c14f929edc26c3c89e</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override com.google.ortools.constraintsolver.RegularLimitParameters</type>
-      <name>getDefaultInstanceForType</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>a8406eeeb591eeb62b25ebe4902def001</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override com.google.ortools.constraintsolver.RegularLimitParameters</type>
-      <name>build</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>abf7141d407fdf18e83e8b431d32923cb</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override com.google.ortools.constraintsolver.RegularLimitParameters</type>
-      <name>buildPartial</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>ad89144e6eac853a998302075af7ba168</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>clone</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>ad4c35acf2d13c654bdf4c231402d8e5b</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>setField</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>a29cb2d6e078130bc33cbb0c4e4363843</anchor>
-      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, java.lang.Object value)</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>clearField</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>af5d18ad987f46f34bc16e14dd69ad465</anchor>
-      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field)</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>clearOneof</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>afed76e2d97b5f1b69aa4c2e32de27a64</anchor>
-      <arglist>(com.google.protobuf.Descriptors.OneofDescriptor oneof)</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>setRepeatedField</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>a32247777d57d4e965b2e70efe3218510</anchor>
-      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, int index, java.lang.Object value)</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>addRepeatedField</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>a4cccefa27c0c36e962ea460029b2e3d1</anchor>
-      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, java.lang.Object value)</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>mergeFrom</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>a916dae08dfc215ec61d3721b0eed6631</anchor>
-      <arglist>(com.google.protobuf.Message other)</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>mergeFrom</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>a72e7f01cf18222a2a097d3d7d2dc7e26</anchor>
-      <arglist>(com.google.ortools.constraintsolver.RegularLimitParameters other)</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override final boolean</type>
-      <name>isInitialized</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>a968cb605190759c690e5a97cdc0bb4a1</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>mergeFrom</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>a290ae22f465e8996adf8f356426908c7</anchor>
-      <arglist>(com.google.protobuf.CodedInputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>getTime</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>ae8baa59527307a55bb987e3f078c264e</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>setTime</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>a6c5cb1ad8c842adf13d90e275aec96dc</anchor>
-      <arglist>(long value)</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>clearTime</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>adffe88eb5d96971dc4690f5edde8b44b</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>getBranches</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>a696cba9329a3e6f62f1f187c95cd6be3</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>setBranches</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>abb5981868205a895bd28ba9bc7cfd66f</anchor>
-      <arglist>(long value)</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>clearBranches</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>abfb948cb1fd5cae373ef2b9c597a3b29</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>getFailures</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>a27050c3ec48b2e903de54b0e886a9fd6</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>setFailures</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>a3c0cbf4a5b03f9a678f6834563dd0aaf</anchor>
-      <arglist>(long value)</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>clearFailures</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>ac5de6d8b097e4bb7454af299c0416fb8</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>getSolutions</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>a7c24b1c682cc7e88720f035d2f1f70ad</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>setSolutions</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>ae9c90ae3857678fbdb56ad33b7ff070a</anchor>
-      <arglist>(long value)</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>clearSolutions</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>a9318c72e9c3e80a2f238d06a98d23f0c</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>boolean</type>
-      <name>getSmartTimeCheck</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>af2c09247fb1276395fbfe27e61f26f19</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>setSmartTimeCheck</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>ad8017b45577911f9142cebd8d90f0523</anchor>
-      <arglist>(boolean value)</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>clearSmartTimeCheck</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>a1abfb25bb8145acf17b17d8075fbaa09</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>boolean</type>
-      <name>getCumulative</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>a042db17d2cea3028cd60fbb8e33b01b5</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>setCumulative</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>adb3e7eb02863d65b6bc31ee615cc0e38</anchor>
-      <arglist>(boolean value)</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>clearCumulative</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>a2b499e3bcdbeb2488fe15226b39cb9c0</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override final Builder</type>
-      <name>setUnknownFields</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>ac316af0298e9645fc3e5159b0d4464e1</anchor>
-      <arglist>(final com.google.protobuf.UnknownFieldSet unknownFields)</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override final Builder</type>
-      <name>mergeUnknownFields</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>a3e05e91aa90c10970a9aafb7b561e218</anchor>
-      <arglist>(final com.google.protobuf.UnknownFieldSet unknownFields)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final com.google.protobuf.Descriptors.Descriptor</type>
-      <name>getDescriptor</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
-      <anchor>ada120643f7710d9df7cad50d6ab2ac51</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>.lang.Override com.google.protobuf.GeneratedMessageV3.FieldAccessorTable</type>
-      <name>internalGetFieldAccessorTable</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html</anchorfile>
       <anchor>a933d518fc16e760775083e723eb80b9a</anchor>
       <arglist>()</arglist>
     </member>
@@ -11375,6 +11166,27 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>getChristofidesUseMinimumMatching</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1Builder.html</anchorfile>
+      <anchor>a4c418c23083d28be367e1d6a90735039</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setChristofidesUseMinimumMatching</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1Builder.html</anchorfile>
+      <anchor>aadf3d3ea30cdeed80551dfe234a0fb98</anchor>
+      <arglist>(boolean value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearChristofidesUseMinimumMatching</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1Builder.html</anchorfile>
+      <anchor>a53437fa5806f8466c86c3ed8602c2dfd</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasLocalSearchOperators</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1Builder.html</anchorfile>
       <anchor>a333f2d0686be2fe320613122a0a671ec</anchor>
@@ -15359,6 +15171,90 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasMergeNoOverlapWorkLimit</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a6940b6d1cca69d84597897c8742d10f4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>getMergeNoOverlapWorkLimit</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a46dcf35a5c5cf3f85cec18070b9ee1a5</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setMergeNoOverlapWorkLimit</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>ac669cb440c3062df32a6b9f0644e09c1</anchor>
+      <arglist>(double value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearMergeNoOverlapWorkLimit</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a6a673e0ab6970074c3b4f31ef0e84bc3</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasMergeAtMostOneWorkLimit</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a8e480e4644874c2a2843122dd50db419</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>getMergeAtMostOneWorkLimit</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a300d7546f1ca5fc73992a4c30a9ca46c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setMergeAtMostOneWorkLimit</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a47daee5a4b4773732ef63367dda887e7</anchor>
+      <arglist>(double value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearMergeAtMostOneWorkLimit</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a914b54a22a6301d6b6d47b3bd5000094</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasPresolveSubstitutionLevel</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a4651bff1ba4fa5849f92a817ce15b043</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getPresolveSubstitutionLevel</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a0f122a4605cc12f2e5e5584d785d7caf</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setPresolveSubstitutionLevel</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>af3d9aedd2ccd11ea52464c4ec0a65859</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearPresolveSubstitutionLevel</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>aded06807b48936e1f0b98642f2cd0547</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasUseOptimizationHints</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
       <anchor>ac3d020c1591d217880a9e2c3771c97df</anchor>
@@ -15863,6 +15759,34 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasMaxAllDiffCutSize</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>acacf7bf59b881eca59414a4e110762b0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getMaxAllDiffCutSize</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a9babf83afd4127f7b0a616d1b9b08fce</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setMaxAllDiffCutSize</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a39a8f762b10a1b33ccce5ea860d4515d</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearMaxAllDiffCutSize</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a438d0fe48ea198c48546f39f8eab88f1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasUseMirRounding</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
       <anchor>ab3bee0e2ead22bb546c5ed14dc357cfa</anchor>
@@ -15975,58 +15899,58 @@
     </member>
     <member kind="function">
       <type>boolean</type>
-      <name>hasMaxInactiveCount</name>
+      <name>hasMaxConsecutiveInactiveCount</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
-      <anchor>a6bdda8c2692954a8ad0f22eb0dc03f1a</anchor>
+      <anchor>a1f281d535b3907999d8bc1181dbd42bf</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>long</type>
-      <name>getMaxInactiveCount</name>
+      <type>int</type>
+      <name>getMaxConsecutiveInactiveCount</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
-      <anchor>a513da47372a0e8229616a92a5430a941</anchor>
+      <anchor>abcf2317f5fa0b14bc83b852aca165cb9</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>Builder</type>
-      <name>setMaxInactiveCount</name>
+      <name>setMaxConsecutiveInactiveCount</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
-      <anchor>a356c21e835edf59fe2082cb1c0e7a07d</anchor>
-      <arglist>(long value)</arglist>
+      <anchor>afc504c333e1a5e3e2cddd4f142455fd4</anchor>
+      <arglist>(int value)</arglist>
     </member>
     <member kind="function">
       <type>Builder</type>
-      <name>clearMaxInactiveCount</name>
+      <name>clearMaxConsecutiveInactiveCount</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
-      <anchor>a5a3a8030d6076ffc6621dc8430eaed09</anchor>
+      <anchor>ab35aa1f1bf4c1594ca9065a75874c9e0</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>boolean</type>
-      <name>hasConstraintRemovalBatchSize</name>
+      <name>hasNewConstraintsBatchSize</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
-      <anchor>ac9ec56c5ce61de865069a495f8afa16c</anchor>
+      <anchor>a18a3d3f8fc0dec34fb9168ccfaa26a32</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>long</type>
-      <name>getConstraintRemovalBatchSize</name>
+      <type>int</type>
+      <name>getNewConstraintsBatchSize</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
-      <anchor>a208e42bf1ecf0816f677e91d00f3f872</anchor>
+      <anchor>a8b521c76e7fe99e66c94d6f6c13fe94a</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>Builder</type>
-      <name>setConstraintRemovalBatchSize</name>
+      <name>setNewConstraintsBatchSize</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
-      <anchor>a48efcdc99acb464a4745bf95a54a7d70</anchor>
-      <arglist>(long value)</arglist>
+      <anchor>a1f4b32b34f3ac55c31a4b07aa7d77245</anchor>
+      <arglist>(int value)</arglist>
     </member>
     <member kind="function">
       <type>Builder</type>
-      <name>clearConstraintRemovalBatchSize</name>
+      <name>clearNewConstraintsBatchSize</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
-      <anchor>a7c0b400800d9881a098f8ede3d93d112</anchor>
+      <anchor>ab156afdd4f4454a34845c28f09e60cce</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -16451,6 +16375,34 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasStopAfterPresolve</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a1baec6d0d5974761ffde1e47380ac49b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getStopAfterPresolve</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a00a8504077709576087285eb76acf3a6</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setStopAfterPresolve</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a1881480ebe0ea18bbe7a70b8c42eb772</anchor>
+      <arglist>(boolean value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearStopAfterPresolve</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>af66b2a160ea5c56120ffc0ec0535ac57</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasNumSearchWorkers</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
       <anchor>a72d40e5fe988b7cf850b95d9845284f4</anchor>
@@ -16703,6 +16655,34 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasUseRelaxationLns</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a72c52efb147b13c1c3f79b7583e538fc</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getUseRelaxationLns</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a3543a573e5491ecb5a4ff1fe5eec1a13</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setUseRelaxationLns</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>ac7c33a9e0678f8d0367f3555c5d9f32c</anchor>
+      <arglist>(boolean value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearUseRelaxationLns</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>adc14a12eafbf00671508e77b0e2e349d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasDiversifyLnsParams</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
       <anchor>a6f707394a9ad967f1365ecdfb04f1750</anchor>
@@ -16927,6 +16907,34 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasUseImpliedBounds</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>aa84cfed62a93fa98c687a31e4e8cae24</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getUseImpliedBounds</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a613fd35a8d17ac45a2485a93a196e77e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setUseImpliedBounds</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>adba359ff2426160caaf61e2a95a7a8a2</anchor>
+      <arglist>(boolean value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearUseImpliedBounds</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a54cb2e5edd9db6796c4a8a230bd0ea74</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasMipMaxBound</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
       <anchor>adbb545197d5084335259a4046980f32e</anchor>
@@ -17090,6 +17098,144 @@
       <type>.lang.Override com.google.protobuf.GeneratedMessageV3.FieldAccessorTable</type>
       <name>internalGetFieldAccessorTable</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a933d518fc16e760775083e723eb80b9a</anchor>
+      <arglist>()</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>com::google::ortools::constraintsolver::LocalSearchMetaheuristic::Builder</name>
+    <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</filename>
+    <base>com::google::ortools::constraintsolver::LocalSearchMetaheuristicOrBuilder</base>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>clear</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
+      <anchor>a542b6d7ba65ac8ab25e1a42debda37ab</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.protobuf.Descriptors.Descriptor</type>
+      <name>getDescriptorForType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
+      <anchor>a5df599d114f2e2c14f929edc26c3c89e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.constraintsolver.LocalSearchMetaheuristic</type>
+      <name>getDefaultInstanceForType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
+      <anchor>a9c9e228744df136ec0bae31d7aa13afd</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.constraintsolver.LocalSearchMetaheuristic</type>
+      <name>build</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
+      <anchor>a90eae426303d050db482849ae4275391</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.constraintsolver.LocalSearchMetaheuristic</type>
+      <name>buildPartial</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
+      <anchor>ace3d82cd01ca871fa9938b708783e8bd</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>clone</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
+      <anchor>ad4c35acf2d13c654bdf4c231402d8e5b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>setField</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
+      <anchor>a29cb2d6e078130bc33cbb0c4e4363843</anchor>
+      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, java.lang.Object value)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>clearField</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
+      <anchor>af5d18ad987f46f34bc16e14dd69ad465</anchor>
+      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>clearOneof</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
+      <anchor>afed76e2d97b5f1b69aa4c2e32de27a64</anchor>
+      <arglist>(com.google.protobuf.Descriptors.OneofDescriptor oneof)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>setRepeatedField</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
+      <anchor>a32247777d57d4e965b2e70efe3218510</anchor>
+      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, int index, java.lang.Object value)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>addRepeatedField</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
+      <anchor>a4cccefa27c0c36e962ea460029b2e3d1</anchor>
+      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, java.lang.Object value)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>mergeFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
+      <anchor>a916dae08dfc215ec61d3721b0eed6631</anchor>
+      <arglist>(com.google.protobuf.Message other)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>mergeFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
+      <anchor>a1fac2d62e5e1c7184a6bf364b04f1fc2</anchor>
+      <arglist>(com.google.ortools.constraintsolver.LocalSearchMetaheuristic other)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override final boolean</type>
+      <name>isInitialized</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
+      <anchor>a968cb605190759c690e5a97cdc0bb4a1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>mergeFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
+      <anchor>a290ae22f465e8996adf8f356426908c7</anchor>
+      <arglist>(com.google.protobuf.CodedInputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override final Builder</type>
+      <name>setUnknownFields</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
+      <anchor>ac316af0298e9645fc3e5159b0d4464e1</anchor>
+      <arglist>(final com.google.protobuf.UnknownFieldSet unknownFields)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override final Builder</type>
+      <name>mergeUnknownFields</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
+      <anchor>a3e05e91aa90c10970a9aafb7b561e218</anchor>
+      <arglist>(final com.google.protobuf.UnknownFieldSet unknownFields)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static final com.google.protobuf.Descriptors.Descriptor</type>
+      <name>getDescriptor</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
+      <anchor>ada120643f7710d9df7cad50d6ab2ac51</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>.lang.Override com.google.protobuf.GeneratedMessageV3.FieldAccessorTable</type>
+      <name>internalGetFieldAccessorTable</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Builder.html</anchorfile>
       <anchor>a933d518fc16e760775083e723eb80b9a</anchor>
       <arglist>()</arglist>
     </member>
@@ -17426,336 +17572,6 @@
       <arglist>()</arglist>
     </member>
   </compound>
-  <compound kind="class">
-    <name>com::google::ortools::constraintsolver::CheapestAdditionFilteredDecisionBuilder</name>
-    <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CheapestAdditionFilteredDecisionBuilder.html</filename>
-    <base>com::google::ortools::constraintsolver::RoutingFilteredDecisionBuilder</base>
-    <member kind="function">
-      <type>synchronized void</type>
-      <name>delete</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CheapestAdditionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a155da317e33b817886120f10038c12cf</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>boolean</type>
-      <name>buildSolution</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CheapestAdditionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a7dad8c02c56408c6839c96612fa25b66</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>RoutingModel</type>
-      <name>model</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2ce484cc375368fb1f01c19a3137821c</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getStartChainEnd</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ad3c41fccf4ea20a8eb845a96883769ec</anchor>
-      <arglist>(int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getEndChainStart</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a672be7ac539db86580851e5b237e4522</anchor>
-      <arglist>(int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>makeDisjunctionNodesUnperformed</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2735d6fe2f2b31cd347c2775dbbaef31</anchor>
-      <arglist>(long node)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>makeUnassignedNodesUnperformed</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a76afa4f98fadaae7db4d36fb0d1b51b2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Decision</type>
-      <name>nextWrap</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2630e7d6d35c6e502b69bb7115ea1004</anchor>
-      <arglist>(Solver solver)</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>number_of_decisions</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>aac193357493f005c162b5252774ff40b</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>number_of_rejects</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a74d570e12be68d37472936cb729237b2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>swigReleaseOwnership</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a71489e94aa126da236972db0ade7229a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>swigTakeOwnership</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>ad4b835b84e76e8d03a518291271069a9</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>String</type>
-      <name>toString</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>ad146fa8579a5f8a876c4688cc5a68520</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type></type>
-      <name>CheapestAdditionFilteredDecisionBuilder</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CheapestAdditionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ab26b26126d6f274a28ec8691630f9b44</anchor>
-      <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>swigDirectorDisconnect</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>aeb590aba470ae6ec1e69cdad7bb5961c</anchor>
-      <arglist>()</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>com::google::ortools::constraintsolver::CheapestInsertionFilteredDecisionBuilder</name>
-    <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CheapestInsertionFilteredDecisionBuilder.html</filename>
-    <base>com::google::ortools::constraintsolver::RoutingFilteredDecisionBuilder</base>
-    <member kind="function">
-      <type>synchronized void</type>
-      <name>delete</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a155da317e33b817886120f10038c12cf</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>RoutingModel</type>
-      <name>model</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2ce484cc375368fb1f01c19a3137821c</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getStartChainEnd</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ad3c41fccf4ea20a8eb845a96883769ec</anchor>
-      <arglist>(int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getEndChainStart</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a672be7ac539db86580851e5b237e4522</anchor>
-      <arglist>(int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>makeDisjunctionNodesUnperformed</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2735d6fe2f2b31cd347c2775dbbaef31</anchor>
-      <arglist>(long node)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>makeUnassignedNodesUnperformed</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a76afa4f98fadaae7db4d36fb0d1b51b2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Decision</type>
-      <name>nextWrap</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2630e7d6d35c6e502b69bb7115ea1004</anchor>
-      <arglist>(Solver solver)</arglist>
-    </member>
-    <member kind="function">
-      <type>boolean</type>
-      <name>buildSolution</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a7dad8c02c56408c6839c96612fa25b66</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>number_of_decisions</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>aac193357493f005c162b5252774ff40b</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>number_of_rejects</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a74d570e12be68d37472936cb729237b2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>swigReleaseOwnership</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a71489e94aa126da236972db0ade7229a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>swigTakeOwnership</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>ad4b835b84e76e8d03a518291271069a9</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>String</type>
-      <name>toString</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>ad146fa8579a5f8a876c4688cc5a68520</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type></type>
-      <name>CheapestInsertionFilteredDecisionBuilder</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CheapestInsertionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a64d12c7b76ba080373d1f074769bd4c1</anchor>
-      <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>swigDirectorDisconnect</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>aeb590aba470ae6ec1e69cdad7bb5961c</anchor>
-      <arglist>()</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>com::google::ortools::constraintsolver::ChristofidesFilteredDecisionBuilder</name>
-    <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ChristofidesFilteredDecisionBuilder.html</filename>
-    <base>com::google::ortools::constraintsolver::RoutingFilteredDecisionBuilder</base>
-    <member kind="function">
-      <type>synchronized void</type>
-      <name>delete</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ChristofidesFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a155da317e33b817886120f10038c12cf</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>boolean</type>
-      <name>buildSolution</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ChristofidesFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a7dad8c02c56408c6839c96612fa25b66</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>String</type>
-      <name>toString</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ChristofidesFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ad146fa8579a5f8a876c4688cc5a68520</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>RoutingModel</type>
-      <name>model</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2ce484cc375368fb1f01c19a3137821c</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getStartChainEnd</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ad3c41fccf4ea20a8eb845a96883769ec</anchor>
-      <arglist>(int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getEndChainStart</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a672be7ac539db86580851e5b237e4522</anchor>
-      <arglist>(int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>makeDisjunctionNodesUnperformed</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2735d6fe2f2b31cd347c2775dbbaef31</anchor>
-      <arglist>(long node)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>makeUnassignedNodesUnperformed</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a76afa4f98fadaae7db4d36fb0d1b51b2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Decision</type>
-      <name>nextWrap</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2630e7d6d35c6e502b69bb7115ea1004</anchor>
-      <arglist>(Solver solver)</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>number_of_decisions</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>aac193357493f005c162b5252774ff40b</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>number_of_rejects</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a74d570e12be68d37472936cb729237b2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>swigReleaseOwnership</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a71489e94aa126da236972db0ade7229a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>swigTakeOwnership</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>ad4b835b84e76e8d03a518291271069a9</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type></type>
-      <name>ChristofidesFilteredDecisionBuilder</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ChristofidesFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a7e2269adfd9093e7274322981e508db8</anchor>
-      <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>swigDirectorDisconnect</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>aeb590aba470ae6ec1e69cdad7bb5961c</anchor>
-      <arglist>()</arglist>
-    </member>
-  </compound>
   <compound kind="enum">
     <name>com::google::ortools::sat::SatParameters::ClauseOrdering</name>
     <filename>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1ClauseOrdering.html</filename>
@@ -17946,116 +17762,6 @@
       <arglist></arglist>
     </member>
   </compound>
-  <compound kind="class">
-    <name>com::google::ortools::constraintsolver::ComparatorCheapestAdditionFilteredDecisionBuilder</name>
-    <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ComparatorCheapestAdditionFilteredDecisionBuilder.html</filename>
-    <base>com::google::ortools::constraintsolver::CheapestAdditionFilteredDecisionBuilder</base>
-    <member kind="function">
-      <type>synchronized void</type>
-      <name>delete</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ComparatorCheapestAdditionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a155da317e33b817886120f10038c12cf</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>String</type>
-      <name>toString</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ComparatorCheapestAdditionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ad146fa8579a5f8a876c4688cc5a68520</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>boolean</type>
-      <name>buildSolution</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CheapestAdditionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a7dad8c02c56408c6839c96612fa25b66</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>RoutingModel</type>
-      <name>model</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2ce484cc375368fb1f01c19a3137821c</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getStartChainEnd</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ad3c41fccf4ea20a8eb845a96883769ec</anchor>
-      <arglist>(int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getEndChainStart</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a672be7ac539db86580851e5b237e4522</anchor>
-      <arglist>(int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>makeDisjunctionNodesUnperformed</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2735d6fe2f2b31cd347c2775dbbaef31</anchor>
-      <arglist>(long node)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>makeUnassignedNodesUnperformed</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a76afa4f98fadaae7db4d36fb0d1b51b2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Decision</type>
-      <name>nextWrap</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2630e7d6d35c6e502b69bb7115ea1004</anchor>
-      <arglist>(Solver solver)</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>number_of_decisions</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>aac193357493f005c162b5252774ff40b</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>number_of_rejects</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a74d570e12be68d37472936cb729237b2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>swigReleaseOwnership</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a71489e94aa126da236972db0ade7229a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>swigTakeOwnership</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>ad4b835b84e76e8d03a518291271069a9</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type></type>
-      <name>ComparatorCheapestAdditionFilteredDecisionBuilder</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ComparatorCheapestAdditionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a4d66d93f6fa6951bf00953af1b69fc49</anchor>
-      <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>swigDirectorDisconnect</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>aeb590aba470ae6ec1e69cdad7bb5961c</anchor>
-      <arglist>()</arglist>
-    </member>
-  </compound>
   <compound kind="enum">
     <name>com::google::ortools::sat::SatParameters::ConflictMinimizationAlgorithm</name>
     <filename>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1ConflictMinimizationAlgorithm.html</filename>
@@ -18170,6 +17876,45 @@
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1ConflictMinimizationAlgorithm.html</anchorfile>
       <anchor>a13ed6181cd68770ad6d91e24025bf908</anchor>
       <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>com::google::ortools::sat::Constraint</name>
+    <filename>classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html</filename>
+    <member kind="function">
+      <type></type>
+      <name>Constraint</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html</anchorfile>
+      <anchor>a601e550712da80f5cac45a0324859c1b</anchor>
+      <arglist>(CpModelProto.Builder builder)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>onlyEnforceIf</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html</anchorfile>
+      <anchor>ae49c1e99145157c8aa8cce5897e6a6bc</anchor>
+      <arglist>(Literal lit)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>onlyEnforceIf</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html</anchorfile>
+      <anchor>a443931feaa4af1c0249968deaef92a11</anchor>
+      <arglist>(Literal[] lits)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getIndex</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html</anchorfile>
+      <anchor>a59d053c950ff1e9f8a004d493f34e754</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>ConstraintProto.Builder</type>
+      <name>getBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html</anchorfile>
+      <anchor>a745f45cacfc19026a06b544c914a773d</anchor>
+      <arglist>()</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -18315,45 +18060,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html</anchorfile>
       <anchor>a51e6ab0a711465399b31ce0c5f851c20</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>com::google::ortools::sat::Constraint</name>
-    <filename>classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html</filename>
-    <member kind="function">
-      <type></type>
-      <name>Constraint</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html</anchorfile>
-      <anchor>a601e550712da80f5cac45a0324859c1b</anchor>
-      <arglist>(CpModelProto.Builder builder)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>onlyEnforceIf</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html</anchorfile>
-      <anchor>ae49c1e99145157c8aa8cce5897e6a6bc</anchor>
-      <arglist>(Literal lit)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>onlyEnforceIf</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html</anchorfile>
-      <anchor>a443931feaa4af1c0249968deaef92a11</anchor>
-      <arglist>(Literal[] lits)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getIndex</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html</anchorfile>
-      <anchor>a59d053c950ff1e9f8a004d493f34e754</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>ConstraintProto.Builder</type>
-      <name>getBuilder</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1Constraint.html</anchorfile>
-      <anchor>a745f45cacfc19026a06b544c914a773d</anchor>
-      <arglist>()</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -19268,10 +18974,24 @@
       <arglist>(IntVar var)</arglist>
     </member>
     <member kind="function">
+      <type>void</type>
+      <name>Relax</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html</anchorfile>
+      <anchor>abc29e3675f4a7c35669bfa31de0f5f34</anchor>
+      <arglist>(Assignment delta, Assignment deltadelta)</arglist>
+    </member>
+    <member kind="function">
       <type>boolean</type>
       <name>isIncremental</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html</anchorfile>
       <anchor>a3ab3bfadc02b2c7882201e1e4ee2e02f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Revert</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html</anchorfile>
+      <anchor>ad415204991d6155dd37e84f3a306ccca</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -21126,7 +20846,7 @@
       <arglist>(long left, long right)</arglist>
     </member>
     <member kind="function">
-      <type>long []</type>
+      <type>long[]</type>
       <name>flattenedIntervals</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1util_1_1Domain.html</anchorfile>
       <anchor>a8f3d8247806e88dd3d62d9d03e520acf</anchor>
@@ -21282,116 +21002,6 @@
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverParameters_1_1DoubleParam.html</anchorfile>
       <anchor>a4356d7daf194f52f051eb5f8113dd609</anchor>
       <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>com::google::ortools::constraintsolver::EvaluatorCheapestAdditionFilteredDecisionBuilder</name>
-    <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1EvaluatorCheapestAdditionFilteredDecisionBuilder.html</filename>
-    <base>com::google::ortools::constraintsolver::CheapestAdditionFilteredDecisionBuilder</base>
-    <member kind="function">
-      <type>synchronized void</type>
-      <name>delete</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1EvaluatorCheapestAdditionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a155da317e33b817886120f10038c12cf</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>String</type>
-      <name>toString</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1EvaluatorCheapestAdditionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ad146fa8579a5f8a876c4688cc5a68520</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>boolean</type>
-      <name>buildSolution</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CheapestAdditionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a7dad8c02c56408c6839c96612fa25b66</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>RoutingModel</type>
-      <name>model</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2ce484cc375368fb1f01c19a3137821c</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getStartChainEnd</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ad3c41fccf4ea20a8eb845a96883769ec</anchor>
-      <arglist>(int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getEndChainStart</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a672be7ac539db86580851e5b237e4522</anchor>
-      <arglist>(int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>makeDisjunctionNodesUnperformed</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2735d6fe2f2b31cd347c2775dbbaef31</anchor>
-      <arglist>(long node)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>makeUnassignedNodesUnperformed</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a76afa4f98fadaae7db4d36fb0d1b51b2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Decision</type>
-      <name>nextWrap</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2630e7d6d35c6e502b69bb7115ea1004</anchor>
-      <arglist>(Solver solver)</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>number_of_decisions</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>aac193357493f005c162b5252774ff40b</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>number_of_rejects</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a74d570e12be68d37472936cb729237b2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>swigReleaseOwnership</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a71489e94aa126da236972db0ade7229a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>swigTakeOwnership</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>ad4b835b84e76e8d03a518291271069a9</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type></type>
-      <name>EvaluatorCheapestAdditionFilteredDecisionBuilder</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1EvaluatorCheapestAdditionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a89a33de14efcd1d351d0692ed18f247f</anchor>
-      <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>swigDirectorDisconnect</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>aeb590aba470ae6ec1e69cdad7bb5961c</anchor>
-      <arglist>()</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -21722,116 +21332,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>com::google::ortools::constraintsolver::GlobalCheapestInsertionFilteredDecisionBuilder</name>
-    <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html</filename>
-    <base>com::google::ortools::constraintsolver::CheapestInsertionFilteredDecisionBuilder</base>
-    <member kind="function">
-      <type>synchronized void</type>
-      <name>delete</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a155da317e33b817886120f10038c12cf</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>boolean</type>
-      <name>buildSolution</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a7dad8c02c56408c6839c96612fa25b66</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>String</type>
-      <name>toString</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ad146fa8579a5f8a876c4688cc5a68520</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>RoutingModel</type>
-      <name>model</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2ce484cc375368fb1f01c19a3137821c</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getStartChainEnd</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ad3c41fccf4ea20a8eb845a96883769ec</anchor>
-      <arglist>(int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getEndChainStart</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a672be7ac539db86580851e5b237e4522</anchor>
-      <arglist>(int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>makeDisjunctionNodesUnperformed</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2735d6fe2f2b31cd347c2775dbbaef31</anchor>
-      <arglist>(long node)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>makeUnassignedNodesUnperformed</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a76afa4f98fadaae7db4d36fb0d1b51b2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Decision</type>
-      <name>nextWrap</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2630e7d6d35c6e502b69bb7115ea1004</anchor>
-      <arglist>(Solver solver)</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>number_of_decisions</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>aac193357493f005c162b5252774ff40b</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>number_of_rejects</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a74d570e12be68d37472936cb729237b2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>swigReleaseOwnership</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a71489e94aa126da236972db0ade7229a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>swigTakeOwnership</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>ad4b835b84e76e8d03a518291271069a9</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type></type>
-      <name>GlobalCheapestInsertionFilteredDecisionBuilder</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1GlobalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>acf94ec7325092704a000c25a22c72bf0</anchor>
-      <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>swigDirectorDisconnect</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>aeb590aba470ae6ec1e69cdad7bb5961c</anchor>
-      <arglist>()</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>com::google::ortools::constraintsolver::GlobalVehicleBreaksConstraint</name>
     <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1GlobalVehicleBreaksConstraint.html</filename>
     <base>com::google::ortools::constraintsolver::Constraint</base>
@@ -21850,6 +21350,13 @@
       <arglist>(RoutingDimension dimension)</arglist>
     </member>
     <member kind="function">
+      <type>String</type>
+      <name>toString</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1GlobalVehicleBreaksConstraint.html</anchorfile>
+      <anchor>ad146fa8579a5f8a876c4688cc5a68520</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
       <type>void</type>
       <name>post</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1GlobalVehicleBreaksConstraint.html</anchorfile>
@@ -21861,13 +21368,6 @@
       <name>initialPropagate</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1GlobalVehicleBreaksConstraint.html</anchorfile>
       <anchor>aa73acb28f5f6fded9f86d4f5b8057d91</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>String</type>
-      <name>toString</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html</anchorfile>
-      <anchor>ad146fa8579a5f8a876c4688cc5a68520</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -22133,38 +21633,6 @@
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverParameters_1_1IntegerParam.html</anchorfile>
       <anchor>a9535695b4190ac2a57778982928daadc</anchor>
       <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>com::google::ortools::sat::IntervalVar</name>
-    <filename>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html</filename>
-    <member kind="function">
-      <type>String</type>
-      <name>toString</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html</anchorfile>
-      <anchor>ad146fa8579a5f8a876c4688cc5a68520</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getIndex</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html</anchorfile>
-      <anchor>a59d053c950ff1e9f8a004d493f34e754</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>IntervalConstraintProto.Builder</type>
-      <name>getBuilder</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html</anchorfile>
-      <anchor>a40e0e83064a13e7852e226b42a339e18</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>String</type>
-      <name>getName</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html</anchorfile>
-      <anchor>a78ee178b6a73658d65ca60da4d1e6683</anchor>
-      <arglist>()</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -22639,6 +22107,38 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntervalVar.html</anchorfile>
       <anchor>ac5145da33c1e7422236a4cadca76b07d</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>com::google::ortools::sat::IntervalVar</name>
+    <filename>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html</filename>
+    <member kind="function">
+      <type>String</type>
+      <name>toString</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html</anchorfile>
+      <anchor>ad146fa8579a5f8a876c4688cc5a68520</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getIndex</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html</anchorfile>
+      <anchor>a59d053c950ff1e9f8a004d493f34e754</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>IntervalConstraintProto.Builder</type>
+      <name>getBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html</anchorfile>
+      <anchor>a40e0e83064a13e7852e226b42a339e18</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>String</type>
+      <name>getName</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntervalVar.html</anchorfile>
+      <anchor>a78ee178b6a73658d65ca60da4d1e6683</anchor>
+      <arglist>()</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -23304,6 +22804,110 @@
     </member>
   </compound>
   <compound kind="class">
+    <name>com::google::ortools::sat::IntVar</name>
+    <filename>classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html</filename>
+    <base>com::google::ortools::sat::Literal</base>
+    <base>com::google::ortools::sat::LinearExpr</base>
+    <member kind="function">
+      <type>String</type>
+      <name>toString</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html</anchorfile>
+      <anchor>ad146fa8579a5f8a876c4688cc5a68520</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>String</type>
+      <name>getName</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html</anchorfile>
+      <anchor>a78ee178b6a73658d65ca60da4d1e6683</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getIndex</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html</anchorfile>
+      <anchor>a59d053c950ff1e9f8a004d493f34e754</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>IntegerVariableProto.Builder</type>
+      <name>getBuilder</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html</anchorfile>
+      <anchor>adc3207cdb93a02d31bb3c2037a425e49</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>numElements</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html</anchorfile>
+      <anchor>a59f9cb76db051cd784a42f38220f896d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>IntVar</type>
+      <name>getVariable</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html</anchorfile>
+      <anchor>aff988e01e71c0dd3c11e6f970a209520</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>long</type>
+      <name>getCoefficient</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html</anchorfile>
+      <anchor>a2c77626134edecc47b69efe661ea1904</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>String</type>
+      <name>getShortString</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html</anchorfile>
+      <anchor>abe2ffdd9c6d616c6f2a5924cd407f585</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>String</type>
+      <name>displayBounds</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html</anchorfile>
+      <anchor>a8ace4881c60b23f63a76a63bab8e9870</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Literal</type>
+      <name>not</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html</anchorfile>
+      <anchor>a9e2c0b0299cf2164e32a7fbc543a7ea6</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>sum</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
+      <anchor>aafaf7ba9f072b09e687ed03fb4d98b4a</anchor>
+      <arglist>(IntVar[] variables)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>scalProd</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
+      <anchor>add2c1c4ca7d2bd87e429a5044df28417</anchor>
+      <arglist>(IntVar[] variables, long[] coefficients)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>scalProd</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
+      <anchor>adc5cb20cefb7b9bfa251adc4a57eb2bb</anchor>
+      <arglist>(IntVar[] variables, int[] coefficients)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static LinearExpr</type>
+      <name>term</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
+      <anchor>ac3f3f3257983820bff7b607f2ba710d0</anchor>
+      <arglist>(IntVar variable, long coefficient)</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
     <name>com::google::ortools::constraintsolver::IntVar</name>
     <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html</filename>
     <base>com::google::ortools::constraintsolver::IntExpr</base>
@@ -23652,110 +23256,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>com::google::ortools::sat::IntVar</name>
-    <filename>classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html</filename>
-    <base>com::google::ortools::sat::Literal</base>
-    <base>com::google::ortools::sat::LinearExpr</base>
-    <member kind="function">
-      <type>String</type>
-      <name>toString</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html</anchorfile>
-      <anchor>ad146fa8579a5f8a876c4688cc5a68520</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>String</type>
-      <name>getName</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html</anchorfile>
-      <anchor>a78ee178b6a73658d65ca60da4d1e6683</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getIndex</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html</anchorfile>
-      <anchor>a59d053c950ff1e9f8a004d493f34e754</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>IntegerVariableProto.Builder</type>
-      <name>getBuilder</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html</anchorfile>
-      <anchor>adc3207cdb93a02d31bb3c2037a425e49</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>numElements</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html</anchorfile>
-      <anchor>a59f9cb76db051cd784a42f38220f896d</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>IntVar</type>
-      <name>getVariable</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html</anchorfile>
-      <anchor>aff988e01e71c0dd3c11e6f970a209520</anchor>
-      <arglist>(int index)</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>getCoefficient</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html</anchorfile>
-      <anchor>a2c77626134edecc47b69efe661ea1904</anchor>
-      <arglist>(int index)</arglist>
-    </member>
-    <member kind="function">
-      <type>String</type>
-      <name>getShortString</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html</anchorfile>
-      <anchor>abe2ffdd9c6d616c6f2a5924cd407f585</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>String</type>
-      <name>displayBounds</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html</anchorfile>
-      <anchor>a8ace4881c60b23f63a76a63bab8e9870</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Literal</type>
-      <name>not</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1IntVar.html</anchorfile>
-      <anchor>a9e2c0b0299cf2164e32a7fbc543a7ea6</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>sum</name>
-      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
-      <anchor>aafaf7ba9f072b09e687ed03fb4d98b4a</anchor>
-      <arglist>(IntVar[] variables)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>scalProd</name>
-      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
-      <anchor>add2c1c4ca7d2bd87e429a5044df28417</anchor>
-      <arglist>(IntVar[] variables, long[] coefficients)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>scalProd</name>
-      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
-      <anchor>adc5cb20cefb7b9bfa251adc4a57eb2bb</anchor>
-      <arglist>(IntVar[] variables, int[] coefficients)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static LinearExpr</type>
-      <name>term</name>
-      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpr.html</anchorfile>
-      <anchor>ac3f3f3257983820bff7b607f2ba710d0</anchor>
-      <arglist>(IntVar variable, long coefficient)</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>com::google::ortools::constraintsolver::IntVarElement</name>
     <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarElement.html</filename>
     <base>com::google::ortools::constraintsolver::AssignmentElement</base>
@@ -23915,81 +23415,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>com::google::ortools::constraintsolver::IntVarFilteredDecisionBuilder</name>
-    <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</filename>
-    <base>com::google::ortools::constraintsolver::DecisionBuilder</base>
-    <member kind="function">
-      <type>synchronized void</type>
-      <name>delete</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a155da317e33b817886120f10038c12cf</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Decision</type>
-      <name>nextWrap</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2630e7d6d35c6e502b69bb7115ea1004</anchor>
-      <arglist>(Solver solver)</arglist>
-    </member>
-    <member kind="function">
-      <type>boolean</type>
-      <name>buildSolution</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a7dad8c02c56408c6839c96612fa25b66</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>number_of_decisions</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>aac193357493f005c162b5252774ff40b</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>number_of_rejects</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a74d570e12be68d37472936cb729237b2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>swigReleaseOwnership</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a71489e94aa126da236972db0ade7229a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>swigTakeOwnership</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>ad4b835b84e76e8d03a518291271069a9</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>String</type>
-      <name>toString</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>ad146fa8579a5f8a876c4688cc5a68520</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type></type>
-      <name>IntVarFilteredDecisionBuilder</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a05dedd499df5adc316305ef5b9208af7</anchor>
-      <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>swigDirectorDisconnect</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>aeb590aba470ae6ec1e69cdad7bb5961c</anchor>
-      <arglist>()</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>com::google::ortools::constraintsolver::IntVarIterator</name>
     <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarIterator.html</filename>
     <base>com::google::ortools::constraintsolver::BaseObject</base>
@@ -24118,6 +23543,13 @@
       <arglist>(IntVar var)</arglist>
     </member>
     <member kind="function">
+      <type>void</type>
+      <name>Relax</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html</anchorfile>
+      <anchor>abc29e3675f4a7c35669bfa31de0f5f34</anchor>
+      <arglist>(Assignment delta, Assignment deltadelta)</arglist>
+    </member>
+    <member kind="function">
       <type>boolean</type>
       <name>accept</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html</anchorfile>
@@ -24129,6 +23561,13 @@
       <name>isIncremental</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html</anchorfile>
       <anchor>a3ab3bfadc02b2c7882201e1e4ee2e02f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>Revert</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html</anchorfile>
+      <anchor>ad415204991d6155dd37e84f3a306ccca</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -24909,116 +24348,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>com::google::ortools::constraintsolver::LocalCheapestInsertionFilteredDecisionBuilder</name>
-    <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalCheapestInsertionFilteredDecisionBuilder.html</filename>
-    <base>com::google::ortools::constraintsolver::CheapestInsertionFilteredDecisionBuilder</base>
-    <member kind="function">
-      <type>synchronized void</type>
-      <name>delete</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a155da317e33b817886120f10038c12cf</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>boolean</type>
-      <name>buildSolution</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a7dad8c02c56408c6839c96612fa25b66</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>String</type>
-      <name>toString</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ad146fa8579a5f8a876c4688cc5a68520</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>RoutingModel</type>
-      <name>model</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2ce484cc375368fb1f01c19a3137821c</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getStartChainEnd</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ad3c41fccf4ea20a8eb845a96883769ec</anchor>
-      <arglist>(int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getEndChainStart</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a672be7ac539db86580851e5b237e4522</anchor>
-      <arglist>(int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>makeDisjunctionNodesUnperformed</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2735d6fe2f2b31cd347c2775dbbaef31</anchor>
-      <arglist>(long node)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>makeUnassignedNodesUnperformed</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a76afa4f98fadaae7db4d36fb0d1b51b2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Decision</type>
-      <name>nextWrap</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2630e7d6d35c6e502b69bb7115ea1004</anchor>
-      <arglist>(Solver solver)</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>number_of_decisions</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>aac193357493f005c162b5252774ff40b</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>number_of_rejects</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a74d570e12be68d37472936cb729237b2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>swigReleaseOwnership</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a71489e94aa126da236972db0ade7229a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>swigTakeOwnership</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>ad4b835b84e76e8d03a518291271069a9</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type></type>
-      <name>LocalCheapestInsertionFilteredDecisionBuilder</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalCheapestInsertionFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a5ac50cb0eb209cc22510d681e0bd8bb9</anchor>
-      <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>swigDirectorDisconnect</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>aeb590aba470ae6ec1e69cdad7bb5961c</anchor>
-      <arglist>()</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>com::google::ortools::constraintsolver::LocalSearchFilter</name>
     <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html</filename>
     <base>com::google::ortools::constraintsolver::BaseObject</base>
@@ -25044,11 +24373,25 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
+      <type>void</type>
+      <name>Relax</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html</anchorfile>
+      <anchor>abc29e3675f4a7c35669bfa31de0f5f34</anchor>
+      <arglist>(Assignment delta, Assignment deltadelta)</arglist>
+    </member>
+    <member kind="function">
       <type>boolean</type>
       <name>accept</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html</anchorfile>
       <anchor>ad9cd3297f1293dc55cd071af3db5fbcc</anchor>
       <arglist>(Assignment delta, Assignment deltadelta, long objective_min, long objective_max)</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>isIncremental</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html</anchorfile>
+      <anchor>a3ab3bfadc02b2c7882201e1e4ee2e02f</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -25058,10 +24401,10 @@
       <arglist>(Assignment assignment, Assignment delta)</arglist>
     </member>
     <member kind="function">
-      <type>boolean</type>
-      <name>isIncremental</name>
+      <type>void</type>
+      <name>Revert</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchFilter.html</anchorfile>
-      <anchor>a3ab3bfadc02b2c7882201e1e4ee2e02f</anchor>
+      <anchor>ad415204991d6155dd37e84f3a306ccca</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -35349,56 +34692,56 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>MPVariable []</type>
+      <type>MPVariable[]</type>
       <name>makeVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
       <anchor>a01d1141a64d0ea2d4c70049139a39489</anchor>
       <arglist>(int count, double lb, double ub, boolean integer)</arglist>
     </member>
     <member kind="function">
-      <type>MPVariable []</type>
+      <type>MPVariable[]</type>
       <name>makeVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
       <anchor>ab42b9ff3770c218f3189db51a8f5dd2b</anchor>
       <arglist>(int count, double lb, double ub, boolean integer, String var_name)</arglist>
     </member>
     <member kind="function">
-      <type>MPVariable []</type>
+      <type>MPVariable[]</type>
       <name>makeNumVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
       <anchor>ae0bf2f8026a136d8cabecd3c94c00ead</anchor>
       <arglist>(int count, double lb, double ub)</arglist>
     </member>
     <member kind="function">
-      <type>MPVariable []</type>
+      <type>MPVariable[]</type>
       <name>makeNumVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
       <anchor>a6afb82b104046e5ea4b2605eec2baa7f</anchor>
       <arglist>(int count, double lb, double ub, String var_name)</arglist>
     </member>
     <member kind="function">
-      <type>MPVariable []</type>
+      <type>MPVariable[]</type>
       <name>makeIntVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
       <anchor>a751dbf8b47d66f985da829ba52f0cec8</anchor>
       <arglist>(int count, double lb, double ub)</arglist>
     </member>
     <member kind="function">
-      <type>MPVariable []</type>
+      <type>MPVariable[]</type>
       <name>makeIntVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
       <anchor>a036e958befd6b580149e8a85ae64db2f</anchor>
       <arglist>(int count, double lb, double ub, String var_name)</arglist>
     </member>
     <member kind="function">
-      <type>MPVariable []</type>
+      <type>MPVariable[]</type>
       <name>makeBoolVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
       <anchor>a90cffe34affa69de7e6630c313efb590</anchor>
       <arglist>(int count)</arglist>
     </member>
     <member kind="function">
-      <type>MPVariable []</type>
+      <type>MPVariable[]</type>
       <name>makeBoolVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
       <anchor>ae8812dddb6912b92a029702a2d4e550b</anchor>
@@ -35426,7 +34769,7 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>MPVariable []</type>
+      <type>MPVariable[]</type>
       <name>variables</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
       <anchor>afa1dd9d9836702c74f8d44e2bcde3390</anchor>
@@ -35475,7 +34818,7 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>MPConstraint []</type>
+      <type>MPConstraint[]</type>
       <name>constraints</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
       <anchor>aa3f051ba337b2c775a91a3adb08dfdc9</anchor>
@@ -35538,7 +34881,7 @@
       <arglist>(MPSolverParameters param)</arglist>
     </member>
     <member kind="function">
-      <type>double []</type>
+      <type>double[]</type>
       <name>computeConstraintActivities</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
       <anchor>ac824e10d554bc452d97976679e423b9a</anchor>
@@ -37488,6 +36831,13 @@
       <anchor>aa603d0869f9d538cec53dbd5f07e75c0</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable">
+      <type></type>
+      <name>SAT_INTEGER_PROGRAMMING</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html</anchorfile>
+      <anchor>abb5bc4ebc84195b49dab8eb2bb34e58a</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::constraintsolver::OptimizeVar</name>
@@ -38484,116 +37834,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>com::google::ortools::constraintsolver::ParallelSavingsFilteredDecisionBuilder</name>
-    <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ParallelSavingsFilteredDecisionBuilder.html</filename>
-    <base>com::google::ortools::constraintsolver::SavingsFilteredDecisionBuilder</base>
-    <member kind="function">
-      <type>synchronized void</type>
-      <name>delete</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ParallelSavingsFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a155da317e33b817886120f10038c12cf</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>String</type>
-      <name>toString</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ParallelSavingsFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ad146fa8579a5f8a876c4688cc5a68520</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>boolean</type>
-      <name>buildSolution</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a7dad8c02c56408c6839c96612fa25b66</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>RoutingModel</type>
-      <name>model</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2ce484cc375368fb1f01c19a3137821c</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getStartChainEnd</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ad3c41fccf4ea20a8eb845a96883769ec</anchor>
-      <arglist>(int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getEndChainStart</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a672be7ac539db86580851e5b237e4522</anchor>
-      <arglist>(int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>makeDisjunctionNodesUnperformed</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2735d6fe2f2b31cd347c2775dbbaef31</anchor>
-      <arglist>(long node)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>makeUnassignedNodesUnperformed</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a76afa4f98fadaae7db4d36fb0d1b51b2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Decision</type>
-      <name>nextWrap</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2630e7d6d35c6e502b69bb7115ea1004</anchor>
-      <arglist>(Solver solver)</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>number_of_decisions</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>aac193357493f005c162b5252774ff40b</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>number_of_rejects</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a74d570e12be68d37472936cb729237b2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>swigReleaseOwnership</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a71489e94aa126da236972db0ade7229a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>swigTakeOwnership</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>ad4b835b84e76e8d03a518291271069a9</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type></type>
-      <name>ParallelSavingsFilteredDecisionBuilder</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ParallelSavingsFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a5d4d77d717fa87842ab808e4310ce2d2</anchor>
-      <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>swigDirectorDisconnect</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>aeb590aba470ae6ec1e69cdad7bb5961c</anchor>
-      <arglist>()</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>com::google::ortools::linearsolver::PartialVariableAssignment</name>
     <filename>classcom_1_1google_1_1ortools_1_1linearsolver_1_1PartialVariableAssignment.html</filename>
     <base>com::google::ortools::linearsolver::PartialVariableAssignmentOrBuilder</base>
@@ -39148,15 +38388,15 @@
       <type>boolean</type>
       <name>isPathStart</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathWithPreviousNodesOperator.html</anchorfile>
-      <anchor>a9e206d367d9084fe28ff0b733f747223</anchor>
-      <arglist>(long node_index)</arglist>
+      <anchor>ac15b1057f026e9aa67facaae66719793</anchor>
+      <arglist>(long node)</arglist>
     </member>
     <member kind="function">
       <type>long</type>
       <name>prev</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PathWithPreviousNodesOperator.html</anchorfile>
-      <anchor>a8b456ac751b552a10fe771bfce40d9e2</anchor>
-      <arglist>(long node_index)</arglist>
+      <anchor>aae05ad59c90ff20308fbeb58a4fba64f</anchor>
+      <arglist>(long node)</arglist>
     </member>
     <member kind="function">
       <type>String</type>
@@ -41236,28 +40476,28 @@
       <arglist>(long index)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar []</type>
+      <type>IntVar[]</type>
       <name>cumuls</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html</anchorfile>
       <anchor>aa5c7d7852ad47cb0eb72d23fee032514</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>IntVar []</type>
+      <type>IntVar[]</type>
       <name>fixed_transits</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html</anchorfile>
       <anchor>aa2a3b81811cedf3afec7281782067c60</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>IntVar []</type>
+      <type>IntVar[]</type>
       <name>transits</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html</anchorfile>
       <anchor>a10a410c5659475992d277b8d3c7dd1ae</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>IntVar []</type>
+      <type>IntVar[]</type>
       <name>slacks</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html</anchorfile>
       <anchor>aaad507796c437b91330ddd17014f01c4</anchor>
@@ -41390,7 +40630,7 @@
       <arglist>(IntervalVar[] breaks, int vehicle, long[] node_visit_transits, LongBinaryOperator group_delays)</arglist>
     </member>
     <member kind="function">
-      <type>IntervalVar []</type>
+      <type>IntervalVar[]</type>
       <name>getBreakIntervalsOfVehicle</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingDimension.html</anchorfile>
       <anchor>aae06e90a6c65de3acc680e15f0daf156</anchor>
@@ -41528,116 +40768,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>com::google::ortools::constraintsolver::RoutingFilteredDecisionBuilder</name>
-    <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</filename>
-    <base>com::google::ortools::constraintsolver::IntVarFilteredDecisionBuilder</base>
-    <member kind="function">
-      <type>synchronized void</type>
-      <name>delete</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a155da317e33b817886120f10038c12cf</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>RoutingModel</type>
-      <name>model</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2ce484cc375368fb1f01c19a3137821c</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getStartChainEnd</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ad3c41fccf4ea20a8eb845a96883769ec</anchor>
-      <arglist>(int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getEndChainStart</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a672be7ac539db86580851e5b237e4522</anchor>
-      <arglist>(int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>makeDisjunctionNodesUnperformed</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2735d6fe2f2b31cd347c2775dbbaef31</anchor>
-      <arglist>(long node)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>makeUnassignedNodesUnperformed</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a76afa4f98fadaae7db4d36fb0d1b51b2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Decision</type>
-      <name>nextWrap</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2630e7d6d35c6e502b69bb7115ea1004</anchor>
-      <arglist>(Solver solver)</arglist>
-    </member>
-    <member kind="function">
-      <type>boolean</type>
-      <name>buildSolution</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a7dad8c02c56408c6839c96612fa25b66</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>number_of_decisions</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>aac193357493f005c162b5252774ff40b</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>number_of_rejects</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a74d570e12be68d37472936cb729237b2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>swigReleaseOwnership</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a71489e94aa126da236972db0ade7229a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>swigTakeOwnership</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>ad4b835b84e76e8d03a518291271069a9</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>String</type>
-      <name>toString</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>ad146fa8579a5f8a876c4688cc5a68520</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type></type>
-      <name>RoutingFilteredDecisionBuilder</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a12065c0bf026df3ecbd2de682ecb56c0</anchor>
-      <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>swigDirectorDisconnect</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>aeb590aba470ae6ec1e69cdad7bb5961c</anchor>
-      <arglist>()</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>com::google::ortools::constraintsolver::RoutingIndexManager</name>
     <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingIndexManager.html</filename>
     <member kind="function">
@@ -41690,7 +40820,7 @@
       <arglist>(int node)</arglist>
     </member>
     <member kind="function">
-      <type>long []</type>
+      <type>long[]</type>
       <name>nodesToIndices</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingIndexManager.html</anchorfile>
       <anchor>af7056a25e273df9f3cccefdb3bec4743</anchor>
@@ -41904,14 +41034,14 @@
       <arglist>(long[] indices)</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>getDisjunctionIndices</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
       <anchor>af88f80fbd0d00903fcda58f988874d59</anchor>
       <arglist>(long index)</arglist>
     </member>
     <member kind="function">
-      <type>long []</type>
+      <type>long[]</type>
       <name>getDisjunctionIndices</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
       <anchor>a941221a2e25ea7a1865724fea5d26fa4</anchor>
@@ -42100,14 +41230,14 @@
       <arglist>(long linear_cost_factor, long quadratic_cost_factor, int vehicle)</arglist>
     </member>
     <member kind="function">
-      <type>long []</type>
+      <type>long[]</type>
       <name>getAmortizedLinearCostFactorOfVehicles</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
       <anchor>adfe8545ba546a13a6111c693d8af31db</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>long []</type>
+      <type>long[]</type>
       <name>getAmortizedQuadraticCostFactorOfVehicles</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
       <anchor>a0983d068a5931cf4eda4a51404676fcb</anchor>
@@ -42408,14 +41538,14 @@
       <arglist>(Assignment assignment, int vehicle)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar []</type>
+      <type>IntVar[]</type>
       <name>nexts</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
       <anchor>a54249384cda0b5692ff00e0a64c647a0</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>IntVar []</type>
+      <type>IntVar[]</type>
       <name>vehicleVars</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
       <anchor>a6c5871a1b9d8673e4668102868da39d7</anchor>
@@ -42534,7 +41664,7 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>getSameVehicleIndicesOfIndex</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
       <anchor>a5371ba240592f02a09635793d839feb3</anchor>
@@ -42609,6 +41739,13 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
       <anchor>af2b3bbfb46d1087366e1d1e4d4eba913</anchor>
       <arglist>(com.google.ortools.constraintsolver.RoutingSearchParameters search_parameters)</arglist>
+    </member>
+    <member kind="function">
+      <type>SWIGTYPE_p_operations_research__FirstSolutionStrategy__Value</type>
+      <name>GetAutomaticFirstSolutionStrategy</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a247deada01e598c24db73e8da76ca9b4</anchor>
+      <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>boolean</type>
@@ -43199,6 +42336,13 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>getChristofidesUseMinimumMatching</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters.html</anchorfile>
+      <anchor>a4c418c23083d28be367e1d6a90735039</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasLocalSearchOperators</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a333f2d0686be2fe320613122a0a671ec</anchor>
@@ -43619,6 +42763,13 @@
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
+      <name>CHRISTOFIDES_USE_MINIMUM_MATCHING_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters.html</anchorfile>
+      <anchor>ae9f1da899e54b72b67cb75d9de02741f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
       <name>LOCAL_SEARCH_OPERATORS_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters.html</anchorfile>
       <anchor>a5adbb8c64d22b93dfbc4a469bdd468b0</anchor>
@@ -43822,6 +42973,13 @@
       <name>getCheapestInsertionNeighborsRatio</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html</anchorfile>
       <anchor>a7ef992474198f81577777a5145b4aa06</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getChristofidesUseMinimumMatching</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParametersOrBuilder.html</anchorfile>
+      <anchor>a4c418c23083d28be367e1d6a90735039</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -44878,6 +44036,48 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasMergeNoOverlapWorkLimit</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a6940b6d1cca69d84597897c8742d10f4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>getMergeNoOverlapWorkLimit</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a46dcf35a5c5cf3f85cec18070b9ee1a5</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasMergeAtMostOneWorkLimit</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a8e480e4644874c2a2843122dd50db419</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>getMergeAtMostOneWorkLimit</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a300d7546f1ca5fc73992a4c30a9ca46c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasPresolveSubstitutionLevel</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a4651bff1ba4fa5849f92a817ce15b043</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getPresolveSubstitutionLevel</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a0f122a4605cc12f2e5e5584d785d7caf</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasUseOptimizationHints</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>ac3d020c1591d217880a9e2c3771c97df</anchor>
@@ -45130,6 +44330,20 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasMaxAllDiffCutSize</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>acacf7bf59b881eca59414a4e110762b0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getMaxAllDiffCutSize</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a9babf83afd4127f7b0a616d1b9b08fce</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasUseMirRounding</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>ab3bee0e2ead22bb546c5ed14dc357cfa</anchor>
@@ -45186,30 +44400,30 @@
     </member>
     <member kind="function">
       <type>boolean</type>
-      <name>hasMaxInactiveCount</name>
+      <name>hasMaxConsecutiveInactiveCount</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a6bdda8c2692954a8ad0f22eb0dc03f1a</anchor>
+      <anchor>a1f281d535b3907999d8bc1181dbd42bf</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>long</type>
-      <name>getMaxInactiveCount</name>
+      <type>int</type>
+      <name>getMaxConsecutiveInactiveCount</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a513da47372a0e8229616a92a5430a941</anchor>
+      <anchor>abcf2317f5fa0b14bc83b852aca165cb9</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>boolean</type>
-      <name>hasConstraintRemovalBatchSize</name>
+      <name>hasNewConstraintsBatchSize</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ac9ec56c5ce61de865069a495f8afa16c</anchor>
+      <anchor>a18a3d3f8fc0dec34fb9168ccfaa26a32</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>long</type>
-      <name>getConstraintRemovalBatchSize</name>
+      <type>int</type>
+      <name>getNewConstraintsBatchSize</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a208e42bf1ecf0816f677e91d00f3f872</anchor>
+      <anchor>a8b521c76e7fe99e66c94d6f6c13fe94a</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -45424,6 +44638,20 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasStopAfterPresolve</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a1baec6d0d5974761ffde1e47380ac49b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getStopAfterPresolve</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a00a8504077709576087285eb76acf3a6</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasNumSearchWorkers</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a72d40e5fe988b7cf850b95d9845284f4</anchor>
@@ -45550,6 +44778,20 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasUseRelaxationLns</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a72c52efb147b13c1c3f79b7583e538fc</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getUseRelaxationLns</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a3543a573e5491ecb5a4ff1fe5eec1a13</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasDiversifyLnsParams</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a6f707394a9ad967f1365ecdfb04f1750</anchor>
@@ -45658,6 +44900,20 @@
       <name>getCatchSigintSignal</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a7596d6120b6e4600b2a48db1411b7a93</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasUseImpliedBounds</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>aa84cfed62a93fa98c687a31e4e8cae24</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getUseImpliedBounds</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a613fd35a8d17ac45a2485a93a196e77e</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -46334,6 +45590,27 @@
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
+      <name>MERGE_NO_OVERLAP_WORK_LIMIT_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>ae20579b5c2e3aa88ef37a18483872864</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>MERGE_AT_MOST_ONE_WORK_LIMIT_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>ac1d141db77dffad1a8b4e45d39bb3c32</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>PRESOLVE_SUBSTITUTION_LEVEL_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a0c74e56980d7a67f7303dd68ad09d6fd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
       <name>USE_OPTIMIZATION_HINTS_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a681727b0aaa5bf6fc14fd9458cfcc05a</anchor>
@@ -46460,6 +45737,13 @@
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
+      <name>MAX_ALL_DIFF_CUT_SIZE_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>aca5cdcb4e67b07940466dde92c4f4de4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
       <name>USE_MIR_ROUNDING_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>ae79469bc29d972b5941f6e58b2c7c574</anchor>
@@ -46488,16 +45772,16 @@
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
-      <name>MAX_INACTIVE_COUNT_FIELD_NUMBER</name>
+      <name>MAX_CONSECUTIVE_INACTIVE_COUNT_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ab85a74c18935c69866500cd46c52088c</anchor>
+      <anchor>a6198669783d4c5a454b2ee51dbe2ecf8</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
-      <name>CONSTRAINT_REMOVAL_BATCH_SIZE_FIELD_NUMBER</name>
+      <name>NEW_CONSTRAINTS_BATCH_SIZE_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a3dc1b0741aacfa151f0f6321ddec0b7c</anchor>
+      <anchor>ac84478225dfe3a57f3373aff81076ba6</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -46607,6 +45891,13 @@
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
+      <name>STOP_AFTER_PRESOLVE_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a4d04311f449b7a5b5ad0466b78405798</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
       <name>NUM_SEARCH_WORKERS_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a3eb976930dc804856685480589694443</anchor>
@@ -46670,6 +45961,13 @@
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
+      <name>USE_RELAXATION_LNS_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a2adfaca7c6cea3986e103eea65f88fd2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
       <name>DIVERSIFY_LNS_PARAMS_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>afd2d263f8e406e111fd4c0e91cd9004a</anchor>
@@ -46722,6 +46020,13 @@
       <name>CATCH_SIGINT_SIGNAL_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a9a41610b3fc353bfef77daaa357628f6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>USE_IMPLIED_BOUNDS_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a0ed0ac05e63569345791ba2ac0a1080d</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -47647,6 +46952,48 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasMergeNoOverlapWorkLimit</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a6940b6d1cca69d84597897c8742d10f4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>getMergeNoOverlapWorkLimit</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a46dcf35a5c5cf3f85cec18070b9ee1a5</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasMergeAtMostOneWorkLimit</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a8e480e4644874c2a2843122dd50db419</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>getMergeAtMostOneWorkLimit</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a300d7546f1ca5fc73992a4c30a9ca46c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasPresolveSubstitutionLevel</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a4651bff1ba4fa5849f92a817ce15b043</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getPresolveSubstitutionLevel</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a0f122a4605cc12f2e5e5584d785d7caf</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasUseOptimizationHints</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
       <anchor>ac3d020c1591d217880a9e2c3771c97df</anchor>
@@ -47899,6 +47246,20 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasMaxAllDiffCutSize</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>acacf7bf59b881eca59414a4e110762b0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getMaxAllDiffCutSize</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a9babf83afd4127f7b0a616d1b9b08fce</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasUseMirRounding</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
       <anchor>ab3bee0e2ead22bb546c5ed14dc357cfa</anchor>
@@ -47955,30 +47316,30 @@
     </member>
     <member kind="function">
       <type>boolean</type>
-      <name>hasMaxInactiveCount</name>
+      <name>hasMaxConsecutiveInactiveCount</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
-      <anchor>a6bdda8c2692954a8ad0f22eb0dc03f1a</anchor>
+      <anchor>a1f281d535b3907999d8bc1181dbd42bf</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>long</type>
-      <name>getMaxInactiveCount</name>
+      <type>int</type>
+      <name>getMaxConsecutiveInactiveCount</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
-      <anchor>a513da47372a0e8229616a92a5430a941</anchor>
+      <anchor>abcf2317f5fa0b14bc83b852aca165cb9</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
       <type>boolean</type>
-      <name>hasConstraintRemovalBatchSize</name>
+      <name>hasNewConstraintsBatchSize</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
-      <anchor>ac9ec56c5ce61de865069a495f8afa16c</anchor>
+      <anchor>a18a3d3f8fc0dec34fb9168ccfaa26a32</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>long</type>
-      <name>getConstraintRemovalBatchSize</name>
+      <type>int</type>
+      <name>getNewConstraintsBatchSize</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
-      <anchor>a208e42bf1ecf0816f677e91d00f3f872</anchor>
+      <anchor>a8b521c76e7fe99e66c94d6f6c13fe94a</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -48193,6 +47554,20 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasStopAfterPresolve</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a1baec6d0d5974761ffde1e47380ac49b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getStopAfterPresolve</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a00a8504077709576087285eb76acf3a6</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasNumSearchWorkers</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
       <anchor>a72d40e5fe988b7cf850b95d9845284f4</anchor>
@@ -48319,6 +47694,20 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasUseRelaxationLns</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a72c52efb147b13c1c3f79b7583e538fc</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getUseRelaxationLns</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a3543a573e5491ecb5a4ff1fe5eec1a13</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasDiversifyLnsParams</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
       <anchor>a6f707394a9ad967f1365ecdfb04f1750</anchor>
@@ -48431,6 +47820,20 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasUseImpliedBounds</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>aa84cfed62a93fa98c687a31e4e8cae24</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getUseImpliedBounds</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a613fd35a8d17ac45a2485a93a196e77e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasMipMaxBound</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
       <anchor>adbb545197d5084335259a4046980f32e</anchor>
@@ -48498,198 +47901,6 @@
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
       <anchor>a6deed9a61abcee1500b4c9033f916f3c</anchor>
       <arglist>()</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>com::google::ortools::constraintsolver::SavingsFilteredDecisionBuilder</name>
-    <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder.html</filename>
-    <base>com::google::ortools::constraintsolver::RoutingFilteredDecisionBuilder</base>
-    <class kind="class">com::google::ortools::constraintsolver::SavingsFilteredDecisionBuilder::SavingsParameters</class>
-    <member kind="function">
-      <type>synchronized void</type>
-      <name>delete</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a155da317e33b817886120f10038c12cf</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>boolean</type>
-      <name>buildSolution</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a7dad8c02c56408c6839c96612fa25b66</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>RoutingModel</type>
-      <name>model</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2ce484cc375368fb1f01c19a3137821c</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getStartChainEnd</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ad3c41fccf4ea20a8eb845a96883769ec</anchor>
-      <arglist>(int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getEndChainStart</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a672be7ac539db86580851e5b237e4522</anchor>
-      <arglist>(int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>makeDisjunctionNodesUnperformed</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2735d6fe2f2b31cd347c2775dbbaef31</anchor>
-      <arglist>(long node)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>makeUnassignedNodesUnperformed</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a76afa4f98fadaae7db4d36fb0d1b51b2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Decision</type>
-      <name>nextWrap</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2630e7d6d35c6e502b69bb7115ea1004</anchor>
-      <arglist>(Solver solver)</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>number_of_decisions</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>aac193357493f005c162b5252774ff40b</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>number_of_rejects</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a74d570e12be68d37472936cb729237b2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>swigReleaseOwnership</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a71489e94aa126da236972db0ade7229a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>swigTakeOwnership</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>ad4b835b84e76e8d03a518291271069a9</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>String</type>
-      <name>toString</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>ad146fa8579a5f8a876c4688cc5a68520</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type></type>
-      <name>SavingsFilteredDecisionBuilder</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a9a6ac9d480c11ca5f893a69afb59fd37</anchor>
-      <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>swigDirectorDisconnect</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>aeb590aba470ae6ec1e69cdad7bb5961c</anchor>
-      <arglist>()</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>com::google::ortools::constraintsolver::SavingsFilteredDecisionBuilder::SavingsParameters</name>
-    <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html</filename>
-    <member kind="function">
-      <type>synchronized void</type>
-      <name>delete</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
-      <anchor>a155da317e33b817886120f10038c12cf</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>setNeighbors_ratio</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
-      <anchor>a6616d10bf37918c31049fbd23ec7c5bc</anchor>
-      <arglist>(double value)</arglist>
-    </member>
-    <member kind="function">
-      <type>double</type>
-      <name>getNeighbors_ratio</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
-      <anchor>a3a3d7f00defbc21ab340173603bd209e</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>setMax_memory_usage_bytes</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
-      <anchor>ab1a0e86b7067ac15cfb2795e70731887</anchor>
-      <arglist>(double value)</arglist>
-    </member>
-    <member kind="function">
-      <type>double</type>
-      <name>getMax_memory_usage_bytes</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
-      <anchor>add46cdc6b470aaba97d41cec2fc1af52</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>setAdd_reverse_arcs</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
-      <anchor>ab5874d8ef907500cca31301679883358</anchor>
-      <arglist>(boolean value)</arglist>
-    </member>
-    <member kind="function">
-      <type>boolean</type>
-      <name>getAdd_reverse_arcs</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
-      <anchor>ae20c4a2e6884425cc8f7cfd87e3569f0</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>setArc_coefficient</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
-      <anchor>ac28e2971ae6813ff0006f8b1c2ed30e8</anchor>
-      <arglist>(double value)</arglist>
-    </member>
-    <member kind="function">
-      <type>double</type>
-      <name>getArc_coefficient</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
-      <anchor>afa1e0ac5cbd6e0105c45c817f7995bb4</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>SavingsParameters</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
-      <anchor>a27a1b39b2abc91eaa8ffd20e02f99e8b</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type></type>
-      <name>SavingsParameters</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder_1_1SavingsParameters.html</anchorfile>
-      <anchor>acfa007b38eed1ce03dcf7866109b6f43</anchor>
-      <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
     </member>
   </compound>
   <compound kind="enum">
@@ -49898,21 +49109,21 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>forwardSequence</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarElement.html</anchorfile>
       <anchor>ab43686c5bb98450134a0d6fa57d6b60b</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>backwardSequence</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarElement.html</anchorfile>
       <anchor>a0f92d7a984cf59f9edbae4442a0125a3</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>unperformed</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarElement.html</anchorfile>
       <anchor>ac5ebddb0e322048d56cb43f5a9a1acf6</anchor>
@@ -50117,7 +49328,7 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>value</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperatorTemplate.html</anchorfile>
       <anchor>a409f5fe254e1288adc8ba57a8166f989</anchor>
@@ -50131,7 +49342,7 @@
       <arglist>(long index)</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>oldValue</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperatorTemplate.html</anchorfile>
       <anchor>a553f26b7c13397c93b3dd4c57b74d375</anchor>
@@ -50262,7 +49473,7 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>value</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperatorTemplate.html</anchorfile>
       <anchor>a409f5fe254e1288adc8ba57a8166f989</anchor>
@@ -50276,7 +49487,7 @@
       <arglist>(long index)</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>oldValue</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchOperatorTemplate.html</anchorfile>
       <anchor>a553f26b7c13397c93b3dd4c57b74d375</anchor>
@@ -50384,116 +49595,6 @@
       <type>void</type>
       <name>swigDirectorDisconnect</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchOperator.html</anchorfile>
-      <anchor>aeb590aba470ae6ec1e69cdad7bb5961c</anchor>
-      <arglist>()</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
-    <name>com::google::ortools::constraintsolver::SequentialSavingsFilteredDecisionBuilder</name>
-    <filename>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequentialSavingsFilteredDecisionBuilder.html</filename>
-    <base>com::google::ortools::constraintsolver::SavingsFilteredDecisionBuilder</base>
-    <member kind="function">
-      <type>synchronized void</type>
-      <name>delete</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequentialSavingsFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a155da317e33b817886120f10038c12cf</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>String</type>
-      <name>toString</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequentialSavingsFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ad146fa8579a5f8a876c4688cc5a68520</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>boolean</type>
-      <name>buildSolution</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SavingsFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a7dad8c02c56408c6839c96612fa25b66</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>RoutingModel</type>
-      <name>model</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2ce484cc375368fb1f01c19a3137821c</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getStartChainEnd</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>ad3c41fccf4ea20a8eb845a96883769ec</anchor>
-      <arglist>(int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getEndChainStart</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a672be7ac539db86580851e5b237e4522</anchor>
-      <arglist>(int vehicle)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>makeDisjunctionNodesUnperformed</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2735d6fe2f2b31cd347c2775dbbaef31</anchor>
-      <arglist>(long node)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>makeUnassignedNodesUnperformed</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a76afa4f98fadaae7db4d36fb0d1b51b2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Decision</type>
-      <name>nextWrap</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a2630e7d6d35c6e502b69bb7115ea1004</anchor>
-      <arglist>(Solver solver)</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>number_of_decisions</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>aac193357493f005c162b5252774ff40b</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>number_of_rejects</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a74d570e12be68d37472936cb729237b2</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>swigReleaseOwnership</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>a71489e94aa126da236972db0ade7229a</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>swigTakeOwnership</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
-      <anchor>ad4b835b84e76e8d03a518291271069a9</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type></type>
-      <name>SequentialSavingsFilteredDecisionBuilder</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequentialSavingsFilteredDecisionBuilder.html</anchorfile>
-      <anchor>a7ef570dec6e17a0d125b92e77b225d1c</anchor>
-      <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>void</type>
-      <name>swigDirectorDisconnect</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html</anchorfile>
       <anchor>aeb590aba470ae6ec1e69cdad7bb5961c</anchor>
       <arglist>()</arglist>
     </member>
@@ -50664,21 +49765,21 @@
       <arglist>(int n, IntervalVar var)</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>forwardSequence</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html</anchorfile>
       <anchor>a690d3ee12e0a18b442115110e4c248e1</anchor>
       <arglist>(int n, SequenceVar var)</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>backwardSequence</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html</anchorfile>
       <anchor>a8a941badc3ff836ee8edcd376bd52cae</anchor>
       <arglist>(int n, SequenceVar var)</arglist>
     </member>
     <member kind="function">
-      <type>int []</type>
+      <type>int[]</type>
       <name>unperformed</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html</anchorfile>
       <anchor>a6703bb3fcb4173ac05a8e4609d86eb05</anchor>
@@ -50955,42 +50056,42 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>IntVar []</type>
+      <type>IntVar[]</type>
       <name>makeIntVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html</anchorfile>
       <anchor>add62fd5d4a55f85e77558af774d08ab9</anchor>
       <arglist>(int count, long min, long max)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar []</type>
+      <type>IntVar[]</type>
       <name>makeIntVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html</anchorfile>
       <anchor>ae91e47002f55903cde7f949cfe518062</anchor>
       <arglist>(int count, long min, long max, String name)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar []</type>
+      <type>IntVar[]</type>
       <name>makeBoolVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html</anchorfile>
       <anchor>a66e5ae535df13b5f26ea995cc001a157</anchor>
       <arglist>(int count)</arglist>
     </member>
     <member kind="function">
-      <type>IntVar []</type>
+      <type>IntVar[]</type>
       <name>makeBoolVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html</anchorfile>
       <anchor>a8ee27c007133dbb64dfb678e882d68c7</anchor>
       <arglist>(int count, String name)</arglist>
     </member>
     <member kind="function">
-      <type>IntervalVar []</type>
+      <type>IntervalVar[]</type>
       <name>makeFixedDurationIntervalVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html</anchorfile>
       <anchor>a932b967722291abd64e6d1084ab88a04</anchor>
       <arglist>(int count, long start_min, long start_max, long duration, boolean optional)</arglist>
     </member>
     <member kind="function">
-      <type>IntervalVar []</type>
+      <type>IntervalVar[]</type>
       <name>makeFixedDurationIntervalVarArray</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html</anchorfile>
       <anchor>a19c0fd3e2a78358b75d7afa29f8261ec</anchor>
@@ -53637,6 +52738,20 @@
     </member>
     <member kind="function">
       <type>LocalSearchFilter</type>
+      <name>MakeAcceptFilter</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html</anchorfile>
+      <anchor>add6436b9126f5b3f5b5b0d77754200e0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>LocalSearchFilter</type>
+      <name>MakeRejectFilter</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html</anchorfile>
+      <anchor>ad3dbbad36f9a38b468183a5469607da4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>LocalSearchFilter</type>
       <name>makeVariableDomainFilter</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html</anchorfile>
       <anchor>a88232d06be9d090bd74885a4d9ae585b</anchor>
@@ -53923,7 +53038,7 @@
       <arglist>(long[] value)</arglist>
     </member>
     <member kind="function">
-      <type>long []</type>
+      <type>long[]</type>
       <name>getTmp_vector_</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html</anchorfile>
       <anchor>a66c2c63cfc8fc1473306c516fc837d8a</anchor>
@@ -54663,59 +53778,6 @@
     </member>
   </compound>
   <compound kind="enum">
-    <name>com::google::ortools::algorithms::KnapsackSolver::SolverType</name>
-    <filename>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</filename>
-    <member kind="function">
-      <type>final int</type>
-      <name>swigValue</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
-      <anchor>ab43b8ea551128c58807e93b368cf5547</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static SolverType</type>
-      <name>swigToEnum</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
-      <anchor>a5a46e9523106e952654fdb6f0cf1c958</anchor>
-      <arglist>(int swigValue)</arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>KNAPSACK_BRUTE_FORCE_SOLVER</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
-      <anchor>ac8a2a25d2eb059cf0edd14d351bff019</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>KNAPSACK_64ITEMS_SOLVER</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
-      <anchor>a937cac4cf730d006d544209fa2e161f8</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
-      <anchor>ab4681ad1cf2eb38d5ae7c8bc05f04bb2</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
-      <anchor>a89153f5268eda524c9221a919c3bc486</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
-      <anchor>ab2e039228749cc14e88c43d7ebf2d31d</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="enum">
     <name>com::google::ortools::linearsolver::MPModelRequest::SolverType</name>
     <filename>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</filename>
     <member kind="function">
@@ -54985,6 +54047,59 @@
       <arglist></arglist>
     </member>
   </compound>
+  <compound kind="enum">
+    <name>com::google::ortools::algorithms::KnapsackSolver::SolverType</name>
+    <filename>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</filename>
+    <member kind="function">
+      <type>final int</type>
+      <name>swigValue</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
+      <anchor>ab43b8ea551128c58807e93b368cf5547</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static SolverType</type>
+      <name>swigToEnum</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
+      <anchor>a5a46e9523106e952654fdb6f0cf1c958</anchor>
+      <arglist>(int swigValue)</arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>KNAPSACK_BRUTE_FORCE_SOLVER</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
+      <anchor>ac8a2a25d2eb059cf0edd14d351bff019</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>KNAPSACK_64ITEMS_SOLVER</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
+      <anchor>a937cac4cf730d006d544209fa2e161f8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
+      <anchor>ab4681ad1cf2eb38d5ae7c8bc05f04bb2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
+      <anchor>a89153f5268eda524c9221a919c3bc486</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
+      <anchor>ab2e039228749cc14e88c43d7ebf2d31d</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
   <compound kind="class">
     <name>com::google::ortools::util::SortedDisjointIntervalList</name>
     <filename>classcom_1_1google_1_1ortools_1_1util_1_1SortedDisjointIntervalList.html</filename>
@@ -55071,52 +54186,6 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1util_1_1SortedDisjointIntervalList.html</anchorfile>
       <anchor>a8b4a23328251fd3a8de770a2532a0fde</anchor>
       <arglist>(long cPtr, boolean cMemoryOwn)</arglist>
-    </member>
-  </compound>
-  <compound kind="enum">
-    <name>com::google::ortools::graph::MaxFlow::Status</name>
-    <filename>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</filename>
-    <member kind="function">
-      <type>final int</type>
-      <name>swigValue</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</anchorfile>
-      <anchor>ab43b8ea551128c58807e93b368cf5547</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static Status</type>
-      <name>swigToEnum</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</anchorfile>
-      <anchor>a95c994850c48f41c9682a4b01bd37a3d</anchor>
-      <arglist>(int swigValue)</arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>OPTIMAL</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</anchorfile>
-      <anchor>a72ec11c9b2688addae061fba37f312a2</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>POSSIBLE_OVERFLOW</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</anchorfile>
-      <anchor>a8938bf616ecb5d10ddde651d4d1835fb</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>BAD_INPUT</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</anchorfile>
-      <anchor>aa0776189cdd951acffba66ccff48bf3d</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>BAD_RESULT</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</anchorfile>
-      <anchor>adc37a73d65765605584983ab2c552ea2</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="enum">
@@ -55222,6 +54291,52 @@
       <name>POSSIBLE_OVERFLOW</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</anchorfile>
       <anchor>a8938bf616ecb5d10ddde651d4d1835fb</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="enum">
+    <name>com::google::ortools::graph::MaxFlow::Status</name>
+    <filename>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</filename>
+    <member kind="function">
+      <type>final int</type>
+      <name>swigValue</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</anchorfile>
+      <anchor>ab43b8ea551128c58807e93b368cf5547</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Status</type>
+      <name>swigToEnum</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</anchorfile>
+      <anchor>a95c994850c48f41c9682a4b01bd37a3d</anchor>
+      <arglist>(int swigValue)</arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>OPTIMAL</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</anchorfile>
+      <anchor>a72ec11c9b2688addae061fba37f312a2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>POSSIBLE_OVERFLOW</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</anchorfile>
+      <anchor>a8938bf616ecb5d10ddde651d4d1835fb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>BAD_INPUT</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</anchorfile>
+      <anchor>aa0776189cdd951acffba66ccff48bf3d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>BAD_RESULT</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</anchorfile>
+      <anchor>adc37a73d65765605584983ab2c552ea2</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -56384,10 +55499,6 @@
     <class kind="class">com::google::ortools::constraintsolver::BooleanVar</class>
     <class kind="class">com::google::ortools::constraintsolver::CastConstraint</class>
     <class kind="class">com::google::ortools::constraintsolver::ChangeValue</class>
-    <class kind="class">com::google::ortools::constraintsolver::CheapestAdditionFilteredDecisionBuilder</class>
-    <class kind="class">com::google::ortools::constraintsolver::CheapestInsertionFilteredDecisionBuilder</class>
-    <class kind="class">com::google::ortools::constraintsolver::ChristofidesFilteredDecisionBuilder</class>
-    <class kind="class">com::google::ortools::constraintsolver::ComparatorCheapestAdditionFilteredDecisionBuilder</class>
     <class kind="class">com::google::ortools::constraintsolver::Constraint</class>
     <class kind="class">com::google::ortools::constraintsolver::ConstraintSolverParameters</class>
     <class kind="interface">com::google::ortools::constraintsolver::ConstraintSolverParametersOrBuilder</class>
@@ -56398,10 +55509,8 @@
     <class kind="class">com::google::ortools::constraintsolver::DefaultPhaseParameters</class>
     <class kind="class">com::google::ortools::constraintsolver::Demon</class>
     <class kind="class">com::google::ortools::constraintsolver::DisjunctiveConstraint</class>
-    <class kind="class">com::google::ortools::constraintsolver::EvaluatorCheapestAdditionFilteredDecisionBuilder</class>
     <class kind="class">com::google::ortools::constraintsolver::FirstSolutionStrategy</class>
     <class kind="interface">com::google::ortools::constraintsolver::FirstSolutionStrategyOrBuilder</class>
-    <class kind="class">com::google::ortools::constraintsolver::GlobalCheapestInsertionFilteredDecisionBuilder</class>
     <class kind="class">com::google::ortools::constraintsolver::GlobalVehicleBreaksConstraint</class>
     <class kind="class">com::google::ortools::constraintsolver::IntervalVar</class>
     <class kind="class">com::google::ortools::constraintsolver::IntervalVarElement</class>
@@ -56410,14 +55519,12 @@
     <class kind="class">com::google::ortools::constraintsolver::IntTupleSet</class>
     <class kind="class">com::google::ortools::constraintsolver::IntVar</class>
     <class kind="class">com::google::ortools::constraintsolver::IntVarElement</class>
-    <class kind="class">com::google::ortools::constraintsolver::IntVarFilteredDecisionBuilder</class>
     <class kind="class">com::google::ortools::constraintsolver::IntVarIterator</class>
     <class kind="class">com::google::ortools::constraintsolver::IntVarLocalSearchFilter</class>
     <class kind="class">com::google::ortools::constraintsolver::IntVarLocalSearchHandler</class>
     <class kind="class">com::google::ortools::constraintsolver::IntVarLocalSearchOperator</class>
     <class kind="class">com::google::ortools::constraintsolver::IntVarLocalSearchOperatorTemplate</class>
     <class kind="class">com::google::ortools::constraintsolver::JavaDecisionBuilder</class>
-    <class kind="class">com::google::ortools::constraintsolver::LocalCheapestInsertionFilteredDecisionBuilder</class>
     <class kind="class">com::google::ortools::constraintsolver::LocalSearchFilter</class>
     <class kind="class">com::google::ortools::constraintsolver::LocalSearchMetaheuristic</class>
     <class kind="interface">com::google::ortools::constraintsolver::LocalSearchMetaheuristicOrBuilder</class>
@@ -56431,7 +55538,6 @@
     <class kind="class">com::google::ortools::constraintsolver::ModelVisitor</class>
     <class kind="class">com::google::ortools::constraintsolver::OptimizeVar</class>
     <class kind="class">com::google::ortools::constraintsolver::Pack</class>
-    <class kind="class">com::google::ortools::constraintsolver::ParallelSavingsFilteredDecisionBuilder</class>
     <class kind="class">com::google::ortools::constraintsolver::PathOperator</class>
     <class kind="class">com::google::ortools::constraintsolver::PathWithPreviousNodesOperator</class>
     <class kind="class">com::google::ortools::constraintsolver::PropagationBaseObject</class>
@@ -56445,7 +55551,6 @@
     <class kind="class">com::google::ortools::constraintsolver::RevPartialSequence</class>
     <class kind="class">com::google::ortools::constraintsolver::RoutingDimension</class>
     <class kind="class">com::google::ortools::constraintsolver::RoutingEnums</class>
-    <class kind="class">com::google::ortools::constraintsolver::RoutingFilteredDecisionBuilder</class>
     <class kind="class">com::google::ortools::constraintsolver::RoutingIndexManager</class>
     <class kind="class">com::google::ortools::constraintsolver::RoutingModel</class>
     <class kind="class">com::google::ortools::constraintsolver::RoutingModelParameters</class>
@@ -56454,7 +55559,6 @@
     <class kind="class">com::google::ortools::constraintsolver::RoutingParameters</class>
     <class kind="class">com::google::ortools::constraintsolver::RoutingSearchParameters</class>
     <class kind="interface">com::google::ortools::constraintsolver::RoutingSearchParametersOrBuilder</class>
-    <class kind="class">com::google::ortools::constraintsolver::SavingsFilteredDecisionBuilder</class>
     <class kind="class">com::google::ortools::constraintsolver::SearchLimit</class>
     <class kind="class">com::google::ortools::constraintsolver::SearchLimitProtobuf</class>
     <class kind="class">com::google::ortools::constraintsolver::SearchLog</class>
@@ -56464,7 +55568,6 @@
     <class kind="class">com::google::ortools::constraintsolver::SequenceVarLocalSearchHandler</class>
     <class kind="class">com::google::ortools::constraintsolver::SequenceVarLocalSearchOperator</class>
     <class kind="class">com::google::ortools::constraintsolver::SequenceVarLocalSearchOperatorTemplate</class>
-    <class kind="class">com::google::ortools::constraintsolver::SequentialSavingsFilteredDecisionBuilder</class>
     <class kind="class">com::google::ortools::constraintsolver::SolutionCollector</class>
     <class kind="class">com::google::ortools::constraintsolver::SolutionPool</class>
     <class kind="class">com::google::ortools::constraintsolver::Solver</class>

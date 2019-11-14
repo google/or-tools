@@ -1,0 +1,56 @@
+digraph "Graphical Class Hierarchy"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node93 [label="IDisposable",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node93 -> Node0 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node0 [label="DecisionBuilderVector",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilderVector.html",tooltip=" "];
+  Node93 -> Node78 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node78 [label="IntervalVarVector",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntervalVarVector.html",tooltip=" "];
+  Node93 -> Node79 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node79 [label="IntVarVector",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarVector.html",tooltip=" "];
+  Node93 -> Node80 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node80 [label="LocalSearchFilterVector",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchFilterVector.html",tooltip=" "];
+  Node93 -> Node81 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node81 [label="LocalSearchOperatorVector",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchOperatorVector.html",tooltip=" "];
+  Node93 -> Node82 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node82 [label="SearchMonitorVector",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchMonitorVector.html",tooltip=" "];
+  Node93 -> Node83 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node83 [label="SequenceVarVector",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarVector.html",tooltip=" "];
+  Node93 -> Node94 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node94 [label="Solver",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Solver.html",tooltip=" "];
+  Node93 -> Node84 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node84 [label="SymmetryBreakerVector",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SymmetryBreakerVector.html",tooltip=" "];
+  Node93 -> Node85 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node85 [label="MPConstraintVector",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classGoogle_1_1OrTools_1_1LinearSolver_1_1MPConstraintVector.html",tooltip=" "];
+  Node93 -> Node86 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node86 [label="MpDoubleVector",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classGoogle_1_1OrTools_1_1LinearSolver_1_1MpDoubleVector.html",tooltip=" "];
+  Node93 -> Node87 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node87 [label="MPVariableVector",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classGoogle_1_1OrTools_1_1LinearSolver_1_1MPVariableVector.html",tooltip=" "];
+  Node90 [label="IEnumerable",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node90 -> Node0 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node90 -> Node78 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node90 -> Node79 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node90 -> Node80 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node90 -> Node81 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node90 -> Node82 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node90 -> Node83 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node90 -> Node84 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node90 -> Node85 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node90 -> Node86 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node90 -> Node87 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node76 [label="IList",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+  Node76 -> Node0 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node76 -> Node78 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node76 -> Node79 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node76 -> Node80 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node76 -> Node81 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node76 -> Node82 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node76 -> Node83 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node76 -> Node84 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node76 -> Node85 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node76 -> Node86 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node76 -> Node87 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

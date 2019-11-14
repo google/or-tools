@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.7.0" />
+<meta name="generator" content="pdoc 0.7.2" />
 <title>pywrapcp API documentation</title>
 <meta name="description" content="" />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
@@ -4163,6 +4163,10 @@ class RoutingModel(object):
     def GetNumberOfRejectsInFirstSolution(self, search_parameters: &#34;operations_research::RoutingSearchParameters const &amp;&#34;) -&gt; &#34;int64&#34;:
         return _pywrapcp.RoutingModel_GetNumberOfRejectsInFirstSolution(self, search_parameters)
 
+    def GetAutomaticFirstSolutionStrategy(self) -&gt; &#34;operations_research::FirstSolutionStrategy::Value&#34;:
+        r&#34;&#34;&#34; Returns the automatic first solution strategy selected.&#34;&#34;&#34;
+        return _pywrapcp.RoutingModel_GetAutomaticFirstSolutionStrategy(self)
+
     def IsMatchingModel(self) -&gt; &#34;bool&#34;:
         r&#34;&#34;&#34; Returns true if a vehicle/node matching problem is detected.&#34;&#34;&#34;
         return _pywrapcp.RoutingModel_IsMatchingModel(self)
@@ -4429,225 +4433,6 @@ _pywrapcp.RoutingDimension_swigregister(RoutingDimension)
 def MakeSetValuesFromTargets(solver: &#34;Solver&#34;, variables: &#34;std::vector&lt; operations_research::IntVar * &gt;&#34;, targets: &#34;std::vector&lt; int64 &gt;&#34;) -&gt; &#34;operations_research::DecisionBuilder *&#34;:
     r&#34;&#34;&#34; A decision builder which tries to assign values to variables as close as possible to target values first.&#34;&#34;&#34;
     return _pywrapcp.MakeSetValuesFromTargets(solver, variables, targets)
-class IntVarFilteredDecisionBuilder(DecisionBuilder):
-    r&#34;&#34;&#34; Decision builders building a solution using local search filters to evaluate its feasibility. This is very fast but can eventually fail when the solution is restored if filters did not detect all infeasiblities. More details: Using local search filters to build a solution. The approach is pretty straight-forward: have a general assignment storing the current solution, build delta assigment representing possible extensions to the current solution and validate them with filters. The tricky bit comes from using the assignment and filter APIs in a way which avoids the lazy creation of internal hash_maps between variables and indices. Generic filter-based decision builder applied to IntVars. when the code is mature enough.&#34;&#34;&#34;
-
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
-    __repr__ = _swig_repr
-    __swig_destroy__ = _pywrapcp.delete_IntVarFilteredDecisionBuilder
-
-    def NextWrapper(self, solver: &#34;Solver&#34;) -&gt; &#34;operations_research::Decision *&#34;:
-        return _pywrapcp.IntVarFilteredDecisionBuilder_NextWrapper(self, solver)
-
-    def BuildSolution(self) -&gt; &#34;bool&#34;:
-        r&#34;&#34;&#34; Virtual method to redefine to build a solution.&#34;&#34;&#34;
-        return _pywrapcp.IntVarFilteredDecisionBuilder_BuildSolution(self)
-
-    def number_of_decisions(self) -&gt; &#34;int64&#34;:
-        r&#34;&#34;&#34; Returns statistics on search, number of decisions sent to filters, number of decisions rejected by filters.&#34;&#34;&#34;
-        return _pywrapcp.IntVarFilteredDecisionBuilder_number_of_decisions(self)
-
-    def number_of_rejects(self) -&gt; &#34;int64&#34;:
-        return _pywrapcp.IntVarFilteredDecisionBuilder_number_of_rejects(self)
-
-# Register IntVarFilteredDecisionBuilder in _pywrapcp:
-_pywrapcp.IntVarFilteredDecisionBuilder_swigregister(IntVarFilteredDecisionBuilder)
-
-class RoutingFilteredDecisionBuilder(IntVarFilteredDecisionBuilder):
-    r&#34;&#34;&#34; Filter-based decision builder dedicated to routing.&#34;&#34;&#34;
-
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
-    __repr__ = _swig_repr
-    __swig_destroy__ = _pywrapcp.delete_RoutingFilteredDecisionBuilder
-
-    def model(self) -&gt; &#34;operations_research::RoutingModel *&#34;:
-        return _pywrapcp.RoutingFilteredDecisionBuilder_model(self)
-
-    def GetStartChainEnd(self, vehicle: &#34;int&#34;) -&gt; &#34;int&#34;:
-        r&#34;&#34;&#34; Returns the end of the start chain of vehicle,&#34;&#34;&#34;
-        return _pywrapcp.RoutingFilteredDecisionBuilder_GetStartChainEnd(self, vehicle)
-
-    def GetEndChainStart(self, vehicle: &#34;int&#34;) -&gt; &#34;int&#34;:
-        r&#34;&#34;&#34; Returns the start of the end chain of vehicle,&#34;&#34;&#34;
-        return _pywrapcp.RoutingFilteredDecisionBuilder_GetEndChainStart(self, vehicle)
-
-    def MakeDisjunctionNodesUnperformed(self, node: &#34;int64&#34;) -&gt; &#34;void&#34;:
-        r&#34;&#34;&#34; Make nodes in the same disjunction as &#39;node&#39; unperformed. &#39;node&#39; is a variable index corresponding to a node.&#34;&#34;&#34;
-        return _pywrapcp.RoutingFilteredDecisionBuilder_MakeDisjunctionNodesUnperformed(self, node)
-
-    def MakeUnassignedNodesUnperformed(self) -&gt; &#34;void&#34;:
-        r&#34;&#34;&#34; Make all unassigned nodes unperformed.&#34;&#34;&#34;
-        return _pywrapcp.RoutingFilteredDecisionBuilder_MakeUnassignedNodesUnperformed(self)
-
-# Register RoutingFilteredDecisionBuilder in _pywrapcp:
-_pywrapcp.RoutingFilteredDecisionBuilder_swigregister(RoutingFilteredDecisionBuilder)
-
-class CheapestInsertionFilteredDecisionBuilder(RoutingFilteredDecisionBuilder):
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
-    __repr__ = _swig_repr
-    __swig_destroy__ = _pywrapcp.delete_CheapestInsertionFilteredDecisionBuilder
-
-# Register CheapestInsertionFilteredDecisionBuilder in _pywrapcp:
-_pywrapcp.CheapestInsertionFilteredDecisionBuilder_swigregister(CheapestInsertionFilteredDecisionBuilder)
-
-class GlobalCheapestInsertionFilteredDecisionBuilder(CheapestInsertionFilteredDecisionBuilder):
-    r&#34;&#34;&#34; Filter-based decision builder which builds a solution by inserting nodes at their cheapest position on any route; potentially several routes can be built in parallel. The cost of a position is computed from an arc-based cost callback. The node selected for insertion is the one which minimizes insertion cost. If a non null penalty evaluator is passed, making nodes unperformed is also taken into account with the corresponding penalty cost.&#34;&#34;&#34;
-
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
-    __repr__ = _swig_repr
-    __swig_destroy__ = _pywrapcp.delete_GlobalCheapestInsertionFilteredDecisionBuilder
-
-    def BuildSolution(self) -&gt; &#34;bool&#34;:
-        return _pywrapcp.GlobalCheapestInsertionFilteredDecisionBuilder_BuildSolution(self)
-
-    def DebugString(self) -&gt; &#34;std::string&#34;:
-        return _pywrapcp.GlobalCheapestInsertionFilteredDecisionBuilder_DebugString(self)
-
-# Register GlobalCheapestInsertionFilteredDecisionBuilder in _pywrapcp:
-_pywrapcp.GlobalCheapestInsertionFilteredDecisionBuilder_swigregister(GlobalCheapestInsertionFilteredDecisionBuilder)
-
-class LocalCheapestInsertionFilteredDecisionBuilder(CheapestInsertionFilteredDecisionBuilder):
-    r&#34;&#34;&#34; Filter-base decision builder which builds a solution by inserting nodes at their cheapest position. The cost of a position is computed an arc-based cost callback. Node selected for insertion are considered in decreasing order of distance to the start/ends of the routes, i.e. farthest nodes are inserted first.&#34;&#34;&#34;
-
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
-    __repr__ = _swig_repr
-    __swig_destroy__ = _pywrapcp.delete_LocalCheapestInsertionFilteredDecisionBuilder
-
-    def BuildSolution(self) -&gt; &#34;bool&#34;:
-        return _pywrapcp.LocalCheapestInsertionFilteredDecisionBuilder_BuildSolution(self)
-
-    def DebugString(self) -&gt; &#34;std::string&#34;:
-        return _pywrapcp.LocalCheapestInsertionFilteredDecisionBuilder_DebugString(self)
-
-# Register LocalCheapestInsertionFilteredDecisionBuilder in _pywrapcp:
-_pywrapcp.LocalCheapestInsertionFilteredDecisionBuilder_swigregister(LocalCheapestInsertionFilteredDecisionBuilder)
-
-class CheapestAdditionFilteredDecisionBuilder(RoutingFilteredDecisionBuilder):
-    r&#34;&#34;&#34; Filtered-base decision builder based on the addition heuristic, extending a path from its start node with the cheapest arc.&#34;&#34;&#34;
-
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
-    __repr__ = _swig_repr
-    __swig_destroy__ = _pywrapcp.delete_CheapestAdditionFilteredDecisionBuilder
-
-    def BuildSolution(self) -&gt; &#34;bool&#34;:
-        return _pywrapcp.CheapestAdditionFilteredDecisionBuilder_BuildSolution(self)
-
-# Register CheapestAdditionFilteredDecisionBuilder in _pywrapcp:
-_pywrapcp.CheapestAdditionFilteredDecisionBuilder_swigregister(CheapestAdditionFilteredDecisionBuilder)
-
-class EvaluatorCheapestAdditionFilteredDecisionBuilder(CheapestAdditionFilteredDecisionBuilder):
-    r&#34;&#34;&#34; A CheapestAdditionFilteredDecisionBuilder where the notion of &#39;cheapest arc&#39; comes from an arc evaluator.&#34;&#34;&#34;
-
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
-    __repr__ = _swig_repr
-    __swig_destroy__ = _pywrapcp.delete_EvaluatorCheapestAdditionFilteredDecisionBuilder
-
-    def DebugString(self) -&gt; &#34;std::string&#34;:
-        return _pywrapcp.EvaluatorCheapestAdditionFilteredDecisionBuilder_DebugString(self)
-
-# Register EvaluatorCheapestAdditionFilteredDecisionBuilder in _pywrapcp:
-_pywrapcp.EvaluatorCheapestAdditionFilteredDecisionBuilder_swigregister(EvaluatorCheapestAdditionFilteredDecisionBuilder)
-
-class ComparatorCheapestAdditionFilteredDecisionBuilder(CheapestAdditionFilteredDecisionBuilder):
-    r&#34;&#34;&#34; A CheapestAdditionFilteredDecisionBuilder where the notion of &#39;cheapest arc&#39; comes from an arc comparator.&#34;&#34;&#34;
-
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
-    __repr__ = _swig_repr
-    __swig_destroy__ = _pywrapcp.delete_ComparatorCheapestAdditionFilteredDecisionBuilder
-
-    def DebugString(self) -&gt; &#34;std::string&#34;:
-        return _pywrapcp.ComparatorCheapestAdditionFilteredDecisionBuilder_DebugString(self)
-
-# Register ComparatorCheapestAdditionFilteredDecisionBuilder in _pywrapcp:
-_pywrapcp.ComparatorCheapestAdditionFilteredDecisionBuilder_swigregister(ComparatorCheapestAdditionFilteredDecisionBuilder)
-
-class SavingsFilteredDecisionBuilder(RoutingFilteredDecisionBuilder):
-    r&#34;&#34;&#34; Filter-based decision builder which builds a solution by using Clarke &amp; Wright&#39;s Savings heuristic. For each pair of nodes, the savings value is the difference between the cost of two routes visiting one node each and one route visiting both nodes. Routes are built sequentially, each route being initialized from the pair with the best avalaible savings value then extended by selecting the nodes with best savings on both ends of the partial route. Cost is based on the arc cost function of the routing model and cost classes are taken into account.&#34;&#34;&#34;
-
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
-    __repr__ = _swig_repr
-    __swig_destroy__ = _pywrapcp.delete_SavingsFilteredDecisionBuilder
-
-    def BuildSolution(self) -&gt; &#34;bool&#34;:
-        return _pywrapcp.SavingsFilteredDecisionBuilder_BuildSolution(self)
-
-# Register SavingsFilteredDecisionBuilder in _pywrapcp:
-_pywrapcp.SavingsFilteredDecisionBuilder_swigregister(SavingsFilteredDecisionBuilder)
-
-class SequentialSavingsFilteredDecisionBuilder(SavingsFilteredDecisionBuilder):
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
-    __repr__ = _swig_repr
-    __swig_destroy__ = _pywrapcp.delete_SequentialSavingsFilteredDecisionBuilder
-
-    def DebugString(self) -&gt; &#34;std::string&#34;:
-        return _pywrapcp.SequentialSavingsFilteredDecisionBuilder_DebugString(self)
-
-# Register SequentialSavingsFilteredDecisionBuilder in _pywrapcp:
-_pywrapcp.SequentialSavingsFilteredDecisionBuilder_swigregister(SequentialSavingsFilteredDecisionBuilder)
-
-class ParallelSavingsFilteredDecisionBuilder(SavingsFilteredDecisionBuilder):
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
-    __repr__ = _swig_repr
-    __swig_destroy__ = _pywrapcp.delete_ParallelSavingsFilteredDecisionBuilder
-
-    def DebugString(self) -&gt; &#34;std::string&#34;:
-        return _pywrapcp.ParallelSavingsFilteredDecisionBuilder_DebugString(self)
-
-# Register ParallelSavingsFilteredDecisionBuilder in _pywrapcp:
-_pywrapcp.ParallelSavingsFilteredDecisionBuilder_swigregister(ParallelSavingsFilteredDecisionBuilder)
-
-class ChristofidesFilteredDecisionBuilder(RoutingFilteredDecisionBuilder):
-    r&#34;&#34;&#34; Christofides addition heuristic. Initially created to solve TSPs, extended to support any model by extending routes as much as possible following the path found by the heuristic, before starting a new route.&#34;&#34;&#34;
-
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
-    __repr__ = _swig_repr
-    __swig_destroy__ = _pywrapcp.delete_ChristofidesFilteredDecisionBuilder
-
-    def BuildSolution(self) -&gt; &#34;bool&#34;:
-        return _pywrapcp.ChristofidesFilteredDecisionBuilder_BuildSolution(self)
-
-    def DebugString(self) -&gt; &#34;std::string&#34;:
-        return _pywrapcp.ChristofidesFilteredDecisionBuilder_DebugString(self)
-
-# Register ChristofidesFilteredDecisionBuilder in _pywrapcp:
-_pywrapcp.ChristofidesFilteredDecisionBuilder_swigregister(ChristofidesFilteredDecisionBuilder)
-
 
 def SolveModelWithSat(model: &#34;RoutingModel&#34;, search_parameters: &#34;operations_research::RoutingSearchParameters const &amp;&#34;, initial_solution: &#34;Assignment&#34;, solution: &#34;Assignment&#34;) -&gt; &#34;bool&#34;:
     r&#34;&#34;&#34; Attempts to solve the model using the cp-sat solver. As of 5/2019, will solve the TSP corresponding to the model if it has a single vehicle. Therefore the resulting solution might not actually be feasible. Will return false if a solution could not be found.&#34;&#34;&#34;
@@ -6741,231 +6526,6 @@ int index_; };</p></section>
 </li>
 </ul>
 </dd>
-<dt id="pywrapcp.CheapestAdditionFilteredDecisionBuilder"><code class="flex name class">
-<span>class <span class="ident">CheapestAdditionFilteredDecisionBuilder</span></span>
-<span>(</span><span>*args, **kwargs)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Filtered-base decision builder based on the addition heuristic, extending a path from its start node with the cheapest arc.</p></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class CheapestAdditionFilteredDecisionBuilder(RoutingFilteredDecisionBuilder):
-    r&#34;&#34;&#34; Filtered-base decision builder based on the addition heuristic, extending a path from its start node with the cheapest arc.&#34;&#34;&#34;
-
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
-    __repr__ = _swig_repr
-    __swig_destroy__ = _pywrapcp.delete_CheapestAdditionFilteredDecisionBuilder
-
-    def BuildSolution(self) -&gt; &#34;bool&#34;:
-        return _pywrapcp.CheapestAdditionFilteredDecisionBuilder_BuildSolution(self)</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li><a title="pywrapcp.RoutingFilteredDecisionBuilder" href="#pywrapcp.RoutingFilteredDecisionBuilder">RoutingFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.IntVarFilteredDecisionBuilder" href="#pywrapcp.IntVarFilteredDecisionBuilder">IntVarFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.DecisionBuilder" href="#pywrapcp.DecisionBuilder">DecisionBuilder</a></li>
-<li><a title="pywrapcp.BaseObject" href="#pywrapcp.BaseObject">BaseObject</a></li>
-</ul>
-<h3>Subclasses</h3>
-<ul class="hlist">
-<li><a title="pywrapcp.EvaluatorCheapestAdditionFilteredDecisionBuilder" href="#pywrapcp.EvaluatorCheapestAdditionFilteredDecisionBuilder">EvaluatorCheapestAdditionFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.ComparatorCheapestAdditionFilteredDecisionBuilder" href="#pywrapcp.ComparatorCheapestAdditionFilteredDecisionBuilder">ComparatorCheapestAdditionFilteredDecisionBuilder</a></li>
-</ul>
-<h3>Inherited members</h3>
-<ul class="hlist">
-<li><code><b><a title="pywrapcp.RoutingFilteredDecisionBuilder" href="#pywrapcp.RoutingFilteredDecisionBuilder">RoutingFilteredDecisionBuilder</a></b></code>:
-<ul class="hlist">
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.BuildSolution" href="#pywrapcp.IntVarFilteredDecisionBuilder.BuildSolution">BuildSolution</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.GetEndChainStart" href="#pywrapcp.RoutingFilteredDecisionBuilder.GetEndChainStart">GetEndChainStart</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.GetStartChainEnd" href="#pywrapcp.RoutingFilteredDecisionBuilder.GetStartChainEnd">GetStartChainEnd</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.MakeDisjunctionNodesUnperformed" href="#pywrapcp.RoutingFilteredDecisionBuilder.MakeDisjunctionNodesUnperformed">MakeDisjunctionNodesUnperformed</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.MakeUnassignedNodesUnperformed" href="#pywrapcp.RoutingFilteredDecisionBuilder.MakeUnassignedNodesUnperformed">MakeUnassignedNodesUnperformed</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.NextWrapper" href="#pywrapcp.DecisionBuilder.NextWrapper">NextWrapper</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.number_of_decisions" href="#pywrapcp.IntVarFilteredDecisionBuilder.number_of_decisions">number_of_decisions</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.thisown" href="#pywrapcp.BaseObject.thisown">thisown</a></code></li>
-</ul>
-</li>
-</ul>
-</dd>
-<dt id="pywrapcp.CheapestInsertionFilteredDecisionBuilder"><code class="flex name class">
-<span>class <span class="ident">CheapestInsertionFilteredDecisionBuilder</span></span>
-<span>(</span><span>*args, **kwargs)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Filter-based decision builder dedicated to routing.</p></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class CheapestInsertionFilteredDecisionBuilder(RoutingFilteredDecisionBuilder):
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
-    __repr__ = _swig_repr
-    __swig_destroy__ = _pywrapcp.delete_CheapestInsertionFilteredDecisionBuilder</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li><a title="pywrapcp.RoutingFilteredDecisionBuilder" href="#pywrapcp.RoutingFilteredDecisionBuilder">RoutingFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.IntVarFilteredDecisionBuilder" href="#pywrapcp.IntVarFilteredDecisionBuilder">IntVarFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.DecisionBuilder" href="#pywrapcp.DecisionBuilder">DecisionBuilder</a></li>
-<li><a title="pywrapcp.BaseObject" href="#pywrapcp.BaseObject">BaseObject</a></li>
-</ul>
-<h3>Subclasses</h3>
-<ul class="hlist">
-<li><a title="pywrapcp.GlobalCheapestInsertionFilteredDecisionBuilder" href="#pywrapcp.GlobalCheapestInsertionFilteredDecisionBuilder">GlobalCheapestInsertionFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.LocalCheapestInsertionFilteredDecisionBuilder" href="#pywrapcp.LocalCheapestInsertionFilteredDecisionBuilder">LocalCheapestInsertionFilteredDecisionBuilder</a></li>
-</ul>
-<h3>Inherited members</h3>
-<ul class="hlist">
-<li><code><b><a title="pywrapcp.RoutingFilteredDecisionBuilder" href="#pywrapcp.RoutingFilteredDecisionBuilder">RoutingFilteredDecisionBuilder</a></b></code>:
-<ul class="hlist">
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.BuildSolution" href="#pywrapcp.IntVarFilteredDecisionBuilder.BuildSolution">BuildSolution</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.GetEndChainStart" href="#pywrapcp.RoutingFilteredDecisionBuilder.GetEndChainStart">GetEndChainStart</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.GetStartChainEnd" href="#pywrapcp.RoutingFilteredDecisionBuilder.GetStartChainEnd">GetStartChainEnd</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.MakeDisjunctionNodesUnperformed" href="#pywrapcp.RoutingFilteredDecisionBuilder.MakeDisjunctionNodesUnperformed">MakeDisjunctionNodesUnperformed</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.MakeUnassignedNodesUnperformed" href="#pywrapcp.RoutingFilteredDecisionBuilder.MakeUnassignedNodesUnperformed">MakeUnassignedNodesUnperformed</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.NextWrapper" href="#pywrapcp.DecisionBuilder.NextWrapper">NextWrapper</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.number_of_decisions" href="#pywrapcp.IntVarFilteredDecisionBuilder.number_of_decisions">number_of_decisions</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.thisown" href="#pywrapcp.BaseObject.thisown">thisown</a></code></li>
-</ul>
-</li>
-</ul>
-</dd>
-<dt id="pywrapcp.ChristofidesFilteredDecisionBuilder"><code class="flex name class">
-<span>class <span class="ident">ChristofidesFilteredDecisionBuilder</span></span>
-<span>(</span><span>*args, **kwargs)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Christofides addition heuristic. Initially created to solve TSPs, extended to support any model by extending routes as much as possible following the path found by the heuristic, before starting a new route.</p></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class ChristofidesFilteredDecisionBuilder(RoutingFilteredDecisionBuilder):
-    r&#34;&#34;&#34; Christofides addition heuristic. Initially created to solve TSPs, extended to support any model by extending routes as much as possible following the path found by the heuristic, before starting a new route.&#34;&#34;&#34;
-
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
-    __repr__ = _swig_repr
-    __swig_destroy__ = _pywrapcp.delete_ChristofidesFilteredDecisionBuilder
-
-    def BuildSolution(self) -&gt; &#34;bool&#34;:
-        return _pywrapcp.ChristofidesFilteredDecisionBuilder_BuildSolution(self)
-
-    def DebugString(self) -&gt; &#34;std::string&#34;:
-        return _pywrapcp.ChristofidesFilteredDecisionBuilder_DebugString(self)</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li><a title="pywrapcp.RoutingFilteredDecisionBuilder" href="#pywrapcp.RoutingFilteredDecisionBuilder">RoutingFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.IntVarFilteredDecisionBuilder" href="#pywrapcp.IntVarFilteredDecisionBuilder">IntVarFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.DecisionBuilder" href="#pywrapcp.DecisionBuilder">DecisionBuilder</a></li>
-<li><a title="pywrapcp.BaseObject" href="#pywrapcp.BaseObject">BaseObject</a></li>
-</ul>
-<h3>Methods</h3>
-<dl>
-<dt id="pywrapcp.ChristofidesFilteredDecisionBuilder.DebugString"><code class="name flex">
-<span>def <span class="ident">DebugString</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<section class="desc"></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def DebugString(self) -&gt; &#34;std::string&#34;:
-    return _pywrapcp.ChristofidesFilteredDecisionBuilder_DebugString(self)</code></pre>
-</details>
-</dd>
-</dl>
-<h3>Inherited members</h3>
-<ul class="hlist">
-<li><code><b><a title="pywrapcp.RoutingFilteredDecisionBuilder" href="#pywrapcp.RoutingFilteredDecisionBuilder">RoutingFilteredDecisionBuilder</a></b></code>:
-<ul class="hlist">
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.BuildSolution" href="#pywrapcp.IntVarFilteredDecisionBuilder.BuildSolution">BuildSolution</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.GetEndChainStart" href="#pywrapcp.RoutingFilteredDecisionBuilder.GetEndChainStart">GetEndChainStart</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.GetStartChainEnd" href="#pywrapcp.RoutingFilteredDecisionBuilder.GetStartChainEnd">GetStartChainEnd</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.MakeDisjunctionNodesUnperformed" href="#pywrapcp.RoutingFilteredDecisionBuilder.MakeDisjunctionNodesUnperformed">MakeDisjunctionNodesUnperformed</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.MakeUnassignedNodesUnperformed" href="#pywrapcp.RoutingFilteredDecisionBuilder.MakeUnassignedNodesUnperformed">MakeUnassignedNodesUnperformed</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.NextWrapper" href="#pywrapcp.DecisionBuilder.NextWrapper">NextWrapper</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.number_of_decisions" href="#pywrapcp.IntVarFilteredDecisionBuilder.number_of_decisions">number_of_decisions</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.thisown" href="#pywrapcp.BaseObject.thisown">thisown</a></code></li>
-</ul>
-</li>
-</ul>
-</dd>
-<dt id="pywrapcp.ComparatorCheapestAdditionFilteredDecisionBuilder"><code class="flex name class">
-<span>class <span class="ident">ComparatorCheapestAdditionFilteredDecisionBuilder</span></span>
-<span>(</span><span>*args, **kwargs)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>A CheapestAdditionFilteredDecisionBuilder where the notion of 'cheapest arc' comes from an arc comparator.</p></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class ComparatorCheapestAdditionFilteredDecisionBuilder(CheapestAdditionFilteredDecisionBuilder):
-    r&#34;&#34;&#34; A CheapestAdditionFilteredDecisionBuilder where the notion of &#39;cheapest arc&#39; comes from an arc comparator.&#34;&#34;&#34;
-
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
-    __repr__ = _swig_repr
-    __swig_destroy__ = _pywrapcp.delete_ComparatorCheapestAdditionFilteredDecisionBuilder
-
-    def DebugString(self) -&gt; &#34;std::string&#34;:
-        return _pywrapcp.ComparatorCheapestAdditionFilteredDecisionBuilder_DebugString(self)</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li><a title="pywrapcp.CheapestAdditionFilteredDecisionBuilder" href="#pywrapcp.CheapestAdditionFilteredDecisionBuilder">CheapestAdditionFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.RoutingFilteredDecisionBuilder" href="#pywrapcp.RoutingFilteredDecisionBuilder">RoutingFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.IntVarFilteredDecisionBuilder" href="#pywrapcp.IntVarFilteredDecisionBuilder">IntVarFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.DecisionBuilder" href="#pywrapcp.DecisionBuilder">DecisionBuilder</a></li>
-<li><a title="pywrapcp.BaseObject" href="#pywrapcp.BaseObject">BaseObject</a></li>
-</ul>
-<h3>Methods</h3>
-<dl>
-<dt id="pywrapcp.ComparatorCheapestAdditionFilteredDecisionBuilder.DebugString"><code class="name flex">
-<span>def <span class="ident">DebugString</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<section class="desc"></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def DebugString(self) -&gt; &#34;std::string&#34;:
-    return _pywrapcp.ComparatorCheapestAdditionFilteredDecisionBuilder_DebugString(self)</code></pre>
-</details>
-</dd>
-</dl>
-<h3>Inherited members</h3>
-<ul class="hlist">
-<li><code><b><a title="pywrapcp.CheapestAdditionFilteredDecisionBuilder" href="#pywrapcp.CheapestAdditionFilteredDecisionBuilder">CheapestAdditionFilteredDecisionBuilder</a></b></code>:
-<ul class="hlist">
-<li><code><a title="pywrapcp.CheapestAdditionFilteredDecisionBuilder.BuildSolution" href="#pywrapcp.IntVarFilteredDecisionBuilder.BuildSolution">BuildSolution</a></code></li>
-<li><code><a title="pywrapcp.CheapestAdditionFilteredDecisionBuilder.GetEndChainStart" href="#pywrapcp.RoutingFilteredDecisionBuilder.GetEndChainStart">GetEndChainStart</a></code></li>
-<li><code><a title="pywrapcp.CheapestAdditionFilteredDecisionBuilder.GetStartChainEnd" href="#pywrapcp.RoutingFilteredDecisionBuilder.GetStartChainEnd">GetStartChainEnd</a></code></li>
-<li><code><a title="pywrapcp.CheapestAdditionFilteredDecisionBuilder.MakeDisjunctionNodesUnperformed" href="#pywrapcp.RoutingFilteredDecisionBuilder.MakeDisjunctionNodesUnperformed">MakeDisjunctionNodesUnperformed</a></code></li>
-<li><code><a title="pywrapcp.CheapestAdditionFilteredDecisionBuilder.MakeUnassignedNodesUnperformed" href="#pywrapcp.RoutingFilteredDecisionBuilder.MakeUnassignedNodesUnperformed">MakeUnassignedNodesUnperformed</a></code></li>
-<li><code><a title="pywrapcp.CheapestAdditionFilteredDecisionBuilder.NextWrapper" href="#pywrapcp.DecisionBuilder.NextWrapper">NextWrapper</a></code></li>
-<li><code><a title="pywrapcp.CheapestAdditionFilteredDecisionBuilder.number_of_decisions" href="#pywrapcp.IntVarFilteredDecisionBuilder.number_of_decisions">number_of_decisions</a></code></li>
-<li><code><a title="pywrapcp.CheapestAdditionFilteredDecisionBuilder.thisown" href="#pywrapcp.BaseObject.thisown">thisown</a></code></li>
-</ul>
-</li>
-</ul>
-</dd>
 <dt id="pywrapcp.Constraint"><code class="flex name class">
 <span>class <span class="ident">Constraint</span></span>
 <span>(</span><span>solver)</span>
@@ -7343,7 +6903,6 @@ by the demons Posted during the post() method.</p></section>
 <h3>Subclasses</h3>
 <ul class="hlist">
 <li><a title="pywrapcp.PyDecisionBuilder" href="#pywrapcp.PyDecisionBuilder">PyDecisionBuilder</a></li>
-<li><a title="pywrapcp.IntVarFilteredDecisionBuilder" href="#pywrapcp.IntVarFilteredDecisionBuilder">IntVarFilteredDecisionBuilder</a></li>
 </ul>
 <h3>Methods</h3>
 <dl>
@@ -7883,135 +7442,6 @@ It forces the distance between the end of interval a and start of interval b tha
 <li><code><a title="pywrapcp.Constraint.Post" href="#pywrapcp.Constraint.Post">Post</a></code></li>
 <li><code><a title="pywrapcp.Constraint.Var" href="#pywrapcp.Constraint.Var">Var</a></code></li>
 <li><code><a title="pywrapcp.Constraint.thisown" href="#pywrapcp.BaseObject.thisown">thisown</a></code></li>
-</ul>
-</li>
-</ul>
-</dd>
-<dt id="pywrapcp.EvaluatorCheapestAdditionFilteredDecisionBuilder"><code class="flex name class">
-<span>class <span class="ident">EvaluatorCheapestAdditionFilteredDecisionBuilder</span></span>
-<span>(</span><span>*args, **kwargs)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>A CheapestAdditionFilteredDecisionBuilder where the notion of 'cheapest arc' comes from an arc evaluator.</p></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class EvaluatorCheapestAdditionFilteredDecisionBuilder(CheapestAdditionFilteredDecisionBuilder):
-    r&#34;&#34;&#34; A CheapestAdditionFilteredDecisionBuilder where the notion of &#39;cheapest arc&#39; comes from an arc evaluator.&#34;&#34;&#34;
-
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
-    __repr__ = _swig_repr
-    __swig_destroy__ = _pywrapcp.delete_EvaluatorCheapestAdditionFilteredDecisionBuilder
-
-    def DebugString(self) -&gt; &#34;std::string&#34;:
-        return _pywrapcp.EvaluatorCheapestAdditionFilteredDecisionBuilder_DebugString(self)</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li><a title="pywrapcp.CheapestAdditionFilteredDecisionBuilder" href="#pywrapcp.CheapestAdditionFilteredDecisionBuilder">CheapestAdditionFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.RoutingFilteredDecisionBuilder" href="#pywrapcp.RoutingFilteredDecisionBuilder">RoutingFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.IntVarFilteredDecisionBuilder" href="#pywrapcp.IntVarFilteredDecisionBuilder">IntVarFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.DecisionBuilder" href="#pywrapcp.DecisionBuilder">DecisionBuilder</a></li>
-<li><a title="pywrapcp.BaseObject" href="#pywrapcp.BaseObject">BaseObject</a></li>
-</ul>
-<h3>Methods</h3>
-<dl>
-<dt id="pywrapcp.EvaluatorCheapestAdditionFilteredDecisionBuilder.DebugString"><code class="name flex">
-<span>def <span class="ident">DebugString</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<section class="desc"></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def DebugString(self) -&gt; &#34;std::string&#34;:
-    return _pywrapcp.EvaluatorCheapestAdditionFilteredDecisionBuilder_DebugString(self)</code></pre>
-</details>
-</dd>
-</dl>
-<h3>Inherited members</h3>
-<ul class="hlist">
-<li><code><b><a title="pywrapcp.CheapestAdditionFilteredDecisionBuilder" href="#pywrapcp.CheapestAdditionFilteredDecisionBuilder">CheapestAdditionFilteredDecisionBuilder</a></b></code>:
-<ul class="hlist">
-<li><code><a title="pywrapcp.CheapestAdditionFilteredDecisionBuilder.BuildSolution" href="#pywrapcp.IntVarFilteredDecisionBuilder.BuildSolution">BuildSolution</a></code></li>
-<li><code><a title="pywrapcp.CheapestAdditionFilteredDecisionBuilder.GetEndChainStart" href="#pywrapcp.RoutingFilteredDecisionBuilder.GetEndChainStart">GetEndChainStart</a></code></li>
-<li><code><a title="pywrapcp.CheapestAdditionFilteredDecisionBuilder.GetStartChainEnd" href="#pywrapcp.RoutingFilteredDecisionBuilder.GetStartChainEnd">GetStartChainEnd</a></code></li>
-<li><code><a title="pywrapcp.CheapestAdditionFilteredDecisionBuilder.MakeDisjunctionNodesUnperformed" href="#pywrapcp.RoutingFilteredDecisionBuilder.MakeDisjunctionNodesUnperformed">MakeDisjunctionNodesUnperformed</a></code></li>
-<li><code><a title="pywrapcp.CheapestAdditionFilteredDecisionBuilder.MakeUnassignedNodesUnperformed" href="#pywrapcp.RoutingFilteredDecisionBuilder.MakeUnassignedNodesUnperformed">MakeUnassignedNodesUnperformed</a></code></li>
-<li><code><a title="pywrapcp.CheapestAdditionFilteredDecisionBuilder.NextWrapper" href="#pywrapcp.DecisionBuilder.NextWrapper">NextWrapper</a></code></li>
-<li><code><a title="pywrapcp.CheapestAdditionFilteredDecisionBuilder.number_of_decisions" href="#pywrapcp.IntVarFilteredDecisionBuilder.number_of_decisions">number_of_decisions</a></code></li>
-<li><code><a title="pywrapcp.CheapestAdditionFilteredDecisionBuilder.thisown" href="#pywrapcp.BaseObject.thisown">thisown</a></code></li>
-</ul>
-</li>
-</ul>
-</dd>
-<dt id="pywrapcp.GlobalCheapestInsertionFilteredDecisionBuilder"><code class="flex name class">
-<span>class <span class="ident">GlobalCheapestInsertionFilteredDecisionBuilder</span></span>
-<span>(</span><span>*args, **kwargs)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Filter-based decision builder which builds a solution by inserting nodes at their cheapest position on any route; potentially several routes can be built in parallel. The cost of a position is computed from an arc-based cost callback. The node selected for insertion is the one which minimizes insertion cost. If a non null penalty evaluator is passed, making nodes unperformed is also taken into account with the corresponding penalty cost.</p></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class GlobalCheapestInsertionFilteredDecisionBuilder(CheapestInsertionFilteredDecisionBuilder):
-    r&#34;&#34;&#34; Filter-based decision builder which builds a solution by inserting nodes at their cheapest position on any route; potentially several routes can be built in parallel. The cost of a position is computed from an arc-based cost callback. The node selected for insertion is the one which minimizes insertion cost. If a non null penalty evaluator is passed, making nodes unperformed is also taken into account with the corresponding penalty cost.&#34;&#34;&#34;
-
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
-    __repr__ = _swig_repr
-    __swig_destroy__ = _pywrapcp.delete_GlobalCheapestInsertionFilteredDecisionBuilder
-
-    def BuildSolution(self) -&gt; &#34;bool&#34;:
-        return _pywrapcp.GlobalCheapestInsertionFilteredDecisionBuilder_BuildSolution(self)
-
-    def DebugString(self) -&gt; &#34;std::string&#34;:
-        return _pywrapcp.GlobalCheapestInsertionFilteredDecisionBuilder_DebugString(self)</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li><a title="pywrapcp.CheapestInsertionFilteredDecisionBuilder" href="#pywrapcp.CheapestInsertionFilteredDecisionBuilder">CheapestInsertionFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.RoutingFilteredDecisionBuilder" href="#pywrapcp.RoutingFilteredDecisionBuilder">RoutingFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.IntVarFilteredDecisionBuilder" href="#pywrapcp.IntVarFilteredDecisionBuilder">IntVarFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.DecisionBuilder" href="#pywrapcp.DecisionBuilder">DecisionBuilder</a></li>
-<li><a title="pywrapcp.BaseObject" href="#pywrapcp.BaseObject">BaseObject</a></li>
-</ul>
-<h3>Methods</h3>
-<dl>
-<dt id="pywrapcp.GlobalCheapestInsertionFilteredDecisionBuilder.DebugString"><code class="name flex">
-<span>def <span class="ident">DebugString</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<section class="desc"></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def DebugString(self) -&gt; &#34;std::string&#34;:
-    return _pywrapcp.GlobalCheapestInsertionFilteredDecisionBuilder_DebugString(self)</code></pre>
-</details>
-</dd>
-</dl>
-<h3>Inherited members</h3>
-<ul class="hlist">
-<li><code><b><a title="pywrapcp.CheapestInsertionFilteredDecisionBuilder" href="#pywrapcp.CheapestInsertionFilteredDecisionBuilder">CheapestInsertionFilteredDecisionBuilder</a></b></code>:
-<ul class="hlist">
-<li><code><a title="pywrapcp.CheapestInsertionFilteredDecisionBuilder.BuildSolution" href="#pywrapcp.IntVarFilteredDecisionBuilder.BuildSolution">BuildSolution</a></code></li>
-<li><code><a title="pywrapcp.CheapestInsertionFilteredDecisionBuilder.GetEndChainStart" href="#pywrapcp.RoutingFilteredDecisionBuilder.GetEndChainStart">GetEndChainStart</a></code></li>
-<li><code><a title="pywrapcp.CheapestInsertionFilteredDecisionBuilder.GetStartChainEnd" href="#pywrapcp.RoutingFilteredDecisionBuilder.GetStartChainEnd">GetStartChainEnd</a></code></li>
-<li><code><a title="pywrapcp.CheapestInsertionFilteredDecisionBuilder.MakeDisjunctionNodesUnperformed" href="#pywrapcp.RoutingFilteredDecisionBuilder.MakeDisjunctionNodesUnperformed">MakeDisjunctionNodesUnperformed</a></code></li>
-<li><code><a title="pywrapcp.CheapestInsertionFilteredDecisionBuilder.MakeUnassignedNodesUnperformed" href="#pywrapcp.RoutingFilteredDecisionBuilder.MakeUnassignedNodesUnperformed">MakeUnassignedNodesUnperformed</a></code></li>
-<li><code><a title="pywrapcp.CheapestInsertionFilteredDecisionBuilder.NextWrapper" href="#pywrapcp.DecisionBuilder.NextWrapper">NextWrapper</a></code></li>
-<li><code><a title="pywrapcp.CheapestInsertionFilteredDecisionBuilder.number_of_decisions" href="#pywrapcp.IntVarFilteredDecisionBuilder.number_of_decisions">number_of_decisions</a></code></li>
-<li><code><a title="pywrapcp.CheapestInsertionFilteredDecisionBuilder.thisown" href="#pywrapcp.BaseObject.thisown">thisown</a></code></li>
 </ul>
 </li>
 </ul>
@@ -9152,103 +8582,6 @@ This method attaches a closure that will watch any domain modification of the do
 <li><code><b><a title="pywrapcp.AssignmentElement" href="#pywrapcp.AssignmentElement">AssignmentElement</a></b></code>:
 <ul class="hlist">
 <li><code><a title="pywrapcp.AssignmentElement.thisown" href="#pywrapcp.AssignmentElement.thisown">thisown</a></code></li>
-</ul>
-</li>
-</ul>
-</dd>
-<dt id="pywrapcp.IntVarFilteredDecisionBuilder"><code class="flex name class">
-<span>class <span class="ident">IntVarFilteredDecisionBuilder</span></span>
-<span>(</span><span>*args, **kwargs)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Decision builders building a solution using local search filters to evaluate its feasibility. This is very fast but can eventually fail when the solution is restored if filters did not detect all infeasiblities. More details: Using local search filters to build a solution. The approach is pretty straight-forward: have a general assignment storing the current solution, build delta assigment representing possible extensions to the current solution and validate them with filters. The tricky bit comes from using the assignment and filter APIs in a way which avoids the lazy creation of internal hash_maps between variables and indices. Generic filter-based decision builder applied to IntVars. when the code is mature enough.</p></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class IntVarFilteredDecisionBuilder(DecisionBuilder):
-    r&#34;&#34;&#34; Decision builders building a solution using local search filters to evaluate its feasibility. This is very fast but can eventually fail when the solution is restored if filters did not detect all infeasiblities. More details: Using local search filters to build a solution. The approach is pretty straight-forward: have a general assignment storing the current solution, build delta assigment representing possible extensions to the current solution and validate them with filters. The tricky bit comes from using the assignment and filter APIs in a way which avoids the lazy creation of internal hash_maps between variables and indices. Generic filter-based decision builder applied to IntVars. when the code is mature enough.&#34;&#34;&#34;
-
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
-    __repr__ = _swig_repr
-    __swig_destroy__ = _pywrapcp.delete_IntVarFilteredDecisionBuilder
-
-    def NextWrapper(self, solver: &#34;Solver&#34;) -&gt; &#34;operations_research::Decision *&#34;:
-        return _pywrapcp.IntVarFilteredDecisionBuilder_NextWrapper(self, solver)
-
-    def BuildSolution(self) -&gt; &#34;bool&#34;:
-        r&#34;&#34;&#34; Virtual method to redefine to build a solution.&#34;&#34;&#34;
-        return _pywrapcp.IntVarFilteredDecisionBuilder_BuildSolution(self)
-
-    def number_of_decisions(self) -&gt; &#34;int64&#34;:
-        r&#34;&#34;&#34; Returns statistics on search, number of decisions sent to filters, number of decisions rejected by filters.&#34;&#34;&#34;
-        return _pywrapcp.IntVarFilteredDecisionBuilder_number_of_decisions(self)
-
-    def number_of_rejects(self) -&gt; &#34;int64&#34;:
-        return _pywrapcp.IntVarFilteredDecisionBuilder_number_of_rejects(self)</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li><a title="pywrapcp.DecisionBuilder" href="#pywrapcp.DecisionBuilder">DecisionBuilder</a></li>
-<li><a title="pywrapcp.BaseObject" href="#pywrapcp.BaseObject">BaseObject</a></li>
-</ul>
-<h3>Subclasses</h3>
-<ul class="hlist">
-<li><a title="pywrapcp.RoutingFilteredDecisionBuilder" href="#pywrapcp.RoutingFilteredDecisionBuilder">RoutingFilteredDecisionBuilder</a></li>
-</ul>
-<h3>Methods</h3>
-<dl>
-<dt id="pywrapcp.IntVarFilteredDecisionBuilder.BuildSolution"><code class="name flex">
-<span>def <span class="ident">BuildSolution</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Virtual method to redefine to build a solution.</p></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def BuildSolution(self) -&gt; &#34;bool&#34;:
-    r&#34;&#34;&#34; Virtual method to redefine to build a solution.&#34;&#34;&#34;
-    return _pywrapcp.IntVarFilteredDecisionBuilder_BuildSolution(self)</code></pre>
-</details>
-</dd>
-<dt id="pywrapcp.IntVarFilteredDecisionBuilder.number_of_decisions"><code class="name flex">
-<span>def <span class="ident">number_of_decisions</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Returns statistics on search, number of decisions sent to filters, number of decisions rejected by filters.</p></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def number_of_decisions(self) -&gt; &#34;int64&#34;:
-    r&#34;&#34;&#34; Returns statistics on search, number of decisions sent to filters, number of decisions rejected by filters.&#34;&#34;&#34;
-    return _pywrapcp.IntVarFilteredDecisionBuilder_number_of_decisions(self)</code></pre>
-</details>
-</dd>
-<dt id="pywrapcp.IntVarFilteredDecisionBuilder.number_of_rejects"><code class="name flex">
-<span>def <span class="ident">number_of_rejects</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<section class="desc"></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def number_of_rejects(self) -&gt; &#34;int64&#34;:
-    return _pywrapcp.IntVarFilteredDecisionBuilder_number_of_rejects(self)</code></pre>
-</details>
-</dd>
-</dl>
-<h3>Inherited members</h3>
-<ul class="hlist">
-<li><code><b><a title="pywrapcp.DecisionBuilder" href="#pywrapcp.DecisionBuilder">DecisionBuilder</a></b></code>:
-<ul class="hlist">
-<li><code><a title="pywrapcp.DecisionBuilder.NextWrapper" href="#pywrapcp.DecisionBuilder.NextWrapper">NextWrapper</a></code></li>
-<li><code><a title="pywrapcp.DecisionBuilder.thisown" href="#pywrapcp.BaseObject.thisown">thisown</a></code></li>
 </ul>
 </li>
 </ul>
@@ -11569,72 +10902,6 @@ Attaches a closure awakened when anything about this interval changes.</p></sect
 </li>
 </ul>
 </dd>
-<dt id="pywrapcp.LocalCheapestInsertionFilteredDecisionBuilder"><code class="flex name class">
-<span>class <span class="ident">LocalCheapestInsertionFilteredDecisionBuilder</span></span>
-<span>(</span><span>*args, **kwargs)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Filter-base decision builder which builds a solution by inserting nodes at their cheapest position. The cost of a position is computed an arc-based cost callback. Node selected for insertion are considered in decreasing order of distance to the start/ends of the routes, i.e. farthest nodes are inserted first.</p></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class LocalCheapestInsertionFilteredDecisionBuilder(CheapestInsertionFilteredDecisionBuilder):
-    r&#34;&#34;&#34; Filter-base decision builder which builds a solution by inserting nodes at their cheapest position. The cost of a position is computed an arc-based cost callback. Node selected for insertion are considered in decreasing order of distance to the start/ends of the routes, i.e. farthest nodes are inserted first.&#34;&#34;&#34;
-
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
-    __repr__ = _swig_repr
-    __swig_destroy__ = _pywrapcp.delete_LocalCheapestInsertionFilteredDecisionBuilder
-
-    def BuildSolution(self) -&gt; &#34;bool&#34;:
-        return _pywrapcp.LocalCheapestInsertionFilteredDecisionBuilder_BuildSolution(self)
-
-    def DebugString(self) -&gt; &#34;std::string&#34;:
-        return _pywrapcp.LocalCheapestInsertionFilteredDecisionBuilder_DebugString(self)</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li><a title="pywrapcp.CheapestInsertionFilteredDecisionBuilder" href="#pywrapcp.CheapestInsertionFilteredDecisionBuilder">CheapestInsertionFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.RoutingFilteredDecisionBuilder" href="#pywrapcp.RoutingFilteredDecisionBuilder">RoutingFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.IntVarFilteredDecisionBuilder" href="#pywrapcp.IntVarFilteredDecisionBuilder">IntVarFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.DecisionBuilder" href="#pywrapcp.DecisionBuilder">DecisionBuilder</a></li>
-<li><a title="pywrapcp.BaseObject" href="#pywrapcp.BaseObject">BaseObject</a></li>
-</ul>
-<h3>Methods</h3>
-<dl>
-<dt id="pywrapcp.LocalCheapestInsertionFilteredDecisionBuilder.DebugString"><code class="name flex">
-<span>def <span class="ident">DebugString</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<section class="desc"></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def DebugString(self) -&gt; &#34;std::string&#34;:
-    return _pywrapcp.LocalCheapestInsertionFilteredDecisionBuilder_DebugString(self)</code></pre>
-</details>
-</dd>
-</dl>
-<h3>Inherited members</h3>
-<ul class="hlist">
-<li><code><b><a title="pywrapcp.CheapestInsertionFilteredDecisionBuilder" href="#pywrapcp.CheapestInsertionFilteredDecisionBuilder">CheapestInsertionFilteredDecisionBuilder</a></b></code>:
-<ul class="hlist">
-<li><code><a title="pywrapcp.CheapestInsertionFilteredDecisionBuilder.BuildSolution" href="#pywrapcp.IntVarFilteredDecisionBuilder.BuildSolution">BuildSolution</a></code></li>
-<li><code><a title="pywrapcp.CheapestInsertionFilteredDecisionBuilder.GetEndChainStart" href="#pywrapcp.RoutingFilteredDecisionBuilder.GetEndChainStart">GetEndChainStart</a></code></li>
-<li><code><a title="pywrapcp.CheapestInsertionFilteredDecisionBuilder.GetStartChainEnd" href="#pywrapcp.RoutingFilteredDecisionBuilder.GetStartChainEnd">GetStartChainEnd</a></code></li>
-<li><code><a title="pywrapcp.CheapestInsertionFilteredDecisionBuilder.MakeDisjunctionNodesUnperformed" href="#pywrapcp.RoutingFilteredDecisionBuilder.MakeDisjunctionNodesUnperformed">MakeDisjunctionNodesUnperformed</a></code></li>
-<li><code><a title="pywrapcp.CheapestInsertionFilteredDecisionBuilder.MakeUnassignedNodesUnperformed" href="#pywrapcp.RoutingFilteredDecisionBuilder.MakeUnassignedNodesUnperformed">MakeUnassignedNodesUnperformed</a></code></li>
-<li><code><a title="pywrapcp.CheapestInsertionFilteredDecisionBuilder.NextWrapper" href="#pywrapcp.DecisionBuilder.NextWrapper">NextWrapper</a></code></li>
-<li><code><a title="pywrapcp.CheapestInsertionFilteredDecisionBuilder.number_of_decisions" href="#pywrapcp.IntVarFilteredDecisionBuilder.number_of_decisions">number_of_decisions</a></code></li>
-<li><code><a title="pywrapcp.CheapestInsertionFilteredDecisionBuilder.thisown" href="#pywrapcp.BaseObject.thisown">thisown</a></code></li>
-</ul>
-</li>
-</ul>
-</dd>
 <dt id="pywrapcp.LocalSearchFilter"><code class="flex name class">
 <span>class <span class="ident">LocalSearchFilter</span></span>
 <span>(</span><span>*args, **kwargs)</span>
@@ -12254,67 +11521,6 @@ This dimension imposes that for all bins b, the weighted sum (weights-&gt;Run(i,
 <li><code><a title="pywrapcp.Constraint.Post" href="#pywrapcp.Constraint.Post">Post</a></code></li>
 <li><code><a title="pywrapcp.Constraint.Var" href="#pywrapcp.Constraint.Var">Var</a></code></li>
 <li><code><a title="pywrapcp.Constraint.thisown" href="#pywrapcp.BaseObject.thisown">thisown</a></code></li>
-</ul>
-</li>
-</ul>
-</dd>
-<dt id="pywrapcp.ParallelSavingsFilteredDecisionBuilder"><code class="flex name class">
-<span>class <span class="ident">ParallelSavingsFilteredDecisionBuilder</span></span>
-<span>(</span><span>*args, **kwargs)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Filter-based decision builder which builds a solution by using Clarke &amp; Wright's Savings heuristic. For each pair of nodes, the savings value is the difference between the cost of two routes visiting one node each and one route visiting both nodes. Routes are built sequentially, each route being initialized from the pair with the best avalaible savings value then extended by selecting the nodes with best savings on both ends of the partial route. Cost is based on the arc cost function of the routing model and cost classes are taken into account.</p></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class ParallelSavingsFilteredDecisionBuilder(SavingsFilteredDecisionBuilder):
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
-    __repr__ = _swig_repr
-    __swig_destroy__ = _pywrapcp.delete_ParallelSavingsFilteredDecisionBuilder
-
-    def DebugString(self) -&gt; &#34;std::string&#34;:
-        return _pywrapcp.ParallelSavingsFilteredDecisionBuilder_DebugString(self)</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li><a title="pywrapcp.SavingsFilteredDecisionBuilder" href="#pywrapcp.SavingsFilteredDecisionBuilder">SavingsFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.RoutingFilteredDecisionBuilder" href="#pywrapcp.RoutingFilteredDecisionBuilder">RoutingFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.IntVarFilteredDecisionBuilder" href="#pywrapcp.IntVarFilteredDecisionBuilder">IntVarFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.DecisionBuilder" href="#pywrapcp.DecisionBuilder">DecisionBuilder</a></li>
-<li><a title="pywrapcp.BaseObject" href="#pywrapcp.BaseObject">BaseObject</a></li>
-</ul>
-<h3>Methods</h3>
-<dl>
-<dt id="pywrapcp.ParallelSavingsFilteredDecisionBuilder.DebugString"><code class="name flex">
-<span>def <span class="ident">DebugString</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<section class="desc"></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def DebugString(self) -&gt; &#34;std::string&#34;:
-    return _pywrapcp.ParallelSavingsFilteredDecisionBuilder_DebugString(self)</code></pre>
-</details>
-</dd>
-</dl>
-<h3>Inherited members</h3>
-<ul class="hlist">
-<li><code><b><a title="pywrapcp.SavingsFilteredDecisionBuilder" href="#pywrapcp.SavingsFilteredDecisionBuilder">SavingsFilteredDecisionBuilder</a></b></code>:
-<ul class="hlist">
-<li><code><a title="pywrapcp.SavingsFilteredDecisionBuilder.BuildSolution" href="#pywrapcp.IntVarFilteredDecisionBuilder.BuildSolution">BuildSolution</a></code></li>
-<li><code><a title="pywrapcp.SavingsFilteredDecisionBuilder.GetEndChainStart" href="#pywrapcp.RoutingFilteredDecisionBuilder.GetEndChainStart">GetEndChainStart</a></code></li>
-<li><code><a title="pywrapcp.SavingsFilteredDecisionBuilder.GetStartChainEnd" href="#pywrapcp.RoutingFilteredDecisionBuilder.GetStartChainEnd">GetStartChainEnd</a></code></li>
-<li><code><a title="pywrapcp.SavingsFilteredDecisionBuilder.MakeDisjunctionNodesUnperformed" href="#pywrapcp.RoutingFilteredDecisionBuilder.MakeDisjunctionNodesUnperformed">MakeDisjunctionNodesUnperformed</a></code></li>
-<li><code><a title="pywrapcp.SavingsFilteredDecisionBuilder.MakeUnassignedNodesUnperformed" href="#pywrapcp.RoutingFilteredDecisionBuilder.MakeUnassignedNodesUnperformed">MakeUnassignedNodesUnperformed</a></code></li>
-<li><code><a title="pywrapcp.SavingsFilteredDecisionBuilder.NextWrapper" href="#pywrapcp.DecisionBuilder.NextWrapper">NextWrapper</a></code></li>
-<li><code><a title="pywrapcp.SavingsFilteredDecisionBuilder.number_of_decisions" href="#pywrapcp.IntVarFilteredDecisionBuilder.number_of_decisions">number_of_decisions</a></code></li>
-<li><code><a title="pywrapcp.SavingsFilteredDecisionBuilder.thisown" href="#pywrapcp.BaseObject.thisown">thisown</a></code></li>
 </ul>
 </li>
 </ul>
@@ -13710,142 +12916,6 @@ span_cost = coefficient * (dimension end value - dimension start value).</p></se
 </dd>
 </dl>
 </dd>
-<dt id="pywrapcp.RoutingFilteredDecisionBuilder"><code class="flex name class">
-<span>class <span class="ident">RoutingFilteredDecisionBuilder</span></span>
-<span>(</span><span>*args, **kwargs)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Filter-based decision builder dedicated to routing.</p></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class RoutingFilteredDecisionBuilder(IntVarFilteredDecisionBuilder):
-    r&#34;&#34;&#34; Filter-based decision builder dedicated to routing.&#34;&#34;&#34;
-
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
-    __repr__ = _swig_repr
-    __swig_destroy__ = _pywrapcp.delete_RoutingFilteredDecisionBuilder
-
-    def model(self) -&gt; &#34;operations_research::RoutingModel *&#34;:
-        return _pywrapcp.RoutingFilteredDecisionBuilder_model(self)
-
-    def GetStartChainEnd(self, vehicle: &#34;int&#34;) -&gt; &#34;int&#34;:
-        r&#34;&#34;&#34; Returns the end of the start chain of vehicle,&#34;&#34;&#34;
-        return _pywrapcp.RoutingFilteredDecisionBuilder_GetStartChainEnd(self, vehicle)
-
-    def GetEndChainStart(self, vehicle: &#34;int&#34;) -&gt; &#34;int&#34;:
-        r&#34;&#34;&#34; Returns the start of the end chain of vehicle,&#34;&#34;&#34;
-        return _pywrapcp.RoutingFilteredDecisionBuilder_GetEndChainStart(self, vehicle)
-
-    def MakeDisjunctionNodesUnperformed(self, node: &#34;int64&#34;) -&gt; &#34;void&#34;:
-        r&#34;&#34;&#34; Make nodes in the same disjunction as &#39;node&#39; unperformed. &#39;node&#39; is a variable index corresponding to a node.&#34;&#34;&#34;
-        return _pywrapcp.RoutingFilteredDecisionBuilder_MakeDisjunctionNodesUnperformed(self, node)
-
-    def MakeUnassignedNodesUnperformed(self) -&gt; &#34;void&#34;:
-        r&#34;&#34;&#34; Make all unassigned nodes unperformed.&#34;&#34;&#34;
-        return _pywrapcp.RoutingFilteredDecisionBuilder_MakeUnassignedNodesUnperformed(self)</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li><a title="pywrapcp.IntVarFilteredDecisionBuilder" href="#pywrapcp.IntVarFilteredDecisionBuilder">IntVarFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.DecisionBuilder" href="#pywrapcp.DecisionBuilder">DecisionBuilder</a></li>
-<li><a title="pywrapcp.BaseObject" href="#pywrapcp.BaseObject">BaseObject</a></li>
-</ul>
-<h3>Subclasses</h3>
-<ul class="hlist">
-<li><a title="pywrapcp.CheapestInsertionFilteredDecisionBuilder" href="#pywrapcp.CheapestInsertionFilteredDecisionBuilder">CheapestInsertionFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.CheapestAdditionFilteredDecisionBuilder" href="#pywrapcp.CheapestAdditionFilteredDecisionBuilder">CheapestAdditionFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.SavingsFilteredDecisionBuilder" href="#pywrapcp.SavingsFilteredDecisionBuilder">SavingsFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.ChristofidesFilteredDecisionBuilder" href="#pywrapcp.ChristofidesFilteredDecisionBuilder">ChristofidesFilteredDecisionBuilder</a></li>
-</ul>
-<h3>Methods</h3>
-<dl>
-<dt id="pywrapcp.RoutingFilteredDecisionBuilder.GetEndChainStart"><code class="name flex">
-<span>def <span class="ident">GetEndChainStart</span></span>(<span>self, vehicle)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Returns the start of the end chain of vehicle,</p></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def GetEndChainStart(self, vehicle: &#34;int&#34;) -&gt; &#34;int&#34;:
-    r&#34;&#34;&#34; Returns the start of the end chain of vehicle,&#34;&#34;&#34;
-    return _pywrapcp.RoutingFilteredDecisionBuilder_GetEndChainStart(self, vehicle)</code></pre>
-</details>
-</dd>
-<dt id="pywrapcp.RoutingFilteredDecisionBuilder.GetStartChainEnd"><code class="name flex">
-<span>def <span class="ident">GetStartChainEnd</span></span>(<span>self, vehicle)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Returns the end of the start chain of vehicle,</p></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def GetStartChainEnd(self, vehicle: &#34;int&#34;) -&gt; &#34;int&#34;:
-    r&#34;&#34;&#34; Returns the end of the start chain of vehicle,&#34;&#34;&#34;
-    return _pywrapcp.RoutingFilteredDecisionBuilder_GetStartChainEnd(self, vehicle)</code></pre>
-</details>
-</dd>
-<dt id="pywrapcp.RoutingFilteredDecisionBuilder.MakeDisjunctionNodesUnperformed"><code class="name flex">
-<span>def <span class="ident">MakeDisjunctionNodesUnperformed</span></span>(<span>self, node)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Make nodes in the same disjunction as 'node' unperformed. 'node' is a variable index corresponding to a node.</p></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def MakeDisjunctionNodesUnperformed(self, node: &#34;int64&#34;) -&gt; &#34;void&#34;:
-    r&#34;&#34;&#34; Make nodes in the same disjunction as &#39;node&#39; unperformed. &#39;node&#39; is a variable index corresponding to a node.&#34;&#34;&#34;
-    return _pywrapcp.RoutingFilteredDecisionBuilder_MakeDisjunctionNodesUnperformed(self, node)</code></pre>
-</details>
-</dd>
-<dt id="pywrapcp.RoutingFilteredDecisionBuilder.MakeUnassignedNodesUnperformed"><code class="name flex">
-<span>def <span class="ident">MakeUnassignedNodesUnperformed</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Make all unassigned nodes unperformed.</p></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def MakeUnassignedNodesUnperformed(self) -&gt; &#34;void&#34;:
-    r&#34;&#34;&#34; Make all unassigned nodes unperformed.&#34;&#34;&#34;
-    return _pywrapcp.RoutingFilteredDecisionBuilder_MakeUnassignedNodesUnperformed(self)</code></pre>
-</details>
-</dd>
-<dt id="pywrapcp.RoutingFilteredDecisionBuilder.model"><code class="name flex">
-<span>def <span class="ident">model</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<section class="desc"></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def model(self) -&gt; &#34;operations_research::RoutingModel *&#34;:
-    return _pywrapcp.RoutingFilteredDecisionBuilder_model(self)</code></pre>
-</details>
-</dd>
-</dl>
-<h3>Inherited members</h3>
-<ul class="hlist">
-<li><code><b><a title="pywrapcp.IntVarFilteredDecisionBuilder" href="#pywrapcp.IntVarFilteredDecisionBuilder">IntVarFilteredDecisionBuilder</a></b></code>:
-<ul class="hlist">
-<li><code><a title="pywrapcp.IntVarFilteredDecisionBuilder.BuildSolution" href="#pywrapcp.IntVarFilteredDecisionBuilder.BuildSolution">BuildSolution</a></code></li>
-<li><code><a title="pywrapcp.IntVarFilteredDecisionBuilder.NextWrapper" href="#pywrapcp.DecisionBuilder.NextWrapper">NextWrapper</a></code></li>
-<li><code><a title="pywrapcp.IntVarFilteredDecisionBuilder.number_of_decisions" href="#pywrapcp.IntVarFilteredDecisionBuilder.number_of_decisions">number_of_decisions</a></code></li>
-<li><code><a title="pywrapcp.IntVarFilteredDecisionBuilder.thisown" href="#pywrapcp.BaseObject.thisown">thisown</a></code></li>
-</ul>
-</li>
-</ul>
-</dd>
 <dt id="pywrapcp.RoutingIndexManager"><code class="flex name class">
 <span>class <span class="ident">RoutingIndexManager</span></span>
 <span>(</span><span>*args)</span>
@@ -14537,6 +13607,10 @@ RoutingModel model(manager);</p></section>
 
     def GetNumberOfRejectsInFirstSolution(self, search_parameters: &#34;operations_research::RoutingSearchParameters const &amp;&#34;) -&gt; &#34;int64&#34;:
         return _pywrapcp.RoutingModel_GetNumberOfRejectsInFirstSolution(self, search_parameters)
+
+    def GetAutomaticFirstSolutionStrategy(self) -&gt; &#34;operations_research::FirstSolutionStrategy::Value&#34;:
+        r&#34;&#34;&#34; Returns the automatic first solution strategy selected.&#34;&#34;&#34;
+        return _pywrapcp.RoutingModel_GetAutomaticFirstSolutionStrategy(self)
 
     def IsMatchingModel(self) -&gt; &#34;bool&#34;:
         r&#34;&#34;&#34; Returns true if a vehicle/node matching problem is detected.&#34;&#34;&#34;
@@ -15331,6 +14405,20 @@ to2: the variable index of the second candidate destination node.</p></section>
 <pre><code class="python">def GetArcCostForVehicle(self, from_index: &#34;int64&#34;, to_index: &#34;int64&#34;, vehicle: &#34;int64&#34;) -&gt; &#34;int64&#34;:
     r&#34;&#34;&#34; Returns the cost of the transit arc between two nodes for a given vehicle. Input are variable indices of node. This returns 0 if vehicle &lt; 0.&#34;&#34;&#34;
     return _pywrapcp.RoutingModel_GetArcCostForVehicle(self, from_index, to_index, vehicle)</code></pre>
+</details>
+</dd>
+<dt id="pywrapcp.RoutingModel.GetAutomaticFirstSolutionStrategy"><code class="name flex">
+<span>def <span class="ident">GetAutomaticFirstSolutionStrategy</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"><p>Returns the automatic first solution strategy selected.</p></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def GetAutomaticFirstSolutionStrategy(self) -&gt; &#34;operations_research::FirstSolutionStrategy::Value&#34;:
+    r&#34;&#34;&#34; Returns the automatic first solution strategy selected.&#34;&#34;&#34;
+    return _pywrapcp.RoutingModel_GetAutomaticFirstSolutionStrategy(self)</code></pre>
 </details>
 </dd>
 <dt id="pywrapcp.RoutingModel.GetCostClassIndexOfVehicle"><code class="name flex">
@@ -16737,57 +15825,6 @@ errors defaults to 'strict'.</p></section>
 </li>
 </ul>
 </dd>
-<dt id="pywrapcp.SavingsFilteredDecisionBuilder"><code class="flex name class">
-<span>class <span class="ident">SavingsFilteredDecisionBuilder</span></span>
-<span>(</span><span>*args, **kwargs)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Filter-based decision builder which builds a solution by using Clarke &amp; Wright's Savings heuristic. For each pair of nodes, the savings value is the difference between the cost of two routes visiting one node each and one route visiting both nodes. Routes are built sequentially, each route being initialized from the pair with the best avalaible savings value then extended by selecting the nodes with best savings on both ends of the partial route. Cost is based on the arc cost function of the routing model and cost classes are taken into account.</p></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class SavingsFilteredDecisionBuilder(RoutingFilteredDecisionBuilder):
-    r&#34;&#34;&#34; Filter-based decision builder which builds a solution by using Clarke &amp; Wright&#39;s Savings heuristic. For each pair of nodes, the savings value is the difference between the cost of two routes visiting one node each and one route visiting both nodes. Routes are built sequentially, each route being initialized from the pair with the best avalaible savings value then extended by selecting the nodes with best savings on both ends of the partial route. Cost is based on the arc cost function of the routing model and cost classes are taken into account.&#34;&#34;&#34;
-
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
-    __repr__ = _swig_repr
-    __swig_destroy__ = _pywrapcp.delete_SavingsFilteredDecisionBuilder
-
-    def BuildSolution(self) -&gt; &#34;bool&#34;:
-        return _pywrapcp.SavingsFilteredDecisionBuilder_BuildSolution(self)</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li><a title="pywrapcp.RoutingFilteredDecisionBuilder" href="#pywrapcp.RoutingFilteredDecisionBuilder">RoutingFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.IntVarFilteredDecisionBuilder" href="#pywrapcp.IntVarFilteredDecisionBuilder">IntVarFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.DecisionBuilder" href="#pywrapcp.DecisionBuilder">DecisionBuilder</a></li>
-<li><a title="pywrapcp.BaseObject" href="#pywrapcp.BaseObject">BaseObject</a></li>
-</ul>
-<h3>Subclasses</h3>
-<ul class="hlist">
-<li><a title="pywrapcp.SequentialSavingsFilteredDecisionBuilder" href="#pywrapcp.SequentialSavingsFilteredDecisionBuilder">SequentialSavingsFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.ParallelSavingsFilteredDecisionBuilder" href="#pywrapcp.ParallelSavingsFilteredDecisionBuilder">ParallelSavingsFilteredDecisionBuilder</a></li>
-</ul>
-<h3>Inherited members</h3>
-<ul class="hlist">
-<li><code><b><a title="pywrapcp.RoutingFilteredDecisionBuilder" href="#pywrapcp.RoutingFilteredDecisionBuilder">RoutingFilteredDecisionBuilder</a></b></code>:
-<ul class="hlist">
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.BuildSolution" href="#pywrapcp.IntVarFilteredDecisionBuilder.BuildSolution">BuildSolution</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.GetEndChainStart" href="#pywrapcp.RoutingFilteredDecisionBuilder.GetEndChainStart">GetEndChainStart</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.GetStartChainEnd" href="#pywrapcp.RoutingFilteredDecisionBuilder.GetStartChainEnd">GetStartChainEnd</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.MakeDisjunctionNodesUnperformed" href="#pywrapcp.RoutingFilteredDecisionBuilder.MakeDisjunctionNodesUnperformed">MakeDisjunctionNodesUnperformed</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.MakeUnassignedNodesUnperformed" href="#pywrapcp.RoutingFilteredDecisionBuilder.MakeUnassignedNodesUnperformed">MakeUnassignedNodesUnperformed</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.NextWrapper" href="#pywrapcp.DecisionBuilder.NextWrapper">NextWrapper</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.number_of_decisions" href="#pywrapcp.IntVarFilteredDecisionBuilder.number_of_decisions">number_of_decisions</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.thisown" href="#pywrapcp.BaseObject.thisown">thisown</a></code></li>
-</ul>
-</li>
-</ul>
-</dd>
 <dt id="pywrapcp.SearchLimit"><code class="flex name class">
 <span>class <span class="ident">SearchLimit</span></span>
 <span>(</span><span>*args, **kwargs)</span>
@@ -18004,67 +17041,6 @@ and the backward_sequence will be empty.</p></section>
 <li><code><b><a title="pywrapcp.LocalSearchOperator" href="#pywrapcp.LocalSearchOperator">LocalSearchOperator</a></b></code>:
 <ul class="hlist">
 <li><code><a title="pywrapcp.LocalSearchOperator.thisown" href="#pywrapcp.BaseObject.thisown">thisown</a></code></li>
-</ul>
-</li>
-</ul>
-</dd>
-<dt id="pywrapcp.SequentialSavingsFilteredDecisionBuilder"><code class="flex name class">
-<span>class <span class="ident">SequentialSavingsFilteredDecisionBuilder</span></span>
-<span>(</span><span>*args, **kwargs)</span>
-</code></dt>
-<dd>
-<section class="desc"><p>Filter-based decision builder which builds a solution by using Clarke &amp; Wright's Savings heuristic. For each pair of nodes, the savings value is the difference between the cost of two routes visiting one node each and one route visiting both nodes. Routes are built sequentially, each route being initialized from the pair with the best avalaible savings value then extended by selecting the nodes with best savings on both ends of the partial route. Cost is based on the arc cost function of the routing model and cost classes are taken into account.</p></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class SequentialSavingsFilteredDecisionBuilder(SavingsFilteredDecisionBuilder):
-    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError(&#34;No constructor defined - class is abstract&#34;)
-    __repr__ = _swig_repr
-    __swig_destroy__ = _pywrapcp.delete_SequentialSavingsFilteredDecisionBuilder
-
-    def DebugString(self) -&gt; &#34;std::string&#34;:
-        return _pywrapcp.SequentialSavingsFilteredDecisionBuilder_DebugString(self)</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li><a title="pywrapcp.SavingsFilteredDecisionBuilder" href="#pywrapcp.SavingsFilteredDecisionBuilder">SavingsFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.RoutingFilteredDecisionBuilder" href="#pywrapcp.RoutingFilteredDecisionBuilder">RoutingFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.IntVarFilteredDecisionBuilder" href="#pywrapcp.IntVarFilteredDecisionBuilder">IntVarFilteredDecisionBuilder</a></li>
-<li><a title="pywrapcp.DecisionBuilder" href="#pywrapcp.DecisionBuilder">DecisionBuilder</a></li>
-<li><a title="pywrapcp.BaseObject" href="#pywrapcp.BaseObject">BaseObject</a></li>
-</ul>
-<h3>Methods</h3>
-<dl>
-<dt id="pywrapcp.SequentialSavingsFilteredDecisionBuilder.DebugString"><code class="name flex">
-<span>def <span class="ident">DebugString</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<section class="desc"></section>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def DebugString(self) -&gt; &#34;std::string&#34;:
-    return _pywrapcp.SequentialSavingsFilteredDecisionBuilder_DebugString(self)</code></pre>
-</details>
-</dd>
-</dl>
-<h3>Inherited members</h3>
-<ul class="hlist">
-<li><code><b><a title="pywrapcp.SavingsFilteredDecisionBuilder" href="#pywrapcp.SavingsFilteredDecisionBuilder">SavingsFilteredDecisionBuilder</a></b></code>:
-<ul class="hlist">
-<li><code><a title="pywrapcp.SavingsFilteredDecisionBuilder.BuildSolution" href="#pywrapcp.IntVarFilteredDecisionBuilder.BuildSolution">BuildSolution</a></code></li>
-<li><code><a title="pywrapcp.SavingsFilteredDecisionBuilder.GetEndChainStart" href="#pywrapcp.RoutingFilteredDecisionBuilder.GetEndChainStart">GetEndChainStart</a></code></li>
-<li><code><a title="pywrapcp.SavingsFilteredDecisionBuilder.GetStartChainEnd" href="#pywrapcp.RoutingFilteredDecisionBuilder.GetStartChainEnd">GetStartChainEnd</a></code></li>
-<li><code><a title="pywrapcp.SavingsFilteredDecisionBuilder.MakeDisjunctionNodesUnperformed" href="#pywrapcp.RoutingFilteredDecisionBuilder.MakeDisjunctionNodesUnperformed">MakeDisjunctionNodesUnperformed</a></code></li>
-<li><code><a title="pywrapcp.SavingsFilteredDecisionBuilder.MakeUnassignedNodesUnperformed" href="#pywrapcp.RoutingFilteredDecisionBuilder.MakeUnassignedNodesUnperformed">MakeUnassignedNodesUnperformed</a></code></li>
-<li><code><a title="pywrapcp.SavingsFilteredDecisionBuilder.NextWrapper" href="#pywrapcp.DecisionBuilder.NextWrapper">NextWrapper</a></code></li>
-<li><code><a title="pywrapcp.SavingsFilteredDecisionBuilder.number_of_decisions" href="#pywrapcp.IntVarFilteredDecisionBuilder.number_of_decisions">number_of_decisions</a></code></li>
-<li><code><a title="pywrapcp.SavingsFilteredDecisionBuilder.thisown" href="#pywrapcp.BaseObject.thisown">thisown</a></code></li>
 </ul>
 </li>
 </ul>
@@ -23548,24 +22524,6 @@ p2/d2. - For a temporal requirement, p2 must be visited between p1 and d1.</p></
 </ul>
 </li>
 <li>
-<h4><code><a title="pywrapcp.CheapestAdditionFilteredDecisionBuilder" href="#pywrapcp.CheapestAdditionFilteredDecisionBuilder">CheapestAdditionFilteredDecisionBuilder</a></code></h4>
-</li>
-<li>
-<h4><code><a title="pywrapcp.CheapestInsertionFilteredDecisionBuilder" href="#pywrapcp.CheapestInsertionFilteredDecisionBuilder">CheapestInsertionFilteredDecisionBuilder</a></code></h4>
-</li>
-<li>
-<h4><code><a title="pywrapcp.ChristofidesFilteredDecisionBuilder" href="#pywrapcp.ChristofidesFilteredDecisionBuilder">ChristofidesFilteredDecisionBuilder</a></code></h4>
-<ul class="">
-<li><code><a title="pywrapcp.ChristofidesFilteredDecisionBuilder.DebugString" href="#pywrapcp.ChristofidesFilteredDecisionBuilder.DebugString">DebugString</a></code></li>
-</ul>
-</li>
-<li>
-<h4><code><a title="pywrapcp.ComparatorCheapestAdditionFilteredDecisionBuilder" href="#pywrapcp.ComparatorCheapestAdditionFilteredDecisionBuilder">ComparatorCheapestAdditionFilteredDecisionBuilder</a></code></h4>
-<ul class="">
-<li><code><a title="pywrapcp.ComparatorCheapestAdditionFilteredDecisionBuilder.DebugString" href="#pywrapcp.ComparatorCheapestAdditionFilteredDecisionBuilder.DebugString">DebugString</a></code></li>
-</ul>
-</li>
-<li>
 <h4><code><a title="pywrapcp.Constraint" href="#pywrapcp.Constraint">Constraint</a></code></h4>
 <ul class="">
 <li><code><a title="pywrapcp.Constraint.DebugString" href="#pywrapcp.Constraint.DebugString">DebugString</a></code></li>
@@ -23632,18 +22590,6 @@ p2/d2. - For a temporal requirement, p2 must be visited between p1 and d1.</p></
 <li><code><a title="pywrapcp.DisjunctiveConstraint.SequenceVar" href="#pywrapcp.DisjunctiveConstraint.SequenceVar">SequenceVar</a></code></li>
 <li><code><a title="pywrapcp.DisjunctiveConstraint.SetTransitionTime" href="#pywrapcp.DisjunctiveConstraint.SetTransitionTime">SetTransitionTime</a></code></li>
 <li><code><a title="pywrapcp.DisjunctiveConstraint.TransitionTime" href="#pywrapcp.DisjunctiveConstraint.TransitionTime">TransitionTime</a></code></li>
-</ul>
-</li>
-<li>
-<h4><code><a title="pywrapcp.EvaluatorCheapestAdditionFilteredDecisionBuilder" href="#pywrapcp.EvaluatorCheapestAdditionFilteredDecisionBuilder">EvaluatorCheapestAdditionFilteredDecisionBuilder</a></code></h4>
-<ul class="">
-<li><code><a title="pywrapcp.EvaluatorCheapestAdditionFilteredDecisionBuilder.DebugString" href="#pywrapcp.EvaluatorCheapestAdditionFilteredDecisionBuilder.DebugString">DebugString</a></code></li>
-</ul>
-</li>
-<li>
-<h4><code><a title="pywrapcp.GlobalCheapestInsertionFilteredDecisionBuilder" href="#pywrapcp.GlobalCheapestInsertionFilteredDecisionBuilder">GlobalCheapestInsertionFilteredDecisionBuilder</a></code></h4>
-<ul class="">
-<li><code><a title="pywrapcp.GlobalCheapestInsertionFilteredDecisionBuilder.DebugString" href="#pywrapcp.GlobalCheapestInsertionFilteredDecisionBuilder.DebugString">DebugString</a></code></li>
 </ul>
 </li>
 <li>
@@ -23717,14 +22663,6 @@ p2/d2. - For a temporal requirement, p2 must be visited between p1 and d1.</p></
 <li><code><a title="pywrapcp.IntVarElement.SetValue" href="#pywrapcp.IntVarElement.SetValue">SetValue</a></code></li>
 <li><code><a title="pywrapcp.IntVarElement.Value" href="#pywrapcp.IntVarElement.Value">Value</a></code></li>
 <li><code><a title="pywrapcp.IntVarElement.Var" href="#pywrapcp.IntVarElement.Var">Var</a></code></li>
-</ul>
-</li>
-<li>
-<h4><code><a title="pywrapcp.IntVarFilteredDecisionBuilder" href="#pywrapcp.IntVarFilteredDecisionBuilder">IntVarFilteredDecisionBuilder</a></code></h4>
-<ul class="">
-<li><code><a title="pywrapcp.IntVarFilteredDecisionBuilder.BuildSolution" href="#pywrapcp.IntVarFilteredDecisionBuilder.BuildSolution">BuildSolution</a></code></li>
-<li><code><a title="pywrapcp.IntVarFilteredDecisionBuilder.number_of_decisions" href="#pywrapcp.IntVarFilteredDecisionBuilder.number_of_decisions">number_of_decisions</a></code></li>
-<li><code><a title="pywrapcp.IntVarFilteredDecisionBuilder.number_of_rejects" href="#pywrapcp.IntVarFilteredDecisionBuilder.number_of_rejects">number_of_rejects</a></code></li>
 </ul>
 </li>
 <li>
@@ -23885,12 +22823,6 @@ p2/d2. - For a temporal requirement, p2 must be visited between p1 and d1.</p></
 </ul>
 </li>
 <li>
-<h4><code><a title="pywrapcp.LocalCheapestInsertionFilteredDecisionBuilder" href="#pywrapcp.LocalCheapestInsertionFilteredDecisionBuilder">LocalCheapestInsertionFilteredDecisionBuilder</a></code></h4>
-<ul class="">
-<li><code><a title="pywrapcp.LocalCheapestInsertionFilteredDecisionBuilder.DebugString" href="#pywrapcp.LocalCheapestInsertionFilteredDecisionBuilder.DebugString">DebugString</a></code></li>
-</ul>
-</li>
-<li>
 <h4><code><a title="pywrapcp.LocalSearchFilter" href="#pywrapcp.LocalSearchFilter">LocalSearchFilter</a></code></h4>
 <ul class="">
 <li><code><a title="pywrapcp.LocalSearchFilter.Accept" href="#pywrapcp.LocalSearchFilter.Accept">Accept</a></code></li>
@@ -23932,12 +22864,6 @@ p2/d2. - For a temporal requirement, p2 must be visited between p1 and d1.</p></
 <li><code><a title="pywrapcp.Pack.AddWeightedSumLessOrEqualConstantDimension" href="#pywrapcp.Pack.AddWeightedSumLessOrEqualConstantDimension">AddWeightedSumLessOrEqualConstantDimension</a></code></li>
 <li><code><a title="pywrapcp.Pack.AddWeightedSumOfAssignedDimension" href="#pywrapcp.Pack.AddWeightedSumOfAssignedDimension">AddWeightedSumOfAssignedDimension</a></code></li>
 <li><code><a title="pywrapcp.Pack.DebugString" href="#pywrapcp.Pack.DebugString">DebugString</a></code></li>
-</ul>
-</li>
-<li>
-<h4><code><a title="pywrapcp.ParallelSavingsFilteredDecisionBuilder" href="#pywrapcp.ParallelSavingsFilteredDecisionBuilder">ParallelSavingsFilteredDecisionBuilder</a></code></h4>
-<ul class="">
-<li><code><a title="pywrapcp.ParallelSavingsFilteredDecisionBuilder.DebugString" href="#pywrapcp.ParallelSavingsFilteredDecisionBuilder.DebugString">DebugString</a></code></li>
 </ul>
 </li>
 <li>
@@ -24048,16 +22974,6 @@ p2/d2. - For a temporal requirement, p2 must be visited between p1 and d1.</p></
 </ul>
 </li>
 <li>
-<h4><code><a title="pywrapcp.RoutingFilteredDecisionBuilder" href="#pywrapcp.RoutingFilteredDecisionBuilder">RoutingFilteredDecisionBuilder</a></code></h4>
-<ul class="">
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.GetEndChainStart" href="#pywrapcp.RoutingFilteredDecisionBuilder.GetEndChainStart">GetEndChainStart</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.GetStartChainEnd" href="#pywrapcp.RoutingFilteredDecisionBuilder.GetStartChainEnd">GetStartChainEnd</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.MakeDisjunctionNodesUnperformed" href="#pywrapcp.RoutingFilteredDecisionBuilder.MakeDisjunctionNodesUnperformed">MakeDisjunctionNodesUnperformed</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.MakeUnassignedNodesUnperformed" href="#pywrapcp.RoutingFilteredDecisionBuilder.MakeUnassignedNodesUnperformed">MakeUnassignedNodesUnperformed</a></code></li>
-<li><code><a title="pywrapcp.RoutingFilteredDecisionBuilder.model" href="#pywrapcp.RoutingFilteredDecisionBuilder.model">model</a></code></li>
-</ul>
-</li>
-<li>
 <h4><code><a title="pywrapcp.RoutingIndexManager" href="#pywrapcp.RoutingIndexManager">RoutingIndexManager</a></code></h4>
 <ul class="two-column">
 <li><code><a title="pywrapcp.RoutingIndexManager.GetNumberOfIndices" href="#pywrapcp.RoutingIndexManager.GetNumberOfIndices">GetNumberOfIndices</a></code></li>
@@ -24121,6 +23037,7 @@ p2/d2. - For a temporal requirement, p2 must be visited between p1 and d1.</p></
 <li><code><a title="pywrapcp.RoutingModel.GetArcCostForClass" href="#pywrapcp.RoutingModel.GetArcCostForClass">GetArcCostForClass</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetArcCostForFirstSolution" href="#pywrapcp.RoutingModel.GetArcCostForFirstSolution">GetArcCostForFirstSolution</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetArcCostForVehicle" href="#pywrapcp.RoutingModel.GetArcCostForVehicle">GetArcCostForVehicle</a></code></li>
+<li><code><a title="pywrapcp.RoutingModel.GetAutomaticFirstSolutionStrategy" href="#pywrapcp.RoutingModel.GetAutomaticFirstSolutionStrategy">GetAutomaticFirstSolutionStrategy</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetCostClassIndexOfVehicle" href="#pywrapcp.RoutingModel.GetCostClassIndexOfVehicle">GetCostClassIndexOfVehicle</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetCostClassesCount" href="#pywrapcp.RoutingModel.GetCostClassesCount">GetCostClassesCount</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetDeliveryIndexPairs" href="#pywrapcp.RoutingModel.GetDeliveryIndexPairs">GetDeliveryIndexPairs</a></code></li>
@@ -24239,9 +23156,6 @@ p2/d2. - For a temporal requirement, p2 must be visited between p1 and d1.</p></
 </ul>
 </li>
 <li>
-<h4><code><a title="pywrapcp.SavingsFilteredDecisionBuilder" href="#pywrapcp.SavingsFilteredDecisionBuilder">SavingsFilteredDecisionBuilder</a></code></h4>
-</li>
-<li>
 <h4><code><a title="pywrapcp.SearchLimit" href="#pywrapcp.SearchLimit">SearchLimit</a></code></h4>
 <ul class="">
 <li><code><a title="pywrapcp.SearchLimit.Check" href="#pywrapcp.SearchLimit.Check">Check</a></code></li>
@@ -24325,12 +23239,6 @@ p2/d2. - For a temporal requirement, p2 must be visited between p1 and d1.</p></
 <li><code><a title="pywrapcp.SequenceVarLocalSearchOperatorTemplate.Size" href="#pywrapcp.SequenceVarLocalSearchOperatorTemplate.Size">Size</a></code></li>
 <li><code><a title="pywrapcp.SequenceVarLocalSearchOperatorTemplate.Start" href="#pywrapcp.SequenceVarLocalSearchOperatorTemplate.Start">Start</a></code></li>
 <li><code><a title="pywrapcp.SequenceVarLocalSearchOperatorTemplate.Value" href="#pywrapcp.SequenceVarLocalSearchOperatorTemplate.Value">Value</a></code></li>
-</ul>
-</li>
-<li>
-<h4><code><a title="pywrapcp.SequentialSavingsFilteredDecisionBuilder" href="#pywrapcp.SequentialSavingsFilteredDecisionBuilder">SequentialSavingsFilteredDecisionBuilder</a></code></h4>
-<ul class="">
-<li><code><a title="pywrapcp.SequentialSavingsFilteredDecisionBuilder.DebugString" href="#pywrapcp.SequentialSavingsFilteredDecisionBuilder.DebugString">DebugString</a></code></li>
 </ul>
 </li>
 <li>
@@ -24628,7 +23536,7 @@ p2/d2. - For a temporal requirement, p2 must be visited between p1 and d1.</p></
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.7.0</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.7.2</a>.</p>
 </footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
 <script>hljs.initHighlightingOnLoad()</script>
