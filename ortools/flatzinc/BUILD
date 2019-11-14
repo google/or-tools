@@ -116,18 +116,6 @@ cc_library(
 )
 
 cc_library(
-    name = "reporting",
-    srcs = ["reporting.cc"],
-    hdrs = ["reporting.h"],
-    deps = [
-        "//ortools/base",
-        "//ortools/constraint_solver:cp",
-        ":logging",
-        "@com_google_absl//absl/synchronization",
-    ],
-)
-
-cc_library(
     name = "cp_model_fz_solver",
     srcs = ["cp_model_fz_solver.cc"],
     hdrs = ["cp_model_fz_solver.h"],
@@ -166,6 +154,5 @@ cc_binary(
         ":model",
         ":parser_lib",
         ":presolve",
-        ":reporting",
     ],
 )
