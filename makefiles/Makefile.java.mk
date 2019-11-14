@@ -295,7 +295,7 @@ $(JAVA_OR_TOOLS_LIBS): \
  $(GEN_DIR)/com/google/ortools/util/OptionalBoolean.java \
  $(GEN_DIR)/com/google/ortools/sat/CpModel.java | \
  $(CLASS_DIR)/com/google/ortools
-	"$(JAVAC_BIN)" -d $(CLASS_DIR) \
+	"$(JAVAC_BIN)" -Dfile.encoding=UTF-8 -d $(CLASS_DIR) \
  -cp $(LIB_DIR)$Sprotobuf.jar \
  $(SRC_DIR)$Sortools$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.java \
  $(SRC_DIR)$Sortools$Scom$Sgoogle$Sortools$Ssat$S*.java \
@@ -314,7 +314,7 @@ ifeq ($(SOURCE_SUFFIX),.java) # Those rules will be used if SOURCE contain a .ja
 $(CLASS_DIR)/$(SOURCE_NAME): $(SOURCE) $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
 	-$(DELREC) $(CLASS_DIR)$S$(SOURCE_NAME)
 	-$(MKDIR_P) $(CLASS_DIR)$S$(SOURCE_NAME)
-	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$(SOURCE_NAME) \
+	"$(JAVAC_BIN)" -Dfile.encoding=UTF-8 -d $(CLASS_DIR)$S$(SOURCE_NAME) \
  -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  $(SOURCE_PATH)
 
@@ -338,56 +338,56 @@ endif
 $(CLASS_DIR)/%: $(TEST_DIR)/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
 	-$(DELREC) $(CLASS_DIR)$S$*
 	-$(MKDIR_P) $(CLASS_DIR)$S$*
-	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$* \
+	"$(JAVAC_BIN)" -Dfile.encoding=UTF-8 -d $(CLASS_DIR)$S$* \
  -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  $(TEST_PATH)$S$*.java
 
 $(CLASS_DIR)/%: $(JAVA_EX_DIR)/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
 	-$(DELREC) $(CLASS_DIR)$S$*
 	-$(MKDIR_P) $(CLASS_DIR)$S$*
-	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$* \
+	"$(JAVAC_BIN)" -Dfile.encoding=UTF-8 -d $(CLASS_DIR)$S$* \
  -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  $(JAVA_EX_PATH)$S$*.java
 
 $(CLASS_DIR)/%: $(CONTRIB_EX_DIR)/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
 	-$(DELREC) $(CLASS_DIR)$S$*
 	-$(MKDIR_P) $(CLASS_DIR)$S$*
-	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$* \
+	"$(JAVAC_BIN)" -Dfile.encoding=UTF-8 -d $(CLASS_DIR)$S$* \
  -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  $(CONTRIB_EX_PATH)$S$*.java
 
 $(CLASS_DIR)/%: $(SRC_DIR)/ortools/algorithms/samples/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
 	-$(DELREC) $(CLASS_DIR)$S$*
 	-$(MKDIR_P) $(CLASS_DIR)$S$*
-	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$* \
+	"$(JAVAC_BIN)" -Dfile.encoding=UTF-8 -d $(CLASS_DIR)$S$* \
  -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  ortools$Salgorithms$Ssamples$S$*.java
 
 $(CLASS_DIR)/%: $(SRC_DIR)/ortools/constraint_solver/samples/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
 	-$(DELREC) $(CLASS_DIR)$S$*
 	-$(MKDIR_P) $(CLASS_DIR)$S$*
-	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$* \
+	"$(JAVAC_BIN)" -Dfile.encoding=UTF-8 -d $(CLASS_DIR)$S$* \
  -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  ortools$Sconstraint_solver$Ssamples$S$*.java
 
 $(CLASS_DIR)/%: $(SRC_DIR)/ortools/graph/samples/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
 	-$(DELREC) $(CLASS_DIR)$S$*
 	-$(MKDIR_P) $(CLASS_DIR)$S$*
-	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$* \
+	"$(JAVAC_BIN)" -Dfile.encoding=UTF-8 -d $(CLASS_DIR)$S$* \
  -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  ortools$Sgraph$Ssamples$S$*.java
 
 $(CLASS_DIR)/%: $(SRC_DIR)/ortools/linear_solver/samples/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
 	-$(DELREC) $(CLASS_DIR)$S$*
 	-$(MKDIR_P) $(CLASS_DIR)$S$*
-	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$* \
+	"$(JAVAC_BIN)" -Dfile.encoding=UTF-8 -d $(CLASS_DIR)$S$* \
  -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  ortools$Slinear_solver$Ssamples$S$*.java
 
 $(CLASS_DIR)/%: $(SRC_DIR)/ortools/sat/samples/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
 	-$(DELREC) $(CLASS_DIR)$S$*
 	-$(MKDIR_P) $(CLASS_DIR)$S$*
-	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$* \
+	"$(JAVAC_BIN)" -Dfile.encoding=UTF-8 -d $(CLASS_DIR)$S$* \
  -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  ortools$Ssat$Ssamples$S$*.java
 
