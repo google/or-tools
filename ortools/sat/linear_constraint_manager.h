@@ -19,6 +19,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "ortools/glop/revised_simplex.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -81,8 +82,13 @@ class LinearConstraintManager {
   // should usually be the optimal solution of the LP returned by GetLp() before
   // this call, but is just used as an heuristic.
   //
+  // The current solution state is used for detecting inactive constraints. It
+  // is also updated correctly on constraint deletion/addition so that the
+  // simplex can be fully iterative on restart by loading this modified state.
+  //
   // Returns true iff LpConstraints() will return a different LP than before.
-  bool ChangeLp(const gtl::ITIVector<IntegerVariable, double>& lp_solution);
+  bool ChangeLp(const gtl::ITIVector<IntegerVariable, double>& lp_solution,
+                glop::BasisState* solution_state);
 
   // This can be called initially to add all the current constraint to the LP
   // returned by GetLp().
@@ -105,8 +111,16 @@ class LinearConstraintManager {
   int64 num_coeff_strenghtening() const { return num_coeff_strenghtening_; }
 
  private:
-  // Removes the marked constraints from the LP.
-  void RemoveMarkedConstraints();
+  // Heuristic that decide which constraints we should remove from the current
+  // LP. Note that such constraints can be added back later by the heuristic
+  // responsible for adding new constraints from the pool.
+  //
+  // Returns true iff one or more constraints where removed.
+  //
+  // If the solutions_state is empty, then this function does nothing and
+  // returns false (this is used for tests). Otherwise, the solutions_state is
+  // assumed to correspond to the current LP and to be of the correct size.
+  bool MaybeRemoveSomeInactiveConstraints(glop::BasisState* solution_state);
 
   // Apply basic inprocessing simplification rules:
   //  - remove fixed variable
@@ -132,10 +146,6 @@ class LinearConstraintManager {
   int64 last_simplification_timestamp_ = 0;
 
   gtl::ITIVector<ConstraintIndex, ConstraintInfo> constraint_infos_;
-
-  // Temporary list of constraints marked for removal. Note that we remove
-  // constraints in batch to avoid changing LP too frequently.
-  absl::flat_hash_set<ConstraintIndex> constraints_removal_list_;
 
   // The subset of constraints currently in the lp.
   std::vector<ConstraintIndex> lp_constraints_;

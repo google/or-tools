@@ -886,15 +886,10 @@ bool LinearProgrammingConstraint::Propagate() {
   // this beeing called again on the next IncrementalPropagate() call, but that
   // might not always happen at level zero.
   if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
-    // First add any new lazy constraints or cuts that where previsouly
-    // generated and are now cutting the current solution.
-    if (constraint_manager_.ChangeLp(expanded_lp_solution_)) {
-      CreateLpFromConstraintManager();
-      if (!SolveLp()) return true;
-    } else if (constraint_manager_.num_cuts() <
-               sat_parameters_.max_num_cuts()) {
-      const int old_num_cuts = constraint_manager_.num_cuts();
-
+    // We wait for the first batch of problem constraints to be added before we
+    // begin to generate cuts.
+    if (!integer_lp_.empty() &&
+        constraint_manager_.num_cuts() < sat_parameters_.max_num_cuts()) {
       // The "generic" cuts are currently part of this class as they are using
       // data from the current LP.
       //
@@ -912,22 +907,23 @@ bool LinearProgrammingConstraint::Propagate() {
           generator.generate_cuts(expanded_lp_solution_, &constraint_manager_);
         }
       }
+    }
 
-      if (constraint_manager_.num_cuts() > old_num_cuts &&
-          constraint_manager_.ChangeLp(expanded_lp_solution_)) {
-        CreateLpFromConstraintManager();
-        const double old_obj = simplex_.GetObjectiveValue();
-        if (!SolveLp()) return true;
-        if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
-          VLOG(1) << "Cuts relaxation improvement " << old_obj << " -> "
-                  << simplex_.GetObjectiveValue()
-                  << " diff: " << simplex_.GetObjectiveValue() - old_obj
-                  << " level: " << trail_->CurrentDecisionLevel();
-        }
-      } else {
-        if (trail_->CurrentDecisionLevel() == 0) {
-          lp_at_level_zero_is_final_ = true;
-        }
+    glop::BasisState state = simplex_.GetState();
+    if (constraint_manager_.ChangeLp(expanded_lp_solution_, &state)) {
+      simplex_.LoadStateForNextSolve(state);
+      CreateLpFromConstraintManager();
+      const double old_obj = simplex_.GetObjectiveValue();
+      if (!SolveLp()) return true;
+      if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
+        VLOG(1) << "Relaxation improvement " << old_obj << " -> "
+                << simplex_.GetObjectiveValue()
+                << " diff: " << simplex_.GetObjectiveValue() - old_obj
+                << " level: " << trail_->CurrentDecisionLevel();
+      }
+    } else {
+      if (trail_->CurrentDecisionLevel() == 0) {
+        lp_at_level_zero_is_final_ = true;
       }
     }
   }
@@ -1408,7 +1404,12 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
     for (const auto entry : integer_lp_[row].terms) {
       const ColIndex col = entry.first;
       const IntegerValue coeff = entry.second;
+      const IntegerValue abs_coef = IntTypeAbs(coeff);
       CHECK_NE(coeff, 0);
+
+      const IntegerVariable var = integer_variables_[col.value()];
+      const IntegerValue lb = integer_trail_->LowerBound(var);
+      const IntegerValue ub = integer_trail_->UpperBound(var);
 
       // Moving a variable away from zero seems to improve the bound even
       // if it reduces the number of non-zero. Note that this is because of
@@ -1416,33 +1417,28 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
       const IntegerValue current = (*dense_terms)[col];
       if (current == 0) {
         const IntegerValue overflow_limit(
-            FloorRatio(kMaxWantedCoeff, IntTypeAbs(coeff)));
+            FloorRatio(kMaxWantedCoeff, abs_coef));
         positive_limit = std::min(positive_limit, overflow_limit);
         negative_limit = std::min(negative_limit, overflow_limit);
-        const IntegerVariable var = integer_variables_[col.value()];
         if (coeff > 0) {
-          positive_diff -= coeff * integer_trail_->LowerBound(var);
-          negative_diff -= coeff * integer_trail_->UpperBound(var);
+          positive_diff -= coeff * lb;
+          negative_diff -= coeff * ub;
         } else {
-          positive_diff -= coeff * integer_trail_->UpperBound(var);
-          negative_diff -= coeff * integer_trail_->LowerBound(var);
+          positive_diff -= coeff * ub;
+          negative_diff -= coeff * lb;
         }
         continue;
       }
 
-      // We don't want to change the sign of current or to have an overflow.
-      IntegerValue before_sign_change(
-          FloorRatio(IntTypeAbs(current), IntTypeAbs(coeff)));
-
-      // If the variable is fixed, we don't actually care about changing the
-      // sign.
-      const IntegerVariable var = integer_variables_[col.value()];
-      if (integer_trail_->LowerBound(var) == integer_trail_->UpperBound(var)) {
-        before_sign_change = kMaxWantedCoeff;
+      // We don't want to change the sign of current (except if the variable is
+      // fixed) or to have an overflow.
+      IntegerValue before_sign_change = kMaxWantedCoeff;
+      if (lb != ub) {
+        before_sign_change = FloorRatio(IntTypeAbs(current), abs_coef);
       }
 
       const IntegerValue overflow_limit(
-          FloorRatio(kMaxWantedCoeff - IntTypeAbs(current), IntTypeAbs(coeff)));
+          FloorRatio(kMaxWantedCoeff - IntTypeAbs(current), abs_coef));
       if (current > 0 == coeff > 0) {  // Same sign.
         negative_limit = std::min(negative_limit, before_sign_change);
         positive_limit = std::min(positive_limit, overflow_limit);
@@ -1452,12 +1448,11 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
       }
 
       // This is how diff change.
-      const IntegerValue implied = current > 0
-                                       ? integer_trail_->LowerBound(var)
-                                       : integer_trail_->UpperBound(var);
-
-      positive_diff -= coeff * implied;
-      negative_diff -= coeff * implied;
+      const IntegerValue implied = current > 0 ? lb : ub;
+      if (implied != 0) {
+        positive_diff -= coeff * implied;
+        negative_diff -= coeff * implied;
+      }
     }
 
     // Only add a multiple of this row if it tighten the final constraint.
@@ -1553,6 +1548,11 @@ bool LinearProgrammingConstraint::ExactLpReasonning() {
   IntegerSumLE* cp_constraint =
       new IntegerSumLE({}, new_constraint.vars, new_constraint.coeffs,
                        new_constraint.ub, model_);
+  if (trail_->CurrentDecisionLevel() == 0) {
+    // Since we will never ask the reason for a constraint at level 0, we just
+    // keep the last one.
+    optimal_constraints_.clear();
+  }
   optimal_constraints_.emplace_back(cp_constraint);
   rev_optimal_constraints_size_ = optimal_constraints_.size();
   return cp_constraint->Propagate();

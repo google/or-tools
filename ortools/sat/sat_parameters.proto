@@ -590,13 +590,14 @@ message SatParameters {
   // feature.
   optional double min_orthogonality_for_lp_constraints = 115 [default = 0.0];
 
-  // If a constraint/cut in LP is not active for the 'max_inactive_count',
-  // remove it from the LP.
-  optional int64 max_inactive_count = 121 [default = 1000];
+  // If a constraint/cut in LP is not active for that many consecutive OPTIMAL
+  // solves, remove it from the LP. Note that it might be added again later if
+  // it become violated by the current LP solution.
+  optional int32 max_consecutive_inactive_count = 121 [default = 100];
 
-  // Remove constraints only if at least 'constraint_removal_batch_size'
-  // constraints are marked for removal.
-  optional int64 constraint_removal_batch_size = 122 [default = 100];
+  // Add that many lazy contraints (or cuts) at once in the LP. Note that at the
+  // beginning of the solve, we do add more than this.
+  optional int32 new_constraints_batch_size = 122 [default = 50];
 
   // The search branching will be used to decide how to branch on unfixed nodes.
   enum SearchBranching {

@@ -82,22 +82,48 @@ LinearConstraintManager::~LinearConstraintManager() {
   }
 }
 
-// TODO(user,user): Also update the revised simplex starting basis for the
-// next solve.
-void LinearConstraintManager::RemoveMarkedConstraints() {
-  int new_index = 0;
-  for (int i = 0; i < lp_constraints_.size(); ++i) {
-    const ConstraintIndex constraint = lp_constraints_[i];
-    if (constraints_removal_list_.contains(constraint)) {
-      constraint_infos_[constraint].is_in_lp = false;
-      continue;
+bool LinearConstraintManager::MaybeRemoveSomeInactiveConstraints(
+    glop::BasisState* solution_state) {
+  if (solution_state->IsEmpty()) return false;  // Mainly to simplify tests.
+  const glop::RowIndex num_rows(lp_constraints_.size());
+  const glop::ColIndex num_cols =
+      solution_state->statuses.size() - RowToColIndex(num_rows);
+
+  int new_size = 0;
+  for (int i = 0; i < num_rows; ++i) {
+    const ConstraintIndex constraint_index = lp_constraints_[i];
+
+    // Constraints that are not tight in the current solution have a basic
+    // status. We remove the ones that have been inactive in the last recent
+    // solves.
+    //
+    // TODO(user): More advanced heuristics might perform better, I didn't do
+    // a lot of tuning experiments yet.
+    const glop::VariableStatus row_status =
+        solution_state->statuses[num_cols + glop::ColIndex(i)];
+    if (row_status == glop::VariableStatus::BASIC) {
+      constraint_infos_[constraint_index].inactive_count++;
+      if (constraint_infos_[constraint_index].inactive_count >
+          sat_parameters_.max_consecutive_inactive_count()) {
+        constraint_infos_[constraint_index].is_in_lp = false;
+        continue;  // Remove it.
+      }
+    } else {
+      // Only count consecutive inactivities.
+      constraint_infos_[constraint_index].inactive_count = 0;
     }
-    lp_constraints_[new_index] = constraint;
-    new_index++;
+
+    lp_constraints_[new_size] = constraint_index;
+    solution_state->statuses[num_cols + glop::ColIndex(new_size)] = row_status;
+    new_size++;
   }
-  lp_constraints_.resize(new_index);
-  VLOG(2) << "Removed " << constraints_removal_list_.size() << " constraints.";
-  constraints_removal_list_.clear();
+  const int num_removed_constraints = lp_constraints_.size() - new_size;
+  lp_constraints_.resize(new_size);
+  solution_state->statuses.resize(num_cols + glop::ColIndex(new_size));
+  if (num_removed_constraints > 0) {
+    VLOG(2) << "Removed " << num_removed_constraints << " constraints";
+  }
+  return num_removed_constraints > 0;
 }
 
 // Because sometimes we split a == constraint in two (>= and <=), it makes sense
@@ -343,7 +369,8 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
 }
 
 bool LinearConstraintManager::ChangeLp(
-    const gtl::ITIVector<IntegerVariable, double>& lp_solution) {
+    const gtl::ITIVector<IntegerVariable, double>& lp_solution,
+    glop::BasisState* solution_state) {
   VLOG(3) << "Enter ChangeLP, scan " << constraint_infos_.size()
           << " constraints";
   std::vector<ConstraintIndex> new_constraints;
@@ -375,25 +402,16 @@ bool LinearConstraintManager::ChangeLp(
       equiv_constraints_[constraint_infos_[i].hash] = i;
     }
 
-    // TODO(user,user): Use constraint status from GLOP for constraints
-    // already in LP.
+    if (constraint_infos_[i].is_in_lp) continue;
+
     const double activity =
         ComputeActivity(constraint_infos_[i].constraint, lp_solution);
-
     const double lb_violation =
         ToDouble(constraint_infos_[i].constraint.lb) - activity;
     const double ub_violation =
         activity - ToDouble(constraint_infos_[i].constraint.ub);
     const double violation = std::max(lb_violation, ub_violation);
-    if (constraint_infos_[i].is_in_lp && violation < tolerance) {
-      constraint_infos_[i].inactive_count++;
-      if (constraint_infos_[i].is_cut &&
-          constraint_infos_[i].inactive_count >
-              sat_parameters_.max_inactive_count()) {
-        // Mark cut for removal.
-        constraints_removal_list_.insert(i);
-      }
-    } else if (!constraint_infos_[i].is_in_lp && violation >= tolerance) {
+    if (violation >= tolerance) {
       constraint_infos_[i].inactive_count = 0;
       new_constraints.push_back(i);
       new_constraints_efficacies.push_back(violation /
@@ -413,10 +431,11 @@ bool LinearConstraintManager::ChangeLp(
     }
   }
 
-  // Remove constraints in a batch to avoid changing the LP too frequently.
-  if (constraints_removal_list_.size() >=
-      sat_parameters_.constraint_removal_batch_size()) {
-    RemoveMarkedConstraints();
+  // Remove constraints from the current LP that have been inactive for a while.
+  // We do that after we computed new_constraints so we do not need to iterate
+  // over the just deleted constraints.
+  if (MaybeRemoveSomeInactiveConstraints(solution_state)) {
+    current_lp_is_changed_ = true;
   }
 
   // Note that the algo below is in O(limit * new_constraint). In order to
@@ -430,7 +449,8 @@ bool LinearConstraintManager::ChangeLp(
   // TODO(user): This blowup factor could be adaptative w.r.t. the constraint
   // limit.
   const int kBlowupFactor = 4;
-  int constraint_limit = std::min(50, static_cast<int>(new_constraints.size()));
+  int constraint_limit = std::min(sat_parameters_.new_constraints_batch_size(),
+                                  static_cast<int>(new_constraints.size()));
   if (lp_constraints_.empty()) {
     constraint_limit = std::min(1000, static_cast<int>(new_constraints.size()));
   }
@@ -448,6 +468,7 @@ bool LinearConstraintManager::ChangeLp(
     new_constraints.resize(kBlowupFactor * constraint_limit);
   }
 
+  int num_added = 0;
   int num_skipped_checks = 0;
   const int kCheckFrequency = 100;
   ConstraintIndex last_added_candidate = kInvalidConstraintIndex;
@@ -507,13 +528,20 @@ bool LinearConstraintManager::ChangeLp(
       // Note that it is important for LP incremental solving that the old
       // constraints stays at the same position in this list (and thus in the
       // returned GetLp()).
+      ++num_added;
       current_lp_is_changed_ = true;
       lp_constraints_.push_back(best_candidate);
       last_added_candidate = best_candidate;
     }
   }
 
-  VLOG(3) << "   - Exit ChangeLP";
+  if (num_added > 0) {
+    // We update the solution sate to match the new LP size.
+    VLOG(2) << "Added " << num_added << " constraints.";
+    solution_state->statuses.resize(solution_state->statuses.size() + num_added,
+                                    glop::VariableStatus::BASIC);
+  }
+
   // The LP changed only if we added new constraints or if some constraints
   // already inside changed (simplification or tighter bounds).
   if (current_lp_is_changed_) {

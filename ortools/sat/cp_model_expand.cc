@@ -43,7 +43,7 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
   auto is_optional = [&context, &reservoir](int index) {
     if (reservoir.actives_size() == 0) return false;
     const int literal = reservoir.actives(index);
-    return !context->DomainOf(PositiveRef(literal)).IsFixed();
+    return !context->IsFixed(literal);
   };
   const int true_literal = context->GetOrCreateConstantVar(1);
   auto active = [&reservoir, true_literal](int index) {
