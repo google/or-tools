@@ -195,7 +195,6 @@ namespace Google.OrTools.Tests {
         Assert.Equal(1, solver.Value(squaredDelta));
         Assert.Equal(new long[] {1, 4, -1, 1}, response.Solution);
         Assert.Equal(1.0, response.ObjectiveValue, 5);
-
       }
 
     [Fact]
