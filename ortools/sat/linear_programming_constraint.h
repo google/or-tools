@@ -222,7 +222,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Note that this will loose some precision, but our subsequent computation
   // will still be exact as it will work for any set of multiplier.
   std::vector<std::pair<glop::RowIndex, IntegerValue>> ScaleLpMultiplier(
-      bool take_objective_into_account, bool use_constraint_status,
+      bool take_objective_into_account,
       const glop::DenseColumn& dense_lp_multipliers, glop::Fractional* scaling,
       int max_pow = 62) const;
 
@@ -232,7 +232,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   //
   // Returns false if we encountered any integer overflow.
   bool ComputeNewLinearConstraint(
-      bool use_constraint_status,
       const std::vector<std::pair<glop::RowIndex, IntegerValue>>&
           integer_multipliers,
       gtl::ITIVector<glop::ColIndex, IntegerValue>* dense_terms,

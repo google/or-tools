@@ -802,9 +802,9 @@ message SatParameters {
   optional bool catch_sigint_signal = 135 [default = true];
 
   // Stores and exploits "implied-bounds" in the solver. That is, relations of
-  // the form literal => (var >= bound). Off by default because the
-  // implementation is still at an early stage.
-  optional bool use_implied_bounds = 144 [default = false];
+  // the form literal => (var >= bound). This is currently used to derive
+  // stronger cuts.
+  optional bool use_implied_bounds = 144 [default = true];
 
   // ==========================================================================
   // MIP -> CP-SAT (i.e. IP with integer coeff) conversion parameters that are

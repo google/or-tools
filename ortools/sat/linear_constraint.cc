@@ -65,13 +65,16 @@ void CleanTermsAndFillConstraint(
   constraint->vars.clear();
   constraint->coeffs.clear();
 
-  // Sort and add coeff of duplicate variables.
+  // Sort and add coeff of duplicate variables. Note that a variable and
+  // its negation will appear one after another in the natural order.
   std::sort(terms->begin(), terms->end());
   IntegerVariable previous_var = kNoIntegerVariable;
   IntegerValue current_coeff(0);
-  for (const auto entry : *terms) {
+  for (const std::pair<IntegerVariable, IntegerValue> entry : *terms) {
     if (previous_var == entry.first) {
       current_coeff += entry.second;
+    } else if (previous_var == NegationOf(entry.first)) {
+      current_coeff -= entry.second;
     } else {
       if (current_coeff != 0) {
         constraint->vars.push_back(previous_var);

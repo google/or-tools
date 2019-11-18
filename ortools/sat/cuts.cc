@@ -657,6 +657,8 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
   }
 }
 
+// TODO(user): This can currently take a significant portion of the run time on
+// problem like opm2-z7-s8.mps.gz. Fix or just call less often.
 void IntegerRoundingCut(RoundingOptions options, std::vector<double> lp_values,
                         std::vector<IntegerValue> lower_bounds,
                         std::vector<IntegerValue> upper_bounds,
@@ -669,13 +671,16 @@ void IntegerRoundingCut(RoundingOptions options, std::vector<double> lp_values,
   CHECK_EQ(cut->coeffs.size(), size);
   CHECK_EQ(cut->lb, kMinIntegerValue);
 
+  // Optimization: upper bound is no longer used once this is filled.
+  std::vector<IntegerValue>& bound_diffs = upper_bounds;
+
   // Shift each variable using its lower/upper bound so that no variable can
   // change sign. We eventually do a change of variable to its negation so
   // that all variable are non-negative.
   bool overflow = false;
   std::vector<bool> change_sign_at_postprocessing(size, false);
   IntegerValue max_initial_magnitude(1);
-  for (int i = 0; i < size && !overflow; ++i) {
+  for (int i = 0; i < size; ++i) {
     if (cut->coeffs[i] == 0) continue;
 
     // Note that since we use ToDouble() this code works fine with lb/ub at
@@ -684,13 +689,14 @@ void IntegerRoundingCut(RoundingOptions options, std::vector<double> lp_values,
       const double value = lp_values[i];
       const IntegerValue lb = lower_bounds[i];
       const IntegerValue ub = upper_bounds[i];
+      bound_diffs[i] = IntegerValue(CapSub(ub.value(), lb.value()));
+
       if (std::abs(value - ToDouble(lb)) > std::abs(value - ToDouble(ub))) {
         // Change the variable sign.
         change_sign_at_postprocessing[i] = true;
         cut->coeffs[i] = -cut->coeffs[i];
         lp_values[i] = -lp_values[i];
         lower_bounds[i] = -ub;
-        upper_bounds[i] = -lb;
       }
     }
 
@@ -704,7 +710,7 @@ void IntegerRoundingCut(RoundingOptions options, std::vector<double> lp_values,
 
     // Deal with fixed variable, no need to shift back in this case, we can
     // just remove the term.
-    if (lower_bounds[i] == upper_bounds[i]) {
+    if (bound_diffs[i] == 0) {
       cut->coeffs[i] = IntegerValue(0);
       lp_values[i] = 0.0;
     }
@@ -712,7 +718,13 @@ void IntegerRoundingCut(RoundingOptions options, std::vector<double> lp_values,
     max_initial_magnitude =
         std::max(max_initial_magnitude, IntTypeAbs(cut->coeffs[i]));
   }
-  if (overflow) {
+
+  // Make sure that when we multiply the rhs or the coefficient by max_scaling,
+  // we do not have an integer overflow.
+  const IntegerValue max_scaling = std::min(
+      options.max_scaling,
+      kMaxIntegerValue / std::max(IntTypeAbs(cut->ub), max_initial_magnitude));
+  if (overflow || max_scaling == 0) {
     VLOG(1) << "Issue, overflow.";
     *cut = LinearConstraint(IntegerValue(0), IntegerValue(0));
     return;
@@ -722,11 +734,13 @@ void IntegerRoundingCut(RoundingOptions options, std::vector<double> lp_values,
   // the most violated one.
   double best_scaled_violation = 0.01;
   LinearConstraint best_cut(IntegerValue(0), IntegerValue(0));
+  LinearConstraint temp_cut;
 
-  for (int i = 0; i < size; ++i) {
+  // TODO(user): Avoid quadratic algorithm.
+  for (int index = 0; index < size; ++index) {
     // Skip shifted variable almost at their lower bound.
-    if (lp_values[i] <= 1e-4) continue;
-    const IntegerValue divisor = IntTypeAbs(cut->coeffs[i]);
+    if (lp_values[index] <= 1e-2) continue;
+    const IntegerValue divisor = IntTypeAbs(cut->coeffs[index]);
 
     // Skip if we don't have the potential to generate a good enough cut.
     const IntegerValue initial_rhs_remainder =
@@ -736,8 +750,8 @@ void IntegerRoundingCut(RoundingOptions options, std::vector<double> lp_values,
       continue;
     }
 
-    // TODO(user): We could avoid this copy.
-    LinearConstraint temp_cut = *cut;
+    // TODO(user): by recomputing, we should avoid the need to make this copy.
+    temp_cut = *cut;
 
     // We will adjust coefficient that are just under an exact multiple of
     // divisor to an exact multiple. This is meant to get rid of small errors
@@ -758,11 +772,11 @@ void IntegerRoundingCut(RoundingOptions options, std::vector<double> lp_values,
         (divisor - initial_rhs_remainder - 1) / IntegerValue(size);
     if (adjust_threshold > 0) {
       for (int i = 0; i < size; ++i) {
-        const IntegerValue coeff = temp_cut.coeffs[i];
-        const IntegerValue diff(
-            CapSub(upper_bounds[i].value(), lower_bounds[i].value()));
+        const IntegerValue diff = bound_diffs[i];
+        if (diff > adjust_threshold) continue;
 
         // Adjust coeff of the form k * divisor - epsilon.
+        const IntegerValue coeff = temp_cut.coeffs[i];
         const IntegerValue remainder =
             CeilRatio(coeff, divisor) * divisor - coeff;
         if (CapProd(diff.value(), remainder.value()) > adjust_threshold) {
@@ -779,7 +793,7 @@ void IntegerRoundingCut(RoundingOptions options, std::vector<double> lp_values,
     if (rhs_remainder == 0) continue;
 
     const auto f = GetSuperAdditiveRoundingFunction(
-        !options.use_mir, rhs_remainder, divisor, options.max_scaling);
+        !options.use_mir, rhs_remainder, divisor, max_scaling);
 
     // Apply f() to the cut and compute the cut violation.
     temp_cut.ub = f(temp_cut.ub);
@@ -796,7 +810,7 @@ void IntegerRoundingCut(RoundingOptions options, std::vector<double> lp_values,
     violation /= max_magnitude;
 
     if (violation > 0.0) {
-      VLOG(2) << "lp_value: " << lp_values[i] << " divisor: " << divisor
+      VLOG(2) << "lp_value: " << lp_values[index] << " divisor: " << divisor
               << " cut_violation: " << violation;
     }
     if (violation > best_scaled_violation) {
@@ -991,6 +1005,9 @@ void ImpliedBoundsProcessor::ProcessUpperBoundedConstraint(
   IntegerValue new_ub = cut->ub;
   bool changed = false;
 
+  // TODO(user): we could relax a bit this test.
+  int64 overflow_detection = 0;
+
   const int size = cut->vars.size();
   for (int i = 0; i < size; ++i) {
     // Make sure we have a positive coefficient.
@@ -1021,6 +1038,7 @@ void ImpliedBoundsProcessor::ProcessUpperBoundedConstraint(
       }
 
       const IntegerValue diff = entry.lower_bound - lb;
+      CHECK_GE(diff, 0);
       const double lp_value = entry.is_positive
                                   ? lp_values[entry.literal_view]
                                   : 1.0 - lp_values[entry.literal_view];
@@ -1033,15 +1051,26 @@ void ImpliedBoundsProcessor::ProcessUpperBoundedConstraint(
         continue;
       }
 
+      if (CapProd(std::abs(coeff.value()), diff.value()) >= kMaxIntegerValue) {
+        VLOG(1) << "Overflow";
+        return;
+      }
+
       if (entry.is_positive) {
         // X >= Indicator * (bound - lb) + lb
         tmp_terms_.push_back({entry.literal_view, coeff * diff});
-        new_ub -= coeff * lb;
+        if (!AddProductTo(-coeff, lb, &new_ub)) {
+          VLOG(1) << "Overflow";
+          return;
+        }
       } else {
         // X >= (1 - Indicator) * (bound - lb) + lb
         // X >= -Indicator * (bound - lb) + bound
         tmp_terms_.push_back({entry.literal_view, -coeff * diff});
-        new_ub -= coeff * entry.lower_bound;
+        if (!AddProductTo(-coeff, entry.lower_bound, &new_ub)) {
+          VLOG(1) << "Overflow";
+          return;
+        }
       }
 
       changed = true;
@@ -1057,11 +1086,20 @@ void ImpliedBoundsProcessor::ProcessUpperBoundedConstraint(
     if (keep_original_term) {
       tmp_terms_.push_back({var, coeff});
     }
+    overflow_detection =
+        CapAdd(overflow_detection, std::abs(tmp_terms_.back().second.value()));
   }
 
+  if (overflow_detection >= kMaxIntegerValue) {
+    VLOG(1) << "Overflow";
+    return;
+  }
   if (!changed) return;
 
   // Update the cut.
+  //
+  // Note that because of our overflow_detection variable, there should be
+  // no integer overflow when we merge identical terms.
   cut->lb = kMinIntegerValue;  // Not relevant.
   cut->ub = new_ub;
   CleanTermsAndFillConstraint(&tmp_terms_, cut);
