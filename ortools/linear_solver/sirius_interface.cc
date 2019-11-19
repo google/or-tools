@@ -140,7 +140,7 @@ namespace operations_research {
 		// Remember that problem type is a static property that is set
 		// in the constructor and never changed.
 		virtual bool IsContinuous() const { return IsLP(); }
-		virtual bool IsLP() const { return !mMip; }
+		virtual bool IsLP() const { return true; /*FIXME !mMip;*/ }
 		virtual bool IsMIP() const { return mMip; }
 
 		virtual void ExtractNewVariables();
@@ -1283,8 +1283,23 @@ namespace operations_research {
 			// MIP does not have duals
 			for (int i = 0; i < solver_->variables_.size(); ++i)
 				solver_->variables_[i]->set_reduced_cost(SRS_NAN);
-			for (int i = 0; i < solver_->constraints_.size(); ++i)
-				solver_->constraints_[i]->set_dual_value(SRS_NAN);
+			unique_ptr<double[]> pi(new double[rows]);
+			if (feasible) {
+				double * dualValues = pi.get();
+				CHECK_STATUS(SRSgetdualvalues(mLp, &dualValues));
+			}
+			for (int i = 0; i < solver_->constraints_.size(); ++i) {
+				MPConstraint *const ct = solver_->constraints_[i];
+				bool dual = false;
+				if (feasible) {
+					ct->set_dual_value(pi[i]);
+					dual = true;
+				}
+				else
+					ct->set_dual_value(SRS_NAN);
+				VLOG(4) << "row " << ct->index() << ":"
+					<< (dual ? absl::StrFormat("  dual = %f", pi[i]) : "");
+			}
 		}
 		else {
 			// Continuous problem.
