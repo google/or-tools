@@ -20,9 +20,10 @@
 
 namespace operations_research {
 
-std::unique_ptr<glop::ShiftVariableBoundsPreprocessor> ApplyMipPresolveSteps(
-    MPModelProto* model) {
-  return nullptr;
+MPSolverResponseStatus ApplyMipPresolveSteps(
+    MPModelProto* model, std::unique_ptr<glop::ShiftVariableBoundsPreprocessor>*
+                             shift_bounds_preprocessor) {
+  return MPSolverResponseStatus::MPSOLVER_NOT_SOLVED;
 }
 
 }  // namespace operations_research

@@ -91,7 +91,22 @@ util::StatusOr<MPSolutionResponse> SatSolveProto(
   }
 
   MPModelProto* const mp_model = request.mutable_model();
-  auto shift_bounds_preprocessor = ApplyMipPresolveSteps(mp_model);
+  std::unique_ptr<glop::ShiftVariableBoundsPreprocessor>
+      shift_bounds_preprocessor;
+
+  const auto status =
+      ApplyMipPresolveSteps(mp_model, &shift_bounds_preprocessor);
+  if (status == MPSolverResponseStatus::MPSOLVER_INFEASIBLE) {
+    if (params.log_search_progress()) {
+      // This is needed for our benchmark scripts.
+      sat::CpSolverResponse cp_response;
+      cp_response.set_status(sat::CpSolverStatus::INFEASIBLE);
+      LOG(INFO) << CpSolverResponseStats(cp_response);
+    }
+    response.set_status(MPSolverResponseStatus::MPSOLVER_INFEASIBLE);
+    response.set_status_str("Problem proven infeasible during MIP presolve");
+    return response;
+  }
   const std::vector<double> var_scaling =
       sat::ScaleContinuousVariables(params.mip_var_scaling(), mp_model);
 

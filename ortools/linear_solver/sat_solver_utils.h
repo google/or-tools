@@ -21,12 +21,18 @@
 
 namespace operations_research {
 
-// Apply presolve steps to improve the MIP -> IP imperfect conversion. The
+// Applies presolve steps to improve the MIP -> IP imperfect conversion. The
 // stricter the domain of the variable, the more room we have for scaling the
 // constraint to integers and prevent overflow.
-// If the bounds were shifted, returns the shifting preprocessor.
-std::unique_ptr<glop::ShiftVariableBoundsPreprocessor> ApplyMipPresolveSteps(
-    MPModelProto* model);
+//
+// If the bounds were shifted, pass in the preprocessor for postsolve to the
+// given unique_ptr.
+//
+// Returns the presolve status which is currently UNKNOWN for most cases but
+// might be INFEASIBLE if there is some trivial infeasiblity in the model.
+MPSolverResponseStatus ApplyMipPresolveSteps(
+    MPModelProto* model, std::unique_ptr<glop::ShiftVariableBoundsPreprocessor>*
+                             shift_bounds_preprocessor);
 
 }  // namespace operations_research
 #endif  // OR_TOOLS_LINEAR_SOLVER_SAT_SOLVER_UTILS_H_

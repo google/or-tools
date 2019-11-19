@@ -1675,21 +1675,9 @@ bool MPSolverInterface::SetSolverSpecificParametersAsString(
   if (parameters.empty()) return true;
 
   std::string extension = ValidFileExtensionForParameterFile();
-#if defined(__linux)
-  int32 tid = static_cast<int32>(pthread_self());
-#else   // defined(__linux__)
-  int32 tid = 123;
-#endif  // defined(__linux__)
-#if !defined(_MSC_VER)
-  int32 pid = static_cast<int32>(getpid());
-#else   // _MSC_VER
-  int32 pid = 456;
-#endif  // _MSC_VER
-  int64 now = absl::GetCurrentTimeNanos();
-  std::string filename =
-      absl::StrFormat("/tmp/parameters-tempfile-%x-%d-%llx%s", tid, pid, now,
-                      extension.c_str());
-  bool no_error_so_far = true;
+  std::string filename;
+  bool no_error_so_far = PortableTemporaryFile(nullptr, &filename);
+  filename += extension;
   if (no_error_so_far) {
     no_error_so_far = PortableFileSetContents(filename, parameters).ok();
   }

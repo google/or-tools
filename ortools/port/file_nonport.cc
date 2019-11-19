@@ -11,6 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
+#if !defined(_MSC_VER)
+#include <unistd.h>
+#endif
+
+#include "absl/strings/str_format.h"
+#include "absl/time/clock.h"
 #include "ortools/base/file.h"
 #include "ortools/port/file.h"
 
@@ -28,7 +35,20 @@ namespace operations_research {
 
 bool PortableTemporaryFile(const char* directory_prefix,
                            std::string* filename_out) {
-  return false;
+#if defined(__linux)
+  int32 tid = static_cast<int32>(pthread_self());
+#else   // defined(__linux__)
+  int32 tid = 123;
+#endif  // defined(__linux__)
+#if !defined(_MSC_VER)
+  int32 pid = static_cast<int32>(getpid());
+#else   // _MSC_VER
+  int32 pid = 456;
+#endif  // _MSC_VER
+  int64 now = absl::GetCurrentTimeNanos();
+  std::string filename =
+      absl::StrFormat("/tmp/parameters-tempfile-%x-%d-%llx", tid, pid, now);
+  return true;
 }
 
 ::util::Status PortableDeleteFile(absl::string_view file_name) {
