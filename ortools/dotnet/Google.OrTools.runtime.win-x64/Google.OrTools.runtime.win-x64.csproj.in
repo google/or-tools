@@ -17,6 +17,8 @@
     <!-- Signing -->
     <AssemblyOriginatorKeyFile>../../../bin/or-tools.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
+    <PublicSign>false</PublicSign>
+    <DelaySign>false</DelaySign>
   </PropertyGroup>
 
   <ItemGroup>

@@ -14,7 +14,8 @@
     <!-- Signing -->
     <AssemblyKeyFileAttribute>../../../bin/or-tools.snk</AssemblyKeyFileAttribute>
     <SignAssembly>true</SignAssembly>
-    <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
+    <PublicSign>false</PublicSign>
+    <DelaySign>false</DelaySign>
   </PropertyGroup>
 
   <!-- On windows we can build cross-platform netstandard and windows-only netframework.-->
