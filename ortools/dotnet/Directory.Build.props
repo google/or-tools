@@ -14,7 +14,7 @@
        <!-- Pack Option -->
        <IncludeSymbols>true</IncludeSymbols>
        <PackageTags>native;math;LinearSolver;LinearProgramming;ConstraintSolver;ConstraintProgramming</PackageTags>
-       <PackageIconUrl>https://developers.google.com/optimization/images/orLogo.png</PackageIconUrl>
+       <PackageIcon>content/orLogo.png</PackageIcon>
        <PackageProjectUrl>https://developers.google.com/optimization</PackageProjectUrl>
        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
        <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
@@ -25,7 +25,12 @@
         <!--Disable CS1591 "Missing XML comment for publicly visible type or member" (Swig doesn't generate documentation)-->
         <NoWarn>1591</NoWarn>
   </PropertyGroup>
-
+  <ItemGroup>
+    <None Include="../../../tools/doc/orLogo.png">
+      <Pack>True</Pack>
+      <PackagePath>content</PackagePath>
+    </None>
+  </ItemGroup>
   <PropertyGroup Label="BasePath">
     <SolutionDir Condition="'$(SolutionDir)'==''">$(MSBuildThisFileDirectory)</SolutionDir>
   </PropertyGroup>
