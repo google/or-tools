@@ -171,7 +171,7 @@ namespace operations_research {
 		virtual void SetRelativeMipGap(double value);
 		virtual void SetPrimalTolerance(double value);
 		virtual void SetDualTolerance(double value);
-		virtual void SetPresolveMode(int value);
+		virtual void SetPresolveMode(int value) override;
 		virtual void SetScalingMode(int value);
 		virtual void SetLpAlgorithm(int value);
 
@@ -1085,10 +1085,10 @@ namespace operations_research {
 
 		switch (presolve) {
 		case MPSolverParameters::PRESOLVE_OFF:
-			//FIXME CHECK_STATUS(SRSsetintcontrol(mLp, SRS_PRESOLVE, 0));
+			SRSsetintparams(mLp, SRS_PARAM_PRESOLVE, 0);
 			return;
 		case MPSolverParameters::PRESOLVE_ON:
-			//FIXME CHECK_STATUS(SRSsetintcontrol(mLp, SRS_PRESOLVE, 1));
+			SRSsetintparams(mLp, SRS_PARAM_PRESOLVE, 1);
 			return;
 		}
 		SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
@@ -1226,6 +1226,9 @@ namespace operations_research {
 		//	std::cout << mLp->problem_mps->SensDeLaContrainte[i] << " " << mLp->problem_mps->Rhs[i] << std::endl;
 		//
 		//exit(0);
+
+		if (IsMIP())
+			SRSsetintparams(mLp, SRS_FORCE_PNE, 1);
 
 		status = SRSoptimize(mLp);
 
