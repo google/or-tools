@@ -415,11 +415,6 @@ int NumDigits(int n) {
   return static_cast<int>(std::max(1.0, log10(static_cast<double>(n)) + 1.0));
 #endif
 }
-
-MPSolver::OptimizationProblemType DetourProblemType(
-    MPSolver::OptimizationProblemType problem_type) {
-  return problem_type;
-}
 }  // namespace
 
 MPSolver::MPSolver(const std::string& name,
@@ -1667,7 +1662,7 @@ bool MPSolverInterface::SetSolverSpecificParametersAsString(
   // immediately, so we also perform the actual parameter parsing right away.
   // Some implementations will keep them forever and won't need to re-parse
   // them; some (eg. Gurobi) need to re-parse the parameters every time they do
-  // Solve(). We just store the parameters std::string anyway.
+  // Solve(). We just store the parameters string anyway.
   //
   // Note(user): This is not implemented on Android because there is no
   // temporary directory to write files to without a pointer to the Java

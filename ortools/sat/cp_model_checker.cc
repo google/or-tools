@@ -37,7 +37,7 @@ namespace {
 // CpModelProto validation.
 // =============================================================================
 
-// If the std::string returned by "statement" is not empty, returns it.
+// If the string returned by "statement" is not empty, returns it.
 #define RETURN_IF_NOT_EMPTY(statement)                \
   do {                                                \
     const std::string error_message = statement;      \

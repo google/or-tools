@@ -720,7 +720,7 @@ static const flex_int32_t yy_rule_can_match_eol[32] = {
 #define isatty _isatty
 #endif
 #line 769 "./ortools/flatzinc/parser.yy.cc"
-/* Rules that parse the bottom-line std::string tokens of a .fz file and
+/* Rules that parse the bottom-line string tokens of a .fz file and
    convert them into YACC tokens, which may carry a value. See the
    LexerInfo struct and the %token declarations in ./parser.yy. */
 #line 773 "./ortools/flatzinc/parser.yy.cc"

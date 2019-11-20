@@ -179,7 +179,7 @@ double BopSolver::GetScaledGap() const {
 
 void BopSolver::UpdateParameters() {
   if (parameters_.solver_optimizer_sets_size() == 0) {
-    // No user defined optimizers, use the default std::string to define the
+    // No user defined optimizers, use the default string to define the
     // behavior.
     CHECK(::google::protobuf::TextFormat::ParseFromString(
         parameters_.default_solver_optimizer_sets(),

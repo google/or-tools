@@ -511,6 +511,10 @@ class IntegerTrail : public SatPropagator {
     return IntegerVariable(vars_.size());
   }
 
+  // Optimization: you can call this before calling AddIntegerVariable()
+  // num_vars time.
+  void ReserveSpaceForNumVariables(int num_vars);
+
   // Adds a new integer variable. Adding integer variable can only be done when
   // the decision level is zero (checked). The given bounds are INCLUSIVE.
   IntegerVariable AddIntegerVariable(IntegerValue lower_bound,

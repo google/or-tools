@@ -217,12 +217,11 @@ Literal IntegerEncoder::GetOrCreateAssociatedLiteral(IntegerLiteral i_lit) {
 
   const auto canonicalization = Canonicalize(i_lit);
   const IntegerLiteral new_lit = canonicalization.first;
-  if (LiteralIsAssociated(new_lit)) {
-    return Literal(GetAssociatedLiteral(new_lit));
-  }
-  if (LiteralIsAssociated(canonicalization.second)) {
-    return Literal(GetAssociatedLiteral(canonicalization.second)).Negated();
-  }
+
+  const LiteralIndex index = GetAssociatedLiteral(new_lit);
+  if (index != kNoLiteralIndex) return Literal(index);
+  const LiteralIndex n_index = GetAssociatedLiteral(canonicalization.second);
+  if (n_index != kNoLiteralIndex) return Literal(index).Negated();
 
   ++num_created_variables_;
   const Literal literal(sat_solver_->NewBooleanVariable(), true);
@@ -569,14 +568,25 @@ void IntegerTrail::Untrail(const Trail& trail, int literal_trail_index) {
   }
 }
 
+void IntegerTrail::ReserveSpaceForNumVariables(int num_vars) {
+  // Because we always create both a variable and its negation.
+  const int size = 2 * num_vars;
+  vars_.reserve(size);
+  is_ignored_literals_.reserve(size);
+  integer_trail_.reserve(size);
+  domains_->reserve(size);
+  var_trail_index_cache_.reserve(size);
+  tmp_var_to_trail_index_in_queue_.reserve(size);
+}
+
 IntegerVariable IntegerTrail::AddIntegerVariable(IntegerValue lower_bound,
                                                  IntegerValue upper_bound) {
-  CHECK_GE(lower_bound, kMinIntegerValue);
-  CHECK_LE(lower_bound, kMaxIntegerValue);
-  CHECK_GE(upper_bound, kMinIntegerValue);
-  CHECK_LE(upper_bound, kMaxIntegerValue);
-  CHECK(integer_search_levels_.empty());
-  CHECK_EQ(vars_.size(), integer_trail_.size());
+  DCHECK_GE(lower_bound, kMinIntegerValue);
+  DCHECK_LE(lower_bound, kMaxIntegerValue);
+  DCHECK_GE(upper_bound, kMinIntegerValue);
+  DCHECK_LE(upper_bound, kMaxIntegerValue);
+  DCHECK(integer_search_levels_.empty());
+  DCHECK_EQ(vars_.size(), integer_trail_.size());
 
   const IntegerVariable i(vars_.size());
   is_ignored_literals_.push_back(kNoLiteralIndex);

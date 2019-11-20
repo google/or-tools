@@ -74,14 +74,13 @@ namespace operations_research {
  * small, without aborting too early.
  *
  * The deterministic time limit can be logged at a more granular level: the
- * method TimeLimit::AdvanceDeterministicTime takes an optional std::string
- * argument: the name of a counter. In debug mode, the time limit object
- * computes also the elapsed time for each named counter separately, and these
- * values can be used to determine the coefficients for computing the
- * deterministic duration from the number of operations. The values of the
- * counters can be printed using TimeLimit::DebugString(). There is no API to
- * access the values of the counters directly, because they do not exist in
- * optimized mode.
+ * method TimeLimit::AdvanceDeterministicTime takes an optional string argument:
+ * the name of a counter. In debug mode, the time limit object computes also the
+ * elapsed time for each named counter separately, and these values can be used
+ * to determine the coefficients for computing the deterministic duration from
+ * the number of operations. The values of the counters can be printed using
+ * TimeLimit::DebugString(). There is no API to access the values of the
+ * counters directly, because they do not exist in optimized mode.
  *
  * The basic steps for determining coefficients for the deterministic time are:
  * 1. Run the code in debug mode to collect the values of the deterministic time

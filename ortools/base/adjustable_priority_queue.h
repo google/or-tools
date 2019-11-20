@@ -15,6 +15,7 @@
 #define OR_TOOLS_BASE_ADJUSTABLE_PRIORITY_QUEUE_H_
 
 #include <stddef.h>
+
 #include <functional>
 #include <list>
 #include <vector>
@@ -28,11 +29,12 @@ class LowerPriorityThan {
  public:
   explicit LowerPriorityThan(Comparator* compare) : compare_(compare) {}
   bool operator()(T* a, T* b) const { return (*compare_)(*a, *b); }
+
  private:
   Comparator* compare_;
 };
 
-template<typename T, typename Comp = std::less<T> >
+template <typename T, typename Comp = std::less<T> >
 class AdjustablePriorityQueue {
  public:
   // The objects references 'c' and 'm' are not required to be alive for the
@@ -99,14 +101,14 @@ class AdjustablePriorityQueue {
       topvec->push_back(elems_[ind]);
       int leftchild = 1 + 2 * ind;
       if (leftchild < Size()) {
-	if (!LowerPriorityThan<T, Comp>(&c_)(elems_[leftchild], elems_[ind])) {
-	  need_to_check_children.push_back(leftchild);
-	}
-	int rightchild = leftchild + 1;
-	if (rightchild < Size() &&
-	    !LowerPriorityThan<T, Comp>(&c_)(elems_[rightchild], elems_[ind])) {
-	  need_to_check_children.push_back(rightchild);
-	}
+        if (!LowerPriorityThan<T, Comp>(&c_)(elems_[leftchild], elems_[ind])) {
+          need_to_check_children.push_back(leftchild);
+        }
+        int rightchild = leftchild + 1;
+        if (rightchild < Size() &&
+            !LowerPriorityThan<T, Comp>(&c_)(elems_[rightchild], elems_[ind])) {
+          need_to_check_children.push_back(rightchild);
+        }
       }
     }
   }
@@ -130,13 +132,15 @@ class AdjustablePriorityQueue {
   // priority than its child).
   void CheckValid() {
     for (int i = 0; i < elems_.size(); ++i) {
-      int left_child = 1 + 2*i;
+      int left_child = 1 + 2 * i;
       if (left_child < elems_.size()) {
-	CHECK(!(LowerPriorityThan<T, Comp>(&c_))(elems_[i], elems_[left_child]));
+        CHECK(
+            !(LowerPriorityThan<T, Comp>(&c_))(elems_[i], elems_[left_child]));
       }
       int right_child = left_child + 1;
       if (right_child < elems_.size()) {
-	CHECK(!(LowerPriorityThan<T, Comp>(&c_))(elems_[i], elems_[right_child]));
+        CHECK(
+            !(LowerPriorityThan<T, Comp>(&c_))(elems_[i], elems_[right_child]));
       }
     }
   }

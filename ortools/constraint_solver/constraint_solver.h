@@ -66,12 +66,15 @@
 #include <functional>
 #include <iosfwd>
 #include <memory>
+#include <random>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/random/distributions.h"
+#include "absl/random/random.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/hash.h"
@@ -79,13 +82,16 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/random.h"
 #include "ortools/base/sysinfo.h"
 #include "ortools/base/timer.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
 #include "ortools/util/piecewise_linear_function.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/tuple_set.h"
+
+#if !defined(SWIG)
+DECLARE_int64(cp_random_seed);
+#endif  // !defined(SWIG)
 
 class File;
 
@@ -148,6 +154,12 @@ struct StateInfo;
 struct Trail;
 template <class T>
 class SimpleRevFIFO;
+
+inline int64 CpRandomSeed() {
+  return FLAGS_cp_random_seed == -1
+             ? absl::Uniform<int64>(absl::BitGen(), 0, kint64max)
+             : FLAGS_cp_random_seed;
+}
 
 /// This struct holds all parameters for the default search.
 /// DefaultPhaseParameters is only used by Solver::MakeDefaultPhase methods.
@@ -1508,9 +1520,9 @@ class Solver {
   ///   https://mpi-inf.mpg.de/~mehlhorn/ftp/Mehlhorn-Thiel.pdf
   Constraint* MakeSortingConstraint(const std::vector<IntVar*>& vars,
                                     const std::vector<IntVar*>& sorted);
-  // TODO(user): Add void MakeSortedArray(const std::vector<IntVar*>& vars,
-  ///                                         std::vector<IntVar*>* const
-  ///                                         sorted);
+  // TODO(user): Add void MakeSortedArray(
+  //                             const std::vector<IntVar*>& vars,
+  //                             std::vector<IntVar*>* const sorted);
 
   /// Creates a constraint that enforces that left is lexicographically less
   /// than right.
@@ -2217,7 +2229,7 @@ class Solver {
   RegularLimitParameters MakeDefaultRegularLimitParameters() const;
 
   /// Creates a search limit that is reached when either of the underlying limit
-  /// is reached. That is, the returned limit is more stringent than both
+  /// is reached. That is, the returned limit is more std::stringent than both
   /// argument limits.
   SearchLimit* MakeLimit(SearchLimit* const limit_1,
                          SearchLimit* const limit_2);
@@ -2771,13 +2783,19 @@ class Solver {
   }
 
   /// Returns a random value between 0 and 'size' - 1;
-  int64 Rand64(int64 size) { return random_.Next64() % size; }
+  int64 Rand64(int64 size) {
+    DCHECK_GT(size, 0);
+    return absl::Uniform<int64>(random_, 0, size);
+  }
 
   /// Returns a random value between 0 and 'size' - 1;
-  int32 Rand32(int32 size) { return random_.Next() % size; }
+  int32 Rand32(int32 size) {
+    DCHECK_GT(size, 0);
+    return absl::Uniform<int32>(random_, 0, size);
+  }
 
   /// Reseed the solver random generator.
-  void ReSeed(int32 seed) { random_.Reset(seed); }
+  void ReSeed(int32 seed) { random_.seed(seed); }
 
   /// Exports the profiling information in a human readable overview.
   /// The parameter profile_level used to create the solver must be
@@ -3033,7 +3051,7 @@ class Solver {
   OptimizationDirection optimization_direction_;
   std::unique_ptr<ClockTimer> timer_;
   std::vector<Search*> searches_;
-  ACMRandom random_;
+  std::mt19937 random_;
   uint64 fail_stamp_;
   std::unique_ptr<Decision> balancing_decision_;
   /// intercept failures

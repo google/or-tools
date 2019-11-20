@@ -846,6 +846,27 @@ bool CpModelPresolver::CanonicalizeLinear(ConstraintProto* ct) {
     const int64 coeff =
         RefIsPositive(ref) ? ct->linear().coeffs(i) : -ct->linear().coeffs(i);
     if (coeff == 0) continue;
+
+    // TODO(user): Avoid the quadratic loop for the corner case of many
+    // enforcement literal (this should be pretty rare though).
+    bool removed = false;
+    for (const int enf : ct->enforcement_literal()) {
+      if (var == PositiveRef(enf)) {
+        if (RefIsPositive(enf)) {
+          // If the constraint is enforced, we can assume the variable is at 1.
+          sum_of_fixed_terms += coeff;
+        } else {
+          // We can assume the variable is at zero.
+        }
+        removed = true;
+        break;
+      }
+    }
+    if (removed) {
+      context_->UpdateRuleStats("linear: enforcement literal in constraint");
+      continue;
+    }
+
     if (context_->IsFixed(var)) {
       sum_of_fixed_terms += coeff * context_->MinOf(var);
       continue;
@@ -1335,7 +1356,6 @@ bool CpModelPresolver::PropagateDomainsInLinear(int c, ConstraintProto* ct) {
                                                Domain(context_->MaxOf(var)))) {
               return false;
             }
-
             context_->UpdateRuleStats("linear: dual fixing");
             recanonicalize = true;
             continue;
@@ -1350,7 +1370,6 @@ bool CpModelPresolver::PropagateDomainsInLinear(int c, ConstraintProto* ct) {
                                                Domain(context_->MinOf(var)))) {
               return false;
             }
-
             context_->UpdateRuleStats("linear: dual fixing");
             recanonicalize = true;
             continue;

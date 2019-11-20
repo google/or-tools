@@ -153,20 +153,19 @@ class SatHelper {
     return SolveCpModel(model_proto, &model);
   }
 
-  // Returns a std::string with some statistics on the given CpModelProto.
+  // Returns a string with some statistics on the given CpModelProto.
   static std::string ModelStats(
       const operations_research::sat::CpModelProto& model_proto) {
     return CpModelStats(model_proto);
   }
 
-  // Returns a std::string with some statistics on the solver response.
+  // Returns a string with some statistics on the solver response.
   static std::string SolverResponseStats(
       const operations_research::sat::CpSolverResponse& response) {
     return CpSolverResponseStats(response);
   }
 
-  // Returns a non empty std::string explaining the issue if the model is not
-  // valid.
+  // Returns a non empty string explaining the issue if the model is not valid.
   static std::string ValidateModel(
       const operations_research::sat::CpModelProto& model_proto) {
     return ValidateCpModel(model_proto);

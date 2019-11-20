@@ -23,11 +23,11 @@
 //
 // SIMPLE EXAMPLE:
 //
-// Fill a std::vector<std::vector<int>> graph; representing your graph adjacency
-// lists. That is, graph[i] contains the nodes adjacent to node #i. The nodes
-// must be integers in [0, num_nodes). Then just do:
+// Fill a vector<vector<int>> graph; representing your graph adjacency lists.
+// That is, graph[i] contains the nodes adjacent to node #i. The nodes must be
+// integers in [0, num_nodes). Then just do:
 //
-// std::vector<std::vector<int>> components;
+// vector<vector<int>> components;
 // FindStronglyConnectedComponents(
 //     static_cast<int>(graph.size()), graph, &components);
 //
@@ -75,10 +75,9 @@ void FindStronglyConnectedComponents(const NodeIndex num_nodes,
 // A simple custom output class that just counts the number of SCC. Not
 // allocating many vectors can save both space and speed if your graph is large.
 //
-// Note: If this matters, you probably don't want to use
-// std::vector<std::vector<int>> as an input either. See StaticGraph in
-// ortools/graph/graph.h for an efficient graph data structure compatible with
-// this algorithm.
+// Note: If this matters, you probably don't want to use vector<vector<int>> as
+// an input either. See StaticGraph in ortools/graph/graph.h
+// for an efficient graph data structure compatible with this algorithm.
 template <typename NodeIndex>
 struct SccCounterOutput {
   int number_of_components = 0;
@@ -86,8 +85,7 @@ struct SccCounterOutput {
     ++number_of_components;
   }
   // This is just here so this class can transparently replace a code that
-  // use std::vector<std::vector<int>> as an SccOutput, and get its size with
-  // size().
+  // use vector<vector<int>> as an SccOutput, and get its size with size().
   int size() const { return number_of_components; }
 };
 

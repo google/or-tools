@@ -50,6 +50,7 @@ class MPSolutionResponse;
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/model_exporter.h"
 #include "ortools/linear_solver/model_exporter_swig_helper.h"
+#include "ortools/linear_solver/model_validator.h"
 %}
 
 %pythoncode %{
@@ -448,9 +449,17 @@ PY_CONVERT(MPVariable);
 %rename (ExportModelAsLpFormat) operations_research::ExportModelAsLpFormatReturnString;
 %rename (ExportModelAsMpsFormat) operations_research::ExportModelAsMpsFormatReturnString;
 
+// Expose the model validator.
+%rename (FindErrorInModelProto) operations_research::FindErrorInMPModelProto;
+
 %include "ortools/linear_solver/linear_solver.h"
 %include "ortools/linear_solver/model_exporter.h"
 %include "ortools/linear_solver/model_exporter_swig_helper.h"
+
+namespace operations_research {
+  std::string FindErrorInMPModelProto(
+      const operations_research::MPModelProto& input_model);
+}  // namespace operations_research
 
 %unignoreall
 

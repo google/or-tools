@@ -43,9 +43,7 @@ Stat::Stat(const std::string& name, StatsGroup* group) : name_(name) {
   group->Register(this);
 }
 
-std::string Stat::StatString() const {
-  return std::string(name_ + ": " + ValueAsString());
-}
+std::string Stat::StatString() const { return name_ + ": " + ValueAsString(); }
 
 StatsGroup::~StatsGroup() { gtl::STLDeleteValues(&time_distributions_); }
 

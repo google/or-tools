@@ -20,6 +20,7 @@
 #include <memory>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
@@ -90,14 +91,17 @@ class Model {
   template <typename T>
   T* GetOrCreate() {
     const size_t type_id = gtl::FastTypeId<T>();
-    if (!gtl::ContainsKey(singletons_, type_id)) {
-      // TODO(user): directly store std::unique_ptr<> in singletons_?
-      T* new_t = MyNew<T>(0);
-      singletons_[type_id] = new_t;
-      TakeOwnership(new_t);
-      return new_t;
+    auto find = singletons_.find(type_id);
+    if (find != singletons_.end()) {
+      return static_cast<T*>(find->second);
     }
-    return static_cast<T*>(gtl::FindOrDie(singletons_, type_id));
+
+    // New element.
+    // TODO(user): directly store std::unique_ptr<> in singletons_?
+    T* new_t = MyNew<T>(0);
+    singletons_[type_id] = new_t;
+    TakeOwnership(new_t);
+    return new_t;
   }
 
   /**
@@ -170,7 +174,7 @@ class Model {
   }
 
   // Map of FastTypeId<T> to a "singleton" of type T.
-  std::map</*typeid*/ size_t, void*> singletons_;
+  absl::flat_hash_map</*typeid*/ size_t, void*> singletons_;
 
   struct DeleteInterface {
     virtual ~DeleteInterface() = default;

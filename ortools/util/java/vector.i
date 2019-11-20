@@ -120,9 +120,9 @@ VECTOR_AS_JAVA_ARRAY(double, double, Double);
   if (nullptr == object_class)
     return $null;
   jmethodID method_id =
-      jenv->GetStaticMethodID(object_class,
-                              "getCPtr",
-                              std::string("(L" + java_class_path + ";)J").c_str());
+      jenv->GetStaticMethodID(
+          object_class, "getCPtr",
+          std::string("(L" + java_class_path + ";)J").c_str());
   assert(method_id != nullptr);
   for (int i = 0; i < jenv->GetArrayLength($input); i++) {
     jobject elem = jenv->GetObjectArrayElement($input, i);

@@ -57,7 +57,6 @@ class ChristofidesPathSolver {
   // By default, MINIMAL_WEIGHT_MATCHING is selected.
   // TODO(user): Change the default when minimum matching gets faster.
   void SetMatchingAlgorithm(MatchingAlgorithm matching) {
-    // TODO(user): Change the default when minimum matching gets faster.
     matching_ = matching;
   }
 
@@ -131,12 +130,10 @@ ComputeMinimumWeightMatching(const GraphType& graph,
 }
 
 #if defined(USE_CBC) || defined(USE_SCIP)
+// Computes a minimum weight perfect matching on an undirected graph using a
+// Mixed Integer Programming model.
 // TODO(user): Handle infeasible cases if this algorithm is used outside of
 // Christofides.
-/**
- * Computes a minimum weight perfect matching on an undirected graph using a
- * Mixed Integer Programming model.
- */
 template <typename WeightFunctionType, typename GraphType>
 std::vector<
     std::pair<typename GraphType::NodeIndex, typename GraphType::NodeIndex>>

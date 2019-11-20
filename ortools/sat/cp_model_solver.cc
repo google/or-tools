@@ -117,8 +117,7 @@ namespace sat {
 
 namespace {
 
-// Makes the std::string fit in one line by cutting it in the middle if
-// necessary.
+// Makes the string fit in one line by cutting it in the middle if necessary.
 std::string Summarize(const std::string& input) {
   if (input.size() < 105) return input;
   const int half = 50;

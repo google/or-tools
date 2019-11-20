@@ -178,7 +178,10 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // Reinitialize the LP from a potentially new set of constraints.
   // This fills all data structure and properly rescale the underlying LP.
-  void CreateLpFromConstraintManager();
+  //
+  // Returns false if the problem is UNSAT (it can happen when presolve is off
+  // and some LP constraint are trivially false).
+  bool CreateLpFromConstraintManager();
 
   // Solve the LP, returns false if something went wrong in the LP solver.
   bool SolveLp();

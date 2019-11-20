@@ -59,7 +59,7 @@ using operations_research::fz::VariableRefOrValueArray;
 // Type declarations.
 
 // The lexer, defined in the ./flazinc.lex file, does the low-level parsing
-// of std::string tokens and converts each of them them into a YACC token. A YACC
+// of string tokens and converts each of them them into a YACC token. A YACC
 // token has a type (VAR, IVALUE, const_literal) and optionally a value,
 // stored in a token-specific field of a LexerInfo instance dedicated to this
 // token. Eg. "26" is converted into an YACC token of type IVALUE, with value

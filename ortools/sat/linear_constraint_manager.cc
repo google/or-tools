@@ -177,9 +177,11 @@ void LinearConstraintManager::ComputeObjectiveParallelism(
   CHECK(objective_is_defined_);
   // lazy computation of objective norm.
   if (!objective_norm_computed_) {
-    DivideByGCD(&objective_);
-    CanonicalizeConstraint(&objective_);
-    objective_l2_norm_ = ComputeL2Norm(objective_);
+    double sum = 0.0;
+    for (const double coeff : dense_objective_coeffs_) {
+      sum += coeff * coeff;
+    }
+    objective_l2_norm_ = std::sqrt(sum);
     objective_norm_computed_ = true;
   }
   CHECK_GT(objective_l2_norm_, 0.0);
@@ -193,9 +195,11 @@ void LinearConstraintManager::ComputeObjectiveParallelism(
   const LinearConstraint& lc = constraint_infos_[ct_index].constraint;
   double unscaled_objective_parallelism = 0.0;
   for (int i = 0; i < lc.vars.size(); ++i) {
-    if (lc.vars[i] < dense_objective_coeffs_.size()) {
+    const IntegerVariable var = lc.vars[i];
+    DCHECK(VariableIsPositive(var));
+    if (var < dense_objective_coeffs_.size()) {
       unscaled_objective_parallelism +=
-          ToDouble(lc.coeffs[i]) * dense_objective_coeffs_[lc.vars[i]];
+          ToDouble(lc.coeffs[i]) * dense_objective_coeffs_[var];
     }
   }
   const double objective_parallelism =
@@ -240,7 +244,14 @@ void LinearConstraintManager::SetObjectiveCoefficient(IntegerVariable var,
                                                       IntegerValue coeff) {
   if (coeff == IntegerValue(0)) return;
   objective_is_defined_ = true;
-  objective_.AddTerm(var, coeff);
+  if (!VariableIsPositive(var)) {
+    var = NegationOf(var);
+    coeff = -coeff;
+  }
+  if (var.value() >= dense_objective_coeffs_.size()) {
+    dense_objective_coeffs_.resize(var.value() + 1, 0.0);
+  }
+  dense_objective_coeffs_[var] = ToDouble(coeff);
 }
 
 bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
@@ -384,7 +395,6 @@ bool LinearConstraintManager::ChangeLp(
   // We keep any constraints that is already present, and otherwise, we add the
   // ones that are currently not satisfied by at least "tolerance".
   const double tolerance = 1e-6;
-  FillDenseObjectiveCoeffs();
   for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
     if (constraint_infos_[i].permanently_removed) continue;
 
@@ -392,6 +402,7 @@ bool LinearConstraintManager::ChangeLp(
     if (simplify_constraints &&
         SimplifyConstraint(&constraint_infos_[i].constraint)) {
       DivideByGCD(&constraint_infos_[i].constraint);
+      constraint_infos_[i].objective_parallelism_computed = false;
       constraint_infos_[i].l2_norm =
           ComputeL2Norm(constraint_infos_[i].constraint);
 
@@ -556,17 +567,6 @@ void LinearConstraintManager::AddAllConstraintsToLp() {
     if (constraint_infos_[i].is_in_lp) continue;
     constraint_infos_[i].is_in_lp = true;
     lp_constraints_.push_back(i);
-  }
-}
-
-void LinearConstraintManager::FillDenseObjectiveCoeffs() {
-  if (objective_.vars.empty()) return;
-  DCHECK(std::is_sorted(objective_.vars.begin(), objective_.vars.end()));
-  const IntegerVariable last_var = objective_.vars.back();
-  dense_objective_coeffs_.assign(last_var.value() + 1, 0.0);
-  for (int i = 0; i < objective_.vars.size(); ++i) {
-    dense_objective_coeffs_[objective_.vars[i]] =
-        ToDouble(objective_.coeffs[i]);
   }
 }
 

@@ -349,13 +349,13 @@ AffineRelation::Relation PresolveContext::GetAffineRelation(int ref) const {
 
 // Create the internal structure for any new variables in working_model.
 void PresolveContext::InitializeNewDomains() {
+  domains.reserve(working_model->variables_size());
   for (int i = domains.size(); i < working_model->variables_size(); ++i) {
-    Domain domain = ReadDomainFromProto(working_model->variables(i));
-    if (domain.IsEmpty()) {
+    domains.emplace_back(ReadDomainFromProto(working_model->variables(i)));
+    if (domains.back().IsEmpty()) {
       is_unsat = true;
       return;
     }
-    domains.push_back(domain);
     if (IsFixed(i)) ExploitFixedDomain(i);
   }
   modified_domains.Resize(domains.size());
@@ -560,15 +560,15 @@ bool PresolveContext::CanonicalizeObjective() {
   // Note that the non-deterministic loop is fine, but because we iterate
   // one the map while modifying it, it is safer to do a copy rather than to
   // try to handle that in one pass.
-  std::vector<std::pair<int, int64>> entries;
+  tmp_entries.clear();
   for (const auto& entry : objective_map) {
-    entries.push_back(entry);
+    tmp_entries.push_back(entry);
   }
 
   // TODO(user): This is a bit duplicated with the presolve linear code.
   // We also do not propagate back any domain restriction from the objective to
   // the variables if any.
-  for (const auto& entry : entries) {
+  for (const auto& entry : tmp_entries) {
     const int var = entry.first;
     const auto it = objective_map.find(var);
     if (it == objective_map.end()) continue;
@@ -626,12 +626,12 @@ bool PresolveContext::CanonicalizeObjective() {
   int64 gcd(0);
 
   // We need to sort the entries to be deterministic.
-  entries.clear();
+  tmp_entries.clear();
   for (const auto& entry : objective_map) {
-    entries.push_back(entry);
+    tmp_entries.push_back(entry);
   }
-  std::sort(entries.begin(), entries.end());
-  for (const auto& entry : entries) {
+  std::sort(tmp_entries.begin(), tmp_entries.end());
+  for (const auto& entry : tmp_entries) {
     const int var = entry.first;
     const int64 coeff = entry.second;
     gcd = MathUtil::GCD64(gcd, std::abs(coeff));
@@ -682,8 +682,7 @@ void PresolveContext::SubstituteVariableInObjective(
 
   // We can only "easily" substitute if the objective coefficient is a multiple
   // of the one in the constraint.
-  const int64 coeff_in_objective =
-      gtl::FindOrDie(objective_map, var_in_equality);
+  const int64 coeff_in_objective = gtl::FindOrDie(objective_map, var_in_equality);
   CHECK_NE(coeff_in_equality, 0);
   CHECK_EQ(coeff_in_objective % coeff_in_equality, 0);
   const int64 multiplier = coeff_in_objective / coeff_in_equality;

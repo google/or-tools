@@ -17,6 +17,7 @@
 #include <random>
 #include <string>
 
+#include "absl/random/random.h"
 #include "ortools/base/basictypes.h"
 
 namespace operations_research {
@@ -118,19 +119,5 @@ class MTRandom : public ACMRandom {
 typedef ACMRandom RandomBase;
 
 }  // namespace operations_research
-
-namespace absl {
-template <typename URBG>
-bool Bernoulli(URBG&& urbg,  // NOLINT(runtime/references)
-               double p) {
-  return std::bernoulli_distribution(p)(urbg);
-}
-
-template <typename URGB>
-int Uniform(URGB&& urgb,  // NOLINT(runtime/references)
-            int low, int high_excluded) {
-  return std::uniform_int_distribution<>(low, high_excluded - 1)(urgb);
-}
-}  // namespace absl
 
 #endif  // OR_TOOLS_BASE_RANDOM_H_

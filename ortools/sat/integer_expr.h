@@ -507,8 +507,8 @@ inline std::function<void(Model*)> WeightedSumNotEqual(
 // Model-based function to create an IntegerVariable that corresponds to the
 // given weighted sum of other IntegerVariables.
 //
-// Note that this is templated so that it can seamlessly accept std::vector<int>
-// or std::vector<int64>.
+// Note that this is templated so that it can seamlessly accept vector<int> or
+// vector<int64>.
 //
 // TODO(user): invert the coefficients/vars arguments.
 template <typename VectorInt>

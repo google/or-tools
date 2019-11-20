@@ -24,6 +24,7 @@
 #include <string>
 #include <utility>
 
+#include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/cleanup.h"
@@ -32,7 +33,6 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/random.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/timer.h"
 #if !defined(__PORTABLE_PLATFORM__) && (defined(USE_CBC) || defined(USE_SCIP))

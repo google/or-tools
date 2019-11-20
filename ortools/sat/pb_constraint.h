@@ -257,7 +257,7 @@ class MutableUpperBoundedLinearConstraint {
   void ReduceSlackTo(const Trail& trail, int trail_index,
                      Coefficient initial_slack, Coefficient target);
 
-  // Copies this constraint into a std::vector<LiteralWithCoeff> representation.
+  // Copies this constraint into a vector<LiteralWithCoeff> representation.
   void CopyIntoVector(std::vector<LiteralWithCoeff>* output);
 
   // Adds a non-negative value to this constraint Rhs().
@@ -306,7 +306,7 @@ class MutableUpperBoundedLinearConstraint {
     return non_zeros_.PositionsSetAtLeastOnce();
   }
 
-  // Returns a std::string representation of the constraint.
+  // Returns a string representation of the constraint.
   std::string DebugString();
 
  private:

@@ -86,7 +86,7 @@ class BoolVar {
     return other.cp_model_ != cp_model_ || other.index_ != index_;
   }
 
-  /// Debug std::string.
+  /// Debug string.
   std::string DebugString() const;
 
   /// Returns the underlying protobuf object (useful for testing).
@@ -151,7 +151,7 @@ class IntVar {
   /// Sets the name of the variable.
   IntVar WithName(const std::string& name);
 
-  /// Returns the name of the variable (or the empty std::string if not set).
+  /// Returns the name of the variable (or the empty string if not set).
   const std::string& Name() const { return Proto().name(); }
 
   /// Equality test with another IntVar.
@@ -164,7 +164,7 @@ class IntVar {
     return other.cp_model_ != cp_model_ || other.index_ != index_;
   }
 
-  /// Returns a debug std::string.
+  /// Returns a debug string.
   std::string DebugString() const;
 
   /// Returns the underlying protobuf object (useful for testing).
@@ -320,7 +320,7 @@ class IntervalVar {
   /// Sets the name of the variable.
   IntervalVar WithName(const std::string& name);
 
-  /// Returns the name of the interval (or the empty std::string if not set).
+  /// Returns the name of the interval (or the empty string if not set).
   std::string Name() const;
 
   /// Returns the start variable.
@@ -349,7 +349,7 @@ class IntervalVar {
     return other.cp_model_ != cp_model_ || other.index_ != index_;
   }
 
-  /// Returns a debug std::string.
+  /// Returns a debug string.
   std::string DebugString() const;
 
   /// Returns the underlying protobuf object (useful for testing).
@@ -415,7 +415,7 @@ class Constraint {
   /// Sets the name of the constraint.
   Constraint WithName(const std::string& name);
 
-  /// Returns the name of the constraint (or the empty std::string if not set).
+  /// Returns the name of the constraint (or the empty string if not set).
   const std::string& Name() const;
 
   /// Returns the underlying protobuf object (useful for testing).

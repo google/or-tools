@@ -275,8 +275,7 @@ class Domain {
   Domain SimplifyUsingImpliedDomain(const Domain& implied_domain) const;
 
   /**
-   * Returns a compact std::string of a vector of intervals like
-   * "[1,4][6][10,20]".
+   * Returns a compact string of a vector of intervals like "[1,4][6][10,20]".
    */
   std::string ToString() const;
 

@@ -64,8 +64,7 @@ util::StatusOr<MPSolutionResponse> SatSolveProto(
   params.set_log_search_progress(request.enable_internal_solver_output());
   if (request.has_solver_specific_parameters()) {
     // If code is compiled with proto-lite runtime, `solver_specific_parameters`
-    // should be encoded as non-human readable std::string from
-    // `SerializeAsString`.
+    // should be encoded as non-human readable string from `SerializeAsString`.
     if (!std::is_base_of<Message, sat::SatParameters>::value) {
       CHECK(params.MergeFromString(request.solver_specific_parameters()));
     } else {

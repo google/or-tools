@@ -45,7 +45,7 @@ namespace operations_research {
 //   * Have a = operator method that sets its value to the given one.
 //   * Have a Compute(const T& left, const T& right) method that sets its value
 //        to the result of the binary operation for the two given operands.
-//   * Have a std::string DebugString() const method.
+//   * Have a string DebugString() const method.
 //
 // Possible use cases are:
 // * Maintain a sum or a product of doubles, with a guarantee that the queried

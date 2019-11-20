@@ -194,10 +194,13 @@
 namespace operations_research {
 
 class GlobalDimensionCumulOptimizer;
-class IntVarFilteredDecisionBuilder;
-class IntVarFilteredHeuristic;
 class LocalDimensionCumulOptimizer;
 class LocalSearchOperator;
+#ifndef SWIG
+class IntVarFilteredDecisionBuilder;
+class IntVarFilteredHeuristic;
+class IndexNeighborFinder;
+#endif
 class RoutingDimension;
 #ifndef SWIG
 using util::ReverseArcListGraph;
@@ -509,7 +512,7 @@ class RoutingModel {
 
   /// Outputs the names of all dimensions added to the routing engine.
   // TODO(user): rename.
-  std::vector<::std::string> GetAllDimensionNames() const;
+  std::vector<std::string> GetAllDimensionNames() const;
   /// Returns all dimensions of the model.
   const std::vector<RoutingDimension*>& GetDimensions() const {
     return dimensions_.get();
@@ -553,8 +556,7 @@ class RoutingModel {
     DCHECK(dimension_name.empty() || HasDimension(dimension_name));
     primary_constrained_dimension_ = dimension_name;
   }
-  /// Get the primary constrained dimension, or an empty std::string if it is
-  /// unset.
+  /// Get the primary constrained dimension, or an empty string if it is unset.
   const std::string& GetPrimaryConstrainedDimension() const {
     return primary_constrained_dimension_;
   }
@@ -1291,6 +1293,10 @@ class RoutingModel {
     CROSS_EXCHANGE,
     TWO_OPT,
     OR_OPT,
+    GLOBAL_CHEAPEST_INSERTION_PATH_LNS,
+    LOCAL_CHEAPEST_INSERTION_PATH_LNS,
+    GLOBAL_CHEAPEST_INSERTION_EXPENSIVE_CHAIN_LNS,
+    LOCAL_CHEAPEST_INSERTION_EXPENSIVE_CHAIN_LNS,
     RELOCATE_EXPENSIVE_CHAIN,
     LIN_KERNIGHAN,
     TSP_OPT,
@@ -2090,6 +2096,42 @@ class RoutingDimension {
   const std::vector<SortedDisjointIntervalList>& forbidden_intervals() const {
     return forbidden_intervals_;
   }
+  /// Returns the smallest value outside the forbidden intervals of node 'index'
+  /// that is greater than or equal to a given 'min_value'.
+  int64 GetFirstPossibleGreaterOrEqualValueForNode(int64 index,
+                                                   int64 min_value) const {
+    DCHECK_LT(index, forbidden_intervals_.size());
+    const SortedDisjointIntervalList& forbidden_intervals =
+        forbidden_intervals_[index];
+    const auto first_forbidden_interval_it =
+        forbidden_intervals.FirstIntervalGreaterOrEqual(min_value);
+    if (first_forbidden_interval_it != forbidden_intervals.end() &&
+        min_value >= first_forbidden_interval_it->start) {
+      /// min_value is in a forbidden interval.
+      return CapAdd(first_forbidden_interval_it->end, 1);
+    }
+    /// min_value is not forbidden.
+    return min_value;
+  }
+  /// Returns the largest value outside the forbidden intervals of node 'index'
+  /// that is less than or equal to a given 'max_value'.
+  /// NOTE: If this method is called with a max_value lower than the node's
+  /// cumul min, it will return -1.
+  int64 GetLastPossibleLessOrEqualValueForNode(int64 index,
+                                               int64 max_value) const {
+    DCHECK_LT(index, forbidden_intervals_.size());
+    const SortedDisjointIntervalList& forbidden_intervals =
+        forbidden_intervals_[index];
+    const auto last_forbidden_interval_it =
+        forbidden_intervals.LastIntervalLessOrEqual(max_value);
+    if (last_forbidden_interval_it != forbidden_intervals.end() &&
+        max_value <= last_forbidden_interval_it->end) {
+      /// max_value is in a forbidden interval.
+      return CapSub(last_forbidden_interval_it->start, 1);
+    }
+    /// max_value is not forbidden.
+    return max_value;
+  }
   /// Returns the capacities for all vehicles.
   const std::vector<int64>& vehicle_capacities() const {
     return vehicle_capacities_;
@@ -2552,19 +2594,12 @@ class IntVarFilteredDecisionBuilder : public DecisionBuilder {
 };
 
 /// Generic filter-based heuristic applied to IntVars.
-// TODO(user): Remove one level of indirection by getting rid of
-// IntVarFilteredHeuristic and putting everything in the
-// RoutingFilteredHeuristic?
-// In this case IntVarFilteredDecisionBuilder would also have to be renamed to
-// RoutingFilteredDecisionBuilder as it would no longer be generic.
-// TODO(user): Remove the inheritance from BaseObject as it's no longer
-// needed.
-class IntVarFilteredHeuristic : public BaseObject {
+class IntVarFilteredHeuristic {
  public:
   IntVarFilteredHeuristic(Solver* solver, const std::vector<IntVar*>& vars,
                           const std::vector<LocalSearchFilter*>& filters);
 
-  ~IntVarFilteredHeuristic() override {}
+  virtual ~IntVarFilteredHeuristic() {}
 
   /// Builds a solution. Returns the resulting assignment if a solution was
   /// found, and nullptr otherwise.
@@ -2575,9 +2610,11 @@ class IntVarFilteredHeuristic : public BaseObject {
   int64 number_of_decisions() const { return number_of_decisions_; }
   int64 number_of_rejects() const { return number_of_rejects_; }
 
-  std::string DebugString() const override { return "IntVarFilteredHeuristic"; }
+  virtual std::string DebugString() const { return "IntVarFilteredHeuristic"; }
 
  protected:
+  /// Resets the data members for a new solution.
+  void ResetSolution();
   /// Virtual method to initialize the solution.
   virtual bool InitializeSolution() { return true; }
   /// Virtual method to redefine how to build a solution.
@@ -2613,16 +2650,17 @@ class IntVarFilteredHeuristic : public BaseObject {
   int Size() const { return vars_.size(); }
   /// Returns the variable of index 'index'.
   IntVar* Var(int64 index) const { return vars_[index]; }
-
- private:
   /// Synchronizes filters with an assignment (the current solution).
   void SynchronizeFilters();
+
+  Assignment* const assignment_;
+
+ private:
   /// Checks if filters accept a given modification to the current solution
   /// (represented by delta).
   bool FilterAccept();
 
   const std::vector<IntVar*> vars_;
-  Assignment* const assignment_;
   Assignment* const delta_;
   std::vector<int> delta_indices_;
   std::vector<bool> is_in_delta_;
@@ -2639,6 +2677,9 @@ class RoutingFilteredHeuristic : public IntVarFilteredHeuristic {
   RoutingFilteredHeuristic(RoutingModel* model,
                            const std::vector<LocalSearchFilter*>& filters);
   ~RoutingFilteredHeuristic() override {}
+  /// Builds a solution starting from the routes formed by the next accessor.
+  const Assignment* BuildSolutionFromRoutes(
+      const std::function<int64(int64)>& next_accessor);
   RoutingModel* model() const { return model_; }
   /// Returns the end of the start chain of vehicle,
   int GetStartChainEnd(int vehicle) const { return start_chain_ends_[vehicle]; }
@@ -3019,6 +3060,8 @@ class LocalCheapestInsertionFilteredHeuristic
   void ComputeEvaluatorSortedPositionsOnRouteAfter(
       int64 node, int64 start, int64 next_after_start,
       std::vector<int64>* sorted_positions);
+
+  std::vector<std::vector<StartEndValue>> start_end_distances_per_node_;
 };
 
 /// Filtered-base decision builder based on the addition heuristic, extending
@@ -3132,7 +3175,8 @@ class SavingsFilteredHeuristic : public RoutingFilteredHeuristic {
     double arc_coefficient = 1.0;
   };
 
-  SavingsFilteredHeuristic(RoutingModel* model, RoutingIndexManager* manager,
+  SavingsFilteredHeuristic(RoutingModel* model,
+                           const RoutingIndexManager* manager,
                            SavingsParameters parameters,
                            const std::vector<LocalSearchFilter*>& filters);
   ~SavingsFilteredHeuristic() override;
@@ -3230,7 +3274,7 @@ class SavingsFilteredHeuristic : public RoutingFilteredHeuristic {
   /// memory usage specified by the savings_params_.
   int64 MaxNumNeighborsPerNode(int num_vehicle_types) const;
 
-  RoutingIndexManager* const manager_;
+  const RoutingIndexManager* const manager_;
   const SavingsParameters savings_params_;
   int64 size_squared_;
 
@@ -3240,7 +3284,7 @@ class SavingsFilteredHeuristic : public RoutingFilteredHeuristic {
 class SequentialSavingsFilteredHeuristic : public SavingsFilteredHeuristic {
  public:
   SequentialSavingsFilteredHeuristic(
-      RoutingModel* model, RoutingIndexManager* manager,
+      RoutingModel* model, const RoutingIndexManager* manager,
       SavingsParameters parameters,
       const std::vector<LocalSearchFilter*>& filters)
       : SavingsFilteredHeuristic(model, manager, parameters, filters) {}
@@ -3261,7 +3305,7 @@ class SequentialSavingsFilteredHeuristic : public SavingsFilteredHeuristic {
 class ParallelSavingsFilteredHeuristic : public SavingsFilteredHeuristic {
  public:
   ParallelSavingsFilteredHeuristic(
-      RoutingModel* model, RoutingIndexManager* manager,
+      RoutingModel* model, const RoutingIndexManager* manager,
       SavingsParameters parameters,
       const std::vector<LocalSearchFilter*>& filters)
       : SavingsFilteredHeuristic(model, manager, parameters, filters) {}
@@ -3434,8 +3478,9 @@ IntVarLocalSearchFilter* MakeVehicleAmortizedCostFilter(
     const RoutingModel& routing_model);
 IntVarLocalSearchFilter* MakeTypeRegulationsFilter(
     const RoutingModel& routing_model);
-std::vector<IntVarLocalSearchFilter*> MakeCumulFilters(
-    const RoutingDimension& dimension, bool filter_objective_cost);
+void AppendDimensionCumulFilters(
+    const std::vector<RoutingDimension*>& dimensions,
+    bool filter_objective_cost, std::vector<LocalSearchFilter*>* filters);
 IntVarLocalSearchFilter* MakePathCumulFilter(const RoutingDimension& dimension,
                                              bool propagate_own_objective_value,
                                              bool filter_objective_cost);

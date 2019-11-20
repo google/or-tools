@@ -1008,7 +1008,7 @@ inline std::function<void(Model*)> ExcludeCurrentSolutionAndBacktrack() {
   };
 }
 
-// Returns a std::string representation of a SatSolver::Status.
+// Returns a string representation of a SatSolver::Status.
 std::string SatStatusString(SatSolver::Status status);
 inline std::ostream& operator<<(std::ostream& os, SatSolver::Status status) {
   os << SatStatusString(status);

@@ -99,7 +99,7 @@ class MPModelProtoExporter {
                            std::string* output) const;
 
   // Same as AppendMpsLineHeader. Appends an extra new-line at the end the
-  // std::string pointed to by output.
+  // string pointed to by output.
   void AppendMpsLineHeaderWithNewLine(const std::string& id,
                                       const std::string& name,
                                       std::string* output) const;
@@ -313,11 +313,11 @@ class LineBreaker {
   // Lines are broken in such a way that:
   // - Strings that are given to Append() are never split.
   // - Lines are split so that their length doesn't exceed the max length;
-  //   unless a single std::string given to Append() exceeds that length (in
-  //   which case it will be put alone on a single unsplit line).
+  //   unless a single string given to Append() exceeds that length (in which
+  //   case it will be put alone on a single unsplit line).
   void Append(const std::string& s);
 
-  // Returns true if std::string s will fit on the current line without adding
+  // Returns true if string s will fit on the current line without adding
   // a carriage return.
   bool WillFit(const std::string& s) {
     return line_size_ + s.size() < max_line_size_;

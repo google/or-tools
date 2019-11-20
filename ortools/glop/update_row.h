@@ -77,7 +77,7 @@ class UpdateRow {
   // Sets the algorithm parameters.
   void SetParameters(const GlopParameters& parameters);
 
-  // Returns statistics about this class as a std::string.
+  // Returns statistics about this class as a string.
   std::string StatString() const { return stats_.StatString(); }
 
   // Only used for testing.

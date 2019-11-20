@@ -22,8 +22,8 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/numeric/int128.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/int128.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
@@ -143,7 +143,7 @@ void LinearProgrammingConstraint::SetObjectiveCoefficient(IntegerVariable ivar,
 // add all variables to each LP solve and do some "sifting". That can be useful
 // for TSP for instance where the number of edges is large, but only a small
 // fraction will be used in the optimal solution.
-void LinearProgrammingConstraint::CreateLpFromConstraintManager() {
+bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
   // Fill integer_lp_.
   integer_lp_.clear();
   infinity_norms_.clear();
@@ -157,6 +157,10 @@ void LinearProgrammingConstraint::CreateLpFromConstraintManager() {
     new_ct.ub = ct.ub;
     const int size = ct.vars.size();
     IntegerValue infinity_norm(0);
+    if (ct.lb > ct.ub) {
+      LOG(INFO) << "Trivial infeasible bound in an LP constraint";
+      return false;
+    }
     if (ct.lb > kMinIntegerValue) {
       infinity_norm = std::max(infinity_norm, IntTypeAbs(ct.lb));
     }
@@ -219,6 +223,7 @@ void LinearProgrammingConstraint::CreateLpFromConstraintManager() {
   VLOG(1) << "LP relaxation: " << lp_data_.GetDimensionString() << ". "
           << constraint_manager_.AllConstraints().size()
           << " Managed constraints.";
+  return true;
 }
 
 LPSolveInfo LinearProgrammingConstraint::SolveLpForBranching() {
@@ -377,7 +382,10 @@ void LinearProgrammingConstraint::RegisterWith(Model* model) {
   if (!sat_parameters_.add_lp_constraints_lazily()) {
     constraint_manager_.AddAllConstraintsToLp();
   }
-  CreateLpFromConstraintManager();
+  if (!CreateLpFromConstraintManager()) {
+    model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+    return;
+  }
 
   GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
   const int watcher_id = watcher->Register(this);
@@ -926,7 +934,9 @@ bool LinearProgrammingConstraint::Propagate() {
     glop::BasisState state = simplex_.GetState();
     if (constraint_manager_.ChangeLp(expanded_lp_solution_, &state)) {
       simplex_.LoadStateForNextSolve(state);
-      CreateLpFromConstraintManager();
+      if (!CreateLpFromConstraintManager()) {
+        return integer_trail_->ReportConflict({});
+      }
       const double old_obj = simplex_.GetObjectiveValue();
       if (!SolveLp()) return true;
       if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
@@ -1311,13 +1321,19 @@ LinearProgrammingConstraint::ScaleLpMultiplier(
     max_sum += ToDouble(objective_infinity_norm_);
   }
 
+  std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers;
+  if (max_sum == 0.0) {
+    // Empty linear combinaison.
+    *scaling = 1;
+    return integer_multipliers;
+  }
+
   // We want max_sum * scaling to be <= 2 ^ max_pow and fit on an int64.
   *scaling = std::ldexp(1, max_pow) / max_sum;
 
   // Scale the multipliers by *scaling.
   //
   // TODO(user): Maybe use int128 to avoid overflow?
-  std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers;
   for (const auto entry : cp_multipliers) {
     const IntegerValue coeff(std::round(entry.second * (*scaling)));
     if (coeff != 0) integer_multipliers.push_back({entry.first, coeff});

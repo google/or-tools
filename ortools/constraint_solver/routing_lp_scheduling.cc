@@ -60,22 +60,52 @@ bool SetVariableBounds(glop::LinearProgram* linear_program,
   return false;
 }
 
-bool GetCumulBoundsWithOffset(const IntVar& cumul_var, int64 cumul_offset,
+bool GetCumulBoundsWithOffset(const RoutingDimension& dimension,
+                              int64 node_index, int64 cumul_offset,
                               int64* lower_bound, int64* upper_bound) {
   DCHECK(lower_bound != nullptr);
   DCHECK(upper_bound != nullptr);
-  *lower_bound = std::max<int64>(0, CapSub(cumul_var.Min(), cumul_offset));
+
+  const IntVar& cumul_var = *dimension.CumulVar(node_index);
   *upper_bound = cumul_var.Max();
-  if (*upper_bound < kint64max) {
-    *upper_bound = CapSub(*upper_bound, cumul_offset);
-    if (*upper_bound < *lower_bound) {
-      // The cumul's upper bound is less than its lower bound.
-      // NOTE: As the lower bound is greater than 0 (using std::max), this
-      // includes cases where the upper bound is less than the offset.
-      return false;
-    }
+  if (*upper_bound < cumul_offset) {
+    return false;
   }
+
+  const int64 first_after_offset =
+      std::max(dimension.GetFirstPossibleGreaterOrEqualValueForNode(
+                   node_index, cumul_offset),
+               cumul_var.Min());
+  DCHECK_LT(first_after_offset, kint64max);
+  *lower_bound = CapSub(first_after_offset, cumul_offset);
+  DCHECK_GE(*lower_bound, 0);
+
+  if (*upper_bound == kint64max) {
+    return true;
+  }
+  *upper_bound = CapSub(*upper_bound, cumul_offset);
+  DCHECK_GE(*upper_bound, *lower_bound);
   return true;
+}
+
+int64 GetFirstPossibleValueForCumulWithOffset(const RoutingDimension& dimension,
+                                              int64 node_index,
+                                              int64 lower_bound_without_offset,
+                                              int64 cumul_offset) {
+  return CapSub(
+      dimension.GetFirstPossibleGreaterOrEqualValueForNode(
+          node_index, CapAdd(lower_bound_without_offset, cumul_offset)),
+      cumul_offset);
+}
+
+int64 GetLastPossibleValueForCumulWithOffset(const RoutingDimension& dimension,
+                                             int64 node_index,
+                                             int64 upper_bound_without_offset,
+                                             int64 cumul_offset) {
+  return CapSub(
+      dimension.GetLastPossibleLessOrEqualValueForNode(
+          node_index, CapAdd(upper_bound_without_offset, cumul_offset)),
+      cumul_offset);
 }
 
 // Finds the pickup/delivery pairs of nodes on a given vehicle's route.
@@ -238,8 +268,8 @@ bool CumulBoundsPropagator::InitializeArcsAndBounds(
     int node = model->Start(vehicle);
     while (true) {
       int64 cumul_lb, cumul_ub;
-      if (!GetCumulBoundsWithOffset(*dimension_.CumulVar(node), cumul_offset,
-                                    &cumul_lb, &cumul_ub)) {
+      if (!GetCumulBoundsWithOffset(dimension_, node, cumul_offset, &cumul_lb,
+                                    &cumul_ub)) {
         return false;
       }
       lower_bounds[PositiveNode(node)] = cumul_lb;
@@ -315,11 +345,23 @@ bool CumulBoundsPropagator::InitializeArcsAndBounds(
 }
 
 bool CumulBoundsPropagator::UpdateCurrentLowerBoundOfNode(int node,
-                                                          int64 new_lb) {
-  propagated_bounds_[node] = new_lb;
+                                                          int64 new_lb,
+                                                          int64 offset) {
+  const int cumul_var_index = node / 2;
+
+  if (node == PositiveNode(cumul_var_index)) {
+    // new_lb is a lower bound of the cumul of variable 'cumul_var_index'.
+    propagated_bounds_[node] = GetFirstPossibleValueForCumulWithOffset(
+        dimension_, cumul_var_index, new_lb, offset);
+  } else {
+    // -new_lb is an upper bound of the cumul of variable 'cumul_var_index'.
+    const int64 new_ub = CapSub(0, new_lb);
+    propagated_bounds_[node] =
+        CapSub(0, GetLastPossibleValueForCumulWithOffset(
+                      dimension_, cumul_var_index, new_ub, offset));
+  }
 
   // Test that the lower/upper bounds do not cross each other.
-  const int cumul_var_index = node / 2;
   const int64 cumul_lower_bound =
       propagated_bounds_[PositiveNode(cumul_var_index)];
 
@@ -385,7 +427,7 @@ bool CumulBoundsPropagator::PropagateCumulBounds(
         // node.
         continue;
       }
-      if (!UpdateCurrentLowerBoundOfNode(head_node, induced_lb) ||
+      if (!UpdateCurrentLowerBoundOfNode(head_node, induced_lb, cumul_offset) ||
           !DisassembleSubtree(head_node, node)) {
         // The new lower bound is infeasible, or a positive cycle was detected
         // in the precedence graph by DisassembleSubtree().
@@ -626,8 +668,8 @@ bool DimensionCumulOptimizerCore::ComputeRouteCumulBounds(
 
   // Extract cumul min/max and fixed transits from CP.
   for (int pos = 0; pos < route_size; ++pos) {
-    if (!GetCumulBoundsWithOffset(*dimension_->CumulVar(route[pos]),
-                                  cumul_offset, &current_route_min_cumuls_[pos],
+    if (!GetCumulBoundsWithOffset(*dimension_, route[pos], cumul_offset,
+                                  &current_route_min_cumuls_[pos],
                                   &current_route_max_cumuls_[pos])) {
       return false;
     }
@@ -642,6 +684,11 @@ bool DimensionCumulOptimizerCore::ComputeRouteCumulBounds(
         CapAdd(
             CapAdd(current_route_min_cumuls_[pos - 1], fixed_transits[pos - 1]),
             slack_min));
+    current_route_min_cumuls_[pos] = GetFirstPossibleValueForCumulWithOffset(
+        *dimension_, route[pos], current_route_min_cumuls_[pos], cumul_offset);
+    if (current_route_min_cumuls_[pos] > current_route_max_cumuls_[pos]) {
+      return false;
+    }
   }
 
   for (int pos = route_size - 2; pos >= 0; --pos) {
@@ -654,6 +701,12 @@ bool DimensionCumulOptimizerCore::ComputeRouteCumulBounds(
           CapSub(
               CapSub(current_route_max_cumuls_[pos + 1], fixed_transits[pos]),
               slack_min));
+      current_route_max_cumuls_[pos] = GetLastPossibleValueForCumulWithOffset(
+          *dimension_, route[pos], current_route_max_cumuls_[pos],
+          cumul_offset);
+      if (current_route_max_cumuls_[pos] < current_route_min_cumuls_[pos]) {
+        return false;
+      }
     }
   }
   return true;

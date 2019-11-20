@@ -33,10 +33,10 @@ CpSolverResponse Solve(const CpModelProto& model_proto);
 CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
                                      const SatParameters& params);
 
-/// Returns a std::string with some statistics on the given CpModelProto.
+/// Returns a string with some statistics on the given CpModelProto.
 std::string CpModelStats(const CpModelProto& model);
 
-/// Returns a std::string with some statistics on the solver response.
+/// Returns a string with some statistics on the solver response.
 std::string CpSolverResponseStats(const CpSolverResponse& response);
 
 /**
@@ -54,8 +54,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model);
 
 #if !defined(__PORTABLE_PLATFORM__)
 /**
- * Solves the given CpModelProto with the given sat parameters as std::string in
- * JSon format, and returns an instance of CpSolverResponse.
+ * Solves the given CpModelProto with the given sat parameters as string in JSon
+ * format, and returns an instance of CpSolverResponse.
  */
 CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
                                      const std::string& params);

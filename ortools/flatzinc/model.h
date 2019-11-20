@@ -222,7 +222,7 @@ struct Constraint {
   void SetAsFalse();
 
   // The flatzinc type of the constraint (i.e. "int_eq" for integer equality)
-  // stored as a std::string.
+  // stored as a string.
   std::string type;
   std::vector<Argument> arguments;
   // Indicates if the constraint actually propagates towards a target variable

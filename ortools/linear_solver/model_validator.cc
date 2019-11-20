@@ -96,7 +96,7 @@ std::string FindDuplicateVarIndex(const Iterable& var_indices,
 }
 
 // Internal method to detect errors in a single constraint.
-// "var_mask" is a std::vector<bool> whose size is the number of variables in
+// "var_mask" is a vector<bool> whose size is the number of variables in
 // the model, and it will be all set to false before and after the call.
 std::string FindErrorInMPConstraint(const MPConstraintProto& constraint,
                                     std::vector<bool>* var_mask) {

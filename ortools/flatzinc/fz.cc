@@ -42,7 +42,7 @@ DEFINE_bool(free_search, false,
             "If false, the solver must follow the defined search."
             "If true, other search are allowed.");
 DEFINE_int32(threads, 0, "Number of threads the solver will use.");
-DEFINE_bool(presolve, false, "Presolve the model to simplify it.");
+DEFINE_bool(presolve, true, "Presolve the model to simplify it.");
 DEFINE_bool(statistics, false, "Print solver statistics after search.");
 DEFINE_bool(read_from_stdin, false,
             "Read the FlatZinc from stdin, not from a file.");

@@ -63,7 +63,7 @@ class Status {
   std::string error_message_;
 };
 
-// Returns the std::string representation of the ErrorCode enum.
+// Returns the string representation of the ErrorCode enum.
 std::string GetErrorCodeString(Status::ErrorCode error_code);
 
 // Macro to simplify error propagation between function returning Status.

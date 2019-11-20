@@ -56,7 +56,7 @@ namespace operations_research {
 // }
 // // Group the nodes in the same connected component together.
 // // group[class_number][i] contains the i-th node in group class_number.
-// hash_map<int, std::vector<int> > group(num_connected_components);
+// hash_map<int, vector<int> > group(num_connected_components);
 // for (int node = 0; node < num_nodes; ++node) {
 //   group[components.GetClassRepresentative(node)].push_back(node);
 // }

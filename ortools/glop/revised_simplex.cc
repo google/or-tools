@@ -877,7 +877,7 @@ void RevisedSimplex::InitializeObjectiveLimit(const LinearProgram& lp) {
     const Fractional shifted_limit =
         limit / objective_scaling_factor_ - objective_offset_;
 
-    // The std::isfinite() test is there to avoid generating NaNs with clang in
+    // The isfinite() test is there to avoid generating NaNs with clang in
     // fast-math mode on iOS 9.3.i.
     if (set_dual) {
       dual_objective_limit_ = std::isfinite(shifted_limit)
@@ -2964,9 +2964,8 @@ std::string StringifyMonomialWithFlags(const Fractional a,
   return StringifyMonomial(a, x, FLAGS_simplex_display_numbers_as_fractions);
 }
 
-// Returns a std::string representing the rational approximation of x or a
-// decimal approximation of x according to
-// FLAGS_simplex_display_numbers_as_fractions.
+// Returns a string representing the rational approximation of x or a decimal
+// approximation of x according to FLAGS_simplex_display_numbers_as_fractions.
 std::string StringifyWithFlags(const Fractional x) {
   return Stringify(x, FLAGS_simplex_display_numbers_as_fractions);
 }

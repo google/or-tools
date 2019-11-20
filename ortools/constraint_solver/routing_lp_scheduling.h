@@ -80,7 +80,7 @@ class CumulBoundsPropagator {
   bool InitializeArcsAndBounds(const std::function<int64(int64)>& next_accessor,
                                int64 cumul_offset);
 
-  bool UpdateCurrentLowerBoundOfNode(int node, int64 new_lb);
+  bool UpdateCurrentLowerBoundOfNode(int node, int64 new_lb, int64 offset);
 
   bool DisassembleSubtree(int source, int target);
 

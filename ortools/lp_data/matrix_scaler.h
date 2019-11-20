@@ -167,7 +167,7 @@ class SparseMatrixScaler {
   // As above, but for the columns of the matrix.
   ColIndex GetColumnScaleIndex(ColIndex col_num);
 
-  // Returns a std::string containing information on the progress of the scaling
+  // Returns a string containing information on the progress of the scaling
   // algorithm. This is not meant to be called in an optimized mode as it takes
   // some time to compute the displayed quantities.
   std::string DebugInformationString() const;

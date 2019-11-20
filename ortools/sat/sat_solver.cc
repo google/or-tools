@@ -614,7 +614,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
                       &pb_backjump_level);
     if (pb_backjump_level == -1) return SetModelUnsat();
 
-    // Convert the conflict into the std::vector<LiteralWithCoeff> form.
+    // Convert the conflict into the vector<LiteralWithCoeff> form.
     std::vector<LiteralWithCoeff> cst;
     pb_conflict_.CopyIntoVector(&cst);
     DCHECK(PBConstraintIsValidUnderDebugAssignment(cst, pb_conflict_.Rhs()));

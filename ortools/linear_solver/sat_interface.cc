@@ -137,9 +137,9 @@ MPSolver::ResultStatus SatInterface::Solve(const MPSolverParameters& param) {
   MPModelRequest request;
   solver_->ExportModelToProto(request.mutable_model());
   // If sat::SatParameters is compiled with proto-lite (go/mobile-cpp-protos),
-  // then serialize as non-human readable std::string. This is because
-  // proto-lite does not support reflection mechanism, which is a prerequisite
-  // for method like `ShortDebugString`.
+  // then serialize as non-human readable string. This is because proto-lite
+  // does not support reflection mechanism, which is a prerequisite for method
+  // like `ShortDebugString`.
   if (!std::is_base_of<Message, sat::SatParameters>::value) {
     request.set_solver_specific_parameters(parameters_.SerializeAsString());
   } else {

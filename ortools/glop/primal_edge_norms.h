@@ -111,7 +111,7 @@ class PrimalEdgeNorms {
     parameters_ = parameters;
   }
 
-  // Returns a std::string with statistics about this class.
+  // Returns a string with statistics about this class.
   std::string StatString() const { return stats_.StatString(); }
 
   // Deterministic time used by the scalar product computation of this class.

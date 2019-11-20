@@ -305,6 +305,7 @@ struct PresolveContext {
   // on large problems (also because the objective is often dense). At the end
   // we re-convert it to its proto form.
   absl::flat_hash_map<int, int64> objective_map;
+  std::vector<std::pair<int, int64>> tmp_entries;
   bool objective_domain_is_constraining = false;
   Domain objective_domain;
   double objective_offset;

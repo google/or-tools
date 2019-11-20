@@ -106,8 +106,8 @@ class MPSReaderImpl {
   // Process section SOS in the MPS file.
   util::Status ProcessSosSection();
 
-  // Safely converts a std::string to a numerical type. Returns an error if the
-  // std::string passed as parameter is ill-formed.
+  // Safely converts a string to a numerical type. Returns an error if the
+  // string passed as parameter is ill-formed.
   util::StatusOr<double> GetDoubleFromString(const std::string& str);
   util::StatusOr<bool> GetBoolFromString(const std::string& str);
 
@@ -330,13 +330,11 @@ class DataWrapper<MPModelProto> {
   }
   void SetConstraintCoefficient(int row_index, int col_index,
                                 double coefficient) {
+    // Note that we assume that there is no duplicate in the mps file format. If
+    // there is, we will just add more than one entry from the same variable in
+    // a constraint, and we let any program that ingests an MPModelProto handle
+    // it.
     MPConstraintProto* const constraint = data_->mutable_constraint(row_index);
-    for (int i = 0; i < constraint->var_index_size(); ++i) {
-      if (constraint->var_index(i) == col_index) {
-        constraint->set_coefficient(i, coefficient);
-        return;
-      }
-    }
     constraint->add_var_index(col_index);
     constraint->add_coefficient(coefficient);
   }
