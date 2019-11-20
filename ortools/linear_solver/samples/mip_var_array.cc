@@ -39,12 +39,9 @@ void IntegerProgrammingExample() {
   // [END data]
 
   // [START solver]
-  // MOE:begin_strip
   // Create the mip solver with the CBC backend.
   MPSolver solver("simple_mip_program",
                   MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
-  MPSolver solver("simple_mip_program",
-                  MPSolver::CBC_MIXED_INTEGER_PROGRAMMING); */
   // [END solver]
 
   // [START variables]
@@ -54,6 +51,7 @@ void IntegerProgrammingExample() {
   for (int j = 0; j < data.num_vars; ++j) {
     x[j] = solver.MakeIntVar(0.0, infinity, "");
   }
+  LOG(INFO) << "Number of variables = " << solver.NumVariables();
   // [END variables]
 
   // [START constraints]
@@ -64,6 +62,7 @@ void IntegerProgrammingExample() {
       constraint->SetCoefficient(x[j], data.constraint_coeffs[i][j]);
     }
   }
+  LOG(INFO) << "Number of constraints = " << solver.NumConstraints();
   // [END constraints]
 
   // [START objective]
@@ -77,9 +76,6 @@ void IntegerProgrammingExample() {
   // [END objective]
 
   // [START print_solution]
-  LOG(INFO) << "Number of variables = " << solver.NumVariables();
-  LOG(INFO) << "Number of constraints = " << solver.NumConstraints();
-
   const MPSolver::ResultStatus result_status = solver.Solve();
   // Check that the problem has an optimal solution.
   if (result_status != MPSolver::OPTIMAL) {
