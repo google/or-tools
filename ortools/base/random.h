@@ -67,24 +67,12 @@ class ACMRandom {
   static int32 HostnamePidTimeSeed();
   static int32 DeterministicSeed();
 
-// RandomNumberGenerator concept. Example:
-//   ACMRandom rand(my_seed);
-//   std::random_shuffle(myvec.begin(), myvec.end(), rand);
-#if defined(_MSC_VER)
-  typedef __int64 difference_type;  // NOLINT
-#else
-  typedef long long difference_type;  // NOLINT
-#endif
+  typedef int64 difference_type;  // NOLINT
   typedef uint64 result_type;
-#if defined(LANG_CXX11) || defined(__APPLE__)
   // Since C++11, the C++ Standard requires min() and max() to be compile-time
   // expressions, see [rand.req.urng].  That's not possible prior to C++11.
   static constexpr result_type min() { return 0; }
   static constexpr result_type max() { return kuint32max; }
-#else
-  static result_type min() { return 0; }
-  static result_type max() { return kuint32max; }
-#endif
   virtual result_type operator()() { return Next(); }
   int64 operator()(int64 val_max) { return Next64() % val_max; }
 
