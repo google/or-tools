@@ -34,25 +34,7 @@
 namespace operations_research {
 
 int32 ACMRandom::Next() {
-  if (seed_ == 0) {
-    seed_ = 0x14fd4603;  // Arbitrary random constant
-  }
-  const int32 M = 2147483647L;  // 2^31-1
-  const int32 A = 16807;
-  // In effect, we are computing seed_ = (seed_ * A) % M, where M = 2^31-1
-  uint32 lo = A * static_cast<int32>(seed_ & 0xFFFF);
-  uint32 hi = A * static_cast<int32>(static_cast<uint32>(seed_) >> 16);
-  lo += (hi & 0x7FFF) << 16;
-  if (lo > M) {
-    lo &= M;
-    ++lo;
-  }
-  lo += hi >> 15;
-  if (lo > M) {
-    lo &= M;
-    ++lo;
-  }
-  return (seed_ = static_cast<int32>(lo));
+  return generator_();
 }
 
 int32 ACMRandom::Uniform(int32 n) { return n == 0 ? 0 : Next() % n; }
