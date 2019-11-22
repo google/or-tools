@@ -54,7 +54,7 @@ if(BUILD_absl)
     REPOSITORY
       "https://github.com/abseil/abseil-cpp.git"
     TAG
-      "master"
+      "aa844899c937bde5d2b24f276b59997e5b668bde"
  )
 endif()
 
