@@ -109,6 +109,7 @@ target_include_directories(${PROJECT_NAME} INTERFACE
 target_link_libraries(${PROJECT_NAME} PUBLIC
   ZLIB::ZLIB
   absl::base
+  absl::random_random
   absl::raw_hash_set
   absl::hash
   absl::memory
