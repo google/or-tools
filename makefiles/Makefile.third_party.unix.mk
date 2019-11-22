@@ -359,18 +359,13 @@ _ABSL_STATIC_LIB_DIR = $(dir $(wildcard \
  $(UNIX_ABSL_DIR)/lib*/libabsl_base.a \
  $(UNIX_ABSL_DIR)/lib/*/libabsl_base.a))
 STATIC_ABSL_LNK = \
-$(_ABSL_STATIC_LIB_DIR)libabsl_base.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_synchronization.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_bad_any_cast_impl.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_bad_optional_access.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_bad_variant_access.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_city.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_civil_time.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_debugging_internal.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_demangle_internal.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_dynamic_annotations.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_examine_stack.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_exponential_biased.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_failure_signal_handler.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_config.a \
@@ -385,7 +380,6 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_flags_usage_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_graphcycles_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_hash.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_hashtablez_sampler.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_int128.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_leak_check.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_leak_check_disable.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_log_severity.a \
@@ -413,40 +407,12 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_symbolize.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_throw_delegate.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_time.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_time_zone.a \
-
-#$(_ABSL_STATIC_LIB_DIR)libabsl_base.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_synchronization.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_bad_any_cast_impl.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_bad_optional_access.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_bad_variant_access.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_city.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_civil_time.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_debugging_internal.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_examine_stack.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_failure_signal_handler.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_graphcycles_internal.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_hash.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_hashtablez_sampler.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_int128.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_leak_check.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_malloc_internal.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_optional.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_raw_hash_set.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_spinlock_wait.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_stacktrace.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_str_format_internal.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_strings.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_strings_internal.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_symbolize.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_throw_delegate.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_time.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_time_zone.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_base.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_int128.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_synchronization.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_debugging_internal.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_demangle_internal.a \
-#$(_ABSL_STATIC_LIB_DIR)libabsl_dynamic_annotations.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_exponential_biased.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_int128.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_debugging_internal.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_demangle_internal.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_base.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_dynamic_annotations.a
 
 _ABSL_LIB_DIR = $(dir $(wildcard \
  $(UNIX_ABSL_DIR)/lib*/libabsl_base.$L \
