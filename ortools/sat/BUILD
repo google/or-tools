@@ -62,6 +62,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:map_util",
         "//ortools/base:typeid",
+        "@com_google_absl//absl/container:flat_hash_map",
     ],
 )
 
@@ -971,6 +972,8 @@ cc_library(
         "//ortools/base",
         "//ortools/base:random",
         "//ortools/util:random_engine",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_protobuf_cc//:protobuf",
     ],
 )

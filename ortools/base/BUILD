@@ -191,6 +191,7 @@ cc_library(
     deps = [
         ":base",
         ":hash",
+        "@com_google_absl//absl/random",
     ],
 )
 
