@@ -147,10 +147,11 @@ bool Run() {
     CHECK(solver.SetSolverSpecificParametersAsString(FLAGS_params))
         << "Wrong --params format.";
   }
-  printf("%-12s: %s\n", "Solver",
-         MPModelRequest::SolverType_Name(
-             static_cast<MPModelRequest::SolverType>(solver.ProblemType()))
-             .c_str());
+  absl::PrintF(
+      "%-12s: %s\n", "Solver",
+      MPModelRequest::SolverType_Name(
+          static_cast<MPModelRequest::SolverType>(solver.ProblemType()))
+          .c_str());
 
   // Load the proto into the solver.
   std::string error_message;
@@ -176,8 +177,8 @@ bool Run() {
     LOG(ERROR) << MPSolverResponseStatus_Name(status) << ": " << error_message;
     return false;
   }
-  printf("%-12s: %d x %d\n", "Dimension", solver.NumConstraints(),
-         solver.NumVariables());
+  absl::PrintF("%-12s: %d x %d\n", "Dimension", solver.NumConstraints(),
+               solver.NumVariables());
 
   // Solve.
   MPSolverParameters param;
@@ -229,20 +230,20 @@ bool Run() {
                           /*log_errors=*/true);
   }
 
-  printf("%-12s: %s\n", "Status",
-         MPSolverResponseStatus_Name(
-             static_cast<MPSolverResponseStatus>(solve_status))
-             .c_str());
-  printf("%-12s: %15.15e\n", "Objective",
-         has_solution ? solver.Objective().Value() : 0.0);
-  printf("%-12s: %15.15e\n", "BestBound",
-         has_solution ? solver.Objective().BestBound() : 0.0);
+  absl::PrintF("%-12s: %s\n", "Status",
+               MPSolverResponseStatus_Name(
+                   static_cast<MPSolverResponseStatus>(solve_status))
+                   .c_str());
+  absl::PrintF("%-12s: %15.15e\n", "Objective",
+               has_solution ? solver.Objective().Value() : 0.0);
+  absl::PrintF("%-12s: %15.15e\n", "BestBound",
+               has_solution ? solver.Objective().BestBound() : 0.0);
   absl::PrintF("%-12s: %d\n", "Iterations", solver.iterations());
   // NOTE(user): nodes() for non-MIP solvers crashes in debug mode by design.
   if (solver.IsMIP()) {
     absl::PrintF("%-12s: %d\n", "Nodes", solver.nodes());
   }
-  printf("%-12s: %-6.4g\n", "Time", absl::ToDoubleSeconds(solving_time));
+  absl::PrintF("%-12s: %-6.4g\n", "Time", absl::ToDoubleSeconds(solving_time));
   return true;
 }
 

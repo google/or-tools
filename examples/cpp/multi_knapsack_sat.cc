@@ -24,7 +24,6 @@
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
-#include "ortools/sat/sat_parameters.pb.h"
 
 DEFINE_int32(size, 16, "scaling factor of the model");
 DEFINE_string(params, "", "Sat parameters");
@@ -63,6 +62,7 @@ void MultiKnapsackSat(int scaling, const std::string& params) {
   }
 
   // Fill up scaled values, weights, volumes;
+  std::vector<int64> values(num_items);
   std::vector<int64> weights(num_items);
   std::vector<int64> volumes(num_items);
   for (int i = 0; i < num_items; ++i) {
@@ -97,11 +97,8 @@ void MultiKnapsackSat(int scaling, const std::string& params) {
   builder.Maximize(LinearExpr::Sum(bin_weights));
 
   // And solve.
-  SatParameters sat_parameters;
-  sat_parameters.set_log_search_progress(true);
-  sat_parameters.MergeFromString(params);
   const CpSolverResponse response =
-      SolveWithParameters(builder.Build(), sat_parameters);
+      SolveWithParameters(builder.Build(), params);
   LOG(INFO) << CpSolverResponseStats(response);
 }
 
@@ -109,7 +106,6 @@ void MultiKnapsackSat(int scaling, const std::string& params) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
   absl::SetFlag(&FLAGS_logtostderr, true);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::sat::MultiKnapsackSat(FLAGS_size, FLAGS_params);
