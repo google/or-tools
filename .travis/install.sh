@@ -128,8 +128,8 @@ if [ "${BUILDER}" == cmake ]; then
     echo 'travis_fold:start:swig'
     brew install swig
     echo 'travis_fold:end:swig'
-    echo 'travis_fold:start:python3'
-    brew upgrade python
-    echo 'travis_fold:end:python3'
+    # echo 'travis_fold:start:python3'
+    # brew upgrade python
+    # echo 'travis_fold:end:python3'
   fi
 fi
