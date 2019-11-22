@@ -25,19 +25,17 @@ namespace operations_research {
 // ACM minimal standard random number generator based on std::mt19937.
 class ACMRandom {
  public:
-  explicit ACMRandom(int32 seed) {
-    generator_.seed(seed);
-  }
+  explicit ACMRandom(int32 seed) : generator_(seed) {}
 
   // Unbounded generators.
-  int32 Next();
-  int64 Next64();
-  uint64 Rand64() { return static_cast<uint64>(Next64()); }
-  uint64 operator()() { return Rand64(); }
+  uint32 Next();
+  uint64 Next64();
+  uint64 Rand64() { return Next64(); }
+  uint64 operator()() { return Next64(); }
 
   // Bounded generators.
-  int32 Uniform(int32 n);
-  int64 operator()(int64 val_max) { return Next64() % val_max; }
+  uint32 Uniform(uint32 n);
+  uint64 operator()(uint64 val_max);
 
   // Seed management.
   void Reset(int32 seed) { generator_.seed(seed); }

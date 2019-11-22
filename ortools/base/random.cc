@@ -33,15 +33,20 @@
 
 namespace operations_research {
 
-int32 ACMRandom::Next() {
-  return generator_();
+uint32 ACMRandom::Next() {
+  return absl::uniform_int_distribution<uint32>(0, kint32max)(generator_);
 }
 
-int32 ACMRandom::Uniform(int32 n) { return n == 0 ? 0 : Next() % n; }
+uint32 ACMRandom::Uniform(uint32 n) {
+  return n == 0 ? 0 : Next() % n;
+}
 
-int64 ACMRandom::Next64() {
-  const int64 next = Next();
-  return (next - 1) * 2147483646L + Next();
+uint64 ACMRandom::Next64() {
+  return absl::uniform_int_distribution<uint64>(0, kint64max)(generator_);
+}
+
+uint64 ACMRandom::operator()(uint64 val_max) {
+  return val_max == 0 ? 0 : Next64() % val_max;
 }
 
 namespace {
