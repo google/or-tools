@@ -34,7 +34,7 @@
 namespace operations_research {
 
 uint32 ACMRandom::Next() {
-  return absl::uniform_int_distribution<uint32>(0, kint32max)(generator_);
+  return absl::uniform_int_distribution<uint32>(0, kuint32max)(generator_);
 }
 
 uint32 ACMRandom::Uniform(uint32 n) {
@@ -42,7 +42,7 @@ uint32 ACMRandom::Uniform(uint32 n) {
 }
 
 uint64 ACMRandom::Next64() {
-  return absl::uniform_int_distribution<uint64>(0, kint64max)(generator_);
+  return absl::uniform_int_distribution<uint64>(0, kuint64max)(generator_);
 }
 
 uint64 ACMRandom::operator()(uint64 val_max) {
