@@ -84,7 +84,7 @@ if [ "${BUILDER}" == make ]; then
     fi
     if [ "${LANGUAGE}" == python3 ]; then
       echo 'travis_fold:start:python3'
-      brew upgrade python
+      # brew upgrade python
       python3 -m pip install -q virtualenv wheel six
       echo 'travis_fold:end:python3'
     elif [ "${LANGUAGE}" == dotnet ]; then
