@@ -12,7 +12,6 @@ BASE_DEPS = \
  $(SRC_DIR)/ortools/base/file.h \
  $(SRC_DIR)/ortools/base/filelineiter.h \
  $(SRC_DIR)/ortools/base/hash.h \
- $(SRC_DIR)/ortools/base/int128.h \
  $(SRC_DIR)/ortools/base/integral_types.h \
  $(SRC_DIR)/ortools/base/int_type.h \
  $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
@@ -1868,7 +1867,7 @@ objs/sat/linear_programming_constraint.$O: \
  ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
  ortools/sat/linear_constraint.h ortools/sat/linear_constraint_manager.h \
  ortools/sat/integer_expr.h ortools/sat/precedences.h ortools/sat/util.h \
- ortools/base/int128.h ortools/glop/preprocessor.h \
+ ortools/glop/preprocessor.h \
  ortools/graph/strongly_connected_components.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Slinear_programming_constraint.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Slinear_programming_constraint.$O
 
@@ -4031,4 +4030,3 @@ $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h: \
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: \
  $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sconstraint_solver$Ssolver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
-
