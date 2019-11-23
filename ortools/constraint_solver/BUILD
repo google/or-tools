@@ -258,16 +258,6 @@ cc_library(
 )
 
 cc_library(
-    name = "routing_neighborhoods",
-    srcs = ["routing_neighborhoods.cc"],
-    hdrs = ["routing_neighborhoods.h"],
-    deps = [
-        ":cp",
-        ":routing_types",
-    ],
-)
-
-cc_library(
     name = "routing_index_manager",
     srcs = ["routing_index_manager.cc"],
     hdrs = ["routing_index_manager.h"],
@@ -288,19 +278,20 @@ cc_library(
         "routing_breaks.cc",
         "routing_flow.cc",
         "routing_lp_scheduling.cc",
+        "routing_neighborhoods.cc",
         "routing_sat.cc",
         "routing_search.cc",
     ],
     hdrs = [
         "routing.h",
         "routing_lp_scheduling.h",
+        "routing_neighborhoods.h",
     ],
     visibility = ["//visibility:public"],
     deps = [
         ":cp",
         ":routing_enums_cc_proto",
         ":routing_index_manager",
-        ":routing_neighborhoods",
         ":routing_parameters",
         ":routing_parameters_cc_proto",
         ":routing_types",
