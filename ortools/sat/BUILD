@@ -857,7 +857,6 @@ cc_library(
         ":linear_constraint_manager",
         ":model",
         "//ortools/base",
-        "//ortools/base:int128",
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
         "//ortools/base:map_util",
@@ -873,6 +872,7 @@ cc_library(
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/numeric:int128",
     ],
 )
 
