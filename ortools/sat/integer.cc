@@ -221,7 +221,7 @@ Literal IntegerEncoder::GetOrCreateAssociatedLiteral(IntegerLiteral i_lit) {
   const LiteralIndex index = GetAssociatedLiteral(new_lit);
   if (index != kNoLiteralIndex) return Literal(index);
   const LiteralIndex n_index = GetAssociatedLiteral(canonicalization.second);
-  if (n_index != kNoLiteralIndex) return Literal(index).Negated();
+  if (n_index != kNoLiteralIndex) return Literal(n_index).Negated();
 
   ++num_created_variables_;
   const Literal literal(sat_solver_->NewBooleanVariable(), true);
