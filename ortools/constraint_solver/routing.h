@@ -457,9 +457,9 @@ class RoutingModel {
   /// model.
   /// Returns false if a dimension with the same name has already been created
   /// (and doesn't create the new dimension).
-  bool AddMatrixDimension(std::vector<std::vector<int64>> values,
-                          int64 capacity, bool fix_start_cumul_to_zero,
-                          const std::string& name);
+  bool AddMatrixDimension(
+      std::vector<std::vector<int64> /*needed_for_swig*/> values,
+      int64 capacity, bool fix_start_cumul_to_zero, const std::string& name);
   /// Creates a dimension with transits depending on the cumuls of another
   /// dimension. 'pure_transits' are the per-vehicle fixed transits as above.
   /// 'dependent_transits' is a vector containing for each vehicle an index to a
@@ -476,6 +476,7 @@ class RoutingModel {
         pure_transits, dependent_transits, base_dimension, slack_max,
         std::move(vehicle_capacities), fix_start_cumul_to_zero, name);
   }
+
   /// As above, but pure_transits are taken to be zero evaluators.
   bool AddDimensionDependentDimensionWithVehicleCapacity(
       const std::vector<int>& transits, const RoutingDimension* base_dimension,

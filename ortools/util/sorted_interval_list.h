@@ -226,16 +226,18 @@ class Domain {
    */
   Domain ContinuousMultiplicationBy(int64 coeff) const;
 
-  /// Returns a super-set of MultiplicationBy() to avoid the explosion in the
-  /// representation size. This behaves as if we replace the set D of
-  /// non-adjacent integer intervals by the set of floating-point element in the
-  /// same intervals.
-  ///
-  /// For instance, [1, 100] * 2 will be transformed in [2, 200] and not in
-  /// [2][4][6]...[200] like in MultiplicationBy(). Note that this would be
-  /// similar to a InverseDivisionBy(), but not quite the same because if we
-  /// look for {x ∈ Int64, ∃ e ∈ D, x / coeff = e}, then we will get [2, 201] in
-  /// the case above.
+  /**
+   * Returns a superset of MultiplicationBy() to avoid the explosion in the
+   * representation size. This behaves as if we replace the set D of
+   * non-adjacent integer intervals by the set of floating-point elements in the
+   * same intervals.
+   *
+   * For instance, [1, 100] * 2 will be transformed in [2, 200] and not in
+   * [2][4][6]...[200] like in MultiplicationBy(). Note that this would be
+   * similar to a InverseDivisionBy(), but not quite the same because if we
+   * look for {x ∈ Int64, ∃ e ∈ D, x / coeff = e}, then we will get [2, 201] in
+   * the case above.
+   */
   Domain ContinuousMultiplicationBy(const Domain& domain) const;
 
   /**

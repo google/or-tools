@@ -66,33 +66,25 @@ public class SimpleMipProgram {
 
     // [START solve]
     final MPSolver.ResultStatus resultStatus = solver.solve();
-    // Check that the problem has an optimal solution.
-    if (resultStatus != MPSolver.ResultStatus.OPTIMAL) {
-      System.err.println("The problem does not have an optimal solution!");
-      return;
-    }
-    // Verify that the solution satisfies all constraints (when using solvers
-    // others than GLOP_LINEAR_PROGRAMMING, this is highly recommended!).
-    if (!solver.verifySolution(/*tolerance=*/1e-7, /*log_errors=*/true)) {
-      System.err.println("The solution returned by the solver violated the"
-          + " problem constraints by at least 1e-7");
-      return;
-    }
     // [END solve]
 
     // [START print_solution]
-    System.out.println("Solution:");
-    System.out.println("Objective value = " + objective.value());
-    System.out.println("x = " + x.solutionValue());
-    System.out.println("y = " + y.solutionValue());
-    // [END print_solution]
+    if (resultStatus == MPSolver.ResultStatus.OPTIMAL) {
+      System.out.println("Solution:");
+      System.out.println("Objective value = " + objective.value());
+      System.out.println("x = " + x.solutionValue());
+      System.out.println("y = " + y.solutionValue());
+      // [END print_solution]
 
-    // [START advanced]
-    System.out.println("\nAdvanced usage:");
-    System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
-    System.out.println("Problem solved in " + solver.iterations() + " iterations");
-    System.out.println("Problem solved in " + solver.nodes() + " branch-and-bound nodes");
-    // [END advanced]
+      // [START advanced]
+      System.out.println("\nAdvanced usage:");
+      System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
+      System.out.println("Problem solved in " + solver.iterations() + " iterations");
+      System.out.println("Problem solved in " + solver.nodes() + " branch-and-bound nodes");
+      // [END advanced]
+    } else {
+      System.err.println("The problem does not have an optimal solution!");
+    }
   }
 }
 // [END program]

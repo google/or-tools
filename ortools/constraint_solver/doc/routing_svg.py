@@ -22,7 +22,7 @@ from ortools.constraint_solver import routing_enums_pb2
 
 
 # [START data_model]
-class DataModel:  # pylint: disable=too-many-instance-attributes
+class DataModel(object):  # pylint: disable=too-many-instance-attributes
     """Stores the data for the problem."""
 
     def __init__(self, args):
@@ -253,7 +253,7 @@ class DataModel:  # pylint: disable=too-many-instance-attributes
 ###########
 # Printer #
 ###########
-class GoogleColorPalette():
+class GoogleColorPalette(object):
     """Google color codes palette."""
 
     def __init__(self):
@@ -288,7 +288,7 @@ class GoogleColorPalette():
         return dict(self._colors)[name]
 
 
-class SVG():
+class SVG(object):
     """SVG draw primitives."""
 
     @staticmethod
@@ -375,7 +375,7 @@ class SVG():
             txt=text))
 
 
-class SVGPrinter():  # pylint: disable=too-many-instance-attributes
+class SVGPrinter(object):  # pylint: disable=too-many-instance-attributes
     """Generate Problem as svg file to stdout."""
 
     # pylint: disable=too-many-arguments

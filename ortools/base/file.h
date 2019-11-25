@@ -124,7 +124,7 @@ util::Status Open(const absl::string_view& filename,
 File* OpenOrDie(const absl::string_view& filename,
                 const absl::string_view& mode, int flags);
 util::Status GetTextProto(const absl::string_view& filename,
-			  google::protobuf::Message* proto, int flags);
+                          google::protobuf::Message* proto, int flags);
 util::Status SetTextProto(const absl::string_view& filename,
                           const google::protobuf::Message& proto, int flags);
 util::Status SetBinaryProto(const absl::string_view& filename,

@@ -3462,8 +3462,8 @@ class ModelVisitor : public BaseObject {
   /// ----- Virtual methods for visitors -----
 
   /// Begin/End visit element.
-  virtual void BeginVisitModel(const std::string& solver_name);
-  virtual void EndVisitModel(const std::string& solver_name);
+  virtual void BeginVisitModel(const std::string& type_name);
+  virtual void EndVisitModel(const std::string& type_name);
   virtual void BeginVisitConstraint(const std::string& type_name,
                                     const Constraint* const constraint);
   virtual void EndVisitConstraint(const std::string& type_name,

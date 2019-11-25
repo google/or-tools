@@ -264,7 +264,7 @@ void WriteProtoToFileOrDie(const google::protobuf::Message& proto,
 }
 
 util::Status GetTextProto(const absl::string_view& filename,
-			  google::protobuf::Message* proto, int flags) {
+                          google::protobuf::Message* proto, int flags) {
   if (flags == Defaults()) {
     if (ReadFileToProto(filename, proto)) return util::Status::OK;
   }
