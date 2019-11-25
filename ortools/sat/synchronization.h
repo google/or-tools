@@ -175,6 +175,14 @@ class SharedResponseManager {
   }
   SharedSolutionRepository* MutableSolutionsRepository() { return &solutions_; }
 
+  // This should be called after the model is loaded. It will read the file
+  // specified by --cp_model_load_debug_solution and properly fill the
+  // model->Get<DebugSolution>() vector.
+  //
+  // TODO(user): Note that for now, only the IntegerVariable value are loaded,
+  // not the value of the pure Booleans variables.
+  void LoadDebugSolution(Model*);
+
  private:
   void FillObjectiveValuesInBestResponse() EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void SetStatsFromModelInternal(Model* model) EXCLUSIVE_LOCKS_REQUIRED(mutex_);

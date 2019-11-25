@@ -50,20 +50,17 @@ def main():
     # [END objective]
 
     # [START solve]
-    result_status = solver.Solve()
-    # The problem has an optimal solution.
-    assert result_status == pywraplp.Solver.OPTIMAL
-
-    # The solution looks legit (when using solvers others than
-    # GLOP_LINEAR_PROGRAMMING, verifying the solution is highly recommended!).
-    assert solver.VerifySolution(1e-7, True)
+    status = solver.Solve()
     # [END solve]
 
     # [START print_solution]
-    print('Solution:')
-    print('Objective value =', solver.Objective().Value())
-    print('x =', x.solution_value())
-    print('y =', y.solution_value())
+    if status == pywraplp.Solver.OPTIMAL:
+        print('Solution:')
+        print('Objective value =', solver.Objective().Value())
+        print('x =', x.solution_value())
+        print('y =', y.solution_value())
+    else:
+        print('The problem does not have an optimal solution.')
     # [END print_solution]
 
     # [START advanced]

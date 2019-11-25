@@ -159,6 +159,7 @@ SCIPInterface::~SCIPInterface() { DeleteSCIP(); }
 
 void SCIPInterface::Reset() {
   DeleteSCIP();
+  scip_constraint_handler_.reset();
   status_ = CreateSCIP();
   ResetExtractionInformation();
 }

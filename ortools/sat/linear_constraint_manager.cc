@@ -135,6 +135,7 @@ LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
   SimplifyConstraint(&ct);
   DivideByGCD(&ct);
   CanonicalizeConstraint(&ct);
+  DCHECK(DebugCheckConstraint(ct));
 
   // If an identical constraint exists, only updates its bound.
   const size_t key = ComputeHashOfTerms(ct);
@@ -224,7 +225,7 @@ void LinearConstraintManager::AddCut(
   // Only add cut with sufficient efficacy.
   if (violation / l2_norm < 1e-5) return;
 
-  VLOG(2) << "Cut '" << type_name << "'"
+  VLOG(1) << "Cut '" << type_name << "'"
           << " size=" << ct.vars.size()
           << " max_magnitude=" << ComputeInfinityNorm(ct) << " norm=" << l2_norm
           << " violation=" << violation << " eff=" << violation / l2_norm;
@@ -402,6 +403,8 @@ bool LinearConstraintManager::ChangeLp(
     if (simplify_constraints &&
         SimplifyConstraint(&constraint_infos_[i].constraint)) {
       DivideByGCD(&constraint_infos_[i].constraint);
+      DCHECK(DebugCheckConstraint(constraint_infos_[i].constraint));
+
       constraint_infos_[i].objective_parallelism_computed = false;
       constraint_infos_[i].l2_norm =
           ComputeL2Norm(constraint_infos_[i].constraint);
@@ -568,6 +571,26 @@ void LinearConstraintManager::AddAllConstraintsToLp() {
     constraint_infos_[i].is_in_lp = true;
     lp_constraints_.push_back(i);
   }
+}
+
+bool LinearConstraintManager::DebugCheckConstraint(
+    const LinearConstraint& cut) {
+  if (model_->Get<DebugSolution>() == nullptr) return true;
+  const auto& debug_solution = *(model_->Get<DebugSolution>());
+  if (debug_solution.empty()) return true;
+
+  IntegerValue activity(0);
+  for (int i = 0; i < cut.vars.size(); ++i) {
+    const IntegerVariable var = cut.vars[i];
+    const IntegerValue coeff = cut.coeffs[i];
+    activity += coeff * debug_solution[var];
+  }
+  if (activity > cut.ub || activity < cut.lb) {
+    LOG(INFO) << "activity " << activity << " not in [" << cut.lb << ","
+              << cut.ub << "]";
+    return false;
+  }
+  return true;
 }
 
 }  // namespace sat

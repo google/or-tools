@@ -2589,6 +2589,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                                    wall_timer.Get());
     }
     LoadCpModel(new_cp_model_proto, &shared_response_manager, model);
+    shared_response_manager.LoadDebugSolution(model);
     if (log_search) {
       LOG(INFO) << absl::StrFormat("*** starting sequential search at %.2fs",
                                    wall_timer.Get());

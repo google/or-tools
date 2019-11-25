@@ -1209,6 +1209,10 @@ absl::int128 FloorRatio128(absl::int128 x, IntegerValue positive_div) {
 void LinearProgrammingConstraint::PreventOverflow(LinearConstraint* constraint,
                                                   int max_pow) {
   // Compute the min/max possible partial sum.
+  //
+  // Note that since we currently only use this cut locally, it is okay to
+  // use the current lb/ub here to decide if we have an overflow or not. Below
+  // however, we do have to use the level zero lower bound.
   double sum_min = std::min(0.0, ToDouble(-constraint->ub));
   double sum_max = std::max(0.0, ToDouble(-constraint->ub));
   const int size = constraint->vars.size();
@@ -1227,6 +1231,13 @@ void LinearProgrammingConstraint::PreventOverflow(LinearConstraint* constraint,
 
   // To be correct, we need to shift all variable so that they are positive.
   //
+  // Important: One might be tempted to think that using the current variable
+  // bounds is okay here since we only use this to derive cut/constraint that
+  // only needs to be locally valid. However, in some corner cases (like when
+  // one term become zero), we might loose the fact that we used one of the
+  // variable bound to derive the new constraint, so we will miss it in the
+  // explanation !!
+  //
   // TODO(user): This code is tricky and similar to the one to generate cuts.
   // Test and may reduce the duplication? note however that here we use int128
   // to deal with potential overflow.
@@ -1242,7 +1253,8 @@ void LinearProgrammingConstraint::PreventOverflow(LinearConstraint* constraint,
         absl::int128(new_coeff.value()) * absl::int128(divisor.value());
     adjust +=
         remainder *
-        absl::int128(integer_trail_->LowerBound(constraint->vars[i]).value());
+        absl::int128(
+            integer_trail_->LevelZeroLowerBound(constraint->vars[i]).value());
 
     if (new_coeff == 0) continue;
     constraint->vars[new_size] = constraint->vars[i];
@@ -1565,7 +1577,8 @@ bool LinearProgrammingConstraint::ExactLpReasonning() {
   new_constraint.coeffs.push_back(-obj_scale);
   DivideByGCD(&new_constraint);
   PreventOverflow(&new_constraint);
-  CHECK(!PossibleOverflow(new_constraint));
+  DCHECK(!PossibleOverflow(new_constraint));
+  DCHECK(constraint_manager_.DebugCheckConstraint(new_constraint));
 
   IntegerSumLE* cp_constraint =
       new IntegerSumLE({}, new_constraint.vars, new_constraint.coeffs,
@@ -1601,7 +1614,8 @@ bool LinearProgrammingConstraint::FillExactDualRayReason() {
       ConvertToLinearConstraint(dense_new_constraint, new_constraint_ub);
   DivideByGCD(&new_constraint);
   PreventOverflow(&new_constraint);
-  CHECK(!PossibleOverflow(new_constraint));
+  DCHECK(!PossibleOverflow(new_constraint));
+  DCHECK(constraint_manager_.DebugCheckConstraint(new_constraint));
 
   const IntegerValue implied_lb = GetImpliedLowerBound(new_constraint);
   if (implied_lb <= new_constraint.ub) {

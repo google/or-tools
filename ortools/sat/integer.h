@@ -201,6 +201,13 @@ struct IntegerDomains : public gtl::ITIVector<IntegerVariable, Domain> {
   explicit IntegerDomains(Model* model) {}
 };
 
+// A singleton used for debugging. If this is set in the model, then we can
+// check that various derived constraint do not exclude this solution (if it is
+// a known optimal solution for instance).
+struct DebugSolution : public gtl::ITIVector<IntegerVariable, IntegerValue> {
+  explicit DebugSolution(Model* model) {}
+};
+
 // Some heuristics may be generated automatically, for instance by constraints.
 // Those will be stored in a SearchHeuristicsVector object owned by the model.
 //

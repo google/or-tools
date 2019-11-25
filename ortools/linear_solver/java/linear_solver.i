@@ -86,7 +86,8 @@ PROTO2_RETURN(
    * Loads a model and returns the error message, which will be empty iff the
    * model is valid.
    */
-  std::string loadModelFromProto(const operations_research::MPModelProto& input_model) {
+  std::string loadModelFromProto(
+      const operations_research::MPModelProto& input_model) {
     std::string error_message;
     $self->LoadModelFromProto(input_model, &error_message);
     return error_message;

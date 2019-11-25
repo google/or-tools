@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Integer programming examples that show how to use the APIs."""
+"""MIP example that uses a variable array."""
 # [START program]
 # [START import]
 from __future__ import print_function
@@ -23,7 +23,6 @@ from ortools.linear_solver import pywraplp
 def create_data_model():
     """Stores the data for the problem."""
     data = {}
-    # Locations in block units
     data['constraint_coeffs'] = [
         [5, 7, 9, 2, 1],
         [18, 4, -9, 10, 12],
@@ -50,6 +49,7 @@ def main():
     solver = pywraplp.Solver('simple_mip_program',
                              pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
     # [END solver]
+
     # [START variables]
     infinity = solver.infinity()
     x = {}

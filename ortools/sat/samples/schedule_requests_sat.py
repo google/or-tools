@@ -16,7 +16,6 @@
 # [START import]
 from __future__ import print_function
 from ortools.sat.python import cp_model
-
 # [END import]
 
 

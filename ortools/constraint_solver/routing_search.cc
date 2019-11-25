@@ -2218,8 +2218,6 @@ class VehicleVarFilter : public BasePathFilter {
  public:
   explicit VehicleVarFilter(const RoutingModel& routing_model);
   ~VehicleVarFilter() override {}
-  bool Accept(const Assignment* delta, const Assignment* deltadelta,
-              int64 objective_min, int64 objective_max) override;
   bool AcceptPath(int64 path_start, int64 chain_start,
                   int64 chain_end) override;
   std::string DebugString() const override { return "VehicleVariableFilter"; }
@@ -2244,38 +2242,17 @@ VehicleVarFilter::VehicleVarFilter(const RoutingModel& routing_model)
   }
 }
 
-// Avoid filtering if variable domains are unconstrained.
-bool VehicleVarFilter::Accept(const Assignment* delta,
-                              const Assignment* deltadelta, int64 objective_min,
-                              int64 objective_max) {
-  if (IsDisabled()) return true;
-  const Assignment::IntContainer& container = delta->IntVarContainer();
-  const int size = container.Size();
-  bool all_unconstrained = true;
-  for (int i = 0; i < size; ++i) {
-    int64 index = -1;
-    if (FindIndex(container.Element(i).Var(), &index) &&
-        IsVehicleVariableConstrained(index)) {
-      all_unconstrained = false;
-      break;
-    }
-  }
-  if (all_unconstrained) return true;
-  return BasePathFilter::Accept(delta, deltadelta, objective_min,
-                                objective_max);
-}
-
 bool VehicleVarFilter::AcceptPath(int64 path_start, int64 chain_start,
                                   int64 chain_end) {
   const int64 vehicle = start_to_vehicle_[path_start];
-  int64 node = path_start;
-  while (node < Size()) {
+  int64 node = chain_start;
+  while (node != chain_end) {
     if (!vehicle_vars_[node]->Contains(vehicle)) {
       return false;
     }
     node = GetNext(node);
   }
-  return true;
+  return vehicle_vars_[node]->Contains(vehicle);
 }
 
 bool VehicleVarFilter::DisableFiltering() const {

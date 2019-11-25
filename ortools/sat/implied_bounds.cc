@@ -71,25 +71,40 @@ void ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
   // crosses integer_literal.bound.
   const auto it = bounds_.find(std::make_pair(literal.NegatedIndex(), var));
   if (it != bounds_.end()) {
-    const IntegerValue deduction = std::min(integer_literal.bound, it->second);
-
-    // TODO(user): support Enqueueing level zero fact at a positive level. That
-    // is, do not loose the info on backtrack. This should be doable. It is also
-    // why we return a bool in case of conflict when pushing deduction.
-    ++num_deductions_;
-    level_zero_lower_bounds_[var] = deduction;
-    new_level_zero_bounds_.Set(var);
-
-    // The entries that are equal to the min no longer need to be stored once
-    // the level zero bound is enqueued.
-    if (it->second == deduction) {
+    if (it->second <= level_zero_lower_bounds_[var]) {
+      // The other bounds is worse than the new level-zero bound which can
+      // happen because of lazy update, so here we just remove it.
       bounds_.erase(it);
-    }
-    if (integer_literal.bound == deduction) {
-      bounds_.erase(std::make_pair(literal.Index(), var));
+    } else {
+      const IntegerValue deduction =
+          std::min(integer_literal.bound, it->second);
+      DCHECK_GT(deduction, level_zero_lower_bounds_[var]);
+      DCHECK_GT(deduction, integer_trail_->LevelZeroLowerBound(var));
 
-      // No need to update var_to_bounds_ in this case.
-      return;
+      // TODO(user): support Enqueueing level zero fact at a positive level.
+      // That is, do not loose the info on backtrack. This should be doable. It
+      // is also why we return a bool in case of conflict when pushing
+      // deduction.
+      ++num_deductions_;
+      level_zero_lower_bounds_[var] = deduction;
+      new_level_zero_bounds_.Set(var);
+
+      VLOG(1) << "Deduction old: "
+              << IntegerLiteral::GreaterOrEqual(
+                     var, integer_trail_->LevelZeroLowerBound(var))
+              << " new: " << IntegerLiteral::GreaterOrEqual(var, deduction);
+
+      // The entries that are equal to the min no longer need to be stored once
+      // the level zero bound is enqueued.
+      if (it->second == deduction) {
+        bounds_.erase(it);
+      }
+      if (integer_literal.bound == deduction) {
+        bounds_.erase(std::make_pair(literal.Index(), var));
+
+        // No need to update var_to_bounds_ in this case.
+        return;
+      }
     }
   }
 

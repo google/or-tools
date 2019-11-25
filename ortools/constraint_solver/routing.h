@@ -3238,7 +3238,7 @@ class SavingsFilteredHeuristic : public RoutingFilteredHeuristic {
 
  private:
   /// Used when add_reverse_arcs_ is true.
-  /// Given the vector of adjacency lists of a graph, adds symetric arcs not
+  /// Given the vector of adjacency lists of a graph, adds symmetric arcs not
   /// already in the graph to the adjacencies (i.e. if n1-->n2 is present and
   /// not n2-->n1, then n1 is added to adjacency_matrix[n2].
   // clang-format off

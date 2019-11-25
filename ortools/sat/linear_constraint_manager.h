@@ -60,7 +60,8 @@ class LinearConstraintManager {
   explicit LinearConstraintManager(Model* model)
       : sat_parameters_(*model->GetOrCreate<SatParameters>()),
         integer_trail_(*model->GetOrCreate<IntegerTrail>()),
-        time_limit_(model->GetOrCreate<TimeLimit>()) {}
+        time_limit_(model->GetOrCreate<TimeLimit>()),
+        model_(model) {}
   ~LinearConstraintManager();
 
   // Add a new constraint to the manager. Note that we canonicalize constraints
@@ -109,6 +110,11 @@ class LinearConstraintManager {
   int64 num_cuts() const { return num_cuts_; }
   int64 num_shortened_constraints() const { return num_shortened_constraints_; }
   int64 num_coeff_strenghtening() const { return num_coeff_strenghtening_; }
+
+  // If a debug solution has been loaded, this checks if the given constaint cut
+  // it or not. Returns true iff everything is fine and the cut does not violate
+  // the loaded solution.
+  bool DebugCheckConstraint(const LinearConstraint& cut);
 
  private:
   // Heuristic that decide which constraints we should remove from the current
@@ -172,6 +178,7 @@ class LinearConstraintManager {
   gtl::ITIVector<IntegerVariable, double> dense_objective_coeffs_;
 
   TimeLimit* time_limit_;
+  Model* model_;
 };
 
 }  // namespace sat

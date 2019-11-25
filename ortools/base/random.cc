@@ -37,9 +37,7 @@ uint32 ACMRandom::Next() {
   return absl::uniform_int_distribution<uint32>(0, kuint32max)(generator_);
 }
 
-uint32 ACMRandom::Uniform(uint32 n) {
-  return n == 0 ? 0 : Next() % n;
-}
+uint32 ACMRandom::Uniform(uint32 n) { return n == 0 ? 0 : Next() % n; }
 
 uint64 ACMRandom::Next64() {
   return absl::uniform_int_distribution<uint64>(0, kuint64max)(generator_);

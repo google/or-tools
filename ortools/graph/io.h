@@ -34,7 +34,7 @@
 
 namespace util {
 
-// Returns a std::string representation of a graph.
+// Returns a string representation of a graph.
 enum GraphToStringFormat {
   // One arc per line, eg. "3->1".
   PRINT_GRAPH_ARCS,
