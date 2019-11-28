@@ -17,8 +17,10 @@ using System;
 using Google.OrTools.LinearSolver;
 // [END import]
 
+// [START program_part1]
 public class MipVarArray
 {
+  // [START data_model]
   class DataModel
   {
     public double[,] ConstraintCoeffs = {
@@ -32,18 +34,20 @@ public class MipVarArray
     public int NumVars = 5;
     public int NumConstraints = 4;
   }
-
+  // [END data_model]
   public static void Main()
   {
     // [START data]
     DataModel data = new DataModel();
     // [END data]
+    // [END program_part1]
 
     // [START solver]
     // Create the linear solver with the CBC backend.
     Solver solver = Solver.CreateSolver("SimpleMipProgram", "CBC_MIXED_INTEGER_PROGRAMMING");
     // [END solver]
 
+    // [START program_part2]
     // [START variables]
     MPVariable[] x = new MPVariable[data.NumVars];
     for (int j = 0; j < data.NumVars; j++)
@@ -75,22 +79,14 @@ public class MipVarArray
 
       // [START solve]
       Solver.ResultStatus resultStatus = solver.Solve();
+      // [END solve]
+
+      // [START print_solution]
       // Check that the problem has an optimal solution.
       if (resultStatus != Solver.ResultStatus.OPTIMAL)
       {
         Console.WriteLine("The problem does not have an optimal solution!");
         return;
-      }
-      // [END solve]
-
-      // [START print_solution]
-      Console.WriteLine("Solution:");
-      Console.WriteLine("Objective value = " + solver.Objective().Value());
-      const MPSolver::ResultStatus result_status = solver.Solve();
-      // Check that the problem has an optimal solution.
-      if (result_status != MPSolver::OPTIMAL)
-      {
-        Console.WriteLine("The problem does not have an optimal solution.");
       }
 
       Console.WriteLine("Solution:");
@@ -111,4 +107,5 @@ public class MipVarArray
     }
   }
 }
+// [END program_part2]
 // [END program]
