@@ -657,19 +657,20 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
   const std::vector<int> vars = {proto.vars().begin(), proto.vars().end()};
 
   // Compute the set of reachable state at each time point.
+  const absl::flat_hash_set<int64> final_states({proto.final_states().begin(),
+                                                 proto.final_states().end()});
   std::vector<absl::flat_hash_set<int64>> reachable_states(n + 1);
   reachable_states[0].insert(proto.starting_state());
-  reachable_states[n] = {proto.final_states().begin(),
-                         proto.final_states().end()};
 
   // Forward pass.
-  for (int time = 0; time + 1 < n; ++time) {
+  for (int time = 0; time < n; ++time) {
     for (int t = 0; t < proto.transition_tail_size(); ++t) {
       const int64 tail = proto.transition_tail(t);
       const int64 label = proto.transition_label(t);
       const int64 head = proto.transition_head(t);
       if (!reachable_states[time].contains(tail)) continue;
       if (!context->DomainContains(vars[time], label)) continue;
+      if (time == n - 1 && !final_states.contains(head)) continue;
       reachable_states[time + 1].insert(head);
     }
   }
