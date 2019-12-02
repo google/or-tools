@@ -76,6 +76,8 @@ class SolutionCallback {
 
   void StopSearch() { stopped_ = true; }
 
+  void ResetSharedBoolean() const { stopped_ = false; }
+
   std::atomic<bool>* stopped() const { return &stopped_; }
 
   operations_research::sat::CpSolverResponse Response() const {
@@ -128,6 +130,7 @@ class SatHelper {
       const operations_research::sat::SatParameters& parameters,
       const SolutionCallback& callback) {
     FixFlagsAndEnvironmentForSwig();
+    callback.ResetSharedBoolean();
     Model model;
     model.Add(NewSatParameters(parameters));
     model.Add(NewFeasibleSolutionObserver(
@@ -143,6 +146,7 @@ class SatHelper {
       const operations_research::sat::CpModelProto& model_proto,
       const std::string& parameters, const SolutionCallback& callback) {
     FixFlagsAndEnvironmentForSwig();
+    callback.ResetSharedBoolean();
     Model model;
     model.Add(NewSatParameters(parameters));
     model.Add(NewFeasibleSolutionObserver(
