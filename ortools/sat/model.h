@@ -174,7 +174,11 @@ class Model {
   }
 
   // Map of FastTypeId<T> to a "singleton" of type T.
+#if defined(__APPLE__)
+  std::map</*typeid*/ size_t, void*> singletons_;
+#else
   absl::flat_hash_map</*typeid*/ size_t, void*> singletons_;
+#endif
 
   struct DeleteInterface {
     virtual ~DeleteInterface() = default;
