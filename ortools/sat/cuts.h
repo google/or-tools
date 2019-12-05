@@ -145,9 +145,10 @@ struct RoundingOptions {
   bool use_mir = false;
   IntegerValue max_scaling = IntegerValue(60);
 };
-void IntegerRoundingCut(RoundingOptions options, std::vector<double> lp_values,
-                        std::vector<IntegerValue> lower_bounds,
-                        std::vector<IntegerValue> upper_bounds,
+void IntegerRoundingCut(RoundingOptions options,
+                        const std::vector<double>& lp_values,
+                        const std::vector<IntegerValue>& lower_bounds,
+                        const std::vector<IntegerValue>& upper_bounds,
                         LinearConstraint* cut);
 
 // If a variable is away from its upper bound by more than value 1.0, then it

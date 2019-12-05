@@ -76,6 +76,7 @@ class SolutionCallback {
 
   void StopSearch() { stopped_ = true; }
 
+  // Reset the shared atomic Boolean used to stop the search.
   void ResetSharedBoolean() const { stopped_ = false; }
 
   std::atomic<bool>* stopped() const { return &stopped_; }

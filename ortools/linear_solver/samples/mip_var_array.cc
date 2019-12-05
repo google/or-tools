@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Mixed Integer programming example that shows how to use the API.
 // [START program]
 // [START import]
 #include "ortools/linear_solver/linear_solver.h"
@@ -39,12 +38,9 @@ void IntegerProgrammingExample() {
   // [END data]
 
   // [START solver]
-  // MOE:begin_strip
   // Create the mip solver with the CBC backend.
   MPSolver solver("simple_mip_program",
                   MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
-  MPSolver solver("simple_mip_program",
-                  MPSolver::CBC_MIXED_INTEGER_PROGRAMMING); */
   // [END solver]
 
   // [START variables]
@@ -54,6 +50,7 @@ void IntegerProgrammingExample() {
   for (int j = 0; j < data.num_vars; ++j) {
     x[j] = solver.MakeIntVar(0.0, infinity, "");
   }
+  LOG(INFO) << "Number of variables = " << solver.NumVariables();
   // [END variables]
 
   // [START constraints]
@@ -64,28 +61,27 @@ void IntegerProgrammingExample() {
       constraint->SetCoefficient(x[j], data.constraint_coeffs[i][j]);
     }
   }
+  LOG(INFO) << "Number of constraints = " << solver.NumConstraints();
   // [END constraints]
 
   // [START objective]
   // Create the objective function.
   MPObjective* const objective = solver.MutableObjective();
-
   for (int j = 0; j < data.num_vars; ++j) {
     objective->SetCoefficient(x[j], data.obj_coeffs[j]);
   }
   objective->SetMaximization();
   // [END objective]
 
-  // [START print_solution]
-  LOG(INFO) << "Number of variables = " << solver.NumVariables();
-  LOG(INFO) << "Number of constraints = " << solver.NumConstraints();
-
+  // [START solve]
   const MPSolver::ResultStatus result_status = solver.Solve();
+  // [END solve]
+
+  // [START print_solution]
   // Check that the problem has an optimal solution.
   if (result_status != MPSolver::OPTIMAL) {
     LOG(FATAL) << "The problem does not have an optimal solution.";
   }
-
   LOG(INFO) << "Solution:";
   LOG(INFO) << "Optimal objective value = " << objective->Value();
 

@@ -358,6 +358,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   Trail* trail_;
   SearchHeuristicsVector* model_heuristics_;
   IntegerEncoder* integer_encoder_;
+  ModelRandomGenerator* random_;
 
   // Used while deriving cuts.
   ImpliedBoundsProcessor implied_bounds_processor_;

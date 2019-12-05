@@ -657,8 +657,8 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
   const std::vector<int> vars = {proto.vars().begin(), proto.vars().end()};
 
   // Compute the set of reachable state at each time point.
-  const absl::flat_hash_set<int64> final_states({proto.final_states().begin(),
-                                                 proto.final_states().end()});
+  const absl::flat_hash_set<int64> final_states(
+      {proto.final_states().begin(), proto.final_states().end()});
   std::vector<absl::flat_hash_set<int64>> reachable_states(n + 1);
   reachable_states[0].insert(proto.starting_state());
 

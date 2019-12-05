@@ -773,7 +773,7 @@ util::StatusOr<MPSolutionResponse> ScipSolveProto(
       request.solver_specific_parameters(), scip);
   if (!parameters_status.ok()) {
     response.set_status(MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS);
-    response.set_status_str(parameters_status.error_message());
+    response.set_status_str(parameters_status.message());
     return response;
   }
   // Default clock type. We use wall clock time because getting CPU user seconds

@@ -170,6 +170,8 @@ class BlossomGraph {
   DEFINE_INT_TYPE(CostValue, int64);
 
   // Basic constants.
+  // NOTE(user): Those can't be constexpr because of the or-tools export,
+  // which complains for constexpr DEFINE_INT_TYPE.
   static const NodeIndex kNoNodeIndex;
   static const EdgeIndex kNoEdgeIndex;
   static const CostValue kMaxCostValue;

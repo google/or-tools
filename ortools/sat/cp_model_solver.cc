@@ -2017,19 +2017,14 @@ class LnsSolver : public SubSolver {
                         postsolve_mapping, shared_->wall_timer,
                         &local_response);
       if (generator_->IsRelaxationGenerator()) {
+        data.neighborhood_id = neighborhood.id;
         data.status = local_response.status();
         data.deterministic_time = local_response.deterministic_time();
-        data.new_objective = data.base_objective;
-        // TODO(user): The objective value might not be a good signal to
-        // adjust difficulty. Use bounds instead.
         bool has_feasible_solution = false;
         if (local_response.status() == CpSolverStatus::OPTIMAL ||
             local_response.status() == CpSolverStatus::FEASIBLE) {
-          data.new_objective = IntegerValue(ComputeInnerObjective(
-              shared_->model_proto->objective(), local_response));
           has_feasible_solution = true;
         }
-        generator_->AddSolveData(data);
 
         if (local_response.status() == CpSolverStatus::INFEASIBLE) {
           shared_->response->NotifyThatImprovingProblemIsInfeasible(
@@ -2043,27 +2038,17 @@ class LnsSolver : public SubSolver {
           const IntegerValue local_obj_lb =
               local_response_manager.GetInnerObjectiveLowerBound();
 
-          const bool is_maximization =
-              (shared_->model_proto->objective().scaling_factor() < 0);
-
-          const double scaled_current_obj_bound = ScaleObjectiveValue(
-              shared_->model_proto->objective(), current_obj_lb.value());
           const double scaled_local_obj_bound = ScaleObjectiveValue(
               neighborhood.cp_model.objective(), local_obj_lb.value());
-
-          // If the objective bounds are not improving, abort early.
-          if ((is_maximization &&
-               scaled_local_obj_bound > scaled_current_obj_bound) ||
-              (!is_maximization &&
-               scaled_local_obj_bound < scaled_current_obj_bound)) {
-            return;
-          }
 
           // Update the bound.
           const IntegerValue new_inner_obj_lb = IntegerValue(
               std::ceil(UnscaleObjectiveValue(shared_->model_proto->objective(),
                                               scaled_local_obj_bound) -
                         1e-6));
+          data.new_objective_bound = new_inner_obj_lb;
+          data.initial_best_objective_bound = current_obj_lb;
+
           if (new_inner_obj_lb > current_obj_lb) {
             const IntegerValue current_obj_ub =
                 shared_->response->GetInnerObjectiveUpperBound();
@@ -2079,13 +2064,13 @@ class LnsSolver : public SubSolver {
               absl::StrCat(local_response.solution_info(), " ", solution_info));
         }
 
+        // If we have a solution of the relaxed problem, we check if it is also
+        // a valid solution of the non-relaxed one.
         if (has_feasible_solution &&
             SolutionIsFeasible(
                 *shared_->model_proto,
                 std::vector<int64>(local_response.solution().begin(),
                                    local_response.solution().end()))) {
-          // If we have a solution of the relaxed problem, we check if it is
-          // also a valid solution of the non-relaxed one.
           shared_->response->NewSolution(local_response,
                                          /*model=*/nullptr);
 
@@ -2096,34 +2081,47 @@ class LnsSolver : public SubSolver {
             shared_->time_limit->Stop();
           }
         }
-        return;
-      }
-
-      if (!local_response.solution().empty()) {
-        CHECK(SolutionIsFeasible(
-            *shared_->model_proto,
-            std::vector<int64>(local_response.solution().begin(),
-                               local_response.solution().end())))
-            << solution_info;
-      }
-
-      local_response_manager.BestSolutionInnerObjectiveValue();
-      if (local_response.solution_info().empty()) {
-        local_response.set_solution_info(solution_info);
       } else {
-        local_response.set_solution_info(
-            absl::StrCat(local_response.solution_info(), " ", solution_info));
+        if (!local_response.solution().empty()) {
+          CHECK(SolutionIsFeasible(
+              *shared_->model_proto,
+              std::vector<int64>(local_response.solution().begin(),
+                                 local_response.solution().end())))
+              << solution_info;
+        }
+
+        if (local_response.solution_info().empty()) {
+          local_response.set_solution_info(solution_info);
+        } else {
+          local_response.set_solution_info(
+              absl::StrCat(local_response.solution_info(), " ", solution_info));
+        }
+
+        // Finish to fill the SolveData now that the local solve is done.
+        data.status = local_response.status();
+        data.deterministic_time = local_response.deterministic_time();
+        data.new_objective = data.base_objective;
+        if (local_response.status() == CpSolverStatus::OPTIMAL ||
+            local_response.status() == CpSolverStatus::FEASIBLE) {
+          data.new_objective = IntegerValue(ComputeInnerObjective(
+              shared_->model_proto->objective(), local_response));
+        }
+
+        // Report any feasible solution we have.
+        if (local_response.status() == CpSolverStatus::OPTIMAL ||
+            local_response.status() == CpSolverStatus::FEASIBLE) {
+          shared_->response->NewSolution(local_response,
+                                         /*model=*/nullptr);
+        }
+        if (!neighborhood.is_reduced &&
+            (local_response.status() == CpSolverStatus::OPTIMAL ||
+             local_response.status() == CpSolverStatus::INFEASIBLE)) {
+          shared_->response->NotifyThatImprovingProblemIsInfeasible(
+              local_response.solution_info());
+          shared_->time_limit->Stop();
+        }
       }
 
-      // Finish to fill the SolveData now that the local solve is done.
-      data.status = local_response.status();
-      data.deterministic_time = local_response.deterministic_time();
-      data.new_objective = data.base_objective;
-      if (local_response.status() == CpSolverStatus::OPTIMAL ||
-          local_response.status() == CpSolverStatus::FEASIBLE) {
-        data.new_objective = IntegerValue(ComputeInnerObjective(
-            shared_->model_proto->objective(), local_response));
-      }
       generator_->AddSolveData(data);
 
       // The total number of call when this was called is the same as task_id.
@@ -2136,20 +2134,6 @@ class LnsSolver : public SubSolver {
               << ", num calls: " << generator_->num_calls()
               << ", UCB1 Score: " << generator_->GetUCBScore(total_num_calls)
               << ", p: " << fully_solved_proportion << "]";
-
-      // Report any feasible solution we have.
-      if (local_response.status() == CpSolverStatus::OPTIMAL ||
-          local_response.status() == CpSolverStatus::FEASIBLE) {
-        shared_->response->NewSolution(local_response,
-                                       /*model=*/nullptr);
-      }
-      if (!neighborhood.is_reduced &&
-          (local_response.status() == CpSolverStatus::OPTIMAL ||
-           local_response.status() == CpSolverStatus::INFEASIBLE)) {
-        shared_->response->NotifyThatImprovingProblemIsInfeasible(
-            local_response.solution_info());
-        shared_->time_limit->Stop();
-      }
     };
   }
 
@@ -2279,8 +2263,15 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       if (parameters.use_relaxation_lns()) {
         subsolvers.push_back(absl::make_unique<LnsSolver>(
             /*id=*/subsolvers.size(),
-            absl::make_unique<RandomRelaxationNeighborhoodGenerator>(
+            absl::make_unique<
+                ConsecutiveConstraintsRelaxationNeighborhoodGenerator>(
                 helper, absl::StrCat("rnd_rel_lns_", strategy_name)),
+            local_params, helper, &shared));
+
+        subsolvers.push_back(absl::make_unique<LnsSolver>(
+            /*id=*/subsolvers.size(),
+            absl::make_unique<WeightedRandomRelaxationNeighborhoodGenerator>(
+                helper, absl::StrCat("wgt_rel_lns_", strategy_name)),
             local_params, helper, &shared));
       }
 

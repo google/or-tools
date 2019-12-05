@@ -28,6 +28,8 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/mathutil.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/preprocessor.h"
 #include "ortools/glop/status.h"
@@ -58,6 +60,7 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(Model* model)
       trail_(model->GetOrCreate<Trail>()),
       model_heuristics_(model->GetOrCreate<SearchHeuristicsVector>()),
       integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
+      random_(model->GetOrCreate<ModelRandomGenerator>()),
       implied_bounds_processor_({}, integer_trail_,
                                 model->GetOrCreate<ImpliedBounds>()),
       dispatcher_(model->GetOrCreate<LinearProgrammingDispatcher>()),
@@ -230,7 +233,7 @@ LPSolveInfo LinearProgrammingConstraint::SolveLpForBranching() {
   LPSolveInfo info;
   glop::BasisState basis_state = simplex_.GetState();
 
-  const auto status = simplex_.Solve(lp_data_, time_limit_);
+  const glop::Status status = simplex_.Solve(lp_data_, time_limit_);
   total_num_simplex_iterations_ += simplex_.GetNumberOfIterations();
   simplex_.LoadStateForNextSolve(basis_state);
   if (!status.ok()) {
@@ -596,10 +599,11 @@ void LinearProgrammingConstraint::AddCutFromConstraints(
     cut = ConvertToLinearConstraint(dense_cut, cut_ub);
   }
 
-  // This should be tight!
+  // This should be tight.
+  const double norm = ToDouble(ComputeInfinityNorm(cut));
   if (std::abs(ComputeActivity(cut, expanded_lp_solution_) - ToDouble(cut.ub)) /
-          std::max(1.0, std::abs(ToDouble(cut.ub))) >
-      1e-2) {
+          norm >
+      1e-4) {
     VLOG(1) << "Cut not tight " << ComputeActivity(cut, expanded_lp_solution_)
             << " " << ToDouble(cut.ub);
     return;
@@ -668,8 +672,7 @@ void LinearProgrammingConstraint::AddCutFromConstraints(
   RoundingOptions options;
   options.use_mir = sat_parameters_.use_mir_rounding();
   options.max_scaling = sat_parameters_.max_integer_rounding_scaling();
-  IntegerRoundingCut(options, std::move(lp_values), std::move(var_lbs),
-                     std::move(var_ubs), &cut);
+  IntegerRoundingCut(options, lp_values, var_lbs, var_ubs, &cut);
 
   // Compute the activity. Warning: the cut no longer have the same size so we
   // cannot use lp_values. Note that the substitution below shouldn't change
@@ -805,7 +808,34 @@ void LinearProgrammingConstraint::AddCGCuts() {
   }
 }
 
+namespace {
+
+// For each element of a, adds a random one in b and append the pair to output.
+void RandomPick(const std::vector<RowIndex>& a, const std::vector<RowIndex>& b,
+                ModelRandomGenerator* random,
+                std::vector<std::pair<RowIndex, RowIndex>>* output) {
+  if (a.empty() || b.empty()) return;
+  for (const RowIndex row : a) {
+    const RowIndex other = b[absl::Uniform<int>(*random, 0, b.size() - 1)];
+    if (other != row) {
+      output->push_back({row, other});
+    }
+  }
+}
+
+template <class ListOfTerms>
+IntegerValue GetCoeff(ColIndex col, const ListOfTerms& terms) {
+  for (const auto& term : terms) {
+    if (term.first == col) return term.second;
+  }
+  return IntegerValue(0);
+}
+
+}  // namespace
+
 void LinearProgrammingConstraint::AddMirCuts() {
+  // We first try to derive MIR cuts for just one constraints. We call these
+  // MIR1 cuts.
   CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   const RowIndex num_rows = lp_data_.num_constraints();
   for (RowIndex row(0); row < num_rows; ++row) {
@@ -813,9 +843,6 @@ void LinearProgrammingConstraint::AddMirCuts() {
     if (status == glop::ConstraintStatus::BASIC) continue;
     if (status == glop::ConstraintStatus::FREE) continue;
 
-    // TODO(user): Do not consider just one constraint, but take linear
-    // combination of a small number of constraints. There is a lot of
-    // literature on the possible heuristics here.
     if (status == glop::ConstraintStatus::AT_UPPER_BOUND ||
         status == glop::ConstraintStatus::FIXED_VALUE) {
       std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers;
@@ -827,6 +854,118 @@ void LinearProgrammingConstraint::AddMirCuts() {
       std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers;
       integer_multipliers.push_back({row, IntegerValue(-1)});
       AddCutFromConstraints("MIR1", integer_multipliers);
+    }
+  }
+
+  // Now, try linear combination of 2 different rows (MIR2).
+  //
+  // To limit the combinations we try. We first pick the top 50 variables, i.e.
+  // the ones with a LP relaxation farther from their bounds. And we try for
+  // each row to combine it with a random other row in order to eliminate the
+  // considered variable from the base constraint used to derive the cut.
+  //
+  // TODO(user): Maybe an heuristic is better than random? consider constraint
+  // sizes, small coefficients, number of BASIC variable in both constraints?
+  //
+  // TODO(user): generalize this to a linear combination of a bit more rows.
+  // The literature seems to go up to 6. The code architecture need to change a
+  // bit though because the usual heuristic is to incrementality try to add one
+  // more row to an existing linear combination of some rows. We also have to
+  // be more careful about integer overflow.
+  const int num_cols_to_consider = 50;
+
+  // First pick the top BASIC variables to consider.
+  std::vector<std::pair<double, ColIndex>> col_candidates;
+  const int num_cols = integer_variables_.size();
+  for (ColIndex col(0); col < num_cols; ++col) {
+    const int col_degree = lp_data_.GetSparseColumn(col).num_entries().value();
+    if (col_degree <= 1) continue;
+    if (simplex_.GetVariableStatus(col) != glop::VariableStatus::BASIC) {
+      continue;
+    }
+
+    const IntegerVariable var = integer_variables_[col.value()];
+    const double lp_value = expanded_lp_solution_[var];
+    const double lb = ToDouble(integer_trail_->LowerBound(var));
+    const double ub = ToDouble(integer_trail_->UpperBound(var));
+    const double bound_distance = std::min(ub - lp_value, lp_value - lb);
+
+    col_candidates.push_back({bound_distance, col});
+  }
+
+  std::sort(col_candidates.begin(), col_candidates.end(),
+            std::greater<std::pair<double, ColIndex>>());
+  if (col_candidates.size() > num_cols_to_consider) {
+    col_candidates.resize(num_cols_to_consider);
+  }
+
+  // For each columns, we split the rows according to their type and coefficient
+  // sign.
+  std::vector<RowIndex> ub_positive_rows;
+  std::vector<RowIndex> ub_negative_rows;
+  std::vector<RowIndex> lb_positive_rows;
+  std::vector<RowIndex> lb_negative_rows;
+  std::vector<std::pair<RowIndex, RowIndex>> to_try;
+
+  for (const auto& entry : col_candidates) {
+    const ColIndex col = entry.second;
+    ub_positive_rows.clear();
+    ub_negative_rows.clear();
+    lb_positive_rows.clear();
+    lb_negative_rows.clear();
+    for (const auto entry : lp_data_.GetSparseColumn(col)) {
+      const RowIndex row = entry.row();
+      const auto status = simplex_.GetConstraintStatus(row);
+      if (status == glop::ConstraintStatus::BASIC) continue;
+
+      // TODO(user): Instead of using FIXED_VALUE consider also both direction
+      // when we almost have an equality? that is if the LP constraints bounds
+      // are close from each others (<1e-6 ?). Initial experiments shows it
+      // doesn't change much, so I kept this version for now. Note that it might
+      // just be better to use the side that constrain the current lp optimal
+      // solution (that we get from the status).
+      if (status == glop::ConstraintStatus::FIXED_VALUE ||
+          status == glop::ConstraintStatus::AT_UPPER_BOUND) {
+        if (entry.coefficient() > 0.0) {
+          ub_positive_rows.push_back(row);
+        } else {
+          ub_negative_rows.push_back(row);
+        }
+      }
+      if (status == glop::ConstraintStatus::FIXED_VALUE ||
+          status == glop::ConstraintStatus::AT_LOWER_BOUND) {
+        if (entry.coefficient() > 0.0) {
+          lb_positive_rows.push_back(row);
+        } else {
+          lb_negative_rows.push_back(row);
+        }
+      }
+    }
+
+    // We combine the row in such a way that -coeff2 * row1 + coeff1 * row2 is
+    // an upper bounded constraint that is also tight under the current LP
+    // solution.
+    to_try.clear();
+    RandomPick(ub_positive_rows, ub_negative_rows, random_, &to_try);
+    RandomPick(lb_negative_rows, lb_positive_rows, random_, &to_try);
+
+    // Note that here, fixed rows will appear on both side. We will not add
+    // anything if we randomly pick twice the same row.
+    RandomPick(lb_positive_rows, ub_positive_rows, random_, &to_try);
+    RandomPick(ub_negative_rows, lb_negative_rows, random_, &to_try);
+    gtl::STLSortAndRemoveDuplicates(&to_try);
+
+    for (const auto& entry : to_try) {
+      const IntegerValue coeff1 = GetCoeff(col, integer_lp_[entry.first].terms);
+      const IntegerValue coeff2 =
+          GetCoeff(col, integer_lp_[entry.second].terms);
+      if (coeff1 == 0 || coeff2 == 0) continue;
+      const IntegerValue gcd = IntegerValue(
+          MathUtil::GCD64(std::abs(coeff1.value()), std::abs(coeff2.value())));
+      std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers;
+      integer_multipliers.push_back({entry.first, -coeff2 / gcd});
+      integer_multipliers.push_back({entry.second, coeff1 / gcd});
+      AddCutFromConstraints("MIR2", integer_multipliers);
     }
   }
 }
@@ -989,7 +1128,8 @@ bool LinearProgrammingConstraint::Propagate() {
         VLOG(2) << "LP objective [ " << ToDouble(propagated_lb) << ", "
                 << ToDouble(integer_trail_->UpperBound(objective_cp_))
                 << " ] approx_lb += "
-                << ToDouble(approximate_new_lb - propagated_lb);
+                << ToDouble(approximate_new_lb - propagated_lb) << " gap: "
+                << integer_trail_->UpperBound(objective_cp_) - propagated_lb;
       }
     } else {
       FillReducedCostReasonIn(simplex_.GetReducedCosts(), &integer_reason_);
@@ -1341,7 +1481,10 @@ LinearProgrammingConstraint::ScaleLpMultiplier(
   }
 
   // We want max_sum * scaling to be <= 2 ^ max_pow and fit on an int64.
-  *scaling = std::ldexp(1, max_pow) / max_sum;
+  // We use a power of 2 as this seems to work better.
+  const double threshold = std::ldexp(1, max_pow) / max_sum;
+  *scaling = 1.0;
+  while (2 * *scaling <= threshold) *scaling *= 2;
 
   // Scale the multipliers by *scaling.
   //

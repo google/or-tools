@@ -91,7 +91,7 @@ inline IntegerValue Subtract(IntegerValue a, IntegerValue b) {
 
 inline IntegerValue CeilRatio(IntegerValue dividend,
                               IntegerValue positive_divisor) {
-  CHECK_GT(positive_divisor, 0);
+  DCHECK_GT(positive_divisor, 0);
   const IntegerValue result = dividend / positive_divisor;
   const IntegerValue adjust =
       static_cast<IntegerValue>(result * positive_divisor < dividend);
@@ -100,7 +100,7 @@ inline IntegerValue CeilRatio(IntegerValue dividend,
 
 inline IntegerValue FloorRatio(IntegerValue dividend,
                                IntegerValue positive_divisor) {
-  CHECK_GT(positive_divisor, 0);
+  DCHECK_GT(positive_divisor, 0);
   const IntegerValue result = dividend / positive_divisor;
   const IntegerValue adjust =
       static_cast<IntegerValue>(result * positive_divisor > dividend);

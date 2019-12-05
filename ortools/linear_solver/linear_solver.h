@@ -674,7 +674,7 @@ class MPSolver {
    */
   int64 nodes() const;
 
-  /// Returns a std::string describing the underlying solver and its version.
+  /// Returns a string describing the underlying solver and its version.
   std::string SolverVersion() const;
 
   /**
@@ -1622,7 +1622,7 @@ class MPSolverInterface {
     return result_status_;
   }
 
-  // Returns a std::string describing the underlying solver and its version.
+  // Returns a string describing the underlying solver and its version.
   virtual std::string SolverVersion() const = 0;
 
   // Returns the underlying solver.

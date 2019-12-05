@@ -402,6 +402,9 @@ bool LinearConstraintManager::ChangeLp(
     // Inprocessing of the constraint.
     if (simplify_constraints &&
         SimplifyConstraint(&constraint_infos_[i].constraint)) {
+      // Note that the canonicalization shouldn't be needed since the order
+      // of the variable is not changed by the simplification, and we only
+      // reduce the coefficients at both end of the spectrum.
       DivideByGCD(&constraint_infos_[i].constraint);
       DCHECK(DebugCheckConstraint(constraint_infos_[i].constraint));
 
@@ -413,6 +416,9 @@ bool LinearConstraintManager::ChangeLp(
       equiv_constraints_.erase(constraint_infos_[i].hash);
       constraint_infos_[i].hash =
           ComputeHashOfTerms(constraint_infos_[i].constraint);
+
+      // TODO(user): Because we simplified this constraint, it is possible that
+      // it is now a duplicate of another one. Merge them.
       equiv_constraints_[constraint_infos_[i].hash] = i;
     }
 

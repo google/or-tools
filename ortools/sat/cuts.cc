@@ -22,6 +22,7 @@
 
 #include "ortools/algorithms/knapsack_solver_for_cuts.h"
 #include "ortools/base/integral_types.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/util/time_limit.h"
@@ -113,7 +114,7 @@ bool AllVarsTakeIntegerValue(
 //    bound.
 // 2. Sort all terms (coefficient * shifted upper bound) in non decreasing
 //    order.
-// 3. Add terms in cover untill term sum is smaller or equal to upper bound.
+// 3. Add terms in cover until term sum is smaller or equal to upper bound.
 // 4. Add the last item which violates the upper bound. This forms the smallest
 //    cover. Return the size of this cover.
 int GetSmallestCoverSize(const LinearConstraint& constraint,
@@ -611,7 +612,8 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
   const IntegerValue size = divisor - rhs_remainder;
   if (max_scaling == 1) {
     // TODO(user): Use everywhere a two step computation to avoid overflow?
-    // First divide by divisor, then multiply by t.
+    // First divide by divisor, then multiply by t. For now, we limit the
+    // max_scaling so that we never have an overflow instead.
     return [t, divisor](IntegerValue coeff) {
       return FloorRatio(t * coeff, divisor);
     };
@@ -657,11 +659,13 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
   }
 }
 
-// TODO(user): This can currently take a significant portion of the run time on
-// problem like opm2-z7-s8.mps.gz. Fix or just call less often.
-void IntegerRoundingCut(RoundingOptions options, std::vector<double> lp_values,
-                        std::vector<IntegerValue> lower_bounds,
-                        std::vector<IntegerValue> upper_bounds,
+// TODO(user): This has been optimized a bit, but we can probably do even better
+// as it still takes around 25% percent of the run time when all the cuts are on
+// for the opm*mps.gz problems and others.
+void IntegerRoundingCut(RoundingOptions options,
+                        const std::vector<double>& lp_values,
+                        const std::vector<IntegerValue>& lower_bounds,
+                        const std::vector<IntegerValue>& upper_bounds,
                         LinearConstraint* cut) {
   const int size = lp_values.size();
   if (size == 0) return;
@@ -671,87 +675,151 @@ void IntegerRoundingCut(RoundingOptions options, std::vector<double> lp_values,
   CHECK_EQ(cut->coeffs.size(), size);
   CHECK_EQ(cut->lb, kMinIntegerValue);
 
-  // Optimization: upper bound is no longer used once this is filled.
-  std::vector<IntegerValue>& bound_diffs = upper_bounds;
+  // To optimize the computation of the best divisor below, we only need to
+  // look at the indices with a shifted lp value that is not close to zero.
+  //
+  // TODO(user): use a class to reuse this memory. Note however that currently
+  // this do not appear in the cpu profile.
+  //
+  // TODO(user): sort by decreasing lp_values so that our early abort test in
+  // the critical loop below has more chance of returning early? I tried but it
+  // didn't seems to change much though.
+  std::vector<int> relevant_indices;
+  std::vector<double> relevant_lp_values;
+  std::vector<IntegerValue> relevant_coeffs;
+  std::vector<IntegerValue> relevant_bound_diffs;
+  std::vector<IntegerValue> divisors;
+  std::vector<std::pair<int, IntegerValue>> adjusted_coeffs;
 
   // Shift each variable using its lower/upper bound so that no variable can
   // change sign. We eventually do a change of variable to its negation so
   // that all variable are non-negative.
   bool overflow = false;
   std::vector<bool> change_sign_at_postprocessing(size, false);
-  IntegerValue max_initial_magnitude(1);
+  IntegerValue max_magnitude(0);
   for (int i = 0; i < size; ++i) {
     if (cut->coeffs[i] == 0) continue;
+
+    // We might change them below.
+    IntegerValue lb = lower_bounds[i];
+    double lp_value = lp_values[i];
+
+    const IntegerValue ub = upper_bounds[i];
+    const IntegerValue bound_diff =
+        IntegerValue(CapSub(ub.value(), lb.value()));
 
     // Note that since we use ToDouble() this code works fine with lb/ub at
     // min/max integer value.
     {
-      const double value = lp_values[i];
-      const IntegerValue lb = lower_bounds[i];
-      const IntegerValue ub = upper_bounds[i];
-      bound_diffs[i] = IntegerValue(CapSub(ub.value(), lb.value()));
-
-      if (std::abs(value - ToDouble(lb)) > std::abs(value - ToDouble(ub))) {
+      if (std::abs(lp_value - ToDouble(lb)) >
+          std::abs(lp_value - ToDouble(ub))) {
         // Change the variable sign.
         change_sign_at_postprocessing[i] = true;
         cut->coeffs[i] = -cut->coeffs[i];
-        lp_values[i] = -lp_values[i];
-        lower_bounds[i] = -ub;
+        lp_value = -lp_value;
+        lb = -ub;
       }
     }
 
     // Always shift to lb.
     // coeff * X = coeff * (X - shift) + coeff * shift.
-    lp_values[i] -= ToDouble(lower_bounds[i]);
-    if (!AddProductTo(-cut->coeffs[i], lower_bounds[i], &cut->ub)) {
+    lp_value -= ToDouble(lb);
+    if (!AddProductTo(-cut->coeffs[i], lb, &cut->ub)) {
       overflow = true;
       break;
     }
 
     // Deal with fixed variable, no need to shift back in this case, we can
     // just remove the term.
-    if (bound_diffs[i] == 0) {
+    if (bound_diff == 0) {
       cut->coeffs[i] = IntegerValue(0);
-      lp_values[i] = 0.0;
+      lp_value = 0.0;
     }
 
-    max_initial_magnitude =
-        std::max(max_initial_magnitude, IntTypeAbs(cut->coeffs[i]));
+    const IntegerValue magnitude = IntTypeAbs(cut->coeffs[i]);
+    if (std::abs(lp_value) > 1e-2) {
+      relevant_coeffs.push_back(cut->coeffs[i]);
+      relevant_indices.push_back(i);
+      relevant_lp_values.push_back(lp_value);
+      relevant_bound_diffs.push_back(bound_diff);
+
+      divisors.push_back(magnitude);
+    }
+    max_magnitude = std::max(max_magnitude, magnitude);
   }
 
-  // Make sure that when we multiply the rhs or the coefficient by max_scaling,
-  // we do not have an integer overflow.
-  const IntegerValue max_scaling = std::min(
-      options.max_scaling,
-      kMaxIntegerValue / std::max(IntTypeAbs(cut->ub), max_initial_magnitude));
-  if (overflow || max_scaling == 0) {
-    VLOG(1) << "Issue, overflow.";
+  // TODO(user): Maybe this shouldn't be called on such constraint.
+  if (relevant_coeffs.empty()) {
+    VLOG(2) << "Issue, nothing to cut.";
     *cut = LinearConstraint(IntegerValue(0), IntegerValue(0));
     return;
   }
+  CHECK_NE(max_magnitude, 0);
 
   // Our heuristic will try to generate a few different cuts, and we will keep
-  // the most violated one.
+  // the most violated one scaled by the l2 norm of the relevant position.
+  //
+  // TODO(user): Experiment for the best value of this initial violation
+  // threshold. Note also that we use the l2 norm on the restricted position
+  // here. Maybe we should change that? On that note, the L2 norm usage seems a
+  // bit weird to me since it grows with the number of term in the cut. And
+  // often, we already have a good cut, and we make it stronger by adding extra
+  // terms that do not change its activity.
+  //
+  // The discussion above only concern the best_scaled_violation initial value.
+  // The remainder_threshold allows to not consider cuts for which the final
+  // efficacity is clearly lower than 1e-3 (it is a bound, so we could generate
+  // cuts with a lower efficacity than this).
   double best_scaled_violation = 0.01;
-  LinearConstraint best_cut(IntegerValue(0), IntegerValue(0));
-  LinearConstraint temp_cut;
+  const IntegerValue remainder_threshold(max_magnitude / 1000);
 
-  // TODO(user): Avoid quadratic algorithm.
-  for (int index = 0; index < size; ++index) {
-    // Skip shifted variable almost at their lower bound.
-    if (lp_values[index] <= 1e-2) continue;
-    const IntegerValue divisor = IntTypeAbs(cut->coeffs[index]);
+  // The cut->ub might have grown quite a bit with the bound substitution, so
+  // we need to include it too since we will apply the rounding function on it.
+  max_magnitude = std::max(max_magnitude, IntTypeAbs(cut->ub));
 
+  // Make sure that when we multiply the rhs or the coefficient by max_scaling,
+  // we do not have an integer overflow. Actually, we need a bit more room
+  // because we might round down a value to the next multiple of
+  // max_magnitude.
+  const IntegerValue threshold = kMaxIntegerValue / 2;
+  if (overflow || max_magnitude >= threshold) {
+    VLOG(2) << "Issue, overflow.";
+    *cut = LinearConstraint(IntegerValue(0), IntegerValue(0));
+    return;
+  }
+  const IntegerValue max_scaling =
+      std::min(options.max_scaling, threshold / max_magnitude);
+
+  // There is no point trying twice the same divisor or s divisor that is too
+  // small. Note that we use a higher threshold than the remainder_threshold
+  // because we can boost the remainder thanks to our adjusting heuristic below
+  // and also because this allows to have cuts with a small range of
+  // coefficients.
+  //
+  // TODO(user): Note that the std::sort() is visible in some cpu profile.
+  {
+    int new_size = 0;
+    const IntegerValue divisor_threshold = max_magnitude / 10;
+    for (int i = 0; i < divisors.size(); ++i) {
+      if (divisors[i] <= divisor_threshold) continue;
+      divisors[new_size++] = divisors[i];
+    }
+    divisors.resize(new_size);
+  }
+  gtl::STLSortAndRemoveDuplicates(&divisors, std::greater<IntegerValue>());
+
+  // TODO(user): Avoid quadratic algorithm? Note that we are quadratic in
+  // relevant_indices not the full cut->coeffs.size(), but this is still too
+  // much on some problems.
+  IntegerValue best_divisor(0);
+  for (const IntegerValue divisor : divisors) {
     // Skip if we don't have the potential to generate a good enough cut.
     const IntegerValue initial_rhs_remainder =
         cut->ub - FloorRatio(cut->ub, divisor) * divisor;
-    if (ToDouble(initial_rhs_remainder) / ToDouble(max_initial_magnitude) <=
-        best_scaled_violation) {
-      continue;
-    }
+    if (initial_rhs_remainder <= remainder_threshold) continue;
 
-    // TODO(user): by recomputing, we should avoid the need to make this copy.
-    temp_cut = *cut;
+    IntegerValue temp_ub = cut->ub;
+    adjusted_coeffs.clear();
 
     // We will adjust coefficient that are just under an exact multiple of
     // divisor to an exact multiple. This is meant to get rid of small errors
@@ -771,64 +839,156 @@ void IntegerRoundingCut(RoundingOptions options, std::vector<double> lp_values,
     const IntegerValue adjust_threshold =
         (divisor - initial_rhs_remainder - 1) / IntegerValue(size);
     if (adjust_threshold > 0) {
-      for (int i = 0; i < size; ++i) {
-        const IntegerValue diff = bound_diffs[i];
-        if (diff > adjust_threshold) continue;
+      // Even before we finish the adjust, we can have a lower bound on the
+      // activily loss using this divisor, and so we can abort early. This is
+      // similar to what is done below in the function.
+      bool early_abort = false;
+      double loss_lb = 0.0;
+      const double threshold = ToDouble(initial_rhs_remainder);
 
-        // Adjust coeff of the form k * divisor - epsilon.
-        const IntegerValue coeff = temp_cut.coeffs[i];
+      for (int i = 0; i < relevant_coeffs.size(); ++i) {
+        // Compute the difference of coeff with the next multiple of divisor.
+        const IntegerValue coeff = relevant_coeffs[i];
         const IntegerValue remainder =
             CeilRatio(coeff, divisor) * divisor - coeff;
-        if (CapProd(diff.value(), remainder.value()) > adjust_threshold) {
-          continue;
+
+        if (divisor - remainder <= initial_rhs_remainder) {
+          // We do not know exactly f() yet, but it will always round to the
+          // floor of the division by divisor in this case.
+          loss_lb += ToDouble(divisor - remainder) * relevant_lp_values[i];
+          if (loss_lb >= threshold) {
+            early_abort = true;
+            break;
+          }
         }
-        temp_cut.ub += remainder * diff;
-        temp_cut.coeffs[i] += remainder;
+
+        // Adjust coeff of the form k * divisor - epsilon.
+        const IntegerValue diff = relevant_bound_diffs[i];
+        if (remainder > 0 && remainder <= adjust_threshold &&
+            CapProd(diff.value(), remainder.value()) <= adjust_threshold) {
+          temp_ub += remainder * diff;
+          adjusted_coeffs.push_back({i, coeff + remainder});
+        }
       }
+
+      if (early_abort) continue;
     }
 
     // Create the super-additive function f().
     const IntegerValue rhs_remainder =
-        temp_cut.ub - FloorRatio(temp_cut.ub, divisor) * divisor;
+        temp_ub - FloorRatio(temp_ub, divisor) * divisor;
     if (rhs_remainder == 0) continue;
 
     const auto f = GetSuperAdditiveRoundingFunction(
         !options.use_mir, rhs_remainder, divisor, max_scaling);
 
-    // Apply f() to the cut and compute the cut violation.
-    temp_cut.ub = f(temp_cut.ub);
-    double violation = -ToDouble(temp_cut.ub);
-    double max_magnitude = 1.0;
-    for (int i = 0; i < temp_cut.coeffs.size(); ++i) {
-      const IntegerValue coeff = temp_cut.coeffs[i];
+    // As we round coefficients, we will compute the loss compared to the
+    // current scaled constraint activity. As soon as this loss crosses the
+    // slack, then we known that there is no violation and we can abort early.
+    //
+    // TODO(user): modulo the scaling, we could compute the exact threshold
+    // using our current best cut. Note that we also have to account the change
+    // in slack due to the adjust code above.
+    const double scaling = ToDouble(f(divisor)) / ToDouble(divisor);
+    const double threshold = scaling * ToDouble(rhs_remainder);
+    double loss = 0.0;
+
+    // Apply f() to the cut and compute the cut violation. Note that it is
+    // okay to just look at the relevant indices since the other have a lp
+    // value which is almost zero. Doing it like this is faster, and even if
+    // the max_magnitude might be off it should still be relevant enough.
+    double violation = -ToDouble(f(temp_ub));
+    double l2_norm = 0.0;
+    bool early_abort = false;
+    int adjusted_coeffs_index = 0;
+    for (int i = 0; i < relevant_coeffs.size(); ++i) {
+      IntegerValue coeff = relevant_coeffs[i];
+
+      // Adjust coeff according to our previous computation if needed.
+      if (adjusted_coeffs_index < adjusted_coeffs.size() &&
+          adjusted_coeffs[adjusted_coeffs_index].first == i) {
+        coeff = adjusted_coeffs[adjusted_coeffs_index].second;
+        adjusted_coeffs_index++;
+      }
+
       if (coeff == 0) continue;
       const IntegerValue new_coeff = f(coeff);
-      temp_cut.coeffs[i] = new_coeff;
-      max_magnitude = std::max(max_magnitude, std::abs(ToDouble(new_coeff)));
-      violation += ToDouble(new_coeff) * lp_values[i];
-    }
-    violation /= max_magnitude;
+      const double new_coeff_double = ToDouble(new_coeff);
+      const double lp_value = relevant_lp_values[i];
 
-    if (violation > 0.0) {
-      VLOG(2) << "lp_value: " << lp_values[index] << " divisor: " << divisor
-              << " cut_violation: " << violation;
+      l2_norm += new_coeff_double * new_coeff_double;
+      violation += new_coeff_double * lp_value;
+      loss += (scaling * ToDouble(coeff) - new_coeff_double) * lp_value;
+      if (loss >= threshold) {
+        early_abort = true;
+        break;
+      }
     }
+    if (early_abort) continue;
+
+    // Here we scale by the L2 norm over the "relevant" positions. This seems
+    // to work slighly better in practice.
+    violation /= sqrt(l2_norm);
     if (violation > best_scaled_violation) {
       best_scaled_violation = violation;
-      best_cut = temp_cut;
+      best_divisor = divisor;
     }
   }
 
+  if (best_divisor == 0) {
+    *cut = LinearConstraint(IntegerValue(0), IntegerValue(0));
+    return;
+  }
+
+  // Adjust coefficients.
+  //
+  // TODO(user): It might make sense to also adjust the one with a small LP
+  // value, but then the cut will be slighlty different than the one we computed
+  // above. Try with and without maybe?
+  const IntegerValue initial_rhs_remainder =
+      cut->ub - FloorRatio(cut->ub, best_divisor) * best_divisor;
+  const IntegerValue adjust_threshold =
+      (best_divisor - initial_rhs_remainder - 1) / IntegerValue(size);
+  if (adjust_threshold > 0) {
+    for (int i = 0; i < relevant_indices.size(); ++i) {
+      const int index = relevant_indices[i];
+      const IntegerValue diff = relevant_bound_diffs[i];
+      if (diff > adjust_threshold) continue;
+
+      // Adjust coeff of the form k * best_divisor - epsilon.
+      const IntegerValue coeff = cut->coeffs[index];
+      const IntegerValue remainder =
+          CeilRatio(coeff, best_divisor) * best_divisor - coeff;
+      if (CapProd(diff.value(), remainder.value()) <= adjust_threshold) {
+        cut->ub += remainder * diff;
+        cut->coeffs[index] += remainder;
+      }
+    }
+  }
+
+  // Create the super-additive function f().
+  const IntegerValue rhs_remainder =
+      cut->ub - FloorRatio(cut->ub, best_divisor) * best_divisor;
+  const auto f = GetSuperAdditiveRoundingFunction(
+      !options.use_mir, rhs_remainder, best_divisor, max_scaling);
+
+  // Apply f() to the cut.
+  //
   // Remove the bound shifts so the constraint is expressed in the original
   // variables and do some basic post-processing.
-  *cut = best_cut;
-  for (int i = 0; i < cut->coeffs.size(); ++i) {
-    const IntegerValue coeff = cut->coeffs[i];
+  cut->ub = f(cut->ub);
+  for (int i = 0; i < size; ++i) {
+    IntegerValue coeff = cut->coeffs[i];
     if (coeff == 0) continue;
-    cut->ub = IntegerValue(
-        CapAdd((coeff * lower_bounds[i]).value(), cut->ub.value()));
+    cut->coeffs[i] = coeff = f(coeff);
+    if (coeff == 0) continue;
     if (change_sign_at_postprocessing[i]) {
+      cut->ub = IntegerValue(
+          CapAdd((coeff * -upper_bounds[i]).value(), cut->ub.value()));
       cut->coeffs[i] = -coeff;
+    } else {
+      cut->ub = IntegerValue(
+          CapAdd((coeff * lower_bounds[i]).value(), cut->ub.value()));
     }
   }
   RemoveZeroTerms(cut);
@@ -1052,7 +1212,7 @@ void ImpliedBoundsProcessor::ProcessUpperBoundedConstraint(
       }
 
       if (CapProd(std::abs(coeff.value()), diff.value()) >= kMaxIntegerValue) {
-        VLOG(1) << "Overflow";
+        VLOG(2) << "Overflow";
         return;
       }
 
@@ -1060,7 +1220,7 @@ void ImpliedBoundsProcessor::ProcessUpperBoundedConstraint(
         // X >= Indicator * (bound - lb) + lb
         tmp_terms_.push_back({entry.literal_view, coeff * diff});
         if (!AddProductTo(-coeff, lb, &new_ub)) {
-          VLOG(1) << "Overflow";
+          VLOG(2) << "Overflow";
           return;
         }
       } else {
@@ -1068,7 +1228,7 @@ void ImpliedBoundsProcessor::ProcessUpperBoundedConstraint(
         // X >= -Indicator * (bound - lb) + bound
         tmp_terms_.push_back({entry.literal_view, -coeff * diff});
         if (!AddProductTo(-coeff, entry.lower_bound, &new_ub)) {
-          VLOG(1) << "Overflow";
+          VLOG(2) << "Overflow";
           return;
         }
       }
@@ -1091,7 +1251,7 @@ void ImpliedBoundsProcessor::ProcessUpperBoundedConstraint(
   }
 
   if (overflow_detection >= kMaxIntegerValue) {
-    VLOG(1) << "Overflow";
+    VLOG(2) << "Overflow";
     return;
   }
   if (!changed) return;

@@ -294,7 +294,7 @@ util::StatusOr<MPSolutionResponse> GurobiSolveProto(
         request.solver_specific_parameters(), GRBgetenv(gurobi_model));
     if (!parameters_status.ok()) {
       response.set_status(MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS);
-      response.set_status_str(parameters_status.error_message());
+      response.set_status_str(parameters_status.message());
       return response;
     }
   }

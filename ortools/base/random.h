@@ -22,7 +22,7 @@
 
 namespace operations_research {
 
-// ACM minimal standard random number generator based on std::mt19937.
+// A wrapper around std::mt19937. Called ACMRandom for historical reasons.
 class ACMRandom {
  public:
   explicit ACMRandom(int32 seed) : generator_(seed) {}

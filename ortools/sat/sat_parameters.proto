@@ -541,7 +541,7 @@ message SatParameters {
   //
   // TODO(user): We should probably remove this parameters, and just always
   // generate cuts but only keep the best n or something.
-  optional int32 max_num_cuts = 91 [default = 5000];
+  optional int32 max_num_cuts = 91 [default = 10000];
 
   // For the cut that can be generated at any level, this control if we only
   // try to generate them at the root node.
