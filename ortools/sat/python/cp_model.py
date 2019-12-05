@@ -157,7 +157,6 @@ class LinearExpr(object):
       model.Minimize(cp_model.LinearExpr.Sum(expressions))
       model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) >= 0)
   """
-
     @classmethod
     def Sum(cls, expressions):
         """Creates the expression sum(expressions)."""
@@ -321,7 +320,6 @@ class LinearExpr(object):
 
 class _ProductCst(LinearExpr):
     """Represents the product of a LinearExpr by a constant."""
-
     def __init__(self, expr, coef):
         cp_model_helper.AssertIsInt64(coef)
         if isinstance(expr, _ProductCst):
@@ -350,7 +348,6 @@ class _ProductCst(LinearExpr):
 
 class _SumArray(LinearExpr):
     """Represents the sum of a list of LinearExpr and a constant."""
-
     def __init__(self, expressions):
         self.__expressions = []
         self.__constant = 0
@@ -383,7 +380,6 @@ class _SumArray(LinearExpr):
 
 class _ScalProd(LinearExpr):
     """Represents the scalar product of expressions with constants and a constant."""
-
     def __init__(self, expressions, coefficients):
         self.__expressions = []
         self.__coefficients = []
@@ -456,7 +452,6 @@ class IntVar(LinearExpr):
   from the set of initial values (called the initial domain), such that the
   model is feasible, or optimal if you provided an objective function.
   """
-
     def __init__(self, model, domain, name):
         """See CpModel.NewIntVar below."""
         self.__model = model
@@ -477,7 +472,7 @@ class IntVar(LinearExpr):
     def __str__(self):
         if not self.__var.name:
             if len(self.__var.domain
-                  ) == 2 and self.__var.domain[0] == self.__var.domain[1]:
+                   ) == 2 and self.__var.domain[0] == self.__var.domain[1]:
                 # Special case for constants.
                 return str(self.__var.domain[0])
             else:
@@ -510,7 +505,6 @@ class IntVar(LinearExpr):
 
 class _NotBooleanVariable(LinearExpr):
     """Negation of a boolean variable."""
-
     def __init__(self, boolvar):
         self.__boolvar = boolvar
 
@@ -532,7 +526,6 @@ class BoundedLinearExpression(object):
 
       model.Add(x + 2 * y -1 >= z)
   """
-
     def __init__(self, expr, bounds):
         self.__expr = expr
         self.__bounds = bounds
@@ -578,7 +571,6 @@ class Constraint(object):
 
       model.Add(x + 2 * y == 5).OnlyEnforceIf(b.Not())
   """
-
     def __init__(self, constraints):
         self.__index = len(constraints)
         self.__constraint = constraints.add()
@@ -640,7 +632,6 @@ class IntervalVar(object):
   also set these enforcement literals to false if they cannot fit these
   intervals into the schedule.
   """
-
     def __init__(self, model, start_index, size_index, end_index,
                  is_present_index, name):
         self.__model = model
@@ -670,14 +661,14 @@ class IntervalVar(object):
         if self.__ct.enforcement_literal:
             return '%s(start = %s, size = %s, end = %s, is_present = %s)' % (
                 self.__ct.name, ShortName(self.__model, interval.start),
-                ShortName(self.__model,
-                          interval.size), ShortName(self.__model, interval.end),
+                ShortName(self.__model, interval.size),
+                ShortName(self.__model, interval.end),
                 ShortName(self.__model, self.__ct.enforcement_literal[0]))
         else:
             return '%s(start = %s, size = %s, end = %s)' % (
                 self.__ct.name, ShortName(self.__model, interval.start),
-                ShortName(self.__model,
-                          interval.size), ShortName(self.__model, interval.end))
+                ShortName(self.__model, interval.size),
+                ShortName(self.__model, interval.end))
 
     def Name(self):
         return self.__ct.name
@@ -691,7 +682,6 @@ class CpModel(object):
   * ```New``` create integer, boolean, or interval variables.
   * ```Add``` create new constraints and add them to the model.
   """
-
     def __init__(self):
         self.__model = cp_model_pb2.CpModelProto()
         self.__constant_map = {}
@@ -1074,7 +1064,8 @@ class CpModel(object):
 
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
-        model_ct.reservoir.times.extend([self.GetOrMakeIndex(x) for x in times])
+        model_ct.reservoir.times.extend(
+            [self.GetOrMakeIndex(x) for x in times])
         model_ct.reservoir.demands.extend(demands)
         model_ct.reservoir.min_level = min_level
         model_ct.reservoir.max_level = max_level
@@ -1126,7 +1117,8 @@ class CpModel(object):
 
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
-        model_ct.reservoir.times.extend([self.GetOrMakeIndex(x) for x in times])
+        model_ct.reservoir.times.extend(
+            [self.GetOrMakeIndex(x) for x in times])
         model_ct.reservoir.demands.extend(demands)
         model_ct.reservoir.actives.extend(
             [self.GetOrMakeIndex(x) for x in actives])
@@ -1391,8 +1383,9 @@ class CpModel(object):
         """Returns the index of a variable, its negation, or a number."""
         if isinstance(arg, IntVar):
             return arg.Index()
-        elif (isinstance(arg, _ProductCst) and
-              isinstance(arg.Expression(), IntVar) and arg.Coefficient() == -1):
+        elif (isinstance(arg, _ProductCst)
+              and isinstance(arg.Expression(), IntVar)
+              and arg.Coefficient() == -1):
             return -arg.Expression().Index() - 1
         elif isinstance(arg, numbers.Integral):
             cp_model_helper.AssertIsInt64(arg)
@@ -1526,6 +1519,9 @@ def EvaluateLinearExpr(expression, solution):
     """Evaluate a linear expression against a solution."""
     if isinstance(expression, numbers.Integral):
         return expression
+    if not isinstance(expression, LinearExpr):
+        raise TypeError('Cannot interpret %s as a linear expression.' %
+                        expression)
     value = 0
     to_process = [(expression, 1)]
     while to_process:
@@ -1573,7 +1569,6 @@ class CpSolver(object):
   with the Value() and BooleanValue() methods, as well as general statistics
   about the solve procedure.
   """
-
     def __init__(self):
         self.__model = None
         self.__solution = None
@@ -1700,7 +1695,6 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
   These methods returns the same information as their counterpart in the
   `CpSolver` class.
   """
-
     def __init__(self):
         pywrapsat.SolutionCallback.__init__(self)
 
@@ -1748,6 +1742,9 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
             raise RuntimeError('Solve() has not be called.')
         if isinstance(expression, numbers.Integral):
             return expression
+        if not isinstance(expression, LinearExpr):
+            raise TypeError('Cannot interpret %s as a linear expression.' %
+                            expression)
         value = 0
         to_process = [(expression, 1)]
         while to_process:
@@ -1773,7 +1770,6 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
 
 class ObjectiveSolutionPrinter(CpSolverSolutionCallback):
     """Display the objective value and time of intermediate solutions."""
-
     def __init__(self):
         CpSolverSolutionCallback.__init__(self)
         self.__solution_count = 0
@@ -1794,7 +1790,6 @@ class ObjectiveSolutionPrinter(CpSolverSolutionCallback):
 
 class VarArrayAndObjectiveSolutionPrinter(CpSolverSolutionCallback):
     """Print intermediate solutions (objective, variable values, time)."""
-
     def __init__(self, variables):
         CpSolverSolutionCallback.__init__(self)
         self.__variables = variables
@@ -1819,7 +1814,6 @@ class VarArrayAndObjectiveSolutionPrinter(CpSolverSolutionCallback):
 
 class VarArraySolutionPrinter(CpSolverSolutionCallback):
     """Print intermediate solutions (variable values, time)."""
-
     def __init__(self, variables):
         CpSolverSolutionCallback.__init__(self)
         self.__variables = variables
