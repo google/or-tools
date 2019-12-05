@@ -131,7 +131,8 @@ struct FlowArc {
 };
 }  // namespace
 
-bool RoutingModel::SolveMatchingModel(Assignment* assignment) {
+bool RoutingModel::SolveMatchingModel(
+    Assignment* assignment, const RoutingSearchParameters& parameters) {
   VLOG(2) << "Solving with flow";
   assignment->Clear();
 
@@ -143,7 +144,8 @@ bool RoutingModel::SolveMatchingModel(Assignment* assignment) {
   std::vector<LocalDimensionCumulOptimizer> optimizers;
   optimizers.reserve(dimensions.size());
   for (RoutingDimension* dimension : dimensions) {
-    optimizers.emplace_back(dimension);
+    optimizers.emplace_back(dimension,
+                            parameters.continuous_scheduling_solver());
   }
 
   int num_flow_nodes = 0;

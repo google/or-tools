@@ -957,7 +957,7 @@ class Solver {
   void AddBacktrackAction(Action a, bool fast);
 #endif  /// !defined(SWIG)
 
-  /// misc debug std::string.
+  /// misc debug string.
   std::string DebugString() const;
 
   /// Current memory usage in bytes
@@ -2229,7 +2229,7 @@ class Solver {
   RegularLimitParameters MakeDefaultRegularLimitParameters() const;
 
   /// Creates a search limit that is reached when either of the underlying limit
-  /// is reached. That is, the returned limit is more std::stringent than both
+  /// is reached. That is, the returned limit is more stringent than both
   /// argument limits.
   SearchLimit* MakeLimit(SearchLimit* const limit_1,
                          SearchLimit* const limit_2);

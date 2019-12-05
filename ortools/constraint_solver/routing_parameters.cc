@@ -93,6 +93,8 @@ RoutingSearchParameters DefaultRoutingSearchParameters() {
       "use_depth_first_search: false "
       "use_cp: BOOL_TRUE "
       "use_cp_sat: BOOL_FALSE "
+      "continuous_scheduling_solver: GLOP "
+      "mixed_integer_scheduling_solver: CP_SAT "
       "optimization_step: 0.0 "
       "number_of_solutions_to_collect: 1 "
       // No "time_limit" by default.

@@ -2173,7 +2173,7 @@ void RoutingModel::CloseModelWithParameters(
   }
 
   // Store the local/global cumul optimizers, along with their offsets.
-  StoreDimensionCumulOptimizers();
+  StoreDimensionCumulOptimizers(parameters);
 
   // Keep this out of SetupSearch as this contains static search objects.
   // This will allow calling SetupSearch multiple times with different search
@@ -2967,7 +2967,7 @@ const Assignment* RoutingModel::SolveFromAssignmentWithParameters(
     if (nullptr == assignment) {
       bool solution_found = false;
       Assignment matching(solver_.get());
-      if (IsMatchingModel() && SolveMatchingModel(&matching) &&
+      if (IsMatchingModel() && SolveMatchingModel(&matching, parameters) &&
           AppendAssignmentIfFeasible(matching, &solution_pool)) {
         if (parameters.log_search()) {
           LogSolution(parameters, "Min-Cost Flow Solution",
@@ -4149,7 +4149,7 @@ void RoutingModel::CreateNeighborhoodOperators(
                 return GetArcCostForVehicle(i, j, vehicle);
               },
               [this](int64 i) { return UnperformedPenaltyOrValue(0, i); },
-              GetOrCreateFeasibilityFilters(), ls_gci_parameters)));
+              GetOrCreateFeasibilityFilters(parameters), ls_gci_parameters)));
 
   local_search_operators_[LOCAL_CHEAPEST_INSERTION_PATH_LNS] =
       solver_->RevAlloc(new FilteredHeuristicPathLNSOperator(
@@ -4158,7 +4158,7 @@ void RoutingModel::CreateNeighborhoodOperators(
               [this](int64 i, int64 j, int64 vehicle) {
                 return GetArcCostForVehicle(i, j, vehicle);
               },
-              GetOrCreateFeasibilityFilters())));
+              GetOrCreateFeasibilityFilters(parameters))));
   local_search_operators_[GLOBAL_CHEAPEST_INSERTION_EXPENSIVE_CHAIN_LNS] =
       solver_->RevAlloc(new FilteredHeuristicExpensiveChainLNSOperator(
           absl::make_unique<GlobalCheapestInsertionFilteredHeuristic>(
@@ -4167,7 +4167,7 @@ void RoutingModel::CreateNeighborhoodOperators(
                 return GetArcCostForVehicle(i, j, vehicle);
               },
               [this](int64 i) { return UnperformedPenaltyOrValue(0, i); },
-              GetOrCreateFeasibilityFilters(), ls_gci_parameters),
+              GetOrCreateFeasibilityFilters(parameters), ls_gci_parameters),
           parameters.heuristic_expensive_chain_lns_num_arcs_to_consider(),
           arc_cost_for_path_start));
 
@@ -4178,7 +4178,7 @@ void RoutingModel::CreateNeighborhoodOperators(
               [this](int64 i, int64 j, int64 vehicle) {
                 return GetArcCostForVehicle(i, j, vehicle);
               },
-              GetOrCreateFeasibilityFilters()),
+              GetOrCreateFeasibilityFilters(parameters)),
           parameters.heuristic_expensive_chain_lns_num_arcs_to_consider(),
           arc_cost_for_path_start));
   local_search_operators_[RELOCATE_EXPENSIVE_CHAIN] =
@@ -4340,7 +4340,8 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
 #undef CP_ROUTING_PUSH_OPERATOR
 
 const std::vector<LocalSearchFilter*>&
-RoutingModel::GetOrCreateLocalSearchFilters() {
+RoutingModel::GetOrCreateLocalSearchFilters(
+    const RoutingSearchParameters& parameters) {
   // As of 2013/01, three filters evaluate sub-parts of the objective
   // function:
   // - NodeDisjunctionFilter: takes disjunction penalty costs into account,
@@ -4389,8 +4390,8 @@ RoutingModel::GetOrCreateLocalSearchFilters() {
 
   filters_.push_back(MakeVehicleVarFilter(*this));
 
-  AppendDimensionCumulFilters(GetDimensions(), /*filter_objective_cost*/ true,
-                              &filters_);
+  AppendDimensionCumulFilters(GetDimensions(), parameters,
+                              /*filter_objective_cost*/ true, &filters_);
 
   for (const RoutingDimension* dimension : dimensions_) {
     if (!dimension->HasBreakConstraints()) continue;
@@ -4401,7 +4402,8 @@ RoutingModel::GetOrCreateLocalSearchFilters() {
 }
 
 const std::vector<LocalSearchFilter*>&
-RoutingModel::GetOrCreateFeasibilityFilters() {
+RoutingModel::GetOrCreateFeasibilityFilters(
+    const RoutingSearchParameters& parameters) {
   if (!feasibility_filters_.empty()) return feasibility_filters_;
 
   if (!disjunctions_.empty()) {
@@ -4417,7 +4419,8 @@ RoutingModel::GetOrCreateFeasibilityFilters() {
   }
   feasibility_filters_.push_back(MakeVehicleVarFilter(*this));
 
-  AppendDimensionCumulFilters(GetDimensions(), /*filter_objective_cost*/ false,
+  AppendDimensionCumulFilters(GetDimensions(), parameters,
+                              /*filter_objective_cost*/ false,
                               &feasibility_filters_);
 
   for (const RoutingDimension* dimension : dimensions_) {
@@ -4444,7 +4447,8 @@ bool AllTransitsPositive(const RoutingDimension& dimension) {
 }
 }  // namespace
 
-void RoutingModel::StoreDimensionCumulOptimizers() {
+void RoutingModel::StoreDimensionCumulOptimizers(
+    const RoutingSearchParameters& parameters) {
   Assignment* packed_dimensions_collector_assignment =
       solver_->MakeAssignment();
   const int num_dimensions = dimensions_.size();
@@ -4505,7 +4509,8 @@ void RoutingModel::StoreDimensionCumulOptimizers() {
             std::move(vehicle_offsets));
         local_optimizer_index_[dim] = local_dimension_optimizers_.size();
         local_dimension_optimizers_.push_back(
-            absl::make_unique<LocalDimensionCumulOptimizer>(dimension));
+            absl::make_unique<LocalDimensionCumulOptimizer>(
+                dimension, parameters.continuous_scheduling_solver()));
         packed_dimensions_collector_assignment->Add(dimension->cumuls());
       }
     }
@@ -4632,7 +4637,7 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
                     [this](int64 i, int64 j) {
                       return GetArcCostForFirstSolution(i, j);
                     },
-                    GetOrCreateFeasibilityFilters())));
+                    GetOrCreateFeasibilityFilters(search_parameters))));
     first_solution_decision_builders_
         [FirstSolutionStrategy::PATH_CHEAPEST_ARC] =
             solver_->Try(first_solution_filtered_decision_builders_
@@ -4653,7 +4658,8 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
         [FirstSolutionStrategy::PATH_MOST_CONSTRAINED_ARC] =
             solver_->RevAlloc(new IntVarFilteredDecisionBuilder(
                 absl::make_unique<ComparatorCheapestAdditionFilteredHeuristic>(
-                    this, comp, GetOrCreateFeasibilityFilters())));
+                    this, comp,
+                    GetOrCreateFeasibilityFilters(search_parameters))));
     first_solution_decision_builders_
         [FirstSolutionStrategy::PATH_MOST_CONSTRAINED_ARC] = solver_->Try(
             first_solution_filtered_decision_builders_
@@ -4681,7 +4687,7 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
   LocalSearchPhaseParameters* const insertion_parameters =
       solver_->MakeLocalSearchPhaseParameters(
           nullptr, CreateInsertionOperator(), finalize, ls_limit,
-          GetOrCreateLocalSearchFilters());
+          GetOrCreateLocalSearchFilters(search_parameters));
   std::vector<IntVar*> decision_vars = nexts_;
   if (!CostsAreHomogeneousAcrossVehicles()) {
     decision_vars.insert(decision_vars.end(), vehicle_vars_.begin(),
@@ -4715,7 +4721,8 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
                     return GetArcCostForVehicle(i, j, vehicle);
                   },
                   [this](int64 i) { return UnperformedPenaltyOrValue(0, i); },
-                  GetOrCreateFeasibilityFilters(), gci_parameters)));
+                  GetOrCreateFeasibilityFilters(search_parameters),
+                  gci_parameters)));
   first_solution_decision_builders_
       [FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION] =
           solver_->Try(first_solution_filtered_decision_builders_
@@ -4734,7 +4741,8 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
                     return GetArcCostForVehicle(i, j, vehicle);
                   },
                   [this](int64 i) { return UnperformedPenaltyOrValue(0, i); },
-                  GetOrCreateFeasibilityFilters(), gci_parameters)));
+                  GetOrCreateFeasibilityFilters(search_parameters),
+                  gci_parameters)));
   first_solution_decision_builders_
       [FirstSolutionStrategy::SEQUENTIAL_CHEAPEST_INSERTION] = solver_->Try(
           first_solution_filtered_decision_builders_
@@ -4751,7 +4759,7 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
                   [this](int64 i, int64 j, int64 vehicle) {
                     return GetArcCostForVehicle(i, j, vehicle);
                   },
-                  GetOrCreateFeasibilityFilters())));
+                  GetOrCreateFeasibilityFilters(search_parameters))));
   first_solution_decision_builders_
       [FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION] =
           solver_->Try(first_solution_filtered_decision_builders_
@@ -4770,7 +4778,7 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
       search_parameters.savings_arc_coefficient();
   std::vector<LocalSearchFilter*> filters;
   if (!search_parameters.use_unfiltered_first_solution_strategy()) {
-    filters = GetOrCreateFeasibilityFilters();
+    filters = GetOrCreateFeasibilityFilters(search_parameters);
   }
 
   if (search_parameters.savings_parallel_routes()) {
@@ -4819,7 +4827,7 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
   first_solution_decision_builders_[FirstSolutionStrategy::CHRISTOFIDES] =
       solver_->RevAlloc(new IntVarFilteredDecisionBuilder(
           absl::make_unique<ChristofidesFilteredHeuristic>(
-              this, GetOrCreateFeasibilityFilters(),
+              this, GetOrCreateFeasibilityFilters(search_parameters),
               search_parameters.christofides_use_minimum_matching())));
   // Automatic
   // TODO(user): make this smarter.
@@ -4866,7 +4874,7 @@ LocalSearchPhaseParameters* RoutingModel::CreateLocalSearchParameters(
       solver_->MakeSolveOnce(CreateSolutionFinalizer(lns_limit), lns_limit),
       GetOrCreateLocalSearchLimit(),
       {solver_->RevAlloc(new LocalSearchFilterManager(
-          solver_.get(), GetOrCreateLocalSearchFilters()))});
+          solver_.get(), GetOrCreateLocalSearchFilters(search_parameters)))});
 }
 
 DecisionBuilder* RoutingModel::CreateLocalSearchDecisionBuilder(
@@ -6229,6 +6237,29 @@ int64 RoutingDimension::GetTransitValue(int64 from_index, int64 to_index,
                                         int64 vehicle) const {
   DCHECK(transit_evaluator(vehicle) != nullptr);
   return transit_evaluator(vehicle)(from_index, to_index);
+}
+
+SortedDisjointIntervalList RoutingDimension::GetAllowedIntervalsInRange(
+    int64 index, int64 min_value, int64 max_value) const {
+  SortedDisjointIntervalList allowed;
+  const SortedDisjointIntervalList& forbidden = forbidden_intervals_[index];
+  IntVar* const cumul_var = cumuls_[index];
+  const int64 min = std::max(min_value, cumul_var->Min());
+  const int64 max = std::min(max_value, cumul_var->Max());
+  int64 next_start = min;
+  for (SortedDisjointIntervalList::Iterator interval =
+           forbidden.FirstIntervalGreaterOrEqual(min);
+       interval != forbidden.end(); ++interval) {
+    if (next_start > max) break;
+    if (next_start < interval->start) {
+      allowed.InsertInterval(next_start, CapSub(interval->start, 1));
+    }
+    next_start = CapAdd(interval->end, 1);
+  }
+  if (next_start <= max) {
+    allowed.InsertInterval(next_start, max);
+  }
+  return allowed;
 }
 
 void RoutingDimension::SetSpanUpperBoundForVehicle(int64 upper_bound,

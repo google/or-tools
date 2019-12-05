@@ -1392,7 +1392,7 @@ class RoutingModel {
   /// On the other hand, when transits on a route can be negative, no assumption
   /// can be made on the cumuls of nodes wrt the start cumuls, and the offset is
   /// therefore set to 0.
-  void StoreDimensionCumulOptimizers();
+  void StoreDimensionCumulOptimizers(const RoutingSearchParameters& parameters);
 
   void ComputeCostClasses(const RoutingSearchParameters& parameters);
   void ComputeVehicleClasses();
@@ -1448,7 +1448,8 @@ class RoutingModel {
   }
 
   /// Solve matching problem with min-cost flow and store result in assignment.
-  bool SolveMatchingModel(Assignment* assignment);
+  bool SolveMatchingModel(Assignment* assignment,
+                          const RoutingSearchParameters& parameters);
 #ifndef SWIG
   /// Append an assignment to a vector of assignments if it is feasible.
   bool AppendAssignmentIfFeasible(
@@ -1484,8 +1485,10 @@ class RoutingModel {
   void CreateNeighborhoodOperators(const RoutingSearchParameters& parameters);
   LocalSearchOperator* GetNeighborhoodOperators(
       const RoutingSearchParameters& search_parameters) const;
-  const std::vector<LocalSearchFilter*>& GetOrCreateLocalSearchFilters();
-  const std::vector<LocalSearchFilter*>& GetOrCreateFeasibilityFilters();
+  const std::vector<LocalSearchFilter*>& GetOrCreateLocalSearchFilters(
+      const RoutingSearchParameters& parameters);
+  const std::vector<LocalSearchFilter*>& GetOrCreateFeasibilityFilters(
+      const RoutingSearchParameters& parameters);
   DecisionBuilder* CreateSolutionFinalizer(SearchLimit* lns_limit);
   DecisionBuilder* CreateFinalizerForMinimizedAndMaximizedVariables();
   void CreateFirstSolutionDecisionBuilders(
@@ -1926,7 +1929,7 @@ class TypeRegulationsChecker {
   /// Returns the number of pickups and fixed nodes from
   /// counts_of_type_["type"].
   int GetNonDeliveryCount(int type) const;
-  /// Same as above, but substracting the number of deliveries of "type".
+  /// Same as above, but subtracting the number of deliveries of "type".
   int GetNonDeliveredCount(int type) const;
 
   virtual bool HasRegulationsToCheck() const = 0;
@@ -2097,6 +2100,10 @@ class RoutingDimension {
   const std::vector<SortedDisjointIntervalList>& forbidden_intervals() const {
     return forbidden_intervals_;
   }
+  /// Returns allowed intervals for a given node in a given interval.
+  SortedDisjointIntervalList GetAllowedIntervalsInRange(int64 index,
+                                                        int64 min_value,
+                                                        int64 max_value) const;
   /// Returns the smallest value outside the forbidden intervals of node 'index'
   /// that is greater than or equal to a given 'min_value'.
   int64 GetFirstPossibleGreaterOrEqualValueForNode(int64 index,
@@ -3416,8 +3423,7 @@ class BasePathFilter : public IntVarLocalSearchFilter {
   virtual bool AcceptPath(int64 path_start, int64 chain_start,
                           int64 chain_end) = 0;
   virtual bool FinalizeAcceptPath(const Assignment* delta, int64 objective_min,
-                                  int64 objective_max,
-                                  bool all_paths_accepted) {
+                                  int64 objective_max) {
     return true;
   }
   /// Detects path starts, used to track which node belongs to which path.
@@ -3481,10 +3487,12 @@ IntVarLocalSearchFilter* MakeTypeRegulationsFilter(
     const RoutingModel& routing_model);
 void AppendDimensionCumulFilters(
     const std::vector<RoutingDimension*>& dimensions,
-    bool filter_objective_cost, std::vector<LocalSearchFilter*>* filters);
-IntVarLocalSearchFilter* MakePathCumulFilter(const RoutingDimension& dimension,
-                                             bool propagate_own_objective_value,
-                                             bool filter_objective_cost);
+    const RoutingSearchParameters& parameters, bool filter_objective_cost,
+    std::vector<LocalSearchFilter*>* filters);
+IntVarLocalSearchFilter* MakePathCumulFilter(
+    const RoutingDimension& dimension,
+    const RoutingSearchParameters& parameters,
+    bool propagate_own_objective_value, bool filter_objective_cost);
 IntVarLocalSearchFilter* MakeCumulBoundsPropagatorFilter(
     const RoutingDimension& dimension);
 IntVarLocalSearchFilter* MakeGlobalLPCumulFilter(

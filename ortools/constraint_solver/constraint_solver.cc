@@ -2486,7 +2486,6 @@ std::ostream& operator<<(std::ostream& out, const BaseObject* const o) {
 // ---------- PropagationBaseObject ---------
 
 std::string PropagationBaseObject::name() const {
-  // TODO(user) : merge with GetName() code to remove a std::string copy.
   return solver_->GetName(this);
 }
 

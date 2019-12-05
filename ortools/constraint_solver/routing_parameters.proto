@@ -34,7 +34,7 @@ package operations_research;
 // then the routing library will pick its preferred value for that parameter
 // automatically: this should be the case for most parameters.
 // To see those "default" parameters, call GetDefaultRoutingSearchParameters().
-// Next ID: 33
+// Next ID: 35
 message RoutingSearchParameters {
   // First solution strategies, used as starting point of local search.
   FirstSolutionStrategy.Value first_solution_strategy = 1;
@@ -369,6 +369,15 @@ message RoutingSearchParameters {
   // remaining and will use the CP solution as a hint for the CP-SAT search.
   // As of 5/2019, only TSP models can be solved.
   OptionalBoolean use_cp_sat = 27;
+  // Underlying solver to use in dimension scheduling, respectively for
+  // continuous and mixed models.
+  enum SchedulingSolver {
+    UNSET = 0;
+    GLOP = 1;
+    CP_SAT = 2;
+  }
+  SchedulingSolver continuous_scheduling_solver = 33;
+  SchedulingSolver mixed_integer_scheduling_solver = 34;
   // Minimum step by which the solution must be improved in local search. 0
   // means "unspecified". If this value is fractional, it will get rounded to
   // the nearest integer.
