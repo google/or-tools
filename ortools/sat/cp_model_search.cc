@@ -342,7 +342,6 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
       if (--index == 0) {  // Reinforce LP relaxation.
         new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
         new_params.set_linearization_level(2);
-        new_params.set_add_cg_cuts(true);
         new_params.set_use_branching_in_lp(true);
         *name = "max_lp";
         return new_params;
@@ -389,7 +388,6 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
       if (--index == 0) {  // Reinforce LP relaxation.
         new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
         new_params.set_linearization_level(2);
-        new_params.set_add_cg_cuts(true);
         *name = "max_lp";
         return new_params;
       }
@@ -442,7 +440,6 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
     if (--index == 0) {  // Reinforce LP relaxation.
       new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
       new_params.set_linearization_level(2);
-      new_params.set_add_cg_cuts(true);
       new_params.set_use_branching_in_lp(true);
       *name = "max_lp";
       return new_params;
@@ -509,7 +506,6 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
     if (--index == 0) {  // Reinforce LP relaxation.
       new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
       new_params.set_linearization_level(2);
-      new_params.set_add_cg_cuts(true);
       *name = "max_lp";
       return new_params;
     }

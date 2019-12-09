@@ -26,8 +26,8 @@ void DomainDeductions::AddDeduction(int literal_ref, int var, Domain domain) {
     something_changed_.Resize(index + 1);
     enforcement_to_vars_.resize(index.value() + 1);
   }
-  if (var >= tmp_num_occurences_.size()) {
-    tmp_num_occurences_.resize(var + 1, 0);
+  if (var >= tmp_num_occurrences_.size()) {
+    tmp_num_occurrences_.resize(var + 1, 0);
   }
   const auto insert = deductions_.insert({{index, var}, domain});
   if (insert.second) {
@@ -65,11 +65,11 @@ std::vector<std::pair<int, Domain>> DomainDeductions::ProcessClause(
   for (const int ref : clause) {
     const Index index = IndexFromLiteral(ref);
     for (const int var : enforcement_to_vars_[index]) {
-      if (tmp_num_occurences_[var] == 0) {
+      if (tmp_num_occurrences_[var] == 0) {
         to_clean.push_back(var);
       }
-      tmp_num_occurences_[var]++;
-      if (tmp_num_occurences_[var] == clause.size()) {
+      tmp_num_occurrences_[var]++;
+      if (tmp_num_occurrences_[var] == clause.size()) {
         to_process.push_back(var);
       }
     }
@@ -77,7 +77,7 @@ std::vector<std::pair<int, Domain>> DomainDeductions::ProcessClause(
 
   // Clear the counts.
   for (const int var : to_clean) {
-    tmp_num_occurences_[var] = 0;
+    tmp_num_occurrences_[var] = 0;
   }
 
   // Compute the domain unions.

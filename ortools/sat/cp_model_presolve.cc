@@ -211,7 +211,7 @@ bool CpModelPresolver::PresolveBoolOr(ConstraintProto* ct) {
       return RemoveConstraint(ct);
     }
     // We can just set the variable to true in this case since it is not
-    // used in any other constraint (note that we artifically bump the
+    // used in any other constraint (note that we artificially bump the
     // objective var usage by 1).
     if (context_->VariableIsUniqueAndRemovable(literal)) {
       context_->UpdateRuleStats("bool_or: singleton");
@@ -1100,7 +1100,7 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
     if (linear.domain_size() == 2 && linear.domain(0) == linear.domain(1)) {
       const int64 value = RefIsPositive(ref) ? linear.domain(0) * coeff
                                              : -linear.domain(0) * coeff;
-      if (context_->StoreLiteralImpliesVarEqValue(literal, var, value)) {
+      if (context_->StoreLiteralImpliesVarEqValue(literal, var, value, ct)) {
         // The domain is not actually modified, but we want to rescan the
         // constraints linked to this variable. See TODO below.
         context_->modified_domains.Set(var);
@@ -1111,7 +1111,7 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
       if (complement.Size() != 1) return false;
       const int64 value = RefIsPositive(ref) ? complement.Min() * coeff
                                              : -complement.Min() * coeff;
-      if (context_->StoreLiteralImpliesVarNEqValue(literal, var, value)) {
+      if (context_->StoreLiteralImpliesVarNEqValue(literal, var, value, ct)) {
         // The domain is not actually modified, but we want to rescan the
         // constraints linked to this variable. See TODO below.
         context_->modified_domains.Set(var);

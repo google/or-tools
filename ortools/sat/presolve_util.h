@@ -76,7 +76,7 @@ class DomainDeductions {
     return Index(ref >= 0 ? 2 * ref : -2 * ref - 1);
   }
 
-  std::vector<int> tmp_num_occurences_;
+  std::vector<int> tmp_num_occurrences_;
 
   SparseBitset<Index> something_changed_;
   gtl::ITIVector<Index, std::vector<int>> enforcement_to_vars_;

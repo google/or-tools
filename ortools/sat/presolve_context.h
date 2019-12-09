@@ -143,11 +143,13 @@ struct PresolveContext {
 
   // Stores the fact that literal implies var == value.
   // It returns true if that information is new.
-  bool StoreLiteralImpliesVarEqValue(int literal, int var, int64 value);
+  bool StoreLiteralImpliesVarEqValue(int literal, int var, int64 value,
+                                     ConstraintProto* ct);
 
   // Stores the fact that literal implies var != value.
   // It returns true if that information is new.
-  bool StoreLiteralImpliesVarNEqValue(int literal, int var, int64 value);
+  bool StoreLiteralImpliesVarNEqValue(int literal, int var, int64 value,
+                                      ConstraintProto* ct);
 
   // Objective handling functions. We load it at the beginning so that during
   // presolve we can work on the more efficient hash_map representation.
@@ -217,9 +219,11 @@ struct PresolveContext {
   //   i.e.: literal => var ==/!= value
   // The state is accumulated (adding x => var == value then !x => var != value)
   // will deduce that x equivalent to var == value.
-  absl::flat_hash_map<std::pair<int, int64>, absl::flat_hash_set<int>>
+  absl::flat_hash_map<std::pair<int, int64>,
+                      absl::flat_hash_map<int, ConstraintProto*>>
       eq_half_encoding;
-  absl::flat_hash_map<std::pair<int, int64>, absl::flat_hash_set<int>>
+  absl::flat_hash_map<std::pair<int, int64>,
+                      absl::flat_hash_map<int, ConstraintProto*>>
       neq_half_encoding;
 
   // Variable <-> constraint graph.
@@ -292,7 +296,7 @@ struct PresolveContext {
   //     InsertHalfVarValueEncoding(literal, var, value, true);
   //     InsertHalfVarValueEncoding(NegatedRef(literal), var, value, false);
   bool InsertHalfVarValueEncoding(int literal, int var, int64 value,
-                                  bool imply_eq);
+                                  bool imply_eq, ConstraintProto* ct);
 
   // Initially false, and set to true on the first inconsistency.
   bool is_unsat = false;

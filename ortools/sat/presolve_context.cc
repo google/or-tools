@@ -47,7 +47,6 @@ void PresolveContext::AddImplication(int a, int b) {
   ConstraintProto* const ct = working_model->add_constraints();
   ct->add_enforcement_literal(a);
   ct->mutable_bool_and()->add_literals(b);
-  UpdateNewConstraintsVariableUsage();
 }
 
 // b => x in [lb, ub].
@@ -61,7 +60,6 @@ void PresolveContext::AddImplyInDomain(int b, int x, const Domain& domain) {
   mutable_linear->mutable_vars()->Resize(1, x);
   mutable_linear->mutable_coeffs()->Resize(1, 1);
   FillDomainInProto(domain, mutable_linear);
-  UpdateNewConstraintsVariableUsage();
 }
 
 bool PresolveContext::DomainIsEmpty(int ref) const {
@@ -293,13 +291,37 @@ void PresolveContext::StoreAffineRelation(const ConstraintProto& ct, int ref_x,
   }
 }
 
-// TODO(user): When merging literals, experiments shows that adding 2
-// implications leads to less Boolean variables on the created model.
-// To investigate.
 void PresolveContext::StoreBooleanEqualityRelation(int ref_a, int ref_b) {
   if (ref_a == ref_b) return;
   if (ref_a == NegatedRef(ref_b)) {
     is_unsat = true;
+    return;
+  }
+
+  if (IsFixed(ref_a)) {
+    const bool val_a = LiteralIsTrue(ref_a);
+    if (IsFixed(ref_b)) {
+      const bool val_b = LiteralIsTrue(ref_b);
+      if (val_a != val_b) {
+        CHECK(!NotifyThatModelIsUnsat());
+      }
+    } else {
+      UpdateRuleStats("variables: propagate equivalent fixed literal");
+      if (val_a) {
+        CHECK(SetLiteralToTrue(ref_b));
+      } else {
+        CHECK(SetLiteralToFalse(ref_b));
+      }
+    }
+    return;
+  } else if (IsFixed(ref_b)) {
+    const bool val_b = LiteralIsTrue(ref_b);
+    UpdateRuleStats("variables: propagate equivalent fixed literal");
+    if (val_b) {
+      CHECK(SetLiteralToTrue(ref_a));
+    } else {
+      CHECK(SetLiteralToFalse(ref_a));
+    }
     return;
   }
 
@@ -383,8 +405,8 @@ void PresolveContext::InsertVarValueEncoding(int literal, int ref,
         // Other value in the domain was already encoded.
         const int previous_other_literal = other_it->second;
         if (previous_other_literal != NegatedRef(literal)) {
-          AddImplication(literal, NegatedRef(previous_other_literal));
-          AddImplication(NegatedRef(previous_other_literal), literal);
+          StoreBooleanEqualityRelation(literal,
+                                       NegatedRef(previous_other_literal));
         }
       } else {
         encoding[other_key] = NegatedRef(literal);
@@ -409,14 +431,14 @@ void PresolveContext::InsertVarValueEncoding(int literal, int ref,
   } else {
     const int previous_literal = insert.first->second;
     if (literal != previous_literal) {
-      AddImplication(literal, previous_literal);
-      AddImplication(previous_literal, literal);
+      StoreBooleanEqualityRelation(literal, previous_literal);
     }
   }
 }
 
 bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
-                                                 int64 value, bool imply_eq) {
+                                                 int64 value, bool imply_eq,
+                                                 ConstraintProto* ct) {
   CHECK(RefIsPositive(var));
 
   // Creates the linking maps on demand.
@@ -425,13 +447,13 @@ bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
   auto& other_map = imply_eq ? neq_half_encoding[key] : eq_half_encoding[key];
 
   // Insert the reference literal in the half encoding map.
-  const auto& new_info = direct_map.insert(literal);
+  const auto& new_info = direct_map.insert(std::make_pair(literal, ct));
   if (new_info.second) {
     VLOG(2) << "Collect lit(" << literal << ") implies var(" << var
             << (imply_eq ? ") == " : ") != ") << value;
     UpdateRuleStats("variables: detect half reified value encoding");
 
-    if (other_map.contains(NegatedRef(literal))) {
+    if (gtl::ContainsKey(other_map, NegatedRef(literal))) {
       const int ref_lit = imply_eq ? literal : NegatedRef(literal);
       const auto insert_encoding_status =
           encoding.insert(std::make_pair(std::make_pair(var, value), ref_lit));
@@ -443,8 +465,25 @@ bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
         const int previous_lit = insert_encoding_status.first->second;
         VLOG(2) << "Detect duplicate encoding lit(" << ref_lit << ") == lit("
                 << previous_lit << ") <=> var(" << var << ") == " << value;
-        AddImplication(previous_lit, ref_lit);
-        AddImplication(ref_lit, previous_lit);
+        StoreBooleanEqualityRelation(previous_lit, ref_lit);
+
+        const AffineRelation::Relation r = GetAffineRelation(previous_lit);
+        if (r.representative != previous_lit) {
+          const int new_ref_lit =
+              r.coeff > 0 ? r.representative : NegatedRef(r.representative);
+          VLOG(2)
+              << "Different representative of previous literal, updating to "
+              << new_ref_lit;
+          encoding[key] = new_ref_lit;
+        }
+
+        // Remove the two half encoding constraints from the model.
+        VLOG(2) << "Delete " << ct->DebugString();
+        ct->Clear();
+        direct_map.erase(literal);
+        VLOG(2) << "Delete " << other_map[NegatedRef(literal)]->DebugString();
+        other_map[NegatedRef(literal)]->Clear();
+        other_map.erase(NegatedRef(literal));
         UpdateRuleStats(
             "variables: merge equivalent var value encoding literals");
       }
@@ -455,13 +494,16 @@ bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
 }
 
 bool PresolveContext::StoreLiteralImpliesVarEqValue(int literal, int var,
-                                                    int64 value) {
-  return InsertHalfVarValueEncoding(literal, var, value, /*imply_eq=*/true);
+                                                    int64 value,
+                                                    ConstraintProto* ct) {
+  return InsertHalfVarValueEncoding(literal, var, value, /*imply_eq=*/true, ct);
 }
 
 bool PresolveContext::StoreLiteralImpliesVarNEqValue(int literal, int var,
-                                                     int64 value) {
-  return InsertHalfVarValueEncoding(literal, var, value, /*imply_eq=*/false);
+                                                     int64 value,
+                                                     ConstraintProto* ct) {
+  return InsertHalfVarValueEncoding(literal, var, value, /*imply_eq=*/false,
+                                    ct);
 }
 
 int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64 value) {

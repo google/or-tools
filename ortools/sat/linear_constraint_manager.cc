@@ -76,9 +76,11 @@ LinearConstraintManager::~LinearConstraintManager() {
   if (num_coeff_strenghtening_ > 0) {
     VLOG(2) << "num_coeff_strenghtening: " << num_coeff_strenghtening_;
   }
-  for (const auto entry : type_to_num_cuts_) {
-    VLOG(1) << "Added " << entry.second << " cuts of type '" << entry.first
-            << "'.";
+  if (sat_parameters_.log_search_progress()) {
+    for (const auto entry : type_to_num_cuts_) {
+      LOG(INFO) << "Added " << entry.second << " cuts of type '" << entry.first
+                << "'.";
+    }
   }
 }
 

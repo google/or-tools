@@ -554,7 +554,7 @@ message SatParameters {
 
   // Whether we generate and add Chvatal-Gomory cuts to the LP at root node.
   // Note that for now, this is not heavily tunned.
-  optional bool add_cg_cuts = 117 [default = false];
+  optional bool add_cg_cuts = 117 [default = true];
 
   // Whether we generate MIR cuts at root node.
   // Note that for now, this is not heavily tunned.
