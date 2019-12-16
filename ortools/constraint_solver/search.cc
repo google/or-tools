@@ -2514,11 +2514,12 @@ bool BestValueSolutionCollector::AtSolution() {
   if (prototype_ != nullptr) {
     const IntVar* objective = prototype_->Objective();
     if (objective != nullptr) {
-      if (maximize_ && objective->Max() > best_) {
+      if (maximize_ && (solution_count() == 0 || objective->Max() > best_)) {
         PopSolution();
         PushSolution();
         best_ = objective->Max();
-      } else if (!maximize_ && objective->Min() < best_) {
+      } else if (!maximize_ &&
+                 (solution_count() == 0 || objective->Min() < best_)) {
         PopSolution();
         PushSolution();
         best_ = objective->Min();
@@ -2606,7 +2607,7 @@ bool NBestValueSolutionCollector::AtSolution() {
     const IntVar* objective = prototype_->Objective();
     if (objective != nullptr) {
       const int64 objective_value =
-          maximize_ ? -objective->Max() : objective->Min();
+          maximize_ ? CapSub(0, objective->Max()) : objective->Min();
       if (solutions_pq_.size() < solution_count_) {
         solutions_pq_.push(
             {objective_value, BuildSolutionDataForCurrentState()});

@@ -531,6 +531,10 @@ class RoutingModel {
   GetLocalDimensionCumulOptimizers() const {
     return local_dimension_optimizers_;
   }
+  const std::vector<std::unique_ptr<LocalDimensionCumulOptimizer> >&
+  GetLocalDimensionCumulMPOptimizers() const {
+    return local_dimension_mp_optimizers_;
+  }
   // clang-format on
 
   /// Returns the global/local dimension cumul optimizer for a given dimension,
@@ -538,6 +542,8 @@ class RoutingModel {
   GlobalDimensionCumulOptimizer* GetMutableGlobalCumulOptimizer(
       const RoutingDimension& dimension) const;
   LocalDimensionCumulOptimizer* GetMutableLocalCumulOptimizer(
+      const RoutingDimension& dimension) const;
+  LocalDimensionCumulOptimizer* GetMutableLocalCumulMPOptimizer(
       const RoutingDimension& dimension) const;
 
   /// Returns true if a dimension exists for a given dimension name.
@@ -1550,6 +1556,8 @@ class RoutingModel {
   gtl::ITIVector<DimensionIndex, int> global_optimizer_index_;
   std::vector<std::unique_ptr<LocalDimensionCumulOptimizer> >
       local_dimension_optimizers_;
+  std::vector<std::unique_ptr<LocalDimensionCumulOptimizer> >
+      local_dimension_mp_optimizers_;
   // clang-format off
   gtl::ITIVector<DimensionIndex, int> local_optimizer_index_;
   std::string primary_constrained_dimension_;
@@ -2841,7 +2849,7 @@ class GlobalCheapestInsertionFilteredHeuristic
   /// newly modified route arcs: after the node insertion position and after the
   /// node position.
   void InsertNodesOnRoutes(const std::vector<int>& nodes,
-                           const std::vector<int>& vehicles);
+                           const absl::flat_hash_set<int>& vehicles);
 
   /// Inserts non-inserted individual nodes on routes by constructing routes
   /// sequentially.
@@ -2854,8 +2862,8 @@ class GlobalCheapestInsertionFilteredHeuristic
   /// (i.e. Value(start) != end) or not.
   /// Updates the three passed vectors accordingly.
   void DetectUsedVehicles(std::vector<bool>* is_vehicle_used,
-                          std::vector<int>* used_vehicles,
-                          std::vector<int>* unused_vehicles);
+                          std::vector<int>* unused_vehicles,
+                          absl::flat_hash_set<int>* used_vehicles);
 
   /// Inserts the (farthest_seeds_ratio_ * model()->vehicles()) nodes farthest
   /// from the start/ends of the available vehicle routes as seeds on their
@@ -2927,14 +2935,14 @@ class GlobalCheapestInsertionFilteredHeuristic
   void InitializePositions(const std::vector<int>& nodes,
                            AdjustablePriorityQueue<NodeEntry>* priority_queue,
                            std::vector<NodeEntries>* position_to_node_entries,
-                           const std::vector<int>& vehicles);
+                           const absl::flat_hash_set<int>& vehicles);
   /// Adds insertion entries performing 'node', and updates 'priority_queue' and
   /// position_to_node_entries accordingly.
   /// Based on gci_params_.use_neighbors_ratio_for_initialization, either all
   /// contained nodes are considered as insertion positions, or only the
   /// closest neighbors of 'node'.
   void InitializeInsertionEntriesPerformingNode(
-      int64 node, int64 penalty, const std::vector<int>& vehicles,
+      int64 node, int64 penalty, const absl::flat_hash_set<int>& vehicles,
       AdjustablePriorityQueue<NodeEntry>* priority_queue,
       std::vector<NodeEntries>* position_to_node_entries);
   /// Updates all node entries inserting a node after node "insert_after" and

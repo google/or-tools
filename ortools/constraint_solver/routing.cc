@@ -177,8 +177,11 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
   SetCumulsFromLocalDimensionCosts(
       const std::vector<std::unique_ptr<LocalDimensionCumulOptimizer>>*
           local_optimizers,
+      const std::vector<std::unique_ptr<LocalDimensionCumulOptimizer>>*
+          local_mp_optimizers,
       SearchMonitor* monitor, bool optimize_and_pack = false)
       : local_optimizers_(*local_optimizers),
+        local_mp_optimizers_(*local_mp_optimizers),
         monitor_(monitor),
         optimize_and_pack_(optimize_and_pack) {}
   Decision* Next(Solver* const solver) override {
@@ -186,7 +189,10 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
     // order to postpone the Fail() call until after the internal for loop, so
     // there are no memory leaks related to the cumul_values vector.
     bool should_fail = false;
-    for (const auto& optimizer : local_optimizers_) {
+    for (int i = 0; i < local_optimizers_.size(); ++i) {
+      const auto& optimizer = local_mp_optimizers_[i] != nullptr
+                                  ? local_mp_optimizers_[i]
+                                  : local_optimizers_[i];
       const RoutingDimension* const dimension = optimizer->dimension();
       RoutingModel* const model = dimension->model();
       const auto next = [model](int64 i) { return model->NextVar(i)->Value(); };
@@ -242,6 +248,8 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
  private:
   const std::vector<std::unique_ptr<LocalDimensionCumulOptimizer>>&
       local_optimizers_;
+  const std::vector<std::unique_ptr<LocalDimensionCumulOptimizer>>&
+      local_mp_optimizers_;
   SearchMonitor* const monitor_;
   const bool optimize_and_pack_;
 };
@@ -309,6 +317,7 @@ const Assignment* RoutingModel::PackCumulsOfOptimizerDimensionsFromAssignment(
   if (time_limit_ms <= 0 || original_assignment == nullptr ||
       (global_dimension_optimizers_.empty() &&
        local_dimension_optimizers_.empty())) {
+    DCHECK(local_dimension_mp_optimizers_.empty());
     return original_assignment;
   }
 
@@ -327,7 +336,7 @@ const Assignment* RoutingModel::PackCumulsOfOptimizerDimensionsFromAssignment(
       solver_->MakeRestoreAssignment(packed_assignment));
   decision_builders.push_back(
       solver_->RevAlloc(new SetCumulsFromLocalDimensionCosts(
-          &local_dimension_optimizers_,
+          &local_dimension_optimizers_, &local_dimension_mp_optimizers_,
           GetOrCreateLargeNeighborhoodSearchLimit(),
           /*optimize_and_pack=*/true)));
   decision_builders.push_back(
@@ -1162,6 +1171,18 @@ LocalDimensionCumulOptimizer* RoutingModel::GetMutableLocalCumulOptimizer(
   const int optimizer_index = local_optimizer_index_[dim_index];
   DCHECK_LT(optimizer_index, local_dimension_optimizers_.size());
   return local_dimension_optimizers_[optimizer_index].get();
+}
+
+LocalDimensionCumulOptimizer* RoutingModel::GetMutableLocalCumulMPOptimizer(
+    const RoutingDimension& dimension) const {
+  const DimensionIndex dim_index = GetDimensionIndex(dimension.name());
+  if (dim_index < 0 || dim_index >= local_optimizer_index_.size() ||
+      local_optimizer_index_[dim_index] < 0) {
+    return nullptr;
+  }
+  const int optimizer_index = local_optimizer_index_[dim_index];
+  DCHECK_LT(optimizer_index, local_dimension_mp_optimizers_.size());
+  return local_dimension_mp_optimizers_[optimizer_index].get();
 }
 
 bool RoutingModel::HasDimension(const std::string& dimension_name) const {
@@ -4511,9 +4532,28 @@ void RoutingModel::StoreDimensionCumulOptimizers(
         local_dimension_optimizers_.push_back(
             absl::make_unique<LocalDimensionCumulOptimizer>(
                 dimension, parameters.continuous_scheduling_solver()));
+        bool has_intervals = false;
+        for (const SortedDisjointIntervalList& intervals :
+             dimension->forbidden_intervals()) {
+          // TODO(user): Change the following test to check intervals within
+          // the domain of the corresponding variables.
+          if (intervals.NumIntervals() > 0) {
+            has_intervals = true;
+            break;
+          }
+        }
+        if (has_intervals) {
+          local_dimension_mp_optimizers_.push_back(
+              absl::make_unique<LocalDimensionCumulOptimizer>(
+                  dimension, parameters.mixed_integer_scheduling_solver()));
+        } else {
+          local_dimension_mp_optimizers_.push_back(nullptr);
+        }
         packed_dimensions_collector_assignment->Add(dimension->cumuls());
       }
     }
+    DCHECK_EQ(local_dimension_mp_optimizers_.size(),
+              local_dimension_optimizers_.size());
   }
 
   // NOTE(b/129252839): We also add all other extra variables to the
@@ -4589,7 +4629,8 @@ DecisionBuilder* RoutingModel::CreateSolutionFinalizer(SearchLimit* lns_limit) {
   if (!local_dimension_optimizers_.empty()) {
     decision_builders.push_back(
         solver_->RevAlloc(new SetCumulsFromLocalDimensionCosts(
-            &local_dimension_optimizers_, lns_limit)));
+            &local_dimension_optimizers_, &local_dimension_mp_optimizers_,
+            lns_limit)));
   }
   if (!global_dimension_optimizers_.empty()) {
     decision_builders.push_back(

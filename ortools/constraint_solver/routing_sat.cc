@@ -339,7 +339,14 @@ void AddSolutionAsHintToModel(const Assignment* solution,
     const int head = solution->Value(model.NextVar(tail));
     const int head_index = model.IsEnd(head) ? depot : head;
     if (tail_index == depot && head_index == depot) continue;
-    hint->add_vars(gtl::FindOrDie(arc_vars, {tail_index, head_index}));
+    const int* const var_index =
+        gtl::FindOrNull(arc_vars, {tail_index, head_index});
+    // Arcs with a cost of kint64max are not added to the model (considered as
+    // infeasible). In some rare cases CP solutions might contain such arcs in
+    // which case they are skipped here and a partial solution is used as a
+    // hint.
+    if (var_index == nullptr) continue;
+    hint->add_vars(*var_index);
     hint->add_values(1);
   }
 }

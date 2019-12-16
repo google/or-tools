@@ -3128,36 +3128,38 @@ bool GlobalCheapestInsertionFilteredHeuristic::CheckVehicleIndices() const {
 
 bool GlobalCheapestInsertionFilteredHeuristic::BuildSolutionInternal() {
   // Insert partially inserted pairs.
-  std::vector<int> pair_nodes;
+  absl::flat_hash_map<int, std::vector<int>> vehicle_to_pair_nodes;
   for (const RoutingModel::IndexPair& index_pair :
        model()->GetPickupAndDeliveryPairs()) {
-    bool has_inserted_pickup = false;
+    int pickup_vehicle = -1;
     for (int64 pickup : index_pair.first) {
       if (Contains(pickup)) {
-        has_inserted_pickup = true;
+        pickup_vehicle = node_index_to_vehicle_[pickup];
         break;
       }
     }
-    bool has_inserted_delivery = false;
+    int delivery_vehicle = -1;
     for (int64 delivery : index_pair.second) {
       if (Contains(delivery)) {
-        has_inserted_delivery = true;
+        delivery_vehicle = node_index_to_vehicle_[delivery];
         break;
       }
     }
-    if (has_inserted_pickup && !has_inserted_delivery) {
+    if (pickup_vehicle >= 0 && delivery_vehicle < 0) {
+      std::vector<int>& pair_nodes = vehicle_to_pair_nodes[pickup_vehicle];
       for (int64 delivery : index_pair.second) {
         pair_nodes.push_back(delivery);
       }
     }
-    if (!has_inserted_pickup && has_inserted_delivery) {
+    if (pickup_vehicle < 0 && delivery_vehicle >= 0) {
+      std::vector<int>& pair_nodes = vehicle_to_pair_nodes[delivery_vehicle];
       for (int64 pickup : index_pair.first) {
         pair_nodes.push_back(pickup);
       }
     }
   }
-  if (!pair_nodes.empty()) {
-    InsertNodesOnRoutes(pair_nodes, {});
+  for (const auto& vehicle_and_nodes : vehicle_to_pair_nodes) {
+    InsertNodesOnRoutes(vehicle_and_nodes.second, {vehicle_and_nodes.first});
   }
   // TODO(user): Adapt the pair insertions to also support seed and
   // sequential insertion.
@@ -3247,7 +3249,7 @@ void GlobalCheapestInsertionFilteredHeuristic::InsertPairs() {
 }
 
 void GlobalCheapestInsertionFilteredHeuristic::InsertNodesOnRoutes(
-    const std::vector<int>& nodes, const std::vector<int>& vehicles) {
+    const std::vector<int>& nodes, const absl::flat_hash_set<int>& vehicles) {
   AdjustablePriorityQueue<NodeEntry> priority_queue;
   std::vector<NodeEntries> position_to_node_entries;
   InitializePositions(nodes, &priority_queue, &position_to_node_entries,
@@ -3316,10 +3318,10 @@ void GlobalCheapestInsertionFilteredHeuristic::InsertNodesOnRoutes(
 void GlobalCheapestInsertionFilteredHeuristic::SequentialInsertNodes(
     const std::vector<int>& nodes) {
   std::vector<bool> is_vehicle_used;
-  std::vector<int> used_vehicles;
+  absl::flat_hash_set<int> used_vehicles;
   std::vector<int> unused_vehicles;
 
-  DetectUsedVehicles(&is_vehicle_used, &used_vehicles, &unused_vehicles);
+  DetectUsedVehicles(&is_vehicle_used, &unused_vehicles, &used_vehicles);
   if (!used_vehicles.empty()) {
     InsertNodesOnRoutes(nodes, used_vehicles);
   }
@@ -3341,8 +3343,8 @@ void GlobalCheapestInsertionFilteredHeuristic::SequentialInsertNodes(
 }
 
 void GlobalCheapestInsertionFilteredHeuristic::DetectUsedVehicles(
-    std::vector<bool>* is_vehicle_used, std::vector<int>* used_vehicles,
-    std::vector<int>* unused_vehicles) {
+    std::vector<bool>* is_vehicle_used, std::vector<int>* unused_vehicles,
+    absl::flat_hash_set<int>* used_vehicles) {
   is_vehicle_used->clear();
   is_vehicle_used->resize(model()->vehicles());
 
@@ -3355,7 +3357,7 @@ void GlobalCheapestInsertionFilteredHeuristic::DetectUsedVehicles(
   for (int vehicle = 0; vehicle < model()->vehicles(); vehicle++) {
     if (Value(model()->Start(vehicle)) != model()->End(vehicle)) {
       (*is_vehicle_used)[vehicle] = true;
-      used_vehicles->push_back(vehicle);
+      used_vehicles->insert(vehicle);
     } else {
       (*is_vehicle_used)[vehicle] = false;
       unused_vehicles->push_back(vehicle);
@@ -3370,9 +3372,9 @@ void GlobalCheapestInsertionFilteredHeuristic::InsertFarthestNodesAsSeeds() {
       std::ceil(gci_params_.farthest_seeds_ratio * model()->vehicles()));
 
   std::vector<bool> is_vehicle_used;
-  std::vector<int> used_vehicles;
+  absl::flat_hash_set<int> used_vehicles;
   std::vector<int> unused_vehicles;
-  DetectUsedVehicles(&is_vehicle_used, &used_vehicles, &unused_vehicles);
+  DetectUsedVehicles(&is_vehicle_used, &unused_vehicles, &used_vehicles);
   std::vector<std::vector<StartEndValue>> start_end_distances_per_node =
       ComputeStartEndDistanceForVehicles(unused_vehicles);
 
@@ -3837,7 +3839,7 @@ void GlobalCheapestInsertionFilteredHeuristic::InitializePositions(
         GlobalCheapestInsertionFilteredHeuristic::NodeEntry>* priority_queue,
     std::vector<GlobalCheapestInsertionFilteredHeuristic::NodeEntries>*
         position_to_node_entries,
-    const std::vector<int>& vehicles) {
+    const absl::flat_hash_set<int>& vehicles) {
   priority_queue->Clear();
   position_to_node_entries->clear();
   position_to_node_entries->resize(model()->Size());
@@ -3875,7 +3877,7 @@ void GlobalCheapestInsertionFilteredHeuristic::InitializePositions(
 
 void GlobalCheapestInsertionFilteredHeuristic::
     InitializeInsertionEntriesPerformingNode(
-        int64 node, int64 penalty, const std::vector<int>& vehicles,
+        int64 node, int64 penalty, const absl::flat_hash_set<int>& vehicles,
         AdjustablePriorityQueue<
             GlobalCheapestInsertionFilteredHeuristic::NodeEntry>*
             priority_queue,
@@ -3884,8 +3886,9 @@ void GlobalCheapestInsertionFilteredHeuristic::
   const int num_vehicles =
       vehicles.empty() ? model()->vehicles() : vehicles.size();
   if (!gci_params_.use_neighbors_ratio_for_initialization) {
+    auto vehicles_it = vehicles.begin();
     for (int v = 0; v < num_vehicles; v++) {
-      const int vehicle = vehicles.empty() ? v : vehicles[v];
+      const int vehicle = vehicles.empty() ? v : *vehicles_it++;
 
       std::vector<ValuedPosition> valued_positions;
       const int64 start = model()->Start(vehicle);
@@ -3906,15 +3909,11 @@ void GlobalCheapestInsertionFilteredHeuristic::
   // the node.
   absl::flat_hash_set<int> vehicles_to_consider;
   const bool all_vehicles = (num_vehicles == model()->vehicles());
-  if (!all_vehicles) {
-    vehicles_to_consider =
-        absl::flat_hash_set<int>(vehicles.begin(), vehicles.end());
-  }
-  const auto insert_on_vehicle_for_cost_class =
-      [this, &vehicles_to_consider, all_vehicles](int v, int cost_class) {
-        return (model()->GetCostClassIndexOfVehicle(v).value() == cost_class) &&
-               (all_vehicles || vehicles_to_consider.contains(v));
-      };
+  const auto insert_on_vehicle_for_cost_class = [this, &vehicles, all_vehicles](
+                                                    int v, int cost_class) {
+    return (model()->GetCostClassIndexOfVehicle(v).value() == cost_class) &&
+           (all_vehicles || vehicles.contains(v));
+  };
   for (int cost_class = 0; cost_class < model()->GetCostClassesCount();
        cost_class++) {
     for (const std::vector<int64>* const neighbors :
