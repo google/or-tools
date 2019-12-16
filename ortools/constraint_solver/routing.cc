@@ -190,9 +190,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
     // there are no memory leaks related to the cumul_values vector.
     bool should_fail = false;
     for (int i = 0; i < local_optimizers_.size(); ++i) {
-      const auto& optimizer = local_mp_optimizers_[i] != nullptr
-                                  ? local_mp_optimizers_[i]
-                                  : local_optimizers_[i];
+      const auto& optimizer = local_optimizers_[i];
       const RoutingDimension* const dimension = optimizer->dimension();
       RoutingModel* const model = dimension->model();
       const auto next = [model](int64 i) { return model->NextVar(i)->Value(); };
@@ -201,7 +199,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
         DCHECK(DimensionFixedTransitsEqualTransitEvaluatorForVehicle(*dimension,
                                                                      vehicle));
         std::vector<int64> cumul_values;
-        const bool cumuls_optimized =
+        bool cumuls_optimized =
             optimize_and_pack_
                 ? optimizer->ComputePackedRouteCumuls(vehicle, next,
                                                       &cumul_values)
@@ -209,6 +207,34 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
         if (!cumuls_optimized) {
           should_fail = true;
           break;
+        }
+        // Check if relaxed solution is feasible (for disjoint time windows).
+        // TODO(user): Move this logic to LocalDimensionCumulOptimizer.
+        bool is_feasible = true;
+        int64 node = model->Start(vehicle);
+        for (int64 cumul_value : cumul_values) {
+          if (cumul_value !=
+              dimension->GetFirstPossibleGreaterOrEqualValueForNode(
+                  node, cumul_value)) {
+            is_feasible = false;
+            break;
+          }
+          if (!model->IsEnd(node)) node = model->NextVar(node)->Value();
+        }
+        // If relaxation is not feasible, try the MILP optimizer.
+        if (!is_feasible) {
+          cumul_values.clear();
+          DCHECK(local_mp_optimizers_[i] != nullptr);
+          cumuls_optimized =
+              optimize_and_pack_
+                  ? local_mp_optimizers_[i]->ComputePackedRouteCumuls(
+                        vehicle, next, &cumul_values)
+                  : local_mp_optimizers_[i]->ComputeRouteCumuls(vehicle, next,
+                                                                &cumul_values);
+          if (!cumuls_optimized) {
+            should_fail = true;
+            break;
+          }
         }
         std::vector<IntVar*> cumuls;
         int current = model->Start(vehicle);
