@@ -20,6 +20,7 @@
 #include <cstdio>
 #include <limits>
 
+#include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
 
 namespace operations_research {
@@ -421,17 +422,17 @@ bool HungarianOptimizer::FindZero(int* zero_row, int* zero_col) const {
 void HungarianOptimizer::PrintMatrix() {
   for (int row = 0; row < matrix_size_; ++row) {
     for (int col = 0; col < matrix_size_; ++col) {
-      printf("%g ", costs_[row][col]);
+      absl::PrintF("%g ", costs_[row][col]);
 
       if (IsStarred(row, col)) {
-        printf("*");
+        absl::PrintF("*");
       }
 
       if (IsPrimed(row, col)) {
-        printf("'");
+        absl::PrintF("'");
       }
     }
-    printf("\n");
+    absl::PrintF("\n");
   }
 }
 
