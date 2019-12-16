@@ -1574,8 +1574,13 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
     // If we add the row to the dense_terms, diff will indicate by how much
     // |upper_bound - ImpliedLB(dense_terms)| will change. That correspond to
     // increasing the multiplier by 1.
-    IntegerValue positive_diff = row_bound;
-    IntegerValue negative_diff = row_bound;
+    //
+    // At this stage, we are not sure computing sum coeff * bound will not
+    // overflow, so we use floating point numbers. It is fine to do so since
+    // this is not directly involved in the actual exact constraint generation:
+    // these variables are just used in an heuristic.
+    double positive_diff = ToDouble(row_bound);
+    double negative_diff = ToDouble(row_bound);
 
     // TODO(user): we could relax a bit some of the condition and allow a sign
     // change. It is just trickier to compute the diff when we allow such
@@ -1600,11 +1605,11 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
         positive_limit = std::min(positive_limit, overflow_limit);
         negative_limit = std::min(negative_limit, overflow_limit);
         if (coeff > 0) {
-          positive_diff -= coeff * lb;
-          negative_diff -= coeff * ub;
+          positive_diff -= ToDouble(coeff) * ToDouble(lb);
+          negative_diff -= ToDouble(coeff) * ToDouble(ub);
         } else {
-          positive_diff -= coeff * ub;
-          negative_diff -= coeff * lb;
+          positive_diff -= ToDouble(coeff) * ToDouble(ub);
+          negative_diff -= ToDouble(coeff) * ToDouble(lb);
         }
         continue;
       }
@@ -1629,20 +1634,24 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
       // This is how diff change.
       const IntegerValue implied = current > 0 ? lb : ub;
       if (implied != 0) {
-        positive_diff -= coeff * implied;
-        negative_diff -= coeff * implied;
+        positive_diff -= ToDouble(coeff) * ToDouble(implied);
+        negative_diff -= ToDouble(coeff) * ToDouble(implied);
       }
     }
 
     // Only add a multiple of this row if it tighten the final constraint.
+    // The positive_diff/negative_diff are supposed to be integer modulo the
+    // double precision, so we only add a multiple if they seems far away from
+    // zero.
     IntegerValue to_add(0);
-    if (positive_diff < 0 && positive_limit > 0) {
+    if (positive_diff <= -1.0 && positive_limit > 0) {
       to_add = positive_limit;
     }
-    if (negative_diff > 0 && negative_limit > 0) {
+    if (negative_diff >= 1.0 && negative_limit > 0) {
       // Pick this if it is better than the positive sign.
-      if (to_add == 0 || IntTypeAbs(negative_limit * negative_diff) >
-                             IntTypeAbs(positive_limit * positive_diff)) {
+      if (to_add == 0 ||
+          std::abs(ToDouble(negative_limit) * negative_diff) >
+              std::abs(ToDouble(positive_limit) * positive_diff)) {
         to_add = -negative_limit;
       }
     }

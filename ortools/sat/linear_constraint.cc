@@ -213,5 +213,32 @@ void MakeAllVariablesPositive(LinearConstraint* constraint) {
   }
 }
 
+// TODO(user): it would be better if LinearConstraint natively supported
+// term and not two separated vectors. Fix?
+//
+// TODO(user): This is really similar to CleanTermsAndFillConstraint(), maybe
+// we should just make the later switch negative variable to positive ones to
+// avoid an extra linear scan on each new cuts.
+void CanonicalizeConstraint(LinearConstraint* ct) {
+  std::vector<std::pair<IntegerVariable, IntegerValue>> terms;
+
+  const int size = ct->vars.size();
+  for (int i = 0; i < size; ++i) {
+    if (VariableIsPositive(ct->vars[i])) {
+      terms.push_back({ct->vars[i], ct->coeffs[i]});
+    } else {
+      terms.push_back({NegationOf(ct->vars[i]), -ct->coeffs[i]});
+    }
+  }
+  std::sort(terms.begin(), terms.end());
+
+  ct->vars.clear();
+  ct->coeffs.clear();
+  for (const auto& term : terms) {
+    ct->vars.push_back(term.first);
+    ct->coeffs.push_back(term.second);
+  }
+}
+
 }  // namespace sat
 }  // namespace operations_research

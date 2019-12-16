@@ -26,6 +26,7 @@
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/util/rev.h"
 
 namespace operations_research {
 namespace sat {
@@ -140,6 +141,57 @@ class MinPropagator : public PropagatorInterface {
   std::vector<IntegerLiteral> integer_reason_;
 
   DISALLOW_COPY_AND_ASSIGN(MinPropagator);
+};
+
+// Helper struct to model linear expression for lin_min/lin_max constraints. The
+// canonical expression should only contain positive coefficients.
+struct LinearExpression {
+  std::vector<IntegerVariable> vars;
+  std::vector<IntegerValue> coeffs;
+  IntegerValue offset = IntegerValue(0);
+};
+
+// Returns the same expression in the canonical form (all positive
+// coefficients).
+LinearExpression CanonicalizeExpr(const LinearExpression& expr);
+
+// Returns lower bound of linear expression using variable bounds of the
+// variables in expression. Assumes Canonical expression (all positive
+// coefficients).
+IntegerValue LinExprLowerBound(const LinearExpression& expr,
+                               const IntegerTrail& integer_trail);
+
+// Returns upper bound of linear expression using variable bounds of the
+// variables in expression. Assumes Canonical expression (all positive
+// coefficients).
+IntegerValue LinExprUpperBound(const LinearExpression& expr,
+                               const IntegerTrail& integer_trail);
+
+// Same as MinPropagator except this works on min = MIN(exprs) where exprs are
+// linear expressions. It uses IntegerSumLE to propagate bounds on the exprs.
+// Assumes Canonical expressions (all positive coefficients).
+// TODO(user): Remove the dependency on IntegerSumLE.
+class LinMinPropagator : public PropagatorInterface {
+ public:
+  LinMinPropagator(const std::vector<LinearExpression>& exprs,
+                   IntegerVariable min_var, Model* model);
+  LinMinPropagator(const LinMinPropagator&) = delete;
+  LinMinPropagator& operator=(const LinMinPropagator&) = delete;
+
+  bool Propagate() final;
+  void RegisterWith(GenericLiteralWatcher* watcher);
+
+ private:
+  const std::vector<LinearExpression> exprs_;
+  const IntegerVariable min_var_;
+  std::vector<IntegerValue> expr_lbs_;
+  Model* model_;
+  IntegerTrail* integer_trail_;
+
+  int rev_ub_constraints_size_ = 0;
+  std::vector<std::unique_ptr<IntegerSumLE>> ub_constraints_;
+
+  std::vector<IntegerLiteral> integer_reason_;
 };
 
 // Propagates a * b = c. Basic version, we don't extract any special cases, and
@@ -557,6 +609,59 @@ inline std::function<void(Model*)> IsEqualToMinOf(
   };
 }
 
+// Expresses the fact that an existing integer variable is equal to the minimum
+// of linear expressions. Assumes Canonical expressions (all positive
+// coefficients).
+inline std::function<void(Model*)> IsEqualToMinOf(
+    const LinearExpression& min_expr,
+    const std::vector<LinearExpression>& exprs) {
+  return [=](Model* model) {
+    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+
+    IntegerVariable min_var;
+    if (min_expr.vars.size() == 1 &&
+        std::abs(min_expr.coeffs[0].value()) == 1) {
+      if (min_expr.coeffs[0].value() == 1) {
+        min_var = min_expr.vars[0];
+      } else {
+        min_var = NegationOf(min_expr.vars[0]);
+      }
+    } else {
+      // Create a new variable if the expression is not just a single variable.
+      IntegerValue min_lb = LinExprLowerBound(min_expr, *integer_trail);
+      IntegerValue min_ub = LinExprUpperBound(min_expr, *integer_trail);
+      min_var = integer_trail->AddIntegerVariable(min_lb, min_ub);
+
+      // min_var = min_expr
+      std::vector<IntegerVariable> min_sum_vars = min_expr.vars;
+      std::vector<int64> min_sum_coeffs;
+      for (IntegerValue coeff : min_expr.coeffs) {
+        min_sum_coeffs.push_back(coeff.value());
+      }
+      min_sum_vars.push_back(min_var);
+      min_sum_coeffs.push_back(-1);
+
+      model->Add(FixedWeightedSum(min_sum_vars, min_sum_coeffs,
+                                  -min_expr.offset.value()));
+    }
+    for (const LinearExpression& expr : exprs) {
+      // min_var <= expr
+      std::vector<IntegerVariable> vars = expr.vars;
+      std::vector<int64> coeffs;
+      for (IntegerValue coeff : expr.coeffs) {
+        coeffs.push_back(coeff.value());
+      }
+      vars.push_back(min_var);
+      coeffs.push_back(-1);
+      model->Add(WeightedSumGreaterOrEqual(vars, coeffs, -expr.offset.value()));
+    }
+
+    LinMinPropagator* constraint = new LinMinPropagator(exprs, min_var, model);
+    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+    model->TakeOwnership(constraint);
+  };
+}
+
 // Expresses the fact that an existing integer variable is equal to the maximum
 // of other integer variables.
 inline std::function<void(Model*)> IsEqualToMaxOf(
@@ -653,7 +758,7 @@ inline std::function<void(Model*)> ProductConstraint(IntegerVariable a,
   };
 }
 
-// Adds the constraint: a / b = d.
+// Adds the constraint: a / b = c.
 inline std::function<void(Model*)> DivisionConstraint(IntegerVariable a,
                                                       IntegerVariable b,
                                                       IntegerVariable c) {
@@ -666,7 +771,7 @@ inline std::function<void(Model*)> DivisionConstraint(IntegerVariable a,
   };
 }
 
-// Adds the constraint: a / b = d where b is a constant.
+// Adds the constraint: a / b = c where b is a constant.
 inline std::function<void(Model*)> FixedDivisionConstraint(IntegerVariable a,
                                                            IntegerValue b,
                                                            IntegerVariable c) {

@@ -1968,6 +1968,7 @@ class LnsSolver : public SubSolver {
       SatParameters local_params(parameters_);
       local_params.set_max_deterministic_time(data.deterministic_limit);
       local_params.set_stop_after_first_solution(false);
+      local_params.set_log_search_progress(false);
 
       if (FLAGS_cp_model_dump_lns) {
         const std::string name =

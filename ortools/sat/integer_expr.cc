@@ -15,9 +15,12 @@
 
 #include <algorithm>
 #include <memory>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/memory/memory.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/sat/integer.h"
 #include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
@@ -288,6 +291,146 @@ void MinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   for (const IntegerVariable& var : vars_) {
     watcher->WatchLowerBound(var, id);
   }
+  watcher->WatchUpperBound(min_var_, id);
+}
+
+LinearExpression CanonicalizeExpr(const LinearExpression& expr) {
+  LinearExpression canonical_expr;
+  canonical_expr.offset = expr.offset;
+  for (int i = 0; i < expr.vars.size(); ++i) {
+    if (expr.coeffs[i] < 0) {
+      canonical_expr.vars.push_back(NegationOf(expr.vars[i]));
+      canonical_expr.coeffs.push_back(-expr.coeffs[i]);
+    } else {
+      canonical_expr.vars.push_back(expr.vars[i]);
+      canonical_expr.coeffs.push_back(expr.coeffs[i]);
+    }
+  }
+  return canonical_expr;
+}
+
+IntegerValue LinExprLowerBound(const LinearExpression& expr,
+                               const IntegerTrail& integer_trail) {
+  IntegerValue lower_bound = expr.offset;
+  for (int i = 0; i < expr.vars.size(); ++i) {
+    DCHECK_GE(expr.coeffs[i], 0) << "The expression is not canonicalized";
+    lower_bound += expr.coeffs[i] * integer_trail.LowerBound(expr.vars[i]);
+  }
+  return lower_bound;
+}
+
+IntegerValue LinExprUpperBound(const LinearExpression& expr,
+                               const IntegerTrail& integer_trail) {
+  IntegerValue upper_bound = expr.offset;
+  for (int i = 0; i < expr.vars.size(); ++i) {
+    DCHECK_GE(expr.coeffs[i], 0) << "The expression is not canonicalized";
+    upper_bound += expr.coeffs[i] * integer_trail.UpperBound(expr.vars[i]);
+  }
+  return upper_bound;
+}
+
+LinMinPropagator::LinMinPropagator(const std::vector<LinearExpression>& exprs,
+                                   IntegerVariable min_var, Model* model)
+    : exprs_(exprs),
+      min_var_(min_var),
+      model_(model),
+      integer_trail_(model_->GetOrCreate<IntegerTrail>()) {}
+
+bool LinMinPropagator::Propagate() {
+  ub_constraints_.resize(rev_ub_constraints_size_);
+
+  if (exprs_.empty()) return true;
+
+  expr_lbs_.clear();
+
+  // Count the number of interval that are possible candidate for the min.
+  // Only the intervals for which lb > current_min_ub cannot.
+  const IntegerLiteral min_ub_literal =
+      integer_trail_->UpperBoundAsLiteral(min_var_);
+  const IntegerValue current_min_ub = integer_trail_->UpperBound(min_var_);
+  int num_intervals_that_can_be_min = 0;
+  int last_possible_min_interval = 0;
+
+  IntegerValue min_of_linear_expression_lb = kMaxIntegerValue;
+  for (int i = 0; i < exprs_.size(); ++i) {
+    const IntegerValue lb = LinExprLowerBound(exprs_[i], *integer_trail_);
+    expr_lbs_.push_back(lb);
+    min_of_linear_expression_lb = std::min(min_of_linear_expression_lb, lb);
+    if (lb <= current_min_ub) {
+      ++num_intervals_that_can_be_min;
+      last_possible_min_interval = i;
+    }
+  }
+
+  // Propagation a) lb(min) >= lb(MIN(exprs)) = MIN(lb(expr));
+
+  // Conflict will be detected by the fact that the [lb, ub] of the min is
+  // empty. In case of conflict, we just need the reason for pushing UB + 1.
+  if (min_of_linear_expression_lb > current_min_ub) {
+    min_of_linear_expression_lb = current_min_ub + 1;
+  }
+  if (min_of_linear_expression_lb > integer_trail_->LowerBound(min_var_)) {
+    integer_reason_.clear();
+    for (int i = 0; i < exprs_.size(); ++i) {
+      const IntegerValue slack = expr_lbs_[i] - min_of_linear_expression_lb;
+      integer_trail_->AppendRelaxedLinearReason(
+          slack, exprs_[i].coeffs, exprs_[i].vars, &integer_reason_);
+    }
+    if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(
+                                     min_var_, min_of_linear_expression_lb),
+                                 {}, integer_reason_)) {
+      return false;
+    }
+  }
+
+  // Propagation b) ub(min) >= ub(MIN(vars)) and we can't propagate anything
+  // here unless there is just one possible expression 'e' that can be the min:
+  //   for all u != e, lb(u) > ub(min);
+  // In this case, ub(min) >= ub(e).
+  if (num_intervals_that_can_be_min == 1) {
+    const IntegerValue ub_of_only_candidate =
+        LinExprUpperBound(exprs_[last_possible_min_interval], *integer_trail_);
+    if (current_min_ub < ub_of_only_candidate) {
+      integer_reason_.clear();
+
+      // The reason is that all the other interval start after current_min_ub.
+      // And that min_ub has its current value.
+      integer_reason_.push_back(min_ub_literal);
+      for (int i = 0; i < exprs_.size(); ++i) {
+        if (i == last_possible_min_interval) continue;
+        const IntegerValue slack = expr_lbs_[i] - (current_min_ub + 1);
+        integer_trail_->AppendRelaxedLinearReason(
+            slack, exprs_[i].coeffs, exprs_[i].vars, &integer_reason_);
+      }
+      std::vector<Literal> literal_reason;
+      integer_trail_->MergeReasonInto(integer_reason_, &literal_reason);
+      auto constraint = absl::make_unique<IntegerSumLE>(
+          literal_reason, exprs_[last_possible_min_interval].vars,
+          exprs_[last_possible_min_interval].coeffs,
+          current_min_ub - exprs_[last_possible_min_interval].offset, model_);
+      constraint->Propagate();
+      ub_constraints_.emplace_back(std::move(constraint));
+      rev_ub_constraints_size_ = ub_constraints_.size();
+    }
+  }
+
+  return true;
+}
+
+void LinMinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
+  const int id = watcher->Register(this);
+  for (const LinearExpression& expr : exprs_) {
+    for (int i = 0; i < expr.vars.size(); ++i) {
+      const IntegerVariable& var = expr.vars[i];
+      const IntegerValue coeff = expr.coeffs[i];
+      if (coeff > 0) {
+        watcher->WatchLowerBound(var, id);
+      } else {
+        watcher->WatchUpperBound(var, id);
+      }
+    }
+  }
+  watcher->RegisterReversibleInt(id, &rev_ub_constraints_size_);
   watcher->WatchUpperBound(min_var_, id);
 }
 

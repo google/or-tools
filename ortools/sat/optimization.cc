@@ -61,7 +61,7 @@ class Logger {
   explicit Logger(LogBehavior v) : use_stdout_(v == STDOUT_LOG) {}
   void Log(const std::string& message) {
     if (use_stdout_) {
-      printf("%s\n", message.c_str());
+      absl::PrintF("%s\n", message);
     } else {
       LOG(INFO) << message;
     }

@@ -711,7 +711,9 @@ WeightedRandomRelaxationNeighborhoodGenerator::
       case ConstraintProto::kIntDiv:
       case ConstraintProto::kIntMod:
       case ConstraintProto::kIntMax:
+      case ConstraintProto::kLinMax:
       case ConstraintProto::kIntMin:
+      case ConstraintProto::kLinMin:
       case ConstraintProto::kNoOverlap:
       case ConstraintProto::kNoOverlap2D:
         constraint_weights_.push_back(2.0);

@@ -817,6 +817,33 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
   ct->Clear();
 }
 
+// Fills the target as negated ref.
+void NegatedLinearExpression(const LinearExpressionProto& ref,
+                             LinearExpressionProto* target) {
+  for (int i = 0; i < ref.vars_size(); ++i) {
+    target->add_vars(NegatedRef(ref.vars(i)));
+    target->add_coeffs(ref.coeffs(i));
+  }
+  target->set_offset(-ref.offset());
+}
+
+void ExpandLinMax(ConstraintProto* ct, PresolveContext* context) {
+  ConstraintProto* const lin_min = context->working_model->add_constraints();
+  for (int i = 0; i < ct->enforcement_literal_size(); ++i) {
+    lin_min->add_enforcement_literal(ct->enforcement_literal(i));
+  }
+
+  // Target
+  NegatedLinearExpression(ct->lin_max().target(),
+                          lin_min->mutable_lin_min()->mutable_target());
+
+  for (int i = 0; i < ct->lin_max().exprs_size(); ++i) {
+    LinearExpressionProto* const expr = lin_min->mutable_lin_min()->add_exprs();
+    NegatedLinearExpression(ct->lin_max().exprs(i), expr);
+  }
+  ct->Clear();
+}
+
 }  // namespace
 
 void ExpandCpModel(PresolveOptions options, PresolveContext* context) {
@@ -837,6 +864,9 @@ void ExpandCpModel(PresolveOptions options, PresolveContext* context) {
         break;
       case ConstraintProto::ConstraintCase::kIntProd:
         ExpandIntProd(ct, context);
+        break;
+      case ConstraintProto::ConstraintCase::kLinMax:
+        ExpandLinMax(ct, context);
         break;
       case ConstraintProto::ConstraintCase::kElement:
         if (options.parameters.expand_element_constraints()) {

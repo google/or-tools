@@ -38,29 +38,6 @@ size_t ComputeHashOfTerms(const LinearConstraint& ct) {
   return hash;
 }
 
-// TODO(user): it would be better if LinearConstraint natively supported
-// term and not two separated vectors. Fix?
-void CanonicalizeConstraint(LinearConstraint* ct) {
-  std::vector<std::pair<IntegerVariable, IntegerValue>> terms;
-
-  const int size = ct->vars.size();
-  for (int i = 0; i < size; ++i) {
-    if (VariableIsPositive(ct->vars[i])) {
-      terms.push_back({ct->vars[i], ct->coeffs[i]});
-    } else {
-      terms.push_back({NegationOf(ct->vars[i]), -ct->coeffs[i]});
-    }
-  }
-  std::sort(terms.begin(), terms.end());
-
-  ct->vars.clear();
-  ct->coeffs.clear();
-  for (const auto& term : terms) {
-    ct->vars.push_back(term.first);
-    ct->coeffs.push_back(term.second);
-  }
-}
-
 }  // namespace
 
 LinearConstraintManager::~LinearConstraintManager() {
@@ -132,7 +109,7 @@ bool LinearConstraintManager::MaybeRemoveSomeInactiveConstraints(
 // to detect duplicate constraints and merge bounds. This is also relevant if
 // we regenerate identical cuts for some reason.
 LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
-    LinearConstraint ct) {
+    LinearConstraint ct, bool* added) {
   CHECK(!ct.vars.empty());
   SimplifyConstraint(&ct);
   DivideByGCD(&ct);
@@ -145,25 +122,28 @@ LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
     const ConstraintIndex ct_index = equiv_constraints_[key];
     if (constraint_infos_[ct_index].constraint.vars == ct.vars &&
         constraint_infos_[ct_index].constraint.coeffs == ct.coeffs) {
+      if (added != nullptr) *added = false;
       if (ct.lb > constraint_infos_[ct_index].constraint.lb) {
         if (constraint_infos_[ct_index].is_in_lp) current_lp_is_changed_ = true;
         constraint_infos_[ct_index].constraint.lb = ct.lb;
+        if (added != nullptr) *added = true;
       }
       if (ct.ub < constraint_infos_[ct_index].constraint.ub) {
         if (constraint_infos_[ct_index].is_in_lp) current_lp_is_changed_ = true;
         constraint_infos_[ct_index].constraint.ub = ct.ub;
+        if (added != nullptr) *added = true;
       }
       ++num_merged_constraints_;
       return ct_index;
     }
   }
 
+  if (added != nullptr) *added = true;
   const ConstraintIndex ct_index(constraint_infos_.size());
   ConstraintInfo ct_info;
   ct_info.constraint = std::move(ct);
   ct_info.l2_norm = ComputeL2Norm(ct_info.constraint);
   ct_info.is_in_lp = false;
-  ct_info.is_cut = false;
   ct_info.objective_parallelism_computed = false;
   ct_info.objective_parallelism = 0.0;
   ct_info.inactive_count = 0;
@@ -227,19 +207,20 @@ void LinearConstraintManager::AddCut(
   // Only add cut with sufficient efficacy.
   if (violation / l2_norm < 1e-5) return;
 
-  VLOG(1) << "Cut '" << type_name << "'"
-          << " size=" << ct.vars.size()
-          << " max_magnitude=" << ComputeInfinityNorm(ct) << " norm=" << l2_norm
-          << " violation=" << violation << " eff=" << violation / l2_norm;
-
   // Add the constraint. We only mark the constraint as a cut if it is not an
   // update of an already existing one.
-  const int64 prev_size = constraint_infos_.size();
-  const ConstraintIndex ct_index = Add(std::move(ct));
-  if (prev_size + 1 == constraint_infos_.size()) {
+  bool added = false;
+  const ConstraintIndex ct_index = Add(std::move(ct), &added);
+  if (added) {
+    VLOG(1) << "Cut '" << type_name << "'"
+            << " size=" << constraint_infos_[ct_index].constraint.vars.size()
+            << " max_magnitude="
+            << ComputeInfinityNorm(constraint_infos_[ct_index].constraint)
+            << " norm=" << l2_norm << " violation=" << violation
+            << " eff=" << violation / l2_norm;
+
     num_cuts_++;
     type_to_num_cuts_[type_name]++;
-    constraint_infos_[ct_index].is_cut = true;
   }
 }
 

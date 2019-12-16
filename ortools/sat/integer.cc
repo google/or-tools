@@ -791,7 +791,7 @@ void IntegerTrail::AppendRelaxedLinearReason(
   for (const IntegerVariable var : vars) {
     tmp_indices_.push_back(vars_[var].current_trail_index);
   }
-  RelaxLinearReason(slack, coeffs, &tmp_indices_);
+  if (slack > 0) RelaxLinearReason(slack, coeffs, &tmp_indices_);
   for (const int i : tmp_indices_) {
     reason->push_back(IntegerLiteral::GreaterOrEqual(integer_trail_[i].var,
                                                      integer_trail_[i].bound));
@@ -810,7 +810,7 @@ void IntegerTrail::RelaxLinearReason(IntegerValue slack,
   // We start by filtering *trail_indices:
   // - remove all level zero entries.
   // - keep the one that cannot be relaxed.
-  // - move the other one the the relax_heap_ (and creating the heap).
+  // - move the other one to the relax_heap_ (and creating the heap).
   int new_size = 0;
   const int size = coeffs.size();
   const int num_vars = vars_.size();

@@ -194,6 +194,19 @@ std::string ValidateLinearConstraint(const CpModelProto& model,
   return "";
 }
 
+std::string ValidateLinearExpression(const CpModelProto& model,
+                                     const LinearExpressionProto& expr) {
+  if (expr.coeffs_size() != expr.vars_size()) {
+    return absl::StrCat("coeffs_size() != vars_size() in linear expression: ",
+                        ProtobufShortDebugString(expr));
+  }
+  if (PossibleIntegerOverflow(model, expr)) {
+    return absl::StrCat("Possible overflow in linear expression: ",
+                        ProtobufShortDebugString(expr));
+  }
+  return "";
+}
+
 std::string ValidateCircuitConstraint(const CpModelProto& model,
                                       const ConstraintProto& ct) {
   const int size = ct.circuit().tails().size();
@@ -387,6 +400,29 @@ std::string ValidateCpModel(const CpModelProto& model) {
         }
         RETURN_IF_NOT_EMPTY(ValidateLinearConstraint(model, ct));
         break;
+      case ConstraintProto::ConstraintCase::kLinMax: {
+        const std::string target_error =
+            ValidateLinearExpression(model, ct.lin_min().target());
+        if (!target_error.empty()) return target_error;
+        for (int i = 0; i < ct.lin_max().exprs_size(); ++i) {
+          const std::string expr_error =
+              ValidateLinearExpression(model, ct.lin_max().exprs(i));
+          if (!expr_error.empty()) return expr_error;
+        }
+        break;
+      }
+      case ConstraintProto::ConstraintCase::kLinMin: {
+        const std::string target_error =
+            ValidateLinearExpression(model, ct.lin_min().target());
+        if (!target_error.empty()) return target_error;
+        for (int i = 0; i < ct.lin_min().exprs_size(); ++i) {
+          const std::string expr_error =
+              ValidateLinearExpression(model, ct.lin_min().exprs(i));
+          if (!expr_error.empty()) return expr_error;
+        }
+        break;
+      }
+
       case ConstraintProto::ConstraintCase::kInterval:
         support_enforcement = true;
         RETURN_IF_NOT_EMPTY(ValidateIntervalConstraint(model, ct));
@@ -524,6 +560,25 @@ class ConstraintChecker {
     return max == actual_max;
   }
 
+  int64 LinearExpressionValue(const LinearExpressionProto& expr) {
+    int64 sum = expr.offset();
+    const int num_variables = expr.vars_size();
+    for (int i = 0; i < num_variables; ++i) {
+      sum += Value(expr.vars(i)) * expr.coeffs(i);
+    }
+    return sum;
+  }
+
+  bool LinMaxConstraintIsFeasible(const ConstraintProto& ct) {
+    const int64 max = LinearExpressionValue(ct.lin_max().target());
+    int64 actual_max = kint64min;
+    for (int i = 0; i < ct.lin_max().exprs_size(); ++i) {
+      const int64 expr_value = LinearExpressionValue(ct.lin_max().exprs(i));
+      actual_max = std::max(actual_max, expr_value);
+    }
+    return max == actual_max;
+  }
+
   bool IntProdConstraintIsFeasible(const ConstraintProto& ct) {
     const int64 prod = Value(ct.int_prod().target());
     int64 actual_prod = 1;
@@ -548,6 +603,16 @@ class ConstraintChecker {
     int64 actual_min = kint64max;
     for (int i = 0; i < ct.int_min().vars_size(); ++i) {
       actual_min = std::min(actual_min, Value(ct.int_min().vars(i)));
+    }
+    return min == actual_min;
+  }
+
+  bool LinMinConstraintIsFeasible(const ConstraintProto& ct) {
+    const int64 min = LinearExpressionValue(ct.lin_min().target());
+    int64 actual_min = kint64max;
+    for (int i = 0; i < ct.lin_min().exprs_size(); ++i) {
+      const int64 expr_value = LinearExpressionValue(ct.lin_min().exprs(i));
+      actual_min = std::min(actual_min, expr_value);
     }
     return min == actual_min;
   }
@@ -949,8 +1014,14 @@ bool SolutionIsFeasible(const CpModelProto& model,
       case ConstraintProto::ConstraintCase::kIntMin:
         is_feasible = checker.IntMinConstraintIsFeasible(ct);
         break;
+      case ConstraintProto::ConstraintCase::kLinMin:
+        is_feasible = checker.LinMinConstraintIsFeasible(ct);
+        break;
       case ConstraintProto::ConstraintCase::kIntMax:
         is_feasible = checker.IntMaxConstraintIsFeasible(ct);
+        break;
+      case ConstraintProto::ConstraintCase::kLinMax:
+        is_feasible = checker.LinMaxConstraintIsFeasible(ct);
         break;
       case ConstraintProto::ConstraintCase::kAllDiff:
         is_feasible = checker.AllDiffConstraintIsFeasible(ct);

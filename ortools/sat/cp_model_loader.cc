@@ -19,6 +19,7 @@
 #include <set>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -30,6 +31,7 @@
 #include "ortools/sat/all_different.h"
 #include "ortools/sat/circuit.h"
 #include "ortools/sat/cp_constraints.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/cumulative.h"
 #include "ortools/sat/diffn.h"
@@ -1249,6 +1251,29 @@ void LoadIntMinConstraint(const ConstraintProto& ct, Model* m) {
   m->Add(IsEqualToMinOf(min, vars));
 }
 
+LinearExpression GetExprFromProto(const LinearExpressionProto& expr_proto,
+                                  const CpModelMapping& mapping) {
+  LinearExpression expr;
+  expr.vars = mapping.Integers(expr_proto.vars());
+  for (int j = 0; j < expr_proto.coeffs_size(); ++j) {
+    expr.coeffs.push_back(IntegerValue(expr_proto.coeffs(j)));
+  }
+  expr.offset = IntegerValue(expr_proto.offset());
+  return CanonicalizeExpr(expr);
+}
+
+void LoadLinMinConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  const LinearExpression min =
+      GetExprFromProto(ct.lin_min().target(), *mapping);
+  std::vector<LinearExpression> exprs;
+  exprs.reserve(ct.lin_min().exprs_size());
+  for (int i = 0; i < ct.lin_min().exprs_size(); ++i) {
+    exprs.push_back(GetExprFromProto(ct.lin_min().exprs(i), *mapping));
+  }
+  m->Add(IsEqualToMinOf(min, exprs));
+}
+
 void LoadIntMaxConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   const IntegerVariable max = mapping->Integer(ct.int_max().target());
@@ -1737,6 +1762,9 @@ bool LoadConstraint(const ConstraintProto& ct, Model* m) {
       return true;
     case ConstraintProto::ConstraintProto::kIntMin:
       LoadIntMinConstraint(ct, m);
+      return true;
+    case ConstraintProto::ConstraintProto::kLinMin:
+      LoadLinMinConstraint(ct, m);
       return true;
     case ConstraintProto::ConstraintProto::kIntMax:
       LoadIntMaxConstraint(ct, m);

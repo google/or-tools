@@ -45,7 +45,6 @@ class LinearConstraintManager {
   struct ConstraintInfo {
     LinearConstraint constraint;
     double l2_norm;
-    bool is_cut;
     int64 inactive_count;
     double objective_parallelism;
     bool objective_parallelism_computed;
@@ -66,9 +65,11 @@ class LinearConstraintManager {
 
   // Add a new constraint to the manager. Note that we canonicalize constraints
   // and merge the bounds of constraints with the same terms. We also perform
-  // basic preprocessing.
+  // basic preprocessing. If added is given, it will be set to true if this
+  // constraint was actually a new one and to false if it was dominated by an
+  // already existing one.
   DEFINE_INT_TYPE(ConstraintIndex, int32);
-  ConstraintIndex Add(LinearConstraint ct);
+  ConstraintIndex Add(LinearConstraint ct, bool* added = nullptr);
 
   // Same as Add(), but logs some information about the newly added constraint.
   // Cuts are also handled slightly differently than normal constraints.

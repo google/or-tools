@@ -737,8 +737,16 @@ class CpModelBuilder {
   /// Adds target == min(vars).
   Constraint AddMinEquality(IntVar target, absl::Span<const IntVar> vars);
 
+  /// Adds target == min(exprs).
+  Constraint AddLinMinEquality(const LinearExpr& target,
+                               absl::Span<const LinearExpr> exprs);
+
   /// Adds target == max(vars).
   Constraint AddMaxEquality(IntVar target, absl::Span<const IntVar> vars);
+
+  /// Adds target == max(exprs).
+  Constraint AddLinMaxEquality(const LinearExpr& target,
+                               absl::Span<const LinearExpr> exprs);
 
   /// Adds target = num / denom (integer division rounded towards 0).
   Constraint AddDivisionEquality(IntVar target, IntVar numerator,
@@ -811,6 +819,10 @@ class CpModelBuilder {
  private:
   friend class CumulativeConstraint;
   friend class ReservoirConstraint;
+
+  // Fills the 'expr_proto' with the linear expression represented by 'expr'.
+  void LinearExprToProto(const LinearExpr& expr,
+                         LinearExpressionProto* expr_proto);
 
   // Returns a (cached) integer variable index with a constant value.
   int IndexFromConstant(int64 value);

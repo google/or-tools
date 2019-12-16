@@ -50,7 +50,8 @@ void PresolveContext::AddImplication(int a, int b) {
 }
 
 // b => x in [lb, ub].
-void PresolveContext::AddImplyInDomain(int b, int x, const Domain& domain) {
+ConstraintProto* PresolveContext::AddImplyInDomain(int b, int x,
+                                                   const Domain& domain) {
   ConstraintProto* const imply = working_model->add_constraints();
 
   // Doing it like this seems to use slightly less memory.
@@ -60,6 +61,7 @@ void PresolveContext::AddImplyInDomain(int b, int x, const Domain& domain) {
   mutable_linear->mutable_vars()->Resize(1, x);
   mutable_linear->mutable_coeffs()->Resize(1, 1);
   FillDomainInProto(domain, mutable_linear);
+  return imply;
 }
 
 bool PresolveContext::DomainIsEmpty(int ref) const {
@@ -424,9 +426,16 @@ void PresolveContext::InsertVarValueEncoding(int literal, int ref,
         }
       }
     } else {
-      AddImplyInDomain(literal, var, Domain(var_value));
-      AddImplyInDomain(NegatedRef(literal), var,
-                       Domain(var_value).Complement());
+      VLOG(2) << "Insert lit(" << literal << ") <=> var(" << var
+              << ") == " << value;
+      const std::pair<int, int64> key{var, var_value};
+      eq_half_encoding[key][literal] =
+          AddImplyInDomain(literal, var, Domain(var_value));
+      VLOG(2) << "  imply_eq = " << eq_half_encoding[key][literal];
+      neq_half_encoding[key][NegatedRef(literal)] = AddImplyInDomain(
+          NegatedRef(literal), var, Domain(var_value).Complement());
+      VLOG(2) << "  imply_neq = "
+              << neq_half_encoding[key][NegatedRef(literal)];
     }
   } else {
     const int previous_literal = insert.first->second;
@@ -450,40 +459,38 @@ bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
   const auto& new_info = direct_map.insert(std::make_pair(literal, ct));
   if (new_info.second) {
     VLOG(2) << "Collect lit(" << literal << ") implies var(" << var
-            << (imply_eq ? ") == " : ") != ") << value;
+            << (imply_eq ? ") == " : ") != ") << value << " [" << ct << "]";
     UpdateRuleStats("variables: detect half reified value encoding");
 
     if (gtl::ContainsKey(other_map, NegatedRef(literal))) {
-      const int ref_lit = imply_eq ? literal : NegatedRef(literal);
-      const auto insert_encoding_status =
-          encoding.insert(std::make_pair(std::make_pair(var, value), ref_lit));
-      if (insert_encoding_status.second) {
-        VLOG(2) << "Detect and store lit(" << ref_lit << ") <=> var(" << var
-                << ") == " << value;
-        UpdateRuleStats("variables: detect fully reified value encoding");
-      } else if (ref_lit != insert_encoding_status.first->second) {
-        const int previous_lit = insert_encoding_status.first->second;
-        VLOG(2) << "Detect duplicate encoding lit(" << ref_lit << ") == lit("
-                << previous_lit << ") <=> var(" << var << ") == " << value;
-        StoreBooleanEqualityRelation(previous_lit, ref_lit);
+      const int imply_eq_literal = imply_eq ? literal : NegatedRef(literal);
 
-        const AffineRelation::Relation r = GetAffineRelation(previous_lit);
-        if (r.representative != previous_lit) {
-          const int new_ref_lit =
-              r.coeff > 0 ? r.representative : NegatedRef(r.representative);
-          VLOG(2)
-              << "Different representative of previous literal, updating to "
-              << new_ref_lit;
+      const auto insert_encoding_status =
+          encoding.insert(std::make_pair(key, imply_eq_literal));
+      if (insert_encoding_status.second) {
+        VLOG(2) << "Detect and store lit(" << imply_eq_literal << ") <=> var("
+                << var << ") == " << value;
+        UpdateRuleStats("variables: detect fully reified value encoding");
+        encoding[key] = imply_eq_literal;
+      } else if (imply_eq_literal != insert_encoding_status.first->second) {
+        const int previous_imply_eq_literal =
+            insert_encoding_status.first->second;
+        VLOG(2) << "Detect duplicate encoding lit(" << imply_eq_literal
+                << ") == lit(" << previous_imply_eq_literal << ") <=> var("
+                << var << ") == " << value;
+        StoreBooleanEqualityRelation(imply_eq_literal,
+                                     previous_imply_eq_literal);
+
+        // Update reference literal.
+        const AffineRelation::Relation r =
+            GetAffineRelation(previous_imply_eq_literal);
+        const int new_ref_lit =
+            r.coeff > 0 ? r.representative : NegatedRef(r.representative);
+        if (new_ref_lit != previous_imply_eq_literal) {
+          VLOG(2) << "Updating reference encoding literal to " << new_ref_lit;
           encoding[key] = new_ref_lit;
         }
 
-        // Remove the two half encoding constraints from the model.
-        VLOG(2) << "Delete " << ct->DebugString();
-        ct->Clear();
-        direct_map.erase(literal);
-        VLOG(2) << "Delete " << other_map[NegatedRef(literal)]->DebugString();
-        other_map[NegatedRef(literal)]->Clear();
-        other_map.erase(NegatedRef(literal));
         UpdateRuleStats(
             "variables: merge equivalent var value encoding literals");
       }
@@ -534,6 +541,8 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64 value) {
   const int64 var_min = MinOf(var);
   const int64 var_max = MaxOf(var);
   if (domains[var].Size() == 2) {
+    VLOG(2) << "GetOrCreate var(" << var << ") {" << var_min << ", " << var_max
+            << "}";
     // Checks if the other value is already encoded.
     const int64 other_value = var_value == var_min ? var_max : var_min;
     const std::pair<int, int64> other_key{var, other_value};
@@ -724,7 +733,8 @@ void PresolveContext::SubstituteVariableInObjective(
 
   // We can only "easily" substitute if the objective coefficient is a multiple
   // of the one in the constraint.
-  const int64 coeff_in_objective = gtl::FindOrDie(objective_map, var_in_equality);
+  const int64 coeff_in_objective =
+      gtl::FindOrDie(objective_map, var_in_equality);
   CHECK_NE(coeff_in_equality, 0);
   CHECK_EQ(coeff_in_objective % coeff_in_equality, 0);
   const int64 multiplier = coeff_in_objective / coeff_in_equality;
@@ -765,6 +775,11 @@ void PresolveContext::SubstituteVariableInObjective(
   // Tricky: The objective domain is without the offset, so we need to shift it
   objective_offset += static_cast<double>(offset.Min());
   objective_domain = objective_domain.AdditionWith(Domain(-offset.Min()));
+
+  // Because we can assume that the constraint we used was constraining
+  // (otherwise it would have been removed), the objective domain should be now
+  // constraining.
+  objective_domain_is_constraining = true;
 }
 
 void PresolveContext::WriteObjectiveToProto() {

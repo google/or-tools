@@ -48,7 +48,7 @@ struct PresolveContext {
   void AddImplication(int a, int b);
 
   // b => x in [lb, ub].
-  void AddImplyInDomain(int b, int x, const Domain& domain);
+  ConstraintProto* AddImplyInDomain(int b, int x, const Domain& domain);
 
   // Helpers to query the current domain of a variable.
   bool DomainIsEmpty(int ref) const;

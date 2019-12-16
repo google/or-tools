@@ -104,6 +104,7 @@ class CpModelPresolver {
   bool PresolveInterval(int c, ConstraintProto* ct);
   bool PresolveIntDiv(ConstraintProto* ct);
   bool PresolveIntProd(ConstraintProto* ct);
+  // TODO(user) : Add presolve rules for LinMin.
   bool PresolveIntMin(ConstraintProto* ct);
   bool PresolveIntMax(ConstraintProto* ct);
   bool PresolveBoolXor(ConstraintProto* ct);
