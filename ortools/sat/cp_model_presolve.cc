@@ -1100,7 +1100,7 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
     if (linear.domain_size() == 2 && linear.domain(0) == linear.domain(1)) {
       const int64 value = RefIsPositive(ref) ? linear.domain(0) * coeff
                                              : -linear.domain(0) * coeff;
-      if (context_->StoreLiteralImpliesVarEqValue(literal, var, value, ct)) {
+      if (context_->StoreLiteralImpliesVarEqValue(literal, var, value)) {
         // The domain is not actually modified, but we want to rescan the
         // constraints linked to this variable. See TODO below.
         context_->modified_domains.Set(var);
@@ -1111,7 +1111,7 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
       if (complement.Size() != 1) return false;
       const int64 value = RefIsPositive(ref) ? complement.Min() * coeff
                                              : -complement.Min() * coeff;
-      if (context_->StoreLiteralImpliesVarNEqValue(literal, var, value, ct)) {
+      if (context_->StoreLiteralImpliesVarNEqValue(literal, var, value)) {
         // The domain is not actually modified, but we want to rescan the
         // constraints linked to this variable. See TODO below.
         context_->modified_domains.Set(var);
