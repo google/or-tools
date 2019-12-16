@@ -592,28 +592,35 @@ CutGenerator CreateKnapsackCoverCutGenerator(
 }
 
 std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
-    bool use_letchford_lodi_version, IntegerValue rhs_remainder,
-    IntegerValue divisor, IntegerValue max_scaling) {
-  // Compute the larger t <= max_scaling such that
+    IntegerValue rhs_remainder, IntegerValue divisor, IntegerValue max_t,
+    IntegerValue max_scaling) {
+  CHECK_GE(max_t, 1);
+  CHECK_GE(max_scaling, 1);
+
+  // Compute the larger t <= max_t such that
   // t * rhs_remainder >= divisor / 2.
   const IntegerValue t =
       rhs_remainder == 0
-          ? max_scaling
-          : std::min(max_scaling, CeilRatio(divisor / 2, rhs_remainder));
+          ? max_t
+          : std::min(max_t, CeilRatio(divisor / 2, rhs_remainder));
 
   // Adjust after the multiplication by t.
+  //
+  // Note(user): the modulo is only needed when t is large which is currently
+  // not possible, but I left it here to not forget to do that in experiments.
   rhs_remainder *= t;
-  max_scaling /= t;
+  rhs_remainder %= divisor;
 
-  // This is the only difference compared to a discretized MIR function.
-  if (use_letchford_lodi_version && max_scaling > 2) max_scaling = 2;
+  // Make sure we don't have an integer overflow below. Note that we assume that
+  // divisor and the maximum coeff magnitude are not too different (maybe a
+  // factor 1000 at most) so that the final result will never overflow.
+  max_scaling = std::min(max_scaling, kint64max / divisor);
 
-  CHECK_GE(max_scaling, 1);
   const IntegerValue size = divisor - rhs_remainder;
-  if (max_scaling == 1) {
+  if (max_scaling == 1 || size == 1) {
     // TODO(user): Use everywhere a two step computation to avoid overflow?
-    // First divide by divisor, then multiply by t. For now, we limit the
-    // max_scaling so that we never have an overflow instead.
+    // First divide by divisor, then multiply by t. For now, we limit t so that
+    // we never have an overflow instead.
     return [t, divisor](IntegerValue coeff) {
       return FloorRatio(t * coeff, divisor);
     };
@@ -624,6 +631,22 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
       const IntegerValue diff = remainder - rhs_remainder;
       return size * ratio + std::max(IntegerValue(0), diff);
     };
+  } else if (max_scaling.value() * rhs_remainder.value() < divisor) {
+    // Because of our max_t limitation, the rhs_remainder might stay small.
+    //
+    // If it is "too small" we cannot use the code below because it will not be
+    // valid. So we just divide divisor into max_scaling bucket. The
+    // rhs_remainder will be in the bucket 0.
+    //
+    // Note(user): This seems the same as just increasing t, modulo integer
+    // overflows. Maybe we should just always do the computation like this so
+    // that we can use larger t even if coeff is close to kint64max.
+    return [t, divisor, max_scaling](IntegerValue coeff) {
+      const IntegerValue ratio = FloorRatio(t * coeff, divisor);
+      const IntegerValue remainder = t * coeff - ratio * divisor;
+      const IntegerValue bucket = FloorRatio(remainder * max_scaling, divisor);
+      return max_scaling * ratio + bucket;
+    };
   } else {
     // We divide (size = divisor - rhs_remainder) into (max_scaling - 1) buckets
     // and increase the function by 1 / max_scaling for each of them.
@@ -632,7 +655,7 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
     // functions that do not dominate each others. So potentially, a max scaling
     // as low as 2 could lead to the better cut (this is exactly the Letchford &
     // Lodi function).
-    ///
+    //
     // Another intersting fact, is that if we want to compute the maximum alpha
     // for a constraint with 2 terms like:
     //    divisor * Y + (ratio * divisor + remainder) * X
@@ -777,7 +800,7 @@ void IntegerRoundingCut(RoundingOptions options,
   // we need to include it too since we will apply the rounding function on it.
   max_magnitude = std::max(max_magnitude, IntTypeAbs(cut->ub));
 
-  // Make sure that when we multiply the rhs or the coefficient by max_scaling,
+  // Make sure that when we multiply the rhs or the coefficient by a factor t,
   // we do not have an integer overflow. Actually, we need a bit more room
   // because we might round down a value to the next multiple of
   // max_magnitude.
@@ -787,10 +810,9 @@ void IntegerRoundingCut(RoundingOptions options,
     *cut = LinearConstraint(IntegerValue(0), IntegerValue(0));
     return;
   }
-  const IntegerValue max_scaling =
-      std::min(options.max_scaling, threshold / max_magnitude);
+  const IntegerValue max_t = threshold / max_magnitude;
 
-  // There is no point trying twice the same divisor or s divisor that is too
+  // There is no point trying twice the same divisor or a divisor that is too
   // small. Note that we use a higher threshold than the remainder_threshold
   // because we can boost the remainder thanks to our adjusting heuristic below
   // and also because this allows to have cuts with a small range of
@@ -879,8 +901,8 @@ void IntegerRoundingCut(RoundingOptions options,
         temp_ub - FloorRatio(temp_ub, divisor) * divisor;
     if (rhs_remainder == 0) continue;
 
-    const auto f = GetSuperAdditiveRoundingFunction(
-        !options.use_mir, rhs_remainder, divisor, max_scaling);
+    const auto f = GetSuperAdditiveRoundingFunction(rhs_remainder, divisor,
+                                                    max_t, options.max_scaling);
 
     // As we round coefficients, we will compute the loss compared to the
     // current scaled constraint activity. As soon as this loss crosses the
@@ -967,10 +989,16 @@ void IntegerRoundingCut(RoundingOptions options,
   }
 
   // Create the super-additive function f().
+  //
+  // TODO(user): Try out different rounding function and keep the best. We can
+  // change max_t and max_scaling. It might not be easy to choose which cut is
+  // the best, but we can at least know for sure if one dominate the other
+  // completely. That is, if for all coeff f(coeff)/f(divisor) is greater than
+  // or equal to the same value for another function f.
   const IntegerValue rhs_remainder =
       cut->ub - FloorRatio(cut->ub, best_divisor) * best_divisor;
-  const auto f = GetSuperAdditiveRoundingFunction(
-      !options.use_mir, rhs_remainder, best_divisor, max_scaling);
+  const auto f = GetSuperAdditiveRoundingFunction(rhs_remainder, best_divisor,
+                                                  max_t, options.max_scaling);
 
   // Apply f() to the cut.
   //

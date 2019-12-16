@@ -670,7 +670,6 @@ void LinearProgrammingConstraint::AddCutFromConstraints(
 
   // Get the cut using some integer rounding heuristic.
   RoundingOptions options;
-  options.use_mir = sat_parameters_.use_mir_rounding();
   options.max_scaling = sat_parameters_.max_integer_rounding_scaling();
   IntegerRoundingCut(options, lp_values, var_lbs, var_ubs, &cut);
 

@@ -1529,6 +1529,7 @@ def EvaluateLinearExpr(expression, solution):
     if not isinstance(expression, LinearExpr):
         raise TypeError('Cannot interpret %s as a linear expression.' %
                         expression)
+
     value = 0
     to_process = [(expression, 1)]
     while to_process:
@@ -1754,6 +1755,7 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
         if not isinstance(expression, LinearExpr):
             raise TypeError('Cannot interpret %s as a linear expression.' %
                             expression)
+
         value = 0
         to_process = [(expression, 1)]
         while to_process:
