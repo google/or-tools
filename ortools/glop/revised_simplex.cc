@@ -2887,8 +2887,8 @@ std::string RevisedSimplex::StatString() {
 
 void RevisedSimplex::DisplayAllStats() {
   if (FLAGS_simplex_display_stats) {
-    fprintf(stderr, "%s", StatString().c_str());
-    fprintf(stderr, "%s", GetPrettySolverStats().c_str());
+    absl::FPrintF(stderr, "%s", StatString());
+    absl::FPrintF(stderr, "%s", GetPrettySolverStats());
   }
 }
 
