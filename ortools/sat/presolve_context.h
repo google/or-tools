@@ -122,6 +122,9 @@ struct PresolveContext {
 
   void StoreBooleanEqualityRelation(int ref_a, int ref_b);
 
+  // Returns the representative of a literal.
+  int GetLiteralRepresentative(int ref);
+
   // This makes sure that the affine relation only uses one of the
   // representative from the var_equiv_relations.
   AffineRelation::Relation GetAffineRelation(int ref) const;

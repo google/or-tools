@@ -361,46 +361,71 @@ void ExpandInverse(ConstraintProto* ct, PresolveContext* context) {
   for (const int ref : ct->inverse().f_direct()) {
     if (!context->IntersectDomainWith(ref, Domain(0, size - 1))) {
       VLOG(1) << "Empty domain for a variable in ExpandInverse()";
+      return;
     }
   }
   for (const int ref : ct->inverse().f_inverse()) {
     if (!context->IntersectDomainWith(ref, Domain(0, size - 1))) {
       VLOG(1) << "Empty domain for a variable in ExpandInverse()";
+      return;
     }
   }
 
-  // Add the "full-encoding" clauses for better presolving.
-  //
-  // TODO(user): Dectect full encoding at presolve and automatically add them or
-  // (maybe implicitely). This way we don't need to add them here and we also
-  // support in a better way encoding already present in the model.
-  std::vector<BoolArgumentProto*> direct_clauses;
-  std::vector<BoolArgumentProto*> inverse_clauses;
+  std::vector<int64> possible_values;
   for (int i = 0; i < size; ++i) {
-    direct_clauses.push_back(
-        context->working_model->add_constraints()->mutable_bool_or());
-    inverse_clauses.push_back(
-        context->working_model->add_constraints()->mutable_bool_or());
+    possible_values.clear();
+    const Domain domain = context->DomainOf(ct->inverse().f_direct(i));
+    bool removed_value = false;
+    for (const ClosedInterval& interval : domain) {
+      for (int64 j = interval.start; j <= interval.end; ++j) {
+        if (context->DomainOf(ct->inverse().f_inverse(j)).Contains(i)) {
+          possible_values.push_back(j);
+        } else {
+          removed_value = true;
+        }
+      }
+    }
+    if (removed_value) {
+      if (!context->IntersectDomainWith(ct->inverse().f_direct(i),
+                                        Domain::FromValues(possible_values))) {
+        VLOG(1) << "Empty domain for a variable in ExpandInverse()";
+        return;
+      }
+    }
   }
 
-  // TODO(user): Avoid creating trivially false literal.
+  for (int j = 0; j < size; ++j) {
+    possible_values.clear();
+    const Domain domain = context->DomainOf(ct->inverse().f_inverse(j));
+    bool removed_value = false;
+    for (const ClosedInterval& interval : domain) {
+      for (int64 i = interval.start; i <= interval.end; ++i) {
+        if (context->DomainOf(ct->inverse().f_direct(i)).Contains(j)) {
+          possible_values.push_back(i);
+        } else {
+          removed_value = true;
+        }
+      }
+    }
+    if (removed_value) {
+      if (!context->IntersectDomainWith(ct->inverse().f_inverse(j),
+                                        Domain::FromValues(possible_values))) {
+        VLOG(1) << "Empty domain for a variable in ExpandInverse()";
+        return;
+      }
+    }
+  }
+
+  // Implement the inverse part.
   for (int i = 0; i < size; ++i) {
     const int f_i = ct->inverse().f_direct(i);
-    for (int j = 0; j < size; ++j) {
-      const int r_j = ct->inverse().f_inverse(j);
-
-      // We have f[i] == j <=> r[j] == i;
-      // Add or reuse a Boolean equivalent to all these fact.
-      //
-      // TODO(user): if r_j == i is already encoded but not f_i == j, reuse
-      // the Boolean. The presolve should eventually remove these, but better
-      // not to create them in the first place.
-      const int bvar = context->GetOrCreateVarValueEncoding(f_i, j);
-      context->AddImplyInDomain(bvar, r_j, Domain(i));
-      context->AddImplyInDomain(NegatedRef(bvar), r_j, Domain(i).Complement());
-
-      direct_clauses[i]->add_literals(bvar);
-      inverse_clauses[j]->add_literals(bvar);
+    const Domain domain = context->DomainOf(f_i);
+    for (const ClosedInterval& interval : domain) {
+      for (int64 j = interval.start; j <= interval.end; ++j) {
+        const int r_j = ct->inverse().f_inverse(j);
+        const int f_i_j = context->GetOrCreateVarValueEncoding(f_i, j);
+        context->InsertVarValueEncoding(f_i_j, r_j, i);
+      }
     }
   }
 
@@ -608,7 +633,8 @@ void LinkLiteralsAndValues(
   CHECK_EQ(value_literals.size(), values.size());
 
   // TODO(user): Make sure this does not appear in the profile.
-  std::map<int, std::vector<int>> value_literals_per_target_value;
+  // We use a map to make this method deterministic.
+  std::map<int, std::vector<int>> value_literals_per_target_literal;
 
   // If a value is false (i.e not possible), then the tuple with this
   // value is false too (i.e not possible). Conversely, if the tuple is
@@ -617,19 +643,34 @@ void LinkLiteralsAndValues(
     const int64 v = values[i];
     CHECK(target_encoding.contains(v));
     const int lit = gtl::FindOrDie(target_encoding, v);
-    value_literals_per_target_value[v].push_back(value_literals[i]);
-    context->AddImplication(value_literals[i], lit);
+    value_literals_per_target_literal[lit].push_back(value_literals[i]);
   }
 
   // If all tuples supporting a value are false, then this value must be
   // false.
-  for (const auto& it : value_literals_per_target_value) {
-    BoolArgumentProto* const bool_or =
-        context->working_model->add_constraints()->mutable_bool_or();
-    const int lit = gtl::FindOrDie(target_encoding, it.first);
-    bool_or->add_literals(NegatedRef(lit));
-    for (const int lit : it.second) {
-      bool_or->add_literals(lit);
+  for (const auto& it : value_literals_per_target_literal) {
+    const int target_literal = it.first;
+    switch (it.second.size()) {
+      case 0: {
+        if (!context->SetLiteralToFalse(target_literal)) {
+          return;
+        }
+        break;
+      }
+      case 1: {
+        context->StoreBooleanEqualityRelation(target_literal,
+                                              it.second.front());
+        break;
+      }
+      default: {
+        BoolArgumentProto* const bool_or =
+            context->working_model->add_constraints()->mutable_bool_or();
+        bool_or->add_literals(NegatedRef(target_literal));
+        for (const int value_literal : it.second) {
+          bool_or->add_literals(value_literal);
+          context->AddImplication(value_literal, target_literal);
+        }
+      }
     }
   }
 }

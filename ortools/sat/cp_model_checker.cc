@@ -280,7 +280,6 @@ std::string ValidateCircuitCoveringConstraint(const ConstraintProto& ct) {
 
 std::string ValidateIntModConstraint(const CpModelProto& model,
                                      const ConstraintProto& ct) {
-  LOG(INFO) << "Validate " << ct.DebugString();
   if (ct.int_mod().vars().size() != 2) {
     return absl::StrCat("An int_mod constraint should have exactly 2 terms: ",
                         ProtobufShortDebugString(ct));

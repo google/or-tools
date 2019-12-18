@@ -997,8 +997,52 @@ void IntegerRoundingCut(RoundingOptions options,
   // or equal to the same value for another function f.
   const IntegerValue rhs_remainder =
       cut->ub - FloorRatio(cut->ub, best_divisor) * best_divisor;
-  const auto f = GetSuperAdditiveRoundingFunction(rhs_remainder, best_divisor,
-                                                  max_t, options.max_scaling);
+  auto f = GetSuperAdditiveRoundingFunction(rhs_remainder, best_divisor, max_t,
+                                            options.max_scaling);
+
+  // Look amongst all our possible function f() for one that dominate greedily
+  // our current best one. Note that we prefer lower scaling factor since that
+  // result in a cut with lower coefficients.
+  std::vector<IntegerValue> remainders;
+  for (int i = 0; i < size; ++i) {
+    const IntegerValue coeff = cut->coeffs[i];
+    const IntegerValue r =
+        coeff - FloorRatio(coeff, best_divisor) * best_divisor;
+    if (r > rhs_remainder) remainders.push_back(r);
+  }
+  gtl::STLSortAndRemoveDuplicates(&remainders);
+  if (remainders.size() <= 100) {
+    std::vector<IntegerValue> best_rs;
+    for (const IntegerValue r : remainders) {
+      best_rs.push_back(f(r));
+    }
+    IntegerValue best_d = f(best_divisor);
+
+    // Note that the complexity seems high 100 * 2 * options.max_scaling, but
+    // this only run on cuts that are already efficient and the inner loop tend
+    // to abort quickly. I didn't see this code in the cpu profile so far.
+    std::vector<IntegerValue> rs;
+    for (const IntegerValue t : {IntegerValue(1), max_t}) {
+      for (IntegerValue s(2); s <= options.max_scaling; ++s) {
+        const auto g =
+            GetSuperAdditiveRoundingFunction(rhs_remainder, best_divisor, t, s);
+        int num_strictly_better = 0;
+        rs.clear();
+        const IntegerValue d = g(best_divisor);
+        for (int i = 0; i < best_rs.size(); ++i) {
+          const IntegerValue temp = g(remainders[i]);
+          if (temp * best_d < best_rs[i] * d) break;
+          if (temp * best_d > best_rs[i] * d) num_strictly_better++;
+          rs.push_back(temp);
+        }
+        if (rs.size() == best_rs.size() && num_strictly_better > 0) {
+          f = g;
+          best_rs = rs;
+          best_d = d;
+        }
+      }
+    }
+  }
 
   // Apply f() to the cut.
   //

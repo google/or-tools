@@ -328,6 +328,12 @@ void PresolveContext::StoreBooleanEqualityRelation(int ref_a, int ref_b) {
   UpdateNewConstraintsVariableUsage();
 }
 
+int PresolveContext::GetLiteralRepresentative(int ref) {
+  const AffineRelation::Relation r = GetAffineRelation(ref);
+  if (r.representative == ref) return ref;
+  return r.coeff > 0 ? r.representative : NegatedRef(r.representative);
+}
+
 // This makes sure that the affine relation only uses one of the
 // representative from the var_equiv_relations.
 AffineRelation::Relation PresolveContext::GetAffineRelation(int ref) const {
@@ -344,7 +350,6 @@ AffineRelation::Relation PresolveContext::GetAffineRelation(int ref) const {
 
 // Create the internal structure for any new variables in working_model.
 void PresolveContext::InitializeNewDomains() {
-  domains.reserve(working_model->variables_size());
   for (int i = domains.size(); i < working_model->variables_size(); ++i) {
     domains.emplace_back(ReadDomainFromProto(working_model->variables(i)));
     if (domains.back().IsEmpty()) {
@@ -439,7 +444,6 @@ bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
         VLOG(2) << "Detect and store lit(" << imply_eq_literal << ") <=> var("
                 << var << ") == " << value;
         UpdateRuleStats("variables: detect fully reified value encoding");
-        encoding[key] = imply_eq_literal;
       } else if (imply_eq_literal != insert_encoding_status.first->second) {
         const int previous_imply_eq_literal =
             insert_encoding_status.first->second;
@@ -448,16 +452,6 @@ bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
                 << var << ") == " << value;
         StoreBooleanEqualityRelation(imply_eq_literal,
                                      previous_imply_eq_literal);
-
-        // Update reference literal.
-        const AffineRelation::Relation r =
-            GetAffineRelation(previous_imply_eq_literal);
-        const int new_ref_lit =
-            r.coeff > 0 ? r.representative : NegatedRef(r.representative);
-        if (new_ref_lit != previous_imply_eq_literal) {
-          VLOG(2) << "Updating reference encoding literal to " << new_ref_lit;
-          encoding[key] = new_ref_lit;
-        }
 
         UpdateRuleStats(
             "variables: merge equivalent var value encoding literals");
@@ -492,7 +486,7 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64 value) {
   const std::pair<int, int64> key{var, var_value};
   auto it = encoding.find(key);
   if (it != encoding.end()) {
-    return it->second;
+    return GetLiteralRepresentative(it->second);
   }
 
   // Special case for fixed domains.
@@ -506,32 +500,35 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64 value) {
   const int64 var_min = MinOf(var);
   const int64 var_max = MaxOf(var);
   if (domains[var].Size() == 2) {
-    VLOG(2) << "GetOrCreate var(" << var << ") {" << var_min << ", " << var_max
-            << "}";
     // Checks if the other value is already encoded.
     const int64 other_value = var_value == var_min ? var_max : var_min;
     const std::pair<int, int64> other_key{var, other_value};
     auto other_it = encoding.find(other_key);
     if (other_it != encoding.end()) {
-      // Fill in other value.
-      encoding[key] = NegatedRef(other_it->second);
-      return NegatedRef(other_it->second);
+      // Update the encoding map. The domain could have been reduced to size
+      // two after the creation of the first literal.
+      const int other_literal =
+          GetLiteralRepresentative(NegatedRef(other_it->second));
+      encoding[key] = other_literal;
+      return other_literal;
     }
 
     if (var_min == 0 && var_max == 1) {
-      encoding[{var, 1}] = var;
-      encoding[{var, 0}] = NegatedRef(var);
-      return value == 1 ? var : NegatedRef(var);
+      const int representative = GetLiteralRepresentative(var);
+      encoding[{var, 1}] = representative;
+      encoding[{var, 0}] = NegatedRef(representative);
+      return value == 1 ? representative : NegatedRef(representative);
     } else {
       const int literal = NewBoolVar();
       InsertVarValueEncoding(literal, var, var_max);
-      return var_value == var_max ? literal : NegatedRef(literal);
+      const int representative = GetLiteralRepresentative(literal);
+      return var_value == var_max ? representative : NegatedRef(representative);
     }
   }
 
   const int literal = NewBoolVar();
   InsertVarValueEncoding(literal, var, var_value);
-  return literal;
+  return GetLiteralRepresentative(literal);
 }
 
 void PresolveContext::ReadObjectiveFromProto() {
