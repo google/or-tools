@@ -175,11 +175,21 @@ bool PossibleIntegerOverflow(const CpModelProto& model,
 std::string ValidateIntervalConstraint(const CpModelProto& model,
                                        const ConstraintProto& ct) {
   const IntervalConstraintProto& arg = ct.interval();
-  const IntegerVariableProto& size_var_proto = model.variables(arg.size());
-  if (size_var_proto.domain(0) < 0) {
-    return absl::StrCat(
-        "Negative value in interval size domain: ", ProtobufDebugString(ct),
-        "size var: ", ProtobufDebugString(size_var_proto));
+  if (arg.size() < 0) {
+    const IntegerVariableProto& size_var_proto =
+        model.variables(NegatedRef(arg.size()));
+    if (size_var_proto.domain(size_var_proto.domain_size() - 1) > 0) {
+      return absl::StrCat(
+          "Negative value in interval size domain: ", ProtobufDebugString(ct),
+          "negation of size var: ", ProtobufDebugString(size_var_proto));
+    }
+  } else {
+    const IntegerVariableProto& size_var_proto = model.variables(arg.size());
+    if (size_var_proto.domain(0) < 0) {
+      return absl::StrCat(
+          "Negative value in interval size domain: ", ProtobufDebugString(ct),
+          "size var: ", ProtobufDebugString(size_var_proto));
+    }
   }
   return "";
 }
