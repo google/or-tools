@@ -468,8 +468,8 @@ static const yytype_uint16 yyrline[] = {
     352, 355, 356, 357, 360, 364, 370, 371, 384, 402, 403, 404, 405, 412,
     413, 414, 415, 422, 423, 430, 431, 432, 435, 436, 439, 440, 441, 446,
     447, 450, 451, 452, 457, 458, 459, 464, 465, 469, 470, 476, 480, 486,
-    487, 490, 517, 518, 521, 522, 523, 524, 525, 530, 561, 578, 603, 612,
-    616, 619, 620, 623, 624, 625, 626, 636, 645, 651, 666, 674, 683};
+    487, 490, 502, 503, 506, 507, 508, 509, 510, 515, 546, 563, 588, 597,
+    601, 604, 605, 608, 609, 610, 611, 621, 630, 636, 651, 659, 668};
 #endif
 
 #if ORFZ_DEBUG || YYERROR_VERBOSE || 1
@@ -1462,7 +1462,7 @@ yyreduce:
             identifier, Domain::IntegerValue(assignment.value), introduced);
       } else {  // a variable.
         var = assignment.variable;
-        var->Merge(identifier, domain, nullptr, introduced);
+        var->Merge(identifier, domain, introduced);
       }
 
       // We also register the variable in the parser's context, and add some
@@ -1513,7 +1513,7 @@ yyreduce:
           IntegerVariable* const var = assignments->variables[i];
           CHECK(var != nullptr);
           vars[i] = var;
-          vars[i]->Merge(var_name, domain, nullptr, introduced);
+          vars[i]->Merge(var_name, domain, introduced);
         }
       }
       delete assignments;
@@ -1952,92 +1952,78 @@ yyreduce:
       const std::vector<Argument>& arguments = *(yyvsp[-2].args);
       std::vector<Annotation>* const annotations = (yyvsp[0].annotations);
 
-      // Does the constraint have a defines_var annotation?
-      IntegerVariable* defines_var = nullptr;
-      if (annotations != nullptr) {
-        for (int i = 0; i < annotations->size(); ++i) {
-          const Annotation& ann = (*annotations)[i];
-          if (ann.IsFunctionCallWithIdentifier("defines_var")) {
-            CHECK_EQ(1, ann.annotations.size());
-            CHECK_EQ(Annotation::INT_VAR_REF, ann.annotations.back().type);
-            defines_var = ann.annotations.back().variables[0];
-            break;
-          }
-        }
-      }
-
       model->AddConstraint(identifier, arguments,
-                           ContainsId(annotations, "domain"), defines_var);
+                           ContainsId(annotations, "domain"));
       delete annotations;
       delete (yyvsp[-2].args);
     }
-#line 2015 "./ortools/flatzinc/parser.tab.cc"
+#line 2000 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 72:
-#line 517 "./ortools/flatzinc/parser.yy"
+#line 502 "./ortools/flatzinc/parser.yy"
     {
       (yyval.args) = (yyvsp[-2].args);
       (yyval.args)->emplace_back((yyvsp[0].arg));
     }
-#line 2021 "./ortools/flatzinc/parser.tab.cc"
+#line 2006 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 73:
-#line 518 "./ortools/flatzinc/parser.yy"
+#line 503 "./ortools/flatzinc/parser.yy"
     {
       (yyval.args) = new std::vector<Argument>();
       (yyval.args)->emplace_back((yyvsp[0].arg));
     }
-#line 2027 "./ortools/flatzinc/parser.tab.cc"
+#line 2012 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 74:
-#line 521 "./ortools/flatzinc/parser.yy"
+#line 506 "./ortools/flatzinc/parser.yy"
     {
       (yyval.arg) = Argument::IntegerValue((yyvsp[0].integer_value));
     }
-#line 2033 "./ortools/flatzinc/parser.tab.cc"
+#line 2018 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 75:
-#line 522 "./ortools/flatzinc/parser.yy"
+#line 507 "./ortools/flatzinc/parser.yy"
     {
       (yyval.arg) = Argument::IntegerValue(
           ConvertAsIntegerOrDie((yyvsp[0].double_value)));
     }
-#line 2039 "./ortools/flatzinc/parser.tab.cc"
+#line 2024 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 76:
-#line 523 "./ortools/flatzinc/parser.yy"
+#line 508 "./ortools/flatzinc/parser.yy"
     {
       (yyval.arg) = Argument::VoidArgument();
     }
-#line 2045 "./ortools/flatzinc/parser.tab.cc"
+#line 2030 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 77:
-#line 524 "./ortools/flatzinc/parser.yy"
+#line 509 "./ortools/flatzinc/parser.yy"
     {
       (yyval.arg) = Argument::Interval((yyvsp[-2].integer_value),
                                        (yyvsp[0].integer_value));
     }
-#line 2051 "./ortools/flatzinc/parser.tab.cc"
+#line 2036 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 78:
-#line 525 "./ortools/flatzinc/parser.yy"
+#line 510 "./ortools/flatzinc/parser.yy"
     {
       CHECK((yyvsp[-1].integers) != nullptr);
       (yyval.arg) = Argument::IntegerList(std::move(*(yyvsp[-1].integers)));
       delete (yyvsp[-1].integers);
     }
-#line 2061 "./ortools/flatzinc/parser.tab.cc"
+#line 2046 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 79:
-#line 530 "./ortools/flatzinc/parser.yy"
+#line 515 "./ortools/flatzinc/parser.yy"
     {
       const std::string& id = (yyvsp[0].string_value);
       if (gtl::ContainsKey(context->integer_map, id)) {
@@ -2075,11 +2061,11 @@ yyreduce:
         (yyval.arg) = Argument::DomainList(d);
       }
     }
-#line 2097 "./ortools/flatzinc/parser.tab.cc"
+#line 2082 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 80:
-#line 561 "./ortools/flatzinc/parser.yy"
+#line 546 "./ortools/flatzinc/parser.yy"
     {
       const std::string& id = (yyvsp[-3].string_value);
       const int64 index = (yyvsp[-1].integer_value);
@@ -2097,11 +2083,11 @@ yyreduce:
         (yyval.arg) = Argument::FromDomain(d);
       }
     }
-#line 2119 "./ortools/flatzinc/parser.tab.cc"
+#line 2104 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 81:
-#line 578 "./ortools/flatzinc/parser.yy"
+#line 563 "./ortools/flatzinc/parser.yy"
     {
       VariableRefOrValueArray* const arguments = (yyvsp[-1].var_or_value_array);
       CHECK(arguments != nullptr);
@@ -2128,81 +2114,81 @@ yyreduce:
       }
       delete arguments;
     }
-#line 2149 "./ortools/flatzinc/parser.tab.cc"
+#line 2134 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 82:
-#line 603 "./ortools/flatzinc/parser.yy"
+#line 588 "./ortools/flatzinc/parser.yy"
     {
       (yyval.arg) = Argument::VoidArgument();
     }
-#line 2157 "./ortools/flatzinc/parser.tab.cc"
+#line 2142 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 83:
-#line 612 "./ortools/flatzinc/parser.yy"
+#line 597 "./ortools/flatzinc/parser.yy"
     {
       (yyval.annotations) = (yyvsp[-2].annotations) != nullptr
                                 ? (yyvsp[-2].annotations)
                                 : new std::vector<Annotation>();
       (yyval.annotations)->emplace_back((yyvsp[0].annotation));
     }
-#line 2166 "./ortools/flatzinc/parser.tab.cc"
+#line 2151 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 84:
-#line 616 "./ortools/flatzinc/parser.yy"
+#line 601 "./ortools/flatzinc/parser.yy"
     {
       (yyval.annotations) = nullptr;
     }
-#line 2172 "./ortools/flatzinc/parser.tab.cc"
+#line 2157 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 85:
-#line 619 "./ortools/flatzinc/parser.yy"
+#line 604 "./ortools/flatzinc/parser.yy"
     {
       (yyval.annotations) = (yyvsp[-2].annotations);
       (yyval.annotations)->emplace_back((yyvsp[0].annotation));
     }
-#line 2178 "./ortools/flatzinc/parser.tab.cc"
+#line 2163 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 86:
-#line 620 "./ortools/flatzinc/parser.yy"
+#line 605 "./ortools/flatzinc/parser.yy"
     {
       (yyval.annotations) = new std::vector<Annotation>();
       (yyval.annotations)->emplace_back((yyvsp[0].annotation));
     }
-#line 2184 "./ortools/flatzinc/parser.tab.cc"
+#line 2169 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 87:
-#line 623 "./ortools/flatzinc/parser.yy"
+#line 608 "./ortools/flatzinc/parser.yy"
     {
       (yyval.annotation) = Annotation::Interval((yyvsp[-2].integer_value),
                                                 (yyvsp[0].integer_value));
     }
-#line 2190 "./ortools/flatzinc/parser.tab.cc"
+#line 2175 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 88:
-#line 624 "./ortools/flatzinc/parser.yy"
+#line 609 "./ortools/flatzinc/parser.yy"
     {
       (yyval.annotation) = Annotation::IntegerValue((yyvsp[0].integer_value));
     }
-#line 2196 "./ortools/flatzinc/parser.tab.cc"
+#line 2181 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 89:
-#line 625 "./ortools/flatzinc/parser.yy"
+#line 610 "./ortools/flatzinc/parser.yy"
     {
       (yyval.annotation) = Annotation::String((yyvsp[0].string_value));
     }
-#line 2202 "./ortools/flatzinc/parser.tab.cc"
+#line 2187 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 90:
-#line 626 "./ortools/flatzinc/parser.yy"
+#line 611 "./ortools/flatzinc/parser.yy"
     {
       const std::string& id = (yyvsp[0].string_value);
       if (gtl::ContainsKey(context->variable_map, id)) {
@@ -2215,11 +2201,11 @@ yyreduce:
         (yyval.annotation) = Annotation::Identifier(id);
       }
     }
-#line 2217 "./ortools/flatzinc/parser.tab.cc"
+#line 2202 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 91:
-#line 636 "./ortools/flatzinc/parser.yy"
+#line 621 "./ortools/flatzinc/parser.yy"
     {
       std::vector<Annotation>* const annotations = (yyvsp[-1].annotations);
       if (annotations != nullptr) {
@@ -2230,11 +2216,11 @@ yyreduce:
         (yyval.annotation) = Annotation::FunctionCall((yyvsp[-3].string_value));
       }
     }
-#line 2231 "./ortools/flatzinc/parser.tab.cc"
+#line 2216 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 92:
-#line 645 "./ortools/flatzinc/parser.yy"
+#line 630 "./ortools/flatzinc/parser.yy"
     {
       CHECK(gtl::ContainsKey(context->variable_array_map,
                              (yyvsp[-3].string_value)))
@@ -2243,11 +2229,11 @@ yyreduce:
           gtl::FindOrDie(context->variable_array_map, (yyvsp[-3].string_value)),
           (yyvsp[-1].integer_value)));
     }
-#line 2242 "./ortools/flatzinc/parser.tab.cc"
+#line 2227 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 93:
-#line 651 "./ortools/flatzinc/parser.yy"
+#line 636 "./ortools/flatzinc/parser.yy"
     {
       std::vector<Annotation>* const annotations = (yyvsp[-1].annotations);
       if (annotations != nullptr) {
@@ -2258,11 +2244,11 @@ yyreduce:
         (yyval.annotation) = Annotation::Empty();
       }
     }
-#line 2256 "./ortools/flatzinc/parser.tab.cc"
+#line 2241 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 94:
-#line 666 "./ortools/flatzinc/parser.yy"
+#line 651 "./ortools/flatzinc/parser.yy"
     {
       if ((yyvsp[-1].annotations) != nullptr) {
         model->Satisfy(std::move(*(yyvsp[-1].annotations)));
@@ -2271,11 +2257,11 @@ yyreduce:
         model->Satisfy(std::vector<Annotation>());
       }
     }
-#line 2269 "./ortools/flatzinc/parser.tab.cc"
+#line 2254 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 95:
-#line 674 "./ortools/flatzinc/parser.yy"
+#line 659 "./ortools/flatzinc/parser.yy"
     {
       CHECK_EQ(Argument::INT_VAR_REF, (yyvsp[0].arg).type);
       if ((yyvsp[-2].annotations) != nullptr) {
@@ -2286,11 +2272,11 @@ yyreduce:
         model->Minimize((yyvsp[0].arg).Var(), std::vector<Annotation>());
       }
     }
-#line 2283 "./ortools/flatzinc/parser.tab.cc"
+#line 2268 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 96:
-#line 683 "./ortools/flatzinc/parser.yy"
+#line 668 "./ortools/flatzinc/parser.yy"
     {
       CHECK_EQ(Argument::INT_VAR_REF, (yyvsp[0].arg).type);
       if ((yyvsp[-2].annotations) != nullptr) {
@@ -2301,10 +2287,10 @@ yyreduce:
         model->Maximize((yyvsp[0].arg).Var(), std::vector<Annotation>());
       }
     }
-#line 2297 "./ortools/flatzinc/parser.tab.cc"
+#line 2282 "./ortools/flatzinc/parser.tab.cc"
     break;
 
-#line 2301 "./ortools/flatzinc/parser.tab.cc"
+#line 2286 "./ortools/flatzinc/parser.tab.cc"
 
     default:
       break;
@@ -2503,4 +2489,4 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 693 "./ortools/flatzinc/parser.yy"
+#line 678 "./ortools/flatzinc/parser.yy"

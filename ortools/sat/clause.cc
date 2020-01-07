@@ -431,8 +431,10 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(const int base_index) {
         const Literal l = at_most_one_buffer_[j];
         if (new_local_end > local_start &&
             l == at_most_one_buffer_[new_local_end - 1]) {
-          if (trail_->Assignment().LiteralIsTrue(l)) return false;
-          trail_->EnqueueWithUnitReason(l.Negated());
+          if (assignment.LiteralIsTrue(l)) return false;
+          if (!assignment.LiteralIsFalse(l)) {
+            trail_->EnqueueWithUnitReason(l.Negated());
+          }
           --new_local_end;
           continue;
         }

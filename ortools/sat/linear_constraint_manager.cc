@@ -194,10 +194,10 @@ void LinearConstraintManager::ComputeObjectiveParallelism(
 
 // Same as Add(), but logs some information about the newly added constraint.
 // Cuts are also handled slightly differently than normal constraints.
-void LinearConstraintManager::AddCut(
+bool LinearConstraintManager::AddCut(
     LinearConstraint ct, std::string type_name,
     const gtl::ITIVector<IntegerVariable, double>& lp_solution) {
-  if (ct.vars.empty()) return;
+  if (ct.vars.empty()) return false;
 
   const double activity = ComputeActivity(ct, lp_solution);
   const double violation =
@@ -205,23 +205,24 @@ void LinearConstraintManager::AddCut(
   const double l2_norm = ComputeL2Norm(ct);
 
   // Only add cut with sufficient efficacy.
-  if (violation / l2_norm < 1e-5) return;
+  if (violation / l2_norm < 1e-5) return false;
 
   // Add the constraint. We only mark the constraint as a cut if it is not an
   // update of an already existing one.
   bool added = false;
   const ConstraintIndex ct_index = Add(std::move(ct), &added);
-  if (added) {
-    VLOG(1) << "Cut '" << type_name << "'"
-            << " size=" << constraint_infos_[ct_index].constraint.vars.size()
-            << " max_magnitude="
-            << ComputeInfinityNorm(constraint_infos_[ct_index].constraint)
-            << " norm=" << l2_norm << " violation=" << violation
-            << " eff=" << violation / l2_norm;
+  if (!added) return false;
 
-    num_cuts_++;
-    type_to_num_cuts_[type_name]++;
-  }
+  VLOG(1) << "Cut '" << type_name << "'"
+          << " size=" << constraint_infos_[ct_index].constraint.vars.size()
+          << " max_magnitude="
+          << ComputeInfinityNorm(constraint_infos_[ct_index].constraint)
+          << " norm=" << l2_norm << " violation=" << violation
+          << " eff=" << violation / l2_norm;
+
+  num_cuts_++;
+  type_to_num_cuts_[type_name]++;
+  return true;
 }
 
 void LinearConstraintManager::SetObjectiveCoefficient(IntegerVariable var,

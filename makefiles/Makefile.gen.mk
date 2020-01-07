@@ -3495,7 +3495,9 @@ objs/constraint_solver/routing.$O: ortools/constraint_solver/routing.cc \
  ortools/util/range_query_function.h ortools/base/mathutil.h \
  ortools/base/protoutil.h ortools/base/statusor.h ortools/base/stl_util.h \
  ortools/base/thorough_hash.h \
- ortools/constraint_solver/routing_lp_scheduling.h \
+ ortools/constraint_solver/routing_lp_scheduling.h ortools/sat/cp_model.h \
+ ortools/gen/ortools/sat/cp_model.pb.h ortools/sat/cp_model_solver.h \
+ ortools/sat/cp_model_utils.h \
  ortools/constraint_solver/routing_neighborhoods.h \
  ortools/constraint_solver/routing_parameters.h \
  ortools/graph/connectivity.h ortools/graph/linear_assignment.h \
@@ -3615,9 +3617,11 @@ objs/constraint_solver/routing_flow.$O: \
  ortools/sat/restart.h ortools/sat/sat_decision.h \
  ortools/util/integer_pq.h ortools/util/rev.h \
  ortools/util/range_query_function.h \
- ortools/constraint_solver/routing_lp_scheduling.h \
- ortools/graph/min_cost_flow.h ortools/graph/ebert_graph.h \
- ortools/util/permutation.h ortools/util/zvector.h | $(OBJ_DIR)/constraint_solver
+ ortools/constraint_solver/routing_lp_scheduling.h ortools/sat/cp_model.h \
+ ortools/gen/ortools/sat/cp_model.pb.h ortools/sat/cp_model_solver.h \
+ ortools/sat/cp_model_utils.h ortools/graph/min_cost_flow.h \
+ ortools/graph/ebert_graph.h ortools/util/permutation.h \
+ ortools/util/zvector.h | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sconstraint_solver$Srouting_flow.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Srouting_flow.$O
 
 objs/constraint_solver/routing_index_manager.$O: \
@@ -3675,7 +3679,9 @@ objs/constraint_solver/routing_lp_scheduling.$O: \
  ortools/gen/ortools/sat/sat_parameters.pb.h ortools/sat/pb_constraint.h \
  ortools/sat/restart.h ortools/sat/sat_decision.h \
  ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/range_query_function.h | $(OBJ_DIR)/constraint_solver
+ ortools/util/range_query_function.h ortools/sat/cp_model.h \
+ ortools/gen/ortools/sat/cp_model.pb.h ortools/sat/cp_model_solver.h \
+ ortools/sat/cp_model_utils.h | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sconstraint_solver$Srouting_lp_scheduling.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Srouting_lp_scheduling.$O
 
 objs/constraint_solver/routing_neighborhoods.$O: \
@@ -3843,11 +3849,12 @@ objs/constraint_solver/routing_search.$O: \
  ortools/sat/restart.h ortools/sat/sat_decision.h \
  ortools/util/integer_pq.h ortools/util/rev.h \
  ortools/util/range_query_function.h \
- ortools/constraint_solver/routing_lp_scheduling.h \
- ortools/graph/christofides.h ortools/graph/eulerian_path.h \
- ortools/graph/minimum_spanning_tree.h ortools/graph/connectivity.h \
- ortools/util/vector_or_function.h ortools/graph/perfect_matching.h \
- ortools/linear_solver/linear_solver.h \
+ ortools/constraint_solver/routing_lp_scheduling.h ortools/sat/cp_model.h \
+ ortools/gen/ortools/sat/cp_model.pb.h ortools/sat/cp_model_solver.h \
+ ortools/sat/cp_model_utils.h ortools/graph/christofides.h \
+ ortools/graph/eulerian_path.h ortools/graph/minimum_spanning_tree.h \
+ ortools/graph/connectivity.h ortools/util/vector_or_function.h \
+ ortools/graph/perfect_matching.h ortools/linear_solver/linear_solver.h \
  ortools/linear_solver/linear_expr.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/port/proto_utils.h | $(OBJ_DIR)/constraint_solver

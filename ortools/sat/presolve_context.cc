@@ -179,6 +179,7 @@ ABSL_MUST_USE_RESULT bool PresolveContext::SetLiteralToTrue(int lit) {
 }
 
 void PresolveContext::UpdateRuleStats(const std::string& name) {
+  VLOG(1) << num_presolve_operations << " : " << name;
   stats_by_rule_name[name]++;
   num_presolve_operations++;
 }
@@ -326,6 +327,12 @@ void PresolveContext::StoreBooleanEqualityRelation(int ref_a, int ref_b) {
                         /*offset=*/1);
   }
   UpdateNewConstraintsVariableUsage();
+}
+
+bool PresolveContext::StoreAbsRelation(int target_ref, int ref) {
+  const auto insert_status =
+      abs_relations.insert(std::make_pair(target_ref, PositiveRef(ref)));
+  return insert_status.second;
 }
 
 int PresolveContext::GetLiteralRepresentative(int ref) {

@@ -73,7 +73,10 @@ class LinearConstraintManager {
 
   // Same as Add(), but logs some information about the newly added constraint.
   // Cuts are also handled slightly differently than normal constraints.
-  void AddCut(LinearConstraint ct, std::string type_name,
+  //
+  // Returns true if a new cut was added and false if this cut is not
+  // efficacious or if it is a duplicate of an already existing one.
+  bool AddCut(LinearConstraint ct, std::string type_name,
               const gtl::ITIVector<IntegerVariable, double>& lp_solution);
 
   // The objective is used as one of the criterion to score cuts.

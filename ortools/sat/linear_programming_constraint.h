@@ -189,7 +189,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Add a "MIR" cut obtained by first taking the linear combination of the
   // row of the matrix according to "integer_multipliers" and then trying
   // some integer rounding heuristic.
-  void AddCutFromConstraints(
+  //
+  // Return true if a new cut was added to the cut manager.
+  bool AddCutFromConstraints(
       const std::string& name,
       const std::vector<std::pair<glop::RowIndex, IntegerValue>>&
           integer_multipliers);

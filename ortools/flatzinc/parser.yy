@@ -265,7 +265,7 @@ variable_or_constant_declaration:
         identifier, Domain::IntegerValue(assignment.value), introduced);
   } else {  // a variable.
     var = assignment.variable;
-    var->Merge(identifier, domain, nullptr, introduced);
+    var->Merge(identifier, domain, introduced);
   }
 
   // We also register the variable in the parser's context, and add some
@@ -310,7 +310,7 @@ variable_or_constant_declaration:
       IntegerVariable* const var = assignments->variables[i];
       CHECK(var != nullptr);
       vars[i] = var;
-      vars[i]->Merge(var_name, domain, nullptr, introduced);
+      vars[i]->Merge(var_name, domain, introduced);
     }
   }
   delete assignments;
@@ -493,22 +493,7 @@ constraint :
   const std::vector<Argument>& arguments = *$4;
   std::vector<Annotation>* const annotations = $6;
 
-  // Does the constraint have a defines_var annotation?
-  IntegerVariable* defines_var = nullptr;
-  if (annotations != nullptr) {
-    for (int i = 0; i < annotations->size(); ++i) {
-      const Annotation& ann = (*annotations)[i];
-      if (ann.IsFunctionCallWithIdentifier("defines_var")) {
-        CHECK_EQ(1, ann.annotations.size());
-        CHECK_EQ(Annotation::INT_VAR_REF, ann.annotations.back().type);
-        defines_var = ann.annotations.back().variables[0];
-        break;
-      }
-    }
-  }
-
-  model->AddConstraint(identifier, arguments,
-                       ContainsId(annotations, "domain"), defines_var);
+  model->AddConstraint(identifier, arguments, ContainsId(annotations, "domain"));
   delete annotations;
   delete $4;
 }

@@ -223,7 +223,9 @@ bool CpModelPresolver::PresolveBoolOr(ConstraintProto* ct) {
       return RemoveConstraint(ct);
     }
 
-    if (!context_->tmp_literal_set.contains(literal)) {
+    if (context_->tmp_literal_set.contains(literal)) {
+      changed = true;
+    } else {
       context_->tmp_literal_set.insert(literal);
       context_->tmp_literals.push_back(literal);
     }
@@ -378,35 +380,6 @@ bool CpModelPresolver::PresolveIntMax(ConstraintProto* ct) {
   }
   const int target_ref = ct->int_max().target();
 
-  // Recognized abs() encoding.
-  if (ct->int_max().vars_size() == 2 &&
-      NegatedRef(ct->int_max().vars(0)) == ct->int_max().vars(1)) {
-    const int var = PositiveRef(ct->int_max().vars(0));
-
-    // abs(x) == constant -> reduce domain.
-    if (context_->IsFixed(target_ref)) {
-      const int64 target_value = context_->MaxOf(target_ref);
-      if (target_value < 0) {
-        return context_->NotifyThatModelIsUnsat();
-      }
-      const Domain reduced_domain =
-          Domain::FromValues({-target_value, target_value});
-      if (!context_->IntersectDomainWith(var, reduced_domain)) {
-        return true;
-      }
-      context_->UpdateRuleStats(
-          "int_max: propagate domain of abs(x) == constant");
-      return RemoveConstraint(ct);
-    }
-
-    if (context_->MinOf(target_ref) < 0) {
-      context_->UpdateRuleStats("int_max: propagate abs(x) >= 0");
-      if (!context_->IntersectDomainWith(target_ref, {0, kint64max})) {
-        return true;
-      }
-    }
-  }
-
   // Pass 1, compute the infered min of the target, and remove duplicates.
   int64 infered_min = kint64min;
   int64 infered_max = kint64min;
@@ -544,9 +517,90 @@ bool CpModelPresolver::PresolveIntMax(ConstraintProto* ct) {
     arg->add_coeffs(-1);
     arg->add_domain(0);
     arg->add_domain(0);
+    context_->UpdateNewConstraintsVariableUsage();
     return RemoveConstraint(ct);
   }
   return modified;
+}
+
+bool CpModelPresolver::PresolveIntAbs(ConstraintProto* ct) {
+  if (context_->ModelIsUnsat()) return false;
+  const int target_ref = ct->int_max().target();
+  const int var = PositiveRef(ct->int_max().vars(0));
+
+  if (context_->MinOf(target_ref) < 0) {
+    context_->UpdateRuleStats("int_abs: propagate abs(x) >= 0");
+    if (!context_->IntersectDomainWith(target_ref, {0, kint64max})) {
+      return true;
+    }
+  }
+
+  // Propagate from target domain to variable.
+  const Domain target_domain = context_->DomainOf(target_ref);
+  const Domain new_var_domain =
+      target_domain.UnionWith(target_domain.Negation());
+  if (!context_->DomainOf(var).IsIncludedIn(new_var_domain)) {
+    if (!context_->IntersectDomainWith(var, new_var_domain)) {
+      return true;
+    }
+    context_->UpdateRuleStats("int_abs: propagate domain abs(x) to x");
+  }
+
+  // Propagate from the variable domain to the target variable.
+  const Domain var_domain = context_->DomainOf(var);
+  const Domain new_target_domain = var_domain.UnionWith(var_domain.Negation())
+                                       .IntersectionWith({0, kint64max});
+  if (!context_->DomainOf(target_ref).IsIncludedIn(new_target_domain)) {
+    if (!context_->IntersectDomainWith(target_ref, new_target_domain)) {
+      return true;
+    }
+    context_->UpdateRuleStats("int_abs: propagate domain x to abs(x)");
+  }
+
+  if (context_->MinOf(var) >= 0 && !context_->IsFixed(var)) {
+    context_->UpdateRuleStats("int_abs: converted to equality");
+    ConstraintProto* new_ct = context_->working_model->add_constraints();
+    new_ct->set_name(ct->name());
+    auto* arg = new_ct->mutable_linear();
+    arg->add_vars(target_ref);
+    arg->add_coeffs(1);
+    arg->add_vars(var);
+    arg->add_coeffs(-1);
+    arg->add_domain(0);
+    arg->add_domain(0);
+    context_->UpdateNewConstraintsVariableUsage();
+    return RemoveConstraint(ct);
+  }
+
+  if (context_->MaxOf(var) <= 0 && !context_->IsFixed(var)) {
+    context_->UpdateRuleStats("int_abs: converted to equality");
+    ConstraintProto* new_ct = context_->working_model->add_constraints();
+    new_ct->set_name(ct->name());
+    auto* arg = new_ct->mutable_linear();
+    arg->add_vars(target_ref);
+    arg->add_coeffs(1);
+    arg->add_vars(var);
+    arg->add_coeffs(1);
+    arg->add_domain(0);
+    arg->add_domain(0);
+    context_->UpdateNewConstraintsVariableUsage();
+    return RemoveConstraint(ct);
+  }
+
+  // Remove the abs constraint if the target is removable or fixed, as domains
+  // have been propagated.
+  if (context_->VariableIsUniqueAndRemovable(target_ref) ||
+      context_->IsFixed(target_ref)) {
+    *context_->mapping_model->add_constraints() = *ct;
+    context_->UpdateRuleStats("int_abs: remove constraint");
+    return RemoveConstraint(ct);
+  }
+
+  if (context_->StoreAbsRelation(target_ref, var)) {
+    context_->UpdateRuleStats("int_abs: store abs(x) == y");
+  }
+
+  return false;
 }
 
 bool CpModelPresolver::PresolveIntMin(ConstraintProto* ct) {
@@ -632,7 +686,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
         lin->mutable_linear()->add_coeffs(-1);
         lin->mutable_linear()->add_domain(0);
         lin->mutable_linear()->add_domain(0);
-
+        context_->UpdateNewConstraintsVariableUsage();
         context_->UpdateRuleStats("int_prod: linearize product by constant.");
         return RemoveConstraint(ct);
       } else if (context_->MinOf(a) != 1) {
@@ -686,6 +740,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
       arg->add_literals(NegatedRef(var));
     }
   }
+  context_->UpdateNewConstraintsVariableUsage();
   return RemoveConstraint(ct);
 }
 
@@ -712,6 +767,7 @@ bool CpModelPresolver::PresolveIntDiv(ConstraintProto* ct) {
     lin->add_coeffs(-1);
     lin->add_domain(0);
     lin->add_domain(0);
+    context_->UpdateNewConstraintsVariableUsage();
     context_->UpdateRuleStats("int_div: rewrite to equality");
     return RemoveConstraint(ct);
   }
@@ -742,6 +798,7 @@ bool CpModelPresolver::PresolveIntDiv(ConstraintProto* ct) {
     lin->add_coeffs(-divisor);
     lin->add_domain(0);
     lin->add_domain(divisor - 1);
+    context_->UpdateNewConstraintsVariableUsage();
     context_->UpdateRuleStats(
         "int_div: linearize positive division with a constant divisor");
     return RemoveConstraint(ct);
@@ -1082,6 +1139,39 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
     } else {
       return MarkConstraintAsFalse(ct);
     }
+  }
+
+  const auto abs_it = context_->abs_relations.find(ct->linear().vars(0));
+  if (ct->linear().vars_size() == 1 && ct->enforcement_literal_size() > 0 &&
+      abs_it != context_->abs_relations.end() && ct->linear().coeffs(0) == 1) {
+    context_->UpdateRuleStats("linear: remove abs from abs(x) in domain");
+    const Domain rhs = ReadDomainFromProto(ct->linear())
+                           .IntersectionWith({0, kint64max})
+                           .IntersectionWith(context_->DomainOf(abs_it->first));
+
+    if (rhs.IsEmpty()) {
+      return MarkConstraintAsFalse(ct);
+    }
+
+    const Domain inner_rhs =
+        rhs.UnionWith(rhs.Negation())
+            .IntersectionWith(context_->DomainOf(abs_it->second));
+
+    if (inner_rhs.IsEmpty()) {
+      return MarkConstraintAsFalse(ct);
+    }
+
+    ConstraintProto* new_ct = context_->working_model->add_constraints();
+    new_ct->set_name(ct->name());
+    for (const int literal : ct->enforcement_literal()) {
+      new_ct->add_enforcement_literal(literal);
+    }
+    auto* arg = new_ct->mutable_linear();
+    arg->add_vars(abs_it->second);
+    arg->add_coeffs(1);
+    FillDomainInProto(inner_rhs, new_ct->mutable_linear());
+    context_->UpdateNewConstraintsVariableUsage();
+    return RemoveConstraint(ct);
   }
 
   if (HasEnforcementLiteral(*ct)) {
@@ -1740,6 +1830,7 @@ void CpModelPresolver::ExtractAtMostOneFromLinear(ConstraintProto* ct) {
       for (const int ref : at_most_one) {
         new_ct->mutable_at_most_one()->add_literals(ref);
       }
+      context_->UpdateNewConstraintsVariableUsage();
     }
   }
 }
@@ -1989,6 +2080,7 @@ bool CpModelPresolver::PresolveInterval(int c, ConstraintProto* ct) {
     new_ct->mutable_linear()->add_coeffs(1);
     new_ct->mutable_linear()->add_vars(end);
     new_ct->mutable_linear()->add_coeffs(-1);
+    context_->UpdateNewConstraintsVariableUsage();
     context_->UpdateRuleStats("interval: unused, converted to linear");
 
     return RemoveConstraint(ct);
@@ -2088,6 +2180,7 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
       lin->add_coeffs(1);
       lin->add_domain(0);
       lin->add_domain(0);
+      context_->UpdateNewConstraintsVariableUsage();
     }
     context_->UpdateRuleStats("element: fixed index");
     return RemoveConstraint(ct);
@@ -2117,6 +2210,7 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
     lin->add_coeffs(v0 - v1);
     lin->add_domain(v0);
     lin->add_domain(v0);
+    context_->UpdateNewConstraintsVariableUsage();
     context_->UpdateRuleStats("element: linearize constant element of size 2");
     return RemoveConstraint(ct);
   }
@@ -2157,6 +2251,7 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
       } else {
         context_->UpdateRuleStats("element: scaled index");
       }
+      context_->UpdateNewConstraintsVariableUsage();
       return RemoveConstraint(ct);
     }
   }
@@ -3188,10 +3283,28 @@ void CpModelPresolver::PresolvePureSatPart() {
   sat_presolver.SetParameters(params);
 
   // Converts a cp_model literal ref to a sat::Literal used by SatPresolver.
-  auto convert = [](int ref) {
+  absl::flat_hash_set<int> used_variables;
+  auto convert = [&used_variables](int ref) {
+    used_variables.insert(PositiveRef(ref));
     if (RefIsPositive(ref)) return Literal(BooleanVariable(ref), true);
     return Literal(BooleanVariable(NegatedRef(ref)), false);
   };
+
+  // We need all Boolean constraints to be presolved before loading them below.
+  // Otherwise duplicate literals might result in a wrong outcome.
+  //
+  // TODO(user): Be a bit more efficient, and enforce this invariant before we
+  // reach this point?
+  for (int c = 0; c < context_->working_model->constraints_size(); ++c) {
+    const ConstraintProto& ct = context_->working_model->constraints(c);
+    if (ct.constraint_case() == ConstraintProto::ConstraintCase::kBoolOr ||
+        ct.constraint_case() == ConstraintProto::ConstraintCase::kBoolAnd) {
+      if (PresolveOneConstraint(c)) {
+        context_->UpdateConstraintVariableUsage(c);
+      }
+      if (context_->ModelIsUnsat()) return;
+    }
+  }
 
   // Load all Clauses into the presolver and remove them from the current model.
   //
@@ -3214,6 +3327,9 @@ void CpModelPresolver::PresolvePureSatPart() {
       clause.clear();
       for (const int ref : ct.bool_or().literals()) {
         clause.push_back(convert(ref));
+      }
+      for (const int ref : ct.enforcement_literal()) {
+        clause.push_back(convert(ref).Negated());
       }
       sat_presolver.AddClause(clause);
 
@@ -3257,6 +3373,17 @@ void CpModelPresolver::PresolvePureSatPart() {
     if (context_->var_to_constraints[i].empty()) {
       ++num_removable;
       can_be_removed[i] = true;
+    }
+
+    // Because we might not have reached the presove "fixed point" above, some
+    // variable in the added clauses might be fixed. We need to indicate this to
+    // the SAT presolver.
+    if (used_variables.contains(i) && context_->IsFixed(i)) {
+      if (context_->LiteralIsTrue(i)) {
+        sat_presolver.AddClause({convert(i)});
+      } else {
+        sat_presolver.AddClause({convert(NegatedRef(i))});
+      }
     }
   }
 
@@ -3689,7 +3816,12 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
     case ConstraintProto::ConstraintCase::kBoolXor:
       return PresolveBoolXor(ct);
     case ConstraintProto::ConstraintCase::kIntMax:
-      return PresolveIntMax(ct);
+      if (ct->int_max().vars_size() == 2 &&
+          NegatedRef(ct->int_max().vars(0)) == ct->int_max().vars(1)) {
+        return PresolveIntAbs(ct);
+      } else {
+        return PresolveIntMax(ct);
+      }
     case ConstraintProto::ConstraintCase::kIntMin:
       return PresolveIntMin(ct);
     case ConstraintProto::ConstraintCase::kIntProd:
@@ -4031,6 +4163,12 @@ void CpModelPresolver::PresolveToFixPoint() {
     TryToSimplifyDomain(var);
   }
 
+  // Limit on number of operations.
+  const int64 max_num_operations =
+      options_.parameters.cp_model_max_num_presolve_operations() > 0
+          ? options_.parameters.cp_model_max_num_presolve_operations()
+          : kint64max;
+
   // This is used for constraint having unique variables in them (i.e. not
   // appearing anywhere else) to not call the presolve more than once for this
   // reason.
@@ -4041,20 +4179,23 @@ void CpModelPresolver::PresolveToFixPoint() {
   std::vector<bool> in_queue(context_->working_model->constraints_size(), true);
   std::deque<int> queue(context_->working_model->constraints_size());
   std::iota(queue.begin(), queue.end(), 0);
+
   // When thinking about how the presolve works, it seems like a good idea to
   // process the "simple" constraints first in order to be more efficient.
   // In September 2019, experiment on the flatzinc problems shows no changes in
-  // the results.
-  // We should actually count the number of rules triggered.
+  // the results. We should actually count the number of rules triggered.
   std::sort(queue.begin(), queue.end(), [this](int a, int b) {
     const int score_a = context_->constraint_to_vars[a].size();
     const int score_b = context_->constraint_to_vars[b].size();
     return score_a < score_b || (score_a == score_b && a < b);
   });
+
   while (!queue.empty() && !context_->ModelIsUnsat()) {
     if (time_limit != nullptr && time_limit->LimitReached()) break;
+    if (context_->num_presolve_operations > max_num_operations) break;
     while (!queue.empty() && !context_->ModelIsUnsat()) {
       if (time_limit != nullptr && time_limit->LimitReached()) break;
+      if (context_->num_presolve_operations > max_num_operations) break;
       const int c = queue.front();
       in_queue[c] = false;
       queue.pop_front();
@@ -4379,6 +4520,7 @@ bool CpModelPresolver::Presolve() {
         PresolveToFixPoint();
       }
     }
+
     // Runs SAT specific presolve on the pure-SAT part of the problem.
     // Note that because this can only remove/fix variable not used in the other
     // part of the problem, there is no need to redo more presolve afterwards.

@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 151
+// NEXT TAG: 152
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -398,6 +398,10 @@ message SatParameters {
 
   // Whether we presolve the cp_model before solving it.
   optional bool cp_model_presolve = 86 [default = true];
+
+  // If positive, try to stop just after that many presolve rules have been
+  // applied. This is mainly useful for debugging presolve.
+  optional int32 cp_model_max_num_presolve_operations = 151 [default = 0];
 
   // How much effort do we spend on probing. 0 disables it completely.
   optional int32 cp_model_probing_level = 110 [default = 2];

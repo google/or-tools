@@ -107,6 +107,7 @@ class CpModelPresolver {
   // TODO(user) : Add presolve rules for LinMin.
   bool PresolveIntMin(ConstraintProto* ct);
   bool PresolveIntMax(ConstraintProto* ct);
+  bool PresolveIntAbs(ConstraintProto* ct);
   bool PresolveBoolXor(ConstraintProto* ct);
   bool PresolveAtMostOne(ConstraintProto* ct);
   bool PresolveBoolAnd(ConstraintProto* ct);
@@ -181,7 +182,7 @@ bool PresolveCpModel(const PresolveOptions& options, PresolveContext* context,
 // Visible here for testing. This is meant to be called at the end of the
 // presolve where constraints have been canonicalized.
 //
-// TODO(user): Ignore names? canonicalize constraint futher by sorting
+// TODO(user): Ignore names? canonicalize constraint further by sorting
 // enforcement literal list for instance...
 std::vector<int> FindDuplicateConstraints(const CpModelProto& model_proto);
 

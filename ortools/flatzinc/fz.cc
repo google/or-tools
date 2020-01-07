@@ -143,20 +143,11 @@ Model ParseFlatzincModel(const std::string& input, bool input_is_filename) {
 
   // Presolve the model.
   Presolver presolve;
-  presolve.CleanUpModelForTheCpSolver(&model, true);
-  if (FLAGS_presolve) {
-    FZLOG << "Presolve model" << FZENDL;
-    timer.Reset();
-    timer.Start();
-    presolve.Run(&model);
-    FZLOG << "  - done in " << timer.GetInMs() << " ms" << FZENDL;
-  } else {
-    FZLOG << "Presolve model using minimal rules" << FZENDL;
-    timer.Reset();
-    timer.Start();
-    presolve.RunMinimal(&model);
-    FZLOG << "  - done in " << timer.GetInMs() << " ms" << FZENDL;
-  }
+  FZLOG << "Presolve model" << FZENDL;
+  timer.Reset();
+  timer.Start();
+  presolve.Run(&model);
+  FZLOG << "  - done in " << timer.GetInMs() << " ms" << FZENDL;
 
   // Print statistics.
   ModelStatistics stats(model);

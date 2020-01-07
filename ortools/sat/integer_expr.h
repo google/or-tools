@@ -170,7 +170,6 @@ IntegerValue LinExprUpperBound(const LinearExpression& expr,
 // Same as MinPropagator except this works on min = MIN(exprs) where exprs are
 // linear expressions. It uses IntegerSumLE to propagate bounds on the exprs.
 // Assumes Canonical expressions (all positive coefficients).
-// TODO(user): Remove the dependency on IntegerSumLE.
 class LinMinPropagator : public PropagatorInterface {
  public:
   LinMinPropagator(const std::vector<LinearExpression>& exprs,
@@ -182,15 +181,18 @@ class LinMinPropagator : public PropagatorInterface {
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
+  // Lighter version of IntegerSumLE. This uses the current value of
+  // integer_reason_ in addition to the reason for propagating the linear
+  // constraint. The coeffs are assumed to be positive here.
+  bool PropagateLinearUpperBound(const std::vector<IntegerVariable>& vars,
+                                 const std::vector<IntegerValue>& coeffs,
+                                 IntegerValue upper_bound);
+
   const std::vector<LinearExpression> exprs_;
   const IntegerVariable min_var_;
   std::vector<IntegerValue> expr_lbs_;
   Model* model_;
   IntegerTrail* integer_trail_;
-
-  int rev_ub_constraints_size_ = 0;
-  std::vector<std::unique_ptr<IntegerSumLE>> ub_constraints_;
-
   std::vector<IntegerLiteral> integer_reason_;
 };
 
@@ -422,12 +424,14 @@ inline std::function<void(Model*)> ConditionalWeightedSumLowerOrEqual(
       return Implication(
           enforcement_literals,
           IntegerLiteral::LowerOrEqual(
-              vars[0], IntegerValue(upper_bound / coefficients[0])));
+              vars[0], FloorRatio(IntegerValue(upper_bound),
+                                  IntegerValue(coefficients[0]))));
     } else {
       return Implication(
           enforcement_literals,
           IntegerLiteral::GreaterOrEqual(
-              vars[0], IntegerValue(upper_bound / coefficients[0])));
+              vars[0], CeilRatio(IntegerValue(-upper_bound),
+                                 IntegerValue(-coefficients[0]))));
     }
   }
 

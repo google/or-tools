@@ -22,6 +22,7 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/integer.h"
 #include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -336,9 +337,103 @@ LinMinPropagator::LinMinPropagator(const std::vector<LinearExpression>& exprs,
       model_(model),
       integer_trail_(model_->GetOrCreate<IntegerTrail>()) {}
 
-bool LinMinPropagator::Propagate() {
-  ub_constraints_.resize(rev_ub_constraints_size_);
+bool LinMinPropagator::PropagateLinearUpperBound(
+    const std::vector<IntegerVariable>& vars,
+    const std::vector<IntegerValue>& coeffs, const IntegerValue upper_bound) {
+  IntegerValue sum_lb = IntegerValue(0);
+  const int num_vars = vars.size();
+  std::vector<IntegerValue> max_variations;
+  for (int i = 0; i < num_vars; ++i) {
+    const IntegerVariable var = vars[i];
+    const IntegerValue coeff = coeffs[i];
+    // The coefficients are assumed to be positive for this to work properly.
+    DCHECK_GE(coeff, 0);
+    const IntegerValue lb = integer_trail_->LowerBound(var);
+    const IntegerValue ub = integer_trail_->UpperBound(var);
+    max_variations.push_back((ub - lb) * coeff);
+    sum_lb += lb * coeff;
+  }
 
+  model_->GetOrCreate<TimeLimit>()->AdvanceDeterministicTime(
+      static_cast<double>(num_vars) * 1e-9);
+
+  const IntegerValue slack = upper_bound - sum_lb;
+
+  std::vector<IntegerLiteral> linear_sum_reason;
+  std::vector<IntegerValue> reason_coeffs;
+  for (int i = 0; i < num_vars; ++i) {
+    const IntegerVariable var = vars[i];
+    if (!integer_trail_->VariableLowerBoundIsFromLevelZero(var)) {
+      linear_sum_reason.push_back(integer_trail_->LowerBoundAsLiteral(var));
+      reason_coeffs.push_back(coeffs[i]);
+    }
+  }
+  if (slack < 0) {
+    // Conflict.
+    integer_trail_->RelaxLinearReason(-slack - 1, reason_coeffs,
+                                      &linear_sum_reason);
+    std::vector<IntegerLiteral> local_reason = integer_reason_;
+    local_reason.insert(local_reason.end(), linear_sum_reason.begin(),
+                        linear_sum_reason.end());
+    return integer_trail_->ReportConflict({}, local_reason);
+  }
+
+  // The lower bound of all the variables except one can be used to update the
+  // upper bound of the last one.
+  std::vector<IntegerLiteral> local_reason;
+  for (int i = 0; i < num_vars; ++i) {
+    if (max_variations[i] <= slack) continue;
+
+    const IntegerVariable var = vars[i];
+    const IntegerValue coeff = coeffs[i];
+    const IntegerValue div = slack / coeff;
+    const IntegerValue new_ub = integer_trail_->LowerBound(var) + div;
+
+    const IntegerValue propagation_slack = (div + 1) * coeff - slack - 1;
+    if (!integer_trail_->Enqueue(
+            IntegerLiteral::LowerOrEqual(var, new_ub),
+            /*lazy_reason=*/[this, &vars, &coeffs, propagation_slack](
+                                IntegerLiteral i_lit, int trail_index,
+                                std::vector<Literal>* literal_reason,
+                                std::vector<int>* trail_indices_reason) {
+              literal_reason->clear();
+              trail_indices_reason->clear();
+              std::vector<IntegerValue> reason_coeffs;
+              const int size = vars.size();
+              for (int i = 0; i < size; ++i) {
+                const IntegerVariable var = vars[i];
+                if (PositiveVariable(var) == PositiveVariable(i_lit.var)) {
+                  continue;
+                }
+                const int index =
+                    integer_trail_->FindTrailIndexOfVarBefore(var, trail_index);
+                if (index >= 0) {
+                  trail_indices_reason->push_back(index);
+                  if (propagation_slack > 0) {
+                    reason_coeffs.push_back(coeffs[i]);
+                  }
+                }
+              }
+              if (propagation_slack > 0) {
+                integer_trail_->RelaxLinearReason(
+                    propagation_slack, reason_coeffs, trail_indices_reason);
+              }
+              // Now add the old integer_reason that triggered this propatation.
+              for (IntegerLiteral reason_lit : integer_reason_) {
+                const int index = integer_trail_->FindTrailIndexOfVarBefore(
+                    reason_lit.var, trail_index);
+                if (index >= 0) {
+                  trail_indices_reason->push_back(index);
+                }
+              }
+            })) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool LinMinPropagator::Propagate() {
   if (exprs_.empty()) return true;
 
   expr_lbs_.clear();
@@ -362,19 +457,24 @@ bool LinMinPropagator::Propagate() {
     }
   }
 
-  // Propagation a) lb(min) >= lb(MIN(exprs)) = MIN(lb(expr));
+  // Propagation a) lb(min) >= lb(MIN(exprs)) = MIN(lb(exprs));
 
   // Conflict will be detected by the fact that the [lb, ub] of the min is
   // empty. In case of conflict, we just need the reason for pushing UB + 1.
   if (min_of_linear_expression_lb > current_min_ub) {
     min_of_linear_expression_lb = current_min_ub + 1;
   }
+
+  // Early experiments seems to show that the code if faster without relaxing
+  // the linear reason. But that might change in the future.
+  const bool use_slack = false;
   if (min_of_linear_expression_lb > integer_trail_->LowerBound(min_var_)) {
     integer_reason_.clear();
     for (int i = 0; i < exprs_.size(); ++i) {
       const IntegerValue slack = expr_lbs_[i] - min_of_linear_expression_lb;
       integer_trail_->AppendRelaxedLinearReason(
-          slack, exprs_[i].coeffs, exprs_[i].vars, &integer_reason_);
+          (use_slack ? slack : IntegerValue(0)), exprs_[i].coeffs,
+          exprs_[i].vars, &integer_reason_);
     }
     if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(
                                      min_var_, min_of_linear_expression_lb),
@@ -383,7 +483,7 @@ bool LinMinPropagator::Propagate() {
     }
   }
 
-  // Propagation b) ub(min) >= ub(MIN(vars)) and we can't propagate anything
+  // Propagation b) ub(min) >= ub(MIN(exprs)) and we can't propagate anything
   // here unless there is just one possible expression 'e' that can be the min:
   //   for all u != e, lb(u) > ub(min);
   // In this case, ub(min) >= ub(e).
@@ -400,17 +500,14 @@ bool LinMinPropagator::Propagate() {
         if (i == last_possible_min_interval) continue;
         const IntegerValue slack = expr_lbs_[i] - (current_min_ub + 1);
         integer_trail_->AppendRelaxedLinearReason(
-            slack, exprs_[i].coeffs, exprs_[i].vars, &integer_reason_);
+            (use_slack ? slack : IntegerValue(0)), exprs_[i].coeffs,
+            exprs_[i].vars, &integer_reason_);
       }
-      std::vector<Literal> literal_reason;
-      integer_trail_->MergeReasonInto(integer_reason_, &literal_reason);
-      auto constraint = absl::make_unique<IntegerSumLE>(
-          literal_reason, exprs_[last_possible_min_interval].vars,
+
+      return PropagateLinearUpperBound(
+          exprs_[last_possible_min_interval].vars,
           exprs_[last_possible_min_interval].coeffs,
-          current_min_ub - exprs_[last_possible_min_interval].offset, model_);
-      constraint->Propagate();
-      ub_constraints_.emplace_back(std::move(constraint));
-      rev_ub_constraints_size_ = ub_constraints_.size();
+          current_min_ub - exprs_[last_possible_min_interval].offset);
     }
   }
 
@@ -430,7 +527,6 @@ void LinMinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
       }
     }
   }
-  watcher->RegisterReversibleInt(id, &rev_ub_constraints_size_);
   watcher->WatchUpperBound(min_var_, id);
 }
 

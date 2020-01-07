@@ -122,6 +122,9 @@ struct PresolveContext {
 
   void StoreBooleanEqualityRelation(int ref_a, int ref_b);
 
+  // Stores the relation target_ref = abs(ref);
+  bool StoreAbsRelation(int target_ref, int ref);
+
   // Returns the representative of a literal.
   int GetLiteralRepresentative(int ref);
 
@@ -224,6 +227,9 @@ struct PresolveContext {
       eq_half_encoding;
   absl::flat_hash_map<std::pair<int, int64>, absl::flat_hash_set<int>>
       neq_half_encoding;
+
+  // Contains abs relation.
+  absl::flat_hash_map<int, int> abs_relations;
 
   // Variable <-> constraint graph.
   // The vector list is sorted and contains unique elements.

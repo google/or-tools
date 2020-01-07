@@ -573,7 +573,7 @@ bool AddLinearExpressionMultiple(
 
 }  // namespace
 
-void LinearProgrammingConstraint::AddCutFromConstraints(
+bool LinearProgrammingConstraint::AddCutFromConstraints(
     const std::string& name,
     const std::vector<std::pair<RowIndex, IntegerValue>>& integer_multipliers) {
   // This is initialized to a valid linear contraint (by taking linear
@@ -591,7 +591,7 @@ void LinearProgrammingConstraint::AddCutFromConstraints(
     IntegerValue cut_ub;
     if (!ComputeNewLinearConstraint(integer_multipliers, &dense_cut, &cut_ub)) {
       VLOG(1) << "Issue, overflow!";
-      return;
+      return false;
     }
 
     // Important: because we use integer_multipliers below, we cannot just
@@ -606,7 +606,7 @@ void LinearProgrammingConstraint::AddCutFromConstraints(
       1e-4) {
     VLOG(1) << "Cut not tight " << ComputeActivity(cut, expanded_lp_solution_)
             << " " << ToDouble(cut.ub);
-    return;
+    return false;
   }
 
   // Unlike for the knapsack cuts, it might not be always beneficial to
@@ -686,7 +686,7 @@ void LinearProgrammingConstraint::AddCutFromConstraints(
   const double violation = activity - ToDouble(cut.ub);
   if (violation < kMinViolation) {
     VLOG(3) << "Bad cut " << activity << " <= " << ToDouble(cut.ub);
-    return;
+    return false;
   }
 
   // Substitute any slack left.
@@ -727,7 +727,7 @@ void LinearProgrammingConstraint::AddCutFromConstraints(
 
     if (overflow) {
       VLOG(1) << "Overflow in slack removal.";
-      return;
+      return false;
     }
 
     VLOG(3) << " num_slack: " << num_slack;
@@ -742,7 +742,7 @@ void LinearProgrammingConstraint::AddCutFromConstraints(
   }
 
   DivideByGCD(&cut);
-  constraint_manager_.AddCut(cut, name, expanded_lp_solution_);
+  return constraint_manager_.AddCut(cut, name, expanded_lp_solution_);
 }
 
 void LinearProgrammingConstraint::AddCGCuts() {
@@ -833,10 +833,31 @@ IntegerValue GetCoeff(ColIndex col, const ListOfTerms& terms) {
 }  // namespace
 
 void LinearProgrammingConstraint::AddMirCuts() {
-  // We first try to derive MIR cuts for just one constraints. We call these
-  // MIR1 cuts.
   CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
+
+  // Heuristic to generate MIR_n cuts by combining a small number of rows. This
+  // works greedily and follow more or less the MIR cut description in the
+  // literature. We have a current cut, and we add one more row to it while
+  // eliminating a variable of the current cut whose LP value is far from its
+  // bound.
+  //
+  // A notable difference is that we randomize the variable we eliminate and
+  // the row we use to do so. We still have weights to indicate our preferred
+  // choices. This allows to generate different cuts when called again and
+  // again.
+  //
+  // TODO(user): We could combine n rows to make sure we eliminate n variables
+  // far away from their bounds by solving exactly in integer small linear
+  // system.
+  gtl::ITIVector<ColIndex, IntegerValue> dense_cut(integer_variables_.size(),
+                                                   IntegerValue(0));
+  SparseBitset<ColIndex> non_zeros(ColIndex(integer_variables_.size()));
+
+  // We compute all the rows that are tight, these will be used as the base row
+  // for the MIR_n procedure below.
   const RowIndex num_rows = lp_data_.num_constraints();
+  std::vector<std::pair<RowIndex, IntegerValue>> base_rows;
+  gtl::ITIVector<RowIndex, double> row_weights(num_rows.value(), 0.0);
   for (RowIndex row(0); row < num_rows; ++row) {
     const auto status = simplex_.GetConstraintStatus(row);
     if (status == glop::ConstraintStatus::BASIC) continue;
@@ -844,127 +865,197 @@ void LinearProgrammingConstraint::AddMirCuts() {
 
     if (status == glop::ConstraintStatus::AT_UPPER_BOUND ||
         status == glop::ConstraintStatus::FIXED_VALUE) {
-      std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers;
-      integer_multipliers.push_back({row, IntegerValue(1)});
-      AddCutFromConstraints("MIR1", integer_multipliers);
+      base_rows.push_back({row, IntegerValue(1)});
     }
     if (status == glop::ConstraintStatus::AT_LOWER_BOUND ||
         status == glop::ConstraintStatus::FIXED_VALUE) {
-      std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers;
-      integer_multipliers.push_back({row, IntegerValue(-1)});
-      AddCutFromConstraints("MIR1", integer_multipliers);
+      base_rows.push_back({row, IntegerValue(-1)});
     }
+
+    // For now, we use the dual values for the row "weights".
+    //
+    // Note that we use the dual at LP scale so that it make more sense when we
+    // compare different rows since the LP has been scaled.
+    //
+    // TODO(user): In Kati Wolter PhD "Implementation of Cutting Plane
+    // Separators for Mixed Integer Programs" which describe SCIP's MIR cuts
+    // implementation (or at least an early version of it), a more complex score
+    // is used.
+    row_weights[row] = std::abs(simplex_.GetDualValue(row));
   }
 
-  // Now, try linear combination of 2 different rows (MIR2).
-  //
-  // To limit the combinations we try. We first pick the top 50 variables, i.e.
-  // the ones with a LP relaxation farther from their bounds. And we try for
-  // each row to combine it with a random other row in order to eliminate the
-  // considered variable from the base constraint used to derive the cut.
-  //
-  // TODO(user): Maybe an heuristic is better than random? consider constraint
-  // sizes, small coefficients, number of BASIC variable in both constraints?
-  //
-  // TODO(user): generalize this to a linear combination of a bit more rows.
-  // The literature seems to go up to 6. The code architecture need to change a
-  // bit though because the usual heuristic is to incrementality try to add one
-  // more row to an existing linear combination of some rows. We also have to
-  // be more careful about integer overflow.
-  const int num_cols_to_consider = 50;
-
-  // First pick the top BASIC variables to consider.
-  std::vector<std::pair<double, ColIndex>> col_candidates;
-  const int num_cols = integer_variables_.size();
-  for (ColIndex col(0); col < num_cols; ++col) {
-    const int col_degree = lp_data_.GetSparseColumn(col).num_entries().value();
-    if (col_degree <= 1) continue;
-    if (simplex_.GetVariableStatus(col) != glop::VariableStatus::BASIC) {
+  std::vector<double> weights;
+  std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers;
+  for (const std::pair<RowIndex, IntegerValue>& entry : base_rows) {
+    // First try to generate a cut directly from this base row (MIR1).
+    //
+    // Note(user): We abort on success like it seems to be done in the
+    // literature. Note that we don't succeed that often in generating an
+    // efficient cut, so I am not sure aborting will make a big difference
+    // speedwise. We might generate similar cuts though, but hopefully the cut
+    // management can deal with that.
+    integer_multipliers = {entry};
+    if (AddCutFromConstraints("MIR_1", integer_multipliers)) {
       continue;
     }
 
-    const IntegerVariable var = integer_variables_[col.value()];
-    const double lp_value = expanded_lp_solution_[var];
-    const double lb = ToDouble(integer_trail_->LowerBound(var));
-    const double ub = ToDouble(integer_trail_->UpperBound(var));
-    const double bound_distance = std::min(ub - lp_value, lp_value - lb);
+    // Cleanup.
+    for (const ColIndex col : non_zeros.PositionsSetAtLeastOnce()) {
+      dense_cut[col] = IntegerValue(0);
+    }
+    non_zeros.SparseClearAll();
 
-    col_candidates.push_back({bound_distance, col});
-  }
-
-  std::sort(col_candidates.begin(), col_candidates.end(),
-            std::greater<std::pair<double, ColIndex>>());
-  if (col_candidates.size() > num_cols_to_consider) {
-    col_candidates.resize(num_cols_to_consider);
-  }
-
-  // For each columns, we split the rows according to their type and coefficient
-  // sign.
-  std::vector<RowIndex> ub_positive_rows;
-  std::vector<RowIndex> ub_negative_rows;
-  std::vector<RowIndex> lb_positive_rows;
-  std::vector<RowIndex> lb_negative_rows;
-  std::vector<std::pair<RowIndex, RowIndex>> to_try;
-
-  for (const auto& entry : col_candidates) {
-    const ColIndex col = entry.second;
-    ub_positive_rows.clear();
-    ub_negative_rows.clear();
-    lb_positive_rows.clear();
-    lb_negative_rows.clear();
-    for (const auto entry : lp_data_.GetSparseColumn(col)) {
-      const RowIndex row = entry.row();
-      const auto status = simplex_.GetConstraintStatus(row);
-      if (status == glop::ConstraintStatus::BASIC) continue;
-
-      // TODO(user): Instead of using FIXED_VALUE consider also both direction
-      // when we almost have an equality? that is if the LP constraints bounds
-      // are close from each others (<1e-6 ?). Initial experiments shows it
-      // doesn't change much, so I kept this version for now. Note that it might
-      // just be better to use the side that constrain the current lp optimal
-      // solution (that we get from the status).
-      if (status == glop::ConstraintStatus::FIXED_VALUE ||
-          status == glop::ConstraintStatus::AT_UPPER_BOUND) {
-        if (entry.coefficient() > 0.0) {
-          ub_positive_rows.push_back(row);
-        } else {
-          ub_negative_rows.push_back(row);
-        }
-      }
-      if (status == glop::ConstraintStatus::FIXED_VALUE ||
-          status == glop::ConstraintStatus::AT_LOWER_BOUND) {
-        if (entry.coefficient() > 0.0) {
-          lb_positive_rows.push_back(row);
-        } else {
-          lb_negative_rows.push_back(row);
-        }
-      }
+    // Copy cut.
+    const IntegerValue multiplier = entry.second;
+    for (const std::pair<ColIndex, IntegerValue> term :
+         integer_lp_[entry.first].terms) {
+      const ColIndex col = term.first;
+      const IntegerValue coeff = term.second;
+      non_zeros.Set(col);
+      dense_cut[col] += coeff * multiplier;
     }
 
-    // We combine the row in such a way that -coeff2 * row1 + coeff1 * row2 is
-    // an upper bounded constraint that is also tight under the current LP
-    // solution.
-    to_try.clear();
-    RandomPick(ub_positive_rows, ub_negative_rows, random_, &to_try);
-    RandomPick(lb_negative_rows, lb_positive_rows, random_, &to_try);
+    gtl::ITIVector<RowIndex, bool> used_rows(num_rows.value(), false);
+    used_rows[entry.first] = true;
 
-    // Note that here, fixed rows will appear on both side. We will not add
-    // anything if we randomly pick twice the same row.
-    RandomPick(lb_positive_rows, ub_positive_rows, random_, &to_try);
-    RandomPick(ub_negative_rows, lb_negative_rows, random_, &to_try);
-    gtl::STLSortAndRemoveDuplicates(&to_try);
+    // We will aggregate at most kMaxAggregation more rows.
+    //
+    // TODO(user): optim + tune.
+    const int kMaxAggregation = 5;
+    for (int i = 0; i < kMaxAggregation; ++i) {
+      // First pick a variable to eliminate. We currently pick a random one with
+      // a weight that depend on how far it is from its closest bound.
+      IntegerValue max_magnitude(0);
+      weights.clear();
+      std::vector<ColIndex> col_candidates;
+      for (const ColIndex col : non_zeros.PositionsSetAtLeastOnce()) {
+        if (dense_cut[col] == 0) continue;
 
-    for (const auto& entry : to_try) {
-      const IntegerValue coeff1 = GetCoeff(col, integer_lp_[entry.first].terms);
-      const IntegerValue coeff2 =
-          GetCoeff(col, integer_lp_[entry.second].terms);
-      if (coeff1 == 0 || coeff2 == 0) continue;
+        max_magnitude = std::max(max_magnitude, IntTypeAbs(dense_cut[col]));
+        const int col_degree =
+            lp_data_.GetSparseColumn(col).num_entries().value();
+        if (col_degree <= 1) continue;
+        if (simplex_.GetVariableStatus(col) != glop::VariableStatus::BASIC) {
+          continue;
+        }
+
+        const IntegerVariable var = integer_variables_[col.value()];
+        const double lp_value = expanded_lp_solution_[var];
+        const double lb = ToDouble(integer_trail_->LowerBound(var));
+        const double ub = ToDouble(integer_trail_->UpperBound(var));
+        const double bound_distance = std::min(ub - lp_value, lp_value - lb);
+        if (bound_distance > 1e-2) {
+          weights.push_back(bound_distance);
+          col_candidates.push_back(col);
+        }
+      }
+      if (col_candidates.empty()) break;
+
+      const ColIndex var_to_eliminate =
+          col_candidates[std::discrete_distribution<>(weights.begin(),
+                                                      weights.end())(*random_)];
+
+      // What rows can we add to eliminate var_to_eliminate?
+      std::vector<RowIndex> possible_rows;
+      weights.clear();
+      for (const auto entry : lp_data_.GetSparseColumn(var_to_eliminate)) {
+        const RowIndex row = entry.row();
+        const auto status = simplex_.GetConstraintStatus(row);
+        if (status == glop::ConstraintStatus::BASIC) continue;
+        if (status == glop::ConstraintStatus::FREE) continue;
+
+        // We dissalow all the rows that contain a variable that we already
+        // eliminated (or are about to). This mean that we choose rows that
+        // form a "triangular" matrix on the position we choose to eliminate.
+        if (used_rows[row]) continue;
+        used_rows[row] = true;
+
+        // TODO(user): Instead of using FIXED_VALUE consider also both direction
+        // when we almost have an equality? that is if the LP constraints bounds
+        // are close from each others (<1e-6 ?). Initial experiments shows it
+        // doesn't change much, so I kept this version for now. Note that it
+        // might just be better to use the side that constrain the current lp
+        // optimal solution (that we get from the status).
+        bool add_row = false;
+        if (status == glop::ConstraintStatus::FIXED_VALUE ||
+            status == glop::ConstraintStatus::AT_UPPER_BOUND) {
+          if (entry.coefficient() > 0.0) {
+            if (dense_cut[var_to_eliminate] < 0) add_row = true;
+          } else {
+            if (dense_cut[var_to_eliminate] > 0) add_row = true;
+          }
+        }
+        if (status == glop::ConstraintStatus::FIXED_VALUE ||
+            status == glop::ConstraintStatus::AT_LOWER_BOUND) {
+          if (entry.coefficient() > 0.0) {
+            if (dense_cut[var_to_eliminate] > 0) add_row = true;
+          } else {
+            if (dense_cut[var_to_eliminate] < 0) add_row = true;
+          }
+        }
+        if (add_row) {
+          possible_rows.push_back(row);
+          weights.push_back(row_weights[row]);
+        }
+      }
+      if (possible_rows.empty()) break;
+
+      const RowIndex row_to_combine =
+          possible_rows[std::discrete_distribution<>(weights.begin(),
+                                                     weights.end())(*random_)];
+      const IntegerValue to_combine_coeff =
+          GetCoeff(var_to_eliminate, integer_lp_[row_to_combine].terms);
+      CHECK_NE(to_combine_coeff, 0);
+
+      IntegerValue mult1 = -to_combine_coeff;
+      IntegerValue mult2 = dense_cut[var_to_eliminate];
+      CHECK_NE(mult2, 0);
+      if (mult1 < 0) {
+        mult1 = -mult1;
+        mult2 = -mult2;
+      }
+
       const IntegerValue gcd = IntegerValue(
-          MathUtil::GCD64(std::abs(coeff1.value()), std::abs(coeff2.value())));
-      std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers;
-      integer_multipliers.push_back({entry.first, -coeff2 / gcd});
-      integer_multipliers.push_back({entry.second, coeff1 / gcd});
-      AddCutFromConstraints("MIR2", integer_multipliers);
+          MathUtil::GCD64(std::abs(mult1.value()), std::abs(mult2.value())));
+      CHECK_NE(gcd, 0);
+      mult1 /= gcd;
+      mult2 /= gcd;
+
+      // Overflow detection.
+      //
+      // TODO(user): do that in the possible_rows selection? only problem is
+      // that we do not have the integer coefficient there...
+      if (CapAdd(CapProd(max_magnitude.value(), std::abs(mult1.value())),
+                 CapProd(infinity_norms_[row_to_combine].value(),
+                         std::abs(mult2.value()))) == kint64max) {
+        break;
+      }
+
+      for (std::pair<RowIndex, IntegerValue>& entry : integer_multipliers) {
+        entry.second *= mult1;
+      }
+      integer_multipliers.push_back({row_to_combine, mult2});
+
+      // TODO(user): Not supper efficient to recombine the rows.
+      if (AddCutFromConstraints(absl::StrCat("MIR_", i + 2),
+                                integer_multipliers)) {
+        break;
+      }
+
+      // Minor optim: the computation below is only needed if we do one more
+      // iteration.
+      if (i + 1 == kMaxAggregation) break;
+
+      for (ColIndex col : non_zeros.PositionsSetAtLeastOnce()) {
+        dense_cut[col] *= mult1;
+      }
+      for (const std::pair<ColIndex, IntegerValue> term :
+           integer_lp_[row_to_combine].terms) {
+        const ColIndex col = term.first;
+        const IntegerValue coeff = term.second;
+        non_zeros.Set(col);
+        dense_cut[col] += coeff * mult2;
+      }
     }
   }
 }

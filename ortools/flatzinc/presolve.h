@@ -39,39 +39,9 @@ class Presolver {
   // - Have some unused constraints (marked as inactive).
   // - Have some modified constraints (for example, they will no longer
   //   refer to unused variables).
-  //
-  // TODO(user): compute on the fly, and add an API to access the set of
-  // unused variables.
-  //
-  // This method returns true iff some transformations were applied to the
-  // model.
-  // TODO(user): Returns the number of rules applied instead.
-  bool Run(Model* model);
-
-  // Minimal version of the presolve.
-  // TODO(user): Currently, without this, the solver fails on a series of
-  // problems like hrc_exp1-1-945_sat.fzn. To investigate.
-  bool RunMinimal(Model* model);
-
-  // Cleans the model for the CP solver.
-  // In particular, it knows if we use a sat solver inside the CP
-  // solver. In that case, for Boolean constraints, it remove the link
-  // (defining_constraint, target_variable) for Boolean constraints.
-  void CleanUpModelForTheCpSolver(Model* model, bool use_sat);
-
-  // This method is public for tests.
-  void PresolveOneConstraint(int index, Constraint* ct);
+  void Run(Model* model);
 
  private:
-  enum RuleStatus {
-    NOT_CHANGED = 0,       // Constraint has not changed.
-    CONTEXT_CHANGED,       // The constraint has not changed, but some mapping,
-                           // or some variables have been updated.
-    CONSTRAINT_REWRITTEN,  // The constraint has been rewritten.
-    CONSTRAINT_ALWAYS_FALSE,  // The constraint is always false.
-    CONSTRAINT_ALWAYS_TRUE,  // The constraint is always true, and now inactive.
-  };
-
   // This struct stores the affine mapping of one variable:
   // it represents new_var = var * coefficient + offset. It also stores the
   // constraint that defines this mapping.
@@ -114,89 +84,21 @@ class Presolver {
           constraint(ct) {}
   };
 
-  // First pass of model scanning. Useful to get information that will
-  // prevent some destructive modifications of the model.
-  void FirstPassModelScan(Model* model);
-  // This rule is applied globally in the first pass because maintaining the
-  // associated data structures w.r.t. variable substitutions would be
-  // expensive.
-  void MergeIntEqNe(Model* model);
-
-  // This regroups all int_ne, find cliques, and replace them with
-  // all_different_int constraints.
-  bool RegroupDifferent(Model* model);
-
-  // Parse constraint x == y - z (and z == y - x) and store the info.
-  // It will be useful to transform x == 0 into x == z in the first case.
-  void StoreDifference(Constraint* ct);
-
   // Substitution support.
   void SubstituteEverywhere(Model* model);
   void SubstituteAnnotation(Annotation* ann);
 
-  // Presolve rules. They returns true iff some presolve has been
-  // performed. These methods are called by the PresolveOneConstraint() method.
-  RuleStatus PresolveBool2Int(Constraint* ct, std::string* log);
-  RuleStatus PresolveIntEq(Constraint* ct, std::string* log);
-  RuleStatus Unreify(Constraint* ct, std::string* log);
-  RuleStatus RemoveFixedEnforcementLiteral(Constraint* ct, std::string* log);
-  RuleStatus PresolveInequalities(Constraint* ct, std::string* log);
-  RuleStatus PresolveIntNe(Constraint* ct, std::string* log);
-  RuleStatus PresolveSetNotIn(Constraint* ct, std::string* log);
-  RuleStatus PresolveSetIn(Constraint* ct, std::string* log);
-  RuleStatus PresolveSetInReif(Constraint* ct, std::string* log);
-  RuleStatus PresolveArrayBoolAnd(Constraint* ct, std::string* log);
-  RuleStatus PresolveArrayBoolOr(Constraint* ct, std::string* log);
-  RuleStatus PresolveBoolEqNeReif(Constraint* ct, std::string* log);
-  RuleStatus PresolveArrayIntElement(Constraint* ct, std::string* log);
-  RuleStatus PresolveIntDiv(Constraint* ct, std::string* log);
-  RuleStatus PresolveIntTimes(Constraint* ct, std::string* log);
-  RuleStatus PresolveIntLinGt(Constraint* ct, std::string* log);
-  RuleStatus PresolveIntLinLt(Constraint* ct, std::string* log);
-  RuleStatus PresolveLinear(Constraint* ct, std::string* log);
-  RuleStatus RegroupLinear(Constraint* ct, std::string* log);
-  RuleStatus SimplifyLinear(Constraint* ct, std::string* log);
-  RuleStatus PropagatePositiveLinear(Constraint* ct, std::string* log);
-  RuleStatus PresolveStoreMapping(Constraint* ct, std::string* log);
-  RuleStatus PresolveSimplifyElement(Constraint* ct, std::string* log);
-  RuleStatus PresolveSimplifyExprElement(Constraint* ct, std::string* log);
-  RuleStatus PropagateReifiedComparisons(Constraint* ct, std::string* log);
-  RuleStatus PropagateImpliedComparisons(Constraint* ct, std::string* log);
-  RuleStatus StoreAbs(Constraint* ct, std::string* log);
-  RuleStatus PropagateAbsBounds(Constraint* ct, std::string* log);
-  RuleStatus RemoveAbsFromIntLeReif(Constraint* ct, std::string* log);
-  RuleStatus RemoveAbsFromIntEqNeReif(Constraint* ct, std::string* log);
-  RuleStatus RemoveAbsFromIntLinLe(Constraint* ct, std::string* log);
-  RuleStatus SimplifyUnaryLinear(Constraint* ct, std::string* log);
-  RuleStatus SimplifyBinaryLinear(Constraint* ct, std::string* log);
-  RuleStatus CheckIntLinReifBounds(Constraint* ct, std::string* log);
-  RuleStatus CreateLinearTarget(Constraint* ct, std::string* log);
-  RuleStatus PresolveBoolNot(Constraint* ct, std::string* log);
-  RuleStatus PresolveBoolXor(Constraint* ct, std::string* log);
-  RuleStatus SimplifyIntLinEqReif(Constraint* ct, std::string* log);
-  RuleStatus PresolveIntMod(Constraint* ct, std::string* log);
-  RuleStatus PresolveBoolClause(Constraint* ct, std::string* log);
-  RuleStatus StoreIntEqReif(Constraint* ct, std::string* log);
-  RuleStatus SimplifyIntNeReif(Constraint* ct, std::string* log);
-  RuleStatus PresolveTableInt(Constraint* ct, std::string* log);
-  RuleStatus PresolveRegular(Constraint* ct, std::string* log);
-  RuleStatus PresolveDiffN(Constraint* ct, std::string* log);
+  // Presolve rules.
+  void PresolveBool2Int(Constraint* ct);
+  void PresolveStoreAffineMapping(Constraint* ct);
+  void PresolveStoreFlatteningMapping(Constraint* ct);
+  void PresolveSimplifyElement(Constraint* ct);
+  void PresolveSimplifyExprElement(Constraint* ct);
 
   // Helpers.
-  bool IntersectVarWithArg(IntegerVariable* var, const Argument& arg);
-  bool IntersectVarWithSingleton(IntegerVariable* var, int64 value);
-  bool IntersectVarWithInterval(IntegerVariable* var, int64 imin, int64 imax);
-  bool RemoveValue(IntegerVariable* var, int64 value);
-  void AddConstraintToMapping(int index, Constraint* ct);
-  void RemoveConstraintFromMapping(int index, Constraint* ct);
-
-  // Mark changed variables.
-  void MarkChangedVariable(IntegerVariable* var);
-
-  // This method wraps each rule, calls it and log its effect.
-  void ApplyRule(
-      int index, Constraint* ct, const std::string& rule_name,
-      const std::function<RuleStatus(Constraint* ct, std::string*)>& rule);
+  void UpdateRuleStats(const std::string& rule_name) {
+    successful_rules_[rule_name]++;
+  }
 
   // The presolver will discover some equivalence classes of variables [two
   // variable are equivalent when replacing one by the other leads to the same
@@ -210,11 +112,6 @@ class Presolver {
       var_representative_map_;
   std::vector<IntegerVariable*> var_representative_vector_;
 
-  // Stores abs_map_[x] = y if x = abs(y).
-  absl::flat_hash_map<const IntegerVariable*, IntegerVariable*> abs_map_;
-  // Link the abs_var with its constraint.
-  absl::flat_hash_map<const IntegerVariable*, Constraint*> abs_ct_;
-
   // Stores affine_map_[x] = a * y + b.
   absl::flat_hash_map<const IntegerVariable*, AffineMapping> affine_map_;
 
@@ -222,31 +119,9 @@ class Presolver {
   absl::flat_hash_map<const IntegerVariable*, Array2DIndexMapping>
       array2d_index_map_;
 
-  // Stores x == (y - z).
-  absl::flat_hash_map<const IntegerVariable*,
-                      std::pair<IntegerVariable*, IntegerVariable*>>
-      difference_map_;
-
-  // Stores (x == y) == b
-  absl::flat_hash_map<const IntegerVariable*,
-                      absl::flat_hash_map<IntegerVariable*, IntegerVariable*>>
-      int_eq_reif_map_;
-
-  // Stores all variables defined in the search annotations.
-  absl::flat_hash_set<const IntegerVariable*> decision_variables_;
-
-  // For all variables, stores all indices of constraints it appears in.
-  absl::flat_hash_map<const IntegerVariable*, std::set<int>>
-      var_to_constraint_indices_;
-
   // Count applications of presolve rules. Use a sorted map for reporting
   // purposes.
   std::map<std::string, int> successful_rules_;
-
-  // Store changed objects.
-  absl::flat_hash_set<IntegerVariable*> changed_variables_;
-  std::vector<IntegerVariable*> changed_variables_vector_;
-  std::set<int> changed_constraints_;
 };
 }  // namespace fz
 }  // namespace operations_research

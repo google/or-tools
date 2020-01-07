@@ -88,6 +88,9 @@ DEFINE_string(cp_model_dump_file, "",
 DEFINE_string(cp_model_dump_presolved_model, "",
               "DEBUG ONLY. If non empty, dump the presolved cp_model.proto in "
               "text format to this file.");
+DEFINE_string(cp_model_dump_mapping_model, "",
+              "DEBUG ONLY. If non empty, dump the mapping cp_model.proto in "
+              "text format to this file.");
 DEFINE_string(cp_model_params, "",
               "This is interpreted as a text SatParameters proto. The "
               "specified fields will override the normal ones for all solves.");
@@ -2536,6 +2539,12 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
               << FLAGS_cp_model_dump_presolved_model << "'.";
     CHECK_OK(file::SetTextProto(FLAGS_cp_model_dump_presolved_model,
                                 new_cp_model_proto, file::Defaults()));
+  }
+  if (!FLAGS_cp_model_dump_mapping_model.empty()) {
+    LOG(INFO) << "Dumping mapping cp model proto to '"
+              << FLAGS_cp_model_dump_mapping_model << "'.";
+    CHECK_OK(file::SetTextProto(FLAGS_cp_model_dump_mapping_model,
+                                mapping_proto, file::Defaults()));
   }
 #endif  // __PORTABLE_PLATFORM__
 

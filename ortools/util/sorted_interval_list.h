@@ -76,6 +76,26 @@ class Domain {
   /// By default, Domain will be empty.
   Domain() {}
 
+#if !defined(SWIG)
+  /// Copy constructor (mandatory as we define the move constructor).
+  Domain(const Domain& other) : intervals_(other.intervals_) {}
+
+  /// Copy operator (mandatory as we define the move operator).
+  Domain& operator=(const Domain& other) {
+    intervals_ = other.intervals_;
+    return *this;
+  }
+
+  /// Move constructor.
+  Domain(Domain&& other) : intervals_(std::move(other.intervals_)) {}
+
+  /// Move operator.
+  Domain& operator=(Domain&& other) {
+    intervals_ = std::move(other.intervals_);
+    return *this;
+  }
+#endif  // !defined(SWIG)
+
   /// Constructor for the common case of a singleton domain.
   explicit Domain(int64 value);
 
