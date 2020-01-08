@@ -524,15 +524,20 @@ bool CpModelPresolver::PresolveIntMax(ConstraintProto* ct) {
 }
 
 bool CpModelPresolver::PresolveIntAbs(ConstraintProto* ct) {
+  CHECK_EQ(ct->enforcement_literal_size(), 0);
   if (context_->ModelIsUnsat()) return false;
   const int target_ref = ct->int_max().target();
   const int var = PositiveRef(ct->int_max().vars(0));
 
-  if (context_->MinOf(target_ref) < 0) {
-    context_->UpdateRuleStats("int_abs: propagate abs(x) >= 0");
-    if (!context_->IntersectDomainWith(target_ref, {0, kint64max})) {
+  // Propagate from the variable domain to the target variable.
+  const Domain var_domain = context_->DomainOf(var);
+  const Domain new_target_domain = var_domain.UnionWith(var_domain.Negation())
+                                       .IntersectionWith({0, kint64max});
+  if (!context_->DomainOf(target_ref).IsIncludedIn(new_target_domain)) {
+    if (!context_->IntersectDomainWith(target_ref, new_target_domain)) {
       return true;
     }
+    context_->UpdateRuleStats("int_abs: propagate domain x to abs(x)");
   }
 
   // Propagate from target domain to variable.
@@ -544,17 +549,6 @@ bool CpModelPresolver::PresolveIntAbs(ConstraintProto* ct) {
       return true;
     }
     context_->UpdateRuleStats("int_abs: propagate domain abs(x) to x");
-  }
-
-  // Propagate from the variable domain to the target variable.
-  const Domain var_domain = context_->DomainOf(var);
-  const Domain new_target_domain = var_domain.UnionWith(var_domain.Negation())
-                                       .IntersectionWith({0, kint64max});
-  if (!context_->DomainOf(target_ref).IsIncludedIn(new_target_domain)) {
-    if (!context_->IntersectDomainWith(target_ref, new_target_domain)) {
-      return true;
-    }
-    context_->UpdateRuleStats("int_abs: propagate domain x to abs(x)");
   }
 
   if (context_->MinOf(var) >= 0 && !context_->IsFixed(var)) {
@@ -591,7 +585,9 @@ bool CpModelPresolver::PresolveIntAbs(ConstraintProto* ct) {
   // have been propagated.
   if (context_->VariableIsUniqueAndRemovable(target_ref) ||
       context_->IsFixed(target_ref)) {
-    *context_->mapping_model->add_constraints() = *ct;
+    if (!context_->IsFixed(target_ref)) {
+      *context_->mapping_model->add_constraints() = *ct;
+    }
     context_->UpdateRuleStats("int_abs: remove constraint");
     return RemoveConstraint(ct);
   }
@@ -1141,23 +1137,29 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
     }
   }
 
+  // If the constraint is literal => abs(x) in domain, we can remove the abs()
+  // and its associated intermediate variables if we extend the domain
+  // correctly.
   const auto abs_it = context_->abs_relations.find(ct->linear().vars(0));
   if (ct->linear().vars_size() == 1 && ct->enforcement_literal_size() > 0 &&
       abs_it != context_->abs_relations.end() && ct->linear().coeffs(0) == 1) {
+    // TODO(user): Deal with coeff = -1, here or during canonicalization.
     context_->UpdateRuleStats("linear: remove abs from abs(x) in domain");
-    const Domain rhs = ReadDomainFromProto(ct->linear())
-                           .IntersectionWith({0, kint64max})
-                           .IntersectionWith(context_->DomainOf(abs_it->first));
+    const Domain implied_abs_target_domain =
+        ReadDomainFromProto(ct->linear())
+            .IntersectionWith({0, kint64max})
+            .IntersectionWith(context_->DomainOf(abs_it->first));
 
-    if (rhs.IsEmpty()) {
+    if (implied_abs_target_domain.IsEmpty()) {
       return MarkConstraintAsFalse(ct);
     }
 
-    const Domain inner_rhs =
-        rhs.UnionWith(rhs.Negation())
+    const Domain new_abs_var_domain =
+        implied_abs_target_domain
+            .UnionWith(implied_abs_target_domain.Negation())
             .IntersectionWith(context_->DomainOf(abs_it->second));
 
-    if (inner_rhs.IsEmpty()) {
+    if (new_abs_var_domain.IsEmpty()) {
       return MarkConstraintAsFalse(ct);
     }
 
@@ -1169,7 +1171,7 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
     auto* arg = new_ct->mutable_linear();
     arg->add_vars(abs_it->second);
     arg->add_coeffs(1);
-    FillDomainInProto(inner_rhs, new_ct->mutable_linear());
+    FillDomainInProto(new_abs_var_domain, new_ct->mutable_linear());
     context_->UpdateNewConstraintsVariableUsage();
     return RemoveConstraint(ct);
   }
