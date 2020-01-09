@@ -53,7 +53,7 @@ RUN curl --location-trusted \
 && rm -rf swig-3.0.12
 
 # Update auditwheel to support manylinux2010
-#RUN /opt/_internal/cpython-3.6.8/bin/pip install auditwheel==2.0.0
+#RUN /opt/_internal/cpython-3.7.6/bin/pip install auditwheel==2.0.0
 
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
