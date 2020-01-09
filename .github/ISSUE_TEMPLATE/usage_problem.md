@@ -3,13 +3,8 @@ name: Modeling/Usage problem
 about: Need help creating your model
 ---
 
+**Please use the mailing list for modeling issues**
 
-**What language and solver are you using?**
-Python, Java, C#, C++ / CP-SAT, Routing, Linear Solver
+Github issues have limited audience and answers on the github page will ot benefit the rest of the users.
 
-**Describe the problem you are trying to solve.**
-
-**Describe what you have tried**
-
-**Additional context**
-Add any other context or code sample here.
+The mailing list is available at [or-tools-discuss](https://groups.google.com/forum/#!forum/or-tools-discuss)
