@@ -479,6 +479,21 @@ bool PresolveContext::StoreLiteralImpliesVarNEqValue(int literal, int var,
   return InsertHalfVarValueEncoding(literal, var, value, /*imply_eq=*/false);
 }
 
+bool PresolveContext::HasVarValueEncoding(int ref, int64 value, int* literal) {
+  const int var = PositiveRef(ref);
+  const int64 var_value = RefIsPositive(ref) ? value : -value;
+  const std::pair<int, int64> key{var, var_value};
+  const auto& it = encoding.find(key);
+  if (it != encoding.end()) {
+    if (literal != nullptr) {
+      *literal = it->second;
+    }
+    return true;
+  } else {
+    return false;
+  }
+}
+
 int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64 value) {
   // TODO(user,user): use affine relation here.
   const int var = PositiveRef(ref);

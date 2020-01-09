@@ -147,6 +147,10 @@ struct PresolveContext {
   // create it, add the corresponding constraints and returns it.
   int GetOrCreateVarValueEncoding(int ref, int64 value);
 
+  // Returns true if a literal attached to ref == var exists.
+  // It assigns the corresponding to `literal` if non null.
+  bool HasVarValueEncoding(int ref, int64 value, int* literal = nullptr);
+
   // Stores the fact that literal implies var == value.
   // It returns true if that information is new.
   bool StoreLiteralImpliesVarEqValue(int literal, int var, int64 value);
