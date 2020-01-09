@@ -27,16 +27,16 @@ RUN yum -y update \
 # Note: 'wget --no-check-certificate' is not an option since we are building
 # distribution binaries.
 RUN curl --location-trusted \
- --remote-name https://cmake.org/files/v3.8/cmake-3.8.2.tar.gz \
- -o cmake-3.8.2.tar.gz \
-&& tar xzf cmake-3.8.2.tar.gz \
-&& rm cmake-3.8.2.tar.gz \
-&& cd cmake-3.8.2 \
+ --remote-name https://cmake.org/files/v3.16/cmake-3.16.2.tar.gz \
+ -o cmake-3.16.2.tar.gz \
+&& tar xzf cmake-3.16.2.tar.gz \
+&& rm cmake-3.16.2.tar.gz \
+&& cd cmake-3.16.2 \
 && ./bootstrap --prefix=/usr \
 && make \
 && make install \
 && cd .. \
-&& rm -rf cmake-3.8.2
+&& rm -rf cmake-3.16.2
 
 
 # Install Swig
