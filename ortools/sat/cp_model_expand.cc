@@ -378,8 +378,8 @@ void ExpandInverse(ConstraintProto* ct, PresolveContext* context) {
   // Note this reaches the fixpoint as there is a one to one mapping between
   // (variable-value) pairs in each vector.
   const auto filter_inverse_domain = [context, size, &possible_values](
-                                         const auto& direct,
-                                         const auto& inverse) {
+     const google::protobuf::RepeatedField<int>& direct,
+     const google::protobuf::RepeatedField<int>& inverse) {
     // Propagate for the inverse vector to the direct vector.
     for (int i = 0; i < size; ++i) {
       possible_values.clear();
