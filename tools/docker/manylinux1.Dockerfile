@@ -41,16 +41,16 @@ RUN curl --location-trusted \
 
 # Install Swig
 RUN curl --location-trusted \
- --remote-name "https://downloads.sourceforge.net/project/swig/swig/swig-3.0.12/swig-3.0.12.tar.gz" \
- -o swig-3.0.12.tar.gz \
-&& tar xvf swig-3.0.12.tar.gz \
-&& rm swig-3.0.12.tar.gz \
-&& cd swig-3.0.12 \
+ --remote-name "https://downloads.sourceforge.net/project/swig/swig/swig-4.0.1/swig-4.0.1.tar.gz" \
+ -o swig-4.0.1.tar.gz \
+&& tar xvf swig-4.0.1.tar.gz \
+&& rm swig-4.0.1.tar.gz \
+&& cd swig-4.0.1 \
 && ./configure --prefix=/usr \
 && make -j 4 \
 && make install \
 && cd .. \
-&& rm -rf swig-3.0.12
+&& rm -rf swig-4.0.1
 
 # Update auditwheel to support manylinux2010
 #RUN /opt/_internal/cpython-3.7.6/bin/pip install auditwheel==2.0.0

@@ -24,15 +24,15 @@ RUN yum -y install epel-release \
 && ln -s /usr/bin/cmake3 /usr/local/bin/cmake
 
 # Install Swig
-RUN wget "https://downloads.sourceforge.net/project/swig/swig/swig-3.0.12/swig-3.0.12.tar.gz" \
-&& tar xvf swig-3.0.12.tar.gz \
-&& rm swig-3.0.12.tar.gz \
-&& cd swig-3.0.12 \
+RUN wget "https://downloads.sourceforge.net/project/swig/swig/swig-4.0.1/swig-4.0.1.tar.gz" \
+&& tar xvf swig-4.0.1.tar.gz \
+&& rm swig-4.0.1.tar.gz \
+&& cd swig-4.0.1 \
 && ./configure --prefix=/usr \
 && make -j 4 \
 && make install \
 && cd .. \
-&& rm -rf swig-3.0.12
+&& rm -rf swig-4.0.1
 
 # Install Java 8 SDK
 RUN yum -y update \
