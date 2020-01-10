@@ -9,6 +9,7 @@ RUN yum -y update \
  git \
  libtool \
  make \
+ openssl-devel \
  patch \
  pcre-devel \
  redhat-lsb \
