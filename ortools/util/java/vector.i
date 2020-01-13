@@ -153,17 +153,21 @@ VECTOR_AS_JAVA_ARRAY(double, double, Double);
 %typemap(jtype) std::vector<CType*> "JavaType[]"
 %typemap(jni) std::vector<CType*> "jobjectArray"
 %typemap(in) std::vector<CType*> (std::vector<CType*> result) {
-  jclass object_class = jenv->FindClass("JavaPackage/JavaType");
+  std::string java_class_path = #JavaPackage "/" #JavaType;
+  jclass object_class = jenv->FindClass(java_class_path.c_str());
   if (nullptr == object_class)
     return $null;
-  jmethodID method_id = jenv->GetStaticMethodID(
-    object_class, "getCPtr", "(LJavaPackage/JavaType;)J");
+  jmethodID method_id =
+      jenv->GetStaticMethodID(object_class,
+                              "getCPtr",
+                              std::string("(L" + java_class_path + ";)J").c_str());
   assert(method_id != nullptr);
   for (int i = 0; i < jenv->GetArrayLength($input); i++) {
     jobject elem = jenv->GetObjectArrayElement($input, i);
     jlong ptr_value = jenv->CallStaticLongMethod(object_class, method_id, elem);
-    $1.push_back(CastOp(CType, ptr_value));
+    result.push_back(CastOp(CType, ptr_value));
   }
+  $1 = result;
 }
 %enddef  // CONVERT_VECTOR_WITH_CAST
 
