@@ -23,6 +23,7 @@ RUN apt-get update -qq \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Dotnet Install
+# see https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-ubuntu-1804
 RUN apt-get update -qq \
 && apt-get install -yq apt-transport-https \
 && wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb \

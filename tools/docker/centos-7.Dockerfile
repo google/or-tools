@@ -41,6 +41,7 @@ RUN yum -y update \
 && rm -rf /var/cache/yum
 
 # Install dotnet
+# see https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-centos7
 RUN rpm -Uvh "https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm" \
 && yum -y update \
 && yum -y install dotnet-sdk-3.1 \

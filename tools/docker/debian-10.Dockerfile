@@ -12,6 +12,7 @@ RUN apt-get update -qq \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Dotnet Install
+# see https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-debian10
 RUN apt-get update -qq \
 && apt-get install -qq gpg apt-transport-https \
 && wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.asc.gpg \
