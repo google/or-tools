@@ -3,7 +3,7 @@ LABEL maintainer="corentinl@google.com"
 
 RUN yum -y update \
 && yum -y groupinstall 'Development Tools' \
-&& yum -y install which zlib-devel \
+&& yum -y install zlib-devel \
 && yum clean all \
 && rm -rf /var/cache/yum
 
