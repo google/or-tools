@@ -155,7 +155,7 @@ export/%/docker_devel.tar: %.Dockerfile ../Makefile.cc.java.dotnet ../../makefil
 targets = $(addprefix bash_, $(DISTROS))
 .PHONY: $(targets)
 $(targets): bash_%: export/%/docker_devel.tar
-	${DOCKER_RUN_CMD} -v `pwd`/export:/export ${IMAGE}_$*:devel /bin/bash
+	${DOCKER_RUN_CMD} -v `pwd`/export:/export or-tools_$*:devel /bin/bash
 
 # Build Archives
 targets = $(addprefix archive_, $(DISTROS))
