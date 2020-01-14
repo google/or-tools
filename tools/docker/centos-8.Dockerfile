@@ -5,7 +5,7 @@ FROM centos:8
 #############
 RUN yum -y update \
 && yum -y groupinstall 'Development Tools' \
-&& yum -y install cmake \
+&& yum -y install cmake zlib-devel which \
 && yum clean all \
 && rm -rf /var/cache/yum
 #pkgconfig
