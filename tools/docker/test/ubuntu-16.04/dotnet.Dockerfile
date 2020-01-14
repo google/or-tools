@@ -6,6 +6,7 @@ RUN apt update -qq \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Dotnet install
+# see https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-ubuntu-1604
 RUN apt-get update \
 && apt-get install -y -q wget apt-transport-https \
 && wget -q https://packages.microsoft.com/config/ubuntu/16.04/packages-microsoft-prod.deb \
