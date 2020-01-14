@@ -1,38 +1,21 @@
-FROM centos/devtoolset-7-toolchain-centos7
-USER root
-
-#FROM centos:7
-#RUN yum -y update \
-#&& yum install -y centos-release-scl \
-#&& yum install -y devtoolset-7-gcc* \
-#&& scl enable devtoolset-7 bash
+FROM centos:8
 
 #############
 ##  SETUP  ##
 #############
 RUN yum -y update \
-&& yum -y install yum-utils \
-&& yum -y install \
- wget git pkg-config make autoconf libtool zlib-devel gawk gcc-c++ curl subversion \
- redhat-lsb-core pcre-devel which \
+&& yum -y groupinstall 'Development Tools' \
+&& yum -y install cmake \
 && yum clean all \
 && rm -rf /var/cache/yum
+#pkgconfig
 
-# Install CMake 3
-RUN yum -y install epel-release \
-&& yum install -y cmake3 \
-&& ln -s /usr/bin/cmake3 /usr/local/bin/cmake
 
 # Install Swig
-RUN wget "https://downloads.sourceforge.net/project/swig/swig/swig-4.0.1/swig-4.0.1.tar.gz" \
-&& tar xvf swig-4.0.1.tar.gz \
-&& rm swig-4.0.1.tar.gz \
-&& cd swig-4.0.1 \
-&& ./configure --prefix=/usr \
-&& make -j 4 \
-&& make install \
-&& cd .. \
-&& rm -rf swig-4.0.1
+RUN yum -y update \
+&& yum -y install swig \
+&& yum clean all \
+&& rm -rf /var/cache/yum
 
 # Install Java 8 SDK
 RUN yum -y update \
