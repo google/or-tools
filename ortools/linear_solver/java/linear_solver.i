@@ -378,7 +378,7 @@ PROTO2_RETURN(
 %unignore operations_research::MPSolver::AT_UPPER_BOUND;  // no test
 %unignore operations_research::MPSolver::FIXED_VALUE;  // no test
 %unignore operations_research::MPSolver::BASIC;
-%unignore operations_research::MPSolver::SetStartingLpBasis;
+%ignore operations_research::MPSolver::SetStartingLpBasis; // no typemap for const vector<BasisStatus>&
 
 // MPVariable: writer API.
 %rename (setInteger) operations_research::MPVariable::SetInteger;
