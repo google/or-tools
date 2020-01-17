@@ -957,6 +957,11 @@ public final class CpModel {
     modelBuilder.getSolutionHintBuilder().addVars(var.getIndex());
     modelBuilder.getSolutionHintBuilder().addValues(value);
   }
+  
+  /** Removes the specified constraint from the model */
+  public void removeConstraint(Constraint constraint) {
+    this.modelBuilder.removeConstraints(constraint.getIndex());
+  }
 
   // Objective.
 
