@@ -843,36 +843,31 @@ clean_python:
 	-$(DEL) $(GEN_PATH)$Sortools$S__init__.py
 	-$(DEL) ortools$S*.pyc
 	-$(DELREC) ortools$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*.pyc
+	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*.py*
 	-$(DELREC) $(GEN_PATH)$Sortools$Salgorithms$S__pycache__
 	-$(DEL) ortools$Salgorithms$S*.pyc
 	-$(DELREC) ortools$Salgorithms$S__pycache__
 	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*_python_wrap.*
 	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S_pywrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*.pyc
+	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*.py*
 	-$(DELREC) $(GEN_PATH)$Sortools$Sgraph$S__pycache__
 	-$(DEL) ortools$Sgraph$S*.pyc
 	-$(DELREC) ortools$Sgraph$S__pycache__
 	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*_python_wrap.*
 	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S_pywrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.pyc
+	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.py*
 	-$(DELREC) $(GEN_PATH)$Sortools$Sconstraint_solver$S__pycache__
 	-$(DEL) ortools$Sconstraint_solver$S*.pyc
 	-$(DELREC) ortools$Sconstraint_solver$S__pycache__
 	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*_python_wrap.*
 	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S_pywrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*.pyc
+	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*.py*
 	-$(DELREC) $(GEN_PATH)$Sortools$Slinear_solver$S__pycache__
 	-$(DEL) ortools$Slinear_solver$S*.pyc
 	-$(DELREC) ortools$Slinear_solver$S__pycache__
 	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*_python_wrap.*
 	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S_pywrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*.pyc
+	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*.py*
 	-$(DELREC) $(GEN_PATH)$Sortools$Ssat$S__pycache__
 	-$(DEL) ortools$Ssat$S*.pyc
 	-$(DELREC) ortools$Ssat$S__pycache__
@@ -880,15 +875,13 @@ clean_python:
 	-$(DELREC) ortools$Ssat$Spython$S__pycache__
 	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*_python_wrap.*
 	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S_pywrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*.pyc
+	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*.py*
 	-$(DELREC) $(GEN_PATH)$Sortools$Sdata$S__pycache__
 	-$(DEL) ortools$Sdata$S*.pyc
 	-$(DELREC) ortools$Sdata$S__pycache__
 	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*_python_wrap.*
 	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S_pywrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*.pyc
+	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*.py*
 	-$(DELREC) $(GEN_PATH)$Sortools$Sutil$S__pycache__
 	-$(DEL) ortools$Sutil$S*.pyc
 	-$(DELREC) ortools$Sutil$S__pycache__
