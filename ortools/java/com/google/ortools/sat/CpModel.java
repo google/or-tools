@@ -962,6 +962,16 @@ public final class CpModel {
   public void removeConstraint(Constraint constraint) {
     this.modelBuilder.removeConstraints(constraint.getIndex());
   }
+  
+  /** Removes the specified IntVar from the model */
+  public void removeVariable(IntVar intVar) {
+    this.modelBuilder.removeVariables(intVar.getIndex());
+  }
+  
+  /** Removes the specified IntvalVar from the model */
+  public void removeVariable(IntervalVar intVar) {
+    this.modelBuilder.removeVariables(intVar.getIndex());
+  }
 
   // Objective.
 
