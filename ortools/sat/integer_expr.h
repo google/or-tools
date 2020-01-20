@@ -193,7 +193,8 @@ class LinMinPropagator : public PropagatorInterface {
   std::vector<IntegerValue> expr_lbs_;
   Model* model_;
   IntegerTrail* integer_trail_;
-  std::vector<IntegerLiteral> integer_reason_;
+  std::vector<IntegerLiteral> integer_reason_for_unique_candidate_;
+  int rev_unique_candidate_ = 0;
 };
 
 // Propagates a * b = c. Basic version, we don't extract any special cases, and
