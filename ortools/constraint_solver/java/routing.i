@@ -145,6 +145,7 @@ import java.util.function.LongUnaryOperator;
 %rename (compactAssignment) RoutingModel::CompactAssignment;
 %rename (computeLowerBound) RoutingModel::ComputeLowerBound;
 %rename (costVar) RoutingModel::CostVar;
+%rename (addExtraCost) RoutingModel::AddExtraCost;
 %rename (costsAreHomogeneousAcrossVehicles) RoutingModel::CostsAreHomogeneousAcrossVehicles;
 %rename (debugOutputAssignment) RoutingModel::DebugOutputAssignment;
 %rename (end) RoutingModel::End;
