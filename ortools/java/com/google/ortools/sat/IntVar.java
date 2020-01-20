@@ -19,11 +19,12 @@ import com.google.ortools.util.Domain;
 
 /** An integer variable. */
 public final class IntVar implements Literal, LinearExpr {
-  IntVar(CpModelProto.Builder builder, Domain domain, String name) {
+  IntVar(final CpModelProto.Builder builder, final Domain domain, final String name) {
     this.modelBuilder = builder;
     this.variableIndex = modelBuilder.getVariablesCount();
     this.varBuilder = modelBuilder.addVariablesBuilder();
     this.varBuilder.setName(name);
+    this.domain = domain;
     for (long b : domain.flattenedIntervals()) {
       this.varBuilder.addDomain(b);
     }
@@ -99,6 +100,11 @@ public final class IntVar implements Literal, LinearExpr {
     return out;
   }
 
+  /** Returns the domain. */
+  public Domain getDomain() {
+    return this.domain;
+  }
+
   /** Returns the negation of a boolean variable. */
   @Override
   public Literal not() {
@@ -108,8 +114,9 @@ public final class IntVar implements Literal, LinearExpr {
     return negation_;
   }
 
+  private final Domain domain;
   private final CpModelProto.Builder modelBuilder;
   private final int variableIndex;
   private final IntegerVariableProto.Builder varBuilder;
-  private NotBooleanVariable negation_;
+  private NotBooleanVariable negation_ = null;
 }
