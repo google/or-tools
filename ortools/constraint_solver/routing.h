@@ -1072,6 +1072,15 @@ class RoutingModel {
     }
     extra_filters_.push_back(filter);
   }
+  // Adds a custom extra cost to the list of cost elements that make up the
+  // objective value
+  void AddExtraCost(IntVar* intVar) {
+    CHECK(intVar != nullptr);
+    if (closed_) {
+      LOG(WARNING) << "Model is closed, cost addition will be ignored.";
+    }
+    extra_costs_.push_back(intVar);
+  }
 
   /// Model inspection.
   /// Returns the variable index of the starting node of a vehicle route.
@@ -1679,6 +1688,7 @@ class RoutingModel {
   std::vector<LocalSearchFilter*> filters_;
   std::vector<LocalSearchFilter*> feasibility_filters_;
   std::vector<LocalSearchFilter*> extra_filters_;
+  std::vector<IntVar*> extra_costs_;
 #ifndef SWIG
   std::vector<std::pair<IntVar*, int64>> finalizer_variable_cost_pairs_;
   std::vector<std::pair<IntVar*, int64>> finalizer_variable_target_pairs_;
