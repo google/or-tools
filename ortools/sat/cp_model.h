@@ -154,6 +154,10 @@ class IntVar {
   /// Returns the name of the variable (or the empty string if not set).
   const std::string& Name() const { return Proto().name(); }
 
+  /// Adds a constant value to an integer variable and returns a linear
+  /// expression.
+  LinearExpr AddConstant(int64 value) const;
+
   /// Equality test with another IntVar.
   bool operator==(const IntVar& other) const {
     return other.cp_model_ == cp_model_ && other.index_ == index_;

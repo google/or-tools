@@ -84,6 +84,10 @@ IntVar::IntVar(const BoolVar& var) {
   index_ = var.index_;
 }
 
+LinearExpr IntVar::AddConstant(int64 value) const {
+  return LinearExpr(*this).AddConstant(value);
+}
+
 std::string IntVar::DebugString() const {
   if (index_ < 0) {
     return absl::StrFormat("Not(%s)",
