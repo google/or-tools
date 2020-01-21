@@ -263,7 +263,6 @@ int init_xpress_env(int xpress_oem_license_key) {
   char *xpresspath;
   xpresspath = getenv("XPRESS");
 
-  google::InitGoogleLogging("Xpress");
   std::call_once(init_done, [] { google::InitGoogleLogging("Xpress"); });
 
   if (!xpresspath) {
