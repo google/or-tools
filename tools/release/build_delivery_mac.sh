@@ -22,18 +22,26 @@ command -v cmake
 command -v cmake | xargs echo "cmake: " | tee -a build.log
 command -v make
 command -v make | xargs echo "make: " | tee -a build.log
+
 command -v swig
 command -v swig | xargs echo "swig: " | tee -a build.log
+
 # python
 command -v python3.6
 command -v python3.6 | xargs echo "python3.6: " | tee -a build.log
 python3.6 -c "import distutils.util as u; print(u.get_platform())" | tee -a build.log
+python3.6 -m pip install --user wheel six virtualenv
+
 command -v python3.7
 command -v python3.7 | xargs echo "python3.7: " | tee -a build.log
 python3.7 -c "import distutils.util as u; print(u.get_platform())" | tee -a build.log
+python3.7 -m pip install --user wheel six virtualenv
+
 command -v python3.8
 command -v python3.8 | xargs echo "python3.8: " | tee -a build.log
 python3.8 -c "import distutils.util as u; print(u.get_platform())" | tee -a build.log
+python3.8 -m pip install --user wheel six virtualenv
+
 # java
 echo "JAVA_HOME: ${JAVA_HOME}" | tee -a build.log
 command -v java
@@ -43,6 +51,7 @@ command -v javac | xargs echo "javac: " | tee -a build.log
 command -v jar
 command -v jar | xargs echo "jar: " | tee -a build.log
 java -version 2>&1 | head -n 1 | grep 1.8
+
 # C#
 command -v dotnet
 command -v dotnet | xargs echo "dotnet: " | tee -a build.log
