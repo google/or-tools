@@ -34,7 +34,7 @@
 %ignore operations_research::SortedDisjointIntervalList::SortedDisjointIntervalList(const std::vector<ClosedInterval>&);
 %unignore operations_research::SortedDisjointIntervalList::~SortedDisjointIntervalList;
 
-%ignore operations_research::SortedDisjointIntervalList::InsertInterval; // return an iterator
+%rename (insertInterval) operations_research::SortedDisjointIntervalList::InsertInterval;
 %rename (insertIntervals) operations_research::SortedDisjointIntervalList::InsertIntervals;
 %rename (numIntervals) operations_research::SortedDisjointIntervalList::NumIntervals;
 %rename (buildComplementOnInterval) operations_research::SortedDisjointIntervalList::BuildComplementOnInterval;
