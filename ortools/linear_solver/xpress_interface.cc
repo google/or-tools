@@ -134,7 +134,7 @@ class XpressInterface : public MPSolverInterface {
   virtual void SetObjectiveCoefficient(MPVariable const *const variable,
                                        double coefficient);
   // Change the constant term in the linear objective.
-  virtual void SetObjectiveOffset(double value);
+  virtual void SetObjectiveOffset(double value) override;
   // Clear the objective from all its terms.
   virtual void ClearObjective();
 
@@ -251,6 +251,10 @@ class XpressInterface : public MPSolverInterface {
                       double &range);
 };
 
+namespace {
+	std::once_flag init_done;
+}  // namespace
+
 /** init XPRESS environment */
 int init_xpress_env(int xpress_oem_license_key = 0);
 int init_xpress_env(int xpress_oem_license_key) {
@@ -260,9 +264,10 @@ int init_xpress_env(int xpress_oem_license_key) {
   xpresspath = getenv("XPRESS");
 
   google::InitGoogleLogging("Xpress");
+  std::call_once(init_done, [] { google::InitGoogleLogging("Xpress"); });
 
   if (!xpresspath) {
-    VLOG(0)
+    LOG(0)
         << "XpressInterface Error : Environment variable XPRESS undefined.\n";
     return -1;
   }
@@ -286,8 +291,8 @@ int init_xpress_env(int xpress_oem_license_key) {
       char errmsg[256];
       XPRSgetlicerrmsg(errmsg, 256);
 
-      VLOG(0) << "XpressInterface : License error : " << errmsg << std::endl;
-      VLOG(0) << "XpressInterface : XPRSinit returned code : " << code << "\n";
+      LOG(0) << "XpressInterface : License error : " << errmsg << std::endl;
+      LOG(0) << "XpressInterface : XPRSinit returned code : " << code << "\n";
 
       char banner[1000];
       XPRSgetbanner(banner);
@@ -358,7 +363,7 @@ XpressInterface::XpressInterface(MPSolver *const solver, bool mip)
 
 XpressInterface::~XpressInterface() {
   CHECK_STATUS(XPRSdestroyprob(mLp));
-  google::ShutdownGoogleLogging();
+  //google::ShutdownGoogleLogging();
 }
 
 std::string XpressInterface::SolverVersion() const {
@@ -1274,8 +1279,7 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const &param) {
     VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
     // In Xpress, a time limit should usually have a negative sign. With a
     // positive sign, the solver will only stop when a solution has been found.
-    CHECK_STATUS(XPRSsetdblcontrol(mLp, XPRS_MAXTIME,
-                                   -1.0 * solver_->time_limit_in_secs()));
+    CHECK_STATUS(XPRSsetintcontrol(mLp, XPRS_MAXTIME, -1 * solver_->time_limit_in_secs()));
   }
 
   // Solve.
