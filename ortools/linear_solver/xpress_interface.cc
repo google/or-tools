@@ -249,6 +249,7 @@ class XpressInterface : public MPSolverInterface {
   // Setup the right-hand side of a constraint from its lower and upper bound.
   static void MakeRhs(double lb, double ub, double &rhs, char &sense,
                       double &range);
+  double objective_rhs_value_ = 0.0;
 };
 
 namespace {
@@ -682,6 +683,7 @@ void XpressInterface::SetObjectiveCoefficient(MPVariable const *const variable,
 void XpressInterface::SetObjectiveOffset(double value) {
   // Changing the objective offset is O(1), so we always do it immediately.
   InvalidateSolutionSynchronization();
+  objective_rhs_value_ = value;
   CHECK_STATUS(XPRSsetobjoffset(mLp, value));
 }
 
@@ -1333,6 +1335,8 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const &param) {
     } else {
       CHECK_STATUS(XPRSgetdblattrib(mLp, XPRS_LPOBJVAL, &objective_value_));
     }
+	
+	objective_value_ += objective_rhs_value_;
   }
   VLOG(1) << "objective = " << objective_value_;
 
