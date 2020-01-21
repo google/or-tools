@@ -1121,8 +1121,9 @@ class GenericLiteralWatcher : public SatPropagator {
   std::vector<bool> in_queue_;
 
   // Data for each propagator.
+  DEFINE_INT_TYPE(IdType, int32);
   std::vector<int> id_to_level_at_last_call_;
-  RevVector<int> id_to_greatest_common_level_since_last_call_;
+  RevVector<IdType, int> id_to_greatest_common_level_since_last_call_;
   std::vector<std::vector<ReversibleInterface*>> id_to_reversible_classes_;
   std::vector<std::vector<int*>> id_to_reversible_ints_;
   std::vector<std::vector<int>> id_to_watch_indices_;

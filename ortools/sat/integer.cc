@@ -1686,11 +1686,12 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
       // Before we propagate, make sure any reversible structure are up to date.
       // Note that we never do anything expensive more than once per level.
       {
-        const int low = id_to_greatest_common_level_since_last_call_[id];
+        const int low =
+            id_to_greatest_common_level_since_last_call_[IdType(id)];
         const int high = id_to_level_at_last_call_[id];
         if (low < high || level > low) {  // Equivalent to not all equal.
           id_to_level_at_last_call_[id] = level;
-          id_to_greatest_common_level_since_last_call_[id] = level;
+          id_to_greatest_common_level_since_last_call_[IdType(id)] = level;
           for (ReversibleInterface* rev : id_to_reversible_classes_[id]) {
             if (low < high) rev->SetLevel(low);
             if (level > low) rev->SetLevel(level);

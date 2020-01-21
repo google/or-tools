@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 
@@ -83,13 +84,13 @@ class RevRepository : public ReversibleInterface {
 };
 
 // A basic reversible vector implementation.
-template <class T>
+template <class IndexType, class T>
 class RevVector : public ReversibleInterface {
  public:
-  const T& operator[](int index) const { return vector_[index]; }
-  T& operator[](int index) {
+  const T& operator[](IndexType index) const { return vector_[index]; }
+  T& operator[](IndexType index) {
     // Save on the stack first.
-    stack_.push_back({index, vector_[index]});
+    if (!end_of_level_.empty()) stack_.push_back({index, vector_[index]});
     return vector_[index];
   }
 
@@ -121,8 +122,8 @@ class RevVector : public ReversibleInterface {
 
  private:
   std::vector<int> end_of_level_;  // In stack_.
-  std::vector<std::pair<int, T>> stack_;
-  std::vector<T> vector_;
+  std::vector<std::pair<IndexType, T>> stack_;
+  gtl::ITIVector<IndexType, T> vector_;
 };
 
 template <class T>
