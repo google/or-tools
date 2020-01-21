@@ -1706,19 +1706,26 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
 
       // We don't want to change the sign of current (except if the variable is
       // fixed) or to have an overflow.
-      IntegerValue before_sign_change = kMaxWantedCoeff;
-      if (lb != ub) {
-        before_sign_change = FloorRatio(IntTypeAbs(current), abs_coef);
-      }
-
-      const IntegerValue overflow_limit(
-          FloorRatio(kMaxWantedCoeff - IntTypeAbs(current), abs_coef));
+      //
+      // Corner case:
+      //  - IntTypeAbs(current) can be larger than kMaxWantedCoeff!
+      //  - The code assumes that 2 * kMaxWantedCoeff do not overflow.
+      const IntegerValue current_magnitude = IntTypeAbs(current);
+      const IntegerValue other_direction_limit = FloorRatio(
+          lb == ub
+              ? kMaxWantedCoeff + std::min(current_magnitude,
+                                           kMaxIntegerValue - kMaxWantedCoeff)
+              : current_magnitude,
+          abs_coef);
+      const IntegerValue same_direction_limit(FloorRatio(
+          std::max(IntegerValue(0), kMaxWantedCoeff - current_magnitude),
+          abs_coef));
       if (current > 0 == coeff > 0) {  // Same sign.
-        negative_limit = std::min(negative_limit, before_sign_change);
-        positive_limit = std::min(positive_limit, overflow_limit);
+        negative_limit = std::min(negative_limit, other_direction_limit);
+        positive_limit = std::min(positive_limit, same_direction_limit);
       } else {
-        negative_limit = std::min(negative_limit, overflow_limit);
-        positive_limit = std::min(positive_limit, before_sign_change);
+        negative_limit = std::min(negative_limit, same_direction_limit);
+        positive_limit = std::min(positive_limit, other_direction_limit);
       }
 
       // This is how diff change.
