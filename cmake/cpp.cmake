@@ -7,7 +7,13 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREAD_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 
-find_package(ZLIB REQUIRED)
+if(BUILD_ZLIB)
+ find_package(ZLIB REQUIRED CONFIG)
+ set(ZLIB_DEP ZLIB::zlibstatic)
+else()
+ find_package(ZLIB REQUIRED)
+ set(ZLIB_DEP ZLIB::ZLIB)
+endif()
 find_package(absl REQUIRED CONFIG)
 set(GFLAGS_USE_TARGET_NAMESPACE TRUE)
 find_package(gflags REQUIRED CONFIG)
@@ -107,7 +113,7 @@ target_include_directories(${PROJECT_NAME} INTERFACE
   $<INSTALL_INTERFACE:include>
   )
 target_link_libraries(${PROJECT_NAME} PUBLIC
-  ZLIB::ZLIB
+  ${ZLIB_DEP}
   absl::base
   absl::random_random
   absl::raw_hash_set
