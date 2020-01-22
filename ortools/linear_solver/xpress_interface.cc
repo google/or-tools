@@ -267,7 +267,7 @@ int init_xpress_env(int xpress_oem_license_key) {
   std::call_once(init_done, [] { google::InitGoogleLogging("Xpress"); });
 
   if (!xpresspath) {
-    LOG(0)
+    LOG(ERROR)
         << "XpressInterface Error : Environment variable XPRESS undefined.\n";
     return -1;
   }
@@ -291,8 +291,8 @@ int init_xpress_env(int xpress_oem_license_key) {
       char errmsg[256];
       XPRSgetlicerrmsg(errmsg, 256);
 
-      LOG(0) << "XpressInterface : License error : " << errmsg << std::endl;
-      LOG(0) << "XpressInterface : XPRSinit returned code : " << code << "\n";
+      LOG(ERROR) << "XpressInterface : License error : " << errmsg << std::endl;
+      LOG(ERROR) << "XpressInterface : XPRSinit returned code : " << code << "\n";
 
       char banner[1000];
       XPRSgetbanner(banner);
