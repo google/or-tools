@@ -132,16 +132,19 @@ VECTOR_AS_JAVA_ARRAY(double, double, Double);
   $1 = &result;
 }
 %typemap(out) const std::vector<CType*>& {
-  jclass object_class = jenv->FindClass("JavaPackage/JavaType");
+  if (nullptr == $1)
+    return $null;
+  std::string java_class_path = #JavaPackage "/" #JavaType;
+  jclass object_class = jenv->FindClass(java_class_path.c_str());
+  if (nullptr == object_class)
+    return $null;
   $result = jenv->NewObjectArray($1->size(), object_class, 0);
-  if (nullptr != object_class) {
-    jmethodID ctor = jenv->GetMethodID(object_class,"<init>", "(JZ)V");
-    for (int i = 0; i < $1->size(); ++i) {
-      jlong obj_ptr = 0;
-      *((CType **)&obj_ptr) = (*$1)[i];
-      jobject elem = jenv->NewObject(object_class, ctor, obj_ptr, false);
-      jenv->SetObjectArrayElement($result, i, elem);
-    }
+  jmethodID ctor = jenv->GetMethodID(object_class,"<init>", "(JZ)V");
+  for (int i = 0; i < $1->size(); ++i) {
+    jlong obj_ptr = 0;
+    *((CType **)&obj_ptr) = (*$1)[i];
+    jobject elem = jenv->NewObject(object_class, ctor, obj_ptr, false);
+    jenv->SetObjectArrayElement($result, i, elem);
   }
 }
 %typemap(javaout) const std::vector<CType*> & {
