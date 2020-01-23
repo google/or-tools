@@ -64,7 +64,10 @@ int XPRSgetnodecnt(const XPRSprob &mLp) {
 }
 
 int XPRSsetobjoffset(const XPRSprob &mLp, double value) {
-  XPRSsetdblcontrol(mLp, XPRS_OBJRHS, value);
+  static int indexes[1] = { -1 };
+  double values[1] = { -value };
+  XPRSchgobj(mLp, 1, indexes, values);
+  //XPRSsetdblcontrol(mLp, XPRS_OBJRHS, value);
   return 0;
 }
 
@@ -357,8 +360,7 @@ XpressInterface::XpressInterface(MPSolver *const solver, bool mip)
   DCHECK(mLp != nullptr);  // should not be NULL if status=0
   CHECK_STATUS(XPRSloadlp(mLp, "newProb", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
 
-  CHECK_STATUS(
-      XPRSchgobjsense(mLp, maximize_ ? XPRS_OBJ_MAXIMIZE : XPRS_OBJ_MINIMIZE));
+  CHECK_STATUS(XPRSchgobjsense(mLp, maximize_ ? XPRS_OBJ_MAXIMIZE : XPRS_OBJ_MINIMIZE));
 }
 
 XpressInterface::~XpressInterface() {
@@ -683,7 +685,6 @@ void XpressInterface::SetObjectiveCoefficient(MPVariable const *const variable,
 void XpressInterface::SetObjectiveOffset(double value) {
   // Changing the objective offset is O(1), so we always do it immediately.
   InvalidateSolutionSynchronization();
-  objective_rhs_value_ = value;
   CHECK_STATUS(XPRSsetobjoffset(mLp, value));
 }
 
@@ -1341,8 +1342,6 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const &param) {
     } else {
       CHECK_STATUS(XPRSgetdblattrib(mLp, XPRS_LPOBJVAL, &objective_value_));
     }
-	
-	objective_value_ += objective_rhs_value_;
   }
   VLOG(1) << "objective = " << objective_value_;
 
