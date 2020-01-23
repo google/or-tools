@@ -1302,6 +1302,11 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const &param) {
       status = XPRSminim(mLp, "");
     XPRSgetintattrib(mLp, XPRS_LPSTATUS, &xpressstat);
   }
+  
+  if ( ! (mMip ? (xpressstat == XPRS_MIP_OPTIMAL) : (xpressstat == XPRS_LP_OPTIMAL)))
+  {
+	XPRSpostsolve(mLp);
+  }
 
   // Disable screen output right after solve
   XPRSsetintcontrol(mLp, XPRS_OUTPUTLOG, 0);
@@ -1317,9 +1322,10 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const &param) {
   VLOG(1) << absl::StrFormat("XPRESS solution status %d.", xpressstat);
 
   // Figure out what solution we have.
-  bool const feasible = (mMip && (xpressstat == XPRS_MIP_OPTIMAL ||
-                                  xpressstat == XPRS_MIP_SOLUTION)) ||
-                        (!mMip && xpressstat == XPRS_LP_OPTIMAL);
+  bool const feasible = (mMip ?
+						(xpressstat == XPRS_MIP_OPTIMAL || xpressstat == XPRS_MIP_SOLUTION)
+                        : (!mMip && xpressstat == XPRS_LP_OPTIMAL)
+  );
 
   // Get problem dimensions for solution queries below.
   int const rows = XPRSgetnumrows(mLp);
