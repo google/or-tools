@@ -218,6 +218,12 @@ void CircuitConstraint::AddArc(int tail, int head, BoolVar literal) {
   proto_->mutable_circuit()->add_literals(literal.index_);
 }
 
+void MultipleCircuitConstraint::AddArc(int tail, int head, BoolVar literal) {
+  proto_->mutable_routes()->add_tails(tail);
+  proto_->mutable_routes()->add_heads(head);
+  proto_->mutable_routes()->add_literals(literal.index_);
+}
+
 void TableConstraint::AddTuple(absl::Span<const int64> tuple) {
   CHECK_EQ(tuple.size(), proto_->table().vars_size());
   for (const int64 t : tuple) {
@@ -549,6 +555,10 @@ Constraint CpModelBuilder::AddElement(IntVar index,
 
 CircuitConstraint CpModelBuilder::AddCircuitConstraint() {
   return CircuitConstraint(cp_model_.add_constraints());
+}
+
+MultipleCircuitConstraint CpModelBuilder::AddMultipleCircuitConstraint() {
+  return MultipleCircuitConstraint(cp_model_.add_constraints());
 }
 
 TableConstraint CpModelBuilder::AddAllowedAssignments(
