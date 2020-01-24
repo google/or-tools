@@ -167,30 +167,31 @@ class PyWrapLpTest(unittest.TestCase):
         all_names_and_problem_types = (list(
             linear_solver_pb2.MPModelRequest.SolverType.items()))
         for name, problem_type in all_names_and_problem_types:
-            if not pywraplp.Solver.SupportsProblemType(problem_type):
-                continue
-            if name.startswith('GUROBI'):
-                continue
-            if name.endswith('LINEAR_PROGRAMMING'):
-                print(('\n------ Linear programming example with %s ------' %
-                       name))
-                print('\n*** Natural language API ***')
-                self.RunLinearExampleNaturalLanguageAPI(problem_type)
-                print('\n*** C++ style API ***')
-                self.RunLinearExampleCppStyleAPI(problem_type)
-            elif name.endswith('MIXED_INTEGER_PROGRAMMING'):
-                print((
-                    '\n------ Mixed Integer programming example with %s ------'
-                    % name))
-                print('\n*** C++ style API ***')
-                self.RunMixedIntegerExampleCppStyleAPI(problem_type)
-            elif name.endswith('INTEGER_PROGRAMMING'):
-                print(('\n------ Boolean programming example with %s ------' %
-                       name))
-                print('\n*** C++ style API ***')
-                self.RunBooleanExampleCppStyleAPI(problem_type)
-            else:
-                print('ERROR: %s unsupported' % name)
+            with self.subTest(f'{name}: {problem_type}'):
+                if not pywraplp.Solver.SupportsProblemType(problem_type):
+                    continue
+                if name.startswith('GUROBI'):
+                    continue
+                if name.endswith('LINEAR_PROGRAMMING'):
+                    print(('\n------ Linear programming example with %s ------' %
+                           name))
+                    print('\n*** Natural language API ***')
+                    self.RunLinearExampleNaturalLanguageAPI(problem_type)
+                    print('\n*** C++ style API ***')
+                    self.RunLinearExampleCppStyleAPI(problem_type)
+                elif name.endswith('MIXED_INTEGER_PROGRAMMING'):
+                    print((
+                        '\n------ Mixed Integer programming example with %s ------'
+                        % name))
+                    print('\n*** C++ style API ***')
+                    self.RunMixedIntegerExampleCppStyleAPI(problem_type)
+                elif name.endswith('INTEGER_PROGRAMMING'):
+                    print(('\n------ Boolean programming example with %s ------' %
+                           name))
+                    print('\n*** C++ style API ***')
+                    self.RunBooleanExampleCppStyleAPI(problem_type)
+                else:
+                    print('ERROR: %s unsupported' % name)
 
     def testSetHint(self):
         print('testSetHint')
@@ -225,7 +226,7 @@ class PyWrapLpTest(unittest.TestCase):
         solver.Add(x >= 20)
 
         result_status = solver.Solve()
-        print(result_status) # outputs: 0        
+        print(result_status) # outputs: 0
 
 
 if __name__ == '__main__':
