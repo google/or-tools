@@ -1691,7 +1691,8 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
         const int high = id_to_level_at_last_call_[id];
         if (low < high || level > low) {  // Equivalent to not all equal.
           id_to_level_at_last_call_[id] = level;
-          id_to_greatest_common_level_since_last_call_[IdType(id)] = level;
+          id_to_greatest_common_level_since_last_call_.MutableRef(IdType(id)) =
+              level;
           for (ReversibleInterface* rev : id_to_reversible_classes_[id]) {
             if (low < high) rev->SetLevel(low);
             if (level > low) rev->SetLevel(level);

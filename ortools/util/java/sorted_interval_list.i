@@ -40,6 +40,10 @@
 %rename (buildComplementOnInterval) operations_research::SortedDisjointIntervalList::BuildComplementOnInterval;
 %rename (toString) operations_research::SortedDisjointIntervalList::DebugString;
 
+SWIG_JAVABODY_PROXY(/*PTRCTOR_VISIBILITY=*/public,
+                    /*CPTR_VISIBILITY=*/protected,
+                    /*TYPE...=*/SWIGTYPE)
+
 // Wrap the domain class here.
 %unignore operations_research::Domain;
 %unignore operations_research::Domain::Domain;

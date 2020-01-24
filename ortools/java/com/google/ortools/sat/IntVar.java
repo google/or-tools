@@ -108,6 +108,11 @@ public final class IntVar implements Literal, LinearExpr {
     return negation_;
   }
 
+  /** Returns the domain of the variable. */
+  public Domain getDomain() {
+    return SatHelper.variableDomain(varBuilder.build());
+  }
+
   private final CpModelProto.Builder modelBuilder;
   private final int variableIndex;
   private final IntegerVariableProto.Builder varBuilder;

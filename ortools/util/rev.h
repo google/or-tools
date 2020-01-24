@@ -88,7 +88,11 @@ template <class IndexType, class T>
 class RevVector : public ReversibleInterface {
  public:
   const T& operator[](IndexType index) const { return vector_[index]; }
-  T& operator[](IndexType index) {
+
+  // TODO(user): Maybe we could have also used the [] operator, but it is harder
+  // to be 100% sure that the mutable version is only called when we modify
+  // the vector. And I had performance bug because of that.
+  T& MutableRef(IndexType index) {
     // Save on the stack first.
     if (!end_of_level_.empty()) stack_.push_back({index, vector_[index]});
     return vector_[index];
