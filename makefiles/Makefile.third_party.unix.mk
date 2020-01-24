@@ -157,6 +157,7 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo >> Makefile.local
 	@echo "## OPTIONAL DEPENDENCIES ##" >> Makefile.local
 	@echo "# Define UNIX_CPLEX_DIR to use CPLEX" >> Makefile.local
+	@echo "#   e.g. UNIX_CPLEX_DIR = /opt/CPLEX_Studio-X.Y" >> Makefile.local
 	@echo >> Makefile.local
 	@echo "# Define UNIX_GLPK_DIR to point to a compiled version of GLPK to use it" >> Makefile.local
 	@echo "#   e.g. UNIX_GLPK_DIR = /opt/glpk-x.y.z" >> Makefile.local
@@ -191,7 +192,7 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo "#   note: by default they all point to UNIX_CBC_DIR" >> Makefile.local
 	@echo >> Makefile.local
 	@echo "# note: You don't need to run \"make third_party\" if you only use external dependencies" >> Makefile.local
-	@echo "# i.e. you define all UNIX_GFLAGS_DIR, UNIX_GLOG_DIR, UNIX_PROTOBUF_DIR and UNIX_CBC_DIR" >> Makefile.local
+	@echo "# i.e. You have defined all UNIX_GFLAGS_DIR, UNIX_GLOG_DIR, UNIX_PROTOBUF_DIR and UNIX_CBC_DIR" >> Makefile.local
 
 ##############
 ##  GFLAGS  ##
