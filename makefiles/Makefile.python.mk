@@ -25,6 +25,10 @@ else # UNIX
 PYTHON_COMPILER ?= python$(UNIX_PYTHON_VER)
 PYTHON_EXECUTABLE := $(shell which $(PYTHON_COMPILER))
 SET_PYTHONPATH = PYTHONPATH=$(OR_TOOLS_PYTHONPATH)
+GEN_MYPY := $(shell $(WHICH) protoc-gen-mypy)
+ifneq ($(GEN_MYPY),)
+MYPY_OUT=--mypy_out=$(GEN_PATH)
+endif
 endif
 
 # Detect python3
@@ -38,6 +42,14 @@ endif
 
 # Set -doxygen tag for swig if possible
 ifeq ("$(SWIG_VERSION)","4.0.0")
+  ifneq ("$(PYTHON_EXECUTABLE)","")
+    ifeq ($(shell "$(PYTHON_EXECUTABLE)" -c "from sys import version_info as v; print (str(v[0]))"),3)
+SWIG_PY_DOXYGEN = -doxygen
+    endif
+  endif
+endif
+
+ifeq ("$(SWIG_VERSION)","4.0.1")
   ifneq ("$(PYTHON_EXECUTABLE)","")
     ifeq ($(shell "$(PYTHON_EXECUTABLE)" -c "from sys import version_info as v; print (str(v[0]))"),3)
 SWIG_PY_DOXYGEN = -doxygen
@@ -205,28 +217,28 @@ $(GEN_DIR)/ortools/constraint_solver/search_limit_pb2.py: \
  $(SRC_DIR)/ortools/constraint_solver/search_limit.proto \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/constraint_solver
-	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) \
+	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
  $(SRC_DIR)$Sortools$Sconstraint_solver$Ssearch_limit.proto
 
 $(GEN_DIR)/ortools/constraint_solver/assignment_pb2.py: \
  $(SRC_DIR)/ortools/constraint_solver/assignment.proto \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/constraint_solver
-	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) \
+	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
  $(SRC_DIR)$Sortools$Sconstraint_solver$Sassignment.proto
 
 $(GEN_DIR)/ortools/constraint_solver/solver_parameters_pb2.py: \
  $(SRC_DIR)/ortools/constraint_solver/solver_parameters.proto \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/constraint_solver
-	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) \
+	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
  $(SRC_DIR)$Sortools$Sconstraint_solver$Ssolver_parameters.proto
 
 $(GEN_DIR)/ortools/constraint_solver/routing_enums_pb2.py: \
  $(SRC_DIR)/ortools/constraint_solver/routing_enums.proto \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/constraint_solver
-	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) \
+	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
  $(SRC_DIR)$Sortools$Sconstraint_solver$Srouting_enums.proto
 
 $(GEN_DIR)/ortools/constraint_solver/routing_parameters_pb2.py: \
@@ -235,7 +247,7 @@ $(GEN_DIR)/ortools/constraint_solver/routing_parameters_pb2.py: \
  $(GEN_DIR)/ortools/constraint_solver/routing_enums_pb2.py \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/constraint_solver
-	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) \
+	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
  $(SRC_DIR)$Sortools$Sconstraint_solver$Srouting_parameters.proto
 
 $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py: \
@@ -303,7 +315,7 @@ $(GEN_DIR)/ortools/util/optional_boolean_pb2.py: \
  $(SRC_DIR)/ortools/util/optional_boolean.proto \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/util
-	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) \
+	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
  $(SRC_DIR)/ortools/util/optional_boolean.proto
 
 $(GEN_DIR)/ortools/linear_solver/linear_solver_pb2.py: \
@@ -311,7 +323,7 @@ $(GEN_DIR)/ortools/linear_solver/linear_solver_pb2.py: \
  $(GEN_DIR)/ortools/util/optional_boolean_pb2.py \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/linear_solver
-	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) \
+	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
  $(SRC_DIR)/ortools/linear_solver/linear_solver.proto
 
 $(GEN_DIR)/ortools/linear_solver/pywraplp.py: \
@@ -363,14 +375,14 @@ $(GEN_DIR)/ortools/sat/cp_model_pb2.py: \
  $(SRC_DIR)/ortools/sat/cp_model.proto \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/sat
-	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) \
+	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
  $(SRC_DIR)/ortools/sat/cp_model.proto
 
 $(GEN_DIR)/ortools/sat/sat_parameters_pb2.py: \
  $(SRC_DIR)/ortools/sat/sat_parameters.proto \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/sat
-	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) \
+	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
  $(SRC_DIR)/ortools/sat/sat_parameters.proto
 
 $(GEN_DIR)/ortools/sat/pywrapsat.py: \
@@ -422,7 +434,7 @@ $(GEN_DIR)/ortools/data/rcpsp_pb2.py: \
  $(SRC_DIR)/ortools/data/rcpsp.proto \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/data
-	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) \
+	$(PROTOC) --proto_path=$(INC_DIR) --python_out=$(GEN_PATH) $(MYPY_OUT) \
  $(SRC_DIR)/ortools/data/rcpsp.proto
 
 $(GEN_DIR)/ortools/data/pywraprcpsp.py: \
@@ -1024,7 +1036,7 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/algorithms: $(PYALGORITHMS_LIBS) | $(PY
 	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Salgorithms
 	-$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Salgorithms
 	$(TOUCH) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Salgorithms$S__init__.py
-	$(COPY) $(GEN_PATH)$Sortools$Salgorithms$Spywrapknapsack_solver.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Salgorithms
+	$(COPY) $(GEN_PATH)$Sortools$Salgorithms$Spywrapknapsack_solver.py* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Salgorithms
 	$(COPY) $(GEN_PATH)$Sortools$Salgorithms$S_pywrapknapsack_solver.* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Salgorithms
 
 $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/graph: $(PYGRAPH_LIBS) | $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools
@@ -1038,7 +1050,7 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/constraint_solver: $(PYCP_LIBS) | $(PYP
 	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sconstraint_solver
 	-$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sconstraint_solver
 	$(TOUCH) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sconstraint_solver$S__init__.py
-	$(COPY) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sconstraint_solver
+	$(COPY) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.py* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sconstraint_solver
 	$(COPY) $(GEN_PATH)$Sortools$Sconstraint_solver$S_pywrapcp.* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sconstraint_solver
 
 $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/linear_solver: $(PYLP_LIBS) | $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools
@@ -1046,7 +1058,7 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/linear_solver: $(PYLP_LIBS) | $(PYPI_AR
 	-$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Slinear_solver
 	$(TOUCH) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Slinear_solver$S__init__.py
 	$(COPY) ortools$Slinear_solver$S*.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Slinear_solver
-	$(COPY) $(GEN_PATH)$Sortools$Slinear_solver$S*.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Slinear_solver
+	$(COPY) $(GEN_PATH)$Sortools$Slinear_solver$S*.py* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Slinear_solver
 	$(COPY) $(GEN_PATH)$Sortools$Slinear_solver$S_pywraplp.* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Slinear_solver
 
 $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/sat: $(PYSAT_LIBS) | $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools
@@ -1055,7 +1067,7 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/sat: $(PYSAT_LIBS) | $(PYPI_ARCHIVE_TEM
 	$(TOUCH) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Ssat$S__init__.py
 	$(COPY) ortools$Ssat$Sdoc$S*.md $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Ssat
 	$(COPY) ortools$Ssat$S*.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Ssat
-	$(COPY) $(GEN_PATH)$Sortools$Ssat$S*.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Ssat
+	$(COPY) $(GEN_PATH)$Sortools$Ssat$S*.py* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Ssat
 	$(COPY) $(GEN_PATH)$Sortools$Ssat$S_pywrapsat.* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Ssat
 	-$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Ssat$Spython
 	$(COPY) ortools$Ssat$Spython$S*.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Ssat$Spython
@@ -1064,14 +1076,14 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/data: $(PYDATA_LIBS) | $(PYPI_ARCHIVE_T
 	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sdata
 	-$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sdata
 	$(TOUCH) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sdata$S__init__.py
-	$(COPY) $(GEN_PATH)$Sortools$Sdata$S*.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sdata
+	$(COPY) $(GEN_PATH)$Sortools$Sdata$S*.py* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sdata
 	$(COPY) $(GEN_PATH)$Sortools$Sdata$S_pywraprcpsp.* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sdata
 
-$(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/util: $(PYUTIL_LIBS) | $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools
+$(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/util: $(PYSORTED_INTERVAL_LIST_LIBS) | $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools
 	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sutil
 	-$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sutil
 	$(TOUCH) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sutil$S__init__.py
-	$(COPY) $(GEN_PATH)$Sortools$Sutil$S*.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sutil
+	$(COPY) $(GEN_PATH)$Sortools$Sutil$S*.py* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sutil
 	$(COPY) $(GEN_PATH)$Sortools$Sutil$S_sorted_interval_list.* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sutil
 
 $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/.libs: | $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools
@@ -1195,7 +1207,9 @@ endif
 	@echo SWIG_INC = $(SWIG_INC)
 	@echo SWIG_PYTHON3_FLAG = $(SWIG_PYTHON3_FLAG)
 	@echo SWIG_PYTHON_LIB_SUFFIX = $(SWIG_PYTHON_LIB_SUFFIX)
+	@echo SWIG_PY_DOXYGEN = $(SWIG_PY_DOXYGEN)
 	@echo SET_PYTHONPATH = "$(SET_PYTHONPATH)"
+	@echo MYPY_OUT = "$(MYPY_OUT)"
 ifeq ($(SYSTEM),win)
 	@echo off & echo(
 else

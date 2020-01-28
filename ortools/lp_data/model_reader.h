@@ -16,12 +16,16 @@
 
 #include <string>
 
+#include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
 
 namespace operations_research {
 namespace glop {
 
-// Helper function to read data from model files into LinearProgram.
+// Helper function to read data from model files into MPModelProto and
+// LinearProgram.
+bool LoadMPModelProtoFromModelOrRequest(const std::string& input_file_path,
+                                        MPModelProto* model);
 bool LoadLinearProgramFromModelOrRequest(const std::string& input_file_path,
                                          LinearProgram* linear_program);
 

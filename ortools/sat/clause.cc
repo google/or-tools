@@ -431,8 +431,10 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(const int base_index) {
         const Literal l = at_most_one_buffer_[j];
         if (new_local_end > local_start &&
             l == at_most_one_buffer_[new_local_end - 1]) {
-          if (trail_->Assignment().LiteralIsTrue(l)) return false;
-          trail_->EnqueueWithUnitReason(l.Negated());
+          if (assignment.LiteralIsTrue(l)) return false;
+          if (!assignment.LiteralIsFalse(l)) {
+            trail_->EnqueueWithUnitReason(l.Negated());
+          }
           --new_local_end;
           continue;
         }
@@ -817,50 +819,132 @@ void BinaryImplicationGraph::RemoveFixedVariables(
   CleanUpAndAddAtMostOnes(/*base_index=*/0);
 }
 
-class SccWrapper {
+class SccGraph {
  public:
   using Implication =
       gtl::ITIVector<LiteralIndex, absl::InlinedVector<Literal, 6>>;
   using AtMostOne = gtl::ITIVector<LiteralIndex, absl::InlinedVector<int32, 6>>;
+  using SccFinder =
+      StronglyConnectedComponentsFinder<int32, SccGraph,
+                                        std::vector<std::vector<int32>>>;
 
-  explicit SccWrapper(Implication* graph, AtMostOne* at_most_ones,
-                      std::vector<Literal>* at_most_one_buffer)
-      : implications_(*graph),
+  explicit SccGraph(SccFinder* finder, Implication* graph,
+                    AtMostOne* at_most_ones,
+                    std::vector<Literal>* at_most_one_buffer)
+      : finder_(*finder),
+        implications_(*graph),
         at_most_ones_(*at_most_ones),
         at_most_one_buffer_(*at_most_one_buffer) {}
 
-  std::vector<int32> operator[](int32 node) const {
+  const std::vector<int32>& operator[](int32 node) const {
     tmp_.clear();
     for (const Literal l : implications_[LiteralIndex(node)]) {
       tmp_.push_back(l.Index().value());
+      if (finder_.NodeIsInCurrentDfsPath(l.NegatedIndex().value())) {
+        to_fix_.push_back(l);
+      }
     }
     if (node < at_most_ones_.size()) {
       for (const int start : at_most_ones_[LiteralIndex(node)]) {
+        if (start >= at_most_one_already_explored_.size()) {
+          at_most_one_already_explored_.resize(start + 1, false);
+          previous_node_to_explore_at_most_one_.resize(start + 1);
+        }
+
+        // In the presence of at_most_ones_ contraints, expanding them
+        // implicitely to implications in the SCC computation can result in a
+        // quadratic complexity rather than a linear one in term of the input
+        // data structure size. So this test here is critical on problem with
+        // large at_most ones like the "ivu06-big.mps.gz" where without it, the
+        // full FindStronglyConnectedComponents() take more than on hour instead
+        // of less than a second!
+        if (at_most_one_already_explored_[start]) {
+          // We never expand a node twice.
+          const int first_node = previous_node_to_explore_at_most_one_[start];
+          CHECK_NE(node, first_node);
+
+          if (finder_.NodeIsInCurrentDfsPath(first_node)) {
+            // If the first node is not settled, then we do explore the
+            // at_most_one constraint again. In "Mixed-Integer-Programming:
+            // Analyzing 12 years of progress", Tobias Achterberg and Roland
+            // Wunderling explains that an at most one need to be looped over at
+            // most twice. I am not sure exactly how that works, so for now we
+            // are not fully linear, but on actual instances, we only rarely
+            // run into this case.
+            //
+            // Note that we change the previous node to explore at most one
+            // since the current node will be settled before the old ones.
+            //
+            // TODO(user): avoid looping more than twice on the same at most one
+            // constraints? Note that the second time we loop we have x => y =>
+            // not(x), so we can already detect that x must be false which we
+            // detect below.
+            previous_node_to_explore_at_most_one_[start] = node;
+          } else {
+            // The first node is already settled and so are all its child. Only
+            // not(first_node) might still need exploring.
+            tmp_.push_back(
+                Literal(LiteralIndex(first_node)).NegatedIndex().value());
+            continue;
+          }
+        } else {
+          at_most_one_already_explored_[start] = true;
+          previous_node_to_explore_at_most_one_[start] = node;
+        }
+
         for (int i = start;; ++i) {
           const Literal l = at_most_one_buffer_[i];
           if (l.Index() == kNoLiteralIndex) break;
           if (l.Index() == node) continue;
           tmp_.push_back(l.NegatedIndex().value());
+          if (finder_.NodeIsInCurrentDfsPath(l.Index().value())) {
+            to_fix_.push_back(l.Negated());
+          }
         }
       }
     }
     return tmp_;
   }
 
+  // All these literals where detected to be true during the SCC computation.
+  mutable std::vector<Literal> to_fix_;
+
  private:
-  mutable std::vector<int32> tmp_;
+  const SccFinder& finder_;
   const Implication& implications_;
   const AtMostOne& at_most_ones_;
   const std::vector<Literal>& at_most_one_buffer_;
+
+  mutable std::vector<int32> tmp_;
+
+  // Used to get a non-quadratic complexity in the presence of at most ones.
+  mutable std::vector<bool> at_most_one_already_explored_;
+  mutable std::vector<int> previous_node_to_explore_at_most_one_;
 };
 
 bool BinaryImplicationGraph::DetectEquivalences() {
   const int32 size(implications_.size());
 
   std::vector<std::vector<int32>> scc;
-  FindStronglyConnectedComponents(
-      size, SccWrapper(&implications_, &at_most_ones_, &at_most_one_buffer_),
-      &scc);
+  {
+    SccGraph::SccFinder finder;
+    SccGraph graph(&finder, &implications_, &at_most_ones_,
+                   &at_most_one_buffer_);
+    finder.FindStronglyConnectedComponents(size, graph, &scc);
+
+    int num_fixed_during_scc = 0;
+    const VariablesAssignment& assignment = trail_->Assignment();
+    for (const Literal l : graph.to_fix_) {
+      if (assignment.LiteralIsFalse(l)) return false;
+      if (assignment.LiteralIsTrue(l)) continue;
+      ++num_fixed_during_scc;
+      trail_->EnqueueWithUnitReason(l);
+    }
+    if (num_fixed_during_scc > 0) {
+      VLOG(1) << num_fixed_during_scc
+              << " variable fixed during SCC computation because x => not(x).";
+    }
+  }
 
   int num_equivalences = 0;
   reverse_topological_order_.clear();

@@ -28,10 +28,10 @@
 //
 // TODO(user): test all the APIs that are currently marked as 'untested'.
 
+%include "ortools/base/base.i"
+
 %include "std_string.i"
 %include "stdint.i"
-
-%include "ortools/base/base.i"
 
 %include "ortools/util/python/proto.i"
 
@@ -50,6 +50,7 @@ class MPSolutionResponse;
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/model_exporter.h"
 #include "ortools/linear_solver/model_exporter_swig_helper.h"
+#include "ortools/linear_solver/model_validator.h"
 %}
 
 %pythoncode %{
@@ -273,8 +274,9 @@ PY_CONVERT(MPVariable);
 %unignore operations_research::MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING;
-%unignore operations_research::MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::SIRIUS_MIXED_INTEGER_PROGRAMMING;
+%unignore operations_research::MPSolver::XPRESS_LINEAR_PROGRAMMING;
+%unignore operations_research::MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING;
 
 
 // Expose the MPSolver::ResultStatus enum.
@@ -450,9 +452,17 @@ PY_CONVERT(MPVariable);
 %rename (ExportModelAsLpFormat) operations_research::ExportModelAsLpFormatReturnString;
 %rename (ExportModelAsMpsFormat) operations_research::ExportModelAsMpsFormatReturnString;
 
+// Expose the model validator.
+%rename (FindErrorInModelProto) operations_research::FindErrorInMPModelProto;
+
 %include "ortools/linear_solver/linear_solver.h"
 %include "ortools/linear_solver/model_exporter.h"
 %include "ortools/linear_solver/model_exporter_swig_helper.h"
+
+namespace operations_research {
+  std::string FindErrorInMPModelProto(
+      const operations_research::MPModelProto& input_model);
+}  // namespace operations_research
 
 %unignoreall
 

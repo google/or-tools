@@ -47,16 +47,20 @@ class SharedPyPtr {
 
 template <typename ReturnT>
 static ReturnT HandleResult(PyObject* pyresult) {
-  // This zero-initializes builting types.
+  // This zero-initializes builtin types.
   ReturnT result = ReturnT();
   if (!pyresult) {
-    PyErr_SetString(PyExc_RuntimeError,
-                    "SWIG std::function invocation failed.");
+    if (!PyErr_Occurred()) {
+      PyErr_SetString(PyExc_RuntimeError,
+                      "SWIG std::function invocation failed.");
+    }
     return result;
   } else {
     if (!PyObjAs<ReturnT>(pyresult, &result)) {
-      PyErr_SetString(PyExc_RuntimeError,
-                      "SWIG std::function invocation failed.");
+      if (!PyErr_Occurred()) {
+        PyErr_SetString(PyExc_RuntimeError,
+                        "SWIG std::function invocation failed.");
+      }
     }
     Py_DECREF(pyresult);
   }
@@ -64,10 +68,12 @@ static ReturnT HandleResult(PyObject* pyresult) {
 }
 
 template <>
-void HandleResult<void>(PyObject* pyresult) {
+void HandleResult<void>(PyObject * pyresult) {
   if (!pyresult) {
-    PyErr_SetString(PyExc_RuntimeError,
-                    "SWIG std::function invocation failed.");
+    if (!PyErr_Occurred()) {
+      PyErr_SetString(PyExc_RuntimeError,
+                      "SWIG std::function invocation failed.");
+    }
   } else {
     Py_DECREF(pyresult);
   }

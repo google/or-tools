@@ -94,7 +94,7 @@ bool IsAssignmentValid(const LinearBooleanProblem& problem,
 
 // Converts a LinearBooleanProblem to the cnf file format.
 // Note that this only works for pure SAT problems (only clauses), max-sat or
-// weighted max-sat problems. Returns an empty std::string on error.
+// weighted max-sat problems. Returns an empty string on error.
 std::string LinearBooleanProblemToCnfString(
     const LinearBooleanProblem& problem);
 

@@ -83,7 +83,7 @@ struct VariableRefOrValueArray {
 };
 
 // Class needed to pass information from the lexer to the parser.
-// TODO(user): Use std::unique_ptr<std::vector< >> to ease memory management.
+// TODO(user): Use std::unique_ptr<vector< >> to ease memory management.
 struct LexerInfo {
   int64 integer_value;
   double double_value;

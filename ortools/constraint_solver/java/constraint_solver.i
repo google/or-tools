@@ -189,7 +189,7 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
   %typemap(javain) TYPE "$javainput" // passing the Callback to JNI java class.
 %enddef
 
-// Method taking no parameters and returning a std::string
+// Method taking no parameters and returning a string
 %define DEFINE_VOID_TO_STRING_CALLBACK(
   TYPE,
   JAVA_TYPE, JAVA_METHOD, JAVA_SIGN)

@@ -82,8 +82,7 @@
 
 namespace operations_research {
 
-// Returns the current thread's total memory usage in an human-readable
-// std::string.
+// Returns the current thread's total memory usage in an human-readable string.
 std::string MemoryUsage();
 
 // Forward declaration.
@@ -140,8 +139,8 @@ class StatsGroup {
       : name_(name), stats_(), time_distributions_() {}
   ~StatsGroup();
 
-  // Registers a Stat, which will appear in the std::string returned by
-  // StatString(). The Stat object must live as long as this StatsGroup.
+  // Registers a Stat, which will appear in the string returned by StatString().
+  // The Stat object must live as long as this StatsGroup.
   void Register(Stat* stat);
 
   // Returns this group name, followed by one line per Stat registered with this

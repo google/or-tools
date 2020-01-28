@@ -187,10 +187,8 @@ class MPSolver {
     /// Linear Programming solver using GLPK.
     GLPK_LINEAR_PROGRAMMING = 1,
 #endif
-#ifdef USE_GLOP
     /// Linear Programming solver using GLOP (Recommended solver).
     GLOP_LINEAR_PROGRAMMING = 2,
-#endif
 #ifdef USE_GUROBI
     /// Linear Programming solver using GUROBI.
     GUROBI_LINEAR_PROGRAMMING = 6,
@@ -221,13 +219,15 @@ class MPSolver {
     /// Mixed integer Programming Solver using CPLEX.
     CPLEX_MIXED_INTEGER_PROGRAMMING = 11,
 #endif
-#if defined(USE_BOP)
     /// Linear Boolean Programming Solver.
     BOP_INTEGER_PROGRAMMING = 12,
-#endif
+    /// SAT based solver (requires only integer and Boolean variables).
+    /// If you pass it mixed integer problems, it will scale coefficients to
+    /// integer values, and solve continuous variables as integral variables.
+    SAT_INTEGER_PROGRAMMING = 14,
 #if defined(USE_XPRESS)
-	XPRESS_LINEAR_PROGRAMMING = 101,
-	XPRESS_MIXED_INTEGER_PROGRAMMING = 102,
+    XPRESS_LINEAR_PROGRAMMING = 101,
+    XPRESS_MIXED_INTEGER_PROGRAMMING = 102,
 #endif
 #if defined(USE_SIRIUS)
 	SIRIUS_LINEAR_PROGRAMMING = 103,
@@ -678,7 +678,7 @@ class MPSolver {
    */
   int64 nodes() const;
 
-  /// Returns a std::string describing the underlying solver and its version.
+  /// Returns a string describing the underlying solver and its version.
   std::string SolverVersion() const;
 
   /**
@@ -845,7 +845,7 @@ class MPSolver {
 
   MPSolverResponseStatus LoadModelFromProtoInternal(
       const MPModelProto& input_model, bool clear_names,
-      std::string* error_message);
+      bool check_model_validity, std::string* error_message);
 
   DISALLOW_COPY_AND_ASSIGN(MPSolver);
 };
@@ -1102,25 +1102,25 @@ class MPVariable {
       : index_(index),
         lb_(lb),
         ub_(ub),
-        integer_(integer),
         name_(name.empty() ? absl::StrFormat("auto_v_%09d", index) : name),
         solution_value_(0.0),
         reduced_cost_(0.0),
-        interface_(interface_in) {}
+        interface_(interface_in),
+        integer_(integer){}
 
   void set_solution_value(double value) { solution_value_ = value; }
   void set_reduced_cost(double reduced_cost) { reduced_cost_ = reduced_cost; }
 
  private:
   const int index_;
+  int branching_priority_ = 0;
   double lb_;
   double ub_;
-  bool integer_;
   const std::string name_;
   double solution_value_;
   double reduced_cost_;
-  int branching_priority_ = 0;
   MPSolverInterface* const interface_;
+  bool integer_;
   DISALLOW_COPY_AND_ASSIGN(MPVariable);
 };
 
@@ -1246,8 +1246,8 @@ class MPConstraint {
         lb_(lb),
         ub_(ub),
         name_(name.empty() ? absl::StrFormat("auto_c_%09d", index) : name),
-        is_lazy_(false),
         indicator_variable_(nullptr),
+        is_lazy_(false),
         dual_value_(0.0),
         interface_(interface_in) {}
 
@@ -1272,15 +1272,15 @@ class MPConstraint {
   // Name.
   const std::string name_;
 
-  // True if the constraint is "lazy", i.e. the constraint is added to the
-  // underlying Linear Programming solver only if it is violated.
-  // By default this parameter is 'false'.
-  bool is_lazy_;
-
   // If given, this constraint is only active if `indicator_variable_`'s value
   // is equal to `indicator_value_`.
   const MPVariable* indicator_variable_;
   bool indicator_value_;
+
+  // True if the constraint is "lazy", i.e. the constraint is added to the
+  // underlying Linear Programming solver only if it is violated.
+  // By default this parameter is 'false'.
+  bool is_lazy_;
 
   double dual_value_;
   MPSolverInterface* const interface_;
@@ -1630,7 +1630,7 @@ class MPSolverInterface {
     return result_status_;
   }
 
-  // Returns a std::string describing the underlying solver and its version.
+  // Returns a string describing the underlying solver and its version.
   virtual std::string SolverVersion() const = 0;
 
   // Returns the underlying solver.

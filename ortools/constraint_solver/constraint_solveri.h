@@ -821,7 +821,7 @@ template <class V, class Val, class Handler>
 class VarLocalSearchOperator : public LocalSearchOperator {
  public:
   VarLocalSearchOperator() : activated_(), was_activated_(), cleared_(true) {}
-  VarLocalSearchOperator(std::vector<V*> vars, Handler var_handler)
+  explicit VarLocalSearchOperator(Handler var_handler)
       : activated_(),
         was_activated_(),
         cleared_(true),
@@ -835,8 +835,8 @@ class VarLocalSearchOperator : public LocalSearchOperator {
     CHECK_LE(size, assignment->Size())
         << "Assignment contains fewer variables than operator";
     for (int i = 0; i < size; ++i) {
-      activated_.Set(i, var_handler_.ValueFromAssignent(*assignment, vars_[i],
-                                                        i, &values_[i]));
+      activated_.Set(i, var_handler_.ValueFromAssignment(*assignment, vars_[i],
+                                                         i, &values_[i]));
     }
     prev_values_ = old_values_;
     old_values_ = values_;
@@ -899,7 +899,7 @@ class VarLocalSearchOperator : public LocalSearchOperator {
     cleared_ = true;
     for (const int64 index : changes_.PositionsSetAtLeastOnce()) {
       values_[index] = old_values_[index];
-      var_handler_.OnRevertChanges(index);
+      var_handler_.OnRevertChanges(index, values_[index]);
       activated_.CopyBucket(was_activated_, index);
       assignment_indices_[index] = -1;
     }
@@ -948,8 +948,14 @@ class VarLocalSearchOperator : public LocalSearchOperator {
 };
 
 /// Base operator class for operators manipulating IntVars.
+class IntVarLocalSearchOperator;
+
 class IntVarLocalSearchHandler {
  public:
+  IntVarLocalSearchHandler() : op_(nullptr) {}
+  IntVarLocalSearchHandler(const IntVarLocalSearchHandler& other)
+      : op_(other.op_) {}
+  explicit IntVarLocalSearchHandler(IntVarLocalSearchOperator* op) : op_(op) {}
   void AddToAssignment(IntVar* var, int64 value, bool active,
                        std::vector<int>* assignment_indices, int64 index,
                        Assignment* assignment) const {
@@ -973,20 +979,13 @@ class IntVarLocalSearchHandler {
       element->Deactivate();
     }
   }
-  bool ValueFromAssignent(const Assignment& assignment, IntVar* var,
-                          int64 index, int64* value) {
-    const Assignment::IntContainer& container = assignment.IntVarContainer();
-    const IntVarElement* element = &(container.Element(index));
-    if (element->Var() != var) {
-      CHECK(container.Contains(var))
-          << "Assignment does not contain operator variable " << var;
-      element = &(container.Element(var));
-    }
-    *value = element->Value();
-    return element->Activated();
-  }
-  void OnRevertChanges(int64 index) {}
+  bool ValueFromAssignment(const Assignment& assignment, IntVar* var,
+                           int64 index, int64* value);
+  void OnRevertChanges(int64 index, int64 value);
   void OnAddVars() {}
+
+ private:
+  IntVarLocalSearchOperator* const op_;
 };
 
 /// Specialization of LocalSearchOperator built from an array of IntVars
@@ -1033,11 +1032,24 @@ class IntVarLocalSearchHandler {
 class IntVarLocalSearchOperator
     : public VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler> {
  public:
-  IntVarLocalSearchOperator() {}
-  explicit IntVarLocalSearchOperator(const std::vector<IntVar*>& vars)
+  IntVarLocalSearchOperator() : max_inverse_value_(-1) {}
+  // If keep_inverse_values is true, assumes that vars models an injective
+  // function f with domain [0, vars.size()) in which case the operator will
+  // maintain the inverse function.
+  explicit IntVarLocalSearchOperator(const std::vector<IntVar*>& vars,
+                                     bool keep_inverse_values = false)
       : VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>(
-            vars, IntVarLocalSearchHandler()) {
+            IntVarLocalSearchHandler(this)),
+        max_inverse_value_(keep_inverse_values ? vars.size() - 1 : -1) {
     AddVars(vars);
+    if (keep_inverse_values) {
+      int64 max_value = -1;
+      for (const IntVar* const var : vars) {
+        max_value = std::max(max_value, var->Max());
+      }
+      inverse_values_.resize(max_value + 1, -1);
+      old_inverse_values_.resize(max_value + 1, -1);
+    }
   }
   ~IntVarLocalSearchOperator() override {}
   /// Redefines MakeNextNeighbor to export a simpler interface. The calls to
@@ -1049,12 +1061,62 @@ class IntVarLocalSearchOperator
   bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
 
  protected:
+  friend class IntVarLocalSearchHandler;
+
   /// Creates a new neighbor. It returns false when the neighborhood is
   /// completely explored.
   // TODO(user): make it pure virtual, implies porting all apps overriding
   /// MakeNextNeighbor() in a subclass of IntVarLocalSearchOperator.
   virtual bool MakeOneNeighbor();
+
+  bool IsInverseValue(int64 index) const {
+    DCHECK_GE(index, 0);
+    return index <= max_inverse_value_;
+  }
+
+  int64 InverseValue(int64 index) const { return inverse_values_[index]; }
+
+  int64 OldInverseValue(int64 index) const {
+    return old_inverse_values_[index];
+  }
+
+  void SetInverseValue(int64 index, int64 value) {
+    inverse_values_[index] = value;
+  }
+
+  void SetOldInverseValue(int64 index, int64 value) {
+    old_inverse_values_[index] = value;
+  }
+
+ private:
+  const int64 max_inverse_value_;
+  std::vector<int64> old_inverse_values_;
+  std::vector<int64> inverse_values_;
 };
+
+inline bool IntVarLocalSearchHandler::ValueFromAssignment(
+    const Assignment& assignment, IntVar* var, int64 index, int64* value) {
+  const Assignment::IntContainer& container = assignment.IntVarContainer();
+  const IntVarElement* element = &(container.Element(index));
+  if (element->Var() != var) {
+    CHECK(container.Contains(var))
+        << "Assignment does not contain operator variable " << var;
+    element = &(container.Element(var));
+  }
+  *value = element->Value();
+  if (op_->IsInverseValue(index)) {
+    op_->SetInverseValue(*value, index);
+    op_->SetOldInverseValue(*value, index);
+  }
+  return element->Activated();
+}
+
+inline void IntVarLocalSearchHandler::OnRevertChanges(int64 index,
+                                                      int64 value) {
+  if (op_->IsInverseValue(index)) {
+    op_->SetInverseValue(value, index);
+  }
+}
 
 /// SequenceVarLocalSearchOperator
 class SequenceVarLocalSearchOperator;
@@ -1069,9 +1131,9 @@ class SequenceVarLocalSearchHandler {
   void AddToAssignment(SequenceVar* var, const std::vector<int>& value,
                        bool active, std::vector<int>* assignment_indices,
                        int64 index, Assignment* assignment) const;
-  bool ValueFromAssignent(const Assignment& assignment, SequenceVar* var,
-                          int64 index, std::vector<int>* value);
-  void OnRevertChanges(int64 index);
+  bool ValueFromAssignment(const Assignment& assignment, SequenceVar* var,
+                           int64 index, std::vector<int>* value);
+  void OnRevertChanges(int64 index, const std::vector<int>& value);
   void OnAddVars();
 
  private:
@@ -1102,7 +1164,7 @@ class SequenceVarLocalSearchOperator
   SequenceVarLocalSearchOperator() {}
   explicit SequenceVarLocalSearchOperator(const std::vector<SequenceVar*>& vars)
       : SequenceVarLocalSearchOperatorTemplate(
-            vars, SequenceVarLocalSearchHandler(this)) {
+            SequenceVarLocalSearchHandler(this)) {
     AddVars(vars);
   }
   ~SequenceVarLocalSearchOperator() override {}
@@ -1123,7 +1185,7 @@ class SequenceVarLocalSearchOperator
  protected:
   friend class SequenceVarLocalSearchHandler;
 
-  std::vector<std::vector<int> > backward_values_;
+  std::vector<std::vector<int>> backward_values_;
 };
 
 inline void SequenceVarLocalSearchHandler::AddToAssignment(
@@ -1152,7 +1214,7 @@ inline void SequenceVarLocalSearchHandler::AddToAssignment(
   }
 }
 
-inline bool SequenceVarLocalSearchHandler::ValueFromAssignent(
+inline bool SequenceVarLocalSearchHandler::ValueFromAssignment(
     const Assignment& assignment, SequenceVar* var, int64 index,
     std::vector<int>* value) {
   const Assignment::SequenceContainer& container =
@@ -1170,7 +1232,8 @@ inline bool SequenceVarLocalSearchHandler::ValueFromAssignent(
   return element->Activated();
 }
 
-inline void SequenceVarLocalSearchHandler::OnRevertChanges(int64 index) {
+inline void SequenceVarLocalSearchHandler::OnRevertChanges(
+    int64 index, const std::vector<int>& value) {
   op_->backward_values_[index].clear();
 }
 
@@ -1252,7 +1315,7 @@ class ChangeValue : public IntVarLocalSearchOperator {
 /// a path).
 /// Several services are provided:
 /// - arc manipulators (SetNext(), ReverseChain(), MoveChain())
-/// - path inspectors (Next(), IsPathEnd())
+/// - path inspectors (Next(), Prev(), IsPathEnd())
 /// - path iterators: operators need a given number of nodes to define a
 ///   neighbor; this class provides the iteration on a given number of (base)
 ///   nodes which can be used to define a neighbor (through the BaseNode method)
@@ -1275,7 +1338,7 @@ class PathOperator : public IntVarLocalSearchOperator {
   /// be removed.
   PathOperator(const std::vector<IntVar*>& next_vars,
                const std::vector<IntVar*>& path_vars, int number_of_base_nodes,
-               bool skip_locally_optimal_paths,
+               bool skip_locally_optimal_paths, bool accept_path_end_base,
                std::function<int(int64)> start_empty_path_class);
   ~PathOperator() override {}
   virtual bool MakeNeighbor() = 0;
@@ -1284,17 +1347,23 @@ class PathOperator : public IntVarLocalSearchOperator {
   // TODO(user): Make the following methods protected.
   bool SkipUnchanged(int index) const override;
 
-  /// Returns the index of the node after the node of index node_index in the
-  /// current assignment.
-  int64 Next(int64 node_index) const {
-    DCHECK(!IsPathEnd(node_index));
-    return Value(node_index);
+  /// Returns the node after node in the current delta.
+  int64 Next(int64 node) const {
+    DCHECK(!IsPathEnd(node));
+    return Value(node);
   }
 
-  /// Returns the index of the path to which the node of index node_index
-  /// belongs in the current assignment.
-  int64 Path(int64 node_index) const {
-    return ignore_path_vars_ ? 0LL : Value(node_index + number_of_nexts_);
+  /// Returns the node before node in the current delta.
+  int64 Prev(int64 node) const {
+    DCHECK(!IsPathStart(node));
+    DCHECK_EQ(Next(InverseValue(node)), node);
+    return InverseValue(node);
+  }
+
+  /// Returns the index of the path to which node belongs in the current delta.
+  /// Only returns a valid value if path variables are taken into account.
+  int64 Path(int64 node) const {
+    return ignore_path_vars_ ? 0LL : Value(node + number_of_nexts_);
   }
 
   /// Number of next variables.
@@ -1303,15 +1372,42 @@ class PathOperator : public IntVarLocalSearchOperator {
  protected:
   /// This method should not be overridden. Override MakeNeighbor() instead.
   bool MakeOneNeighbor() override;
+  /// Called by OnStart() after initializing node information. Should be
+  /// overridden instead of OnStart() to avoid calling PathOperator::OnStart
+  /// explicitly.
+  virtual void OnNodeInitialization() {}
 
-  /// Returns the index of the variable corresponding to the ith base node.
+  /// Returns the ith base node of the operator.
   int64 BaseNode(int i) const { return base_nodes_[i]; }
-  /// Returns the index of the variable corresponding to the current path
-  /// of the ith base node.
+  /// Returns the alternative for the ith base node.
+  int BaseAlternative(int i) const { return base_alternatives_[i]; }
+  /// Returns the alternative node for the ith base node.
+  int64 BaseAlternativeNode(int i) const {
+    if (!ConsiderAlternatives(i)) return BaseNode(i);
+    const int alternative_index = alternative_index_[BaseNode(i)];
+    return alternative_index >= 0
+               ? alternative_sets_[alternative_index][base_alternatives_[i]]
+               : BaseNode(i);
+  }
+  /// Returns the alternative for the sibling of the ith base node.
+  int BaseSiblingAlternative(int i) const {
+    return base_sibling_alternatives_[i];
+  }
+  /// Returns the alternative node for the sibling of the ith base node.
+  int64 BaseSiblingAlternativeNode(int i) const {
+    if (!ConsiderAlternatives(i)) return BaseNode(i);
+    const int sibling_alternative_index =
+        GetSiblingAlternativeIndex(BaseNode(i));
+    return sibling_alternative_index >= 0
+               ? alternative_sets_[sibling_alternative_index]
+                                  [base_sibling_alternatives_[i]]
+               : BaseNode(i);
+  }
+  /// Returns the start node of the ith base node.
   int64 StartNode(int i) const { return path_starts_[base_paths_[i]]; }
   /// Returns the vector of path start nodes.
   const std::vector<int64>& path_starts() const { return path_starts_; }
-  /// Returns the class of the current path of the ith base node.
+  /// Returns the class of the path of the ith base node.
   int PathClass(int i) const {
     return start_empty_path_class_ != nullptr
                ? start_empty_path_class_(StartNode(i))
@@ -1345,14 +1441,22 @@ class PathOperator : public IntVarLocalSearchOperator {
   virtual void SetNextBaseToIncrement(int64 base_index) {
     next_base_to_increment_ = base_index;
   }
+  /// Indicates if alternatives should be considered when iterating over base
+  /// nodes.
+  virtual bool ConsiderAlternatives(int64 base_index) const { return false; }
 
-  int64 OldNext(int64 node_index) const {
-    DCHECK(!IsPathEnd(node_index));
-    return OldValue(node_index);
+  int64 OldNext(int64 node) const {
+    DCHECK(!IsPathEnd(node));
+    return OldValue(node);
   }
 
-  int64 OldPath(int64 node_index) const {
-    return ignore_path_vars_ ? 0LL : OldValue(node_index + number_of_nexts_);
+  int64 OldPrev(int64 node) const {
+    DCHECK(!IsPathStart(node));
+    return OldInverseValue(node);
+  }
+
+  int64 OldPath(int64 node) const {
+    return ignore_path_vars_ ? 0LL : OldValue(node + number_of_nexts_);
   }
 
   /// Moves the chain starting after the node before_chain and ending at the
@@ -1363,33 +1467,100 @@ class PathOperator : public IntVarLocalSearchOperator {
   /// after_chain
   bool ReverseChain(int64 before_chain, int64 after_chain, int64* chain_last);
 
+  /// Insert the inactive node after destination.
   bool MakeActive(int64 node, int64 destination);
+  /// Makes the nodes on the chain starting after before_chain and ending at
+  /// chain_end inactive.
   bool MakeChainInactive(int64 before_chain, int64 chain_end);
+  /// Replaces active by inactive in the current path, making active inactive.
+  bool SwapActiveAndInactive(int64 active, int64 inactive);
 
-  /// Sets the to to be the node after from
+  /// Sets 'to' to be the node after 'from' on the given path.
   void SetNext(int64 from, int64 to, int64 path) {
     DCHECK_LT(from, number_of_nexts_);
     SetValue(from, to);
+    SetInverseValue(to, from);
     if (!ignore_path_vars_) {
       DCHECK_LT(from + number_of_nexts_, Size());
       SetValue(from + number_of_nexts_, path);
     }
   }
 
-  /// Returns true if i is the last node on the path; defined by the fact that
-  /// i outside the range of the variable array
-  bool IsPathEnd(int64 i) const { return i >= number_of_nexts_; }
+  /// Returns true if node is the last node on the path; defined by the fact
+  /// that node is outside the range of the variable array.
+  bool IsPathEnd(int64 node) const { return node >= number_of_nexts_; }
 
-  /// Returns true if node is inactive
-  bool IsInactive(int64 i) const { return !IsPathEnd(i) && inactives_[i]; }
+  /// Returns true if node is the first node on the path.
+  bool IsPathStart(int64 node) const { return OldInverseValue(node) == -1; }
 
-  /// Returns true if operator needs to restart its initial position at each
+  /// Returns true if node is inactive.
+  bool IsInactive(int64 node) const {
+    return !IsPathEnd(node) && inactives_[node];
+  }
+
+  /// Returns true if the operator needs to restart its initial position at each
   /// call to Start()
   virtual bool InitPosition() const { return false; }
   /// Reset the position of the operator to its position when Start() was last
   /// called; this can be used to let an operator iterate more than once over
   /// the paths.
   void ResetPosition() { just_started_ = true; }
+
+  /// Handling node alternatives.
+  /// Adds a set of node alternatives to the neighborhood. No node can be in
+  /// two altrnatives.
+  int AddAlternativeSet(const std::vector<int64>& alternative_set) {
+    const int alternative = alternative_sets_.size();
+    for (int64 node : alternative_set) {
+      DCHECK_EQ(-1, alternative_index_[node]);
+      alternative_index_[node] = alternative;
+    }
+    alternative_sets_.push_back(alternative_set);
+    sibling_alternative_.push_back(-1);
+    return alternative;
+  }
+#ifndef SWIG
+  /// Adds all sets of node alternatives of a vector of alternative pairs. No
+  /// node can be in two altrnatives.
+  void AddPairAlternativeSets(
+      const std::vector<std::pair<std::vector<int64>, std::vector<int64>>>&
+          pair_alternative_sets) {
+    for (const auto& pair_alternative_set : pair_alternative_sets) {
+      const int alternative = AddAlternativeSet(pair_alternative_set.first);
+      sibling_alternative_.back() = alternative + 1;
+      AddAlternativeSet(pair_alternative_set.second);
+    }
+  }
+#endif  // SWIG
+  /// Returns the active node in the given alternative set.
+  int64 GetActiveInAlternativeSet(int alternative_index) const {
+    return alternative_index >= 0
+               ? active_in_alternative_set_[alternative_index]
+               : -1;
+  }
+  /// Returns the active node in the alternative set of the given node.
+  int64 GetActiveAlternativeNode(int node) const {
+    return GetActiveInAlternativeSet(alternative_index_[node]);
+  }
+  /// Returns the index of the alternative set of the sibling of node.
+  int GetSiblingAlternativeIndex(int node) const {
+    if (node >= alternative_index_.size()) return -1;
+    const int alternative = alternative_index_[node];
+    return alternative >= 0 ? sibling_alternative_[alternative] : -1;
+  }
+  /// Returns the active node in the alternative set of the sibling of the given
+  /// node.
+  int64 GetActiveAlternativeSibling(int node) const {
+    if (node >= alternative_index_.size()) return -1;
+    const int alternative = alternative_index_[node];
+    const int sibling_alternative =
+        alternative >= 0 ? sibling_alternative_[alternative] : -1;
+    return GetActiveInAlternativeSet(sibling_alternative);
+  }
+  /// Returns true if the chain is a valid path without cycles from before_chain
+  /// to chain_end and does not contain exclude.
+  bool CheckChainValidity(int64 before_chain, int64 chain_end,
+                          int64 exclude) const;
 
   const int number_of_nexts_;
   const bool ignore_path_vars_;
@@ -1399,10 +1570,6 @@ class PathOperator : public IntVarLocalSearchOperator {
 
  private:
   void OnStart() override;
-  /// Called by OnStart() after initializing node information. Should be
-  /// overridden instead of OnStart() to avoid calling PathOperator::OnStart
-  /// explicitly.
-  virtual void OnNodeInitialization() {}
   /// Returns true if two nodes are on the same path in the current assignment.
   bool OnSamePath(int64 node1, int64 node2) const;
 
@@ -1419,50 +1586,31 @@ class PathOperator : public IntVarLocalSearchOperator {
   void InitializePathStarts();
   void InitializeInactives();
   void InitializeBaseNodes();
-  bool CheckChainValidity(int64 before_chain, int64 chain_end,
-                          int64 exclude) const;
+  void InitializeAlternatives();
   void Synchronize();
 
   std::vector<int> base_nodes_;
+  std::vector<int> base_alternatives_;
+  std::vector<int> base_sibling_alternatives_;
   std::vector<int> end_nodes_;
   std::vector<int> base_paths_;
   std::vector<int64> path_starts_;
   std::vector<bool> inactives_;
   bool just_started_;
   bool first_start_;
+  const bool accept_path_end_base_;
   std::function<int(int64)> start_empty_path_class_;
   bool skip_locally_optimal_paths_;
   bool optimal_paths_enabled_;
   std::vector<int> path_basis_;
   std::vector<bool> optimal_paths_;
-};
-
-/// Simple PathOperator wrapper that also stores the current previous nodes,
-/// and is thus able to provide the "Prev" and "IsPathStart" functions.
-class PathWithPreviousNodesOperator : public PathOperator {
- public:
-  PathWithPreviousNodesOperator(
-      const std::vector<IntVar*>& vars,
-      const std::vector<IntVar*>& secondary_vars, int number_of_base_nodes,
-      std::function<int(int64)> start_empty_path_class);
-  ~PathWithPreviousNodesOperator() override {}
-
-  bool IsPathStart(int64 node_index) const { return prevs_[node_index] == -1; }
-
-  int64 Prev(int64 node_index) const {
-    DCHECK(!IsPathStart(node_index));
-    return prevs_[node_index];
-  }
-
-  std::string DebugString() const override {
-    return "PathWithPreviousNodesOperator";
-  }
-
- protected:
-  void OnNodeInitialization() override;  /// Initializes the "prevs_" array.
-
- private:
-  std::vector<int64> prevs_;
+  /// Node alternative data.
+#ifndef SWIG
+  std::vector<std::vector<int64>> alternative_sets_;
+#endif  // SWIG
+  std::vector<int> alternative_index_;
+  std::vector<int64> active_in_alternative_set_;
+  std::vector<int> sibling_alternative_;
 };
 
 /// Operator Factories.
@@ -1487,9 +1635,98 @@ class MakeActiveAndRelocate;
 class RelocateAndMakeActiveOperator;
 class RelocateAndMakeInactiveOperator;
 
+#if !defined(SWIG)
+// A LocalSearchState is a container for variables with bounds that can be
+// relaxed and tightened, saved and restored. It represents the solution state
+// of a local search engine, and allows it to go from solution to solution by
+// relaxing some variables to form a new subproblem, then tightening those
+// variables to move to a new solution representation. That state may be saved
+// to an internal copy, or reverted to the last saved internal copy.
+// Relaxing a variable returns its bounds to their initial state.
+// Tightening a variable's bounds may make its min larger than its max,
+// in that case, the tightening function will return false, and the state will
+// be marked as invalid. No other operations than Revert() can be called on an
+// invalid state: in particular, an invalid state cannot be saved.
+class LocalSearchVariable;
+class LocalSearchState {
+ public:
+  LocalSearchVariable AddVariable(int64 initial_min, int64 initial_max);
+  void Commit();
+  void Revert();
+  bool StateIsValid() const { return state_is_valid_; }
+
+ private:
+  friend class LocalSearchVariable;
+
+  struct Bounds {
+    int64 min;
+    int64 max;
+  };
+
+  void RelaxVariableBounds(int variable_index);
+  bool TightenVariableMin(int variable_index, int64 value);
+  bool TightenVariableMax(int variable_index, int64 value);
+  int64 VariableMin(int variable_index) const;
+  int64 VariableMax(int variable_index) const;
+
+  std::vector<Bounds> initial_variable_bounds_;
+  std::vector<Bounds> variable_bounds_;
+  std::vector<std::pair<Bounds, int>> saved_variable_bounds_trail_;
+  std::vector<bool> variable_is_relaxed_;
+  bool state_is_valid_ = true;
+};
+
+// A LocalSearchVariable can only be created by a LocalSearchState, then it is
+// meant to be passed by copy. If at some point the duplication of
+// LocalSearchState pointers is too expensive, we could switch to index only,
+// and the user would have to know the relevant state. The present setup allows
+// to ensure that variable users will not misuse the state.
+class LocalSearchVariable {
+ public:
+  int64 Min() const { return state_->VariableMin(variable_index_); }
+  int64 Max() const { return state_->VariableMax(variable_index_); }
+  bool SetMin(int64 new_min) {
+    return state_->TightenVariableMin(variable_index_, new_min);
+  }
+  bool SetMax(int64 new_max) {
+    return state_->TightenVariableMax(variable_index_, new_max);
+  }
+  void Relax() { state_->RelaxVariableBounds(variable_index_); }
+
+ private:
+  // Only LocalSearchState can construct LocalSearchVariables.
+  friend class LocalSearchState;
+
+  LocalSearchVariable(LocalSearchState* state, int variable_index)
+      : state_(state), variable_index_(variable_index) {}
+
+  LocalSearchState* const state_;
+  const int variable_index_;
+};
+#endif  // !defined(SWIG)
+
 /// Local Search Filters are used for fast neighbor pruning.
+/// Filtering a move is done in several phases:
+/// - in the Relax phase, filters determine which parts of their internals
+///   will be changed by the candidate, and modify intermediary State
+/// - in the Accept phase, filters check that the candidate is feasible,
+/// - if the Accept phase succeeds, the solver may decide to trigger a
+///   Synchronize phase that makes filters change their internal representation
+///   to the last candidate,
+/// - otherwise (Accept fails or the solver does not want to synchronize),
+///   a Revert phase makes filters erase any intermediary State generated by the
+///   Relax and Accept phases.
+/// A given filter has phases called with the following pattern:
+/// (Relax.Accept.Synchronize | Relax.Accept.Revert | Relax.Revert)*.
+/// Filters's Revert() is always called in the reverse order their Accept() was
+/// called, to allow late filters to use state done/undone by early filters'
+/// Accept()/Revert().
 class LocalSearchFilter : public BaseObject {
  public:
+  /// Lets the filter know what delta and deltadelta will be passed in the next
+  /// Accept().
+  virtual void Relax(const Assignment* delta, const Assignment* deltadelta) {}
+
   /// Accepts a "delta" given the assignment with which the filter has been
   /// synchronized; the delta holds the variables which have been modified and
   /// their new value.
@@ -1498,8 +1735,10 @@ class LocalSearchFilter : public BaseObject {
   /// Sample: supposing one wants to maintain a[0,1] + b[0,1] <= 1,
   /// for the assignment (a,1), (b,0), the delta (b,1) will be rejected
   /// but the delta (a,0) will be accepted.
+  /// TODO(user): Remove arguments when there are no more need for those.
   virtual bool Accept(const Assignment* delta, const Assignment* deltadelta,
                       int64 objective_min, int64 objective_max) = 0;
+  virtual bool IsIncremental() const { return false; }
 
   /// Synchronizes the filter with the current solution, delta being the
   /// difference with the solution passed to the previous call to Synchronize()
@@ -1508,7 +1747,8 @@ class LocalSearchFilter : public BaseObject {
   /// changes in delta.
   virtual void Synchronize(const Assignment* assignment,
                            const Assignment* delta) = 0;
-  virtual bool IsIncremental() const { return false; }
+  /// Cancels the changes made by the last Relax()/Accept() calls.
+  virtual void Revert() {}
 
   /// Objective value from last time Synchronize() was called.
   virtual int64 GetSynchronizedObjectiveValue() const { return 0LL; }
@@ -1528,6 +1768,8 @@ class LocalSearchFilterManager : public LocalSearchFilter {
   std::string DebugString() const override {
     return "LocalSearchFilterManager";
   }
+  void Relax(const Assignment* delta, const Assignment* deltadelta) override;
+  void Revert() override;
   /// Returns true iff all filters return true, and the sum of their accepted
   /// objectives is between objective_min and objective_max.
   bool Accept(const Assignment* delta, const Assignment* deltadelta,
@@ -2091,16 +2333,16 @@ class ArgumentHolder {
  private:
   std::string type_name_;
   absl::flat_hash_map<std::string, int64> integer_argument_;
-  absl::flat_hash_map<std::string, std::vector<int64> > integer_array_argument_;
+  absl::flat_hash_map<std::string, std::vector<int64>> integer_array_argument_;
   absl::flat_hash_map<std::string, IntTupleSet> matrix_argument_;
   absl::flat_hash_map<std::string, IntExpr*> integer_expression_argument_;
   absl::flat_hash_map<std::string, IntervalVar*> interval_argument_;
   absl::flat_hash_map<std::string, SequenceVar*> sequence_argument_;
-  absl::flat_hash_map<std::string, std::vector<IntVar*> >
+  absl::flat_hash_map<std::string, std::vector<IntVar*>>
       integer_variable_array_argument_;
-  absl::flat_hash_map<std::string, std::vector<IntervalVar*> >
+  absl::flat_hash_map<std::string, std::vector<IntervalVar*>>
       interval_array_argument_;
-  absl::flat_hash_map<std::string, std::vector<SequenceVar*> >
+  absl::flat_hash_map<std::string, std::vector<SequenceVar*>>
       sequence_array_argument_;
 };
 

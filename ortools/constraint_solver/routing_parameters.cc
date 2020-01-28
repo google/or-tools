@@ -52,7 +52,8 @@ RoutingSearchParameters DefaultRoutingSearchParameters() {
       "savings_arc_coefficient: 1 "
       "savings_parallel_routes: false "
       "cheapest_insertion_farthest_seeds_ratio: 0 "
-      "cheapest_insertion_neighbors_ratio: 1 "
+      "cheapest_insertion_first_solution_neighbors_ratio: 1 "
+      "cheapest_insertion_ls_operator_neighbors_ratio: 1 "
       "local_search_operators {"
       "  use_relocate: BOOL_TRUE"
       "  use_relocate_pair: BOOL_TRUE"
@@ -80,13 +81,20 @@ RoutingSearchParameters DefaultRoutingSearchParameters() {
       "  use_full_path_lns: BOOL_FALSE"
       "  use_tsp_lns: BOOL_FALSE"
       "  use_inactive_lns: BOOL_FALSE"
+      "  use_global_cheapest_insertion_path_lns: BOOL_TRUE"
+      "  use_local_cheapest_insertion_path_lns: BOOL_TRUE"
+      "  use_global_cheapest_insertion_expensive_chain_lns: BOOL_FALSE"
+      "  use_local_cheapest_insertion_expensive_chain_lns: BOOL_FALSE"
       "}"
       "relocate_expensive_chain_num_arcs_to_consider: 4 "
+      "heuristic_expensive_chain_lns_num_arcs_to_consider: 4 "
       "local_search_metaheuristic: AUTOMATIC "
       "guided_local_search_lambda_coefficient: 0.1 "
       "use_depth_first_search: false "
       "use_cp: BOOL_TRUE "
       "use_cp_sat: BOOL_FALSE "
+      "continuous_scheduling_solver: GLOP "
+      "mixed_integer_scheduling_solver: CP_SAT "
       "optimization_step: 0.0 "
       "number_of_solutions_to_collect: 1 "
       // No "time_limit" by default.
@@ -176,9 +184,19 @@ std::string FindErrorInRoutingSearchParameters(
     }
   }
   {
-    const double ratio = search_parameters.cheapest_insertion_neighbors_ratio();
+    const double ratio =
+        search_parameters.cheapest_insertion_first_solution_neighbors_ratio();
     if (std::isnan(ratio) || ratio <= 0 || ratio > 1) {
-      return StrCat("Invalid cheapest_insertion_neighbors_ratio: ", ratio);
+      return StrCat(
+          "Invalid cheapest_insertion_first_solution_neighbors_ratio: ", ratio);
+    }
+  }
+  {
+    const double ratio =
+        search_parameters.cheapest_insertion_ls_operator_neighbors_ratio();
+    if (std::isnan(ratio) || ratio <= 0 || ratio > 1) {
+      return StrCat("Invalid cheapest_insertion_ls_operator_neighbors_ratio: ",
+                    ratio);
     }
   }
   {
@@ -187,6 +205,15 @@ std::string FindErrorInRoutingSearchParameters(
     if (num_arcs < 2 || num_arcs > 1e6) {
       return StrCat("Invalid relocate_expensive_chain_num_arcs_to_consider: ",
                     num_arcs, ". Must be between 2 and 10^6 (included).");
+    }
+  }
+  {
+    const int32 num_arcs =
+        search_parameters.heuristic_expensive_chain_lns_num_arcs_to_consider();
+    if (num_arcs < 2 || num_arcs > 1e6) {
+      return StrCat(
+          "Invalid heuristic_expensive_chain_lns_num_arcs_to_consider: ",
+          num_arcs, ". Must be between 2 and 10^6 (included).");
     }
   }
   {

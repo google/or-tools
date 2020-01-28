@@ -28,6 +28,10 @@ bool DualEdgeNorms::NeedsBasisRefactorization() {
 
 void DualEdgeNorms::Clear() { recompute_edge_squared_norms_ = true; }
 
+void DualEdgeNorms::ResizeOnNewRows(RowIndex new_size) {
+  edge_squared_norms_.resize(new_size, 1.0);
+}
+
 const DenseColumn& DualEdgeNorms::GetEdgeSquaredNorms() {
   if (recompute_edge_squared_norms_) ComputeEdgeSquaredNorms();
   return edge_squared_norms_;

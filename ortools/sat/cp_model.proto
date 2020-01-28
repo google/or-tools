@@ -76,6 +76,17 @@ message IntegerArgumentProto {
   repeated int32 vars = 2;
 }
 
+message LinearExpressionProto {
+  repeated int32 vars = 1;
+  repeated int32 coeffs = 2;
+  int64 offset = 3;
+}
+
+message LinearArgumentProto {
+  LinearExpressionProto target = 1;
+  repeated LinearExpressionProto exprs = 2;
+}
+
 // All variables must take different values.
 message AllDifferentConstraintProto {
   repeated int32 vars = 1;
@@ -119,13 +130,10 @@ message NoOverlapConstraintProto {
 }
 
 // The boxes defined by [start_x, end_x) * [start_y, end_y) cannot overlap.
-//
-// TODO(user): Currently, this constraint will ignore a box if one of its
-// dimension is zero. Add parameter to specify the behavior with boxes with
-// zero area.
 message NoOverlap2DConstraintProto {
   repeated int32 x_intervals = 1;
   repeated int32 y_intervals = 2;  // Same size as x_intervals.
+  bool boxes_with_null_area_can_overlap = 3;
 }
 
 // The sum of the demands of the intervals at each interval point cannot exceed
@@ -249,7 +257,7 @@ message AutomatonConstraintProto {
   repeated int32 vars = 7;
 }
 
-// Next id: 27
+// Next id: 29
 message ConstraintProto {
   // For debug/logging only. Can be empty.
   string name = 1;
@@ -300,11 +308,21 @@ message ConstraintProto {
 
     // The int_max constraint forces the target to equal the maximum of all
     // variables.
+    // TODO(user): Remove int_max in favor of lin_max.
     IntegerArgumentProto int_max = 9;
+
+    // The lin_max constraint forces the target to equal the maximum of all
+    // linear expressions.
+    LinearArgumentProto lin_max = 27;
 
     // The int_min constraint forces the target to equal the minimum of all
     // variables.
+    // TODO(user): Remove int_min in favor of lin_min.
     IntegerArgumentProto int_min = 10;
+
+    // The lin_max constraint forces the target to equal the minimum of all
+    // linear expressions.
+    LinearArgumentProto lin_min = 28;
 
     // The int_min constraint forces the target to equal the product of all
     // variables.
@@ -433,6 +451,7 @@ message DecisionStrategyProto {
     SELECT_MAX_VALUE = 1;
     SELECT_LOWER_HALF = 2;
     SELECT_UPPER_HALF = 3;
+    SELECT_MEDIAN_VALUE = 4;
   }
   DomainReductionStrategy domain_reduction_strategy = 3;
 

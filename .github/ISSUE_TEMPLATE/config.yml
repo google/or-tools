@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+
+contact_links:
+- name: Modeling/Usage problem
+  url: https://groups.google.com/forum/#!forum/or-tools-discuss
+  about: Need help creating your model ?
+    Please use the mailing list for modeling issues.
+    Github issues have limited audience and answers on the github page will not benefit the rest of the users.

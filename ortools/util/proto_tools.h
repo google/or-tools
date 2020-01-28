@@ -19,7 +19,7 @@
 #include "google/protobuf/message.h"
 
 namespace operations_research {
-// Prints a proto2 message as a std::string, it behaves like TextFormat::Print()
+// Prints a proto2 message as a string, it behaves like TextFormat::Print()
 // but also prints the default values of unset fields which is useful for
 // printing parameters.
 std::string FullProtocolMessageAsString(

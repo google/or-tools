@@ -86,14 +86,14 @@
 //   Graph graph(num_nodes, arc_capacity);
 //
 // Storing and using node annotations:
-//   std::vector<bool> is_visited(graph.num_nodes(), false);
+//   vector<bool> is_visited(graph.num_nodes(), false);
 //   ...
 //   for (int node = 0; node < graph.num_nodes(); ++node) {
 //     if (!is_visited[node]) ...
 //   }
 //
 // Storing and using arc annotations:
-//   std::vector<int> weights;
+//   vector<int> weights;
 //   for (...) {
 //     graph.AddArc(tail, head);
 //     weights.push_back(arc_weight);
@@ -106,14 +106,14 @@
 // More efficient version:
 //   typedef StaticGraph<> Graph;
 //   Graph graph(num_nodes, arc_capacity);  // Optional, but help memory usage.
-//   std::vector<int> weights;
+//   vector<int> weights;
 //   weights.reserve(arc_capacity);  // Optional, but help memory usage.
 //   for (...) {
 //     graph.AddArc(tail, head);
 //     weights.push_back(arc_weight);
 //   }
 //   ...
-//   std::vector<Graph::ArcIndex> permutation;
+//   vector<Graph::ArcIndex> permutation;
 //   graph.Build(&permutation);  // A static graph must be Build() before usage.
 //   Permute(permutation, &weights);  // Build() may permute the arc index.
 //   ...
@@ -742,7 +742,7 @@ void Permute(const IntVector& permutation, Array* array_to_permute) {
                                  (*array_to_permute)[0]);
 }
 
-// We need a specialization for std::vector<bool>, because the default code uses
+// We need a specialization for vector<bool>, because the default code uses
 // (*array_to_permute)[0] as ElementType, which isn't 'bool' in that case.
 template <class IntVector>
 void Permute(const IntVector& permutation,

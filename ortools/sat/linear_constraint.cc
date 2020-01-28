@@ -59,31 +59,42 @@ ABSL_MUST_USE_RESULT bool LinearConstraintBuilder::AddLiteralTerm(
   return false;
 }
 
-LinearConstraint LinearConstraintBuilder::Build() {
-  LinearConstraint result;
-  result.lb = lb_;
-  result.ub = ub_;
+void CleanTermsAndFillConstraint(
+    std::vector<std::pair<IntegerVariable, IntegerValue>>* terms,
+    LinearConstraint* constraint) {
+  constraint->vars.clear();
+  constraint->coeffs.clear();
 
-  // Sort and add coeff of duplicate variables.
-  std::sort(terms_.begin(), terms_.end());
+  // Sort and add coeff of duplicate variables. Note that a variable and
+  // its negation will appear one after another in the natural order.
+  std::sort(terms->begin(), terms->end());
   IntegerVariable previous_var = kNoIntegerVariable;
   IntegerValue current_coeff(0);
-  for (const auto entry : terms_) {
+  for (const std::pair<IntegerVariable, IntegerValue> entry : *terms) {
     if (previous_var == entry.first) {
       current_coeff += entry.second;
+    } else if (previous_var == NegationOf(entry.first)) {
+      current_coeff -= entry.second;
     } else {
       if (current_coeff != 0) {
-        result.vars.push_back(previous_var);
-        result.coeffs.push_back(current_coeff);
+        constraint->vars.push_back(previous_var);
+        constraint->coeffs.push_back(current_coeff);
       }
       previous_var = entry.first;
       current_coeff = entry.second;
     }
   }
   if (current_coeff != 0) {
-    result.vars.push_back(previous_var);
-    result.coeffs.push_back(current_coeff);
+    constraint->vars.push_back(previous_var);
+    constraint->coeffs.push_back(current_coeff);
   }
+}
+
+LinearConstraint LinearConstraintBuilder::Build() {
+  LinearConstraint result;
+  result.lb = lb_;
+  result.ub = ub_;
+  CleanTermsAndFillConstraint(&terms_, &result);
   return result;
 }
 
@@ -147,6 +158,7 @@ IntegerValue ComputeGcd(const std::vector<IntegerValue>& values) {
     gcd = MathUtil::GCD64(gcd, std::abs(value.value()));
     if (gcd == 1) break;
   }
+  if (gcd < 0) return IntegerValue(1);  // Can happen with kint64min.
   return IntegerValue(gcd);
 }
 
@@ -187,6 +199,44 @@ void MakeAllCoefficientsPositive(LinearConstraint* constraint) {
       constraint->coeffs[i] = -coeff;
       constraint->vars[i] = NegationOf(constraint->vars[i]);
     }
+  }
+}
+
+void MakeAllVariablesPositive(LinearConstraint* constraint) {
+  const int size = constraint->vars.size();
+  for (int i = 0; i < size; ++i) {
+    const IntegerVariable var = constraint->vars[i];
+    if (!VariableIsPositive(var)) {
+      constraint->coeffs[i] = -constraint->coeffs[i];
+      constraint->vars[i] = NegationOf(var);
+    }
+  }
+}
+
+// TODO(user): it would be better if LinearConstraint natively supported
+// term and not two separated vectors. Fix?
+//
+// TODO(user): This is really similar to CleanTermsAndFillConstraint(), maybe
+// we should just make the later switch negative variable to positive ones to
+// avoid an extra linear scan on each new cuts.
+void CanonicalizeConstraint(LinearConstraint* ct) {
+  std::vector<std::pair<IntegerVariable, IntegerValue>> terms;
+
+  const int size = ct->vars.size();
+  for (int i = 0; i < size; ++i) {
+    if (VariableIsPositive(ct->vars[i])) {
+      terms.push_back({ct->vars[i], ct->coeffs[i]});
+    } else {
+      terms.push_back({NegationOf(ct->vars[i]), -ct->coeffs[i]});
+    }
+  }
+  std::sort(terms.begin(), terms.end());
+
+  ct->vars.clear();
+  ct->coeffs.clear();
+  for (const auto& term : terms) {
+    ct->vars.push_back(term.first);
+    ct->coeffs.push_back(term.second);
   }
 }
 

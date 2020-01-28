@@ -57,7 +57,7 @@ DECLARE_double(savings_neighbors_ratio);
 DECLARE_bool(savings_add_reverse_arcs);
 DECLARE_double(savings_arc_coefficient);
 DECLARE_double(cheapest_insertion_farthest_seeds_ratio);
-DECLARE_double(cheapest_insertion_neighbors_ratio);
+DECLARE_double(cheapest_insertion_first_solution_neighbors_ratio);
 DECLARE_bool(routing_dfs);
 DECLARE_double(routing_optimization_step);
 DECLARE_int32(routing_number_of_solutions_to_collect);

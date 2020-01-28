@@ -19,9 +19,11 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "ortools/glop/revised_simplex.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -43,7 +45,6 @@ class LinearConstraintManager {
   struct ConstraintInfo {
     LinearConstraint constraint;
     double l2_norm;
-    bool is_cut;
     int64 inactive_count;
     double objective_parallelism;
     bool objective_parallelism_computed;
@@ -52,22 +53,30 @@ class LinearConstraintManager {
     // parallel to one of the existing constraints in the LP.
     bool permanently_removed;
     size_t hash;
+    double current_score;
   };
 
   explicit LinearConstraintManager(Model* model)
       : sat_parameters_(*model->GetOrCreate<SatParameters>()),
-        integer_trail_(*model->GetOrCreate<IntegerTrail>()) {}
+        integer_trail_(*model->GetOrCreate<IntegerTrail>()),
+        time_limit_(model->GetOrCreate<TimeLimit>()),
+        model_(model) {}
   ~LinearConstraintManager();
 
   // Add a new constraint to the manager. Note that we canonicalize constraints
   // and merge the bounds of constraints with the same terms. We also perform
-  // basic preprocessing.
+  // basic preprocessing. If added is given, it will be set to true if this
+  // constraint was actually a new one and to false if it was dominated by an
+  // already existing one.
   DEFINE_INT_TYPE(ConstraintIndex, int32);
-  ConstraintIndex Add(LinearConstraint ct);
+  ConstraintIndex Add(LinearConstraint ct, bool* added = nullptr);
 
   // Same as Add(), but logs some information about the newly added constraint.
   // Cuts are also handled slightly differently than normal constraints.
-  void AddCut(LinearConstraint ct, std::string type_name,
+  //
+  // Returns true if a new cut was added and false if this cut is not
+  // efficacious or if it is a duplicate of an already existing one.
+  bool AddCut(LinearConstraint ct, std::string type_name,
               const gtl::ITIVector<IntegerVariable, double>& lp_solution);
 
   // The objective is used as one of the criterion to score cuts.
@@ -78,8 +87,13 @@ class LinearConstraintManager {
   // should usually be the optimal solution of the LP returned by GetLp() before
   // this call, but is just used as an heuristic.
   //
+  // The current solution state is used for detecting inactive constraints. It
+  // is also updated correctly on constraint deletion/addition so that the
+  // simplex can be fully iterative on restart by loading this modified state.
+  //
   // Returns true iff LpConstraints() will return a different LP than before.
-  bool ChangeLp(const gtl::ITIVector<IntegerVariable, double>& lp_solution);
+  bool ChangeLp(const gtl::ITIVector<IntegerVariable, double>& lp_solution,
+                glop::BasisState* solution_state);
 
   // This can be called initially to add all the current constraint to the LP
   // returned by GetLp().
@@ -101,9 +115,22 @@ class LinearConstraintManager {
   int64 num_shortened_constraints() const { return num_shortened_constraints_; }
   int64 num_coeff_strenghtening() const { return num_coeff_strenghtening_; }
 
+  // If a debug solution has been loaded, this checks if the given constaint cut
+  // it or not. Returns true iff everything is fine and the cut does not violate
+  // the loaded solution.
+  bool DebugCheckConstraint(const LinearConstraint& cut);
+
  private:
-  // Removes the marked constraints from the LP.
-  void RemoveMarkedConstraints();
+  // Heuristic that decide which constraints we should remove from the current
+  // LP. Note that such constraints can be added back later by the heuristic
+  // responsible for adding new constraints from the pool.
+  //
+  // Returns true iff one or more constraints where removed.
+  //
+  // If the solutions_state is empty, then this function does nothing and
+  // returns false (this is used for tests). Otherwise, the solutions_state is
+  // assumed to correspond to the current LP and to be of the correct size.
+  bool MaybeRemoveSomeInactiveConstraints(glop::BasisState* solution_state);
 
   // Apply basic inprocessing simplification rules:
   //  - remove fixed variable
@@ -127,10 +154,6 @@ class LinearConstraintManager {
 
   gtl::ITIVector<ConstraintIndex, ConstraintInfo> constraint_infos_;
 
-  // Temporary list of constraints marked for removal. Note that we remove
-  // constraints in batch to avoid changing LP too frequently.
-  absl::flat_hash_set<ConstraintIndex> constraints_removal_list_;
-
   // The subset of constraints currently in the lp.
   std::vector<ConstraintIndex> lp_constraints_;
 
@@ -151,8 +174,15 @@ class LinearConstraintManager {
 
   bool objective_is_defined_ = false;
   bool objective_norm_computed_ = false;
-  LinearConstraint objective_;
   double objective_l2_norm_ = 0.0;
+
+  // Dense representation of the objective coeffs indexed by positive variables
+  // indices. It contains 0.0 where the variables does not appear in the
+  // objective.
+  gtl::ITIVector<IntegerVariable, double> dense_objective_coeffs_;
+
+  TimeLimit* time_limit_;
+  Model* model_;
 };
 
 }  // namespace sat

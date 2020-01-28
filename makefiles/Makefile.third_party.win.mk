@@ -37,14 +37,14 @@ ZLIB_TAG = 1.2.11
 ZLIB_ARCHIVE_TAG = 1211
 GFLAGS_TAG = 2.2.2
 GLOG_TAG = 0.4.0
-PROTOBUF_TAG = 3.9.0
-ABSL_TAG = bf29470
+PROTOBUF_TAG = 3.11.2
+ABSL_TAG = 8ba96a8
 CBC_TAG = 2.10.3
 CGL_TAG = 0.60.2
 CLP_TAG = 1.17.3
 OSI_TAG = 0.108.4
 COINUTILS_TAG = 2.11.2
-SWIG_TAG = 4.0.0
+SWIG_TAG = 4.0.1
 
 # Added in support of clean third party targets
 TSVNCACHE_EXE = TSVNCache.exe
@@ -361,7 +361,7 @@ dependencies/sources/abseil-cpp-$(ABSL_TAG): | dependencies/sources
 	-$(DELREC) dependencies/sources/abseil-cpp-$(ABSL_TAG)
 	git clone --quiet https://github.com/abseil/abseil-cpp.git dependencies\sources\abseil-cpp-$(ABSL_TAG)
 	cd dependencies\sources\abseil-cpp-$(ABSL_TAG) && git reset --hard $(ABSL_TAG)
-	cd dependencies\sources\abseil-cpp-$(ABSL_TAG) && git apply "$(OR_TOOLS_TOP)\patches\abseil-cpp-$(ABSL_TAG).patch"
+# cd dependencies\sources\abseil-cpp-$(ABSL_TAG) && git apply "$(OR_TOOLS_TOP)\patches\abseil-cpp-$(ABSL_TAG).patch"
 
 ABSL_INC = /I"$(WINDOWS_ABSL_PATH)\\include"
 ABSL_SWIG = -I"$(WINDOWS_ABSL_PATH)/include"

@@ -128,12 +128,12 @@ add_custom_command(OUTPUT setup.py dist ${PROJECT_NAME}.egg-info
   COMMAND ${CMAKE_COMMAND} -E echo "  packages=find_packages()," >> setup.py
   COMMAND ${CMAKE_COMMAND} -E echo "  package_data={" >> setup.py
   COMMAND ${CMAKE_COMMAND} -E echo "  'ortools':[$<$<NOT:$<PLATFORM_ID:Windows>>:'.libs/*', '../$<TARGET_SONAME_FILE_NAME:ortools>'>]," >> setup.py
-  COMMAND ${CMAKE_COMMAND} -E echo "  'ortools.constraint_solver':['$<TARGET_FILE_NAME:_pywrapcp>']," >> setup.py
-  COMMAND ${CMAKE_COMMAND} -E echo "  'ortools.linear_solver':['$<TARGET_FILE_NAME:_pywraplp>']," >> setup.py
-  COMMAND ${CMAKE_COMMAND} -E echo "  'ortools.sat':['$<TARGET_FILE_NAME:_pywrapsat>']," >> setup.py
+  COMMAND ${CMAKE_COMMAND} -E echo "  'ortools.constraint_solver':['$<TARGET_FILE_NAME:_pywrapcp>', '*.pyi']," >> setup.py
+  COMMAND ${CMAKE_COMMAND} -E echo "  'ortools.linear_solver':['$<TARGET_FILE_NAME:_pywraplp>', '*.pyi']," >> setup.py
+  COMMAND ${CMAKE_COMMAND} -E echo "  'ortools.sat':['$<TARGET_FILE_NAME:_pywrapsat>', '*.pyi']," >> setup.py
   COMMAND ${CMAKE_COMMAND} -E echo "  'ortools.graph':['$<TARGET_FILE_NAME:_pywrapgraph>']," >> setup.py
   COMMAND ${CMAKE_COMMAND} -E echo "  'ortools.algorithms':['$<TARGET_FILE_NAME:_pywrapknapsack_solver>']," >> setup.py
-  COMMAND ${CMAKE_COMMAND} -E echo "  'ortools.data':['$<TARGET_FILE_NAME:_pywraprcpsp>']," >> setup.py
+  COMMAND ${CMAKE_COMMAND} -E echo "  'ortools.data':['$<TARGET_FILE_NAME:_pywraprcpsp>', '*.pyi']," >> setup.py
   COMMAND ${CMAKE_COMMAND} -E echo "  }," >> setup.py
   COMMAND ${CMAKE_COMMAND} -E echo "  include_package_data=True," >> setup.py
   COMMAND ${CMAKE_COMMAND} -E echo "  install_requires=[" >> setup.py

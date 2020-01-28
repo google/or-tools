@@ -34,7 +34,6 @@
 #include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/mathutil.h"
-#include "ortools/base/random.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/timer.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -2515,11 +2514,12 @@ bool BestValueSolutionCollector::AtSolution() {
   if (prototype_ != nullptr) {
     const IntVar* objective = prototype_->Objective();
     if (objective != nullptr) {
-      if (maximize_ && objective->Max() > best_) {
+      if (maximize_ && (solution_count() == 0 || objective->Max() > best_)) {
         PopSolution();
         PushSolution();
         best_ = objective->Max();
-      } else if (!maximize_ && objective->Min() < best_) {
+      } else if (!maximize_ &&
+                 (solution_count() == 0 || objective->Min() < best_)) {
         PopSolution();
         PushSolution();
         best_ = objective->Min();
@@ -2607,7 +2607,7 @@ bool NBestValueSolutionCollector::AtSolution() {
     const IntVar* objective = prototype_->Objective();
     if (objective != nullptr) {
       const int64 objective_value =
-          maximize_ ? -objective->Max() : objective->Min();
+          maximize_ ? CapSub(0, objective->Max()) : objective->Min();
       if (solutions_pq_.size() < solution_count_) {
         solutions_pq_.push(
             {objective_value, BuildSolutionDataForCurrentState()});
@@ -3272,7 +3272,7 @@ class SimulatedAnnealing : public Metaheuristic {
 
   const int64 temperature0_;
   int64 iteration_;
-  ACMRandom rand_;
+  std::mt19937 rand_;
   bool found_initial_solution_;
 
   DISALLOW_COPY_AND_ASSIGN(SimulatedAnnealing);
@@ -3284,7 +3284,7 @@ SimulatedAnnealing::SimulatedAnnealing(Solver* const s, bool maximize,
     : Metaheuristic(s, maximize, objective, step),
       temperature0_(initial_temperature),
       iteration_(0),
-      rand_(654),
+      rand_(CpRandomSeed()),
       found_initial_solution_(false) {}
 
 void SimulatedAnnealing::EnterSearch() {
@@ -3297,11 +3297,13 @@ void SimulatedAnnealing::ApplyDecision(Decision* const d) {
   if (d == s->balancing_decision()) {
     return;
   }
+  const double rand_double = absl::Uniform<double>(rand_, 0.0, 1.0);
 #if defined(_MSC_VER) || defined(__ANDROID__)
-  const int64 energy_bound = Temperature() * log(rand_.RndFloat()) / log(2.0L);
+  const double rand_log2_double = log(rand_double) / log(2.0L);
 #else
-  const int64 energy_bound = Temperature() * log2(rand_.RndFloat());
+  const double rand_log2_double = log2(rand_double);
 #endif
+  const int64 energy_bound = Temperature() * rand_log2_double;
   if (maximize_) {
     const int64 bound =
         (current_ > kint64min) ? current_ + step_ + energy_bound : current_;

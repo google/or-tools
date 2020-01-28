@@ -97,9 +97,9 @@ DEFINE_double(savings_arc_coefficient, 1.0,
 DEFINE_double(cheapest_insertion_farthest_seeds_ratio, 0,
               "Ratio of available vehicles in the model on which farthest "
               "nodes of the model are inserted as seeds.");
-DEFINE_double(cheapest_insertion_neighbors_ratio, 1.0,
+DEFINE_double(cheapest_insertion_first_solution_neighbors_ratio, 1.0,
               "Ratio of nodes considered as neighbors in the "
-              "GlobalCheapestInsertion heuristic.");
+              "GlobalCheapestInsertion first solution heuristic.");
 DEFINE_bool(routing_dfs, false, "Routing: use a complete depth-first search.");
 DEFINE_double(routing_optimization_step, 0.0, "Optimization step.");
 DEFINE_int32(routing_number_of_solutions_to_collect, 1,
@@ -165,8 +165,8 @@ void SetFirstSolutionStrategyFromFlags(RoutingSearchParameters* parameters) {
   parameters->set_savings_arc_coefficient(FLAGS_savings_arc_coefficient);
   parameters->set_cheapest_insertion_farthest_seeds_ratio(
       FLAGS_cheapest_insertion_farthest_seeds_ratio);
-  parameters->set_cheapest_insertion_neighbors_ratio(
-      FLAGS_cheapest_insertion_neighbors_ratio);
+  parameters->set_cheapest_insertion_first_solution_neighbors_ratio(
+      FLAGS_cheapest_insertion_first_solution_neighbors_ratio);
 }
 
 void SetLocalSearchMetaheuristicFromFlags(RoutingSearchParameters* parameters) {
@@ -195,6 +195,7 @@ OptionalBoolean ToOptionalBoolean(bool x) { return x ? BOOL_TRUE : BOOL_FALSE; }
 void AddLocalSearchNeighborhoodOperatorsFromFlags(
     RoutingSearchParameters* parameters) {
   CHECK(parameters != nullptr);
+  parameters->set_cheapest_insertion_ls_operator_neighbors_ratio(1.0);
   RoutingSearchParameters::LocalSearchNeighborhoodOperators* const
       local_search_operators = parameters->mutable_local_search_operators();
 
@@ -206,6 +207,12 @@ void AddLocalSearchNeighborhoodOperatorsFromFlags(
   local_search_operators->set_use_relocate_and_make_active(BOOL_FALSE);
   local_search_operators->set_use_node_pair_swap_active(BOOL_FALSE);
   local_search_operators->set_use_cross_exchange(BOOL_FALSE);
+  local_search_operators->set_use_global_cheapest_insertion_path_lns(BOOL_TRUE);
+  local_search_operators->set_use_local_cheapest_insertion_path_lns(BOOL_TRUE);
+  local_search_operators->set_use_global_cheapest_insertion_expensive_chain_lns(
+      BOOL_FALSE);
+  local_search_operators->set_use_local_cheapest_insertion_expensive_chain_lns(
+      BOOL_FALSE);
 
   local_search_operators->set_use_relocate(
       ToOptionalBoolean(!FLAGS_routing_no_relocate));
@@ -278,6 +285,7 @@ void SetMiscellaneousParametersFromFlags(RoutingSearchParameters* parameters) {
   parameters->set_log_cost_scaling_factor(1.0);
   parameters->set_relocate_expensive_chain_num_arcs_to_consider(
       FLAGS_routing_relocate_expensive_chain_num_arcs_to_consider);
+  parameters->set_heuristic_expensive_chain_lns_num_arcs_to_consider(4);
 }
 
 RoutingSearchParameters BuildSearchParametersFromFlags() {

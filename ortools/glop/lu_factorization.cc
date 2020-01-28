@@ -30,10 +30,10 @@ LuFactorization::LuFactorization()
 
 void LuFactorization::Clear() {
   SCOPED_TIME_STAT(&stats_);
-  lower_.Reset(RowIndex(0));
-  upper_.Reset(RowIndex(0));
-  transpose_upper_.Reset(RowIndex(0));
-  transpose_lower_.Reset(RowIndex(0));
+  lower_.Reset(RowIndex(0), ColIndex(0));
+  upper_.Reset(RowIndex(0), ColIndex(0));
+  transpose_upper_.Reset(RowIndex(0), ColIndex(0));
+  transpose_lower_.Reset(RowIndex(0), ColIndex(0));
   is_identity_factorization_ = true;
   col_perm_.clear();
   row_perm_.clear();
@@ -182,11 +182,16 @@ bool AreEqualWithPermutation(const DenseColumn& a, const DenseColumn& b,
 }  // namespace
 
 void LuFactorization::RightSolveLWithPermutedInput(const DenseColumn& a,
-                                                   DenseColumn* x) const {
+                                                   ScatteredColumn* x) const {
   SCOPED_TIME_STAT(&stats_);
   if (!is_identity_factorization_) {
-    DCHECK(AreEqualWithPermutation(a, *x, row_perm_));
-    lower_.LowerSolve(x);
+    DCHECK(AreEqualWithPermutation(a, x->values, row_perm_));
+    lower_.ComputeRowsToConsiderInSortedOrder(&x->non_zeros);
+    if (x->non_zeros.empty()) {
+      lower_.LowerSolve(&x->values);
+    } else {
+      lower_.HyperSparseSolve(&x->values, &x->non_zeros);
+    }
   }
 }
 
@@ -302,12 +307,13 @@ void LuFactorization::RightSolveUWithNonZeros(ScatteredColumn* x) const {
   // If non-zeros is non-empty, we use an hypersparse solve. Note that if
   // non_zeros starts to be too big, we clear it and thus switch back to a
   // normal sparse solve.
-  upper_.ComputeRowsToConsiderInSortedOrder(&x->non_zeros);
+  upper_.ComputeRowsToConsiderInSortedOrder(&x->non_zeros, 0.1, 0.2);
   x->non_zeros_are_sorted = true;
   if (x->non_zeros.empty()) {
-    upper_.UpperSolve(&x->values);
+    transpose_upper_.TransposeLowerSolve(&x->values);
   } else {
-    upper_.HyperSparseSolveWithReversedNonZeros(&x->values, &x->non_zeros);
+    transpose_upper_.TransposeHyperSparseSolveWithReversedNonZeros(
+        &x->values, &x->non_zeros);
   }
 }
 

@@ -296,7 +296,7 @@ struct BoxLessThan {
 
 class CoveringProblem {
  public:
-  // Grid is a row-major std::string of length width*height with '@' for an
+  // Grid is a row-major string of length width*height with '@' for an
   // occupied cell (strawberry) and '.' for an empty cell.  Solver is
   // not owned.
   CoveringProblem(MPSolver* const solver, const Instance& instance)

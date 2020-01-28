@@ -22,7 +22,7 @@ syntax = "proto2";
 
 package operations_research.glop;
 
-// next id = 59
+// next id = 60
 message GlopParameters {
 
   // Supported algorithms for scaling:
@@ -393,5 +393,10 @@ message GlopParameters {
   //   + relative_max_cost_perturbation * max_cost);
   optional double relative_cost_perturbation = 54 [default = 1e-5];
   optional double relative_max_cost_perturbation = 55 [default = 1e-7];
+
+  // If our upper bound on the condition number of the initial basis (from our
+  // heurisitic or a warm start) is above this threshold, we revert to an all
+  // slack basis.
+  optional double initial_condition_number_threshold = 59 [default = 1e50];
 
 }

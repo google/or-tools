@@ -31,6 +31,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/random/random.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/random.h"
 #include "ortools/bop/bop_base.h"
@@ -222,7 +223,7 @@ class NonOrderedSetHasher {
   }
 
   // The hash of a set is simply the XOR of all its elements. This allows
-  // to compute an hash incrementally or without the need of a std::vector<>.
+  // to compute an hash incrementally or without the need of a vector<>.
   uint64 Hash(IntType e) const { return hashes_[e]; }
 
   // Returns true if Initialize() has been called with a non-zero size.

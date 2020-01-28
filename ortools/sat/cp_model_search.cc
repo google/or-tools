@@ -80,6 +80,9 @@ const std::function<LiteralIndex()> ConstructSearchStrategyInternal(
           offset = coeff_offset.second;
         }
         DCHECK_GT(coeff, 0);
+
+        // TODO(user): deal with integer overflow in case of wrongly specified
+        // coeff.
         switch (strategy.var_strategy) {
           case DecisionStrategyProto::CHOOSE_FIRST:
             break;
@@ -153,6 +156,10 @@ const std::function<LiteralIndex()> ConstructSearchStrategyInternal(
         case DecisionStrategyProto::SELECT_UPPER_HALF:
           literal = IntegerLiteral::GreaterOrEqual(
               candidate, candidate_ub - (candidate_ub - candidate_lb) / 2);
+          break;
+        case DecisionStrategyProto::SELECT_MEDIAN_VALUE:
+          // TODO(user): Implement the correct method.
+          literal = IntegerLiteral::LowerOrEqual(candidate, candidate_lb);
           break;
         default:
           LOG(FATAL) << "Unknown DomainReductionStrategy "
@@ -285,7 +292,113 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
   new_params.set_use_lns_only(false);
   int index = worker_id;
 
-  if (cp_model.has_objective()) {
+  if (params.reduce_memory_usage_in_interleave_mode() &&
+      params.interleave_search()) {
+    // Low memory mode for interleaved search in single thread (4 workers).
+    CHECK_LE(index, 4);
+    if (cp_model.has_objective()) {
+      // First strategy (default).
+      if (index == 0) {  // Use default parameters and automatic search.
+        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+        *name = "auto";
+        return new_params;
+      }
+
+      // Second strategy (fixed or pseudo costs).
+      if (cp_model.search_strategy_size() > 0) {
+        if (--index == 0) {  // Use default parameters and fixed search.
+          new_params.set_search_branching(SatParameters::FIXED_SEARCH);
+          *name = "fixed";
+          return new_params;
+        }
+      } else {
+        if (--index == 0) {
+          new_params.set_search_branching(SatParameters::PSEUDO_COST_SEARCH);
+          new_params.set_exploit_best_solution(true);
+          *name = "pseudo_cost";
+          return new_params;
+        }
+      }
+
+      // Third strategy (core or no lp).
+      if (cp_model.objective().vars_size() > 1) {
+        if (--index == 0) {  // Core based approach.
+          new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+          new_params.set_optimize_with_core(true);
+          new_params.set_linearization_level(0);
+          *name = "core";
+          return new_params;
+        }
+      } else {
+        if (--index == 0) {  // Remove LP relaxation.
+          new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+          new_params.set_linearization_level(0);
+          *name = "no_lp";
+          return new_params;
+        }
+      }
+
+      // Fourth strategy: max_lp.
+      if (--index == 0) {  // Reinforce LP relaxation.
+        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+        new_params.set_linearization_level(2);
+        new_params.set_use_branching_in_lp(true);
+        *name = "max_lp";
+        return new_params;
+      }
+
+      // Fifth strategy using LNS.
+      new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+      new_params.set_use_lns_only(true);
+      *name = "lns";
+      return new_params;
+    } else {  // No objective
+      // First strategy (default).
+      if (index == 0) {  // Use default parameters and automatic search.
+        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+        *name = "auto";
+        return new_params;
+      }
+      // Second strategy (fixed or no_lp).
+      if (cp_model.search_strategy_size() > 0) {
+        if (--index == 0) {  // Use default parameters and fixed search.
+          new_params.set_search_branching(SatParameters::FIXED_SEARCH);
+          *name = "fixed";
+          return new_params;
+        }
+      } else {
+        // TODO(user): Disable lp_br if linear part is small or empty.
+        if (--index == 0) {
+          new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+          new_params.set_linearization_level(0);
+          *name = "no_lp";
+          return new_params;
+        }
+      }
+
+      // Third strategy: reduce boolean encoding.
+      if (--index == 0) {
+        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+        new_params.set_boolean_encoding_level(0);
+        *name = "less encoding";
+        return new_params;
+      }
+
+      // Fourth strategy: max_lp.
+      if (--index == 0) {  // Reinforce LP relaxation.
+        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+        new_params.set_linearization_level(2);
+        *name = "max_lp";
+        return new_params;
+      }
+
+      // Fifth strategy: quick restart.
+      new_params.set_search_branching(
+          SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
+      *name = "random";
+      return new_params;
+    }
+  } else if (cp_model.has_objective()) {
     if (index == 0) {  // Use default parameters and automatic search.
       new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
       new_params.set_linearization_level(1);
@@ -327,14 +440,13 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
     if (--index == 0) {  // Reinforce LP relaxation.
       new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
       new_params.set_linearization_level(2);
-      new_params.set_add_cg_cuts(true);
+      new_params.set_use_branching_in_lp(true);
       *name = "max_lp";
       return new_params;
     }
 
     // Only add this strategy if we have enough worker left for LNS.
-    if ((params.num_search_workers() > 8 || params.interleave_search()) &&
-        --index == 0) {
+    if (params.num_search_workers() > 8 && --index == 0) {
       new_params.set_search_branching(
           SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
       *name = "quick_restart";
@@ -394,7 +506,6 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
     if (--index == 0) {  // Reinforce LP relaxation.
       new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
       new_params.set_linearization_level(2);
-      new_params.set_add_cg_cuts(true);
       *name = "max_lp";
       return new_params;
     }

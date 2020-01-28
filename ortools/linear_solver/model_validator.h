@@ -16,22 +16,24 @@
 
 #include <string>
 
+#include "absl/types/optional.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/util/lazy_mutable_copy.h"
 
 namespace operations_research {
 /**
- * Returns an empty std::string iff the model is valid and not trivially
- * infeasible. Otherwise, returns a description of the first error or trivial
- * infeasibility encountered.
+ * Returns an empty string iff the model is valid and not trivially infeasible.
+ * Otherwise, returns a description of the first error or trivial infeasibility
+ * encountered.
  *
  * NOTE(user): the code of this method (and the client code too!) is
- * considerably simplified by this std::string-based, simple API. If clients
+ * considerably simplified by this string-based, simple API. If clients
  * require it, we could add a formal error status enum.
  */
 std::string FindErrorInMPModelProto(const MPModelProto& model);
 
 /**
- *  Like FindErrorInMPModelProto, but for a MPModelDeltaProto applied to a given
+ * Like FindErrorInMPModelProto, but for a MPModelDeltaProto applied to a given
  * baseline model (assumed valid, eg. FindErrorInMPModelProto(model)="").
  * Works in O(|model_delta|) + O(num_vars in model), but the latter term has a
  * very small constant factor.
@@ -40,16 +42,24 @@ std::string FindErrorInMPModelDeltaProto(const MPModelDeltaProto& delta,
                                          const MPModelProto& model);
 
 /**
- *  Updates `response` and returns true if errors, infeasibilities, or trivial
- * optimals were found. Returns false if the model is valid and non-trivially
- * solvable.
+ * If the model is valid and non-empty, returns it (possibly after extracting
+ * the model_delta). If invalid or empty, updates `response` and returns null.
  */
-bool MPRequestIsEmptyOrInvalid(const MPModelRequest& request,
-                               MPSolutionResponse* response);
+absl::optional<LazyMutableCopy<MPModelProto>>
+ExtractValidMPModelOrPopulateResponseStatus(const MPModelRequest& request,
+                                            MPSolutionResponse* response);
 
 /**
- * Returns an empty std::string if the solution hint given in the model is a
- * feasible solution. Otherwise, returns a description of the first reason for
+ * Like ExtractValidMPModelOrPopulateResponseStatus(), but works in-place:
+ * if the MPModel needed extraction, it will be populated in the request, and
+ * it returns the success boolean.
+ */
+bool ExtractValidMPModelInPlaceOrPopulateResponseStatus(
+    MPModelRequest* request, MPSolutionResponse* response);
+
+/**
+ * Returns an empty string if the solution hint given in the model is a feasible
+ * solution. Otherwise, returns a description of the first reason for
  * infeasibility.
  *
  * This function can be useful for debugging/checking that the given solution
@@ -60,7 +70,6 @@ bool MPRequestIsEmptyOrInvalid(const MPModelRequest& request,
 std::string FindFeasibilityErrorInSolutionHint(const MPModelProto& model,
                                                double tolerance);
 
-// PUBLIC ONLY FOR TESTING.
 // Partially merges a MPConstraintProto onto another, skipping only the
 // repeated fields "var_index" and "coefficients". This is used within
 // FindErrorInMPModelDeltaProto.
@@ -68,6 +77,12 @@ std::string FindFeasibilityErrorInSolutionHint(const MPModelProto& model,
 // need this.
 void MergeMPConstraintProtoExceptTerms(const MPConstraintProto& from,
                                        MPConstraintProto* to);
+
+// PUBLIC FOR TESTING ONLY.
+// Applies the given model_delta to "model". Assumes that
+// FindErrorInMPModelDeltaProto() found no error.
+void ApplyVerifiedMPModelDelta(const MPModelDeltaProto& delta,
+                               MPModelProto* model);
 
 }  // namespace operations_research
 

@@ -162,7 +162,7 @@ enum class ProblemStatus : int8 {
   IMPRECISE,
 };
 
-// Returns the std::string representation of the ProblemStatus enum.
+// Returns the string representation of the ProblemStatus enum.
 std::string GetProblemStatusString(ProblemStatus problem_status);
 
 inline std::ostream& operator<<(std::ostream& os, ProblemStatus status) {
@@ -179,7 +179,7 @@ enum class VariableType : int8 {
   FIXED_VARIABLE
 };
 
-// Returns the std::string representation of the VariableType enum.
+// Returns the string representation of the VariableType enum.
 std::string GetVariableTypeString(VariableType variable_type);
 
 inline std::ostream& operator<<(std::ostream& os, VariableType type) {
@@ -210,7 +210,7 @@ enum class VariableStatus : int8 {
   FREE,
 };
 
-// Returns the std::string representation of the VariableStatus enum.
+// Returns the string representation of the VariableStatus enum.
 std::string GetVariableStatusString(VariableStatus status);
 
 inline std::ostream& operator<<(std::ostream& os, VariableStatus status) {
@@ -232,7 +232,7 @@ enum class ConstraintStatus : int8 {
   FREE,
 };
 
-// Returns the std::string representation of the ConstraintStatus enum.
+// Returns the string representation of the ConstraintStatus enum.
 std::string GetConstraintStatusString(ConstraintStatus status);
 
 inline std::ostream& operator<<(std::ostream& os, ConstraintStatus status) {

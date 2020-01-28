@@ -190,6 +190,7 @@ class RevisedSimplex {
   int64 GetNumberOfIterations() const;
   Fractional GetVariableValue(ColIndex col) const;
   Fractional GetReducedCost(ColIndex col) const;
+  const DenseRow& GetReducedCosts() const;
   Fractional GetDualValue(RowIndex row) const;
   Fractional GetConstraintActivity(RowIndex row) const;
   VariableStatus GetVariableStatus(ColIndex col) const;
@@ -229,7 +230,7 @@ class RevisedSimplex {
 
   const BasisFactorization& GetBasisFactorization() const;
 
-  // Returns statistics about this class as a std::string.
+  // Returns statistics about this class as a string.
   std::string StatString();
 
   // Computes the dictionary B^-1*N on-the-fly row by row. Returns the resulting
@@ -247,12 +248,12 @@ class RevisedSimplex {
   // Propagates parameters_ to all the other classes that need it.
   //
   // TODO(user): Maybe a better design is for them to have a reference to a
-  // unique parameters object? it will clutter a bit more these classes
-  // contructor though.
+  // unique parameters object? It will clutter a bit more these classes'
+  // constructor though.
   void PropagateParameters();
 
-  // Returns a std::string containing the same information as with
-  // GetSolverStats, but in a much more human-readable format. For example:
+  // Returns a string containing the same information as with GetSolverStats,
+  // but in a much more human-readable format. For example:
   //     Problem status                               : Optimal
   //     Solving time                                 : 1.843
   //     Number of iterations                         : 12345
@@ -265,12 +266,11 @@ class RevisedSimplex {
   //     Stop after first basis                       : 0
   std::string GetPrettySolverStats() const;
 
-  // Returns a std::string containing formatted information about the variable
+  // Returns a string containing formatted information about the variable
   // corresponding to column col.
   std::string SimpleVariableInfo(ColIndex col) const;
 
-  // Displays a short std::string with the current iteration and objective
-  // value.
+  // Displays a short string with the current iteration and objective value.
   void DisplayIterationInfo() const;
 
   // Displays the error bounds of the current solution.

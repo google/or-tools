@@ -29,8 +29,8 @@ namespace operations_research {
   }                                                          \
   return out
 
-// Converts a vector into a std::string by calling the given method (or simply
-// getting the given std::string member), on all elements, and concatenating
+// Converts a vector into a string by calling the given method (or simply
+// getting the given string member), on all elements, and concatenating
 // the obtained strings with the given separator.
 
 // Join v[i].DebugString().

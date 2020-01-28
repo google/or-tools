@@ -191,7 +191,7 @@ do
 
     # Save old hash and size, in order to look them up in RECORD
     # see: https://github.com/pypa/pip/blob/c9df690f3b5bb285a855953272e6fe24f69aa08a/src/pip/_internal/wheel.py#L71-L84
-    WHEEL_HASH_CMD="/opt/_internal/cpython-3.7.3/bin/python3 -c \
+    WHEEL_HASH_CMD="/opt/_internal/cpython-3.7.6/bin/python3 -c \
 \"import hashlib;\
 import base64;\
 print(\

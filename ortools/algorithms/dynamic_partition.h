@@ -22,10 +22,10 @@
 // (aka "elements") into disjoint equivalence classes (aka "parts").
 //
 // SAFETY:
-// Like std::vector<int> crashes when used improperly, these classes are not
-// "safe": most of their methods may crash if called with invalid arguments. The
-// client code is responsible for using this class properly. A few DCHECKs()
-// will help catch bugs, though.
+// Like vector<int> crashes when used improperly, these classes are not "safe":
+// most of their methods may crash if called with invalid arguments. The client
+// code is responsible for using this class properly. A few DCHECKs() will help
+// catch bugs, though.
 
 #ifndef OR_TOOLS_ALGORITHMS_DYNAMIC_PARTITION_H_
 #define OR_TOOLS_ALGORITHMS_DYNAMIC_PARTITION_H_
@@ -112,8 +112,8 @@ class DynamicPartition {
   // Prerequisite: NumParts() >= original_num_parts.
   void UndoRefineUntilNumPartsEqual(int original_num_parts);
 
-  // Dump the partition to a std::string. There might be different conventions
-  // for sorting the parts and the elements inside them.
+  // Dump the partition to a string. There might be different conventions for
+  // sorting the parts and the elements inside them.
   enum DebugStringSorting {
     // Elements are sorted within parts, and parts are then sorted
     // lexicographically.

@@ -184,16 +184,17 @@ namespace Google.OrTools.Tests {
 
         CpSolver solver = new CpSolver();
         CpSolverStatus status = solver.Solve(model);
+        CpSolverResponse response = solver.Response;
+        Console.WriteLine("response = " + response.ToString());        
+
         Assert.Equal(CpSolverStatus.Optimal, status);
 
-        CpSolverResponse response = solver.Response;
         Assert.Equal(1, solver.Value(boolvar));
         Assert.Equal(4, solver.Value(x));
         Assert.Equal(-1, solver.Value(delta));
         Assert.Equal(1, solver.Value(squaredDelta));
         Assert.Equal(new long[] {1, 4, -1, 1}, response.Solution);
-        Assert.Equal(1, response.ObjectiveValue);
-        //Console.WriteLine("response = " + reponse.ToString());
+        Assert.Equal(1.0, response.ObjectiveValue, 5);
       }
 
     [Fact]

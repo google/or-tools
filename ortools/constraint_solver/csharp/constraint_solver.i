@@ -714,7 +714,6 @@ namespace operations_research {
 %unignore SearchLog::Maintain;
 %unignore SearchLog::OutputDecision;
 
-
 // IntVarLocalSearchHandler
 %ignore IntVarLocalSearchHandler;
 

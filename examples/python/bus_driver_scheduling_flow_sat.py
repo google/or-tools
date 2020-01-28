@@ -1677,6 +1677,7 @@ def find_minimum_number_of_drivers(shifts, params):
     max_working_time = 720
     min_working_time = 390  # 6.5 hours
     extra_time = 10 + 25
+    max_break = 180
 
     # Computed data.
     total_driving_time = sum(shift[5] for shift in shifts)
@@ -1698,7 +1699,7 @@ def find_minimum_number_of_drivers(shifts, params):
     # Along the path, we will accumulate driving time, accrued time since the
     # last break, and total working time.
 
-    model = cp_model.CpModel()    
+    model = cp_model.CpModel()
 
     # Per node info
     driving_time = {}
@@ -1709,6 +1710,8 @@ def find_minimum_number_of_drivers(shifts, params):
     outgoing_literals = collections.defaultdict(list)
     outgoing_source_literals = []
     incoming_sink_literals = []
+
+    all_literals = []
 
     # Create all the shift variables before iterating on the transitions
     # between these shifts.
@@ -1726,6 +1729,7 @@ def find_minimum_number_of_drivers(shifts, params):
         #    - set the working time of the driver
         #    - increase driving time and driving time since the last break
         source_lit = model.NewBoolVar('from source to %i' % shift)
+        all_literals.append(source_lit)
         outgoing_source_literals.append(source_lit)
         incoming_literals[shift].append(source_lit)
         model.Add(driving_time[shift] == duration).OnlyEnforceIf(source_lit)
@@ -1737,17 +1741,20 @@ def find_minimum_number_of_drivers(shifts, params):
         # Arc from shift to sink
         #     - checks that working time is greater than min_working_time
         sink_lit = model.NewBoolVar('from %i to sink' % shift)
+        all_literals.append(sink_lit)
         outgoing_literals[shift].append(sink_lit)
         incoming_sink_literals.append(sink_lit)
-        #model.Add(working_time[shift] >= min_working_time).OnlyEnforceIf(sink_lit)
-        #model.Add(working_time[shift] < min_working_time).OnlyEnforceIf(sink_lit.Not())
+        model.Add(working_time[shift] >= min_working_time).OnlyEnforceIf(sink_lit)
 
         for other in range(num_shifts):
             delay = shifts[other][3] - shifts[shift][4]
             if delay < min_delay_between_shifts:
                 continue
+            if delay > max_break:
+                break  # Assumes start times are sorted.
             other_duration = shifts[other][5]
             lit = model.NewBoolVar('from %i to %i' % (shift, other))
+            all_literals.append(lit)
 
             # Increase driving time
             model.Add(driving_time[other] ==
@@ -1785,7 +1792,9 @@ def find_minimum_number_of_drivers(shifts, params):
     # Solve model.
     solver = cp_model.CpSolver()
     solver.parameters.log_search_progress = True
-    solver.parameters.num_search_workers = 8
+    #solver.parameters.num_search_workers = 16
+    # solver.parameters.boolean_encoding_level = 0
+    # solver.parameters.lns_focus_on_decision_variables = True
     status = solver.Solve(model)
 
     if status != cp_model.OPTIMAL and status != cp_model.FEASIBLE:

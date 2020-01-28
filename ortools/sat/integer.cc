@@ -34,7 +34,8 @@ std::vector<IntegerVariable> NegationOf(
 }
 
 void IntegerEncoder::FullyEncodeVariable(IntegerVariable var) {
-  CHECK(!VariableIsFullyEncoded(var));
+  if (VariableIsFullyEncoded(var)) return;
+
   CHECK_EQ(0, sat_solver_->CurrentDecisionLevel());
   CHECK(!(*domains_)[var].IsEmpty());  // UNSAT. We don't deal with that here.
   CHECK_LT((*domains_)[var].Size(), 100000)
@@ -42,19 +43,63 @@ void IntegerEncoder::FullyEncodeVariable(IntegerVariable var) {
 
   // TODO(user): Maybe we can optimize the literal creation order and their
   // polarity as our default SAT heuristics initially depends on this.
+  //
+  // TODO(user): Currently, in some corner cases,
+  // GetOrCreateLiteralAssociatedToEquality() might trigger some propagation
+  // that update the domain of var, so we need to cache the values to not read
+  // garbage. Note that it is okay to call the function on values no longer
+  // reachable, as this will just do nothing.
+  tmp_values_.clear();
   for (const ClosedInterval interval : (*domains_)[var]) {
     for (IntegerValue v(interval.start); v <= interval.end; ++v) {
-      GetOrCreateLiteralAssociatedToEquality(var, v);
+      tmp_values_.push_back(v);
     }
+  }
+  for (const IntegerValue v : tmp_values_) {
+    GetOrCreateLiteralAssociatedToEquality(var, v);
   }
 
   // Mark var and Negation(var) as fully encoded.
-  const int required_size = std::max(var, NegationOf(var)).value() + 1;
-  if (required_size > is_fully_encoded_.size()) {
-    is_fully_encoded_.resize(required_size, false);
+  CHECK_LT(GetPositiveOnlyIndex(var), is_fully_encoded_.size());
+  CHECK(!equality_by_var_[GetPositiveOnlyIndex(var)].empty());
+  is_fully_encoded_[GetPositiveOnlyIndex(var)] = true;
+}
+
+bool IntegerEncoder::VariableIsFullyEncoded(IntegerVariable var) const {
+  const PositiveOnlyIndex index = GetPositiveOnlyIndex(var);
+  if (index >= is_fully_encoded_.size()) return false;
+
+  // Once fully encoded, the status never changes.
+  if (is_fully_encoded_[index]) return true;
+  if (!VariableIsPositive(var)) var = PositiveVariable(var);
+
+  // TODO(user): Cache result as long as equality_by_var_[index] is unchanged?
+  // It might not be needed since if the variable is not fully encoded, then
+  // PartialDomainEncoding() will filter unreachable values, and so the size
+  // check will be false until further value have been encoded.
+  const int64 initial_domain_size = (*domains_)[var].Size();
+  if (equality_by_var_[index].size() < initial_domain_size) return false;
+
+  // This cleans equality_by_var_[index] as a side effect and in particular,
+  // sorts it by values.
+  PartialDomainEncoding(var);
+
+  // TODO(user): Comparing the size might be enough, but we want to be always
+  // valid even if either (*domains_[var]) or PartialDomainEncoding(var) are
+  // not properly synced because the propagation is not finished.
+  const auto& ref = equality_by_var_[index];
+  int i = 0;
+  for (const ClosedInterval interval : (*domains_)[var]) {
+    for (int64 v = interval.start; v <= interval.end; ++v) {
+      if (i < ref.size() && v == ref[i].value) {
+        i++;
+      }
+    }
   }
-  is_fully_encoded_[var] = true;
-  is_fully_encoded_[NegationOf(var)] = true;
+  if (i == ref.size()) {
+    is_fully_encoded_[index] = true;
+  }
+  return is_fully_encoded_[index];
 }
 
 std::vector<IntegerEncoder::ValueLiteralPair>
@@ -66,23 +111,31 @@ IntegerEncoder::FullDomainEncoding(IntegerVariable var) const {
 std::vector<IntegerEncoder::ValueLiteralPair>
 IntegerEncoder::PartialDomainEncoding(IntegerVariable var) const {
   CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
-  if (var >= equality_by_var_.size()) return {};
+  const PositiveOnlyIndex index = GetPositiveOnlyIndex(var);
+  if (index >= equality_by_var_.size()) return {};
 
   int new_size = 0;
-  std::vector<ValueLiteralPair>& ref = equality_by_var_[var];
+  std::vector<ValueLiteralPair>& ref = equality_by_var_[index];
   for (int i = 0; i < ref.size(); ++i) {
     const ValueLiteralPair pair = ref[i];
     if (sat_solver_->Assignment().LiteralIsFalse(pair.literal)) continue;
     if (sat_solver_->Assignment().LiteralIsTrue(pair.literal)) {
       ref.clear();
       ref.push_back(pair);
-      return ref;
+      new_size = 1;
+      break;
     }
     ref[new_size++] = pair;
   }
   ref.resize(new_size);
   std::sort(ref.begin(), ref.end());
-  return ref;
+
+  std::vector<IntegerEncoder::ValueLiteralPair> result = ref;
+  if (!VariableIsPositive(var)) {
+    std::reverse(result.begin(), result.end());
+    for (ValueLiteralPair& ref : result) ref.value = -ref.value;
+  }
+  return result;
 }
 
 // Note that by not inserting the literal in "order" we can in the worst case
@@ -164,28 +217,47 @@ Literal IntegerEncoder::GetOrCreateAssociatedLiteral(IntegerLiteral i_lit) {
 
   const auto canonicalization = Canonicalize(i_lit);
   const IntegerLiteral new_lit = canonicalization.first;
-  if (LiteralIsAssociated(new_lit)) {
-    return Literal(GetAssociatedLiteral(new_lit));
-  }
-  if (LiteralIsAssociated(canonicalization.second)) {
-    return Literal(GetAssociatedLiteral(canonicalization.second)).Negated();
-  }
+
+  const LiteralIndex index = GetAssociatedLiteral(new_lit);
+  if (index != kNoLiteralIndex) return Literal(index);
+  const LiteralIndex n_index = GetAssociatedLiteral(canonicalization.second);
+  if (n_index != kNoLiteralIndex) return Literal(n_index).Negated();
 
   ++num_created_variables_;
   const Literal literal(sat_solver_->NewBooleanVariable(), true);
   AssociateToIntegerLiteral(literal, new_lit);
 
-  // TODO(user): on some problem the check below fail. We should probably
-  // make sure that we don't create extra fixed Boolean variable for no reason.
-  DCHECK(!sat_solver_->Assignment().LiteralIsAssigned(literal));
+  // TODO(user): on some problem this happens. We should probably make sure that
+  // we don't create extra fixed Boolean variable for no reason.
+  if (sat_solver_->Assignment().LiteralIsAssigned(literal)) {
+    VLOG(1) << "Created a fixed literal for no reason!";
+  }
   return literal;
+}
+
+namespace {
+std::pair<PositiveOnlyIndex, IntegerValue> PositiveVarKey(IntegerVariable var,
+                                                          IntegerValue value) {
+  return std::make_pair(GetPositiveOnlyIndex(var),
+                        VariableIsPositive(var) ? value : -value);
+}
+}  // namespace
+
+LiteralIndex IntegerEncoder::GetAssociatedEqualityLiteral(
+    IntegerVariable var, IntegerValue value) const {
+  const auto it =
+      equality_to_associated_literal_.find(PositiveVarKey(var, value));
+  if (it != equality_to_associated_literal_.end()) {
+    return it->second.Index();
+  }
+  return kNoLiteralIndex;
 }
 
 Literal IntegerEncoder::GetOrCreateLiteralAssociatedToEquality(
     IntegerVariable var, IntegerValue value) {
   {
-    const std::pair<IntegerVariable, IntegerValue> key{var, value};
-    const auto it = equality_to_associated_literal_.find(key);
+    const auto it =
+        equality_to_associated_literal_.find(PositiveVarKey(var, value));
     if (it != equality_to_associated_literal_.end()) {
       return it->second;
     }
@@ -194,10 +266,7 @@ Literal IntegerEncoder::GetOrCreateLiteralAssociatedToEquality(
   // Check for trivial true/false literal to avoid creating variable for no
   // reasons.
   const Domain& domain = (*domains_)[var];
-  if (!domain.Contains(value.value())) {
-    AssociateToIntegerEqualValue(GetFalseLiteral(), var, value);
-    return GetFalseLiteral();
-  }
+  if (!domain.Contains(value.value())) return GetFalseLiteral();
   if (value == domain.Min() && value == domain.Max()) {
     AssociateToIntegerEqualValue(GetTrueLiteral(), var, value);
     return GetTrueLiteral();
@@ -207,9 +276,14 @@ Literal IntegerEncoder::GetOrCreateLiteralAssociatedToEquality(
   const Literal literal(sat_solver_->NewBooleanVariable(), true);
   AssociateToIntegerEqualValue(literal, var, value);
 
-  // TODO(user): on some problem the check below fail. We should probably
+  // TODO(user): this happens on some problem. We should probably
   // make sure that we don't create extra fixed Boolean variable for no reason.
-  DCHECK(!sat_solver_->Assignment().LiteralIsAssigned(literal));
+  // Note that here we could detect the case before creating the literal. The
+  // initial domain didn't contain it, but maybe the one of (>= value) or (<=
+  // value) is false?
+  if (sat_solver_->Assignment().LiteralIsAssigned(literal)) {
+    VLOG(1) << "Created a fixed literal for no reason!";
+  }
   return literal;
 }
 
@@ -265,8 +339,8 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
 
   // We use the "do not insert if present" behavior of .insert() to do just one
   // lookup.
-  const auto insert_result =
-      equality_to_associated_literal_.insert({{var, value}, literal});
+  const auto insert_result = equality_to_associated_literal_.insert(
+      {PositiveVarKey(var, value), literal});
   if (!insert_result.second) {
     // If this key is already associated, make the two literals equal.
     const Literal representative = insert_result.first->second;
@@ -277,8 +351,6 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
     }
     return;
   }
-  gtl::InsertOrDieNoPrint(&equality_to_associated_literal_,
-                          {{NegationOf(var), -value}, literal});
 
   // Fix literal for value outside the domain.
   if (!domain.Contains(value.value())) {
@@ -289,13 +361,13 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
   // Update equality_by_var. Note that due to the
   // equality_to_associated_literal_ hash table, there should never be any
   // duplicate values for a given variable.
-  const int needed_size = std::max(var.value(), NegationOf(var).value()) + 1;
-  if (needed_size > equality_by_var_.size()) {
-    equality_by_var_.resize(needed_size);
+  const PositiveOnlyIndex index = GetPositiveOnlyIndex(var);
+  if (index >= equality_by_var_.size()) {
+    equality_by_var_.resize(index.value() + 1);
+    is_fully_encoded_.resize(index.value() + 1);
   }
-  equality_by_var_[var].push_back(ValueLiteralPair(value, literal));
-  equality_by_var_[NegationOf(var)].push_back(
-      ValueLiteralPair(-value, literal));
+  equality_by_var_[index].push_back(
+      ValueLiteralPair(VariableIsPositive(var) ? value : -value, literal));
 
   // Fix literal for constant domain.
   if (value == domain.Min() && value == domain.Max()) {
@@ -384,7 +456,7 @@ bool IntegerEncoder::LiteralIsAssociated(IntegerLiteral i) const {
   return encoding.find(i.bound) != encoding.end();
 }
 
-LiteralIndex IntegerEncoder::GetAssociatedLiteral(IntegerLiteral i) {
+LiteralIndex IntegerEncoder::GetAssociatedLiteral(IntegerLiteral i) const {
   if (i.var >= encoding_by_var_.size()) return kNoLiteralIndex;
   const std::map<IntegerValue, Literal>& encoding = encoding_by_var_[i.var];
   const auto result = encoding.find(i.bound);
@@ -496,14 +568,25 @@ void IntegerTrail::Untrail(const Trail& trail, int literal_trail_index) {
   }
 }
 
+void IntegerTrail::ReserveSpaceForNumVariables(int num_vars) {
+  // Because we always create both a variable and its negation.
+  const int size = 2 * num_vars;
+  vars_.reserve(size);
+  is_ignored_literals_.reserve(size);
+  integer_trail_.reserve(size);
+  domains_->reserve(size);
+  var_trail_index_cache_.reserve(size);
+  tmp_var_to_trail_index_in_queue_.reserve(size);
+}
+
 IntegerVariable IntegerTrail::AddIntegerVariable(IntegerValue lower_bound,
                                                  IntegerValue upper_bound) {
-  CHECK_GE(lower_bound, kMinIntegerValue);
-  CHECK_LE(lower_bound, kMaxIntegerValue);
-  CHECK_GE(upper_bound, kMinIntegerValue);
-  CHECK_LE(upper_bound, kMaxIntegerValue);
-  CHECK(integer_search_levels_.empty());
-  CHECK_EQ(vars_.size(), integer_trail_.size());
+  DCHECK_GE(lower_bound, kMinIntegerValue);
+  DCHECK_LE(lower_bound, kMaxIntegerValue);
+  DCHECK_GE(upper_bound, kMinIntegerValue);
+  DCHECK_LE(upper_bound, kMaxIntegerValue);
+  DCHECK(integer_search_levels_.empty());
+  DCHECK_EQ(vars_.size(), integer_trail_.size());
 
   const IntegerVariable i(vars_.size());
   is_ignored_literals_.push_back(kNoLiteralIndex);
@@ -708,7 +791,7 @@ void IntegerTrail::AppendRelaxedLinearReason(
   for (const IntegerVariable var : vars) {
     tmp_indices_.push_back(vars_[var].current_trail_index);
   }
-  RelaxLinearReason(slack, coeffs, &tmp_indices_);
+  if (slack > 0) RelaxLinearReason(slack, coeffs, &tmp_indices_);
   for (const int i : tmp_indices_) {
     reason->push_back(IntegerLiteral::GreaterOrEqual(integer_trail_[i].var,
                                                      integer_trail_[i].bound));
@@ -727,7 +810,7 @@ void IntegerTrail::RelaxLinearReason(IntegerValue slack,
   // We start by filtering *trail_indices:
   // - remove all level zero entries.
   // - keep the one that cannot be relaxed.
-  // - move the other one the the relax_heap_ (and creating the heap).
+  // - move the other one to the relax_heap_ (and creating the heap).
   int new_size = 0;
   const int size = coeffs.size();
   const int num_vars = vars_.size();
@@ -1494,7 +1577,10 @@ absl::Span<const Literal> IntegerTrail::Reason(const Trail& trail,
 // than variables!
 void IntegerTrail::AppendNewBounds(std::vector<IntegerLiteral>* output) const {
   tmp_marked_.ClearAndResize(IntegerVariable(vars_.size()));
-  for (int i = vars_.size(); i < integer_trail_.size(); ++i) {
+
+  // In order to push the best bound for each variable, we loop backward.
+  const int end = vars_.size();
+  for (int i = integer_trail_.size(); --i >= end;) {
     const TrailEntry& entry = integer_trail_[i];
     if (entry.var == kNoIntegerVariable) continue;
     if (tmp_marked_[entry.var]) continue;
@@ -1515,6 +1601,8 @@ GenericLiteralWatcher::GenericLiteralWatcher(Model* model)
   // this one.
   model->GetOrCreate<SatSolver>()->AddLastPropagator(this);
 
+  integer_trail_->RegisterReversibleClass(
+      &id_to_greatest_common_level_since_last_call_);
   integer_trail_->RegisterWatcher(&modified_vars_);
   queue_by_priority_.resize(2);  // Because default priority is 1.
 }
@@ -1693,11 +1781,6 @@ void GenericLiteralWatcher::Untrail(const Trail& trail, int trail_index) {
   propagation_trail_index_ = trail_index;
   modified_vars_.ClearAndResize(integer_trail_->NumIntegerVariables());
   in_queue_.assign(watchers_.size(), false);
-
-  const int level = trail.CurrentDecisionLevel();
-  for (int& ref : id_to_greatest_common_level_since_last_call_) {
-    ref = std::min(ref, level);
-  }
 }
 
 // Registers a propagator and returns its unique ids.
@@ -1705,7 +1788,7 @@ int GenericLiteralWatcher::Register(PropagatorInterface* propagator) {
   const int id = watchers_.size();
   watchers_.push_back(propagator);
   id_to_level_at_last_call_.push_back(0);
-  id_to_greatest_common_level_since_last_call_.push_back(0);
+  id_to_greatest_common_level_since_last_call_.GrowByOne();
   id_to_reversible_classes_.push_back(std::vector<ReversibleInterface*>());
   id_to_reversible_ints_.push_back(std::vector<int*>());
   id_to_watch_indices_.push_back(std::vector<int>());

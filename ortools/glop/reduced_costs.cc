@@ -122,7 +122,10 @@ Fractional ReducedCosts::ComputeMaximumDualResidual() const {
   DenseRow dual_values(RowToColIndex(num_rows), 0.0);
   for (RowIndex row(0); row < num_rows; ++row) {
     const ColIndex row_as_col = RowToColIndex(row);
-    dual_values[row_as_col] = -reduced_costs_[first_slack_col + row_as_col];
+    const ColIndex slack_col = first_slack_col + row_as_col;
+    dual_values[row_as_col] = objective_[slack_col] +
+                              cost_perturbations_[slack_col] -
+                              reduced_costs_[slack_col];
   }
   Fractional dual_residual_error(0.0);
   for (RowIndex row(0); row < num_rows; ++row) {

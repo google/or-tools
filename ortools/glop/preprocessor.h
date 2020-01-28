@@ -90,6 +90,7 @@ class Preprocessor {
   ProblemStatus status_;
   const GlopParameters& parameters_;
   bool in_mip_context_;
+  std::unique_ptr<TimeLimit> infinite_time_limit_;
   TimeLimit* time_limit_;
 };
 
@@ -245,9 +246,6 @@ class EmptyColumnPreprocessor : public Preprocessor {
 // --------------------------------------------------------
 // ProportionalColumnPreprocessor
 // --------------------------------------------------------
-// TODO(user): For now this preprocessor just logs the number of proportional
-// columns. Do something with this information.
-//
 // Removes the proportional columns from the problem when possible. Two columns
 // are proportional if one is a non-zero scalar multiple of the other.
 //
@@ -952,6 +950,8 @@ class ShiftVariableBoundsPreprocessor : public Preprocessor {
   ~ShiftVariableBoundsPreprocessor() final {}
   bool Run(LinearProgram* lp) final;
   void RecoverSolution(ProblemSolution* solution) const final;
+
+  const DenseRow& offsets() const { return offsets_; }
 
  private:
   // Contains for each variable by how much its bounds where shifted during

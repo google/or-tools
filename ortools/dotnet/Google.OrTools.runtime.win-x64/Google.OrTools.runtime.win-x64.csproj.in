@@ -1,92 +1,50 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.1;netstandard2.0;net452</TargetFrameworks>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <AssemblyName>Google.OrTools</AssemblyName>
+    <AssemblyName>google-ortools-native</AssemblyName>
     <Version>@PROJECT_VERSION@</Version>
 
     <!-- Nuget Properties -->
-    <MinClientVersion>4.1.0</MinClientVersion>
     <Description>.NET native wrapper for the Operations Research Tools project</Description>
-    <NeutralLanguage>en-US</NeutralLanguage>
-    <Authors>Laurent Perron</Authors>
-    <Company>Google LLC</Company>
-    <Copyright>Copyright 2018 Google LLC</Copyright>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+
     <!-- Pack Option -->
     <Title>Google.OrTools win-x64 v@PROJECT_VERSION@</Title>
     <PackageId>Google.OrTools.runtime.win-x64</PackageId>
-    <PackageTags>native;math;LinearSolver;LinearProgramming;ConstraintSolver;ConstraintProgramming</PackageTags>
-    <PackageIconUrl>https://developers.google.com/optimization/images/orLogo.png</PackageIconUrl>
-    <PackageProjectUrl>https://developers.google.com/optimization</PackageProjectUrl>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <PackageOutputPath>../../../packages</PackageOutputPath>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/google/or-tools</RepositoryUrl>
 
+    <!-- Signing -->
     <AssemblyOriginatorKeyFile>../../../bin/or-tools.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
-    <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
-
-    <!-- Build Properties -->
-    <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
-    <UseSharedCompilation>false</UseSharedCompilation>
-    <EnableDefaultItems>false</EnableDefaultItems>
-    <BuildOutputTargetFolder>runtimes/$(RuntimeIdentifier)/lib</BuildOutputTargetFolder>
+    <PublicSign>false</PublicSign>
+    <DelaySign>false</DelaySign>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="../../gen/ortools/algorithms/*.cs">
-      <Link>algorithms/%(Filename)%(Extension)</Link>
-    </Compile>
-
-    <Compile Include="../../gen/ortools/graph/*.cs">
-      <Link>graph/%(Filename)%(Extension)</Link>
-    </Compile>
-    <Compile Include="../../graph/csharp/*.cs">
-      <Link>graph/%(Filename)%(Extension)</Link>
-    </Compile>
-
-    <Compile Include="../../gen/ortools/linear_solver/*.cs">
-      <Link>linear_solver/%(Filename)%(Extension)</Link>
-    </Compile>
-    <Compile Include="../../linear_solver/csharp/*.cs">
-      <Link>linear_solver/%(Filename)%(Extension)</Link>
-    </Compile>
-
-    <Compile Include="../../gen/ortools/constraint_solver/*.cs">
-      <Link>constraint_solver/%(Filename)%(Extension)</Link>
-    </Compile>
-    <Compile Include="../../constraint_solver/csharp/*.cs">
-      <Link>constraint_solver/%(Filename)%(Extension)</Link>
-    </Compile>
-
-    <Compile Include="../../gen/ortools/sat/*.cs">
-      <Link>sat/%(Filename)%(Extension)</Link>
-    </Compile>
-    <Compile Include="../../sat/csharp/*.cs">
-      <Link>sat/%(Filename)%(Extension)</Link>
-    </Compile>
-
-    <Compile Include="../../gen/ortools/util/*.cs">
-      <Link>util/%(Filename)%(Extension)</Link>
-    </Compile>
-    <Compile Include="../../util/csharp/*.cs">
-      <Link>util/%(Filename)%(Extension)</Link>
-    </Compile>
-
     <!-- Native library must be in native directory... -->
     <!-- On windows libortools is built as static -->
-    <Content Include="../../../lib/Google.OrTools.runtime.win-x64.dll">
+    <Content Include="../../../lib/$(AssemblyName).dll">
       <PackagePath>runtimes/win-x64/native/%(Filename)%(Extension)</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-  </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Google.Protobuf" Version="3.9.0" />
+    <!-- For netframework we need to copy the native binary manually during build on Nuget consumer side. That's why we need a separate target file doing this for us. -->
+    <Content Include="$(MSBuildThisFileDirectory)\Google.OrTools.runtime.win-x64.targets">
+      <PackagePath>build/net45/%(Filename)%(Extension)</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)\Google.OrTools.runtime.win-x64.targets">
+       <PackagePath>build/netstandard2.0/%(Filename)%(Extension)</PackagePath>
+       <Pack>true</Pack>
+       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)\Google.OrTools.runtime.win-x64.targets">
+       <PackagePath>build/netstandard2.1/%(Filename)%(Extension)</PackagePath>
+       <Pack>true</Pack>
+       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 </Project>

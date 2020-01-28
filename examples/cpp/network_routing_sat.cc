@@ -322,7 +322,7 @@ class NetworkRoutingDataBuilder {
 
   std::vector<std::vector<bool>> network_;
   std::vector<int> degrees_;
-  ACMRandom random_;
+  MTRandom random_;
 };
 
 // ---------- Solving the Problem ----------

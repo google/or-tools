@@ -24,11 +24,13 @@
 #include "absl/strings/str_split.h"
 #include "absl/synchronization/mutex.h"
 #include "google/protobuf/text_format.h"
+#include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/base/timer.h"
 #include "ortools/flatzinc/checker.h"
 #include "ortools/flatzinc/logging.h"
+#include "ortools/flatzinc/model.h"
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_search.h"
@@ -137,6 +139,9 @@ std::vector<int> CpModelProtoWithMapping::LookupVars(
     for (int64 value : argument.values) {
       result.push_back(LookupConstant(value));
     }
+
+  } else if (argument.type == fz::Argument::INT_VALUE) {
+    result.push_back(LookupConstant(argument.Value()));
   } else {
     CHECK_EQ(argument.type, fz::Argument::INT_VAR_REF_ARRAY);
     for (fz::IntegerVariable* var : argument.variables) {
@@ -193,11 +198,39 @@ void CpModelProtoWithMapping::FillAMinusBInDomain(
     const std::vector<int64>& domain, const fz::Constraint& fz_ct,
     ConstraintProto* ct) {
   auto* arg = ct->mutable_linear();
-  for (const int64 domain_bound : domain) arg->add_domain(domain_bound);
-  arg->add_vars(LookupVar(fz_ct.arguments[0]));
-  arg->add_coeffs(1);
-  arg->add_vars(LookupVar(fz_ct.arguments[1]));
-  arg->add_coeffs(-1);
+  if (fz_ct.arguments[1].type == fz::Argument::INT_VALUE) {
+    const int64 value = fz_ct.arguments[1].Value();
+    const int var_a = LookupVar(fz_ct.arguments[0]);
+    for (const int64 domain_bound : domain) {
+      if (domain_bound == kint64min || domain_bound == kint64max) {
+        arg->add_domain(domain_bound);
+      } else {
+        arg->add_domain(domain_bound + value);
+      }
+    }
+    arg->add_vars(var_a);
+    arg->add_coeffs(1);
+  } else if (fz_ct.arguments[0].type == fz::Argument::INT_VALUE) {
+    const int64 value = fz_ct.arguments[0].Value();
+    const int var_b = LookupVar(fz_ct.arguments[1]);
+    for (int64 domain_bound : gtl::reversed_view(domain)) {
+      if (domain_bound == kint64min) {
+        arg->add_domain(kint64max);
+      } else if (domain_bound == kint64max) {
+        arg->add_domain(kint64min);
+      } else {
+        arg->add_domain(value - domain_bound);
+      }
+    }
+    arg->add_vars(var_b);
+    arg->add_coeffs(1);
+  } else {
+    for (const int64 domain_bound : domain) arg->add_domain(domain_bound);
+    arg->add_vars(LookupVar(fz_ct.arguments[0]));
+    arg->add_coeffs(1);
+    arg->add_vars(LookupVar(fz_ct.arguments[1]));
+    arg->add_coeffs(-1);
+  }
 }
 
 void CpModelProtoWithMapping::FillLinearConstraintWithGivenDomain(
@@ -226,9 +259,32 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       arg->add_literals(FalseLiteral(var));
     }
   } else if (fz_ct.type == "bool_xor") {
-    auto* arg = ct->mutable_bool_xor();
-    arg->add_literals(TrueLiteral(LookupVar(fz_ct.arguments[0])));
-    arg->add_literals(TrueLiteral(LookupVar(fz_ct.arguments[1])));
+    // This is not the same semantics as the array_bool_xor as this constraint
+    // is actually a fully reified xor(a, b) <==> x.
+    const int a = LookupVar(fz_ct.arguments[0]);
+    const int b = LookupVar(fz_ct.arguments[1]);
+    const int x = LookupVar(fz_ct.arguments[2]);
+
+    // not(x) => a == b
+    ct->add_enforcement_literal(NegatedRef(x));
+    auto* const refute = ct->mutable_linear();
+    refute->add_vars(a);
+    refute->add_coeffs(1);
+    refute->add_vars(b);
+    refute->add_coeffs(-1);
+    refute->add_domain(0);
+    refute->add_domain(0);
+
+    // x => a + b == 1
+    auto* ct2 = proto.add_constraints();
+    ct2->add_enforcement_literal(x);
+    auto* const enforce = ct2->mutable_linear();
+    enforce->add_vars(a);
+    enforce->add_coeffs(1);
+    enforce->add_vars(b);
+    enforce->add_coeffs(1);
+    enforce->add_domain(1);
+    enforce->add_domain(1);
   } else if (fz_ct.type == "array_bool_or") {
     auto* arg = ct->mutable_bool_or();
     for (const int var : LookupVars(fz_ct.arguments[0])) {
@@ -398,7 +454,8 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
              fz_ct.type == "array_var_int_element" ||
              fz_ct.type == "array_var_bool_element" ||
              fz_ct.type == "array_int_element_nonshifted") {
-    if (fz_ct.arguments[0].type == fz::Argument::INT_VAR_REF) {
+    if (fz_ct.arguments[0].type == fz::Argument::INT_VAR_REF ||
+        fz_ct.arguments[0].type == fz::Argument::INT_VALUE) {
       auto* arg = ct->mutable_element();
       arg->set_index(LookupVar(fz_ct.arguments[0]));
       arg->set_target(LookupVar(fz_ct.arguments[2]));
@@ -625,7 +682,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
         arg->add_demands(demands[i]);
       }
     }
-  } else if (fz_ct.type == "diffn") {
+  } else if (fz_ct.type == "diffn" || fz_ct.type == "diffn_nonstrict") {
     const std::vector<int> x = LookupVars(fz_ct.arguments[0]);
     const std::vector<int> y = LookupVars(fz_ct.arguments[1]);
     const std::vector<int> dx = LookupVars(fz_ct.arguments[2]);
@@ -637,6 +694,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       arg->add_x_intervals(x_intervals[i]);
       arg->add_y_intervals(y_intervals[i]);
     }
+    arg->set_boxes_with_null_area_can_overlap(fz_ct.type == "diffn_nonstrict");
   } else if (fz_ct.type == "network_flow" ||
              fz_ct.type == "network_flow_cost") {
     // Note that we leave ct empty here (with just the name set).
@@ -828,6 +886,9 @@ void CpModelProtoWithMapping::TranslateSearchAnnotations(
       } else if (select.id == "indomain_reverse_split") {
         strategy->set_domain_reduction_strategy(
             DecisionStrategyProto::SELECT_UPPER_HALF);
+      } else if (select.id == "indomain_median") {
+        strategy->set_domain_reduction_strategy(
+            DecisionStrategyProto::SELECT_MEDIAN_VALUE);
       } else {
         LOG(FATAL) << "Unsupported select: " << select.id;
       }
@@ -998,6 +1059,10 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   }
   if (p.use_free_search) {
     m.parameters.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+    if (p.number_of_threads <= 1) {
+      m.parameters.set_interleave_search(true);
+      m.parameters.set_reduce_memory_usage_in_interleave_mode(true);
+    }
   } else {
     m.parameters.set_search_branching(SatParameters::FIXED_SEARCH);
   }
