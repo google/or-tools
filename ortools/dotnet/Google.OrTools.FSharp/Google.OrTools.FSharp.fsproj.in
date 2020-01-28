@@ -10,6 +10,8 @@
     <!-- Pack Option -->
     <Title>Google.OrTools.FSharp v@PROJECT_VERSION@</Title>
     <PackageId>Google.OrTools.FSharp</PackageId>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
 
     <!-- Signing -->
     <AssemblyKeyFileAttribute>../../../bin/or-tools.snk</AssemblyKeyFileAttribute>

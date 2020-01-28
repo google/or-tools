@@ -11,6 +11,8 @@
     <!-- Pack Option -->
     <Title>Google.OrTools v@PROJECT_VERSION@</Title>
     <PackageId>Google.OrTools</PackageId>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
 
     <!-- Signing -->
     <AssemblyOriginatorKeyFile>../../../bin/or-tools.snk</AssemblyOriginatorKeyFile>
