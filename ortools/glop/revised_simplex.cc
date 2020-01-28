@@ -877,7 +877,7 @@ void RevisedSimplex::InitializeObjectiveLimit(const LinearProgram& lp) {
     const Fractional shifted_limit =
         limit / objective_scaling_factor_ - objective_offset_;
 
-    // The std::isfinite() test is there to avoid generating NaNs with clang in
+    // The isfinite() test is there to avoid generating NaNs with clang in
     // fast-math mode on iOS 9.3.i.
     if (set_dual) {
       dual_objective_limit_ = std::isfinite(shifted_limit)
@@ -1118,7 +1118,7 @@ Status RevisedSimplex::InitializeFirstBasis(const RowToColMapping& basis) {
   // infinity upper bound.
   const Fractional condition_number_ub =
       basis_factorization_.ComputeInfinityNormConditionNumberUpperBound();
-  if (condition_number_ub > 1e25) {
+  if (condition_number_ub > parameters_.initial_condition_number_threshold()) {
     const std::string error_message =
         absl::StrCat("The matrix condition number upper bound is too high: ",
                      condition_number_ub);
@@ -1263,8 +1263,9 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
           dual_pricing_vector_.clear();
 
           // Note that this needs to be done after the Clear() calls above.
-          GLOP_RETURN_IF_ERROR(InitializeFirstBasis(basis_));
-          solve_from_scratch = false;
+          if (InitializeFirstBasis(basis_).ok()) {
+            solve_from_scratch = false;
+          }
         }
       }
     }
@@ -2886,8 +2887,8 @@ std::string RevisedSimplex::StatString() {
 
 void RevisedSimplex::DisplayAllStats() {
   if (FLAGS_simplex_display_stats) {
-    fprintf(stderr, "%s", StatString().c_str());
-    fprintf(stderr, "%s", GetPrettySolverStats().c_str());
+    absl::FPrintF(stderr, "%s", StatString());
+    absl::FPrintF(stderr, "%s", GetPrettySolverStats());
   }
 }
 
@@ -2963,9 +2964,8 @@ std::string StringifyMonomialWithFlags(const Fractional a,
   return StringifyMonomial(a, x, FLAGS_simplex_display_numbers_as_fractions);
 }
 
-// Returns a std::string representing the rational approximation of x or a
-// decimal approximation of x according to
-// FLAGS_simplex_display_numbers_as_fractions.
+// Returns a string representing the rational approximation of x or a decimal
+// approximation of x according to FLAGS_simplex_display_numbers_as_fractions.
 std::string StringifyWithFlags(const Fractional x) {
   return Stringify(x, FLAGS_simplex_display_numbers_as_fractions);
 }

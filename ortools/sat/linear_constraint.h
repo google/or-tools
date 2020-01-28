@@ -148,6 +148,12 @@ void CleanTermsAndFillConstraint(
     std::vector<std::pair<IntegerVariable, IntegerValue>>* terms,
     LinearConstraint* constraint);
 
+// Sorts the terms and makes all IntegerVariable positive. This assumes that a
+// variable or its negation only appear once.
+//
+// Note that currently this allocates some temporary memory.
+void CanonicalizeConstraint(LinearConstraint* ct);
+
 }  // namespace sat
 }  // namespace operations_research
 

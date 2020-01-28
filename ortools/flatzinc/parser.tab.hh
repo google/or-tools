@@ -1,4 +1,4 @@
-/* A Bison parser, made by GNU Bison 3.3.2.  */
+/* A Bison parser, made by GNU Bison 3.4.1.  */
 
 /* Bison interface for Yacc-like parsers in C
 
@@ -52,7 +52,7 @@
 extern int orfz_debug;
 #endif
 /* "%code requires" blocks.  */
-#line 21 "./ortools/flatzinc/parser.yy" /* yacc.c:1921  */
+#line 21 "./ortools/flatzinc/parser.yy"
 
 #if !defined(OR_TOOLS_FLATZINC_FLATZINC_TAB_HH_)
 #define OR_TOOLS_FLATZINC_FLATZINC_TAB_HH_
@@ -68,7 +68,7 @@ typedef operations_research::fz::LexerInfo YYSTYPE;
 
 #endif  // OR_TOOLS_FLATZINC_FLATZINC_TAB_HH_
 
-#line 72 "./ortools/flatzinc/parser.tab.hh" /* yacc.c:1921  */
+#line 72 "./ortools/flatzinc/parser.tab.hh"
 
 /* Token type.  */
 #ifndef ORFZ_TOKENTYPE

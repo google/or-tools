@@ -279,7 +279,10 @@ GlobalVehicleBreaksConstraint::GlobalVehicleBreaksConstraint(
 
 void GlobalVehicleBreaksConstraint::Post() {
   for (int vehicle = 0; vehicle < model_->vehicles(); vehicle++) {
-    if (dimension_->GetBreakIntervalsOfVehicle(vehicle).empty()) continue;
+    if (dimension_->GetBreakIntervalsOfVehicle(vehicle).empty() &&
+        dimension_->GetBreakDistanceDurationOfVehicle(vehicle).empty()) {
+      continue;
+    }
     vehicle_demons_[vehicle] = MakeDelayedConstraintDemon1(
         solver(), this, &GlobalVehicleBreaksConstraint::PropagateVehicle,
         "PropagateVehicle", vehicle);

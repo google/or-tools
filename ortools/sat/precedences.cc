@@ -631,7 +631,7 @@ bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
 
     // TODO(user): we don't need bf_can_be_skipped_ since we can detect this
     // if this node has a parent arc which is not marked. Investigate if it is
-    // faster without the std::vector<bool>.
+    // faster without the vector<bool>.
     //
     // TODO(user): An alternative algorithm is to remove all these nodes from
     // the queue instead of simply marking them. This should also lead to a

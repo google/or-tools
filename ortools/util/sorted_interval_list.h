@@ -76,6 +76,26 @@ class Domain {
   /// By default, Domain will be empty.
   Domain() {}
 
+#if !defined(SWIG)
+  /// Copy constructor (mandatory as we define the move constructor).
+  Domain(const Domain& other) : intervals_(other.intervals_) {}
+
+  /// Copy operator (mandatory as we define the move operator).
+  Domain& operator=(const Domain& other) {
+    intervals_ = other.intervals_;
+    return *this;
+  }
+
+  /// Move constructor.
+  Domain(Domain&& other) : intervals_(std::move(other.intervals_)) {}
+
+  /// Move operator.
+  Domain& operator=(Domain&& other) {
+    intervals_ = std::move(other.intervals_);
+    return *this;
+  }
+#endif  // !defined(SWIG)
+
   /// Constructor for the common case of a singleton domain.
   explicit Domain(int64 value);
 
@@ -143,17 +163,21 @@ class Domain {
 
   /**
    * Returns the min value of the domain.
-   *
-   * This checks that the domain is not empty.
+   * The domain must not be empty.
    */
   int64 Min() const;
 
   /**
    * Returns the max value of the domain.
-   *
-   * This checks that the domain is not empty.
+   * The domain must not be empty.
    */
   int64 Max() const;
+
+  /**
+   * Returns true iff the domain is reduced to a single value.
+   * The domain must not be empty.
+   */
+  bool IsFixed() const;
 
   /**
    * Returns true iff value is in Domain.
@@ -222,16 +246,18 @@ class Domain {
    */
   Domain ContinuousMultiplicationBy(int64 coeff) const;
 
-  /// Returns a super-set of MultiplicationBy() to avoid the explosion in the
-  /// representation size. This behaves as if we replace the set D of
-  /// non-adjacent integer intervals by the set of floating-point element in the
-  /// same intervals.
-  ///
-  /// For instance, [1, 100] * 2 will be transformed in [2, 200] and not in
-  /// [2][4][6]...[200] like in MultiplicationBy(). Note that this would be
-  /// similar to a InverseDivisionBy(), but not quite the same because if we
-  /// look for {x ∈ Int64, ∃ e ∈ D, x / coeff = e}, then we will get [2, 201] in
-  /// the case above.
+  /**
+   * Returns a superset of MultiplicationBy() to avoid the explosion in the
+   * representation size. This behaves as if we replace the set D of
+   * non-adjacent integer intervals by the set of floating-point elements in the
+   * same intervals.
+   *
+   * For instance, [1, 100] * 2 will be transformed in [2, 200] and not in
+   * [2][4][6]...[200] like in MultiplicationBy(). Note that this would be
+   * similar to a InverseDivisionBy(), but not quite the same because if we
+   * look for {x ∈ Int64, ∃ e ∈ D, x / coeff = e}, then we will get [2, 201] in
+   * the case above.
+   */
   Domain ContinuousMultiplicationBy(const Domain& domain) const;
 
   /**
@@ -271,8 +297,7 @@ class Domain {
   Domain SimplifyUsingImpliedDomain(const Domain& implied_domain) const;
 
   /**
-   * Returns a compact std::string of a vector of intervals like
-   * "[1,4][6][10,20]".
+   * Returns a compact string of a vector of intervals like "[1,4][6][10,20]".
    */
   std::string ToString() const;
 

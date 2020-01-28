@@ -69,7 +69,8 @@ namespace Google.OrTools.Sat
       return new SumArray(vars, coeffs);
     }
 
-    public static LinearExpr Term(IntVar var, long coeff) {
+    public static LinearExpr Term(IntVar var, long coeff)
+    {
       return Prod(var, coeff);
     }
 
@@ -522,6 +523,11 @@ namespace Google.OrTools.Sat
       set { var_ = value; }
     }
 
+    public Domain Domain
+    {
+      get { return SatHelper.VariableDomain(var_); }
+    }
+
     public override string ToString()
     {
       return var_.ToString();
@@ -560,7 +566,6 @@ namespace Google.OrTools.Sat
       }
       return negation_;
     }
-
 
     private CpModelProto model_;
     private int index_;

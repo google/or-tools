@@ -198,19 +198,12 @@ FLATZINC_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fz.$L
 FLATZINC_PATH = $(subst /,$S,$(FLATZINC_LIBS))
 FLATZINC_DEPS = \
 	$(SRC_DIR)/ortools/flatzinc/checker.h \
-	$(SRC_DIR)/ortools/flatzinc/constraints.h \
 	$(SRC_DIR)/ortools/flatzinc/cp_model_fz_solver.h \
-	$(SRC_DIR)/ortools/flatzinc/flatzinc_constraints.h \
 	$(SRC_DIR)/ortools/flatzinc/logging.h \
 	$(SRC_DIR)/ortools/flatzinc/model.h \
 	$(SRC_DIR)/ortools/flatzinc/parser.h \
 	$(SRC_DIR)/ortools/flatzinc/parser.tab.hh \
 	$(SRC_DIR)/ortools/flatzinc/presolve.h \
-	$(SRC_DIR)/ortools/flatzinc/reporting.h \
-	$(SRC_DIR)/ortools/flatzinc/sat_constraint.h \
-	$(SRC_DIR)/ortools/flatzinc/solver_data.h \
-	$(SRC_DIR)/ortools/flatzinc/solver.h \
-	$(SRC_DIR)/ortools/flatzinc/solver_util.h \
 	$(CP_DEPS) \
 	$(SAT_DEPS)
 FLATZINC_LNK = $(PRE_LIB)fz$(POST_LIB) $(OR_TOOLS_LNK)
@@ -220,23 +213,13 @@ endif
 
 FLATZINC_OBJS=\
 	$(OBJ_DIR)/flatzinc/checker.$O \
-	$(OBJ_DIR)/flatzinc/constraints.$O \
 	$(OBJ_DIR)/flatzinc/cp_model_fz_solver.$O \
-	$(OBJ_DIR)/flatzinc/flatzinc_constraints.$O \
 	$(OBJ_DIR)/flatzinc/logging.$O \
 	$(OBJ_DIR)/flatzinc/model.$O \
 	$(OBJ_DIR)/flatzinc/parser.$O \
 	$(OBJ_DIR)/flatzinc/parser.tab.$O \
 	$(OBJ_DIR)/flatzinc/parser.yy.$O \
-	$(OBJ_DIR)/flatzinc/presolve.$O \
-	$(OBJ_DIR)/flatzinc/reporting.$O \
-	$(OBJ_DIR)/flatzinc/sat_constraint.$O \
-	$(OBJ_DIR)/flatzinc/solver.$O \
-	$(OBJ_DIR)/flatzinc/solver_data.$O \
-	$(OBJ_DIR)/flatzinc/solver_util.$O
-
-FLATZINC_CC_TESTS = \
-boolean_test
+	$(OBJ_DIR)/flatzinc/presolve.$O
 
 fz_parser: #$(SRC_DIR)/ortools/flatzinc/parser.lex $(SRC_DIR)/ortools/flatzinc/parser.yy
 	flex -o $(SRC_DIR)/ortools/flatzinc/parser.yy.cc $(SRC_DIR)/ortools/flatzinc/parser.lex
@@ -253,17 +236,10 @@ $(FLATZINC_LIBS): $(OR_TOOLS_LIBS) $(FLATZINC_OBJS) | $(LIB_DIR)
  $(OR_TOOLS_LNK) \
  $(OR_TOOLS_LDFLAGS)
 
-$(OBJ_DIR)/boolean_test.$O: $(TEST_DIR)/boolean_test.cc $(FLATZINC_DEPS) | $(OBJ_DIR)
-	$(CCC) $(CFLAGS) -c $(TEST_PATH)$Sboolean_test.cc $(OBJ_OUT)$(OBJ_DIR)$Sboolean_test.$O
-
-$(BIN_DIR)/boolean_test$E: $(OBJ_DIR)/boolean_test.$O $(FLATZINC_LIBS) | $(BIN_DIR)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sboolean_test.$O $(FLATZINC_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sboolean_test$E
-
 .PHONY: fz # Build Flatzinc binaries.
 fz: \
  $(BIN_DIR)/fz$E \
- $(BIN_DIR)/parser_main$E \
- $(addsuffix $E, $(addprefix $(BIN_DIR)/, $(FLATZINC_CC_TESTS)))
+ $(BIN_DIR)/parser_main$E
 
 $(BIN_DIR)/fz$E: $(OBJ_DIR)/flatzinc/fz.$O $(FLATZINC_LIBS) $(OR_TOOLS_LIBS) | $(BIN_DIR)
 	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sflatzinc$Sfz.$O $(FLATZINC_LNK) $(OR_TOOLS_LDFLAGS) $(EXE_OUT)$(BIN_DIR)$Sfz$E
@@ -426,7 +402,6 @@ check_cc_pimpl: \
 .PHONY: test_cc_tests # Build and Run all C++ Tests (located in ortools/examples/tests)
 test_cc_tests: \
  rcc_lp_test \
- rcc_boolean_test \
  rcc_bug_fz1 \
  rcc_cpp11_test \
  rcc_forbidden_intervals_test \

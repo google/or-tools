@@ -30,6 +30,8 @@
 
 %include "ortools/base/base.i"
 
+%include "ortools/util/python/functions.i"
+
 %import "ortools/util/python/vector.i"
 
 %import "ortools/graph/ebert_graph.h"

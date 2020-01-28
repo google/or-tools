@@ -122,10 +122,17 @@ void LpScalingHelper::UnscaleUnitRowLeftSolve(
   const Fractional global_factor = scaler_.ColUnscalingFactor(basis_col);
 
   // We have left_inverse * [RowScale * B * ColScale] = unit_row.
-  const ColIndex num_rows = left_inverse->values.size();
-  for (ColIndex col(0); col < num_rows; ++col) {
-    left_inverse->values[col] /=
-        scaler_.RowUnscalingFactor(ColToRowIndex(col)) * global_factor;
+  if (left_inverse->non_zeros.empty()) {
+    const ColIndex num_rows = left_inverse->values.size();
+    for (ColIndex col(0); col < num_rows; ++col) {
+      left_inverse->values[col] /=
+          scaler_.RowUnscalingFactor(ColToRowIndex(col)) * global_factor;
+    }
+  } else {
+    for (const ColIndex col : left_inverse->non_zeros) {
+      left_inverse->values[col] /=
+          scaler_.RowUnscalingFactor(ColToRowIndex(col)) * global_factor;
+    }
   }
 }
 
@@ -136,10 +143,17 @@ void LpScalingHelper::UnscaleColumnRightSolve(
 
   // [RowScale * B * BColScale] * inverse = RowScale * column * ColScale.
   // That is B * (BColScale * inverse) = columm * ColScale[col].
-  const RowIndex num_rows = right_inverse->values.size();
-  for (RowIndex row(0); row < num_rows; ++row) {
-    right_inverse->values[row] /=
-        scaler_.ColUnscalingFactor(basis[row]) * global_factor;
+  if (right_inverse->non_zeros.empty()) {
+    const RowIndex num_rows = right_inverse->values.size();
+    for (RowIndex row(0); row < num_rows; ++row) {
+      right_inverse->values[row] /=
+          scaler_.ColUnscalingFactor(basis[row]) * global_factor;
+    }
+  } else {
+    for (const RowIndex row : right_inverse->non_zeros) {
+      right_inverse->values[row] /=
+          scaler_.ColUnscalingFactor(basis[row]) * global_factor;
+    }
   }
 }
 

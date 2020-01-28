@@ -43,8 +43,8 @@ namespace operations_research {
 namespace sat {
 
 // This is how the SatSolver stores a clause. A clause is just a disjunction of
-// literals. In many places, we just use std::vector<literal> to encode one. But
-// in the critical propagation code, we use this class to remove one memory
+// literals. In many places, we just use vector<literal> to encode one. But in
+// the critical propagation code, we use this class to remove one memory
 // indirection.
 class SatClause {
  public:

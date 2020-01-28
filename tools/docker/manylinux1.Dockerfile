@@ -9,6 +9,7 @@ RUN yum -y update \
  git \
  libtool \
  make \
+ openssl-devel \
  patch \
  pcre-devel \
  redhat-lsb \
@@ -27,33 +28,33 @@ RUN yum -y update \
 # Note: 'wget --no-check-certificate' is not an option since we are building
 # distribution binaries.
 RUN curl --location-trusted \
- --remote-name https://cmake.org/files/v3.8/cmake-3.8.2.tar.gz \
- -o cmake-3.8.2.tar.gz \
-&& tar xzf cmake-3.8.2.tar.gz \
-&& rm cmake-3.8.2.tar.gz \
-&& cd cmake-3.8.2 \
+ --remote-name https://cmake.org/files/v3.16/cmake-3.16.2.tar.gz \
+ -o cmake-3.16.2.tar.gz \
+&& tar xzf cmake-3.16.2.tar.gz \
+&& rm cmake-3.16.2.tar.gz \
+&& cd cmake-3.16.2 \
 && ./bootstrap --prefix=/usr \
 && make \
 && make install \
 && cd .. \
-&& rm -rf cmake-3.8.2
+&& rm -rf cmake-3.16.2
 
 
 # Install Swig
 RUN curl --location-trusted \
- --remote-name "https://downloads.sourceforge.net/project/swig/swig/swig-3.0.12/swig-3.0.12.tar.gz" \
- -o swig-3.0.12.tar.gz \
-&& tar xvf swig-3.0.12.tar.gz \
-&& rm swig-3.0.12.tar.gz \
-&& cd swig-3.0.12 \
+ --remote-name "https://downloads.sourceforge.net/project/swig/swig/swig-4.0.1/swig-4.0.1.tar.gz" \
+ -o swig-4.0.1.tar.gz \
+&& tar xvf swig-4.0.1.tar.gz \
+&& rm swig-4.0.1.tar.gz \
+&& cd swig-4.0.1 \
 && ./configure --prefix=/usr \
 && make -j 4 \
 && make install \
 && cd .. \
-&& rm -rf swig-3.0.12
+&& rm -rf swig-4.0.1
 
 # Update auditwheel to support manylinux2010
-#RUN /opt/_internal/cpython-3.6.8/bin/pip install auditwheel==2.0.0
+#RUN /opt/_internal/cpython-3.7.6/bin/pip install auditwheel==2.0.0
 
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
@@ -79,7 +80,7 @@ RUN make cc
 ENV EXPORT_ROOT /export
 # The build of Python 2.6.x bindings is known to be broken.
 # Python3.4 include conflict with abseil-cpp dynamic_annotation.h
-ENV SKIP_PLATFORMS "cp26-cp26m cp26-cp26mu cp27-cp27m cp27-cp27mu cp34-cp34m"
+ENV SKIP_PLATFORMS "cp27-cp27m cp27-cp27mu cp34-cp34m"
 
 COPY build-manylinux1.sh "$BUILD_ROOT"
 RUN chmod ugo+x "${BUILD_ROOT}/build-manylinux1.sh"

@@ -246,9 +246,6 @@ class EmptyColumnPreprocessor : public Preprocessor {
 // --------------------------------------------------------
 // ProportionalColumnPreprocessor
 // --------------------------------------------------------
-// TODO(user): For now this preprocessor just logs the number of proportional
-// columns. Do something with this information.
-//
 // Removes the proportional columns from the problem when possible. Two columns
 // are proportional if one is a non-zero scalar multiple of the other.
 //

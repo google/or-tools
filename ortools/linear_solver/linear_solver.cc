@@ -331,12 +331,9 @@ extern MPSolverInterface* BuildCBCInterface(MPSolver* const solver);
 #if defined(USE_GLPK)
 extern MPSolverInterface* BuildGLPKInterface(bool mip, MPSolver* const solver);
 #endif
-#if defined(USE_BOP)
 extern MPSolverInterface* BuildBopInterface(MPSolver* const solver);
-#endif
-#if defined(USE_GLOP)
 extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
-#endif
+extern MPSolverInterface* BuildSatInterface(MPSolver* const solver);
 #if defined(USE_SCIP)
 extern MPSolverInterface* BuildSCIPInterface(MPSolver* const solver);
 #endif
@@ -358,14 +355,12 @@ namespace {
 MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
   DCHECK(solver != nullptr);
   switch (solver->ProblemType()) {
-#if defined(USE_BOP)
     case MPSolver::BOP_INTEGER_PROGRAMMING:
       return BuildBopInterface(solver);
-#endif
-#if defined(USE_GLOP)
+    case MPSolver::SAT_INTEGER_PROGRAMMING:
+      return BuildSatInterface(solver);
     case MPSolver::GLOP_LINEAR_PROGRAMMING:
       return BuildGLOPInterface(solver);
-#endif
 #if defined(USE_GLPK)
     case MPSolver::GLPK_LINEAR_PROGRAMMING:
       return BuildGLPKInterface(false, solver);
@@ -420,17 +415,12 @@ int NumDigits(int n) {
   return static_cast<int>(std::max(1.0, log10(static_cast<double>(n)) + 1.0));
 #endif
 }
-
-MPSolver::OptimizationProblemType DetourProblemType(
-    MPSolver::OptimizationProblemType problem_type) {
-  return problem_type;
-}
 }  // namespace
 
 MPSolver::MPSolver(const std::string& name,
                    OptimizationProblemType problem_type)
     : name_(name),
-      problem_type_(DetourProblemType(problem_type)),
+      problem_type_(problem_type),
       construction_time_(absl::Now()) {
   interface_.reset(BuildSolverInterface(this));
   if (FLAGS_linear_solver_enable_verbose_output) {
@@ -450,12 +440,9 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
   if (problem_type == GLPK_LINEAR_PROGRAMMING) return true;
   if (problem_type == GLPK_MIXED_INTEGER_PROGRAMMING) return true;
 #endif
-#ifdef USE_BOP
   if (problem_type == BOP_INTEGER_PROGRAMMING) return true;
-#endif
-#ifdef USE_GLOP
+  if (problem_type == SAT_INTEGER_PROGRAMMING) return true;
   if (problem_type == GLOP_LINEAR_PROGRAMMING) return true;
-#endif
 #ifdef USE_GUROBI
   if (problem_type == GUROBI_LINEAR_PROGRAMMING) return true;
   if (problem_type == GUROBI_MIXED_INTEGER_PROGRAMMING) return true;
@@ -515,9 +502,8 @@ constexpr
 #if defined(USE_GLPK)
         {MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING, "glpk_mip"},
 #endif
-#if defined(USE_BOP)
         {MPSolver::BOP_INTEGER_PROGRAMMING, "bop"},
-#endif
+        {MPSolver::SAT_INTEGER_PROGRAMMING, "sat"},
 #if defined(USE_GUROBI)
         {MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING, "gurobi_mip"},
 #endif
@@ -1619,20 +1605,16 @@ double MPSolverInterface::ComputeExactConditionNumber() const {
 }
 
 void MPSolverInterface::SetCommonParameters(const MPSolverParameters& param) {
-// TODO(user): Overhaul the code that sets parameters to enable changing
-// GLOP parameters without issuing warnings.
-// By default, we let GLOP keep its own default tolerance, much more accurate
-// than for the rest of the solvers.
-//
-#if defined(USE_GLOP)
+  // TODO(user): Overhaul the code that sets parameters to enable changing
+  // GLOP parameters without issuing warnings.
+  // By default, we let GLOP keep its own default tolerance, much more accurate
+  // than for the rest of the solvers.
+  //
   if (solver_->ProblemType() != MPSolver::GLOP_LINEAR_PROGRAMMING) {
-#endif
     SetPrimalTolerance(
         param.GetDoubleParam(MPSolverParameters::PRIMAL_TOLERANCE));
     SetDualTolerance(param.GetDoubleParam(MPSolverParameters::DUAL_TOLERANCE));
-#if defined(USE_GLOP)
   }
-#endif
   SetPresolveMode(param.GetIntegerParam(MPSolverParameters::PRESOLVE));
   // TODO(user): In the future, we could distinguish between the
   // algorithm to solve the root LP and the algorithm to solve node
@@ -1644,14 +1626,10 @@ void MPSolverInterface::SetCommonParameters(const MPSolverParameters& param) {
 }
 
 void MPSolverInterface::SetMIPParameters(const MPSolverParameters& param) {
-#if defined(USE_GLOP)
   if (solver_->ProblemType() != MPSolver::GLOP_LINEAR_PROGRAMMING) {
-#endif
     SetRelativeMipGap(
         param.GetDoubleParam(MPSolverParameters::RELATIVE_MIP_GAP));
-#if defined(USE_GLOP)
   }
-#endif
 }
 
 void MPSolverInterface::SetUnsupportedDoubleParam(
@@ -1684,7 +1662,7 @@ bool MPSolverInterface::SetSolverSpecificParametersAsString(
   // immediately, so we also perform the actual parameter parsing right away.
   // Some implementations will keep them forever and won't need to re-parse
   // them; some (eg. Gurobi) need to re-parse the parameters every time they do
-  // Solve(). We just store the parameters std::string anyway.
+  // Solve(). We just store the parameters string anyway.
   //
   // Note(user): This is not implemented on Android because there is no
   // temporary directory to write files to without a pointer to the Java
@@ -1692,21 +1670,9 @@ bool MPSolverInterface::SetSolverSpecificParametersAsString(
   if (parameters.empty()) return true;
 
   std::string extension = ValidFileExtensionForParameterFile();
-#if defined(__linux)
-  int32 tid = static_cast<int32>(pthread_self());
-#else   // defined(__linux__)
-  int32 tid = 123;
-#endif  // defined(__linux__)
-#if !defined(_MSC_VER)
-  int32 pid = static_cast<int32>(getpid());
-#else   // _MSC_VER
-  int32 pid = 456;
-#endif  // _MSC_VER
-  int64 now = absl::GetCurrentTimeNanos();
-  std::string filename =
-      absl::StrFormat("/tmp/parameters-tempfile-%x-%d-%llx%s", tid, pid, now,
-                      extension.c_str());
-  bool no_error_so_far = true;
+  std::string filename;
+  bool no_error_so_far = PortableTemporaryFile(nullptr, &filename);
+  filename += extension;
   if (no_error_so_far) {
     no_error_so_far = PortableFileSetContents(filename, parameters).ok();
   }

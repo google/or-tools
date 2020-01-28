@@ -47,11 +47,12 @@ struct Status {
     return absl::StrCat("ERROR #", error_code_, ": '", error_message_, "'");
   }
 
-  util::error::Error code() const { return static_cast<util::error::Error>(error_code_); }
+  util::error::Error code() const {
+    return static_cast<util::error::Error>(error_code_);
+  }
 
   std::string error_message() const { return error_message_; }
   std::string message() const { return error_message(); }
-
 
   void IgnoreError() const {}
 

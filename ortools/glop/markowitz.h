@@ -301,7 +301,7 @@ class Markowitz {
   // Releases the memory used by this class.
   void Clear();
 
-  // Returns a std::string containing the statistics for this class.
+  // Returns a string containing the statistics for this class.
   std::string StatString() const { return stats_.StatString(); }
 
   // Sets the current parameters.

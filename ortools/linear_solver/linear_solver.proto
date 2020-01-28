@@ -185,7 +185,7 @@ message MPQuadraticConstraint {
   // Sparse representation of linear terms in the quadratic constraint, where
   // term i is var_index[i] * coefficient[i].
   // `var_index` are variable indices w.r.t the "variable" field in
-  // MPModelProto.
+  // MPModelProto, and should be unique.
   repeated int32 var_index = 1;
   repeated double coefficient = 2;  // Must be finite.
 
@@ -311,19 +311,20 @@ message OptionalDouble {
 // Some values won't be supported by some solvers. The behavior in that case is
 // not defined yet.
 message MPSolverCommonParameters {
-  // Limit for relative MIP gap.
-  // If the relative MIP gap reaches this value or below, stop the solve before
-  // the time limit.
+  // The solver stops if the relative MIP gap reaches this value or below.
   // The relative MIP gap is an upper bound of the relative distance to the
-  // optimal:
-  // for a maximization problem, it is defined as either
-  //   (best_bound - objective) / abs(objective) (Gurobi)
-  //   abs((best_bound - objective) / best_bound) (SCIP)
-  // where "objective" is the max objective of any solution found so far, and
-  // "best_bound" is the tightest (i.e. lowest) upper bound of the objective
-  // determined so far.
-  // The MIP Gap is sensitive to objective offset.
-  // If the denominator is 0 the MIP Gap is INFINITY for SCIP and Gurobi.
+  // optimum, and it is defined as:
+  //
+  //   abs(best_bound - incumbent) / abs(incumbent) [Gurobi]
+  //   abs(best_bound - incumbent) / min(abs(best_bound), abs(incumbent)) [SCIP]
+  //
+  // where "incumbent" is the objective value of the best solution found so far
+  // (i.e., lowest when minimizing, highest when maximizing), and "best_bound"
+  // is the tightest bound of the objective determined so far (i.e., highest
+  // when minimizing, and lowest when maximizing). The MIP Gap is sensitive to
+  // objective offset. If the denominator is 0 the MIP Gap is INFINITY for SCIP
+  // and Gurobi. Of note, "incumbent" and "best bound" are called "primal bound"
+  // and "dual bound" in SCIP, respectively.
   // Ask or-core-team@ for other solvers.
   optional OptionalDouble relative_mip_gap = 1;
 

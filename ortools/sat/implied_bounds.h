@@ -40,18 +40,19 @@ struct ImpliedBoundEntry {
   // An integer variable in [0, 1]. When at 1, then the IntegerVariable
   // corresponding to this entry must be greater or equal to the given lower
   // bound.
-  IntegerVariable literal_view;
-  IntegerValue lower_bound;
+  IntegerVariable literal_view = kNoIntegerVariable;
+  IntegerValue lower_bound = IntegerValue(0);
 
   // If false, it is when the literal_view is zero that the lower bound is
   // valid.
   bool is_positive = true;
 
-  ImpliedBoundEntry(IntegerVariable lit, IntegerValue lb, bool pos)
-      : literal_view(lit), lower_bound(lb), is_positive(pos) {}
+  // These constructors are needed for OR-Tools.
+  ImpliedBoundEntry(IntegerVariable lit, IntegerValue lb, bool positive)
+      : literal_view(lit), lower_bound(lb), is_positive(positive) {}
 
- ImpliedBoundEntry()
-     : literal_view(kNoIntegerVariable), lower_bound(0), is_positive(false) {}
+  ImpliedBoundEntry()
+      : literal_view(kNoIntegerVariable), lower_bound(0), is_positive(true) {}
 };
 
 // Maintains all the implications of the form Literal => IntegerLiteral. We

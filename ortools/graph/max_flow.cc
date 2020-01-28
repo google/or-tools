@@ -826,7 +826,7 @@ void GenericMaxFlow<Graph>::RefineWithGlobalUpdate() {
         // worse. The behavior of this heuristic is related to the Gap
         // heuristic.
         //
-        // Note that the global update will fix all such cases efficently. So
+        // Note that the global update will fix all such cases efficiently. So
         // the idea is to discharge the active node as much as possible, and
         // then do a global update.
         //

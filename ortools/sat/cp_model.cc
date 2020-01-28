@@ -84,6 +84,10 @@ IntVar::IntVar(const BoolVar& var) {
   index_ = var.index_;
 }
 
+LinearExpr IntVar::AddConstant(int64 value) const {
+  return LinearExpr(*this).AddConstant(value);
+}
+
 std::string IntVar::DebugString() const {
   if (index_ < 0) {
     return absl::StrFormat("Not(%s)",
@@ -212,6 +216,12 @@ void CircuitConstraint::AddArc(int tail, int head, BoolVar literal) {
   proto_->mutable_circuit()->add_tails(tail);
   proto_->mutable_circuit()->add_heads(head);
   proto_->mutable_circuit()->add_literals(literal.index_);
+}
+
+void MultipleCircuitConstraint::AddArc(int tail, int head, BoolVar literal) {
+  proto_->mutable_routes()->add_tails(tail);
+  proto_->mutable_routes()->add_heads(head);
+  proto_->mutable_routes()->add_literals(literal.index_);
 }
 
 void TableConstraint::AddTuple(absl::Span<const int64> tuple) {
@@ -547,6 +557,10 @@ CircuitConstraint CpModelBuilder::AddCircuitConstraint() {
   return CircuitConstraint(cp_model_.add_constraints());
 }
 
+MultipleCircuitConstraint CpModelBuilder::AddMultipleCircuitConstraint() {
+  return MultipleCircuitConstraint(cp_model_.add_constraints());
+}
+
 TableConstraint CpModelBuilder::AddAllowedAssignments(
     absl::Span<const IntVar> vars) {
   ConstraintProto* const proto = cp_model_.add_constraints();
@@ -612,12 +626,45 @@ Constraint CpModelBuilder::AddMinEquality(IntVar target,
   return Constraint(proto);
 }
 
+void CpModelBuilder::LinearExprToProto(const LinearExpr& expr,
+                                       LinearExpressionProto* expr_proto) {
+  for (const IntVar var : expr.variables()) {
+    expr_proto->add_vars(GetOrCreateIntegerIndex(var.index_));
+  }
+  for (const int64 coeff : expr.coefficients()) {
+    expr_proto->add_coeffs(coeff);
+  }
+  expr_proto->set_offset(expr.constant());
+}
+
+Constraint CpModelBuilder::AddLinMinEquality(
+    const LinearExpr& target, absl::Span<const LinearExpr> exprs) {
+  ConstraintProto* const proto = cp_model_.add_constraints();
+  LinearExprToProto(target, proto->mutable_lin_min()->mutable_target());
+  for (const LinearExpr& expr : exprs) {
+    LinearExpressionProto* expr_proto = proto->mutable_lin_min()->add_exprs();
+    LinearExprToProto(expr, expr_proto);
+  }
+  return Constraint(proto);
+}
+
 Constraint CpModelBuilder::AddMaxEquality(IntVar target,
                                           absl::Span<const IntVar> vars) {
   ConstraintProto* const proto = cp_model_.add_constraints();
   proto->mutable_int_max()->set_target(GetOrCreateIntegerIndex(target.index_));
   for (const IntVar& var : vars) {
     proto->mutable_int_max()->add_vars(GetOrCreateIntegerIndex(var.index_));
+  }
+  return Constraint(proto);
+}
+
+Constraint CpModelBuilder::AddLinMaxEquality(
+    const LinearExpr& target, absl::Span<const LinearExpr> exprs) {
+  ConstraintProto* const proto = cp_model_.add_constraints();
+  LinearExprToProto(target, proto->mutable_lin_max()->mutable_target());
+  for (const LinearExpr& expr : exprs) {
+    LinearExpressionProto* expr_proto = proto->mutable_lin_max()->add_exprs();
+    LinearExprToProto(expr, expr_proto);
   }
   return Constraint(proto);
 }

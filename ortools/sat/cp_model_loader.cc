@@ -19,6 +19,7 @@
 #include <set>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
@@ -30,6 +31,7 @@
 #include "ortools/sat/all_different.h"
 #include "ortools/sat/circuit.h"
 #include "ortools/sat/cp_constraints.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/cumulative.h"
 #include "ortools/sat/diffn.h"
@@ -200,13 +202,14 @@ void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
   integers_.resize(num_proto_variables, kNoIntegerVariable);
 
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
+  integer_trail->ReserveSpaceForNumVariables(
+      var_to_instantiate_as_integer.size());
+  reverse_integer_map_.resize(2 * var_to_instantiate_as_integer.size(), -1);
   for (const int i : var_to_instantiate_as_integer) {
     const auto& var_proto = model_proto.variables(i);
     integers_[i] =
         integer_trail->AddIntegerVariable(ReadDomainFromProto(var_proto));
-    if (integers_[i] >= reverse_integer_map_.size()) {
-      reverse_integer_map_.resize(integers_[i].value() + 1, -1);
-    }
+    DCHECK_LT(integers_[i], reverse_integer_map_.size());
     reverse_integer_map_[integers_[i]] = i;
   }
 
@@ -1050,26 +1053,28 @@ void LoadEquivalenceNeqAC(const std::vector<Literal> enforcement_literal,
 }  // namespace
 
 void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+
   if (ct.linear().vars().empty()) {
     const Domain rhs = ReadDomainFromProto(ct.linear());
     if (rhs.Contains(0)) return;
-    VLOG(1) << "Trivially UNSAT constraint: " << ct.DebugString();
-    m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+    if (HasEnforcementLiteral(ct)) {
+      std::vector<Literal> clause;
+      for (const int ref : ct.enforcement_literal()) {
+        clause.push_back(mapping->Literal(ref).Negated());
+      }
+      m->Add(ClauseConstraint(clause));
+    } else {
+      VLOG(1) << "Trivially UNSAT constraint: " << ct.DebugString();
+      m->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+    }
     return;
   }
 
-  auto* mapping = m->GetOrCreate<CpModelMapping>();
   auto* integer_trail = m->GetOrCreate<IntegerTrail>();
-  auto* encoder = m->GetOrCreate<IntegerEncoder>();
   const std::vector<IntegerVariable> vars =
       mapping->Integers(ct.linear().vars());
   const std::vector<int64> coeffs = ValuesFromProto(ct.linear().coeffs());
-  IntegerValue max_domain_size(0);
-  for (int i = 0; i < vars.size(); ++i) {
-    const IntegerValue vmin = integer_trail->LowerBound(vars[i]);
-    const IntegerValue vmax = integer_trail->UpperBound(vars[i]);
-    max_domain_size = std::max(max_domain_size, vmax - vmin + 1);
-  }
 
   // Compute the min/max to relax the bounds if needed.
   //
@@ -1077,52 +1082,56 @@ void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
   // to detect if we only have Booleans.
   IntegerValue min_sum(0);
   IntegerValue max_sum(0);
+  IntegerValue max_domain_size(0);
   bool all_booleans = true;
   for (int i = 0; i < vars.size(); ++i) {
     if (all_booleans && !mapping->IsBoolean(ct.linear().vars(i))) {
       all_booleans = false;
     }
-    const IntegerValue term_a = coeffs[i] * integer_trail->LowerBound(vars[i]);
-    const IntegerValue term_b = coeffs[i] * integer_trail->UpperBound(vars[i]);
+    const IntegerValue lb = integer_trail->LowerBound(vars[i]);
+    const IntegerValue ub = integer_trail->UpperBound(vars[i]);
+    max_domain_size = std::max(max_domain_size, ub - lb + 1);
+    const IntegerValue term_a = coeffs[i] * lb;
+    const IntegerValue term_b = coeffs[i] * ub;
     min_sum += std::min(term_a, term_b);
     max_sum += std::max(term_a, term_b);
   }
 
-  const SatParameters& params = *m->GetOrCreate<SatParameters>();
-  if (params.boolean_encoding_level() > 0 && ct.linear().vars_size() == 2 &&
-      ConstraintIsEq(ct.linear()) && ct.linear().domain(0) != min_sum &&
-      ct.linear().domain(0) != max_sum &&
-      encoder->VariableIsFullyEncoded(vars[0]) &&
-      encoder->VariableIsFullyEncoded(vars[1]) &&
-      !integer_trail->IsFixed(vars[0]) && !integer_trail->IsFixed(vars[1]) &&
-      max_domain_size < 16) {
-    VLOG(3) << "Load AC version of " << ct.DebugString() << ", var0 domain = "
-            << integer_trail->InitialVariableDomain(vars[0])
-            << ", var1 domain = "
-            << integer_trail->InitialVariableDomain(vars[1]);
-    return LoadEquivalenceAC(mapping->Literals(ct.enforcement_literal()),
-                             IntegerValue(coeffs[0]), vars[0],
-                             IntegerValue(coeffs[1]), vars[1],
-                             IntegerValue(ct.linear().domain(0)), m);
-  }
+  if (ct.linear().vars_size() == 2 && !integer_trail->IsFixed(vars[0]) &&
+      !integer_trail->IsFixed(vars[1]) && max_domain_size < 16) {
+    const SatParameters& params = *m->GetOrCreate<SatParameters>();
+    auto* encoder = m->GetOrCreate<IntegerEncoder>();
+    if (params.boolean_encoding_level() > 0 && ConstraintIsEq(ct.linear()) &&
+        ct.linear().domain(0) != min_sum && ct.linear().domain(0) != max_sum &&
+        encoder->VariableIsFullyEncoded(vars[0]) &&
+        encoder->VariableIsFullyEncoded(vars[1])) {
+      VLOG(3) << "Load AC version of " << ct.DebugString() << ", var0 domain = "
+              << integer_trail->InitialVariableDomain(vars[0])
+              << ", var1 domain = "
+              << integer_trail->InitialVariableDomain(vars[1]);
+      return LoadEquivalenceAC(mapping->Literals(ct.enforcement_literal()),
+                               IntegerValue(coeffs[0]), vars[0],
+                               IntegerValue(coeffs[1]), vars[1],
+                               IntegerValue(ct.linear().domain(0)), m);
+    }
 
-  int64 single_value = 0;
-  if (params.boolean_encoding_level() > 0 && ct.linear().vars_size() == 2 &&
-      ConstraintIsNEq(ct.linear(), mapping, integer_trail, &single_value) &&
-      single_value != min_sum && single_value != max_sum &&
-      encoder->VariableIsFullyEncoded(vars[0]) &&
-      encoder->VariableIsFullyEncoded(vars[1]) &&
-      !integer_trail->IsFixed(vars[0]) && !integer_trail->IsFixed(vars[1]) &&
-      max_domain_size < 16) {
-    VLOG(3) << "Load NAC version of " << ct.DebugString() << ", var0 domain = "
-            << integer_trail->InitialVariableDomain(vars[0])
-            << ", var1 domain = "
-            << integer_trail->InitialVariableDomain(vars[1])
-            << ", value = " << single_value;
-    return LoadEquivalenceNeqAC(mapping->Literals(ct.enforcement_literal()),
-                                IntegerValue(coeffs[0]), vars[0],
-                                IntegerValue(coeffs[1]), vars[1],
-                                IntegerValue(single_value), m);
+    int64 single_value = 0;
+    if (params.boolean_encoding_level() > 0 &&
+        ConstraintIsNEq(ct.linear(), mapping, integer_trail, &single_value) &&
+        single_value != min_sum && single_value != max_sum &&
+        encoder->VariableIsFullyEncoded(vars[0]) &&
+        encoder->VariableIsFullyEncoded(vars[1])) {
+      VLOG(3) << "Load NAC version of " << ct.DebugString()
+              << ", var0 domain = "
+              << integer_trail->InitialVariableDomain(vars[0])
+              << ", var1 domain = "
+              << integer_trail->InitialVariableDomain(vars[1])
+              << ", value = " << single_value;
+      return LoadEquivalenceNeqAC(mapping->Literals(ct.enforcement_literal()),
+                                  IntegerValue(coeffs[0]), vars[0],
+                                  IntegerValue(coeffs[1]), vars[1],
+                                  IntegerValue(single_value), m);
+    }
   }
 
   if (ct.linear().domain_size() == 2) {
@@ -1251,6 +1260,29 @@ void LoadIntMinConstraint(const ConstraintProto& ct, Model* m) {
   m->Add(IsEqualToMinOf(min, vars));
 }
 
+LinearExpression GetExprFromProto(const LinearExpressionProto& expr_proto,
+                                  const CpModelMapping& mapping) {
+  LinearExpression expr;
+  expr.vars = mapping.Integers(expr_proto.vars());
+  for (int j = 0; j < expr_proto.coeffs_size(); ++j) {
+    expr.coeffs.push_back(IntegerValue(expr_proto.coeffs(j)));
+  }
+  expr.offset = IntegerValue(expr_proto.offset());
+  return CanonicalizeExpr(expr);
+}
+
+void LoadLinMinConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  const LinearExpression min =
+      GetExprFromProto(ct.lin_min().target(), *mapping);
+  std::vector<LinearExpression> exprs;
+  exprs.reserve(ct.lin_min().exprs_size());
+  for (int i = 0; i < ct.lin_min().exprs_size(); ++i) {
+    exprs.push_back(GetExprFromProto(ct.lin_min().exprs(i), *mapping));
+  }
+  m->Add(IsEqualToMinOf(min, exprs));
+}
+
 void LoadIntMaxConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   const IntegerVariable max = mapping->Integer(ct.int_max().target());
@@ -1265,6 +1297,7 @@ void LoadNoOverlapConstraint(const ConstraintProto& ct, Model* m) {
 }
 
 void LoadNoOverlap2dConstraint(const ConstraintProto& ct, Model* m) {
+  if (ct.no_overlap_2d().x_intervals().empty()) return;
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   const std::vector<IntervalVariable> x_intervals =
       mapping->Intervals(ct.no_overlap_2d().x_intervals());
@@ -1738,6 +1771,9 @@ bool LoadConstraint(const ConstraintProto& ct, Model* m) {
       return true;
     case ConstraintProto::ConstraintProto::kIntMin:
       LoadIntMinConstraint(ct, m);
+      return true;
+    case ConstraintProto::ConstraintProto::kLinMin:
+      LoadLinMinConstraint(ct, m);
       return true;
     case ConstraintProto::ConstraintProto::kIntMax:
       LoadIntMaxConstraint(ct, m);

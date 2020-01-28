@@ -7,7 +7,12 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREAD_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 
-find_package(ZLIB REQUIRED)
+# libprotobuf force us to depends on ZLIB::ZLIB target
+if(BUILD_ZLIB)
+ find_package(ZLIB REQUIRED CONFIG)
+else()
+ find_package(ZLIB REQUIRED)
+endif()
 find_package(absl REQUIRED CONFIG)
 set(GFLAGS_USE_TARGET_NAMESPACE TRUE)
 find_package(gflags REQUIRED CONFIG)
@@ -109,6 +114,7 @@ target_include_directories(${PROJECT_NAME} INTERFACE
 target_link_libraries(${PROJECT_NAME} PUBLIC
   ZLIB::ZLIB
   absl::base
+  absl::random_random
   absl::raw_hash_set
   absl::hash
   absl::memory
@@ -123,11 +129,11 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   Coin::CbcSolver Coin::OsiCbc Coin::ClpSolver Coin::OsiClp
   Threads::Threads)
 if(WIN32)
-	target_link_libraries(${PROJECT_NAME} PUBLIC psapi.lib ws2_32.lib)
+  target_link_libraries(${PROJECT_NAME} PUBLIC psapi.lib ws2_32.lib)
 target_compile_definitions(${PROJECT_NAME} PUBLIC __WIN32__)
 endif()
 target_compile_definitions(${PROJECT_NAME}
-	PUBLIC	USE_BOP USE_GLOP USE_CBC USE_CLP)
+  PUBLIC USE_BOP USE_GLOP USE_CBC USE_CLP)
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 

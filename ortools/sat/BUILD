@@ -62,6 +62,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:map_util",
         "//ortools/base:typeid",
+        "@com_google_absl//absl/container:flat_hash_map",
     ],
 )
 
@@ -271,6 +272,7 @@ cc_library(
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
         "//ortools/base:map_util",
+        "//ortools/base:mathutil",
         "//ortools/port:proto_utils",
         "//ortools/util:affine_relation",
         "//ortools/util:bitset",
@@ -855,7 +857,6 @@ cc_library(
         ":linear_constraint_manager",
         ":model",
         "//ortools/base",
-        "//ortools/base:int128",
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
         "//ortools/base:map_util",
@@ -871,6 +872,7 @@ cc_library(
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/numeric:int128",
     ],
 )
 
@@ -883,6 +885,7 @@ cc_library(
         ":linear_constraint",
         ":model",
         ":sat_parameters_cc_proto",
+        "//ortools/glop:revised_simplex",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
     ],
@@ -950,7 +953,6 @@ cc_library(
         "//ortools/base:int_type",
         "//ortools/base:map_util",
         "//ortools/base:random",
-        "//ortools/linear_solver",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/port:proto_utils",
         "//ortools/util:time_limit",
@@ -970,6 +972,8 @@ cc_library(
         "//ortools/base",
         "//ortools/base:random",
         "//ortools/util:random_engine",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_protobuf_cc//:protobuf",
     ],
 )

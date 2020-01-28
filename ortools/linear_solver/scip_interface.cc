@@ -111,9 +111,9 @@ class SCIPInterface : public MPSolverInterface {
   void SetRelativeMipGap(double value) override;
   void SetPrimalTolerance(double value) override;
   void SetDualTolerance(double value) override;
-  void SetPresolveMode(int value) override;
-  void SetScalingMode(int value) override;
-  void SetLpAlgorithm(int value) override;
+  void SetPresolveMode(int presolve) override;
+  void SetScalingMode(int scaling) override;
+  void SetLpAlgorithm(int lp_algorithm) override;
 
   // SCIP parameters allow to lower and upper bound the number of threads used
   // (via "parallel/minnthreads" and "parallel/maxnthread", respectively). Here,
@@ -712,7 +712,8 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
     default:
       if (solution != nullptr) {
         result_status_ = MPSolver::FEASIBLE;
-      } else if (scip_status == SCIP_STATUS_TIMELIMIT) {
+      } else if (scip_status == SCIP_STATUS_TIMELIMIT ||
+                 scip_status == SCIP_STATUS_TOTALNODELIMIT) {
         result_status_ = MPSolver::NOT_SOLVED;
       } else {
         result_status_ = MPSolver::ABNORMAL;
@@ -821,9 +822,9 @@ void SCIPInterface::SetDualTolerance(double value) {
   if (status_.ok()) status_ = status;
 }
 
-void SCIPInterface::SetPresolveMode(int value) {
+void SCIPInterface::SetPresolveMode(int presolve) {
   // See the NOTE on SetRelativeMipGap().
-  switch (value) {
+  switch (presolve) {
     case MPSolverParameters::PRESOLVE_OFF: {
       const auto status =
           SCIP_TO_STATUS(SCIPsetIntParam(scip_, "presolving/maxrounds", 0));
@@ -837,22 +838,22 @@ void SCIPInterface::SetPresolveMode(int value) {
       return;
     }
     default: {
-      SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
+      SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, presolve);
       return;
     }
   }
 }
 
-void SCIPInterface::SetScalingMode(int value) {
+void SCIPInterface::SetScalingMode(int scaling) {
   SetUnsupportedIntegerParam(MPSolverParameters::SCALING);
 }
 
 // Only the root LP algorithm is set as setting the node LP to a
 // non-default value rarely is beneficial. The node LP algorithm could
 // be set as well with "lp/resolvealgorithm".
-void SCIPInterface::SetLpAlgorithm(int value) {
+void SCIPInterface::SetLpAlgorithm(int lp_algorithm) {
   // See the NOTE on SetRelativeMipGap().
-  switch (value) {
+  switch (lp_algorithm) {
     case MPSolverParameters::DUAL: {
       const auto status =
           SCIP_TO_STATUS(SCIPsetCharParam(scip_, "lp/initalgorithm", 'd'));
@@ -874,7 +875,7 @@ void SCIPInterface::SetLpAlgorithm(int value) {
     }
     default: {
       SetIntegerParamToUnsupportedValue(MPSolverParameters::LP_ALGORITHM,
-                                        value);
+                                        lp_algorithm);
       return;
     }
   }

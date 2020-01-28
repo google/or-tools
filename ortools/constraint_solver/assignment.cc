@@ -503,7 +503,7 @@ template <class Var, class Element, class Proto, class Container>
 void RealLoad(const AssignmentProto& assignment_proto,
               Container* const container,
               int (AssignmentProto::*GetSize)() const,
-              const Proto& (AssignmentProto::*GetElem)(int)const) {
+              const Proto& (AssignmentProto::*GetElem)(int) const) {
   bool fast_load = (container->Size() == (assignment_proto.*GetSize)());
   for (int i = 0; fast_load && i < (assignment_proto.*GetSize)(); ++i) {
     Element* const element = container->MutableElement(i);
@@ -541,7 +541,7 @@ void Assignment::Load(const AssignmentProto& assignment_proto) {
     const IntVarAssignment& objective = assignment_proto.objective();
     const std::string objective_id = objective.var_id();
     CHECK(!objective_id.empty());
-    if (HasObjective() && objective_id.compare(Objective()->name()) == 0) {
+    if (HasObjective() && objective_id == Objective()->name()) {
       const int64 obj_min = objective.min();
       const int64 obj_max = objective.max();
       SetObjectiveRange(obj_min, obj_max);

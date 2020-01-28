@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.1;netstandard2.0</TargetFrameworks>
     <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
     <AssemblyName>google-ortools-native</AssemblyName>
     <Version>@PROJECT_VERSION@</Version>
@@ -17,6 +17,8 @@
     <!-- Signing -->
     <AssemblyOriginatorKeyFile>../../../bin/or-tools.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
+    <PublicSign>false</PublicSign>
+    <DelaySign>false</DelaySign>
   </PropertyGroup>
 
   <ItemGroup>

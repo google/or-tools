@@ -26,7 +26,7 @@
  cp_model.AddEquality(LinearExpr::Sum({rabbits, pheasants}), 20);
  cp_model.AddEquality(LinearExpr::ScalProd({rabbits, pheasants}, {4, 2}), 56);
 
- const CpSolverResponse response = Solve(cp_model);
+ const CpSolverResponse response = Solve(cp_model.Build());
  if (response.status() == CpSolverStatus::FEASIBLE) {
    LOG(INFO) << SolutionIntegerValue(response, rabbits)
              << " rabbits, and " << SolutionIntegerValue(response, pheasants)
@@ -86,7 +86,7 @@ class BoolVar {
     return other.cp_model_ != cp_model_ || other.index_ != index_;
   }
 
-  /// Debug std::string.
+  /// Debug string.
   std::string DebugString() const;
 
   /// Returns the underlying protobuf object (useful for testing).
@@ -113,6 +113,7 @@ class BoolVar {
   friend class CpModelBuilder;
   friend class IntVar;
   friend class IntervalVar;
+  friend class MultipleCircuitConstraint;
   friend class LinearExpr;
   friend class ReservoirConstraint;
   friend bool SolutionBooleanValue(const CpSolverResponse& r, BoolVar x);
@@ -151,8 +152,12 @@ class IntVar {
   /// Sets the name of the variable.
   IntVar WithName(const std::string& name);
 
-  /// Returns the name of the variable (or the empty std::string if not set).
+  /// Returns the name of the variable (or the empty string if not set).
   const std::string& Name() const { return Proto().name(); }
+
+  /// Adds a constant value to an integer variable and returns a linear
+  /// expression.
+  LinearExpr AddConstant(int64 value) const;
 
   /// Equality test with another IntVar.
   bool operator==(const IntVar& other) const {
@@ -164,7 +169,7 @@ class IntVar {
     return other.cp_model_ != cp_model_ || other.index_ != index_;
   }
 
-  /// Returns a debug std::string.
+  /// Returns a debug string.
   std::string DebugString() const;
 
   /// Returns the underlying protobuf object (useful for testing).
@@ -320,7 +325,7 @@ class IntervalVar {
   /// Sets the name of the variable.
   IntervalVar WithName(const std::string& name);
 
-  /// Returns the name of the interval (or the empty std::string if not set).
+  /// Returns the name of the interval (or the empty string if not set).
   std::string Name() const;
 
   /// Returns the start variable.
@@ -349,7 +354,7 @@ class IntervalVar {
     return other.cp_model_ != cp_model_ || other.index_ != index_;
   }
 
-  /// Returns a debug std::string.
+  /// Returns a debug string.
   std::string DebugString() const;
 
   /// Returns the underlying protobuf object (useful for testing).
@@ -415,7 +420,7 @@ class Constraint {
   /// Sets the name of the constraint.
   Constraint WithName(const std::string& name);
 
-  /// Returns the name of the constraint (or the empty std::string if not set).
+  /// Returns the name of the constraint (or the empty string if not set).
   const std::string& Name() const;
 
   /// Returns the underlying protobuf object (useful for testing).
@@ -438,6 +443,29 @@ class Constraint {
  * This constraint allows adding arcs to the circuit constraint incrementally.
  */
 class CircuitConstraint : public Constraint {
+ public:
+  /**
+   * Add an arc to the circuit.
+   *
+   * @param tail the index of the tail node.
+   * @param head the index of the head node.
+   * @param literal it will be set to true if the arc is selected.
+   */
+  void AddArc(int tail, int head, BoolVar literal);
+
+ private:
+  friend class CpModelBuilder;
+
+  using Constraint::Constraint;
+};
+
+/**
+ * Specialized circuit constraint.
+ *
+ * This constraint allows adding arcs to the multiple circuit constraint
+ * incrementally.
+ */
+class MultipleCircuitConstraint : public Constraint {
  public:
   /**
    * Add an arc to the circuit.
@@ -647,8 +675,24 @@ class CpModelBuilder {
    *
    * It returns a circuit constraint that allows adding arcs incrementally after
    * construction.
+   *
    */
   CircuitConstraint AddCircuitConstraint();
+
+  /**
+   * Adds a multiple circuit constraint, aka the "VRP" (Vehicle Routing Problem)
+   * constraint.
+   *
+   * The direct graph where arc #i (from tails[i] to head[i]) is present iff
+   * literals[i] is true must satisfy this set of properties:
+   * - #incoming arcs == 1 except for node 0.
+   * - #outgoing arcs == 1 except for node 0.
+   * - for node zero, #incoming arcs == #outgoing arcs.
+   * - There are no duplicate arcs.
+   * - Self-arcs are allowed except for node 0.
+   * - There is no cycle in this graph, except through node 0.
+   */
+  MultipleCircuitConstraint AddMultipleCircuitConstraint();
 
   /**
    * Adds an allowed assignments constraint.
@@ -737,8 +781,16 @@ class CpModelBuilder {
   /// Adds target == min(vars).
   Constraint AddMinEquality(IntVar target, absl::Span<const IntVar> vars);
 
+  /// Adds target == min(exprs).
+  Constraint AddLinMinEquality(const LinearExpr& target,
+                               absl::Span<const LinearExpr> exprs);
+
   /// Adds target == max(vars).
   Constraint AddMaxEquality(IntVar target, absl::Span<const IntVar> vars);
+
+  /// Adds target == max(exprs).
+  Constraint AddLinMaxEquality(const LinearExpr& target,
+                               absl::Span<const LinearExpr> exprs);
 
   /// Adds target = num / denom (integer division rounded towards 0).
   Constraint AddDivisionEquality(IntVar target, IntVar numerator,
@@ -811,6 +863,10 @@ class CpModelBuilder {
  private:
   friend class CumulativeConstraint;
   friend class ReservoirConstraint;
+
+  // Fills the 'expr_proto' with the linear expression represented by 'expr'.
+  void LinearExprToProto(const LinearExpr& expr,
+                         LinearExpressionProto* expr_proto);
 
   // Returns a (cached) integer variable index with a constant value.
   int IndexFromConstant(int64 value);

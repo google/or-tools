@@ -178,7 +178,10 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // Reinitialize the LP from a potentially new set of constraints.
   // This fills all data structure and properly rescale the underlying LP.
-  void CreateLpFromConstraintManager();
+  //
+  // Returns false if the problem is UNSAT (it can happen when presolve is off
+  // and some LP constraint are trivially false).
+  bool CreateLpFromConstraintManager();
 
   // Solve the LP, returns false if something went wrong in the LP solver.
   bool SolveLp();
@@ -186,7 +189,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Add a "MIR" cut obtained by first taking the linear combination of the
   // row of the matrix according to "integer_multipliers" and then trying
   // some integer rounding heuristic.
-  void AddCutFromConstraints(
+  //
+  // Return true if a new cut was added to the cut manager.
+  bool AddCutFromConstraints(
       const std::string& name,
       const std::vector<std::pair<glop::RowIndex, IntegerValue>>&
           integer_multipliers);
@@ -222,7 +227,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Note that this will loose some precision, but our subsequent computation
   // will still be exact as it will work for any set of multiplier.
   std::vector<std::pair<glop::RowIndex, IntegerValue>> ScaleLpMultiplier(
-      bool take_objective_into_account, bool use_constraint_status,
+      bool take_objective_into_account,
       const glop::DenseColumn& dense_lp_multipliers, glop::Fractional* scaling,
       int max_pow = 62) const;
 
@@ -232,7 +237,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   //
   // Returns false if we encountered any integer overflow.
   bool ComputeNewLinearConstraint(
-      bool use_constraint_status,
       const std::vector<std::pair<glop::RowIndex, IntegerValue>>&
           integer_multipliers,
       gtl::ITIVector<glop::ColIndex, IntegerValue>* dense_terms,
@@ -356,6 +360,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   Trail* trail_;
   SearchHeuristicsVector* model_heuristics_;
   IntegerEncoder* integer_encoder_;
+  ModelRandomGenerator* random_;
 
   // Used while deriving cuts.
   ImpliedBoundsProcessor implied_bounds_processor_;

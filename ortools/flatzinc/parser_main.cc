@@ -55,7 +55,6 @@ void ParseFile(const std::string& filename, bool presolve) {
     timer.Reset();
     timer.Start();
     Presolver presolve;
-    presolve.CleanUpModelForTheCpSolver(&model, /*use_sat=*/true);
     presolve.Run(&model);
     FZLOG << "  - done in " << timer.GetInMs() << " ms" << FZENDL;
   }

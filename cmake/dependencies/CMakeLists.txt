@@ -40,7 +40,7 @@ if(BUILD_ZLIB)
     TAG
       "v1.2.11"
     APPLY_PATCH
-      "${CMAKE_SOURCE_DIR}/patches/ZLIB.patch"
+      "${CMAKE_CURRENT_SOURCE_DIR}/../../patches/ZLIB.patch"
  )
 endif()
 
@@ -54,7 +54,7 @@ if(BUILD_absl)
     REPOSITORY
       "https://github.com/abseil/abseil-cpp.git"
     TAG
-      "master"
+      "8ba96a8"
  )
 endif()
 
@@ -102,7 +102,7 @@ if(BUILD_Protobuf)
     REPOSITORY
       "https://github.com/protocolbuffers/protobuf.git"
     TAG
-      "v3.10.0"
+      "v3.11.2"
     CMAKE_ARGS
 	  -Dprotobuf_MSVC_STATIC_RUNTIME:BOOL=OFF
       "SOURCE_SUBDIR cmake"

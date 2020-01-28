@@ -91,7 +91,7 @@ inline IntegerValue Subtract(IntegerValue a, IntegerValue b) {
 
 inline IntegerValue CeilRatio(IntegerValue dividend,
                               IntegerValue positive_divisor) {
-  CHECK_GT(positive_divisor, 0);
+  DCHECK_GT(positive_divisor, 0);
   const IntegerValue result = dividend / positive_divisor;
   const IntegerValue adjust =
       static_cast<IntegerValue>(result * positive_divisor < dividend);
@@ -100,7 +100,7 @@ inline IntegerValue CeilRatio(IntegerValue dividend,
 
 inline IntegerValue FloorRatio(IntegerValue dividend,
                                IntegerValue positive_divisor) {
-  CHECK_GT(positive_divisor, 0);
+  DCHECK_GT(positive_divisor, 0);
   const IntegerValue result = dividend / positive_divisor;
   const IntegerValue adjust =
       static_cast<IntegerValue>(result * positive_divisor > dividend);
@@ -199,6 +199,13 @@ using InlinedIntegerLiteralVector = absl::InlinedVector<IntegerLiteral, 2>;
 // A singleton that holds the INITIAL integer variable domains.
 struct IntegerDomains : public gtl::ITIVector<IntegerVariable, Domain> {
   explicit IntegerDomains(Model* model) {}
+};
+
+// A singleton used for debugging. If this is set in the model, then we can
+// check that various derived constraint do not exclude this solution (if it is
+// a known optimal solution for instance).
+struct DebugSolution : public gtl::ITIVector<IntegerVariable, IntegerValue> {
+  explicit DebugSolution(Model* model) {}
 };
 
 // Some heuristics may be generated automatically, for instance by constraints.
@@ -510,6 +517,10 @@ class IntegerTrail : public SatPropagator {
   IntegerVariable NumIntegerVariables() const {
     return IntegerVariable(vars_.size());
   }
+
+  // Optimization: you can call this before calling AddIntegerVariable()
+  // num_vars time.
+  void ReserveSpaceForNumVariables(int num_vars);
 
   // Adds a new integer variable. Adding integer variable can only be done when
   // the decision level is zero (checked). The given bounds are INCLUSIVE.
@@ -1110,8 +1121,9 @@ class GenericLiteralWatcher : public SatPropagator {
   std::vector<bool> in_queue_;
 
   // Data for each propagator.
+  DEFINE_INT_TYPE(IdType, int32);
   std::vector<int> id_to_level_at_last_call_;
-  std::vector<int> id_to_greatest_common_level_since_last_call_;
+  RevVector<IdType, int> id_to_greatest_common_level_since_last_call_;
   std::vector<std::vector<ReversibleInterface*>> id_to_reversible_classes_;
   std::vector<std::vector<int*>> id_to_reversible_ints_;
   std::vector<std::vector<int>> id_to_watch_indices_;

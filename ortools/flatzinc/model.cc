@@ -583,33 +583,17 @@ IntegerVariable* Argument::VarAt(int pos) const {
 
 IntegerVariable::IntegerVariable(const std::string& name_,
                                  const Domain& domain_, bool temporary_)
-    : name(name_),
-      domain(domain_),
-      defining_constraint(nullptr),
-      temporary(temporary_),
-      active(true) {
+    : name(name_), domain(domain_), temporary(temporary_), active(true) {
   if (!domain.is_interval) {
     gtl::STLSortAndRemoveDuplicates(&domain.values);
   }
 }
 
 bool IntegerVariable::Merge(const std::string& other_name,
-                            const Domain& other_domain,
-                            Constraint* const other_constraint,
-                            bool other_temporary) {
-  if (defining_constraint != nullptr && other_constraint != nullptr) {
-    // Both are defined, we cannot merge the two variables.
-    return false;
-  }
+                            const Domain& other_domain, bool other_temporary) {
   if (temporary && !other_temporary) {
     temporary = false;
     name = other_name;
-  }
-  if (defining_constraint == nullptr) {
-    defining_constraint = other_constraint;
-    if (defining_constraint != nullptr) {
-      defining_constraint->target_variable = this;
-    }
   }
   domain.IntersectWithDomain(other_domain);
   return true;
@@ -619,11 +603,9 @@ std::string IntegerVariable::DebugString() const {
   if (!domain.is_interval && domain.values.size() == 1) {
     return absl::StrFormat("% d", domain.values.back());
   } else {
-    return absl::StrFormat(
-        "%s(%s%s%s)%s", name, domain.DebugString(),
-        temporary ? ", temporary" : "",
-        defining_constraint != nullptr ? ", target_variable" : "",
-        active ? "" : " [removed during presolve]");
+    return absl::StrFormat("%s(%s%s)%s", name, domain.DebugString(),
+                           temporary ? ", temporary" : "",
+                           active ? "" : " [removed during presolve]");
   }
 }
 
@@ -635,13 +617,8 @@ std::string Constraint::DebugString() const {
       active ? ""
              : (presolve_propagation_done ? "[propagated during presolve]"
                                           : "[removed during presolve]");
-  const std::string target =
-      target_variable != nullptr
-          ? absl::StrFormat(" => %s", target_variable->name)
-          : "";
-  return absl::StrFormat("%s(%s)%s %s %s", type,
-                         JoinDebugString(arguments, ", "), target, strong,
-                         presolve_status_str);
+  return absl::StrFormat("%s(%s)%s %s", type, JoinDebugString(arguments, ", "),
+                         strong, presolve_status_str);
 }
 
 void Constraint::RemoveArg(int arg_pos) {
@@ -649,28 +626,13 @@ void Constraint::RemoveArg(int arg_pos) {
 }
 
 void Constraint::MarkAsInactive() {
-  RemoveTargetVariable();
   active = false;
   // TODO(user): Reclaim arguments and memory.
 }
 
 void Constraint::SetAsFalse() {
-  RemoveTargetVariable();
   type = "false_constraint";
   arguments.clear();
-}
-
-void Constraint::RemoveTargetVariable() {
-  if (target_variable != nullptr) {
-    if (target_variable->defining_constraint == this) {
-      FZVLOG << "  - remove target_variable from " << DebugString() << FZENDL;
-      target_variable->defining_constraint = nullptr;
-      target_variable = nullptr;
-    } else {
-      FZVLOG << "  - asymmetric relation " << DebugString() << FZENDL;
-      target_variable = nullptr;
-    }
-  }
 }
 
 // ----- Annotation -----
@@ -877,19 +839,15 @@ IntegerVariable* Model::AddConstant(int64 value) {
 }
 
 void Model::AddConstraint(const std::string& id,
-                          std::vector<Argument> arguments, bool is_domain,
-                          IntegerVariable* defines) {
+                          std::vector<Argument> arguments, bool is_domain) {
   Constraint* const constraint =
-      new Constraint(id, std::move(arguments), is_domain, defines);
+      new Constraint(id, std::move(arguments), is_domain);
   constraints_.push_back(constraint);
-  if (defines != nullptr) {
-    defines->defining_constraint = constraint;
-  }
 }
 
 void Model::AddConstraint(const std::string& id,
                           std::vector<Argument> arguments) {
-  AddConstraint(id, std::move(arguments), false, nullptr);
+  AddConstraint(id, std::move(arguments), false);
 }
 
 void Model::AddOutput(SolutionOutputSpecs output) {

@@ -30,6 +30,7 @@
 #include "absl/types/optional.h"
 #include "ortools/base/canonical_errors.h"
 #include "ortools/base/cleanup.h"
+#include "ortools/base/commandlineflags.h"
 #include "ortools/base/status.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -50,6 +51,10 @@
 #include "scip/type_paramset.h"
 #include "scip/type_var.h"
 
+DEFINE_string(scip_proto_solver_output_cip_file, "",
+              "If given, saves the generated CIP file here. Useful for "
+              "reporting bugs to SCIP.");
+
 namespace operations_research {
 
 util::Status ScipSetSolverSpecificParameters(const std::string& parameters,
@@ -69,6 +74,7 @@ util::Status ScipSetSolverSpecificParameters(const std::string& parameters,
     absl::RemoveExtraAsciiWhitespace(&name);
     std::string value = key_value[1];
     absl::RemoveExtraAsciiWhitespace(&value);
+    const double infinity = SCIPinfinity(scip);
 
     SCIP_PARAM* param = SCIPgetParam(scip, name.c_str());
     if (param == nullptr) {
@@ -106,6 +112,7 @@ util::Status ScipSetSolverSpecificParameters(const std::string& parameters,
       case SCIP_PARAMTYPE_REAL: {
         double parsed_value;
         if (absl::SimpleAtod(value, &parsed_value)) {
+          if (parsed_value > infinity) parsed_value = infinity;
           RETURN_IF_SCIP_ERROR(
               SCIPsetRealParam(scip, name.c_str(), parsed_value));
           continue;
@@ -138,14 +145,15 @@ util::Status ScipSetSolverSpecificParameters(const std::string& parameters,
 namespace {
 // This function will create a new constraint if the indicator constraint has
 // both a lower bound and an upper bound.
-util::Status AddIndicatorConstraint(
-    const MPGeneralConstraintProto& gen_cst,
-    const std::vector<SCIP_VAR*>& scip_variables, SCIP* scip,
-    SCIP_CONS** scip_cst, std::vector<SCIP_CONS*>* scip_constraints,
-    std::vector<SCIP_VAR*>* tmp_variables,
-    std::vector<double>* tmp_coefficients) {
+util::Status AddIndicatorConstraint(const MPGeneralConstraintProto& gen_cst,
+                                    SCIP* scip, SCIP_CONS** scip_cst,
+                                    std::vector<SCIP_VAR*>* scip_variables,
+                                    std::vector<SCIP_CONS*>* scip_constraints,
+                                    std::vector<SCIP_VAR*>* tmp_variables,
+                                    std::vector<double>* tmp_coefficients) {
   CHECK(scip != nullptr);
   CHECK(scip_cst != nullptr);
+  CHECK(scip_variables != nullptr);
   CHECK(scip_constraints != nullptr);
   CHECK(tmp_variables != nullptr);
   CHECK(tmp_coefficients != nullptr);
@@ -160,14 +168,14 @@ util::Status AddIndicatorConstraint(
   tmp_variables->resize(size, nullptr);
   tmp_coefficients->resize(size, 0);
   for (int i = 0; i < size; ++i) {
-    (*tmp_variables)[i] = scip_variables[constraint.var_index(i)];
+    (*tmp_variables)[i] = (*scip_variables)[constraint.var_index(i)];
     (*tmp_coefficients)[i] = constraint.coefficient(i);
   }
 
-  SCIP_VAR* ind_var = scip_variables[ind.var_index()];
+  SCIP_VAR* ind_var = (*scip_variables)[ind.var_index()];
   if (ind.var_value() == 0) {
     RETURN_IF_SCIP_ERROR(
-        SCIPgetNegatedVar(scip, scip_variables[ind.var_index()], &ind_var));
+        SCIPgetNegatedVar(scip, (*scip_variables)[ind.var_index()], &ind_var));
   }
 
   if (ind.constraint().upper_bound() < kInfinity) {
@@ -601,32 +609,99 @@ util::Status AddSolutionHint(const MPModelProto& model, SCIP* scip,
   return util::OkStatus();
 }
 
-bool MPModelIsInvalidForScip(const MPModelProto& model, SCIP* scip,
-                             MPSolutionResponse* response) {
+// Returns "" iff the model seems valid for SCIP, else returns a human-readable
+// error message. Assumes that FindErrorInMPModelProto(model) found no error.
+std::string FindErrorInMPModelForScip(const MPModelProto& model, SCIP* scip) {
   CHECK(scip != nullptr);
-  CHECK(response != nullptr);
-
   const double infinity = SCIPinfinity(scip);
+
   for (int v = 0; v < model.variable_size(); ++v) {
     const MPVariableProto& variable = model.variable(v);
     if (variable.lower_bound() >= infinity) {
-      response->set_status(MPSOLVER_MODEL_INVALID);
-      response->set_status_str(absl::StrFormat(
-          "Variable %i's lower bound is considered +infinity", v));
-      return true;
+      return absl::StrFormat(
+          "Variable %i's lower bound is considered +infinity", v);
     }
     if (variable.upper_bound() <= -infinity) {
-      response->set_status(MPSOLVER_MODEL_INVALID);
-      response->set_status_str(absl::StrFormat(
-          "Variable %i's lower bound is considered -infinity", v));
-      return true;
+      return absl::StrFormat(
+          "Variable %i's upper bound is considered -infinity", v);
     }
     const double coeff = variable.objective_coefficient();
     if (coeff >= infinity || coeff <= -infinity) {
-      response->set_status(MPSOLVER_MODEL_INVALID);
-      response->set_status_str(absl::StrFormat(
-          "Variable %i's objective coefficient is considered infinite", v));
-      return true;
+      return absl::StrFormat(
+          "Variable %i's objective coefficient is considered infinite", v);
+    }
+  }
+
+  for (int c = 0; c < model.constraint_size(); ++c) {
+    const MPConstraintProto& cst = model.constraint(c);
+    if (cst.lower_bound() >= infinity) {
+      return absl::StrFormat(
+          "Constraint %d's lower_bound is considered +infinity", c);
+    }
+    if (cst.upper_bound() <= -infinity) {
+      return absl::StrFormat(
+          "Constraint %d's upper_bound is considered -infinity", c);
+    }
+    for (int i = 0; i < cst.coefficient_size(); ++i) {
+      if (std::abs(cst.coefficient(i)) >= infinity) {
+        return absl::StrFormat(
+            "Constraint %d's coefficient #%d is considered infinite", c, i);
+      }
+    }
+  }
+
+  for (int c = 0; c < model.general_constraint_size(); ++c) {
+    const MPGeneralConstraintProto& cst = model.general_constraint(c);
+    switch (cst.general_constraint_case()) {
+      case MPGeneralConstraintProto::kQuadraticConstraint:
+        if (cst.quadratic_constraint().lower_bound() >= infinity) {
+          return absl::StrFormat(
+              "Quadratic constraint %d's lower_bound is considered +infinity",
+              c);
+        }
+        if (cst.quadratic_constraint().upper_bound() <= -infinity) {
+          return absl::StrFormat(
+              "Quadratic constraint %d's upper_bound is considered -infinity",
+              c);
+        }
+        for (int i = 0; i < cst.quadratic_constraint().coefficient_size();
+             ++i) {
+          const double coefficient = cst.quadratic_constraint().coefficient(i);
+          if (coefficient >= infinity || coefficient <= -infinity) {
+            return absl::StrFormat(
+                "Quadratic constraint %d's linear coefficient #%d considered "
+                "infinite",
+                c, i);
+          }
+        }
+        break;
+      case MPGeneralConstraintProto::kMinConstraint:
+        if (cst.min_constraint().constant() >= infinity ||
+            cst.min_constraint().constant() <= -infinity) {
+          return absl::StrFormat(
+              "Min constraint %d's coefficient constant considered infinite",
+              c);
+        }
+        break;
+      case MPGeneralConstraintProto::kMaxConstraint:
+        if (cst.max_constraint().constant() >= infinity ||
+            cst.max_constraint().constant() <= -infinity) {
+          return absl::StrFormat(
+              "Max constraint %d's coefficient constant considered infinite",
+              c);
+        }
+        break;
+      default:
+        continue;
+    }
+  }
+
+  const MPQuadraticObjective& quad_obj = model.quadratic_objective();
+  for (int i = 0; i < quad_obj.coefficient_size(); ++i) {
+    if (std::abs(quad_obj.coefficient(i)) >= infinity) {
+      return absl::StrFormat(
+          "Quadratic objective term #%d's coefficient is considered infinite",
+          i);
     }
   }
 
@@ -634,24 +709,19 @@ bool MPModelIsInvalidForScip(const MPModelProto& model, SCIP* scip,
     for (int i = 0; i < model.solution_hint().var_value_size(); ++i) {
       const double value = model.solution_hint().var_value(i);
       if (value >= infinity || value <= -infinity) {
-        response->set_status(MPSOLVER_MODEL_INVALID);
-        response->set_status_str(absl::StrFormat(
+        return absl::StrFormat(
             "Variable %i's solution hint is considered infinite",
-            model.solution_hint().var_index(i)));
-        return true;
+            model.solution_hint().var_index(i));
       }
     }
   }
 
   if (model.objective_offset() >= infinity ||
       model.objective_offset() <= -infinity) {
-    response->set_status(MPSOLVER_MODEL_INVALID);
-    response->set_status_str(
-        "Model's objective offset is considered infinite.");
-    return true;
+    return "Model's objective offset is considered infinite.";
   }
 
-  return false;
+  return "";
 }
 }  // namespace
 
@@ -691,13 +761,19 @@ util::StatusOr<MPSolutionResponse> ScipSolveProto(
 
   RETURN_IF_SCIP_ERROR(SCIPcreate(&scip));
   RETURN_IF_SCIP_ERROR(SCIPincludeDefaultPlugins(scip));
-  if (MPModelIsInvalidForScip(model, scip, &response)) return response;
+  const std::string scip_model_invalid_error =
+      FindErrorInMPModelForScip(model, scip);
+  if (!scip_model_invalid_error.empty()) {
+    response.set_status(MPSOLVER_MODEL_INVALID);
+    response.set_status_str(scip_model_invalid_error);
+    return response;
+  }
 
   const auto parameters_status = ScipSetSolverSpecificParameters(
       request.solver_specific_parameters(), scip);
   if (!parameters_status.ok()) {
     response.set_status(MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS);
-    response.set_status_str(parameters_status.error_message());
+    response.set_status_str(parameters_status.message());
     return response;
   }
   // Default clock type. We use wall clock time because getting CPU user seconds
@@ -772,8 +848,9 @@ util::StatusOr<MPSolutionResponse> ScipSolveProto(
       switch (gen_cst.general_constraint_case()) {
         case MPGeneralConstraintProto::kIndicatorConstraint: {
           RETURN_IF_ERROR(AddIndicatorConstraint(
-              gen_cst, scip_variables, scip, &scip_constraints[lincst_size + c],
-              &scip_constraints, &ct_variables, &ct_coefficients));
+              gen_cst, scip, &scip_constraints[lincst_size + c],
+              &scip_variables, &scip_constraints, &ct_variables,
+              &ct_coefficients));
           break;
         }
         case MPGeneralConstraintProto::kSosConstraint: {
@@ -828,6 +905,10 @@ util::StatusOr<MPSolutionResponse> ScipSolveProto(
   RETURN_IF_SCIP_ERROR(SCIPaddOrigObjoffset(scip, model.objective_offset()));
   RETURN_IF_ERROR(AddSolutionHint(model, scip, scip_variables));
 
+  if (!FLAGS_scip_proto_solver_output_cip_file.empty()) {
+    SCIPwriteOrigProblem(scip, FLAGS_scip_proto_solver_output_cip_file.c_str(),
+                         nullptr, true);
+  }
   RETURN_IF_SCIP_ERROR(SCIPsolve(scip));
 
   SCIP_SOL* const solution = SCIPgetBestSol(scip);
@@ -880,6 +961,8 @@ util::StatusOr<MPSolutionResponse> ScipSolveProto(
       break;
   }
 
+  VLOG(1) << "ScipSolveProto() status="
+          << MPSolverResponseStatus_Name(response.status()) << ".";
   return response;
 }
 

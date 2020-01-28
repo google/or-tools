@@ -187,10 +187,8 @@ class MPSolver {
     /// Linear Programming solver using GLPK.
     GLPK_LINEAR_PROGRAMMING = 1,
 #endif
-#ifdef USE_GLOP
     /// Linear Programming solver using GLOP (Recommended solver).
     GLOP_LINEAR_PROGRAMMING = 2,
-#endif
 #ifdef USE_GUROBI
     /// Linear Programming solver using GUROBI.
     GUROBI_LINEAR_PROGRAMMING = 6,
@@ -221,10 +219,12 @@ class MPSolver {
     /// Mixed integer Programming Solver using CPLEX.
     CPLEX_MIXED_INTEGER_PROGRAMMING = 11,
 #endif
-#if defined(USE_BOP)
     /// Linear Boolean Programming Solver.
     BOP_INTEGER_PROGRAMMING = 12,
-#endif
+    /// SAT based solver (requires only integer and Boolean variables).
+    /// If you pass it mixed integer problems, it will scale coefficients to
+    /// integer values, and solve continuous variables as integral variables.
+    SAT_INTEGER_PROGRAMMING = 14,
 #if defined(USE_XPRESS)
     XPRESS_LINEAR_PROGRAMMING = 101,
     XPRESS_MIXED_INTEGER_PROGRAMMING = 102,
@@ -674,7 +674,7 @@ class MPSolver {
    */
   int64 nodes() const;
 
-  /// Returns a std::string describing the underlying solver and its version.
+  /// Returns a string describing the underlying solver and its version.
   std::string SolverVersion() const;
 
   /**
@@ -1622,7 +1622,7 @@ class MPSolverInterface {
     return result_status_;
   }
 
-  // Returns a std::string describing the underlying solver and its version.
+  // Returns a string describing the underlying solver and its version.
   virtual std::string SolverVersion() const = 0;
 
   // Returns the underlying solver.

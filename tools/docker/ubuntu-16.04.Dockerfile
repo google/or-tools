@@ -23,12 +23,13 @@ RUN apt-get update -qq \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Dotnet Install
+# see https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-ubuntu-1604
 RUN apt-get update -qq \
 && apt-get install -yq apt-transport-https \
 && wget -q https://packages.microsoft.com/config/ubuntu/16.04/packages-microsoft-prod.deb \
 && dpkg -i packages-microsoft-prod.deb \
 && apt-get update -qq \
-&& apt-get install -yq dotnet-sdk-2.2 \
+&& apt-get install -yq dotnet-sdk-3.1 \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 

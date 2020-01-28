@@ -167,6 +167,8 @@ Domain Domain::FromVectorIntervals(
 
 bool Domain::IsEmpty() const { return intervals_.empty(); }
 
+bool Domain::IsFixed() const { return Min() == Max(); }
+
 int64 Domain::Size() const {
   int64 size = 0;
   for (const ClosedInterval interval : intervals_) {
@@ -180,12 +182,12 @@ int64 Domain::Size() const {
 }
 
 int64 Domain::Min() const {
-  CHECK(!IsEmpty());
+  DCHECK(!IsEmpty());
   return intervals_.front().start;
 }
 
 int64 Domain::Max() const {
-  CHECK(!IsEmpty());
+  DCHECK(!IsEmpty());
   return intervals_.back().end;
 }
 

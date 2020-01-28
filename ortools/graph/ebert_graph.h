@@ -797,7 +797,7 @@ class ForwardStaticGraph
     }
   }
 
-  // Returns a debug std::string containing all the information contained in the
+  // Returns a debug string containing all the information contained in the
   // data structure in raw form.
   std::string DebugString() const {
     std::string result = "Arcs:(node) :\n";
@@ -1453,7 +1453,7 @@ class EbertGraph
     representation_clean_ = true;
   }
 
-  // Returns a debug std::string containing all the information contained in the
+  // Returns a debug string containing all the information contained in the
   // data structure in raw form.
   std::string DebugString() const {
     DCHECK(representation_clean_);
@@ -1693,7 +1693,7 @@ class ForwardEbertGraph
     return true;
   }
 
-  // Returns a debug std::string containing all the information contained in the
+  // Returns a debug string containing all the information contained in the
   // data structure in raw form.
   std::string DebugString() const {
     DCHECK(representation_clean_);

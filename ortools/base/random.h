@@ -17,83 +17,41 @@
 #include <random>
 #include <string>
 
+#include "absl/random/random.h"
 #include "ortools/base/basictypes.h"
 
 namespace operations_research {
 
-// ACM minimal standard random number generator.  (Re-entrant.)
+// A wrapper around std::mt19937. Called ACMRandom for historical reasons.
 class ACMRandom {
  public:
-  explicit ACMRandom(int32 seed) : seed_(seed) {}
+  explicit ACMRandom(int32 seed) : generator_(seed) {}
 
-  int32 Next();
+  // Unbounded generators.
+  uint32 Next();
+  uint64 Next64();
+  uint64 Rand64() { return Next64(); }
+  uint64 operator()() { return Next64(); }
 
-  // Returns a random value in [0..n-1]. If n == 0, always returns 0.
-  int32 Uniform(int32 n);
+  // Bounded generators.
+  uint32 Uniform(uint32 n);
+  uint64 operator()(uint64 val_max);
 
-  int64 Next64();
-
-  float RndFloat() {
-    return Next() * 0.000000000465661273646;  // x: x * (M-1) = 1 - eps
-  }
-
-  // Returns a double in [0, 1).
-  double RndDouble() {
-    // Android does not provide ieee754.h and the associated types.
-    union {
-      double d;
-      int64 i;
-    } ieee_double;
-    ieee_double.i = Next64();
-    ieee_double.i &= ~(1LL << 63);  // Clear sign bit.
-    // The returned number will be between 0 and 1. Take into account the
-    // exponent offset.
-    ieee_double.i |= (1023LL << 52);
-    return ieee_double.d - static_cast<double>(1.0);
-  }
-
-  double RandDouble() { return RndDouble(); }
-
-  double UniformDouble(double x) { return RandDouble() * x; }
-
-  // Returns a double in [a, b). The distribution is uniform.
-  double UniformDouble(double a, double b) { return a + (b - a) * RndDouble(); }
-
-  // Returns true with probability 1/n. If n=0, always returns true.
-  bool OneIn(int n) { return Uniform(n) == 0; }
-
-  void Reset(int32 seed) { seed_ = seed; }
+  // Seed management.
+  void Reset(int32 seed) { generator_.seed(seed); }
   static int32 HostnamePidTimeSeed();
   static int32 DeterministicSeed();
 
-// RandomNumberGenerator concept. Example:
-//   ACMRandom rand(my_seed);
-//   std::random_shuffle(myvec.begin(), myvec.end(), rand);
-#if defined(_MSC_VER)
-  typedef __int64 difference_type;  // NOLINT
-#else
-  typedef long long difference_type;  // NOLINT
-#endif
+  // C++11 goodies.
+  typedef int64 difference_type;
   typedef uint64 result_type;
-#if defined(LANG_CXX11) || defined(__APPLE__)
-  // Since C++11, the C++ Standard requires min() and max() to be compile-time
-  // expressions, see [rand.req.urng].  That's not possible prior to C++11.
   static constexpr result_type min() { return 0; }
   static constexpr result_type max() { return kuint32max; }
-#else
-  static result_type min() { return 0; }
-  static result_type max() { return kuint32max; }
-#endif
-  virtual result_type operator()() { return Next(); }
-  int64 operator()(int64 val_max) { return Next64() % val_max; }
 
  private:
-  int32 seed_;
+  std::mt19937 generator_;
 };
 
-// This is meant to become an implementation of (or a wrapper around)
-// http://www.cplusplus.com/reference/random/mt19937, but for now it is just
-// using ACMRandom.
 class MTRandom : public ACMRandom {
  public:
   explicit MTRandom(int32 seed) : ACMRandom(seed) {}
@@ -102,7 +60,6 @@ class MTRandom : public ACMRandom {
       : ACMRandom(GenerateInt32SeedFromString(str_seed)) {}
 
   MTRandom() : ACMRandom(ACMRandom::HostnamePidTimeSeed()) {}
-  uint64 Rand64() { return static_cast<uint64>(Next64()); }
 
  private:
   int32 GenerateInt32SeedFromString(const std::string& str) {
@@ -115,22 +72,6 @@ class MTRandom : public ACMRandom {
   }
 };
 
-typedef ACMRandom RandomBase;
-
 }  // namespace operations_research
-
-namespace absl {
-template <typename URBG>
-bool Bernoulli(URBG&& urbg,  // NOLINT(runtime/references)
-               double p) {
-  return std::bernoulli_distribution(p)(urbg);
-}
-
-template <typename URGB>
-int Uniform(URGB&& urgb,  // NOLINT(runtime/references)
-            int low, int high_excluded) {
-  return std::uniform_int_distribution<>(low, high_excluded - 1)(urgb);
-}
-}  // namespace absl
 
 #endif  // OR_TOOLS_BASE_RANDOM_H_

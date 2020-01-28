@@ -22,6 +22,8 @@ using System.Collections;
 %include "ortools/base/base.i"
 %include "ortools/util/csharp/proto.i"
 
+%import "ortools/util/csharp/sorted_interval_list.i"
+
 %{
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -42,6 +44,10 @@ PROTO_INPUT(operations_research::sat::CpSolverResponse,
             Google.OrTools.Sat.CpSolverResponse,
             response);
 
+PROTO_INPUT(operations_research::sat::IntegerVariableProto,
+            Google.OrTools.Sat.IntegerVariableProto,
+            variable_proto);
+
 PROTO2_RETURN(operations_research::sat::CpSolverResponse,
               Google.OrTools.Sat.CpSolverResponse);
 
@@ -59,6 +65,11 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 %unignore operations_research::sat::SatHelper::ModelStats;
 %unignore operations_research::sat::SatHelper::SolverResponseStats;
 %unignore operations_research::sat::SatHelper::ValidateModel;
+%unignore operations_research::sat::SatHelper::VariableDomain;
+
+%typemap(csimports) operations_research::sat::SatHelper %{
+using Google.OrTools.Util;
+%}
 
 %feature("director") operations_research::sat::SolutionCallback;
 %unignore operations_research::sat::SolutionCallback;

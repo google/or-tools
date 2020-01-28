@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 0fe939d..5f25cce 100644
+index 0fe939d..bbf748b 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -1,24 +1,23 @@
@@ -96,57 +96,72 @@ index 0fe939d..5f25cce 100644
  	if(ZLIB_ASMS)
  		add_definitions(-DASMV -DASMINF)
  	endif()
-@@ -184,9 +181,25 @@ if(MINGW)
+@@ -183,10 +180,21 @@ if(MINGW)
+     set(ZLIB_DLL_SRCS ${CMAKE_CURRENT_BINARY_DIR}/zlib1rc.obj)
  endif(MINGW)
  
- add_library(zlib SHARED ${ZLIB_SRCS} ${ZLIB_ASMS} ${ZLIB_DLL_SRCS} ${ZLIB_PUBLIC_HDRS} ${ZLIB_PRIVATE_HDRS})
-+target_include_directories(zlib PUBLIC
-+	$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-+	$<INSTALL_INTERFACE:include>)
-+set_target_properties(zlib PROPERTIES
-+	DEFINE_SYMBOL ZLIB_DLL
-+	SOVERSION 1)
-+
- add_library(zlibstatic STATIC ${ZLIB_SRCS} ${ZLIB_ASMS} ${ZLIB_PUBLIC_HDRS} ${ZLIB_PRIVATE_HDRS})
+-add_library(zlib SHARED ${ZLIB_SRCS} ${ZLIB_ASMS} ${ZLIB_DLL_SRCS} ${ZLIB_PUBLIC_HDRS} ${ZLIB_PRIVATE_HDRS})
+-add_library(zlibstatic STATIC ${ZLIB_SRCS} ${ZLIB_ASMS} ${ZLIB_PUBLIC_HDRS} ${ZLIB_PRIVATE_HDRS})
 -set_target_properties(zlib PROPERTIES DEFINE_SYMBOL ZLIB_DLL)
 -set_target_properties(zlib PROPERTIES SOVERSION 1)
-+target_include_directories(zlibstatic PUBLIC
++if(BUILD_SHARED_LIBS)
++	add_library(ZLIB SHARED ${ZLIB_SRCS} ${ZLIB_ASMS} ${ZLIB_DLL_SRCS} ${ZLIB_PUBLIC_HDRS} ${ZLIB_PRIVATE_HDRS})
++  set_target_properties(zlib PROPERTIES
++	  DEFINE_SYMBOL ZLIB_DLL
++	  SOVERSION 1)
++else()
++	add_library(ZLIB STATIC ${ZLIB_SRCS} ${ZLIB_ASMS} ${ZLIB_PUBLIC_HDRS} ${ZLIB_PRIVATE_HDRS})
++endif()
++
++target_include_directories(ZLIB PUBLIC
 +	$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
 +	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 +	$<INSTALL_INTERFACE:include>)
 +
-+if(BUILD_SHARED_LIBS)
-+	add_library(ZLIB::ZLIB ALIAS zlib)
-+else()
-+	add_library(ZLIB::ZLIB ALIAS zlibstatic)
-+endif()
++add_library(ZLIB::ZLIB ALIAS ZLIB)
  
  if(NOT CYGWIN)
      # This property causes shared libraries on Linux to have the full version
-@@ -197,6 +210,7 @@ if(NOT CYGWIN)
+@@ -196,26 +204,48 @@ if(NOT CYGWIN)
+     #
      # This has no effect with MSVC, on that platform the version info for
      # the DLL comes from the resource file win32/zlib1.rc
-     set_target_properties(zlib PROPERTIES VERSION ${ZLIB_FULL_VERSION})
-+    set_target_properties(zlibstatic PROPERTIES VERSION ${ZLIB_FULL_VERSION})
+-    set_target_properties(zlib PROPERTIES VERSION ${ZLIB_FULL_VERSION})
++		set_target_properties(ZLIB PROPERTIES VERSION ${ZLIB_FULL_VERSION})
  endif()
  
  if(UNIX)
-@@ -210,12 +224,30 @@ elseif(BUILD_SHARED_LIBS AND WIN32)
-     set_target_properties(zlib PROPERTIES SUFFIX "1.dll")
+-    # On unix-like platforms the library is almost always called libz
+-   set_target_properties(zlib zlibstatic PROPERTIES OUTPUT_NAME z)
+-   if(NOT APPLE)
+-     set_target_properties(zlib PROPERTIES LINK_FLAGS "-Wl,--version-script,\"${CMAKE_CURRENT_SOURCE_DIR}/zlib.map\"")
+-   endif()
++  # On unix-like platforms the library is almost always called libz
++  set_target_properties(ZLIB PROPERTIES OUTPUT_NAME z)
++  if(NOT APPLE AND BUILD_SHARED_LIBS)
++    set_target_properties(ZLIB PROPERTIES LINK_FLAGS "-Wl,--version-script,\"${CMAKE_CURRENT_SOURCE_DIR}/zlib.map\"")
++  endif()
+ elseif(BUILD_SHARED_LIBS AND WIN32)
+     # Creates zlib1.dll when building shared library version
+-    set_target_properties(zlib PROPERTIES SUFFIX "1.dll")
++		set_target_properties(ZLIB PROPERTIES SUFFIX "1.dll")
  endif()
  
 -if(NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL )
+-    install(TARGETS zlib zlibstatic
+-        RUNTIME DESTINATION "${INSTALL_BIN_DIR}"
+-        ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
+-        LIBRARY DESTINATION "${INSTALL_LIB_DIR}" )
++if(NOT UNIX)
++  set_target_properties(ZLIB PROPERTIES OUTPUT_NAME zlib)
+ endif()
++
 +#if(WIN32)
 +#	add_definitions(-DZLIB_WINAPI)
 +#endif()
 +
 +if(NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL)
-     install(TARGETS zlib zlibstatic
--        RUNTIME DESTINATION "${INSTALL_BIN_DIR}"
--        ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
--        LIBRARY DESTINATION "${INSTALL_LIB_DIR}" )
--endif()
++	install(TARGETS ZLIB
 +			EXPORT ZLIBTargets
 +			RUNTIME DESTINATION "${INSTALL_BIN_DIR}"
 +			ARCHIVE DESTINATION "${INSTALL_LIB_DIR}"
@@ -168,7 +183,7 @@ index 0fe939d..5f25cce 100644
  if(NOT SKIP_INSTALL_HEADERS AND NOT SKIP_INSTALL_ALL )
      install(FILES ${ZLIB_PUBLIC_HDRS} DESTINATION "${INSTALL_INC_DIR}")
  endif()
-@@ -229,21 +261,22 @@ endif()
+@@ -229,21 +259,22 @@ endif()
  #============================================================================
  # Example binaries
  #============================================================================
@@ -191,20 +206,20 @@ index 0fe939d..5f25cce 100644
 -    set_target_properties(minigzip64 PROPERTIES COMPILE_FLAGS "-D_FILE_OFFSET_BITS=64")
 +if(BUILD_TESTING)
 +	add_executable(example test/example.c)
-+	target_link_libraries(example zlib)
++	target_link_libraries(example ZLIB::ZLIB)
 +	add_test(example example)
 +
 +	add_executable(minigzip test/minigzip.c)
-+	target_link_libraries(minigzip zlib)
++	target_link_libraries(minigzip ZLIB::ZLIB)
 +
 +	if(HAVE_OFF64_T)
 +		add_executable(example64 test/example.c)
-+		target_link_libraries(example64 zlib)
++		target_link_libraries(example64 ZLIB::ZLIB)
 +		set_target_properties(example64 PROPERTIES COMPILE_FLAGS "-D_FILE_OFFSET_BITS=64")
 +		add_test(example64 example64)
 +
 +		add_executable(minigzip64 test/minigzip.c)
-+		target_link_libraries(minigzip64 zlib)
++		target_link_libraries(minigzip64 ZLIB::ZLIB)
 +		set_target_properties(minigzip64 PROPERTIES COMPILE_FLAGS "-D_FILE_OFFSET_BITS=64")
 +	endif()
  endif()

@@ -13,6 +13,11 @@
 
 #include "ortools/sat/synchronization.h"
 
+#if !defined(__PORTABLE_PLATFORM__)
+#include "ortools/base/file.h"
+#include "ortools/sat/cp_model_loader.h"
+#endif  // __PORTABLE_PLATFORM__
+
 #include "absl/container/flat_hash_set.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/stl_util.h"
@@ -23,6 +28,15 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/time_limit.h"
+
+DEFINE_bool(cp_model_dump_solutions, false,
+            "DEBUG ONLY. If true, all the intermediate solution will be dumped "
+            "under '/tmp/solution_xxx.pb.txt'.");
+DEFINE_string(
+    cp_model_load_debug_solution, "",
+    "DEBUG ONLY. When this is set to a non-empty file name, "
+    "we will interpret this as an internal solution which can be used for "
+    "debugging. For instance we use it to identify wrong cuts/reasons.");
 
 namespace operations_research {
 namespace sat {
@@ -372,6 +386,50 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
       pair.second(best_response_);
     }
   }
+
+#if !defined(__PORTABLE_PLATFORM__)
+  if (FLAGS_cp_model_dump_solutions) {
+    const std::string file =
+        absl::StrCat("/tmp/solution_", num_solutions_, ".pb.txt");
+    LOG(INFO) << "Dumping solution to '" << file << "'.";
+    CHECK_OK(file::SetTextProto(file, best_response_, file::Defaults()));
+  }
+#endif  // __PORTABLE_PLATFORM__
+}
+
+void SharedResponseManager::LoadDebugSolution(Model* model) {
+#if !defined(__PORTABLE_PLATFORM__)
+  if (FLAGS_cp_model_load_debug_solution.empty()) return;
+  if (model->Get<DebugSolution>() != nullptr) return;  // Already loaded.
+
+  CpSolverResponse response;
+  LOG(INFO) << "Reading solution from '" << FLAGS_cp_model_load_debug_solution
+            << "'.";
+  CHECK_OK(file::GetTextProto(FLAGS_cp_model_load_debug_solution, &response,
+                              file::Defaults()));
+
+  const auto& mapping = *model->GetOrCreate<CpModelMapping>();
+  auto& debug_solution = *model->GetOrCreate<DebugSolution>();
+  debug_solution.resize(
+      model->GetOrCreate<IntegerTrail>()->NumIntegerVariables().value());
+  for (int i = 0; i < response.solution().size(); ++i) {
+    if (!mapping.IsInteger(i)) continue;
+    const IntegerVariable var = mapping.Integer(i);
+    debug_solution[var] = response.solution(i);
+    debug_solution[NegationOf(var)] = -response.solution(i);
+  }
+
+  // The objective variable is usually not part of the proto, but it is still
+  // nice to have it, so we recompute it here.
+  auto* objective_def = model->Get<ObjectiveDefinition>();
+  if (objective_def == nullptr) return;
+
+  const IntegerVariable objective_var = objective_def->objective_var;
+  const int64 objective_value =
+      ComputeInnerObjective(model_proto_.objective(), response);
+  debug_solution[objective_var] = objective_value;
+  debug_solution[NegationOf(objective_var)] = -objective_value;
+#endif  // __PORTABLE_PLATFORM__
 }
 
 void SharedResponseManager::SetStatsFromModel(Model* model) {

@@ -136,7 +136,9 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 %template(CpIntVector) std::vector<int>;
 // IMPORTANT(corentinl) this template for vec<vec<T>> must be call BEFORE
 // we redefine typemap of vec<T> in VECTOR_AS_CSHARP_ARRAY
+%template(CpIntVectorVector) std::vector<std::vector<int> >;
 VECTOR_AS_CSHARP_ARRAY(int, int, int, CpIntVector);
+JAGGED_MATRIX_AS_CSHARP_ARRAY(int, int, int, CpIntVectorVector);
 
 %template(CpInt64Vector) std::vector<int64>;
 // IMPORTANT(corentinl) this template for vec<vec<T>> must be call BEFORE
@@ -410,6 +412,7 @@ namespace operations_research {
 %ignore Solver::SetBranchSelector;
 %ignore Solver::MakeApplyBranchSelector;
 %ignore Solver::MakeAtMost;
+%ignore Solver::Now;
 %ignore Solver::demon_profiler;
 %ignore Solver::set_fail_intercept;
 %ignore Solver::tmp_vector_;
@@ -702,6 +705,12 @@ namespace operations_research {
 // Methods:
 %rename (IsCrossed) SearchLimit::crossed;
 
+// RegularLimit
+%feature("director") RegularLimit;
+%unignore RegularLimit;
+%ignore RegularLimit::duration_limit;
+%ignore RegularLimit::AbsoluteSolverDeadline;
+
 // Searchlog
 %unignore SearchLog;
 // Ignored:
@@ -713,7 +722,6 @@ namespace operations_research {
 // Methods:
 %unignore SearchLog::Maintain;
 %unignore SearchLog::OutputDecision;
-
 
 // IntVarLocalSearchHandler
 %ignore IntVarLocalSearchHandler;

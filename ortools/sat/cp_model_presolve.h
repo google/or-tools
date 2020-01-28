@@ -102,19 +102,24 @@ class CpModelPresolver {
   bool PresolveTable(ConstraintProto* ct);
   bool PresolveElement(ConstraintProto* ct);
   bool PresolveInterval(int c, ConstraintProto* ct);
-  bool PresolveLinear(ConstraintProto* ct);
-  bool PresolveLinearOnBooleans(ConstraintProto* ct);
-  bool CanonicalizeLinear(ConstraintProto* ct);
-  bool RemoveSingletonInLinear(ConstraintProto* ct);
   bool PresolveIntDiv(ConstraintProto* ct);
   bool PresolveIntProd(ConstraintProto* ct);
+  // TODO(user) : Add presolve rules for LinMin.
   bool PresolveIntMin(ConstraintProto* ct);
   bool PresolveIntMax(ConstraintProto* ct);
+  bool PresolveIntAbs(ConstraintProto* ct);
   bool PresolveBoolXor(ConstraintProto* ct);
   bool PresolveAtMostOne(ConstraintProto* ct);
   bool PresolveBoolAnd(ConstraintProto* ct);
   bool PresolveBoolOr(ConstraintProto* ct);
   bool PresolveEnforcementLiteral(ConstraintProto* ct);
+
+  // For the linear constraints, we have more than one function.
+  bool CanonicalizeLinear(ConstraintProto* ct);
+  bool PropagateDomainsInLinear(int c, ConstraintProto* ct);
+  bool RemoveSingletonInLinear(ConstraintProto* ct);
+  bool PresolveSmallLinear(ConstraintProto* ct);
+  bool PresolveLinearOnBooleans(ConstraintProto* ct);
 
   // SetPPC is short for set packing, partitioning and covering constraints.
   // These are sum of booleans <=, = and >= 1 respectively.
@@ -144,7 +149,7 @@ class CpModelPresolver {
 
   void ExpandObjective();
 
-  void TryToSimplifyDomains();
+  void TryToSimplifyDomain(int var);
 
   void MergeNoOverlapConstraints();
 
@@ -161,6 +166,9 @@ class CpModelPresolver {
   const PresolveOptions& options_;
   std::vector<int>* postsolve_mapping_;
   PresolveContext* context_;
+
+  // Used by CanonicalizeLinear().
+  std::vector<std::pair<int, int64>> tmp_terms_;
 };
 
 // Convenient wrapper to call the full presolve.
@@ -174,7 +182,7 @@ bool PresolveCpModel(const PresolveOptions& options, PresolveContext* context,
 // Visible here for testing. This is meant to be called at the end of the
 // presolve where constraints have been canonicalized.
 //
-// TODO(user): Ignore names? canonicalize constraint futher by sorting
+// TODO(user): Ignore names? canonicalize constraint further by sorting
 // enforcement literal list for instance...
 std::vector<int> FindDuplicateConstraints(const CpModelProto& model_proto);
 

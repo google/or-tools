@@ -217,12 +217,11 @@ Literal IntegerEncoder::GetOrCreateAssociatedLiteral(IntegerLiteral i_lit) {
 
   const auto canonicalization = Canonicalize(i_lit);
   const IntegerLiteral new_lit = canonicalization.first;
-  if (LiteralIsAssociated(new_lit)) {
-    return Literal(GetAssociatedLiteral(new_lit));
-  }
-  if (LiteralIsAssociated(canonicalization.second)) {
-    return Literal(GetAssociatedLiteral(canonicalization.second)).Negated();
-  }
+
+  const LiteralIndex index = GetAssociatedLiteral(new_lit);
+  if (index != kNoLiteralIndex) return Literal(index);
+  const LiteralIndex n_index = GetAssociatedLiteral(canonicalization.second);
+  if (n_index != kNoLiteralIndex) return Literal(n_index).Negated();
 
   ++num_created_variables_;
   const Literal literal(sat_solver_->NewBooleanVariable(), true);
@@ -569,14 +568,25 @@ void IntegerTrail::Untrail(const Trail& trail, int literal_trail_index) {
   }
 }
 
+void IntegerTrail::ReserveSpaceForNumVariables(int num_vars) {
+  // Because we always create both a variable and its negation.
+  const int size = 2 * num_vars;
+  vars_.reserve(size);
+  is_ignored_literals_.reserve(size);
+  integer_trail_.reserve(size);
+  domains_->reserve(size);
+  var_trail_index_cache_.reserve(size);
+  tmp_var_to_trail_index_in_queue_.reserve(size);
+}
+
 IntegerVariable IntegerTrail::AddIntegerVariable(IntegerValue lower_bound,
                                                  IntegerValue upper_bound) {
-  CHECK_GE(lower_bound, kMinIntegerValue);
-  CHECK_LE(lower_bound, kMaxIntegerValue);
-  CHECK_GE(upper_bound, kMinIntegerValue);
-  CHECK_LE(upper_bound, kMaxIntegerValue);
-  CHECK(integer_search_levels_.empty());
-  CHECK_EQ(vars_.size(), integer_trail_.size());
+  DCHECK_GE(lower_bound, kMinIntegerValue);
+  DCHECK_LE(lower_bound, kMaxIntegerValue);
+  DCHECK_GE(upper_bound, kMinIntegerValue);
+  DCHECK_LE(upper_bound, kMaxIntegerValue);
+  DCHECK(integer_search_levels_.empty());
+  DCHECK_EQ(vars_.size(), integer_trail_.size());
 
   const IntegerVariable i(vars_.size());
   is_ignored_literals_.push_back(kNoLiteralIndex);
@@ -781,7 +791,7 @@ void IntegerTrail::AppendRelaxedLinearReason(
   for (const IntegerVariable var : vars) {
     tmp_indices_.push_back(vars_[var].current_trail_index);
   }
-  RelaxLinearReason(slack, coeffs, &tmp_indices_);
+  if (slack > 0) RelaxLinearReason(slack, coeffs, &tmp_indices_);
   for (const int i : tmp_indices_) {
     reason->push_back(IntegerLiteral::GreaterOrEqual(integer_trail_[i].var,
                                                      integer_trail_[i].bound));
@@ -800,7 +810,7 @@ void IntegerTrail::RelaxLinearReason(IntegerValue slack,
   // We start by filtering *trail_indices:
   // - remove all level zero entries.
   // - keep the one that cannot be relaxed.
-  // - move the other one the the relax_heap_ (and creating the heap).
+  // - move the other one to the relax_heap_ (and creating the heap).
   int new_size = 0;
   const int size = coeffs.size();
   const int num_vars = vars_.size();
@@ -1591,6 +1601,8 @@ GenericLiteralWatcher::GenericLiteralWatcher(Model* model)
   // this one.
   model->GetOrCreate<SatSolver>()->AddLastPropagator(this);
 
+  integer_trail_->RegisterReversibleClass(
+      &id_to_greatest_common_level_since_last_call_);
   integer_trail_->RegisterWatcher(&modified_vars_);
   queue_by_priority_.resize(2);  // Because default priority is 1.
 }
@@ -1674,11 +1686,13 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
       // Before we propagate, make sure any reversible structure are up to date.
       // Note that we never do anything expensive more than once per level.
       {
-        const int low = id_to_greatest_common_level_since_last_call_[id];
+        const int low =
+            id_to_greatest_common_level_since_last_call_[IdType(id)];
         const int high = id_to_level_at_last_call_[id];
         if (low < high || level > low) {  // Equivalent to not all equal.
           id_to_level_at_last_call_[id] = level;
-          id_to_greatest_common_level_since_last_call_[id] = level;
+          id_to_greatest_common_level_since_last_call_.MutableRef(IdType(id)) =
+              level;
           for (ReversibleInterface* rev : id_to_reversible_classes_[id]) {
             if (low < high) rev->SetLevel(low);
             if (level > low) rev->SetLevel(level);
@@ -1769,11 +1783,6 @@ void GenericLiteralWatcher::Untrail(const Trail& trail, int trail_index) {
   propagation_trail_index_ = trail_index;
   modified_vars_.ClearAndResize(integer_trail_->NumIntegerVariables());
   in_queue_.assign(watchers_.size(), false);
-
-  const int level = trail.CurrentDecisionLevel();
-  for (int& ref : id_to_greatest_common_level_since_last_call_) {
-    ref = std::min(ref, level);
-  }
 }
 
 // Registers a propagator and returns its unique ids.
@@ -1781,7 +1790,7 @@ int GenericLiteralWatcher::Register(PropagatorInterface* propagator) {
   const int id = watchers_.size();
   watchers_.push_back(propagator);
   id_to_level_at_last_call_.push_back(0);
-  id_to_greatest_common_level_since_last_call_.push_back(0);
+  id_to_greatest_common_level_since_last_call_.GrowByOne();
   id_to_reversible_classes_.push_back(std::vector<ReversibleInterface*>());
   id_to_reversible_ints_.push_back(std::vector<int*>());
   id_to_watch_indices_.push_back(std::vector<int>());

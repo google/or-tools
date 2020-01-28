@@ -23,6 +23,8 @@
 DEFINE_INDEX_TYPE_TYPEDEF(operations_research::RoutingNodeIndex,
                           operations_research::RoutingIndexManager::NodeIndex);
 
+%rename (getStartIndex) GetStartIndex;
+%rename (getEndIndex) GetEndIndex;
 %rename (indexToNode) IndexToNode;
 %rename (nodeToIndex) NodeToIndex;
 %rename (nodesToIndices) NodesToIndices;
@@ -34,6 +36,8 @@ DEFINE_INDEX_TYPE_TYPEDEF(operations_research::RoutingNodeIndex,
 namespace operations_research {
 
 %unignore RoutingIndexManager;
+%unignore RoutingIndexManager::GetStartIndex(int);
+%unignore RoutingIndexManager::GetEndIndex(int);
 %unignore RoutingIndexManager::IndexToNode(int64);
 %unignore RoutingIndexManager::NodeToIndex(NodeIndex);
 %unignore RoutingIndexManager::NodesToIndices(const std::vector<NodeIndex>&);

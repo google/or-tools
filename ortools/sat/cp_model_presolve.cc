@@ -42,6 +42,7 @@
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_objective.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/presolve_util.h"
 #include "ortools/sat/probing.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -113,6 +114,20 @@ bool CpModelPresolver::PresolveEnforcementLiteral(ConstraintProto* ct) {
       context_->UpdateRuleStats("enforcement literal not used");
       CHECK(context_->SetLiteralToFalse(literal));
       return RemoveConstraint(ct);
+    }
+
+    // If the literal only appear in the objective, we might be able to fix it
+    // to false. TODO(user): generalize if the literal always appear with the
+    // same polarity.
+    if (context_->VariableWithCostIsUniqueAndRemovable(literal)) {
+      const int64 obj_coeff =
+          gtl::FindOrDie(context_->ObjectiveMap(), PositiveRef(literal));
+      if (RefIsPositive(literal) == obj_coeff > 0) {
+        // It is just more advantageous to set it to false!
+        context_->UpdateRuleStats("enforcement literal with unique direction");
+        CHECK(context_->SetLiteralToFalse(literal));
+        return RemoveConstraint(ct);
+      }
     }
 
     ct->set_enforcement_literal(new_size++, literal);
@@ -196,7 +211,7 @@ bool CpModelPresolver::PresolveBoolOr(ConstraintProto* ct) {
       return RemoveConstraint(ct);
     }
     // We can just set the variable to true in this case since it is not
-    // used in any other constraint (note that we artifically bump the
+    // used in any other constraint (note that we artificially bump the
     // objective var usage by 1).
     if (context_->VariableIsUniqueAndRemovable(literal)) {
       context_->UpdateRuleStats("bool_or: singleton");
@@ -208,7 +223,9 @@ bool CpModelPresolver::PresolveBoolOr(ConstraintProto* ct) {
       return RemoveConstraint(ct);
     }
 
-    if (!context_->tmp_literal_set.contains(literal)) {
+    if (context_->tmp_literal_set.contains(literal)) {
+      changed = true;
+    } else {
       context_->tmp_literal_set.insert(literal);
       context_->tmp_literals.push_back(literal);
     }
@@ -363,35 +380,6 @@ bool CpModelPresolver::PresolveIntMax(ConstraintProto* ct) {
   }
   const int target_ref = ct->int_max().target();
 
-  // Recognized abs() encoding.
-  if (ct->int_max().vars_size() == 2 &&
-      NegatedRef(ct->int_max().vars(0)) == ct->int_max().vars(1)) {
-    const int var = PositiveRef(ct->int_max().vars(0));
-
-    // abs(x) == constant -> reduce domain.
-    if (context_->IsFixed(target_ref)) {
-      const int64 target_value = context_->MaxOf(target_ref);
-      if (target_value < 0) {
-        return context_->NotifyThatModelIsUnsat();
-      }
-      const Domain reduced_domain =
-          Domain::FromValues({-target_value, target_value});
-      if (!context_->IntersectDomainWith(var, reduced_domain)) {
-        return true;
-      }
-      context_->UpdateRuleStats(
-          "int_max: propagate domain of abs(x) == constant");
-      return RemoveConstraint(ct);
-    }
-
-    if (context_->MinOf(target_ref) < 0) {
-      context_->UpdateRuleStats("int_max: propagate abs(x) >= 0");
-      if (!context_->IntersectDomainWith(target_ref, {0, kint64max})) {
-        return true;
-      }
-    }
-  }
-
   // Pass 1, compute the infered min of the target, and remove duplicates.
   int64 infered_min = kint64min;
   int64 infered_max = kint64min;
@@ -529,9 +517,86 @@ bool CpModelPresolver::PresolveIntMax(ConstraintProto* ct) {
     arg->add_coeffs(-1);
     arg->add_domain(0);
     arg->add_domain(0);
+    context_->UpdateNewConstraintsVariableUsage();
     return RemoveConstraint(ct);
   }
   return modified;
+}
+
+bool CpModelPresolver::PresolveIntAbs(ConstraintProto* ct) {
+  CHECK_EQ(ct->enforcement_literal_size(), 0);
+  if (context_->ModelIsUnsat()) return false;
+  const int target_ref = ct->int_max().target();
+  const int var = PositiveRef(ct->int_max().vars(0));
+
+  // Propagate from the variable domain to the target variable.
+  const Domain var_domain = context_->DomainOf(var);
+  const Domain new_target_domain = var_domain.UnionWith(var_domain.Negation())
+                                       .IntersectionWith({0, kint64max});
+  if (!context_->DomainOf(target_ref).IsIncludedIn(new_target_domain)) {
+    if (!context_->IntersectDomainWith(target_ref, new_target_domain)) {
+      return true;
+    }
+    context_->UpdateRuleStats("int_abs: propagate domain x to abs(x)");
+  }
+
+  // Propagate from target domain to variable.
+  const Domain target_domain = context_->DomainOf(target_ref);
+  const Domain new_var_domain =
+      target_domain.UnionWith(target_domain.Negation());
+  if (!context_->DomainOf(var).IsIncludedIn(new_var_domain)) {
+    if (!context_->IntersectDomainWith(var, new_var_domain)) {
+      return true;
+    }
+    context_->UpdateRuleStats("int_abs: propagate domain abs(x) to x");
+  }
+
+  if (context_->MinOf(var) >= 0 && !context_->IsFixed(var)) {
+    context_->UpdateRuleStats("int_abs: converted to equality");
+    ConstraintProto* new_ct = context_->working_model->add_constraints();
+    new_ct->set_name(ct->name());
+    auto* arg = new_ct->mutable_linear();
+    arg->add_vars(target_ref);
+    arg->add_coeffs(1);
+    arg->add_vars(var);
+    arg->add_coeffs(-1);
+    arg->add_domain(0);
+    arg->add_domain(0);
+    context_->UpdateNewConstraintsVariableUsage();
+    return RemoveConstraint(ct);
+  }
+
+  if (context_->MaxOf(var) <= 0 && !context_->IsFixed(var)) {
+    context_->UpdateRuleStats("int_abs: converted to equality");
+    ConstraintProto* new_ct = context_->working_model->add_constraints();
+    new_ct->set_name(ct->name());
+    auto* arg = new_ct->mutable_linear();
+    arg->add_vars(target_ref);
+    arg->add_coeffs(1);
+    arg->add_vars(var);
+    arg->add_coeffs(1);
+    arg->add_domain(0);
+    arg->add_domain(0);
+    context_->UpdateNewConstraintsVariableUsage();
+    return RemoveConstraint(ct);
+  }
+
+  // Remove the abs constraint if the target is removable or fixed, as domains
+  // have been propagated.
+  if (context_->VariableIsUniqueAndRemovable(target_ref) ||
+      context_->IsFixed(target_ref)) {
+    if (!context_->IsFixed(target_ref)) {
+      *context_->mapping_model->add_constraints() = *ct;
+    }
+    context_->UpdateRuleStats("int_abs: remove constraint");
+    return RemoveConstraint(ct);
+  }
+
+  if (context_->StoreAbsRelation(target_ref, var)) {
+    context_->UpdateRuleStats("int_abs: store abs(x) == y");
+  }
+
+  return false;
 }
 
 bool CpModelPresolver::PresolveIntMin(ConstraintProto* ct) {
@@ -617,7 +682,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
         lin->mutable_linear()->add_coeffs(-1);
         lin->mutable_linear()->add_domain(0);
         lin->mutable_linear()->add_domain(0);
-
+        context_->UpdateNewConstraintsVariableUsage();
         context_->UpdateRuleStats("int_prod: linearize product by constant.");
         return RemoveConstraint(ct);
       } else if (context_->MinOf(a) != 1) {
@@ -671,6 +736,7 @@ bool CpModelPresolver::PresolveIntProd(ConstraintProto* ct) {
       arg->add_literals(NegatedRef(var));
     }
   }
+  context_->UpdateNewConstraintsVariableUsage();
   return RemoveConstraint(ct);
 }
 
@@ -697,6 +763,7 @@ bool CpModelPresolver::PresolveIntDiv(ConstraintProto* ct) {
     lin->add_coeffs(-1);
     lin->add_domain(0);
     lin->add_domain(0);
+    context_->UpdateNewConstraintsVariableUsage();
     context_->UpdateRuleStats("int_div: rewrite to equality");
     return RemoveConstraint(ct);
   }
@@ -727,6 +794,7 @@ bool CpModelPresolver::PresolveIntDiv(ConstraintProto* ct) {
     lin->add_coeffs(-divisor);
     lin->add_domain(0);
     lin->add_domain(divisor - 1);
+    context_->UpdateNewConstraintsVariableUsage();
     context_->UpdateRuleStats(
         "int_div: linearize positive division with a constant divisor");
     return RemoveConstraint(ct);
@@ -808,14 +876,17 @@ void CpModelPresolver::DivideLinearByGcd(ConstraintProto* ct) {
 }
 
 bool CpModelPresolver::CanonicalizeLinear(ConstraintProto* ct) {
-  if (context_->ModelIsUnsat()) return false;
+  if (ct->constraint_case() != ConstraintProto::ConstraintCase::kLinear ||
+      context_->ModelIsUnsat()) {
+    return false;
+  }
 
   // First regroup the terms on the same variables and sum the fixed ones.
   //
   // TODO(user): move terms in context to reuse its memory? Add a quick pass
   // to skip most of the work below if the constraint is already in canonical
   // form (strictly increasing var, no-fixed var, gcd = 1).
-  std::vector<std::pair<int, int64>> terms;
+  tmp_terms_.clear();
   const bool was_affine = gtl::ContainsKey(context_->affine_constraints, ct);
 
   int64 sum_of_fixed_terms = 0;
@@ -828,6 +899,27 @@ bool CpModelPresolver::CanonicalizeLinear(ConstraintProto* ct) {
     const int64 coeff =
         RefIsPositive(ref) ? ct->linear().coeffs(i) : -ct->linear().coeffs(i);
     if (coeff == 0) continue;
+
+    // TODO(user): Avoid the quadratic loop for the corner case of many
+    // enforcement literal (this should be pretty rare though).
+    bool removed = false;
+    for (const int enf : ct->enforcement_literal()) {
+      if (var == PositiveRef(enf)) {
+        if (RefIsPositive(enf)) {
+          // If the constraint is enforced, we can assume the variable is at 1.
+          sum_of_fixed_terms += coeff;
+        } else {
+          // We can assume the variable is at zero.
+        }
+        removed = true;
+        break;
+      }
+    }
+    if (removed) {
+      context_->UpdateRuleStats("linear: enforcement literal in constraint");
+      continue;
+    }
+
     if (context_->IsFixed(var)) {
       sum_of_fixed_terms += coeff * context_->MinOf(var);
       continue;
@@ -839,9 +931,9 @@ bool CpModelPresolver::CanonicalizeLinear(ConstraintProto* ct) {
         remapped = true;
         sum_of_fixed_terms += coeff * r.offset;
       }
-      terms.push_back({r.representative, coeff * r.coeff});
+      tmp_terms_.push_back({r.representative, coeff * r.coeff});
     } else {
-      terms.push_back({var, coeff});
+      tmp_terms_.push_back({var, coeff});
     }
   }
 
@@ -853,10 +945,10 @@ bool CpModelPresolver::CanonicalizeLinear(ConstraintProto* ct) {
 
   ct->mutable_linear()->clear_vars();
   ct->mutable_linear()->clear_coeffs();
-  std::sort(terms.begin(), terms.end());
+  std::sort(tmp_terms_.begin(), tmp_terms_.end());
   int current_var = 0;
   int64 current_coeff = 0;
-  for (const auto entry : terms) {
+  for (const auto entry : tmp_terms_) {
     CHECK(RefIsPositive(entry.first));
     if (entry.first == current_var) {
       current_coeff += entry.second;
@@ -888,39 +980,125 @@ bool CpModelPresolver::CanonicalizeLinear(ConstraintProto* ct) {
 }
 
 bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
-  if (context_->ModelIsUnsat()) return false;
-
-  const bool was_affine = gtl::ContainsKey(context_->affine_constraints, ct);
-  if (was_affine) return false;
+  if (ct->constraint_case() != ConstraintProto::ConstraintCase::kLinear ||
+      context_->ModelIsUnsat()) {
+    return false;
+  }
 
   std::set<int> index_to_erase;
   const int num_vars = ct->linear().vars().size();
   Domain rhs = ReadDomainFromProto(ct->linear());
+
+  // First pass. Process singleton column that are not in the objective.
   for (int i = 0; i < num_vars; ++i) {
     const int var = ct->linear().vars(i);
     const int64 coeff = ct->linear().coeffs(i);
+    CHECK(RefIsPositive(var));
     if (context_->VariableIsUniqueAndRemovable(var)) {
       bool exact;
       const auto term_domain =
           context_->DomainOf(var).MultiplicationBy(-coeff, &exact);
-      if (exact) {
-        // We do not do that if the domain of rhs becomes too complex.
-        const Domain new_rhs = rhs.AdditionWith(term_domain);
-        if (new_rhs.NumIntervals() > 100) continue;
+      if (!exact) continue;
 
-        // Note that we can't do that if we loose information in the
-        // multiplication above because the new domain might not be as strict
-        // as the initial constraint otherwise. TODO(user): because of the
-        // addition, it might be possible to cover more cases though.
-        index_to_erase.insert(i);
-        rhs = new_rhs;
-        continue;
+      // We do not do that if the domain of rhs becomes too complex.
+      const Domain new_rhs = rhs.AdditionWith(term_domain);
+      if (new_rhs.NumIntervals() > 100) continue;
+
+      // Note that we can't do that if we loose information in the
+      // multiplication above because the new domain might not be as strict
+      // as the initial constraint otherwise. TODO(user): because of the
+      // addition, it might be possible to cover more cases though.
+      context_->UpdateRuleStats("linear: singleton column");
+      index_to_erase.insert(i);
+      rhs = new_rhs;
+      continue;
+    }
+  }
+
+  // If we didn't find any, look for the one appearing in the objective.
+  if (index_to_erase.empty()) {
+    // Note that we only do that if we have a non-reified equality.
+    if (options_.parameters.presolve_substitution_level() <= 0) return false;
+    if (!ct->enforcement_literal().empty()) return false;
+
+    // If it is possible to do so, note that we can transform constraint into
+    // equalities in PropagateDomainsInLinear().
+    if (rhs.Min() != rhs.Max()) return false;
+
+    for (int i = 0; i < num_vars; ++i) {
+      const int var = ct->linear().vars(i);
+      const int64 coeff = ct->linear().coeffs(i);
+      CHECK(RefIsPositive(var));
+
+      // If the variable appear only in the objective and we have an equality,
+      // we can transfer the cost to the rest of the linear expression, and
+      // remove that variable.
+      //
+      // Note that is similar to the substitution code in PresolveLinear() but
+      // it doesn't require the variable to be implied free since we do not
+      // remove the constraints afterwards, just the variable.
+      if (!context_->VariableWithCostIsUniqueAndRemovable(var)) continue;
+
+      // We only support substitution that does not require to multiply the
+      // objective by some factor.
+      //
+      // TODO(user): If the objective is a single variable, we can actually
+      // "absorb" any factor into the objective scaling.
+      const int64 objective_coeff =
+          gtl::FindOrDie(context_->ObjectiveMap(), var);
+      CHECK_NE(coeff, 0);
+      if (objective_coeff % coeff != 0) continue;
+
+      // We do not do that if the domain of rhs becomes too complex.
+      bool exact;
+      const auto term_domain =
+          context_->DomainOf(var).MultiplicationBy(-coeff, &exact);
+      if (!exact) continue;
+      const Domain new_rhs = rhs.AdditionWith(term_domain);
+      if (new_rhs.NumIntervals() > 100) continue;
+
+      // Special case: If the objective was a single variable, we can transfer
+      // the domain of var to the objective, and just completely remove this
+      // equality constraint like it is done in ExpandObjective().
+      if (context_->ObjectiveMap().size() == 1 &&
+          context_->ObjectiveMap().contains(var)) {
+        if (!context_->IntersectDomainWith(
+                var, context_->ObjectiveDomain().InverseMultiplicationBy(
+                         objective_coeff))) {
+          return true;
+        }
+
+        // This makes sure the domain of var is propagated back to the
+        // objective. We have the DCHECK() below, because this code rely on the
+        // fact that var is neither fixed nor have a different representative
+        // otherwise CanonicalizeLinear() will remove it. Note the special case
+        // for affine constraint where the substitution is already done by
+        // CanonicalizeObjective().
+        if (!context_->CanonicalizeObjective()) {
+          return context_->NotifyThatModelIsUnsat();
+        }
+        if (!context_->affine_constraints.contains(ct)) {
+          DCHECK(context_->ObjectiveMap().contains(var));
+          context_->UpdateRuleStats(
+              "linear: singleton column define objective.");
+          context_->SubstituteVariableInObjective(var, coeff, *ct);
+        }
+
+        *(context_->mapping_model->add_constraints()) = *ct;
+        return RemoveConstraint(ct);
       }
+
+      // Update the objective and remove the variable from its equality
+      // constraint by expanding its rhs.
+      context_->UpdateRuleStats(
+          "linear: singleton column in equality and in objective.");
+      context_->SubstituteVariableInObjective(var, coeff, *ct);
+      rhs = new_rhs;
+      index_to_erase.insert(i);
+      break;
     }
   }
   if (index_to_erase.empty()) return false;
-
-  context_->UpdateRuleStats("linear: singleton column");
 
   // TODO(user): we could add the constraint to mapping_model only once
   // instead of adding a reduced version of it each time a new singleton
@@ -942,14 +1120,16 @@ bool CpModelPresolver::RemoveSingletonInLinear(ConstraintProto* ct) {
   return true;
 }
 
-bool CpModelPresolver::PresolveLinear(ConstraintProto* ct) {
-  if (context_->ModelIsUnsat()) return false;
-
-  Domain rhs = ReadDomainFromProto(ct->linear());
+bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
+  if (ct->constraint_case() != ConstraintProto::ConstraintCase::kLinear ||
+      context_->ModelIsUnsat()) {
+    return false;
+  }
 
   // Empty constraint?
   if (ct->linear().vars().empty()) {
     context_->UpdateRuleStats("linear: empty");
+    const Domain rhs = ReadDomainFromProto(ct->linear());
     if (rhs.Contains(0)) {
       return RemoveConstraint(ct);
     } else {
@@ -957,194 +1137,106 @@ bool CpModelPresolver::PresolveLinear(ConstraintProto* ct) {
     }
   }
 
+  // If the constraint is literal => abs(x) in domain, we can remove the abs()
+  // and its associated intermediate variables if we extend the domain
+  // correctly.
+  const auto abs_it = context_->abs_relations.find(ct->linear().vars(0));
+  if (ct->linear().vars_size() == 1 && ct->enforcement_literal_size() > 0 &&
+      abs_it != context_->abs_relations.end() && ct->linear().coeffs(0) == 1) {
+    // TODO(user): Deal with coeff = -1, here or during canonicalization.
+    context_->UpdateRuleStats("linear: remove abs from abs(x) in domain");
+    const Domain implied_abs_target_domain =
+        ReadDomainFromProto(ct->linear())
+            .IntersectionWith({0, kint64max})
+            .IntersectionWith(context_->DomainOf(abs_it->first));
+
+    if (implied_abs_target_domain.IsEmpty()) {
+      return MarkConstraintAsFalse(ct);
+    }
+
+    const Domain new_abs_var_domain =
+        implied_abs_target_domain
+            .UnionWith(implied_abs_target_domain.Negation())
+            .IntersectionWith(context_->DomainOf(abs_it->second));
+
+    if (new_abs_var_domain.IsEmpty()) {
+      return MarkConstraintAsFalse(ct);
+    }
+
+    ConstraintProto* new_ct = context_->working_model->add_constraints();
+    new_ct->set_name(ct->name());
+    for (const int literal : ct->enforcement_literal()) {
+      new_ct->add_enforcement_literal(literal);
+    }
+    auto* arg = new_ct->mutable_linear();
+    arg->add_vars(abs_it->second);
+    arg->add_coeffs(1);
+    FillDomainInProto(new_abs_var_domain, new_ct->mutable_linear());
+    context_->UpdateNewConstraintsVariableUsage();
+    return RemoveConstraint(ct);
+  }
+
+  if (HasEnforcementLiteral(*ct)) {
+    if (ct->enforcement_literal_size() != 1 || ct->linear().vars_size() != 1 ||
+        (ct->linear().coeffs(0) != 1 && ct->linear().coeffs(0) == -1)) {
+      return false;
+    }
+
+    const int literal = ct->enforcement_literal(0);
+    const LinearConstraintProto& linear = ct->linear();
+    const int ref = linear.vars(0);
+    const int var = PositiveRef(ref);
+    const int64 coeff =
+        RefIsPositive(ref) ? ct->linear().coeffs(0) : -ct->linear().coeffs(0);
+
+    if (linear.domain_size() == 2 && linear.domain(0) == linear.domain(1)) {
+      const int64 value = RefIsPositive(ref) ? linear.domain(0) * coeff
+                                             : -linear.domain(0) * coeff;
+      if (context_->StoreLiteralImpliesVarEqValue(literal, var, value)) {
+        // The domain is not actually modified, but we want to rescan the
+        // constraints linked to this variable. See TODO below.
+        context_->modified_domains.Set(var);
+      }
+    } else {
+      const Domain complement = context_->DomainOf(ref).IntersectionWith(
+          ReadDomainFromProto(linear).Complement());
+      if (complement.Size() != 1) return false;
+      const int64 value = RefIsPositive(ref) ? complement.Min() * coeff
+                                             : -complement.Min() * coeff;
+      if (context_->StoreLiteralImpliesVarNEqValue(literal, var, value)) {
+        // The domain is not actually modified, but we want to rescan the
+        // constraints linked to this variable. See TODO below.
+        context_->modified_domains.Set(var);
+      }
+    }
+
+    // TODO(user): if we have l1 <=> x == value && l2 => x == value, we
+    //     could rewrite the second constraint into l2 => l1.
+    return false;
+  }
+
   // Size one constraint?
-  if (ct->linear().vars().size() == 1 && !HasEnforcementLiteral(*ct)) {
+  if (ct->linear().vars().size() == 1) {
     const int64 coeff = RefIsPositive(ct->linear().vars(0))
                             ? ct->linear().coeffs(0)
                             : -ct->linear().coeffs(0);
     context_->UpdateRuleStats("linear: size one");
     const int var = PositiveRef(ct->linear().vars(0));
-    if (coeff == 1) {
-      if (!context_->IntersectDomainWith(var, rhs)) {
-        return true;
-      }
-    } else {
-      DCHECK_EQ(coeff, -1);  // Because of the GCD above.
-      if (!context_->IntersectDomainWith(var, rhs.Negation())) {
-        return true;
-      }
+    const Domain rhs = ReadDomainFromProto(ct->linear());
+    if (!context_->IntersectDomainWith(var,
+                                       rhs.InverseMultiplicationBy(coeff))) {
+      return true;
     }
     return RemoveConstraint(ct);
-  }
-
-  // Compute the implied rhs bounds from the variable ones.
-  auto& term_domains = context_->tmp_term_domains;
-  auto& left_domains = context_->tmp_left_domains;
-  const int num_vars = ct->linear().vars_size();
-  term_domains.resize(num_vars + 1);
-  left_domains.resize(num_vars + 1);
-  left_domains[0] = Domain(0);
-  for (int i = 0; i < num_vars; ++i) {
-    const int var = PositiveRef(ct->linear().vars(i));
-    const int64 coeff = ct->linear().coeffs(i);
-    term_domains[i] = context_->DomainOf(var).MultiplicationBy(coeff);
-    left_domains[i + 1] =
-        left_domains[i].AdditionWith(term_domains[i]).RelaxIfTooComplex();
-  }
-  const Domain& implied_rhs = left_domains[num_vars];
-
-  // Abort if trivial.
-  if (implied_rhs.IsIncludedIn(rhs)) {
-    context_->UpdateRuleStats("linear: always true");
-    return RemoveConstraint(ct);
-  }
-
-  // Incorporate the implied rhs information.
-  rhs = rhs.SimplifyUsingImpliedDomain(implied_rhs);
-  if (rhs.IsEmpty()) {
-    context_->UpdateRuleStats("linear: infeasible");
-    return MarkConstraintAsFalse(ct);
-  }
-  if (rhs != ReadDomainFromProto(ct->linear())) {
-    context_->UpdateRuleStats("linear: simplified rhs");
-  }
-  FillDomainInProto(rhs, ct->mutable_linear());
-
-  const bool was_affine = context_->affine_constraints.contains(ct);
-
-  // Propagate the variable bounds.
-  if (ct->enforcement_literal().size() <= 1) {
-    bool new_bounds = false;
-    Domain new_domain;
-    Domain right_domain(0, 0);
-    term_domains[num_vars] = rhs.Negation();
-    for (int i = num_vars - 1; i >= 0; --i) {
-      const int64 var_coeff = ct->linear().coeffs(i);
-      right_domain =
-          right_domain.AdditionWith(term_domains[i + 1]).RelaxIfTooComplex();
-      new_domain = left_domains[i]
-                       .AdditionWith(right_domain)
-                       .InverseMultiplicationBy(-var_coeff);
-
-      if (ct->enforcement_literal().size() == 1) {
-        // We cannot push the new domain, but we can add some deduction.
-        const int var = ct->linear().vars(i);
-        CHECK(RefIsPositive(var));
-        if (!context_->DomainOfVarIsIncludedIn(var, new_domain)) {
-          context_->deductions.AddDeduction(ct->enforcement_literal(0), var,
-                                            new_domain);
-        }
-        continue;
-      }
-
-      bool domain_modified = false;
-      if (!context_->IntersectDomainWith(ct->linear().vars(i), new_domain,
-                                         &domain_modified)) {
-        return true;
-      }
-      if (domain_modified) {
-        new_bounds = true;
-      }
-
-      // Can we perform some substitution?
-      //
-      // TODO(user): there is no guarante we will not miss some since we might
-      // not reprocess a constraint once other have been deleted.
-
-      // Skip affine constraint. Note however that we are before the affine
-      // detection for this constraint. If this variable only appear in linear
-      // constraints, the final result should be the same though. It should be
-      // even better since we don't need to track any affine relations because
-      // we remove the variable usage right away.
-      if (was_affine) continue;
-
-      // TODO(user): We actually do not need a strict equality when
-      // keep_all_feasible_solutions is false, but that simplifies things as the
-      // SubstituteVariable() function cannot fail this way.
-      if (rhs.Min() != rhs.Max()) continue;
-
-      // Only consider "implied free" variables. Note that the coefficient of
-      // magnitude 1 is important otherwise we can't easily remove the
-      // constraint since the fact that the sum of the other terms must be a
-      // multiple of coeff will not be enforced anymore.
-      const int var = ct->linear().vars(i);
-      if (context_->DomainOf(var) != new_domain) continue;
-      if (std::abs(var_coeff) != 1) continue;
-
-      // Skip if the variable is in the objective.
-      if (context_->var_to_constraints[var].contains(-1)) continue;
-
-      // Only consider low degree columns.
-      if (context_->var_to_constraints[var].size() < 2) continue;
-      if (context_->var_to_constraints[var].size() >
-          options_.parameters.presolve_substitution_level()) {
-        continue;
-      }
-
-      // Check pre-conditions on all the constraints in which this variable
-      // appear. Basically they must all be linear and not already used for
-      // affine relation.
-      std::vector<int> others;
-      for (const int c : context_->var_to_constraints[var]) {
-        if (context_->working_model->mutable_constraints(c) == ct) continue;
-        others.push_back(c);
-      }
-      bool abort = false;
-      for (const int c : others) {
-        if (context_->working_model->constraints(c).constraint_case() !=
-            ConstraintProto::ConstraintCase::kLinear) {
-          abort = true;
-          break;
-        }
-        if (context_->affine_constraints.contains(
-                &context_->working_model->constraints(c))) {
-          abort = true;
-          break;
-        }
-        for (const int ref :
-             context_->working_model->constraints(c).enforcement_literal()) {
-          if (PositiveRef(ref) == var) {
-            abort = true;
-            break;
-          }
-        }
-        if (abort) break;
-      }
-      if (abort) continue;
-
-      // Do the actual substitution.
-      for (const int c : others) {
-        // TODO(user): In some corner cases, this might create integer overflow
-        // issues. The danger is limited since the range of the linear
-        // expression used in the definition do not exceed the domain of the
-        // variable we substitute.
-        SubstituteVariable(var, var_coeff, *ct,
-                           context_->working_model->mutable_constraints(c));
-
-        // TODO(user): We should re-enqueue these constraints for presolve.
-        context_->UpdateConstraintVariableUsage(c);
-      }
-
-      context_->UpdateRuleStats(
-          absl::StrCat("linear: variable substitution ", others.size()));
-
-      // The variable now only appear in its definition and we can remove it
-      // because it was implied free.
-      CHECK_EQ(context_->var_to_constraints[var].size(), 1);
-      *context_->mapping_model->add_constraints() = *ct;
-      return RemoveConstraint(ct);
-    }
-    if (new_bounds) {
-      context_->UpdateRuleStats("linear: reduced variable domains");
-    }
   }
 
   // Detect affine relation.
   //
   // TODO(user): it might be better to first add only the affine relation with
   // a coefficient of magnitude 1, and later the one with larger coeffs.
-  if (!was_affine && !HasEnforcementLiteral(*ct)) {
+  if (!context_->affine_constraints.contains(ct)) {
     const LinearConstraintProto& arg = ct->linear();
+    const Domain rhs = ReadDomainFromProto(ct->linear());
     const int64 rhs_min = rhs.Min();
     const int64 rhs_max = rhs.Max();
     if (rhs_min == rhs_max && arg.vars_size() == 2) {
@@ -1167,6 +1259,381 @@ bool CpModelPresolver::PresolveLinear(ConstraintProto* ct) {
   return false;
 }
 
+namespace {
+
+// Return true if the given domain only restrict the values with an upper bound.
+bool IsLeConstraint(const Domain& domain, const Domain& all_values) {
+  return all_values.IntersectionWith(Domain(kint64min, domain.Max()))
+      .IsIncludedIn(domain);
+}
+
+// Same as IsLeConstraint() but in the other direction.
+bool IsGeConstraint(const Domain& domain, const Domain& all_values) {
+  return all_values.IntersectionWith(Domain(domain.Min(), kint64max))
+      .IsIncludedIn(domain);
+}
+
+// In the equation terms + coeff * var_domain \included rhs, returns true if can
+// we always fix rhs to its min value for any value in terms. It is okay to
+// not be as generic as possible here.
+bool RhsCanBeFixedToMin(int64 coeff, const Domain& var_domain,
+                        const Domain& terms, const Domain& rhs) {
+  if (var_domain.NumIntervals() != 1) return false;
+  if (std::abs(coeff) != 1) return false;
+
+  // If for all values in terms, there is one value below rhs.Min(), then
+  // because we add only one integer interval, if there is a feasible value, it
+  // can be at rhs.Min().
+  //
+  // TODO(user): generalize to larger coeff magnitude if rhs is also a multiple
+  // or if terms is a multiple.
+  if (coeff == 1 && terms.Max() + var_domain.Min() <= rhs.Min()) {
+    return true;
+  }
+  if (coeff == -1 && terms.Max() - var_domain.Max() <= rhs.Min()) {
+    return true;
+  }
+  return false;
+}
+
+bool RhsCanBeFixedToMax(int64 coeff, const Domain& var_domain,
+                        const Domain& terms, const Domain& rhs) {
+  if (var_domain.NumIntervals() != 1) return false;
+  if (std::abs(coeff) != 1) return false;
+
+  if (coeff == 1 && terms.Min() + var_domain.Max() >= rhs.Max()) {
+    return true;
+  }
+  if (coeff == -1 && terms.Min() - var_domain.Min() >= rhs.Max()) {
+    return true;
+  }
+  return false;
+}
+
+// Remove from to_clear any entry not in current.
+void TakeIntersectionWith(const absl::flat_hash_set<int>& current,
+                          absl::flat_hash_set<int>* to_clear) {
+  std::vector<int> new_set;
+  for (const int c : *to_clear) {
+    if (current.contains(c)) new_set.push_back(c);
+  }
+  to_clear->clear();
+  for (const int c : new_set) to_clear->insert(c);
+}
+
+}  // namespace
+
+bool CpModelPresolver::PropagateDomainsInLinear(int c, ConstraintProto* ct) {
+  if (ct->constraint_case() != ConstraintProto::ConstraintCase::kLinear ||
+      context_->ModelIsUnsat()) {
+    return false;
+  }
+
+  // Compute the implied rhs bounds from the variable ones.
+  auto& term_domains = context_->tmp_term_domains;
+  auto& left_domains = context_->tmp_left_domains;
+  const int num_vars = ct->linear().vars_size();
+  term_domains.resize(num_vars + 1);
+  left_domains.resize(num_vars + 1);
+  left_domains[0] = Domain(0);
+  for (int i = 0; i < num_vars; ++i) {
+    const int var = ct->linear().vars(i);
+    const int64 coeff = ct->linear().coeffs(i);
+    CHECK(RefIsPositive(var));
+    term_domains[i] = context_->DomainOf(var).MultiplicationBy(coeff);
+    left_domains[i + 1] =
+        left_domains[i].AdditionWith(term_domains[i]).RelaxIfTooComplex();
+  }
+  const Domain& implied_rhs = left_domains[num_vars];
+
+  // Abort if trivial.
+  const Domain old_rhs = ReadDomainFromProto(ct->linear());
+  if (implied_rhs.IsIncludedIn(old_rhs)) {
+    context_->UpdateRuleStats("linear: always true");
+    return RemoveConstraint(ct);
+  }
+
+  // Incorporate the implied rhs information.
+  Domain rhs = old_rhs.SimplifyUsingImpliedDomain(implied_rhs);
+  if (rhs.IsEmpty()) {
+    context_->UpdateRuleStats("linear: infeasible");
+    return MarkConstraintAsFalse(ct);
+  }
+  if (rhs != old_rhs) {
+    context_->UpdateRuleStats("linear: simplified rhs");
+  }
+  FillDomainInProto(rhs, ct->mutable_linear());
+
+  // Detect if it is always good for a term of this constraint to move towards
+  // its lower (resp. upper) bound. This is the same as saying that this
+  // constraint only bound in one direction.
+  bool is_le_constraint = IsLeConstraint(rhs, implied_rhs);
+  bool is_ge_constraint = IsGeConstraint(rhs, implied_rhs);
+
+  // Propagate the variable bounds.
+  if (ct->enforcement_literal().size() > 1) return false;
+
+  bool new_bounds = false;
+  bool recanonicalize = false;
+  Domain negated_rhs = rhs.Negation();
+  Domain right_domain(0);
+  Domain new_domain;
+  Domain implied_term_domain;
+  term_domains[num_vars] = Domain(0);
+  for (int i = num_vars - 1; i >= 0; --i) {
+    const int var = ct->linear().vars(i);
+    const int64 var_coeff = ct->linear().coeffs(i);
+    right_domain =
+        right_domain.AdditionWith(term_domains[i + 1]).RelaxIfTooComplex();
+    implied_term_domain = left_domains[i].AdditionWith(right_domain);
+    new_domain = implied_term_domain.AdditionWith(negated_rhs)
+                     .InverseMultiplicationBy(-var_coeff);
+
+    if (ct->enforcement_literal().empty()) {
+      // Push the new domain.
+      if (!context_->IntersectDomainWith(var, new_domain, &new_bounds)) {
+        return true;
+      }
+    } else if (ct->enforcement_literal().size() == 1) {
+      // We cannot push the new domain, but we can add some deduction.
+      CHECK(RefIsPositive(var));
+      if (!context_->DomainOfVarIsIncludedIn(var, new_domain)) {
+        context_->deductions.AddDeduction(ct->enforcement_literal(0), var,
+                                          new_domain);
+      }
+    }
+
+    if (context_->IsFixed(var)) {
+      // This will make sure we remove that fixed variable from the constraint.
+      recanonicalize = true;
+      continue;
+    }
+
+    if (is_le_constraint || is_ge_constraint) {
+      CHECK_NE(is_le_constraint, is_ge_constraint);
+      if ((var_coeff > 0) == is_ge_constraint) {
+        context_->var_to_lb_only_constraints[var].insert(c);
+      } else {
+        context_->var_to_ub_only_constraints[var].insert(c);
+      }
+
+      // Simple dual fixing: If for any feasible solution, any solution with var
+      // higher (resp. lower) is also valid, then we can fix that variable to
+      // its bound if it also moves the objective in the good direction.
+      //
+      // A bit tricky. If a linear constraint was detected to not block a
+      // variable in one direction, this shouldn't change later (expect in the
+      // tightening code below, and we do take care of it). However variable can
+      // appear in new constraints.
+      if (!context_->keep_all_feasible_solutions) {
+        const bool is_in_objective =
+            context_->var_to_constraints[var].contains(-1);
+        const int size = context_->var_to_constraints[var].size() -
+                         (is_in_objective ? 1 : 0);
+        const int64 obj_coeff =
+            is_in_objective ? gtl::FindOrDie(context_->ObjectiveMap(), var) : 0;
+
+        // We cannot fix anything if the domain of the objective is excluding
+        // some objective values.
+        if (obj_coeff != 0 && context_->ObjectiveDomainIsConstraining()) {
+          continue;
+        }
+
+        if (obj_coeff <= 0 &&
+            context_->var_to_lb_only_constraints[var].size() >= size) {
+          TakeIntersectionWith(context_->var_to_constraints[var],
+                               &(context_->var_to_lb_only_constraints[var]));
+          if (context_->var_to_lb_only_constraints[var].size() >= size) {
+            if (!context_->IntersectDomainWith(var,
+                                               Domain(context_->MaxOf(var)))) {
+              return false;
+            }
+            context_->UpdateRuleStats("linear: dual fixing");
+            recanonicalize = true;
+            continue;
+          }
+        }
+        if (obj_coeff >= 0 &&
+            context_->var_to_ub_only_constraints[var].size() >= size) {
+          TakeIntersectionWith(context_->var_to_constraints[var],
+                               &(context_->var_to_ub_only_constraints[var]));
+          if (context_->var_to_ub_only_constraints[var].size() >= size) {
+            if (!context_->IntersectDomainWith(var,
+                                               Domain(context_->MinOf(var)))) {
+              return false;
+            }
+            context_->UpdateRuleStats("linear: dual fixing");
+            recanonicalize = true;
+            continue;
+          }
+        }
+      }
+    }
+
+    // The other transformations below require a non-reified constraint.
+    if (!ct->enforcement_literal().empty()) continue;
+
+    // Given a variable that only appear in one constraint and in the
+    // objective, for any feasible solution, it will be always better to move
+    // this singleton variable as much as possible towards its good objective
+    // direction. Sometimes, we can detect that we will always be able to do
+    // this until the only constraint of this singleton variable is tight.
+    //
+    // When this happens, we can make the constraint an equality. Note that it
+    // might not always be good to restrict constraint like this, but in this
+    // case, the RemoveSingletonInLinear() code should be able to remove this
+    // variable altogether.
+    if (rhs.Min() != rhs.Max() &&
+        context_->VariableWithCostIsUniqueAndRemovable(var)) {
+      const int64 obj_coeff = gtl::FindOrDie(context_->ObjectiveMap(), var);
+      bool fixed = false;
+      if ((var_coeff > 0 == obj_coeff > 0) &&
+          RhsCanBeFixedToMin(var_coeff, context_->DomainOf(var),
+                             implied_term_domain, rhs)) {
+        rhs = Domain(rhs.Min());
+        fixed = true;
+      }
+      if ((var_coeff > 0 != obj_coeff > 0) &&
+          RhsCanBeFixedToMax(var_coeff, context_->DomainOf(var),
+                             implied_term_domain, rhs)) {
+        rhs = Domain(rhs.Max());
+        fixed = true;
+      }
+      if (fixed) {
+        context_->UpdateRuleStats("linear: tightened into equality");
+        FillDomainInProto(rhs, ct->mutable_linear());
+        negated_rhs = rhs.Negation();
+
+        // Restart the loop.
+        i = num_vars;
+        right_domain = Domain(0);
+
+        // An equality is a >= (or <=) constraint iff all its term are fixed.
+        // Since we restart the loop, we will detect that.
+        is_le_constraint = false;
+        is_ge_constraint = false;
+        for (const int var : ct->linear().vars()) {
+          context_->var_to_lb_only_constraints[var].erase(c);
+          context_->var_to_ub_only_constraints[var].erase(c);
+        }
+        continue;
+      }
+    }
+
+    // Can we perform some substitution?
+    //
+    // TODO(user): there is no guarante we will not miss some since we might
+    // not reprocess a constraint once other have been deleted.
+
+    // Skip affine constraint. It is more efficient to substitute them lazily
+    // when we process other constraints. Note that if we relax the fact that
+    // we substitute only equalities, we can deal with inequality of size 2
+    // here.
+    if (ct->linear().vars().size() <= 2) continue;
+
+    // TODO(user): We actually do not need a strict equality when
+    // keep_all_feasible_solutions is false, but that simplifies things as the
+    // SubstituteVariable() function cannot fail this way.
+    if (rhs.Min() != rhs.Max()) continue;
+
+    // Only consider "implied free" variables. Note that the coefficient of
+    // magnitude 1 is important otherwise we can't easily remove the
+    // constraint since the fact that the sum of the other terms must be a
+    // multiple of coeff will not be enforced anymore.
+    if (context_->DomainOf(var) != new_domain) continue;
+    if (std::abs(var_coeff) != 1) continue;
+    if (options_.parameters.presolve_substitution_level() <= 0) continue;
+
+    // NOTE: The mapping doesn't allow us to remove a variable if
+    // 'keep_all_feasible_solutions' is true.
+    if (context_->keep_all_feasible_solutions) continue;
+
+    bool is_in_objective = false;
+    if (context_->var_to_constraints[var].contains(-1)) {
+      is_in_objective = true;
+      DCHECK(context_->ObjectiveMap().contains(var));
+    }
+
+    // Only consider low degree columns.
+    int col_size = context_->var_to_constraints[var].size();
+    if (is_in_objective) col_size--;
+    const int row_size = ct->linear().vars_size();
+
+    // This is actually an upper bound on the number of entries added since
+    // some of them might already be present.
+    const int num_entries_added = (row_size - 1) * (col_size - 1);
+    const int num_entries_removed = col_size + row_size - 1;
+
+    if (num_entries_added > num_entries_removed) {
+      continue;
+    }
+
+    // Check pre-conditions on all the constraints in which this variable
+    // appear. Basically they must all be linear and not already used for
+    // affine relation.
+    std::vector<int> others;
+    for (const int c : context_->var_to_constraints[var]) {
+      if (c == -1) continue;
+      if (context_->working_model->mutable_constraints(c) == ct) continue;
+      others.push_back(c);
+    }
+    bool abort = false;
+    for (const int c : others) {
+      if (context_->working_model->constraints(c).constraint_case() !=
+          ConstraintProto::ConstraintCase::kLinear) {
+        abort = true;
+        break;
+      }
+      if (context_->affine_constraints.contains(
+              &context_->working_model->constraints(c))) {
+        abort = true;
+        break;
+      }
+      for (const int ref :
+           context_->working_model->constraints(c).enforcement_literal()) {
+        if (PositiveRef(ref) == var) {
+          abort = true;
+          break;
+        }
+      }
+      if (abort) break;
+    }
+    if (abort) continue;
+
+    // Do the actual substitution.
+    for (const int c : others) {
+      // TODO(user): In some corner cases, this might create integer overflow
+      // issues. The danger is limited since the range of the linear
+      // expression used in the definition do not exceed the domain of the
+      // variable we substitute.
+      SubstituteVariable(var, var_coeff, *ct,
+                         context_->working_model->mutable_constraints(c));
+
+      // TODO(user): We should re-enqueue these constraints for presolve.
+      context_->UpdateConstraintVariableUsage(c);
+    }
+
+    // Substitute in objective.
+    if (is_in_objective) {
+      context_->SubstituteVariableInObjective(var, var_coeff, *ct);
+    }
+
+    context_->UpdateRuleStats(
+        absl::StrCat("linear: variable substitution ", others.size()));
+
+    // The variable now only appear in its definition and we can remove it
+    // because it was implied free.
+    CHECK_EQ(context_->var_to_constraints[var].size(), 1);
+    *context_->mapping_model->add_constraints() = *ct;
+    return RemoveConstraint(ct);
+  }
+  if (new_bounds) {
+    context_->UpdateRuleStats("linear: reduced variable domains");
+  }
+  if (recanonicalize) return CanonicalizeLinear(ct);
+  return false;
+}
+
 // Identify Boolean variable that makes the constraint always true when set to
 // true or false. Moves such literal to the constraint enforcement literals
 // list.
@@ -1177,7 +1644,10 @@ bool CpModelPresolver::PresolveLinear(ConstraintProto* ct) {
 // by using the same logic (i.e. real coefficient strengthening).
 void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
     ConstraintProto* ct) {
-  if (context_->ModelIsUnsat()) return;
+  if (ct->constraint_case() != ConstraintProto::ConstraintCase::kLinear ||
+      context_->ModelIsUnsat()) {
+    return;
+  }
   if (context_->affine_constraints.contains(ct)) return;
 
   const LinearConstraintProto& arg = ct->linear();
@@ -1318,7 +1788,7 @@ void CpModelPresolver::ExtractEnforcementLiteralFromLinearConstraint(
 void CpModelPresolver::ExtractAtMostOneFromLinear(ConstraintProto* ct) {
   if (context_->ModelIsUnsat()) return;
   if (HasEnforcementLiteral(*ct)) return;
-  const Domain domain = ReadDomainFromProto(ct->linear());
+  const Domain rhs = ReadDomainFromProto(ct->linear());
 
   const LinearConstraintProto& arg = ct->linear();
   const int num_vars = arg.vars_size();
@@ -1341,14 +1811,13 @@ void CpModelPresolver::ExtractAtMostOneFromLinear(ConstraintProto* ct) {
       if (context_->MaxOf(ref) != 1) continue;
 
       if (type == 0) {
-        // TODO(user): we could potentially add one more Boolean with a lower
-        // coeff as long as we have lower_coeff + min_of_other_coeff >
-        // domain.Max().
-        if (min_sum + 2 * std::abs(coeff) > domain.Max()) {
+        // TODO(user): we could add one more Boolean with a lower coeff as long
+        // as we have lower_coeff + min_of_other_coeff > rhs.Max().
+        if (min_sum + 2 * std::abs(coeff) > rhs.Max()) {
           at_most_one.push_back(coeff > 0 ? ref : NegatedRef(ref));
         }
       } else {
-        if (max_sum - 2 * std::abs(coeff) < domain.Min()) {
+        if (max_sum - 2 * std::abs(coeff) < rhs.Min()) {
           at_most_one.push_back(coeff > 0 ? NegatedRef(ref) : ref);
         }
       }
@@ -1363,6 +1832,7 @@ void CpModelPresolver::ExtractAtMostOneFromLinear(ConstraintProto* ct) {
       for (const int ref : at_most_one) {
         new_ct->mutable_at_most_one()->add_literals(ref);
       }
+      context_->UpdateNewConstraintsVariableUsage();
     }
   }
 }
@@ -1370,7 +1840,10 @@ void CpModelPresolver::ExtractAtMostOneFromLinear(ConstraintProto* ct) {
 // Convert some linear constraint involving only Booleans to their Boolean
 // form.
 bool CpModelPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
-  if (context_->ModelIsUnsat()) return false;
+  if (ct->constraint_case() != ConstraintProto::ConstraintCase::kLinear ||
+      context_->ModelIsUnsat()) {
+    return false;
+  }
 
   // TODO(user): the alternative to mark any newly created constraints might
   // be better.
@@ -1569,6 +2042,34 @@ bool CpModelPresolver::PresolveInterval(int c, ConstraintProto* ct) {
   const int start = ct->interval().start();
   const int end = ct->interval().end();
   const int size = ct->interval().size();
+
+  if (ct->enforcement_literal().empty()) {
+    bool changed = false;
+    const Domain start_domain = context_->DomainOf(start);
+    const Domain end_domain = context_->DomainOf(end);
+    const Domain size_domain = context_->DomainOf(size);
+    // Size can't be negative.
+    if (!context_->IntersectDomainWith(size, Domain(0, context_->MaxOf(size)),
+                                       &changed)) {
+      return false;
+    }
+    if (!context_->IntersectDomainWith(
+            end, start_domain.AdditionWith(size_domain), &changed)) {
+      return false;
+    }
+    if (!context_->IntersectDomainWith(
+            start, end_domain.AdditionWith(size_domain.Negation()), &changed)) {
+      return false;
+    }
+    if (!context_->IntersectDomainWith(
+            size, end_domain.AdditionWith(start_domain.Negation()), &changed)) {
+      return false;
+    }
+    if (changed) {
+      context_->UpdateRuleStats("interval: reduced domains");
+    }
+  }
+
   if (context_->interval_usage[c] == 0) {
     // Convert to linear.
     ConstraintProto* new_ct = context_->working_model->add_constraints();
@@ -1581,30 +2082,10 @@ bool CpModelPresolver::PresolveInterval(int c, ConstraintProto* ct) {
     new_ct->mutable_linear()->add_coeffs(1);
     new_ct->mutable_linear()->add_vars(end);
     new_ct->mutable_linear()->add_coeffs(-1);
+    context_->UpdateNewConstraintsVariableUsage();
     context_->UpdateRuleStats("interval: unused, converted to linear");
 
     return RemoveConstraint(ct);
-  }
-
-  if (!ct->enforcement_literal().empty()) return false;
-  bool changed = false;
-  const Domain start_domain = context_->DomainOf(start);
-  const Domain end_domain = context_->DomainOf(end);
-  const Domain size_domain = context_->DomainOf(size);
-  if (!context_->IntersectDomainWith(
-          end, start_domain.AdditionWith(size_domain), &changed)) {
-    return false;
-  }
-  if (!context_->IntersectDomainWith(
-          start, end_domain.AdditionWith(size_domain.Negation()), &changed)) {
-    return false;
-  }
-  if (!context_->IntersectDomainWith(
-          size, end_domain.AdditionWith(start_domain.Negation()), &changed)) {
-    return false;
-  }
-  if (changed) {
-    context_->UpdateRuleStats("interval: reduced domains");
   }
 
   // TODO(user): This currently has a side effect that both the interval and
@@ -1664,7 +2145,7 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
           reduced_index_domain = true;
         } else {
           ++num_vars;
-          if (domain.Min() == domain.Max()) {
+          if (domain.IsFixed()) {
             constant_set.insert(domain.Min());
           } else {
             all_constants = false;
@@ -1701,6 +2182,7 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
       lin->add_coeffs(1);
       lin->add_domain(0);
       lin->add_domain(0);
+      context_->UpdateNewConstraintsVariableUsage();
     }
     context_->UpdateRuleStats("element: fixed index");
     return RemoveConstraint(ct);
@@ -1730,6 +2212,7 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
     lin->add_coeffs(v0 - v1);
     lin->add_domain(v0);
     lin->add_domain(v0);
+    context_->UpdateNewConstraintsVariableUsage();
     context_->UpdateRuleStats("element: linearize constant element of size 2");
     return RemoveConstraint(ct);
   }
@@ -1770,6 +2253,7 @@ bool CpModelPresolver::PresolveElement(ConstraintProto* ct) {
       } else {
         context_->UpdateRuleStats("element: scaled index");
       }
+      context_->UpdateNewConstraintsVariableUsage();
       return RemoveConstraint(ct);
     }
   }
@@ -2021,6 +2505,13 @@ bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
     }
   }
 
+  std::sort(new_variables.begin(), new_variables.end());
+  for (int i = 1; i < new_variables.size(); ++i) {
+    if (new_variables[i] == new_variables[i - 1]) {
+      return context_->NotifyThatModelIsUnsat("Duplicate variable in all_diff");
+    }
+  }
+
   if (new_variables.size() < all_diff.vars_size()) {
     all_diff.mutable_vars()->Clear();
     for (const int var : new_variables) {
@@ -2044,20 +2535,6 @@ bool CpModelPresolver::IntervalsCanIntersect(
 }
 
 namespace {
-
-void MaybeDivideByGcd(std::map<int, int64>* objective_map, int64* divisor) {
-  if (objective_map->empty()) return;
-  int64 gcd = 0;
-  for (const auto entry : *objective_map) {
-    gcd = MathUtil::GCD64(gcd, std::abs(entry.second));
-    if (gcd == 1) break;
-  }
-  if (gcd == 1) return;
-  for (auto& entry : *objective_map) {
-    entry.second /= gcd;
-  }
-  *divisor *= gcd;
-}
 
 // Returns the sorted list of literals for given bool_or or at_most_one
 // constraint.
@@ -2738,6 +3215,10 @@ void CpModelPresolver::Probe() {
   // equivalences, and use the newly learned binary clauses?
   auto* implication_graph = model.GetOrCreate<BinaryImplicationGraph>();
   ProbeBooleanVariables(/*deterministic_time_limit=*/1.0, &model);
+  if (options_.time_limit != nullptr) {
+    options_.time_limit->AdvanceDeterministicTime(
+        model.GetOrCreate<TimeLimit>()->GetElapsedDeterministicTime());
+  }
   if (sat_solver->IsModelUnsat() || !implication_graph->DetectEquivalences()) {
     return (void)context_->NotifyThatModelIsUnsat();
   }
@@ -2788,6 +3269,7 @@ void CpModelPresolver::PresolvePureSatPart() {
   SatPostsolver sat_postsolver(num_variables);
   SatPresolver sat_presolver(&sat_postsolver);
   sat_presolver.SetNumVariables(num_variables);
+  sat_presolver.SetTimeLimit(options_.time_limit);
 
   SatParameters params;
 
@@ -2803,10 +3285,28 @@ void CpModelPresolver::PresolvePureSatPart() {
   sat_presolver.SetParameters(params);
 
   // Converts a cp_model literal ref to a sat::Literal used by SatPresolver.
-  auto convert = [](int ref) {
+  absl::flat_hash_set<int> used_variables;
+  auto convert = [&used_variables](int ref) {
+    used_variables.insert(PositiveRef(ref));
     if (RefIsPositive(ref)) return Literal(BooleanVariable(ref), true);
     return Literal(BooleanVariable(NegatedRef(ref)), false);
   };
+
+  // We need all Boolean constraints to be presolved before loading them below.
+  // Otherwise duplicate literals might result in a wrong outcome.
+  //
+  // TODO(user): Be a bit more efficient, and enforce this invariant before we
+  // reach this point?
+  for (int c = 0; c < context_->working_model->constraints_size(); ++c) {
+    const ConstraintProto& ct = context_->working_model->constraints(c);
+    if (ct.constraint_case() == ConstraintProto::ConstraintCase::kBoolOr ||
+        ct.constraint_case() == ConstraintProto::ConstraintCase::kBoolAnd) {
+      if (PresolveOneConstraint(c)) {
+        context_->UpdateConstraintVariableUsage(c);
+      }
+      if (context_->ModelIsUnsat()) return;
+    }
+  }
 
   // Load all Clauses into the presolver and remove them from the current model.
   //
@@ -2817,7 +3317,8 @@ void CpModelPresolver::PresolvePureSatPart() {
   // TODO(user): Add the "small" at most one constraints to the SAT presolver by
   // expanding them to implications? that could remove a lot of clauses. Do that
   // when we are sure we don't load duplicates at_most_one/implications in the
-  // solver.
+  // solver. Ideally, the pure sat presolve could be improved to handle at most
+  // one, and we could merge this with what the ProcessSetPPC() is doing.
   std::vector<Literal> clause;
   int num_removed_constraints = 0;
   for (int i = 0; i < context_->working_model->constraints_size(); ++i) {
@@ -2828,6 +3329,9 @@ void CpModelPresolver::PresolvePureSatPart() {
       clause.clear();
       for (const int ref : ct.bool_or().literals()) {
         clause.push_back(convert(ref));
+      }
+      for (const int ref : ct.enforcement_literal()) {
+        clause.push_back(convert(ref).Negated());
       }
       sat_presolver.AddClause(clause);
 
@@ -2872,6 +3376,17 @@ void CpModelPresolver::PresolvePureSatPart() {
       ++num_removable;
       can_be_removed[i] = true;
     }
+
+    // Because we might not have reached the presove "fixed point" above, some
+    // variable in the added clauses might be fixed. We need to indicate this to
+    // the SAT presolver.
+    if (used_variables.contains(i) && context_->IsFixed(i)) {
+      if (context_->LiteralIsTrue(i)) {
+        sat_presolver.AddClause({convert(i)});
+      } else {
+        sat_presolver.AddClause({convert(NegatedRef(i))});
+      }
+    }
   }
 
   // Run the presolve for a small number of passes.
@@ -2891,7 +3406,7 @@ void CpModelPresolver::PresolvePureSatPart() {
   // Add any new variables to our internal structure.
   const int new_num_variables = sat_presolver.NumVariables();
   if (new_num_variables > context_->working_model->variables_size()) {
-    LOG(INFO) << "New variables added by the SAT presolver.";
+    VLOG(1) << "New variables added by the SAT presolver.";
     for (int i = context_->working_model->variables_size();
          i < new_num_variables; ++i) {
       IntegerVariableProto* var_proto =
@@ -2919,73 +3434,20 @@ void CpModelPresolver::PresolvePureSatPart() {
 void CpModelPresolver::ExpandObjective() {
   if (context_->ModelIsUnsat()) return;
 
-  // Start by simplifying the objective domain using the implied domain of the
-  // initial linear objective.
-  {
-    Domain implied_domain(0);
-    for (int i = 0; i < context_->working_model->objective().vars_size(); ++i) {
-      const int ref = context_->working_model->objective().vars(i);
-      const int64 coeff = context_->working_model->objective().coeffs(i);
-      // NOTE: Domain multiplication with zero coeff returns empty domain so we
-      // avoid it by skipping the terms with zero coeff.
-      if (coeff == 0) continue;
-      implied_domain =
-          implied_domain
-              .AdditionWith(context_->DomainOf(ref).MultiplicationBy(coeff))
-              .RelaxIfTooComplex();
-    }
-
-    CpObjectiveProto* const mutable_objective =
-        context_->working_model->mutable_objective();
-    Domain old_domain = Domain::AllValues();
-    if (!mutable_objective->domain().empty()) {
-      old_domain = ReadDomainFromProto(*mutable_objective);
-    }
-    const Domain simplified_domain =
-        old_domain.SimplifyUsingImpliedDomain(implied_domain);
-    if (simplified_domain.IsEmpty()) {
-      return (void)context_->NotifyThatModelIsUnsat();
-    }
-    FillDomainInProto(simplified_domain, mutable_objective);
+  // The objective is already loaded in the constext, but we re-canonicalize
+  // it with the latest information.
+  if (!context_->CanonicalizeObjective()) {
+    (void)context_->NotifyThatModelIsUnsat();
+    return;
   }
-
-  // Convert the objective linear expression to a map for ease of use below.
-  // We also only use affine representative.
-  std::map<int, int64> objective_map;
-  int64 objective_offset_change = 0;
-  int64 objective_divisor = 1;
-  for (int i = 0; i < context_->working_model->objective().vars_size(); ++i) {
-    const int ref = context_->working_model->objective().vars(i);
-    int64 coeff = context_->working_model->objective().coeffs(i);
-    if (!RefIsPositive(ref)) coeff = -coeff;
-    int var = PositiveRef(ref);
-
-    // Will be added back at the end.
-    context_->var_to_constraints[var].erase(-1);
-
-    if (context_->IsFixed(var)) {
-      objective_offset_change += coeff * context_->MinOf(var);
-      continue;
-    }
-
-    const AffineRelation::Relation r = context_->GetAffineRelation(var);
-    if (r.representative != var) {
-      var = r.representative;
-      objective_offset_change += r.offset * coeff;
-      coeff *= r.coeff;
-    }
-
-    objective_map[var] += coeff;
-    if (objective_map[var] == 0) objective_map.erase(var);
-  }
-  MaybeDivideByGcd(&objective_map, &objective_divisor);
 
   // If the objective is a single variable, then we can usually remove this
   // variable if it is only used in one linear equality constraint and we do
   // just one expansion. This is because the domain of the variable will be
   // transferred to our objective_domain.
   int unique_expanded_constraint = -1;
-  const bool objective_was_a_single_variable = objective_map.size() == 1;
+  const bool objective_was_a_single_variable =
+      context_->ObjectiveMap().size() == 1;
 
   // To avoid a bad complexity, we need to compute the number of relevant
   // constraints for each variables.
@@ -3012,7 +3474,7 @@ void CpModelPresolver::ExpandObjective() {
   }
 
   std::set<int> var_to_process;
-  for (const auto entry : objective_map) {
+  for (const auto entry : context_->ObjectiveMap()) {
     const int var = entry.first;
     CHECK(RefIsPositive(var));
     if (var_to_num_relevant_constraints[var] != 0) {
@@ -3023,14 +3485,20 @@ void CpModelPresolver::ExpandObjective() {
   // We currently never expand a variable more than once.
   int num_expansions = 0;
   absl::flat_hash_set<int> processed_vars;
+  std::vector<int> new_vars_in_objective;
   while (!relevant_constraints.empty()) {
     // Find a not yet expanded var.
     int objective_var = -1;
     while (!var_to_process.empty()) {
       const int var = *var_to_process.begin();
-      CHECK(!processed_vars.count(var));
+      CHECK(!processed_vars.contains(var));
       if (var_to_num_relevant_constraints[var] == 0) {
         processed_vars.insert(var);
+        var_to_process.erase(var);
+        continue;
+      }
+      if (!context_->ObjectiveMap().contains(var)) {
+        // We do not mark it as processed in case it re-appear later.
         var_to_process.erase(var);
         continue;
       }
@@ -3078,7 +3546,7 @@ void CpModelPresolver::ExpandObjective() {
           objective_coeff = (ref == objective_var) ? coeff : -coeff;
         } else {
           // This is not possible since we only consider relevant constraints.
-          CHECK(!processed_vars.count(PositiveRef(ref)));
+          CHECK(!processed_vars.contains(PositiveRef(ref)));
         }
       }
       CHECK(is_present);
@@ -3102,36 +3570,16 @@ void CpModelPresolver::ExpandObjective() {
       // Update the objective map. Note that the division is possible because
       // currently we only expand with coeff with a magnitude of 1.
       CHECK_EQ(std::abs(objective_coeff_in_expanded_constraint), 1);
-      const int64 factor =
-          objective_map[objective_var] / objective_coeff_in_expanded_constraint;
-
-      objective_map.erase(objective_var);
-
       const ConstraintProto& ct =
           context_->working_model->constraints(expanded_linear_index);
-      const int num_terms = ct.linear().vars_size();
-      for (int i = 0; i < num_terms; ++i) {
-        const int ref = ct.linear().vars(i);
-        const int var = PositiveRef(ref);
-        if (var == objective_var) continue;
+      context_->SubstituteVariableInObjective(
+          objective_var, objective_coeff_in_expanded_constraint, ct,
+          &new_vars_in_objective);
 
-        int64 coeff = -ct.linear().coeffs(i) * factor;
-        if (!RefIsPositive(ref)) coeff = -coeff;
-        if (!gtl::ContainsKey(objective_map, var)) {
-          if (!gtl::ContainsKey(processed_vars, var)) {
-            var_to_process.insert(var);
-          }
-        }
-        objective_map[var] += coeff;
-        if (objective_map[var] == 0.0) {
-          objective_map.erase(var);
-          var_to_process.erase(var);
-        }
+      // Add not yet processed new variables.
+      for (const int var : new_vars_in_objective) {
+        if (!processed_vars.contains(var)) var_to_process.insert(var);
       }
-
-      objective_offset_change +=
-          ct.linear().domain(0) * factor * objective_divisor;
-      MaybeDivideByGcd(&objective_map, &objective_divisor);
 
       // If the objective variable wasn't used in other constraints and it can
       // be reconstructed whatever the value of the other variables, we can
@@ -3142,7 +3590,7 @@ void CpModelPresolver::ExpandObjective() {
       if (context_->var_to_constraints[objective_var].size() == 1) {
         // Compute implied domain on objective_var.
         Domain implied_domain = ReadDomainFromProto(ct.linear());
-        for (int i = 0; i < num_terms; ++i) {
+        for (int i = 0; i < size_of_expanded_constraint; ++i) {
           const int ref = ct.linear().vars(i);
           if (PositiveRef(ref) == objective_var) continue;
           implied_domain =
@@ -3184,51 +3632,12 @@ void CpModelPresolver::ExpandObjective() {
     context_->UpdateConstraintVariableUsage(unique_expanded_constraint);
   }
 
-  // Compute the implied domain from the new objective linear expression.
-  Domain implied_domain(0);
-  for (const auto& entry : objective_map) {
-    implied_domain =
-        implied_domain
-            .AdditionWith(
-                context_->DomainOf(entry.first).MultiplicationBy(entry.second))
-            .RelaxIfTooComplex();
+  // We re-do a canonicalization with the final linear expression.
+  if (!context_->CanonicalizeObjective()) {
+    (void)context_->NotifyThatModelIsUnsat();
+    return;
   }
-
-  // Re-write the objective.
-  CpObjectiveProto* const mutable_objective =
-      context_->working_model->mutable_objective();
-  mutable_objective->clear_coeffs();
-  mutable_objective->clear_vars();
-  for (const auto& entry : objective_map) {
-    context_->var_to_constraints[PositiveRef(entry.first)].insert(-1);
-    mutable_objective->add_vars(entry.first);
-    mutable_objective->add_coeffs(entry.second);
-  }
-  Domain old_domain = Domain::AllValues();
-  if (!mutable_objective->domain().empty()) {
-    // Tricky, the domain in the proto do not include the offset.
-    old_domain = ReadDomainFromProto(*mutable_objective)
-                     .AdditionWith(Domain(-objective_offset_change))
-                     .InverseMultiplicationBy(objective_divisor);
-  }
-  const Domain simplified_domain =
-      old_domain.SimplifyUsingImpliedDomain(implied_domain);
-  if (simplified_domain.IsEmpty()) {
-    return (void)context_->NotifyThatModelIsUnsat();
-  }
-  FillDomainInProto(simplified_domain, mutable_objective);
-  mutable_objective->set_offset(mutable_objective->offset() +
-                                objective_offset_change);
-  if (objective_divisor > 1) {
-    const double divisor = static_cast<double>(objective_divisor);
-    mutable_objective->set_offset(mutable_objective->offset() / divisor);
-    if (mutable_objective->scaling_factor() == 0) {
-      mutable_objective->set_scaling_factor(divisor);
-    } else {
-      mutable_objective->set_scaling_factor(
-          mutable_objective->scaling_factor() * divisor);
-    }
-  }
+  context_->WriteObjectiveToProto();
 }
 
 void CpModelPresolver::MergeNoOverlapConstraints() {
@@ -3256,6 +3665,7 @@ void CpModelPresolver::MergeNoOverlapConstraints() {
     old_num_no_overlaps++;
     old_num_intervals += clique.size();
   }
+  if (old_num_no_overlaps == 0) return;
 
   // We reuse the max-clique code from sat.
   Model local_model;
@@ -3408,7 +3818,12 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
     case ConstraintProto::ConstraintCase::kBoolXor:
       return PresolveBoolXor(ct);
     case ConstraintProto::ConstraintCase::kIntMax:
-      return PresolveIntMax(ct);
+      if (ct->int_max().vars_size() == 2 &&
+          NegatedRef(ct->int_max().vars(0)) == ct->int_max().vars(1)) {
+        return PresolveIntAbs(ct);
+      } else {
+        return PresolveIntMax(ct);
+      }
     case ConstraintProto::ConstraintCase::kIntMin:
       return PresolveIntMin(ct);
     case ConstraintProto::ConstraintCase::kIntProd:
@@ -3419,20 +3834,27 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
       if (CanonicalizeLinear(ct)) {
         context_->UpdateConstraintVariableUsage(c);
       }
-      if (ct->constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
-        if (RemoveSingletonInLinear(ct)) {
+      if (PresolveSmallLinear(ct)) {
+        context_->UpdateConstraintVariableUsage(c);
+      }
+      if (PropagateDomainsInLinear(c, ct)) {
+        context_->UpdateConstraintVariableUsage(c);
+      }
+      if (PresolveSmallLinear(ct)) {
+        context_->UpdateConstraintVariableUsage(c);
+      }
+      // We first propagate the domains before calling this presolve rule.
+      if (RemoveSingletonInLinear(ct)) {
+        context_->UpdateConstraintVariableUsage(c);
+
+        // There is no need to re-do a propagation here, but the constraint
+        // size might have been reduced.
+        if (PresolveSmallLinear(ct)) {
           context_->UpdateConstraintVariableUsage(c);
         }
       }
-      if (ct->constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
-        if (PresolveLinear(ct)) {
-          context_->UpdateConstraintVariableUsage(c);
-        }
-      }
-      if (ct->constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
-        if (PresolveLinearOnBooleans(ct)) {
-          context_->UpdateConstraintVariableUsage(c);
-        }
+      if (PresolveLinearOnBooleans(ct)) {
+        context_->UpdateConstraintVariableUsage(c);
       }
       if (ct->constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
         const int old_num_enforcement_literals = ct->enforcement_literal_size();
@@ -3442,10 +3864,9 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
           context_->UpdateConstraintVariableUsage(c);
           return true;
         }
-        if (ct->enforcement_literal_size() > old_num_enforcement_literals) {
-          if (PresolveLinear(ct)) {
-            context_->UpdateConstraintVariableUsage(c);
-          }
+        if (ct->enforcement_literal_size() > old_num_enforcement_literals &&
+            PresolveSmallLinear(ct)) {
+          context_->UpdateConstraintVariableUsage(c);
         }
       }
       return false;
@@ -3664,87 +4085,91 @@ bool CpModelPresolver::ProcessSetPPC() {
   return changed;
 }
 
-void CpModelPresolver::TryToSimplifyDomains() {
+void CpModelPresolver::TryToSimplifyDomain(int var) {
   if (context_->ModelIsUnsat()) return;
+  if (context_->IsFixed(var)) return;
 
-  const int num_vars = context_->working_model->variables_size();
-  for (int var = 0; var < num_vars; ++var) {
-    if (context_->IsFixed(var)) continue;
+  const AffineRelation::Relation r = context_->GetAffineRelation(var);
+  if (r.representative != var) return;
 
-    const AffineRelation::Relation r = context_->GetAffineRelation(var);
-    if (r.representative != var) continue;
+  // Only process discrete domain.
+  const Domain& domain = context_->DomainOf(var);
 
-    // Only process discrete domain.
-    const Domain& domain = context_->DomainOf(var);
-
-    if (domain.Size() == 2 && domain.NumIntervals() == 1 && domain.Min() != 0) {
-      // Shifted Boolean variable.
-      const int new_var_index = context_->NewBoolVar();
-      const int64 offset = domain.Min();
-
-      ConstraintProto* const ct = context_->working_model->add_constraints();
-      LinearConstraintProto* const lin = ct->mutable_linear();
-      lin->add_vars(var);
-      lin->add_coeffs(1);
-      lin->add_vars(new_var_index);
-      lin->add_coeffs(-1);
-      lin->add_domain(offset);
-      lin->add_domain(offset);
-      context_->StoreAffineRelation(*ct, var, new_var_index, 1, offset);
-      context_->UpdateRuleStats("variables: canonicalize size two domain");
-      continue;
-    }
-
-    if (domain.NumIntervals() != domain.Size()) continue;
-
-    const int64 var_min = domain.Min();
-    int64 gcd = domain[1].start - var_min;
-    for (int index = 2; index < domain.NumIntervals(); ++index) {
-      const ClosedInterval& i = domain[index];
-      CHECK_EQ(i.start, i.end);
-      const int64 shifted_value = i.start - var_min;
-      CHECK_GE(shifted_value, 0);
-
-      gcd = MathUtil::GCD64(gcd, shifted_value);
-      if (gcd == 1) break;
-    }
-    if (gcd == 1) continue;
-
-    const int new_var_index = context_->working_model->variables_size();
-    IntegerVariableProto* const var_proto =
-        context_->working_model->add_variables();
-    {
-      std::vector<int64> scaled_values;
-      for (int index = 0; index < domain.NumIntervals(); ++index) {
-        const ClosedInterval& i = domain[index];
-        CHECK_EQ(i.start, i.end);
-        const int64 shifted_value = i.start - var_min;
-        scaled_values.push_back(shifted_value / gcd);
-      }
-      const Domain scaled_domain = Domain::FromValues(scaled_values);
-      FillDomainInProto(scaled_domain, var_proto);
-    }
-    context_->InitializeNewDomains();
-    if (context_->ModelIsUnsat()) return;
+  if (domain.Size() == 2 && domain.NumIntervals() == 1 && domain.Min() != 0) {
+    // Shifted Boolean variable.
+    const int new_var_index = context_->NewBoolVar();
+    const int64 offset = domain.Min();
 
     ConstraintProto* const ct = context_->working_model->add_constraints();
     LinearConstraintProto* const lin = ct->mutable_linear();
     lin->add_vars(var);
     lin->add_coeffs(1);
     lin->add_vars(new_var_index);
-    lin->add_coeffs(-gcd);
-    lin->add_domain(var_min);
-    lin->add_domain(var_min);
-
-    context_->StoreAffineRelation(*ct, var, new_var_index, gcd, var_min);
-    context_->UpdateRuleStats("variables: canonicalize affine domain");
+    lin->add_coeffs(-1);
+    lin->add_domain(offset);
+    lin->add_domain(offset);
+    context_->StoreAffineRelation(*ct, var, new_var_index, 1, offset);
+    context_->UpdateRuleStats("variables: canonicalize size two domain");
+    context_->UpdateNewConstraintsVariableUsage();
+    return;
   }
 
+  if (domain.NumIntervals() != domain.Size()) return;
+
+  const int64 var_min = domain.Min();
+  int64 gcd = domain[1].start - var_min;
+  for (int index = 2; index < domain.NumIntervals(); ++index) {
+    const ClosedInterval& i = domain[index];
+    CHECK_EQ(i.start, i.end);
+    const int64 shifted_value = i.start - var_min;
+    CHECK_GE(shifted_value, 0);
+
+    gcd = MathUtil::GCD64(gcd, shifted_value);
+    if (gcd == 1) break;
+  }
+  if (gcd == 1) return;
+
+  int new_var_index;
+  {
+    std::vector<int64> scaled_values;
+    for (int index = 0; index < domain.NumIntervals(); ++index) {
+      const ClosedInterval& i = domain[index];
+      CHECK_EQ(i.start, i.end);
+      const int64 shifted_value = i.start - var_min;
+      scaled_values.push_back(shifted_value / gcd);
+    }
+    new_var_index = context_->NewIntVar(Domain::FromValues(scaled_values));
+  }
+  if (context_->ModelIsUnsat()) return;
+
+  ConstraintProto* const ct = context_->working_model->add_constraints();
+  LinearConstraintProto* const lin = ct->mutable_linear();
+  lin->add_vars(var);
+  lin->add_coeffs(1);
+  lin->add_vars(new_var_index);
+  lin->add_coeffs(-gcd);
+  lin->add_domain(var_min);
+  lin->add_domain(var_min);
+
+  context_->StoreAffineRelation(*ct, var, new_var_index, gcd, var_min);
+  context_->UpdateRuleStats("variables: canonicalize affine domain");
   context_->UpdateNewConstraintsVariableUsage();
 }
 
 void CpModelPresolver::PresolveToFixPoint() {
   if (context_->ModelIsUnsat()) return;
+
+  // Do one pass to try to simplify the domain of variables.
+  const int num_vars = context_->working_model->variables_size();
+  for (int var = 0; var < num_vars; ++var) {
+    TryToSimplifyDomain(var);
+  }
+
+  // Limit on number of operations.
+  const int64 max_num_operations =
+      options_.parameters.cp_model_max_num_presolve_operations() > 0
+          ? options_.parameters.cp_model_max_num_presolve_operations()
+          : kint64max;
 
   // This is used for constraint having unique variables in them (i.e. not
   // appearing anywhere else) to not call the presolve more than once for this
@@ -3756,20 +4181,23 @@ void CpModelPresolver::PresolveToFixPoint() {
   std::vector<bool> in_queue(context_->working_model->constraints_size(), true);
   std::deque<int> queue(context_->working_model->constraints_size());
   std::iota(queue.begin(), queue.end(), 0);
+
   // When thinking about how the presolve works, it seems like a good idea to
   // process the "simple" constraints first in order to be more efficient.
   // In September 2019, experiment on the flatzinc problems shows no changes in
-  // the results.
-  // We should actually count the number of rules triggered.
+  // the results. We should actually count the number of rules triggered.
   std::sort(queue.begin(), queue.end(), [this](int a, int b) {
     const int score_a = context_->constraint_to_vars[a].size();
     const int score_b = context_->constraint_to_vars[b].size();
     return score_a < score_b || (score_a == score_b && a < b);
   });
+
   while (!queue.empty() && !context_->ModelIsUnsat()) {
     if (time_limit != nullptr && time_limit->LimitReached()) break;
+    if (context_->num_presolve_operations > max_num_operations) break;
     while (!queue.empty() && !context_->ModelIsUnsat()) {
       if (time_limit != nullptr && time_limit->LimitReached()) break;
+      if (context_->num_presolve_operations > max_num_operations) break;
       const int c = queue.front();
       in_queue[c] = false;
       queue.pop_front();
@@ -3801,19 +4229,25 @@ void CpModelPresolver::PresolveToFixPoint() {
       }
     }
 
-    // Look at variables to see if we can canonicalize the domain.
-    // Note that all the new constraint are just affine constraint and do
-    // not need to be presolved at this time.
-    TryToSimplifyDomains();
-    in_queue.resize(context_->working_model->constraints_size(), false);
-
     // Re-add to the queue the constraints that touch a variable that changed.
     //
     // TODO(user): Avoid reprocessing the constraints that changed the variables
     // with the use of timestamp.
     if (context_->ModelIsUnsat()) return;
     for (const int v : context_->modified_domains.PositionsSetAtLeastOnce()) {
-      if (context_->IsFixed(v)) context_->ExploitFixedDomain(v);
+      if (context_->IsFixed(v)) {
+        context_->ExploitFixedDomain(v);
+      } else {
+        // The domain changed, maybe we can canonicalize it.
+        //
+        // Important: This code is a bit brittle, because it assumes
+        // PositionsSetAtLeastOnce() will not change behind our back. That
+        // should however be the case because TryToSimplifyDomain() will only
+        // mark as modified via AddAffineRelation a variable that is already
+        // present in the modified set.
+        TryToSimplifyDomain(v);
+        in_queue.resize(context_->working_model->constraints_size(), false);
+      }
       for (const int c : context_->var_to_constraints[v]) {
         if (c >= 0 && !in_queue[c]) {
           in_queue[c] = true;
@@ -3850,10 +4284,8 @@ void CpModelPresolver::PresolveToFixPoint() {
 
   if (context_->ModelIsUnsat()) return;
 
-  // Make sure we filter out absent intervals.
-  //
-  // Try to infer domain reductions from clauses and the saved "implies in
-  // domain" relations.
+  // Second "pass" for transformation better done after all of the above and
+  // that do not need a fix-point loop.
   //
   // TODO(user): Also add deductions achieved during probing!
   //
@@ -3865,6 +4297,7 @@ void CpModelPresolver::PresolveToFixPoint() {
     ConstraintProto* ct = context_->working_model->mutable_constraints(c);
     switch (ct->constraint_case()) {
       case ConstraintProto::ConstraintCase::kNoOverlap:
+        // Filter out absent intervals.
         if (PresolveNoOverlap(ct)) {
           context_->UpdateConstraintVariableUsage(c);
         }
@@ -3874,11 +4307,14 @@ void CpModelPresolver::PresolveToFixPoint() {
         // this constraint. Currently we do not.
         break;
       case ConstraintProto::ConstraintCase::kCumulative:
+        // Filter out absent intervals.
         if (PresolveCumulative(ct)) {
           context_->UpdateConstraintVariableUsage(c);
         }
         break;
       case ConstraintProto::ConstraintCase::kBoolOr: {
+        // Try to infer domain reductions from clauses and the saved "implies in
+        // domain" relations.
         for (const auto pair :
              context_->deductions.ProcessClause(ct->bool_or().literals())) {
           bool modified = false;
@@ -4006,7 +4442,8 @@ CpModelPresolver::CpModelPresolver(const PresolveOptions& options,
       context_(context) {
   context_->keep_all_feasible_solutions =
       options.parameters.enumerate_all_solutions() ||
-      options.parameters.fill_tightened_domains_in_response();
+      options.parameters.fill_tightened_domains_in_response() ||
+      !options.parameters.cp_model_presolve();
 
   // We copy the search strategy to the mapping_model.
   for (const auto& decision_strategy :
@@ -4022,12 +4459,10 @@ CpModelPresolver::CpModelPresolver(const PresolveOptions& options,
       context_->working_model->variables_size());
   context_->UpdateNewConstraintsVariableUsage();
 
-  // Hack for the objective variable(s) so that they are never considered to
-  // appear in only one constraint.
-  if (context_->working_model->has_objective()) {
-    for (const int obj_var : context_->working_model->objective().vars()) {
-      context_->var_to_constraints[PositiveRef(obj_var)].insert(-1);
-    }
+  // Initialize the objective.
+  context_->ReadObjectiveFromProto();
+  if (!context_->CanonicalizeObjective()) {
+    (void)context_->NotifyThatModelIsUnsat();
   }
 }
 
@@ -4087,6 +4522,7 @@ bool CpModelPresolver::Presolve() {
         PresolveToFixPoint();
       }
     }
+
     // Runs SAT specific presolve on the pure-SAT part of the problem.
     // Note that because this can only remove/fix variable not used in the other
     // part of the problem, there is no need to redo more presolve afterwards.

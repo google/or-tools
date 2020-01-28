@@ -37,14 +37,14 @@ ZLIB_TAG = 1.2.11
 ZLIB_ARCHIVE_TAG = 1211
 GFLAGS_TAG = 2.2.2
 GLOG_TAG = 0.4.0
-PROTOBUF_TAG = 3.10.0
-ABSL_TAG = bf29470
+PROTOBUF_TAG = 3.11.2
+ABSL_TAG = 8ba96a8
 CBC_TAG = 2.10.3
 CGL_TAG = 0.60.2
 CLP_TAG = 1.17.3
 OSI_TAG = 0.108.4
 COINUTILS_TAG = 2.11.2
-SWIG_TAG = 4.0.0
+SWIG_TAG = 4.0.1
 
 # Added in support of clean third party targets
 TSVNCACHE_EXE = TSVNCache.exe
@@ -175,16 +175,42 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo $(SELECTED_PATH_TO_JDK)>> Makefile.local
 	@echo $(SELECTED_PATH_TO_PYTHON)>> Makefile.local
 	@echo # >> Makefile.local
+	@echo ## OPTIONAL DEPENDENCIES ## >> Makefile.local
+	@echo # Define WINDOWS_CPLEX_DIR to point to a installation directory of the CPLEX Studio >> Makefile.local
+	@echo #   e.g.: WINDOWS_CPLEX_DIR = C:\Progra~1\CPLEX_STUDIO1210 >> Makefile.local
+	@echo # >> Makefile.local
 	@echo # Define WINDOWS_SCIP_DIR to point to a installation directory of the scip binary packaged to use it >> Makefile.local
-	@echo #   e.g.: WINDOWS_SCIP_DIR = "relative_path/to/scip-6.0.2" >> Makefile.local
+	@echo #   e.g.: WINDOWS_SCIP_DIR = C:\Progra~1\SCIPOP~1.2 >> Makefile.local
+	@echo #   note: You can use: 'dir "%ProgramFiles%\SCIPOp*" /x' to find the shortname >> Makefile.local
+	@echo # >> Makefile.local
 	@echo # Define WINDOWS_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi >> Makefile.local
+	@echo #   e.g.: WINDOWS_GUROBI_DIR = C:\Progra~1\Gurobi >> Makefile.local
 	@echo # >> Makefile.local
-	@echo # Define WINDOWS_ZLIB_DIR, WINDOWS_ZLIB_NAME, WINDOWS_GFLAGS_DIR, >> Makefile.local
-	@echo # WINDOWS_GLOG_DIR, WINDOWS_PROTOBUF_DIR, WINDOWS_SWIG_BINARY, >> Makefile.local
+	@echo ## REQUIRED DEPENDENCIES ## >> Makefile.local
+	@echo # By default they will be automatically built -> nothing to define >> Makefile.local
+	@echo # Define WINDOWS_GFLAGS_DIR to depend on external Gflags library >> Makefile.local
+	@echo #   e.g.: WINDOWS_GFLAGS_DIR = C:\Progra~1\Gflags >> Makefile.local
+	@echo # >> Makefile.local
+	@echo # Define WINDOWS_GLOG_DIR to depend on external Glog library >> Makefile.local
+	@echo #   e.g.: WINDOWS_GLOG_DIR = C:\Progra~1\Glog >> Makefile.local
+	@echo # >> Makefile.local
+	@echo # Define WINDOWS_PROTOBUF_DIR to depend on external Protobuf library >> Makefile.local
+	@echo #   e.g.: WINDOWS_PROTOBUF_DIR = C:\Progra~1\Protobuf >> Makefile.local
+	@echo # >> Makefile.local
 	@echo # WINDOWS_CLP_DIR, WINDOWS_CBC_DIR if you wish to use a custom version >> Makefile.local
-	@echo #   e.g.: WINDOWS_GFLAGS_DIR = "relative_path/to/gflags/dir" >> Makefile.local
+	@echo #   e.g.: WINDOWS_CBC_DIR = C:\Progra~1\CoinOR\Cbc >> Makefile.local
+	@echo #         WINDOWS_CLP_DIR = C:\Progra~1\CoinOR\Clp >> Makefile.local
 	@echo # >> Makefile.local
-	@echo # Define absolute paths without trailing "\". E.g. "c:\Installs\SCIP-6.0.0" >> Makefile.local
+	@echo # Define WINDOWS_ZLIB_DIR, WINDOWS_ZLIB_NAME >> Makefile.local
+	@echo #   e.g.: WINDOWS_ZLIB_DIR = C:\Progra~1\zlib >> Makefile.local
+	@echo # >> Makefile.local
+	@echo # Define WINDOWS_SWIG_BINARY for using a custom swig binary >> Makefile.local
+	@echo #   e.g.: WINDOWS_SWIG_BINARY = C:\Progra~1\swigwin >> Makefile.local
+	@echo # >> Makefile.local
+	@echo # Define absolute paths without trailing "\". E.g. "C:\Foo\Bar" >> Makefile.local
+	@echo # Paths must be without spaces, try to use 'dir "directory*" /x' to get the shortname without space of each directory >> Makefile.local
+	@echo #   e.g. dir "%ProgramFiles%*" /x >> Makefile.local
+
 
 ############
 ##  ZLIB  ##
@@ -361,7 +387,7 @@ dependencies/sources/abseil-cpp-$(ABSL_TAG): | dependencies/sources
 	-$(DELREC) dependencies/sources/abseil-cpp-$(ABSL_TAG)
 	git clone --quiet https://github.com/abseil/abseil-cpp.git dependencies\sources\abseil-cpp-$(ABSL_TAG)
 	cd dependencies\sources\abseil-cpp-$(ABSL_TAG) && git reset --hard $(ABSL_TAG)
-	cd dependencies\sources\abseil-cpp-$(ABSL_TAG) && git apply "$(OR_TOOLS_TOP)\patches\abseil-cpp-$(ABSL_TAG).patch"
+# cd dependencies\sources\abseil-cpp-$(ABSL_TAG) && git apply "$(OR_TOOLS_TOP)\patches\abseil-cpp-$(ABSL_TAG).patch"
 
 ABSL_INC = /I"$(WINDOWS_ABSL_PATH)\\include"
 ABSL_SWIG = -I"$(WINDOWS_ABSL_PATH)/include"

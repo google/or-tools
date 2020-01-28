@@ -18,8 +18,7 @@
 // * The lines are separated by '\n' (which is removed by default) and have no
 //   size limits.
 // * Consecutive '\n' result in empty lines being produced.
-// * If not empty, the std::string after the last '\n' is produced as the last
-// line.
+// * If not empty, the string after the last '\n' is produced as the last line.
 // * Options are available to keep the trailing '\n' for each line, to remove
 //   carriage-return chararters ('\r'), and to remove blank lines.
 //

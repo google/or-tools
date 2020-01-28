@@ -16,7 +16,7 @@
 
 #include <deque>
 
-#include "ortools/base/random.h"
+#include "absl/random/random.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"

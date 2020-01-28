@@ -25,13 +25,14 @@
 #include <utility>
 
 #include "absl/memory/memory.h"
+#include "absl/time/clock.h"
+#include "absl/time/time.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/random.h"
 #include "ortools/base/recordio.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
@@ -85,6 +86,10 @@ DEFINE_bool(cp_use_element_rmq, true,
 DEFINE_int32(cp_check_solution_period, 1,
              "Number of solutions explored between two solution checks during "
              "local search.");
+DEFINE_int64(cp_random_seed, 12345,
+             "Random seed used in several (but not all) random number "
+             "generators used by the CP solver. Use -1 to auto-generate an"
+             "undeterministic random seed.");
 
 void ConstraintSolverFailsHere() { VLOG(3) << "Fail"; }
 
@@ -1395,7 +1400,7 @@ Solver::Solver(const std::string& name,
                const ConstraintSolverParameters& parameters)
     : name_(name),
       parameters_(parameters),
-      random_(ACMRandom::DeterministicSeed()),
+      random_(CpRandomSeed()),
       demon_profiler_(BuildDemonProfiler(this)),
       use_fast_local_search_(true),
       local_search_profiler_(BuildLocalSearchProfiler(this)) {
@@ -1405,7 +1410,7 @@ Solver::Solver(const std::string& name,
 Solver::Solver(const std::string& name)
     : name_(name),
       parameters_(DefaultSolverParameters()),
-      random_(ACMRandom::DeterministicSeed()),
+      random_(CpRandomSeed()),
       demon_profiler_(BuildDemonProfiler(this)),
       use_fast_local_search_(true),
       local_search_profiler_(BuildLocalSearchProfiler(this)) {
@@ -2455,7 +2460,7 @@ std::string Solver::GetName(const PropagationBaseObject* object) {
 void Solver::SetName(const PropagationBaseObject* object,
                      const std::string& name) {
   if (parameters_.store_names() &&
-      GetName(object).compare(name) != 0) {  // in particular if name.empty()
+      GetName(object) != name) {  // in particular if name.empty()
     propagation_object_names_[object] = name;
   }
 }
@@ -2481,7 +2486,6 @@ std::ostream& operator<<(std::ostream& out, const BaseObject* const o) {
 // ---------- PropagationBaseObject ---------
 
 std::string PropagationBaseObject::name() const {
-  // TODO(user) : merge with GetName() code to remove a std::string copy.
   return solver_->GetName(this);
 }
 

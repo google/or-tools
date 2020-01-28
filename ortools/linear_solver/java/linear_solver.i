@@ -86,7 +86,8 @@ PROTO2_RETURN(
    * Loads a model and returns the error message, which will be empty iff the
    * model is valid.
    */
-  std::string loadModelFromProto(const operations_research::MPModelProto& input_model) {
+  std::string loadModelFromProto(
+      const operations_research::MPModelProto& input_model) {
     std::string error_message;
     $self->LoadModelFromProto(input_model, &error_message);
     return error_message;
@@ -377,7 +378,7 @@ PROTO2_RETURN(
 %unignore operations_research::MPSolver::AT_UPPER_BOUND;  // no test
 %unignore operations_research::MPSolver::FIXED_VALUE;  // no test
 %unignore operations_research::MPSolver::BASIC;
-%unignore operations_research::MPSolver::SetStartingLpBasis;
+%ignore operations_research::MPSolver::SetStartingLpBasis; // no typemap for const vector<BasisStatus>&
 
 // MPVariable: writer API.
 %rename (setInteger) operations_research::MPVariable::SetInteger;

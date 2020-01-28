@@ -37,8 +37,8 @@ help:
 	@echo -e "\t${BOLD}distclean${RESET}: Clean all docker images and remove all archives."
 	@echo
 	@echo -e "\t${BOLD}<distro>${RESET}:"
-	@echo -e "\t\t${BOLD}centos-7${RESET} (latest)"
-	@echo -e "\t\t${BOLD}debian-9${RESET} (latest)"
+	@echo -e "\t\t${BOLD}centos-8${RESET} (latest)"
+	@echo -e "\t\t${BOLD}debian-10${RESET} (latest)"
 	@echo -e "\t\t${BOLD}ubuntu-19.04${RESET} (Ubuntu latest)"
 	@echo -e "\t\t${BOLD}ubuntu-18.04${RESET} (Ubuntu 18.04 LTS)"
 	@echo -e "\t\t${BOLD}ubuntu-16.04${RESET} (Ubuntu 16.04 LTS)"
@@ -128,7 +128,7 @@ export/python: | export
 #################
 
 # Currently supported distro
-DISTROS = centos-7 debian-9 ubuntu-19.10 ubuntu-18.04 ubuntu-16.04
+DISTROS = centos-8 debian-10 ubuntu-19.10 ubuntu-18.04 ubuntu-16.04
 
 # Create build docker images with OR-Tools built
 targets = $(addprefix docker_, $(DISTROS))
@@ -155,7 +155,7 @@ export/%/docker_devel.tar: %.Dockerfile ../Makefile.cc.java.dotnet ../../makefil
 targets = $(addprefix bash_, $(DISTROS))
 .PHONY: $(targets)
 $(targets): bash_%: export/%/docker_devel.tar
-	${DOCKER_RUN_CMD} -v `pwd`/export:/export ${IMAGE}_$*:devel /bin/bash
+	${DOCKER_RUN_CMD} -v `pwd`/export:/export or-tools_$*:devel /bin/bash
 
 # Build Archives
 targets = $(addprefix archive_, $(DISTROS))

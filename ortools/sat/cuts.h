@@ -96,7 +96,7 @@ class ImpliedBoundsProcessor {
 //
 // Algorithm:
 // - We first scale by a factor t so that rhs_remainder >= divisor / 2.
-// - Then, if use_letchford_lodi_version is true, we use the function described
+// - Then, if max_scaling == 2, we use the function described
 //   in "Strenghtening Chvatal-Gomory cuts and Gomory fractional cuts", Adam N.
 //   Letchfrod, Andrea Lodi.
 // - Otherwise, we use a generalization of this which is a discretized version
@@ -109,8 +109,8 @@ class ImpliedBoundsProcessor {
 // it could be nice to try to generate a cut using different values of
 // max_scaling.
 std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
-    bool use_letchford_lodi_version, IntegerValue rhs_remainder,
-    IntegerValue divisor, IntegerValue max_scaling);
+    IntegerValue rhs_remainder, IntegerValue divisor, IntegerValue max_t,
+    IntegerValue max_scaling);
 
 // Given an upper bounded linear constraint, this function tries to transform it
 // to a valid cut that violate the given LP solution using integer rounding.
@@ -142,12 +142,12 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
 // the best looking cut (or more than one). This is not on the critical code
 // path, so we can spend more effort in finding good cuts.
 struct RoundingOptions {
-  bool use_mir = false;
   IntegerValue max_scaling = IntegerValue(60);
 };
-void IntegerRoundingCut(RoundingOptions options, std::vector<double> lp_values,
-                        std::vector<IntegerValue> lower_bounds,
-                        std::vector<IntegerValue> upper_bounds,
+void IntegerRoundingCut(RoundingOptions options,
+                        const std::vector<double>& lp_values,
+                        const std::vector<IntegerValue>& lower_bounds,
+                        const std::vector<IntegerValue>& upper_bounds,
                         LinearConstraint* cut);
 
 // If a variable is away from its upper bound by more than value 1.0, then it

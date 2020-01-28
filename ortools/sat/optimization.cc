@@ -24,6 +24,7 @@
 #include <string>
 #include <utility>
 
+#include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/cleanup.h"
@@ -32,10 +33,9 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/random.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/timer.h"
-#if !defined(__PORTABLE_PLATFORM__)
+#if !defined(__PORTABLE_PLATFORM__) && (defined(USE_CBC) || defined(USE_SCIP))
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #endif  // __PORTABLE_PLATFORM__
@@ -61,7 +61,7 @@ class Logger {
   explicit Logger(LogBehavior v) : use_stdout_(v == STDOUT_LOG) {}
   void Log(const std::string& message) {
     if (use_stdout_) {
-      printf("%s\n", message.c_str());
+      absl::PrintF("%s\n", message);
     } else {
       LOG(INFO) << message;
     }
@@ -1243,7 +1243,10 @@ SatSolver::Status FindCores(std::vector<Literal> assumptions,
                             std::vector<std::vector<Literal>>* cores) {
   cores->clear();
   SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
+  TimeLimit* limit = model->GetOrCreate<TimeLimit>();
   do {
+    if (limit->LimitReached()) return SatSolver::LIMIT_REACHED;
+
     const SatSolver::Status result =
         ResetAndSolveIntegerProblem(assumptions, model);
     if (result != SatSolver::ASSUMPTIONS_UNSAT) return result;
@@ -1425,7 +1428,7 @@ bool CoreBasedOptimizer::PropagateObjectiveBounds() {
 // that invalidate the current solution. But to avoid corner cases for
 // problem with a lot of terms all with different objective weights (in
 // which case we will kind of introduce only one assumption per loop
-// wich is little), we use an heuristic and take the 90% percentile of
+// which is little), we use an heuristic and take the 90% percentile of
 // the unique weights not yet included.
 //
 // TODO(user): There is many other possible heuristics here, and I

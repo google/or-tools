@@ -62,16 +62,6 @@ cc_library(
 )
 
 cc_library(
-    name = "int128",
-    hdrs = [
-        "int128.h",
-    ],
-    deps = [
-        "@com_google_absl//absl/numeric:int128",
-    ],
-)
-
-cc_library(
     name = "encodingutils",
     hdrs = [
         "encodingutils.h",
@@ -191,6 +181,7 @@ cc_library(
     deps = [
         ":base",
         ":hash",
+        "@com_google_absl//absl/random",
     ],
 )
 
