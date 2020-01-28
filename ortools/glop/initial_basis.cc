@@ -99,27 +99,27 @@ void InitialBasis::CompleteBixbyBasis(ColIndex num_cols,
 
 void InitialBasis::GetPrimalMarosBasis(ColIndex num_cols,
                                        RowToColMapping* basis) {
-  return GetMarosBasis(num_cols, basis, false);
+  return GetMarosBasis<false>(num_cols, basis);
 }
 
 void InitialBasis::GetDualMarosBasis(ColIndex num_cols,
                                      RowToColMapping* basis) {
-  return GetMarosBasis(num_cols, basis, true);
+  return GetMarosBasis<true>(num_cols, basis);
 }
 
 void InitialBasis::CompleteTriangularPrimalBasis(ColIndex num_cols,
                                                  RowToColMapping* basis) {
-  return CompleteTriangularBasis(num_cols, basis, false);
+  return CompleteTriangularBasis<false>(num_cols, basis);
 }
 
 void InitialBasis::CompleteTriangularDualBasis(ColIndex num_cols,
                                                RowToColMapping* basis) {
-  return CompleteTriangularBasis(num_cols, basis, true);
+  return CompleteTriangularBasis<true>(num_cols, basis);
 }
 
-//template <bool only_allow_zero_cost_column>
+template <bool only_allow_zero_cost_column>
 void InitialBasis::CompleteTriangularBasis(ColIndex num_cols,
-                                           RowToColMapping* basis, bool only_allow_zero_cost_column) {
+                                           RowToColMapping* basis) {
   // Initialize can_be_replaced.
   const RowIndex num_rows = compact_matrix_.num_rows();
   DenseBooleanColumn can_be_replaced(num_rows, false);
@@ -225,8 +225,8 @@ int InitialBasis::GetMarosPriority(RowIndex row) const {
   return GetMarosPriority(slack_index);
 }
 
-//template <bool only_allow_zero_cost_column>
-void InitialBasis::GetMarosBasis(ColIndex num_cols, RowToColMapping* basis, bool only_allow_zero_cost_column) {
+template <bool only_allow_zero_cost_column>
+void InitialBasis::GetMarosBasis(ColIndex num_cols, RowToColMapping* basis) {
   VLOG(1) << "Starting Maros crash procedure.";
 
   // Initialize basis to the all-slack basis.
