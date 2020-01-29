@@ -35,29 +35,31 @@ elseif(MSVC)
   set(BUILD_SHARED_LIBS OFF)
 endif()
 
-# By default only the ortools C++ library is built.
+# By default only build the C++ library.
 option(BUILD_CXX "Build C++ library" ON)
-option(BUILD_PYTHON "Build Python Library" OFF)
-option(BUILD_JAVA "Build Java Library" OFF)
-option(BUILD_DOTNET "Build .NET Library" OFF)
-option(USE_XPRESS "Build and use XPRESS interface" OFF)
-option(USE_CPLEX "Build and use CPLEX interface" OFF)
 message(STATUS "Build C++ library: ${BUILD_CXX}")
+
+option(BUILD_PYTHON "Build Python Library" OFF)
 message(STATUS "Build Python: ${BUILD_PYTHON}")
+option(BUILD_JAVA "Build Java Library" OFF)
 message(STATUS "Build Java: ${BUILD_JAVA}")
+option(BUILD_DOTNET "Build .NET Library" OFF)
 message(STATUS "Build .Net: ${BUILD_DOTNET}")
-message(STATUS "USE_XPRESS: ${USE_XPRESS}")
-message(STATUS "USE_CPLEX: ${USE_CPLEX}")
 
 #option(BUILD_DOC "Build doxygen" OFF)
 #message(STATUS "Build doxygen: ${BUILD_DOC}")
 
-# By default all dependencies are NOT built (i.e. BUILD_DEPS=OFF).
-# IF building any wrapper THEN Force BUILD_DEPS=ON
+# By default all dependencies are NOT built (i.e. BUILD_DEPS=OFF),
+# BUT if building any wrappers (Python, Java or .Net) then BUILD_DEPS=ON.
+if(BUILD_PYTHON OR BUILD_JAVA OR BUILD_DOTNET)
+  option(BUILD_DEPS "Build all dependencies" ON)
+else()
+  option(BUILD_DEPS "Build all dependencies" OFF)
+endif()
+message(STATUS "Build all dependencies: ${BUILD_DEPS}")
+
 # IF BUILD_DEPS=ON THEN Force all BUILD_*=ON
 include(CMakeDependentOption)
-CMAKE_DEPENDENT_OPTION(BUILD_DEPS "Force re-build of all dependencies" OFF
-  "NOT BUILD_PYTHON; NOT BUILD_JAVA; NOT BUILD_DOTNET" ON)
 CMAKE_DEPENDENT_OPTION(BUILD_ZLIB "Build the ZLIB dependency Library" OFF
   "NOT BUILD_DEPS" ON)
 CMAKE_DEPENDENT_OPTION(BUILD_absl "Build the abseil-cpp dependency Library" OFF
@@ -79,7 +81,6 @@ CMAKE_DEPENDENT_OPTION(BUILD_Cgl "Build the Cgl dependency Library" OFF
 CMAKE_DEPENDENT_OPTION(BUILD_Cbc "Build the Cbc dependency Library" OFF
   "NOT BUILD_DEPS" ON)
 
-message(STATUS "Build all dependencies: ${BUILD_DEPS}")
 message(STATUS "Build ZLIB: ${BUILD_ZLIB}")
 message(STATUS "Build abseil-cpp: ${BUILD_absl}")
 message(STATUS "Build gflags: ${BUILD_gflags}")
@@ -91,6 +92,13 @@ message(STATUS "Build Clp: ${BUILD_Clp}")
 message(STATUS "Build Cgl: ${BUILD_Cgl}")
 message(STATUS "Build Cbc: ${BUILD_Cbc}")
 
+# Optional third party solvers (disabled by default)
+option(USE_CPLEX "Use the CPLEX solver" OFF)
+message(STATUS "CPLEX support: ${USE_CPLEX}")
+option(USE_SCIP "Use the SCIP solver" OFF)
+message(STATUS "SCIP support: ${USE_SCIP}")
+option(USE_XPRESS "Use the XPRESS solver" OFF)
+message(STATUS "XPRESS support: ${USE_XPRESS}")
 if (USE_XPRESS)
 
 	if (APPLE)
