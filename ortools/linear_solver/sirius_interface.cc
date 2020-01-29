@@ -1257,6 +1257,7 @@ namespace operations_research {
 		objective_value_ = SRS_NAN;
 		if (feasible) {
 			(SRSgetobjval(mLp, &objective_value_));
+			objective_value_ += solver_->Objective().offset();
 		}
 		VLOG(1) << "objective = " << objective_value_;
 
