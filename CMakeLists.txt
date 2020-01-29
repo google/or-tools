@@ -99,48 +99,6 @@ option(USE_SCIP "Use the SCIP solver" OFF)
 message(STATUS "SCIP support: ${USE_SCIP}")
 option(USE_XPRESS "Use the XPRESS solver" OFF)
 message(STATUS "XPRESS support: ${USE_XPRESS}")
-if (USE_XPRESS)
-
-	if (APPLE)
-		message(FATAL_ERROR "XPRESS not yet supported on MACOS")
-	endif()
-	
-	message(STATUS "XPRESS: configuring makefiles")
-	if (NOT XPRESSDIR)
-		set(XPRESSDIR $ENV{XPRESSDIR})
-	endif(NOT XPRESSDIR)
-
-	message(STATUS "XPRESSDIR: ${XPRESSDIR}")
-
-	if (NOT XPRESSDIR)
-		message(FATAL_ERROR "XPRESSDIR: not found")
-	endif()
-
-	add_compile_definitions(USE_XPRESS)
-endif(USE_XPRESS)
-
-
-if (USE_CPLEX)
-
-	if (APPLE)
-		message(FATAL_ERROR "CPLEX not yet supported on MACOS")
-	elseif(UNIX)
-		message(FATAL_ERROR "CPLEX not yet supported on LINUX")
-	endif()
-	
-	message(STATUS "CPLEX: configuring makefiles")
-	if (NOT CPLEXDIR)
-		set(CPLEXDIR $ENV{CPLEXDIR})
-	endif(NOT CPLEXDIR)
-
-	message(STATUS "CPLEXDIR: ${CPLEXDIR}")
-
-	if (NOT CPLEXDIR)
-		message(FATAL_ERROR "CPLEXDIR: not found")
-	endif()
-
-	add_compile_definitions(USE_CPLEX)
-endif(USE_CPLEX)
 
 # Build Needed dependencies
 add_subdirectory(cmake/dependencies dependencies)
@@ -153,27 +111,3 @@ include(cpp)
 include(python)
 include(java)
 include(dotnet)
-
-if (USE_XPRESS)
-	if (APPLE)
-		message(FATAL_ERROR "XPRESS not yet supported on MACOS")
-		#target_link_libraries(ortools PUBLIC ${XPRESSDIR}/lib/libxprs.dylib)
-	elseif(UNIX)
-		target_link_libraries(ortools PUBLIC ${XPRESSDIR}/lib/libxprs.so)
-	elseif(MSVC)
-		target_link_libraries(ortools PUBLIC ${XPRESSDIR}/lib/xprs.lib)
-	endif()
-endif(USE_XPRESS)
-
-
-if (USE_CPLEX)
-	if (APPLE)
-		message(FATAL_ERROR "CPLEX not yet supported on MACOS")
-		#target_link_libraries(ortools PUBLIC ${CPLEXDIR}/lib/x64_windows_vs2015/stat_mda/cplex1270.dylib)
-	elseif(UNIX)
-		message(FATAL_ERROR "CPLEX not yet supported on LINUX")
-		#target_link_libraries(ortools PUBLIC ${CPLEXDIR}/lib/x64_windows_vs2015/stat_mda/cplex1270.so)
-	elseif(MSVC)
-		target_link_libraries(ortools PUBLIC ${CPLEXDIR}/lib/x64_windows_vs2015/stat_mda/cplex1270.lib)
-	endif()
-endif(USE_CPLEX)

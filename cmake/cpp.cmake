@@ -29,12 +29,33 @@ find_package(Clp REQUIRED CONFIG)
 find_package(Cgl REQUIRED CONFIG)
 find_package(Cbc REQUIRED CONFIG)
 
+# Check optional Dependencies
+if(USE_CPLEX)
+  find_package(CPLEX REQUIRED)
+endif()
+if(USE_SCIP)
+  find_package(SCIP REQUIRED)
+endif()
+if(USE_XPRESS)
+  find_package(XPRESS REQUIRED)
+endif()
+
 # If wrapper are built, we need to have the install rpath in BINARY_DIR to package
 if(BUILD_PYTHON OR BUILD_JAVA OR BUILD_DOTNET)
   set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 endif()
 
-# config options
+# Main Target
+add_library(${PROJECT_NAME} "")
+if(USE_CPLEX)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC USE_CPLEX)
+endif()
+if(USE_SCIP)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC USE_SCIP)
+endif()
+if(USE_XPRESS)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC USE_XPRESS)
+endif()
 if(MSVC)
   # Allow big object
   add_definitions(/bigobj)
@@ -74,9 +95,6 @@ else()
   add_definitions(-fwrapv)
 endif()
 add_definitions(-DUSE_GLOP -DUSE_BOP -DUSE_CBC -DUSE_CLP)
-
-# Main Target
-add_library(${PROJECT_NAME} "")
 
 if(CMAKE_VERSION VERSION_LESS "3.8.2")
   set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -131,6 +149,15 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 if(WIN32)
   target_link_libraries(${PROJECT_NAME} PUBLIC psapi.lib ws2_32.lib)
 target_compile_definitions(${PROJECT_NAME} PUBLIC __WIN32__)
+endif()
+if(USE_CPLEX)
+  target_link_libraries(${PROJECT_NAME} PUBLIC CPLEX::CPLEX)
+endif()
+if(USE_SCIP)
+  target_link_libraries(${PROJECT_NAME} PUBLIC SCIP::SCIP)
+endif()
+if(USE_XPRESS)
+  target_link_libraries(${PROJECT_NAME} PUBLIC XPRESS::XPRESS)
 endif()
 target_compile_definitions(${PROJECT_NAME}
   PUBLIC USE_BOP USE_GLOP USE_CBC USE_CLP)
