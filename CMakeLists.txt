@@ -57,6 +57,8 @@ else()
   option(BUILD_DEPS "Build all dependencies" OFF)
 endif()
 message(STATUS "Build all dependencies: ${BUILD_DEPS}")
+# Install built dependencies if any,
+option(INSTALL_BUILD_DEPS "Install build all dependencies" ON)
 
 # IF BUILD_DEPS=ON THEN Force all BUILD_*=ON
 include(CMakeDependentOption)

@@ -303,6 +303,26 @@ endif()
 # Install rules
 include(GNUInstallDirs)
 
+# Install builded dependencies
+if(INSTALL_BUILD_DEPS)
+  if( BUILD_ZLIB OR
+      BUILD_absl OR
+      BUILD_gflags OR
+      BUILD_glog OR
+      BUILD_Protobuf OR
+      BUILD_CoinUtils OR
+      BUILD_Osi OR
+      BUILD_Clp OR
+      BUILD_Cgl OR
+      BUILD_Cbc
+      )
+    install(
+      DIRECTORY ${CMAKE_BINARY_DIR}/dependencies/install/
+      DESTINATION ${CMAKE_INSTALL_PREFIX}
+      )
+  endif()
+endif()
+
 include(GenerateExportHeader)
 GENERATE_EXPORT_HEADER(${PROJECT_NAME})
 install(FILES ${PROJECT_BINARY_DIR}/${PROJECT_NAME}_export.h
