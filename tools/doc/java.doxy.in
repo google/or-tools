@@ -792,21 +792,12 @@ WARN_LOGFILE           =
 
 INPUT                  = \
   ortools/java/com/google/ortools/constraintsolver \
-  ortools/java/com/google/ortools/sat/Constraint.java \
-  ortools/java/com/google/ortools/sat/CpModel.java \
-  ortools/java/com/google/ortools/sat/CpSolver.java \
-  ortools/java/com/google/ortools/sat/CpSolverSolutionCallback.java \
-  ortools/java/com/google/ortools/sat/IntVar.java \
-  ortools/java/com/google/ortools/sat/IntervalVar.java \
-  ortools/java/com/google/ortools/sat/LinearExpr.java \
-  ortools/java/com/google/ortools/sat/Literal.java \
+  ortools/java/com/google/ortools/sat \
   ortools/gen/java/com/google/ortools/algorithms \
   ortools/gen/java/com/google/ortools/constraintsolver \
+  ortools/gen/java/com/google/ortools/sat \
   ortools/gen/java/com/google/ortools/graph \
   ortools/gen/java/com/google/ortools/linearsolver \
-  ortools/gen/java/com/google/ortools/sat/CpModelProto.java \
-  ortools/gen/java/com/google/ortools/sat/SatParameters.java \
-  ortools/gen/java/com/google/ortools/sat/SatParametersOrBuilder.java \
   ortools/gen/java/com/google/ortools/util
 
 # This tag can be used to specify the character encoding of the source files
