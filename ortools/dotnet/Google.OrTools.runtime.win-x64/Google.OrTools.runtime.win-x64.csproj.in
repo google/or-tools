@@ -35,17 +35,5 @@
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-
-    <!-- For .Net Core we need to copy the native binary manually during build on Nuget consumer side. That's why we need a separate target file doing this for us. -->
-    <Content Include="$(MSBuildThisFileDirectory)\Google.OrTools.runtime.win-x64.targets">
-       <PackagePath>build/netstandard2.0/%(Filename)%(Extension)</PackagePath>
-       <Pack>true</Pack>
-       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MSBuildThisFileDirectory)\Google.OrTools.runtime.win-x64.targets">
-       <PackagePath>build/netstandard2.1/%(Filename)%(Extension)</PackagePath>
-       <Pack>true</Pack>
-       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
 </Project>
