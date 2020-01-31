@@ -102,16 +102,16 @@ Public Member Functions</h2></td></tr>
 Protected Types</h2></td></tr>
 <tr class="memitem:aa2099867a858f3da90d9e26a1dc88b4d"><td class="memItemLeft" align="right" valign="top">typedef std::pair&lt; int64, int64 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1CheapestInsertionFilteredHeuristic.html#aa2099867a858f3da90d9e26a1dc88b4d">ValuedPosition</a></td></tr>
 <tr class="separator:aa2099867a858f3da90d9e26a1dc88b4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af10aed726a9b750452a6fdeae3f00feb"><td class="memItemLeft" align="right" valign="top">typedef std::pair&lt; StartEndValue, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1CheapestInsertionFilteredHeuristic.html#af10aed726a9b750452a6fdeae3f00feb">Seed</a></td></tr>
+<tr class="memitem:af10aed726a9b750452a6fdeae3f00feb"><td class="memItemLeft" align="right" valign="top">typedef std::pair&lt; <a class="el" href="structoperations__research_1_1CheapestInsertionFilteredHeuristic_1_1StartEndValue.html">StartEndValue</a>, int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1CheapestInsertionFilteredHeuristic.html#af10aed726a9b750452a6fdeae3f00feb">Seed</a></td></tr>
 <tr class="separator:af10aed726a9b750452a6fdeae3f00feb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
-<tr class="memitem:a171d443549aa9ccd4abfbb4724378b7f"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::vector&lt; StartEndValue &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1CheapestInsertionFilteredHeuristic.html#a171d443549aa9ccd4abfbb4724378b7f">ComputeStartEndDistanceForVehicles</a> (const std::vector&lt; int &gt; &amp;vehicles)</td></tr>
+<tr class="memitem:a171d443549aa9ccd4abfbb4724378b7f"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::vector&lt; <a class="el" href="structoperations__research_1_1CheapestInsertionFilteredHeuristic_1_1StartEndValue.html">StartEndValue</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1CheapestInsertionFilteredHeuristic.html#a171d443549aa9ccd4abfbb4724378b7f">ComputeStartEndDistanceForVehicles</a> (const std::vector&lt; int &gt; &amp;vehicles)</td></tr>
 <tr class="memdesc:a171d443549aa9ccd4abfbb4724378b7f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes and returns the distance of each uninserted node to every vehicle in "vehicles" as a std::vector&lt;std::vector&lt;StartEndValue&gt;&gt;, start_end_distances_per_node.  <a href="classoperations__research_1_1CheapestInsertionFilteredHeuristic.html#a171d443549aa9ccd4abfbb4724378b7f">More...</a><br /></td></tr>
 <tr class="separator:a171d443549aa9ccd4abfbb4724378b7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a69d38e86eb8fc2fa4df0d8839c8dd5a9"><td class="memTemplParams" colspan="2">template&lt;class Queue &gt; </td></tr>
-<tr class="memitem:a69d38e86eb8fc2fa4df0d8839c8dd5a9"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1CheapestInsertionFilteredHeuristic.html#a69d38e86eb8fc2fa4df0d8839c8dd5a9">InitializePriorityQueue</a> (std::vector&lt; std::vector&lt; StartEndValue &gt; &gt; *start_end_distances_per_node, Queue *priority_queue)</td></tr>
+<tr class="memitem:a69d38e86eb8fc2fa4df0d8839c8dd5a9"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1CheapestInsertionFilteredHeuristic.html#a69d38e86eb8fc2fa4df0d8839c8dd5a9">InitializePriorityQueue</a> (std::vector&lt; std::vector&lt; <a class="el" href="structoperations__research_1_1CheapestInsertionFilteredHeuristic_1_1StartEndValue.html">StartEndValue</a> &gt; &gt; *start_end_distances_per_node, Queue *priority_queue)</td></tr>
 <tr class="memdesc:a69d38e86eb8fc2fa4df0d8839c8dd5a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initializes the priority_queue by inserting the best entry corresponding to each node, i.e.  <a href="classoperations__research_1_1CheapestInsertionFilteredHeuristic.html#a69d38e86eb8fc2fa4df0d8839c8dd5a9">More...</a><br /></td></tr>
 <tr class="separator:a69d38e86eb8fc2fa4df0d8839c8dd5a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a40574fa8ec102d52f650a616d7fe6c39"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1CheapestInsertionFilteredHeuristic.html#a40574fa8ec102d52f650a616d7fe6c39">InsertBetween</a> (int64 node, int64 predecessor, int64 successor)</td></tr>
@@ -178,7 +178,7 @@ Protected Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">typedef std::pair&lt;StartEndValue, int&gt; <a class="el" href="classoperations__research_1_1CheapestInsertionFilteredHeuristic.html#af10aed726a9b750452a6fdeae3f00feb">Seed</a></td>
+          <td class="memname">typedef std::pair&lt;<a class="el" href="structoperations__research_1_1CheapestInsertionFilteredHeuristic_1_1StartEndValue.html">StartEndValue</a>, int&gt; <a class="el" href="classoperations__research_1_1CheapestInsertionFilteredHeuristic.html#af10aed726a9b750452a6fdeae3f00feb">Seed</a></td>
         </tr>
       </table>
   </td>
@@ -460,7 +460,7 @@ Protected Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;std::vector&lt;StartEndValue&gt; &gt; ComputeStartEndDistanceForVehicles </td>
+          <td class="memname">std::vector&lt;std::vector&lt;<a class="el" href="structoperations__research_1_1CheapestInsertionFilteredHeuristic_1_1StartEndValue.html">StartEndValue</a>&gt; &gt; ComputeStartEndDistanceForVehicles </td>
           <td>(</td>
           <td class="paramtype">const std::vector&lt; int &gt; &amp;&#160;</td>
           <td class="paramname"><em>vehicles</em></td><td>)</td>
