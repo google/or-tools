@@ -791,23 +791,23 @@ WARN_LOGFILE           =
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  = \
-  ortools/com/google/ortools/constraintsolver \
-  ortools/com/google/ortools/sat/Constraint.java \
-  ortools/com/google/ortools/sat/CpModel.java \
-  ortools/com/google/ortools/sat/CpSolver.java \
-  ortools/com/google/ortools/sat/CpSolverSolutionCallback.java \
-  ortools/com/google/ortools/sat/IntVar.java \
-  ortools/com/google/ortools/sat/IntervalVar.java \
-  ortools/com/google/ortools/sat/LinearExpr.java \
-  ortools/com/google/ortools/sat/Literal.java \
-  ortools/gen/com/google/ortools/algorithms \
-  ortools/gen/com/google/ortools/constraintsolver \
-  ortools/gen/com/google/ortools/graph \
-  ortools/gen/com/google/ortools/linearsolver \
-  ortools/gen/com/google/ortools/sat/CpModelProto.java \
-  ortools/gen/com/google/ortools/sat/SatParameters.java \
-  ortools/gen/com/google/ortools/sat/SatParametersOrBuilder.java \
-  ortools/gen/com/google/ortools/util
+  ortools/java/com/google/ortools/constraintsolver \
+  ortools/java/com/google/ortools/sat/Constraint.java \
+  ortools/java/com/google/ortools/sat/CpModel.java \
+  ortools/java/com/google/ortools/sat/CpSolver.java \
+  ortools/java/com/google/ortools/sat/CpSolverSolutionCallback.java \
+  ortools/java/com/google/ortools/sat/IntVar.java \
+  ortools/java/com/google/ortools/sat/IntervalVar.java \
+  ortools/java/com/google/ortools/sat/LinearExpr.java \
+  ortools/java/com/google/ortools/sat/Literal.java \
+  ortools/gen/java/com/google/ortools/algorithms \
+  ortools/gen/java/com/google/ortools/constraintsolver \
+  ortools/gen/java/com/google/ortools/graph \
+  ortools/gen/java/com/google/ortools/linearsolver \
+  ortools/gen/java/com/google/ortools/sat/CpModelProto.java \
+  ortools/gen/java/com/google/ortools/sat/SatParameters.java \
+  ortools/gen/java/com/google/ortools/sat/SatParametersOrBuilder.java \
+  ortools/gen/java/com/google/ortools/util
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
