@@ -12,7 +12,6 @@
       <Copyright>Copyright 2019 Google LLC</Copyright>
 
        <!-- Pack Option -->
-       <IncludeSymbols>true</IncludeSymbols>
        <PackageTags>native;math;LinearSolver;LinearProgramming;ConstraintSolver;ConstraintProgramming</PackageTags>
        <PackageIcon>content/orLogo.png</PackageIcon>
        <PackageProjectUrl>https://developers.google.com/optimization</PackageProjectUrl>
