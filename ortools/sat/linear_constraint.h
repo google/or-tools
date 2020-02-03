@@ -88,6 +88,7 @@ class LinearConstraintBuilder {
 
   // Adds var * coeff to the constraint.
   void AddTerm(IntegerVariable var, IntegerValue coeff);
+  void AddTerm(AffineExpression expr, IntegerValue coeff);
 
   // Add literal * coeff to the constaint. Returns false and do nothing if the
   // given literal didn't have an integer view.
@@ -153,6 +154,39 @@ void CleanTermsAndFillConstraint(
 //
 // Note that currently this allocates some temporary memory.
 void CanonicalizeConstraint(LinearConstraint* ct);
+
+// Returns false if duplicate variables are found in ct.
+bool NoDuplicateVariable(const LinearConstraint& ct);
+
+// Helper struct to model linear expression for lin_min/lin_max constraints. The
+// canonical expression should only contain positive coefficients.
+struct LinearExpression {
+  std::vector<IntegerVariable> vars;
+  std::vector<IntegerValue> coeffs;
+  IntegerValue offset = IntegerValue(0);
+};
+
+// Returns the same expression in the canonical form (all positive
+// coefficients).
+LinearExpression CanonicalizeExpr(const LinearExpression& expr);
+
+// Returns lower bound of linear expression using variable bounds of the
+// variables in expression. Assumes Canonical expression (all positive
+// coefficients).
+IntegerValue LinExprLowerBound(const LinearExpression& expr,
+                               const IntegerTrail& integer_trail);
+
+// Returns upper bound of linear expression using variable bounds of the
+// variables in expression. Assumes Canonical expression (all positive
+// coefficients).
+IntegerValue LinExprUpperBound(const LinearExpression& expr,
+                               const IntegerTrail& integer_trail);
+
+// Preserves canonicality.
+LinearExpression NegationOf(const LinearExpression& expr);
+
+// Returns the same expression with positive variables.
+LinearExpression PositiveVarExpr(const LinearExpression& expr);
 
 }  // namespace sat
 }  // namespace operations_research

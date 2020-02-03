@@ -643,6 +643,7 @@ cc_library(
     deps = [
         ":integer",
         ":model",
+        ":linear_constraint",
         ":precedences",
         ":sat_base",
         ":sat_solver",

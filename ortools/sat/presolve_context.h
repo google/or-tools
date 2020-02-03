@@ -35,7 +35,8 @@ struct PresolveOptions {
 
 // Wrap the CpModelProto we are presolving with extra data structure like the
 // in-memory domain of each variables and the constraint variable graph.
-struct PresolveContext {
+class PresolveContext {
+ public:
   explicit PresolveContext(CpModelProto* model, CpModelProto* mapping)
       : working_model(model), mapping_model(mapping) {}
 
@@ -53,6 +54,7 @@ struct PresolveContext {
   // Helpers to query the current domain of a variable.
   bool DomainIsEmpty(int ref) const;
   bool IsFixed(int ref) const;
+  bool CanBeUsedAsLiteral(int ref) const;
   bool LiteralIsTrue(int lit) const;
   bool LiteralIsFalse(int lit) const;
   int64 MinOf(int ref) const;
@@ -105,6 +107,12 @@ struct PresolveContext {
   // time a constraint is modified.
   void UpdateConstraintVariableUsage(int c);
 
+  // At the beginning of the presolve, we delay the costly creation of this
+  // "graph" until we at least ran some basic presolve. This is because during
+  // a LNS neighbhorhood, many constraints will be reduced significantly by
+  // this "simple" presolve.
+  bool ConstraintVariableGraphIsUpToDate() const;
+
   // Calls UpdateConstraintVariableUsage() on all newly created constraints.
   void UpdateNewConstraintsVariableUsage();
 
@@ -126,7 +134,14 @@ struct PresolveContext {
   bool StoreAbsRelation(int target_ref, int ref);
 
   // Returns the representative of a literal.
-  int GetLiteralRepresentative(int ref);
+  int GetLiteralRepresentative(int ref) const;
+
+  // Returns another reference with exactly the same value.
+  int GetVariableRepresentative(int ref) const;
+
+  // Used for statistics.
+  int NumAffineRelations() const { return affine_relations_.NumRelations(); }
+  int NumEquivRelations() const { return var_equiv_relations_.NumRelations(); }
 
   // This makes sure that the affine relation only uses one of the
   // representative from the var_equiv_relations.
@@ -197,14 +212,6 @@ struct PresolveContext {
     return objective_domain_is_constraining;
   }
 
-  // This regroups all the affine relations between variables. Note that the
-  // constraints used to detect such relations will not be removed from the
-  // model at detection time (thus allowing proper domain propagation). However,
-  // if the arity of a variable becomes one, then such constraint will be
-  // removed.
-  AffineRelation affine_relations;
-  AffineRelation var_equiv_relations;
-
   // Set of constraint that implies an "affine relation". We need to mark them,
   // because we can't simplify them using the relation they added.
   //
@@ -271,6 +278,10 @@ struct PresolveContext {
   // bounds in the response.
   bool keep_all_feasible_solutions = false;
 
+  // If true, fills stats_by_rule_name, otherwise do not do that. This can take
+  // a few percent of the run time with a lot of LNS threads.
+  bool enable_stats = true;
+
   // Just used to display statistics on the presolve rules that were used.
   absl::flat_hash_map<std::string, int> stats_by_rule_name;
 
@@ -294,6 +305,9 @@ struct PresolveContext {
   DomainDeductions deductions;
 
  private:
+  // Helper to add an affine relation x = c.y + o to the given repository.
+  bool AddRelation(int x, int y, int c, int o, AffineRelation* repo);
+
   void AddVariableUsage(int c);
 
   // Inserts an half reified var value encoding (literal => var ==/!= value).
@@ -323,6 +337,16 @@ struct PresolveContext {
   Domain objective_domain;
   double objective_offset;
   double objective_scaling_factor;
+
+  // This regroups all the affine relations between variables. Note that the
+  // constraints used to detect such relations will not be removed from the
+  // model at detection time (thus allowing proper domain propagation). However,
+  // if the arity of a variable becomes one, then such constraint will be
+  // removed.
+  AffineRelation affine_relations_;
+  AffineRelation var_equiv_relations_;
+
+  std::vector<int> tmp_new_usage_;
 };
 
 }  // namespace sat

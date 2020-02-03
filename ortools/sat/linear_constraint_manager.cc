@@ -17,6 +17,7 @@
 #include <cmath>
 #include <utility>
 
+#include "absl/container/flat_hash_set.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint.h"
 
@@ -111,6 +112,7 @@ bool LinearConstraintManager::MaybeRemoveSomeInactiveConstraints(
 LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
     LinearConstraint ct, bool* added) {
   CHECK(!ct.vars.empty());
+  DCHECK(NoDuplicateVariable(ct));
   SimplifyConstraint(&ct);
   DivideByGCD(&ct);
   CanonicalizeConstraint(&ct);

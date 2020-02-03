@@ -295,41 +295,6 @@ void MinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   watcher->WatchUpperBound(min_var_, id);
 }
 
-LinearExpression CanonicalizeExpr(const LinearExpression& expr) {
-  LinearExpression canonical_expr;
-  canonical_expr.offset = expr.offset;
-  for (int i = 0; i < expr.vars.size(); ++i) {
-    if (expr.coeffs[i] < 0) {
-      canonical_expr.vars.push_back(NegationOf(expr.vars[i]));
-      canonical_expr.coeffs.push_back(-expr.coeffs[i]);
-    } else {
-      canonical_expr.vars.push_back(expr.vars[i]);
-      canonical_expr.coeffs.push_back(expr.coeffs[i]);
-    }
-  }
-  return canonical_expr;
-}
-
-IntegerValue LinExprLowerBound(const LinearExpression& expr,
-                               const IntegerTrail& integer_trail) {
-  IntegerValue lower_bound = expr.offset;
-  for (int i = 0; i < expr.vars.size(); ++i) {
-    DCHECK_GE(expr.coeffs[i], 0) << "The expression is not canonicalized";
-    lower_bound += expr.coeffs[i] * integer_trail.LowerBound(expr.vars[i]);
-  }
-  return lower_bound;
-}
-
-IntegerValue LinExprUpperBound(const LinearExpression& expr,
-                               const IntegerTrail& integer_trail) {
-  IntegerValue upper_bound = expr.offset;
-  for (int i = 0; i < expr.vars.size(); ++i) {
-    DCHECK_GE(expr.coeffs[i], 0) << "The expression is not canonicalized";
-    upper_bound += expr.coeffs[i] * integer_trail.UpperBound(expr.vars[i]);
-  }
-  return upper_bound;
-}
-
 LinMinPropagator::LinMinPropagator(const std::vector<LinearExpression>& exprs,
                                    IntegerVariable min_var, Model* model)
     : exprs_(exprs),

@@ -521,6 +521,55 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
           CreateAllDifferentCutGenerator(vars, m));
     }
   }
+
+  if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinMin) {
+    if (!m->GetOrCreate<SatParameters>()->add_lin_max_cuts()) return;
+    if (linearization_level < 2) return;
+    if (HasEnforcementLiteral(ct)) return;
+    if (ct.lin_min().target().vars_size() != 1) return;
+    if (ct.lin_min().target().coeffs(0) != 1) return;
+
+    const IntegerVariable target =
+        NegationOf(mapping->Integer(ct.lin_min().target().vars(0)));
+    std::vector<LinearExpression> exprs;
+    exprs.reserve(ct.lin_min().exprs_size());
+    for (int i = 0; i < ct.lin_min().exprs_size(); ++i) {
+      // Note: Cut generator requires all expressions to contain only positive
+      // vars.
+      exprs.push_back(PositiveVarExpr(
+          NegationOf(GetExprFromProto(ct.lin_min().exprs(i), *mapping))));
+    }
+
+    // Create and register binary z vars.
+    // z_vars[i] == 1 <=> target = exprs[i].
+    IntegerEncoder* encoder = m->GetOrCreate<IntegerEncoder>();
+    GenericLiteralWatcher* watcher = m->GetOrCreate<GenericLiteralWatcher>();
+    const int num_exprs = exprs.size();
+    std::vector<IntegerVariable> z_vars;
+    std::vector<Literal> z_lits;
+    z_vars.reserve(num_exprs);
+    z_lits.reserve(num_exprs);
+    // TODO(user): For the case where num_exprs = 2, Create only 1 z var.
+    for (int i = 0; i < num_exprs; ++i) {
+      IntegerVariable z = m->Add(NewIntegerVariable(0, 1));
+      z_vars.push_back(z);
+      const Literal z_lit =
+          encoder->GetOrCreateLiteralAssociatedToEquality(z, IntegerValue(1));
+      z_lits.push_back(z_lit);
+      std::vector<IntegerVariable> local_vars = NegationOf(exprs[i].vars);
+      local_vars.push_back(target);
+      std::vector<IntegerValue> local_coeffs = exprs[i].coeffs;
+      local_coeffs.push_back(IntegerValue(1));
+      IntegerSumLE* upper_bound = new IntegerSumLE(
+          {z_lit}, local_vars, local_coeffs, exprs[i].offset, m);
+      upper_bound->RegisterWith(watcher);
+      m->TakeOwnership(upper_bound);
+    }
+    m->Add(ExactlyOneConstraint(z_lits));
+
+    relaxation->cut_generators.push_back(
+        CreateLinMaxCutGenerator(target, exprs, z_vars, m));
+  }
 }
 
 }  // namespace
@@ -1274,6 +1323,12 @@ void LoadCpModel(const CpModelProto& model_proto,
   if (!sat_solver->FinishPropagation()) return unsat();
 
   if (model_proto.has_objective()) {
+    // Report the initial objective variable bounds.
+    auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+    shared_response_manager->UpdateInnerObjectiveBounds(
+        "init", integer_trail->LowerBound(objective_var),
+        integer_trail->UpperBound(objective_var));
+
     // Watch improved objective best bounds.
     RegisterObjectiveBestBoundExport(objective_var, shared_response_manager,
                                      model);
@@ -1960,6 +2015,7 @@ class LnsSolver : public SubSolver {
       }
       neighborhood.cp_model.set_name(absl::StrCat("lns_", task_id));
       if (!neighborhood.is_generated) return;
+      data.neighborhood_id = neighborhood.id;
 
       const double fully_solved_proportion =
           static_cast<double>(generator_->num_fully_solved_calls()) /
@@ -1972,6 +2028,7 @@ class LnsSolver : public SubSolver {
       local_params.set_max_deterministic_time(data.deterministic_limit);
       local_params.set_stop_after_first_solution(false);
       local_params.set_log_search_progress(false);
+      local_params.set_cp_model_probing_level(0);
 
       if (FLAGS_cp_model_dump_lns) {
         const std::string name =
@@ -1983,8 +2040,8 @@ class LnsSolver : public SubSolver {
 
       Model local_model;
       local_model.Add(NewSatParameters(local_params));
-      shared_->time_limit->UpdateLocalLimit(
-          local_model.GetOrCreate<TimeLimit>());
+      TimeLimit* local_time_limit = local_model.GetOrCreate<TimeLimit>();
+      shared_->time_limit->UpdateLocalLimit(local_time_limit);
 
       const int64 num_neighborhood_model_vars =
           neighborhood.cp_model.variables_size();
@@ -2014,16 +2071,22 @@ class LnsSolver : public SubSolver {
       SolveLoadedCpModel(neighborhood.cp_model, &local_response_manager,
                          &local_model);
       CpSolverResponse local_response = local_response_manager.GetResponse();
+      if (local_response.solution_info().empty()) {
+        local_response.set_solution_info(solution_info);
+      } else {
+        local_response.set_solution_info(
+            absl::StrCat(local_response.solution_info(), " ", solution_info));
+      }
 
       // TODO(user): we actually do not need to postsolve if the solution is
       // not going to be used...
       PostsolveResponse(num_neighborhood_model_vars, mapping_proto,
                         postsolve_mapping, shared_->wall_timer,
                         &local_response);
+      data.status = local_response.status();
+      data.deterministic_time = local_time_limit->GetElapsedDeterministicTime();
+
       if (generator_->IsRelaxationGenerator()) {
-        data.neighborhood_id = neighborhood.id;
-        data.status = local_response.status();
-        data.deterministic_time = local_response.deterministic_time();
         bool has_feasible_solution = false;
         if (local_response.status() == CpSolverStatus::OPTIMAL ||
             local_response.status() == CpSolverStatus::FEASIBLE) {
@@ -2036,6 +2099,8 @@ class LnsSolver : public SubSolver {
         }
 
         if (shared_->model_proto->has_objective()) {
+          // TODO(user): This is not deterministic since it is updated without
+          // synchronization! So we shouldn't base the LNS score out of that.
           const IntegerValue current_obj_lb =
               shared_->response->GetInnerObjectiveLowerBound();
 
@@ -2052,20 +2117,10 @@ class LnsSolver : public SubSolver {
                         1e-6));
           data.new_objective_bound = new_inner_obj_lb;
           data.initial_best_objective_bound = current_obj_lb;
-
           if (new_inner_obj_lb > current_obj_lb) {
-            const IntegerValue current_obj_ub =
-                shared_->response->GetInnerObjectiveUpperBound();
             shared_->response->UpdateInnerObjectiveBounds(
-                solution_info, new_inner_obj_lb, current_obj_ub);
+                solution_info, new_inner_obj_lb, kMaxIntegerValue);
           }
-        }
-
-        if (local_response.solution_info().empty()) {
-          local_response.set_solution_info(solution_info);
-        } else {
-          local_response.set_solution_info(
-              absl::StrCat(local_response.solution_info(), " ", solution_info));
         }
 
         // If we have a solution of the relaxed problem, we check if it is also
@@ -2094,16 +2149,7 @@ class LnsSolver : public SubSolver {
               << solution_info;
         }
 
-        if (local_response.solution_info().empty()) {
-          local_response.set_solution_info(solution_info);
-        } else {
-          local_response.set_solution_info(
-              absl::StrCat(local_response.solution_info(), " ", solution_info));
-        }
-
         // Finish to fill the SolveData now that the local solve is done.
-        data.status = local_response.status();
-        data.deterministic_time = local_response.deterministic_time();
         data.new_objective = data.base_objective;
         if (local_response.status() == CpSolverStatus::OPTIMAL ||
             local_response.status() == CpSolverStatus::FEASIBLE) {
@@ -2202,9 +2248,12 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   std::vector<std::unique_ptr<SubSolver>> subsolvers;
 
   if (parameters.use_lns_only()) {
-    // Register something to find a first solution.
+    // Register something to find a first solution. Note that this is mainly
+    // used for experimentation, and using no LP ususally result in a faster
+    // first solution.
     SatParameters local_params = parameters;
     local_params.set_stop_after_first_solution(true);
+    local_params.set_linearization_level(0);
     subsolvers.push_back(absl::make_unique<FullProblemSolver>(
         /*id=*/subsolvers.size(), "first_solution", local_params,
         /*split_in_chunks=*/false, &shared));
@@ -2303,14 +2352,22 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     }
   }
 
+  // Add a synchronization point for the primal integral that is executed last.
+  // This way, after each batch, the proper deterministic time is updated and
+  // then the function to integrate take the value of the new gap.
+  subsolvers.push_back(absl::make_unique<SynchronizationPoint>(
+      /*id=*/subsolvers.size(), [shared_response_manager]() {
+        shared_response_manager->UpdatePrimalIntegral();
+      }));
+
   // Log the name of all our SubSolvers.
   if (log_search) {
     std::vector<std::string> names;
     for (const auto& subsolver : subsolvers) {
-      names.push_back(subsolver->name());
+      if (!subsolver->name().empty()) names.push_back(subsolver->name());
     }
     LOG(INFO) << absl::StrFormat(
-        "*** starting Search at %.2fs with %i workers and strategies: [ %s ]",
+        "*** starting Search at %.2fs with %i workers and subsolvers: [ %s ]",
         wall_timer->Get(), num_search_workers, absl::StrJoin(names, ", "));
   }
 

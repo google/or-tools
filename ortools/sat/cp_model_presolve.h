@@ -158,7 +158,7 @@ class CpModelPresolver {
   bool IntervalsCanIntersect(const IntervalConstraintProto& interval1,
                              const IntervalConstraintProto& interval2);
 
-  bool ExploitEquivalenceRelations(ConstraintProto* ct);
+  bool ExploitEquivalenceRelations(int c, ConstraintProto* ct);
 
   ABSL_MUST_USE_RESULT bool RemoveConstraint(ConstraintProto* ct);
   ABSL_MUST_USE_RESULT bool MarkConstraintAsFalse(ConstraintProto* ct);

@@ -255,9 +255,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // Converts a dense represenation of a linear constraint to a sparse one
   // expressed in terms of IntegerVariable.
-  LinearConstraint ConvertToLinearConstraint(
+  void ConvertToLinearConstraint(
       const gtl::ITIVector<glop::ColIndex, IntegerValue>& dense_vector,
-      IntegerValue upper_bound);
+      IntegerValue upper_bound, LinearConstraint* result);
 
   // Compute the implied lower bound of the given linear expression using the
   // current variable bound. Return kMinIntegerValue in case of overflow.
@@ -339,6 +339,16 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // For the scaling.
   glop::LpScalingHelper scaler_;
+
+  // Temporary data for cuts.
+  IntegerRoundingCutHelper integer_rounding_cut_helper_;
+  LinearConstraint cut_;
+  gtl::ITIVector<glop::ColIndex, IntegerValue> tmp_dense_vector_;
+  std::vector<double> tmp_lp_values_;
+  std::vector<IntegerValue> tmp_var_lbs_;
+  std::vector<IntegerValue> tmp_var_ubs_;
+  std::vector<glop::RowIndex> tmp_slack_rows_;
+  std::vector<IntegerValue> tmp_slack_bounds_;
 
   // Structures used for mirroring IntegerVariables inside the underlying LP
   // solver: an integer variable var is mirrored by mirror_lp_variable_[var].

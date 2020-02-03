@@ -242,6 +242,9 @@ void LoadRoutesConstraint(const ConstraintProto& ct, Model* m);
 void LoadCircuitCoveringConstraint(const ConstraintProto& ct, Model* m);
 void LoadInverseConstraint(const ConstraintProto& ct, Model* m);
 
+LinearExpression GetExprFromProto(const LinearExpressionProto& expr_proto,
+                                  const CpModelMapping& mapping);
+
 }  // namespace sat
 }  // namespace operations_research
 

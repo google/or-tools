@@ -880,7 +880,7 @@ inline std::function<void(Model*)> AtMostOneConstraint(
 }
 
 inline std::function<void(Model*)> ClauseConstraint(
-    const std::vector<Literal>& literals) {
+    absl::Span<const Literal> literals) {
   return [=](Model* model) {
     std::vector<LiteralWithCoeff> cst;
     cst.reserve(literals.size());

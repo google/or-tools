@@ -902,6 +902,7 @@ void ExpandCpModel(PresolveOptions options, PresolveContext* context) {
   const int num_constraints = context->working_model->constraints_size();
   for (int i = 0; i < num_constraints; ++i) {
     ConstraintProto* const ct = context->working_model->mutable_constraints(i);
+    bool skip = false;
     switch (ct->constraint_case()) {
       case ConstraintProto::ConstraintCase::kReservoir:
         ExpandReservoir(ct, context);
@@ -929,8 +930,10 @@ void ExpandCpModel(PresolveOptions options, PresolveContext* context) {
         }
         break;
       default:
+        skip = true;
         break;
     }
+    if (skip) continue;  // Nothing was done for this constraint.
 
     // Update variable-contraint graph.
     context->UpdateNewConstraintsVariableUsage();

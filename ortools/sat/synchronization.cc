@@ -19,6 +19,7 @@
 #endif  // __PORTABLE_PLATFORM__
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/random/random.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -57,14 +58,35 @@ SharedSolutionRepository::Solution
 SharedSolutionRepository::GetRandomBiasedSolution(
     random_engine_t* random) const {
   absl::MutexLock mutex_lock(&mutex_);
-  weights_.resize(solutions_.size());
   const int64 best_objective = solutions_[0].internal_objective;
+
+  // As long as we have solution with the best objective that haven't been
+  // explored too much, we select one uniformly. Otherwise, we select a solution
+  // from the pool uniformly.
+  //
+  // Note(user): Because of the increase of num_selected, this is dependent on
+  // the order of call. It should be fine for "determinism" because we do
+  // generate the task of a batch always in the same order.
+  const int kExplorationThreshold = 100;
+
+  // Select all the best solution with a low enough selection count.
+  tmp_indices_.clear();
   for (int i = 0; i < solutions_.size(); ++i) {
-    weights_[i] =
-        solutions_[i].internal_objective == best_objective ? 1.0 : 0.1;
+    const auto& solution = solutions_[i];
+    if (solution.internal_objective == best_objective &&
+        solution.num_selected <= kExplorationThreshold) {
+      tmp_indices_.push_back(i);
+    }
   }
-  std::discrete_distribution<> dist(weights_.begin(), weights_.end());
-  return solutions_[dist(*random)];
+
+  int index = 0;
+  if (tmp_indices_.empty()) {
+    index = tmp_indices_[absl::Uniform<int>(*random, 0, tmp_indices_.size())];
+  } else {
+    index = absl::Uniform<int>(*random, 0, solutions_.size());
+  }
+  solutions_[index].num_selected++;
+  return solutions_[index];
 }
 
 void SharedSolutionRepository::Add(const Solution& solution) {
@@ -89,7 +111,12 @@ void SharedSolutionRepository::Synchronize() {
   solutions_.insert(solutions_.end(), new_solutions_.begin(),
                     new_solutions_.end());
   new_solutions_.clear();
-  gtl::STLSortAndRemoveDuplicates(&solutions_);
+
+  // We use a stable sort to keep the num_selected count for the already
+  // existing solutions.
+  //
+  // TODO(user): Intoduce a notion of orthogonality to diversify the pool?
+  gtl::STLStableSortAndRemoveDuplicates(&solutions_);
   if (solutions_.size() > num_solutions_to_keep_) {
     solutions_.resize(num_solutions_to_keep_);
   }
@@ -104,7 +131,7 @@ SharedResponseManager::SharedResponseManager(
       model_proto_(*proto),
       wall_timer_(*wall_timer),
       shared_time_limit_(*shared_time_limit),
-      solutions_(/*num_solutions_to_keep=*/10) {}
+      solutions_(/*num_solutions_to_keep=*/3) {}
 
 namespace {
 
@@ -127,21 +154,26 @@ void LogNewSatSolution(const std::string& event_or_solution_count,
 
 }  // namespace
 
-void SharedResponseManager::UpdatePrimalIntegral(int64 max_integral) {
+void SharedResponseManager::UpdatePrimalIntegral() {
+  absl::MutexLock mutex_lock(&mutex_);
   if (!model_proto_.has_objective()) return;
+
   const double current_time = shared_time_limit_.GetElapsedDeterministicTime();
   const double time_delta = current_time - last_primal_integral_time_stamp_;
   last_primal_integral_time_stamp_ = current_time;
+
+  // We use the log of the absolute objective gap.
+  //
+  // Using the log should count no solution as just log(2*64) = 18, and
+  // otherwise just compare order of magnitude which seems nice. Also, It is
+  // more easy to compare the primal integral with the total time.
   const CpObjectiveProto& obj = model_proto_.objective();
-  double bounds_delta = 0.0;
-  if (inner_objective_upper_bound_ == kint64max ||
-      inner_objective_lower_bound_ == kint64min) {
-    bounds_delta = ScaleObjectiveValue(obj, max_integral);
-  } else {
-    bounds_delta = ScaleObjectiveValue(
-        obj, inner_objective_upper_bound_ - inner_objective_lower_bound_);
-  }
-  primal_integral_ += time_delta * std::abs(bounds_delta);
+  const double factor =
+      obj.scaling_factor() != 0.0 ? std::abs(obj.scaling_factor()) : 1.0;
+  const double bounds_delta = std::log(
+      1 + factor * std::abs(static_cast<double>(inner_objective_upper_bound_) -
+                            static_cast<double>(inner_objective_lower_bound_)));
+  primal_integral_ += time_delta * bounds_delta;
 }
 
 void SharedResponseManager::UpdateInnerObjectiveBounds(
@@ -160,15 +192,6 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
 
   const bool change =
       (lb > inner_objective_lower_bound_ || ub < inner_objective_upper_bound_);
-  if (change) {
-    IntegerValue max_integral(0);
-    if (!AddProductTo(IntegerValue(2), ub - lb, &max_integral)) {
-      // Overflow.
-      max_integral = kMaxIntegerValue;
-    }
-    UpdatePrimalIntegral(
-        /*max_integral=*/std::max(int64{0}, max_integral.value()));
-  }
   if (lb > inner_objective_lower_bound_) {
     inner_objective_lower_bound_ = lb.value();
   }
@@ -217,7 +240,6 @@ void SharedResponseManager::NotifyThatImprovingProblemIsInfeasible(
     CHECK_EQ(num_solutions_, 0);
     best_response_.set_status(CpSolverStatus::INFEASIBLE);
   }
-  UpdatePrimalIntegral(/*max_integral=*/kint64max);
   if (log_updates_) LogNewSatSolution("Done", wall_timer_.Get(), worker_info);
 }
 
@@ -263,6 +285,7 @@ void SharedResponseManager::UnregisterCallback(int callback_id) {
 CpSolverResponse SharedResponseManager::GetResponse() {
   absl::MutexLock mutex_lock(&mutex_);
   FillObjectiveValuesInBestResponse();
+  best_response_.set_primal_integral(primal_integral_);
   return best_response_;
 }
 
@@ -322,14 +345,6 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
     DCHECK_LT(objective_value, best_solution_objective_value_);
     DCHECK_NE(best_response_.status(), CpSolverStatus::OPTIMAL);
     best_solution_objective_value_ = objective_value;
-
-    IntegerValue max_integral(0);
-    if (!AddProductTo(IntegerValue(2), IntegerValue(std::abs(objective_value)),
-                      &max_integral)) {
-      // Overflow.
-      max_integral = kMaxIntegerValue;
-    }
-    UpdatePrimalIntegral(/*max_integral=*/max_integral.value());
 
     // Update the new bound.
     inner_objective_upper_bound_ = objective_value - 1;
@@ -444,7 +459,6 @@ void SharedResponseManager::SetStatsFromModelInternal(Model* model) {
   best_response_.set_num_booleans(sat_solver->NumVariables());
   best_response_.set_num_branches(sat_solver->num_branches());
   best_response_.set_num_conflicts(sat_solver->num_failures());
-  best_response_.set_primal_integral(primal_integral_);
   best_response_.set_num_binary_propagations(sat_solver->num_propagations());
   best_response_.set_num_integer_propagations(
       integer_trail == nullptr ? 0 : integer_trail->num_enqueues());

@@ -71,8 +71,13 @@ bool PresolveContext::IsFixed(int ref) const {
   return domains[PositiveRef(ref)].IsFixed();
 }
 
+bool PresolveContext::CanBeUsedAsLiteral(int ref) const {
+  const int var = PositiveRef(ref);
+  return domains[var].Min() >= 0 && domains[var].Max() <= 1;
+}
+
 bool PresolveContext::LiteralIsTrue(int lit) const {
-  if (!IsFixed(lit)) return false;
+  DCHECK(CanBeUsedAsLiteral(lit));
   if (RefIsPositive(lit)) {
     return domains[lit].Min() == 1;
   } else {
@@ -81,7 +86,7 @@ bool PresolveContext::LiteralIsTrue(int lit) const {
 }
 
 bool PresolveContext::LiteralIsFalse(int lit) const {
-  if (!IsFixed(lit)) return false;
+  DCHECK(CanBeUsedAsLiteral(lit));
   if (RefIsPositive(lit)) {
     return domains[lit].Max() == 0;
   } else {
@@ -90,32 +95,34 @@ bool PresolveContext::LiteralIsFalse(int lit) const {
 }
 
 int64 PresolveContext::MinOf(int ref) const {
-  CHECK(!DomainIsEmpty(ref));
+  DCHECK(!DomainIsEmpty(ref));
   return RefIsPositive(ref) ? domains[PositiveRef(ref)].Min()
                             : -domains[PositiveRef(ref)].Max();
 }
 
 int64 PresolveContext::MaxOf(int ref) const {
-  CHECK(!DomainIsEmpty(ref));
+  DCHECK(!DomainIsEmpty(ref));
   return RefIsPositive(ref) ? domains[PositiveRef(ref)].Max()
                             : -domains[PositiveRef(ref)].Min();
 }
 
 bool PresolveContext::VariableIsNotRepresentativeOfEquivalenceClass(
     int ref) const {
-  if (affine_relations.ClassSize(PositiveRef(ref)) == 1) return true;
+  if (affine_relations_.ClassSize(PositiveRef(ref)) == 1) return true;
   return PositiveRef(GetAffineRelation(ref).representative) != PositiveRef(ref);
 }
 
 // TODO(user): In some case, we could still remove var when it has some variable
 // in affine relation with it, but we need to be careful that none are used.
 bool PresolveContext::VariableIsUniqueAndRemovable(int ref) const {
+  if (!ConstraintVariableGraphIsUpToDate()) return false;
   return var_to_constraints[PositiveRef(ref)].size() == 1 &&
          VariableIsNotRepresentativeOfEquivalenceClass(ref) &&
          !keep_all_feasible_solutions;
 }
 
 bool PresolveContext::VariableWithCostIsUniqueAndRemovable(int ref) const {
+  if (!ConstraintVariableGraphIsUpToDate()) return false;
   const int var = PositiveRef(ref);
   return !keep_all_feasible_solutions && var_to_constraints[var].contains(-1) &&
          var_to_constraints[var].size() == 2 &&
@@ -179,31 +186,53 @@ ABSL_MUST_USE_RESULT bool PresolveContext::SetLiteralToTrue(int lit) {
 }
 
 void PresolveContext::UpdateRuleStats(const std::string& name) {
-  VLOG(1) << num_presolve_operations << " : " << name;
-  stats_by_rule_name[name]++;
+  if (enable_stats) {
+    VLOG(1) << num_presolve_operations << " : " << name;
+    stats_by_rule_name[name]++;
+  }
   num_presolve_operations++;
 }
 
 void PresolveContext::AddVariableUsage(int c) {
   const ConstraintProto& ct = working_model->constraints(c);
-
-  constraint_to_vars[c] = UsedVariables(working_model->constraints(c));
+  constraint_to_vars[c] = UsedVariables(ct);
   constraint_to_intervals[c] = UsedIntervals(ct);
   for (const int v : constraint_to_vars[c]) var_to_constraints[v].insert(c);
   for (const int i : constraint_to_intervals[c]) interval_usage[i]++;
 }
 
 void PresolveContext::UpdateConstraintVariableUsage(int c) {
-  CHECK_EQ(constraint_to_vars.size(), working_model->constraints_size());
+  DCHECK_EQ(constraint_to_vars.size(), working_model->constraints_size());
+  const ConstraintProto& ct = working_model->constraints(c);
 
-  // Remove old usage.
-  //
-  // TODO(user): we could avoid erase() and then insert() for the variable
-  // that are still in this constraint.
-  for (const int v : constraint_to_vars[c]) var_to_constraints[v].erase(c);
+  // We don't optimize the interval usage as this is not super frequent.
   for (const int i : constraint_to_intervals[c]) interval_usage[i]--;
+  constraint_to_intervals[c] = UsedIntervals(ct);
+  for (const int i : constraint_to_intervals[c]) interval_usage[i]++;
 
-  AddVariableUsage(c);
+  // For the variables, we avoid an erase() followed by an insert() for the
+  // variables that didn't change.
+  tmp_new_usage_ = UsedVariables(ct);
+  const std::vector<int>& old_usage = constraint_to_vars[c];
+  const int old_size = old_usage.size();
+  int i = 0;
+  for (const int var : tmp_new_usage_) {
+    while (i < old_size && old_usage[i] < var) {
+      var_to_constraints[old_usage[i]].erase(c);
+      ++i;
+    }
+    if (i < old_size && old_usage[i] == var) {
+      ++i;
+    } else {
+      var_to_constraints[var].insert(c);
+    }
+  }
+  for (; i < old_size; ++i) var_to_constraints[old_usage[i]].erase(c);
+  constraint_to_vars[c] = tmp_new_usage_;
+}
+
+bool PresolveContext::ConstraintVariableGraphIsUpToDate() const {
+  return constraint_to_vars.size() == working_model->constraints_size();
 }
 
 void PresolveContext::UpdateNewConstraintsVariableUsage() {
@@ -219,7 +248,7 @@ void PresolveContext::UpdateNewConstraintsVariableUsage() {
 }
 
 bool PresolveContext::ConstraintVariableUsageIsConsistent() {
-  if (is_unsat) return false;
+  if (is_unsat) return true;  // We do not care in this case.
   if (constraint_to_vars.size() != working_model->constraints_size()) {
     LOG(INFO) << "Wrong constraint_to_vars size!";
     return false;
@@ -234,14 +263,36 @@ bool PresolveContext::ConstraintVariableUsageIsConsistent() {
   return true;
 }
 
+// If a Boolean variable (one with domain [0, 1]) appear in this affine
+// equivalence class, then we want its representative to be Boolean. Note that
+// this is always possible because a Boolean variable can never be equal to a
+// multiple of another if std::abs(coeff) is greater than 1 and if it is not
+// fixed to zero. This is important because it allows to simply use the same
+// representative for any referenced literals.
+bool PresolveContext::AddRelation(int x, int y, int c, int o,
+                                  AffineRelation* repo) {
+  const int rep_x = repo->Get(x).representative;
+  const int rep_y = repo->Get(y).representative;
+  const bool allow_rep_x = CanBeUsedAsLiteral(rep_x);
+  const bool allow_rep_y = CanBeUsedAsLiteral(rep_y);
+  if (allow_rep_x || allow_rep_y) {
+    return repo->TryAdd(x, y, c, o, allow_rep_x, allow_rep_y);
+  } else {
+    // If none are boolean, we do not care about which is used as
+    // representative.
+    return repo->TryAdd(x, y, c, o);
+  }
+}
+
 void PresolveContext::ExploitFixedDomain(int var) {
+  CHECK(RefIsPositive(var));
   CHECK(IsFixed(var));
   const int min = MinOf(var);
   if (gtl::ContainsKey(constant_to_ref, min)) {
     const int representative = constant_to_ref[min];
     if (representative != var) {
-      affine_relations.TryAdd(var, representative, 1, 0);
-      var_equiv_relations.TryAdd(var, representative, 1, 0);
+      AddRelation(var, representative, 1, 0, &affine_relations_);
+      AddRelation(var, representative, 1, 0, &var_equiv_relations_);
     }
   } else {
     constant_to_ref[min] = var;
@@ -251,43 +302,26 @@ void PresolveContext::ExploitFixedDomain(int var) {
 void PresolveContext::StoreAffineRelation(const ConstraintProto& ct, int ref_x,
                                           int ref_y, int64 coeff,
                                           int64 offset) {
-  int x = PositiveRef(ref_x);
-  int y = PositiveRef(ref_y);
   if (is_unsat) return;
-  if (IsFixed(x) || IsFixed(y)) return;
+  if (IsFixed(ref_x) || IsFixed(ref_y)) return;
 
-  int64 c = RefIsPositive(ref_x) == RefIsPositive(ref_y) ? coeff : -coeff;
-  int64 o = RefIsPositive(ref_x) ? offset : -offset;
-  const int rep_x = affine_relations.Get(x).representative;
-  const int rep_y = affine_relations.Get(y).representative;
-
-  // If a Boolean variable (one with domain [0, 1]) appear in this affine
-  // equivalence class, then we want its representative to be Boolean. Note
-  // that this is always possible because a Boolean variable can never be
-  // equal to a multiple of another if std::abs(coeff) is greater than 1 and
-  // if it is not fixed to zero. This is important because it allows to simply
-  // use the same representative for any referenced literals.
-  bool allow_rep_x = MinOf(rep_x) == 0 && MaxOf(rep_x) == 1;
-  bool allow_rep_y = MinOf(rep_y) == 0 && MaxOf(rep_y) == 1;
-  if (!allow_rep_x && !allow_rep_y) {
-    // If none are Boolean, we can use any representative.
-    allow_rep_x = true;
-    allow_rep_y = true;
-  }
+  const int x = PositiveRef(ref_x);
+  const int y = PositiveRef(ref_y);
+  const int64 c = RefIsPositive(ref_x) == RefIsPositive(ref_y) ? coeff : -coeff;
+  const int64 o = RefIsPositive(ref_x) ? offset : -offset;
 
   // TODO(user): can we force the rep and remove GetAffineRelation()?
-  bool added = affine_relations.TryAdd(x, y, c, o, allow_rep_x, allow_rep_y);
+  bool added = AddRelation(x, y, c, o, &affine_relations_);
   if ((c == 1 || c == -1) && o == 0) {
-    added |= var_equiv_relations.TryAdd(x, y, c, o, allow_rep_x, allow_rep_y);
+    added |= AddRelation(x, y, c, o, &var_equiv_relations_);
   }
   if (added) {
     // The domain didn't change, but this notification allows to re-process any
     // constraint containing these variables. Note that we do not need to
     // retrigger a propagation of the constraint containing a variable whose
     // representative didn't change.
-    const int new_rep = affine_relations.Get(rep_x).representative;
-    if (new_rep != rep_x) modified_domains.Set(x);
-    if (new_rep != rep_y) modified_domains.Set(y);
+    if (GetAffineRelation(x).representative != x) modified_domains.Set(x);
+    if (GetAffineRelation(y).representative != y) modified_domains.Set(y);
     affine_constraints.insert(&ct);
   }
 }
@@ -335,17 +369,41 @@ bool PresolveContext::StoreAbsRelation(int target_ref, int ref) {
   return insert_status.second;
 }
 
-int PresolveContext::GetLiteralRepresentative(int ref) {
-  const AffineRelation::Relation r = GetAffineRelation(ref);
-  if (r.representative == ref) return ref;
-  return r.coeff > 0 ? r.representative : NegatedRef(r.representative);
+int PresolveContext::GetLiteralRepresentative(int ref) const {
+  const AffineRelation::Relation r = GetAffineRelation(PositiveRef(ref));
+
+  // We made sure that the affine representative can always be used as a
+  // literal. However, if some variable are fixed, we might not have only
+  // (coeff=1 offset=0) or (coeff=-1 offset=1) and we might have something like
+  // (coeff=8 offset=0) which is only valid for both variable at zero...
+  //
+  // What is sure is that depending on the value, only one mapping can be valid
+  // because r.coeff can never be zero.
+  DCHECK(CanBeUsedAsLiteral(ref));
+  DCHECK(CanBeUsedAsLiteral(r.representative));
+  const bool positive_possible = (r.offset == 0 || r.coeff + r.offset == 1);
+  const bool negative_possible = (r.offset == 1 || r.coeff + r.offset == 0);
+  DCHECK_NE(positive_possible, negative_possible);
+  if (RefIsPositive(ref)) {
+    return positive_possible ? r.representative : NegatedRef(r.representative);
+  } else {
+    return positive_possible ? NegatedRef(r.representative) : r.representative;
+  }
+}
+
+int PresolveContext::GetVariableRepresentative(int ref) const {
+  const AffineRelation::Relation r = var_equiv_relations_.Get(PositiveRef(ref));
+  CHECK_EQ(std::abs(r.coeff), 1);
+  CHECK_EQ(r.offset, 0);
+  return RefIsPositive(ref) == (r.coeff == 1) ? r.representative
+                                              : NegatedRef(r.representative);
 }
 
 // This makes sure that the affine relation only uses one of the
-// representative from the var_equiv_relations.
+// representative from the var_equiv_relations_.
 AffineRelation::Relation PresolveContext::GetAffineRelation(int ref) const {
-  AffineRelation::Relation r = affine_relations.Get(PositiveRef(ref));
-  AffineRelation::Relation o = var_equiv_relations.Get(r.representative);
+  AffineRelation::Relation r = affine_relations_.Get(PositiveRef(ref));
+  AffineRelation::Relation o = var_equiv_relations_.Get(r.representative);
   r.representative = o.representative;
   if (o.coeff == -1) r.coeff = -r.coeff;
   if (!RefIsPositive(ref)) {
@@ -396,17 +454,25 @@ void PresolveContext::InsertVarValueEncoding(int literal, int ref,
       } else {
         encoding[other_key] = NegatedRef(literal);
         // Add affine relation.
-        if (var_min != 0 || var_max != 1) {
-          ConstraintProto* const ct = working_model->add_constraints();
-          LinearConstraintProto* const lin = ct->mutable_linear();
-          lin->add_vars(var);
-          lin->add_coeffs(1);
-          lin->add_vars(literal);
+        ConstraintProto* const ct = working_model->add_constraints();
+        LinearConstraintProto* const lin = ct->mutable_linear();
+        lin->add_vars(var);
+        lin->add_coeffs(1);
+        lin->add_vars(PositiveRef(literal));
+        if (RefIsPositive(literal) == (var_value == var_max)) {
           lin->add_coeffs(var_min - var_max);
           lin->add_domain(var_min);
           lin->add_domain(var_min);
-          StoreAffineRelation(*ct, var, literal, var_max - var_min, var_min);
+          StoreAffineRelation(*ct, var, PositiveRef(literal), var_max - var_min,
+                              var_min);
+        } else {
+          lin->add_coeffs(var_max - var_min);
+          lin->add_domain(var_max);
+          lin->add_domain(var_max);
+          StoreAffineRelation(*ct, var, PositiveRef(literal), var_min - var_max,
+                              var_max);
         }
+        UpdateNewConstraintsVariableUsage();
       }
     } else {
       VLOG(2) << "Insert lit(" << literal << ") <=> var(" << var
@@ -611,6 +677,7 @@ bool PresolveContext::CanonicalizeObjective() {
 
     // If a variable only appear in objective, we can fix it!
     if (!keep_all_feasible_solutions && !objective_domain_is_constraining &&
+        ConstraintVariableGraphIsUpToDate() &&
         VariableIsNotRepresentativeOfEquivalenceClass(var) &&
         var_to_constraints[var].size() == 1 &&
         var_to_constraints[var].contains(-1)) {

@@ -162,7 +162,7 @@ struct IntegerLiteral {
   static IntegerLiteral LowerOrEqual(IntegerVariable i, IntegerValue bound);
 
   // Clients should prefer the static construction methods above.
-  IntegerLiteral() : var(-1), bound(0) {}
+  IntegerLiteral() : var(kNoIntegerVariable), bound(0) {}
   IntegerLiteral(IntegerVariable v, IntegerValue b) : var(v), bound(b) {
     DCHECK_GE(bound, kMinIntegerValue);
     DCHECK_LE(bound, kMaxIntegerValue + 1);
@@ -185,8 +185,8 @@ struct IntegerLiteral {
   }
 
   // Note that bound should be in [kMinIntegerValue, kMaxIntegerValue + 1].
-  IntegerVariable var;
-  IntegerValue bound;
+  IntegerVariable var = kNoIntegerVariable;
+  IntegerValue bound = IntegerValue(0);
 };
 
 inline std::ostream& operator<<(std::ostream& os, IntegerLiteral i_lit) {
@@ -195,6 +195,38 @@ inline std::ostream& operator<<(std::ostream& os, IntegerLiteral i_lit) {
 }
 
 using InlinedIntegerLiteralVector = absl::InlinedVector<IntegerLiteral, 2>;
+
+// Represents [coeff * variable + constant] or just a [constant].
+//
+// In some places it is useful to manipulate such expression instead of having
+// to create an extra integer variable. This is mainly used for scheduling
+// related constraints.
+struct AffineExpression {
+  // Helper to construct an AffineExpression.
+  AffineExpression() {}
+  explicit AffineExpression(IntegerValue cst) : constant(cst) {}
+  explicit AffineExpression(IntegerVariable v) : var(v), coeff(1) {}
+  AffineExpression(IntegerVariable v, IntegerValue c)
+      : var(c > 0 ? v : NegationOf(v)), coeff(IntTypeAbs(c)) {}
+  AffineExpression(IntegerVariable v, IntegerValue c, IntegerValue cst)
+      : var(c > 0 ? v : NegationOf(v)), coeff(IntTypeAbs(c)), constant(cst) {}
+
+  // Returns the integer literal corresponding to expression >= value or
+  // expression <= value.
+  //
+  // These should not be called on constant expression (CHECKED).
+  IntegerLiteral GreaterOrEqual(IntegerValue bound) const;
+  IntegerLiteral LowerOrEqual(IntegerValue bound) const;
+
+  bool operator==(AffineExpression o) const {
+    return var == o.var && coeff == o.coeff && constant == o.constant;
+  }
+
+  // The coefficient MUST be positive. Use NegationOf(var) if needed.
+  IntegerVariable var = kNoIntegerVariable;  // kNoIntegerVariable for constant.
+  IntegerValue coeff = IntegerValue(0);      // Zero for constant.
+  IntegerValue constant = IntegerValue(0);
+};
 
 // A singleton that holds the INITIAL integer variable domains.
 struct IntegerDomains : public gtl::ITIVector<IntegerVariable, Domain> {
@@ -595,6 +627,11 @@ class IntegerTrail : public SatPropagator {
 
   // Checks if the variable is fixed.
   bool IsFixed(IntegerVariable i) const;
+
+  // Same as above for an affine expression.
+  IntegerValue LowerBound(AffineExpression expr) const;
+  IntegerValue UpperBound(AffineExpression expr) const;
+  bool IsFixed(AffineExpression expr) const;
 
   // Returns the integer literal that represent the current lower/upper bound of
   // the given integer variable.
@@ -1178,6 +1215,24 @@ inline bool IntegerTrail::IsFixed(IntegerVariable i) const {
   return vars_[i].current_bound == -vars_[NegationOf(i)].current_bound;
 }
 
+// TODO(user): Use capped arithmetic? It might be slow though and we better just
+// make sure there is no overflow at model creation.
+inline IntegerValue IntegerTrail::LowerBound(AffineExpression expr) const {
+  if (expr.var == kNoIntegerVariable) return expr.constant;
+  return LowerBound(expr.var) * expr.coeff + expr.constant;
+}
+
+// TODO(user): Use capped arithmetic? same remark as for LowerBound().
+inline IntegerValue IntegerTrail::UpperBound(AffineExpression expr) const {
+  if (expr.var == kNoIntegerVariable) return expr.constant;
+  return UpperBound(expr.var) * expr.coeff + expr.constant;
+}
+
+inline bool IntegerTrail::IsFixed(AffineExpression expr) const {
+  if (expr.var == kNoIntegerVariable) return true;
+  return IsFixed(expr.var);
+}
+
 inline IntegerLiteral IntegerTrail::LowerBoundAsLiteral(
     IntegerVariable i) const {
   return IntegerLiteral::GreaterOrEqual(i, LowerBound(i));
@@ -1218,6 +1273,7 @@ inline void GenericLiteralWatcher::WatchLiteral(Literal l, int id,
 
 inline void GenericLiteralWatcher::WatchLowerBound(IntegerVariable var, int id,
                                                    int watch_index) {
+  if (var == kNoIntegerVariable) return;
   if (var.value() >= var_to_watcher_.size()) {
     var_to_watcher_.resize(var.value() + 1);
   }
@@ -1226,6 +1282,7 @@ inline void GenericLiteralWatcher::WatchLowerBound(IntegerVariable var, int id,
 
 inline void GenericLiteralWatcher::WatchUpperBound(IntegerVariable var, int id,
                                                    int watch_index) {
+  if (var == kNoIntegerVariable) return;
   WatchLowerBound(NegationOf(var), id, watch_index);
 }
 

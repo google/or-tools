@@ -805,23 +805,43 @@ bool CpModelPresolver::PresolveIntDiv(ConstraintProto* ct) {
   return false;
 }
 
-bool CpModelPresolver::ExploitEquivalenceRelations(ConstraintProto* ct) {
+bool CpModelPresolver::ExploitEquivalenceRelations(int c, ConstraintProto* ct) {
   if (gtl::ContainsKey(context_->affine_constraints, ct)) return false;
   bool changed = false;
+
+  // Optim: Special case for the linear constraint. We just remap the
+  // enforcement literals, the normal variables will be replaced by their
+  // representative in CanonicalizeLinear().
+  if (ct->constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
+    for (int& ref : *ct->mutable_enforcement_literal()) {
+      const int rep = this->context_->GetLiteralRepresentative(ref);
+      if (rep != ref) {
+        changed = true;
+        ref = rep;
+      }
+    }
+    return changed;
+  }
+
+  // Optim: This extra loop is a lot faster than reparsing the variable from the
+  // proto when there is nothing to do, which is quite often.
+  bool work_to_do = false;
+  for (const int var : context_->constraint_to_vars[c]) {
+    const AffineRelation::Relation r = context_->GetAffineRelation(var);
+    if (r.representative != var) {
+      work_to_do = true;
+      break;
+    }
+  }
+  if (!work_to_do) return false;
 
   // Remap equal and negated variables to their representative.
   ApplyToAllVariableIndices(
       [&changed, this](int* ref) {
-        const int var = PositiveRef(*ref);
-        const AffineRelation::Relation r =
-            this->context_->var_equiv_relations.Get(var);
-        if (r.representative != var) {
-          CHECK_EQ(r.offset, 0);
-          CHECK_EQ(std::abs(r.coeff), 1);
-          *ref = (r.coeff == 1) == RefIsPositive(*ref)
-                     ? r.representative
-                     : NegatedRef(r.representative);
+        const int rep = context_->GetVariableRepresentative(*ref);
+        if (rep != *ref) {
           changed = true;
+          *ref = rep;
         }
       },
       ct);
@@ -829,22 +849,10 @@ bool CpModelPresolver::ExploitEquivalenceRelations(ConstraintProto* ct) {
   // Remap literal and negated literal to their representative.
   ApplyToAllLiteralIndices(
       [&changed, this](int* ref) {
-        const int var = PositiveRef(*ref);
-        const AffineRelation::Relation r =
-            this->context_->GetAffineRelation(var);
-        if (r.representative == var) return;
-
-        // Tricky: We might not have propagated the domain of the variables yet,
-        // so we may have weird offset/coeff pair that will force one variable
-        // to be fixed. This will be dealt with later, so we just handle the
-        // two proper full mapping between [0, 1] variables here.
-        const bool is_positive = (r.offset == 0 && r.coeff == 1);
-        const bool is_negative = (r.offset == 1 && r.coeff == -1);
-        if (is_positive || is_negative) {
-          *ref = (is_positive == RefIsPositive(*ref))
-                     ? r.representative
-                     : NegatedRef(r.representative);
+        const int rep = this->context_->GetLiteralRepresentative(*ref);
+        if (rep != *ref) {
           changed = true;
+          *ref = rep;
         }
       },
       ct);
@@ -3798,7 +3806,7 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
   ConstraintProto* ct = context_->working_model->mutable_constraints(c);
 
   // Generic presolve to exploit variable/literal equivalence.
-  if (ExploitEquivalenceRelations(ct)) {
+  if (ExploitEquivalenceRelations(c, ct)) {
     context_->UpdateConstraintVariableUsage(c);
   }
 
@@ -4086,6 +4094,7 @@ bool CpModelPresolver::ProcessSetPPC() {
 }
 
 void CpModelPresolver::TryToSimplifyDomain(int var) {
+  CHECK(RefIsPositive(var));
   if (context_->ModelIsUnsat()) return;
   if (context_->IsFixed(var)) return;
 
@@ -4095,22 +4104,12 @@ void CpModelPresolver::TryToSimplifyDomain(int var) {
   // Only process discrete domain.
   const Domain& domain = context_->DomainOf(var);
 
-  if (domain.Size() == 2 && domain.NumIntervals() == 1 && domain.Min() != 0) {
+  // Special case for non-Boolean domain of size 2.
+  if (domain.Size() == 2 && (domain.Min() != 0 || domain.Max() != 1)) {
     // Shifted Boolean variable.
     const int new_var_index = context_->NewBoolVar();
-    const int64 offset = domain.Min();
-
-    ConstraintProto* const ct = context_->working_model->add_constraints();
-    LinearConstraintProto* const lin = ct->mutable_linear();
-    lin->add_vars(var);
-    lin->add_coeffs(1);
-    lin->add_vars(new_var_index);
-    lin->add_coeffs(-1);
-    lin->add_domain(offset);
-    lin->add_domain(offset);
-    context_->StoreAffineRelation(*ct, var, new_var_index, 1, offset);
+    context_->InsertVarValueEncoding(new_var_index, var, domain.Max());
     context_->UpdateRuleStats("variables: canonicalize size two domain");
-    context_->UpdateNewConstraintsVariableUsage();
     return;
   }
 
@@ -4176,11 +4175,19 @@ void CpModelPresolver::PresolveToFixPoint() {
   // reason.
   absl::flat_hash_set<std::pair<int, int>> var_constraint_pair_already_called;
 
-  // The queue of "active" constraints, initialized to all of them.
   TimeLimit* time_limit = options_.time_limit;
-  std::vector<bool> in_queue(context_->working_model->constraints_size(), true);
-  std::deque<int> queue(context_->working_model->constraints_size());
-  std::iota(queue.begin(), queue.end(), 0);
+
+  // The queue of "active" constraints, initialized to the non-empty ones.
+  std::vector<bool> in_queue(context_->working_model->constraints_size(),
+                             false);
+  std::deque<int> queue;
+  for (int c = 0; c < in_queue.size(); ++c) {
+    if (context_->working_model->constraints(c).constraint_case() !=
+        ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET) {
+      in_queue[c] = true;
+      queue.push_back(c);
+    }
+  }
 
   // When thinking about how the presolve works, it seems like a good idea to
   // process the "simple" constraints first in order to be more efficient.
@@ -4408,9 +4415,9 @@ void CpModelPresolver::RemoveUnusedEquivalentVariables() {
 }
 
 void LogInfoFromContext(const PresolveContext* context) {
-  LOG(INFO) << "- " << context->affine_relations.NumRelations()
+  LOG(INFO) << "- " << context->NumAffineRelations()
             << " affine relations were detected.";
-  LOG(INFO) << "- " << context->var_equiv_relations.NumRelations()
+  LOG(INFO) << "- " << context->NumEquivRelations()
             << " variable equivalence relations were detected.";
   std::map<std::string, int> sorted_rules(context->stats_by_rule_name.begin(),
                                           context->stats_by_rule_name.end());
@@ -4454,16 +4461,14 @@ CpModelPresolver::CpModelPresolver(const PresolveOptions& options,
   // Initialize the initial context.working_model domains.
   context_->InitializeNewDomains();
 
-  // Initialize the constraint <-> variable graph.
-  context_->var_to_constraints.resize(
-      context_->working_model->variables_size());
-  context_->UpdateNewConstraintsVariableUsage();
-
   // Initialize the objective.
   context_->ReadObjectiveFromProto();
   if (!context_->CanonicalizeObjective()) {
     (void)context_->NotifyThatModelIsUnsat();
   }
+
+  // Note that we delay the call to UpdateNewConstraintsVariableUsage() for
+  // efficiency during LNS presolve.
 }
 
 // The presolve works as follow:
@@ -4482,12 +4487,44 @@ CpModelPresolver::CpModelPresolver(const PresolveOptions& options,
 // - Everything will be remapped so that only the variables appearing in some
 //   constraints will be kept and their index will be in [0, num_new_variables).
 bool CpModelPresolver::Presolve() {
+  context_->enable_stats = options_.log_info;
+
   // If presolve is false, just run expansion.
   if (!options_.parameters.cp_model_presolve()) {
     ExpandCpModel(options_, context_);
     if (options_.log_info) LogInfoFromContext(context_);
     return true;
   }
+
+  // Before initializing the constraint <-> variable graph (which is costly), we
+  // run a bunch of simple presolve rules. Note that these function should NOT
+  // use the graph, or the part that uses it should properly check for
+  // context_->ConstraintVariableGraphIsUpToDate() before doing anything that
+  // depends on the graph.
+  for (int c = 0; c < context_->working_model->constraints_size(); ++c) {
+    ConstraintProto* ct = context_->working_model->mutable_constraints(c);
+    PresolveEnforcementLiteral(ct);
+    switch (ct->constraint_case()) {
+      case ConstraintProto::ConstraintCase::kBoolOr:
+        PresolveBoolOr(ct);
+        break;
+      case ConstraintProto::ConstraintCase::kBoolAnd:
+        PresolveBoolAnd(ct);
+        break;
+      case ConstraintProto::ConstraintCase::kAtMostOne:
+        PresolveAtMostOne(ct);
+        break;
+      case ConstraintProto::ConstraintCase::kLinear:
+        CanonicalizeLinear(ct);
+        break;
+      default:
+        break;
+    }
+    if (context_->ModelIsUnsat()) break;
+  }
+  DCHECK(context_->constraint_to_vars.empty());
+  context_->UpdateNewConstraintsVariableUsage();
+  DCHECK(context_->ConstraintVariableUsageIsConsistent());
 
   // Main propagation loop.
   for (int iter = 0; iter < options_.parameters.max_presolve_iterations();
@@ -4526,12 +4563,11 @@ bool CpModelPresolver::Presolve() {
     // Runs SAT specific presolve on the pure-SAT part of the problem.
     // Note that because this can only remove/fix variable not used in the other
     // part of the problem, there is no need to redo more presolve afterwards.
-    //
-    // TODO(user): expose the parameters here so we can use
-    // cp_model_use_sat_presolve().
-    if (options_.time_limit == nullptr ||
-        !options_.time_limit->LimitReached()) {
-      PresolvePureSatPart();
+    if (options_.parameters.cp_model_use_sat_presolve()) {
+      if (options_.time_limit == nullptr ||
+          !options_.time_limit->LimitReached()) {
+        PresolvePureSatPart();
+      }
     }
 
     // Extract redundant at most one constraint form the linear ones.

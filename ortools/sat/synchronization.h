@@ -48,6 +48,12 @@ class SharedSolutionRepository {
     int64 internal_objective;
     std::vector<int64> variable_values;
 
+    // Number of time this was returned by GetRandomBiasedSolution(). We use
+    // this information during the selection process.
+    //
+    // Should be private: only SharedSolutionRepository should modify this.
+    mutable int num_selected = 0;
+
     bool operator==(const Solution& other) const {
       return internal_objective == other.internal_objective &&
              variable_values == other.variable_values;
@@ -90,7 +96,7 @@ class SharedSolutionRepository {
 
   // Our two solutions pools, the current one and the new one that will be
   // merged into the current one on each Synchronize() calls.
-  mutable std::vector<double> weights_ GUARDED_BY(mutex_);
+  mutable std::vector<int> tmp_indices_ GUARDED_BY(mutex_);
   std::vector<Solution> solutions_ GUARDED_BY(mutex_);
   std::vector<Solution> new_solutions_ GUARDED_BY(mutex_);
 };
@@ -133,7 +139,20 @@ class SharedResponseManager {
   // there is no solution.
   IntegerValue BestSolutionInnerObjectiveValue();
 
+  // Returns the integral of the log of the absolute gap over deterministic
+  // time. This is mainly used to compare how fast the gap closes on a
+  // particular instance. Or to evaluate how efficient our LNS code is improving
+  // solution.
+  //
+  // Important: To report a proper deterministic integral, we only update it
+  // on UpdatePrimalIntegral() which should be called in the main subsolver
+  // synchronization loop.
+  //
+  // Note(user): In the litterature, people use the relative gap to the optimal
+  // solution (or the best known one), but this is ill defined in many case
+  // (like if the optimal cost is zero), so I prefer this version.
   double PrimalIntegral() const;
+  void UpdatePrimalIntegral();
 
   // Updates the inner objective bounds.
   void UpdateInnerObjectiveBounds(const std::string& worker_info,
@@ -187,11 +206,6 @@ class SharedResponseManager {
   void FillObjectiveValuesInBestResponse() EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void SetStatsFromModelInternal(Model* model) EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
-  // Updates the primal integral using the old bounds on the objective. If the
-  // old bounds are not finite, it uses the 'max_integral' value instead of gap.
-  void UpdatePrimalIntegral(int64 max_integral)
-      EXCLUSIVE_LOCKS_REQUIRED(mutex_);
-
   const bool log_updates_;
   const bool enumerate_all_solutions_;
   const CpModelProto& model_proto_;
@@ -207,6 +221,7 @@ class SharedResponseManager {
   int64 inner_objective_lower_bound_ GUARDED_BY(mutex_) = kint64min;
   int64 inner_objective_upper_bound_ GUARDED_BY(mutex_) = kint64max;
   int64 best_solution_objective_value_ GUARDED_BY(mutex_) = kint64max;
+
   double primal_integral_ GUARDED_BY(mutex_) = 0.0;
   double last_primal_integral_time_stamp_ GUARDED_BY(mutex_) = 0.0;
 

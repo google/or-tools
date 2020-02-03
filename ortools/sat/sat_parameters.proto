@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 152
+// NEXT TAG: 153
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -568,6 +568,11 @@ message SatParameters {
   // constraints. This parameter restricts the large all_diff constraints to
   // have a cut generator.
   optional int32 max_all_diff_cut_size = 148 [default = 7];
+
+  // For the lin max constraints, generates the cuts described in "Strong
+  // mixed-integer programming formulations for trained neural networks" by Ross
+  // Anderson et. (https://arxiv.org/pdf/1811.01988.pdf)
+  optional bool add_lin_max_cuts = 152 [default = true];
 
   // In the integer rounding procedure used for MIR and Gomory cut, the maximum
   // "scaling" we use (must be positive). The lower this is, the lower the
