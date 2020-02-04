@@ -666,13 +666,13 @@ namespace operations_research {
 			case SRS_AT_LOWER:
 				return MPSolver::AT_LOWER_BOUND;
 			case SRS_BASIC:
-			case SRS_BASIC_FREE:
 				return MPSolver::BASIC;
 			case SRS_AT_UPPER:
 				return MPSolver::AT_UPPER_BOUND;
 			case SRS_FREE_LOWER:
 			case SRS_FREE_UPPER:
 			case SRS_FREE_ZERO:
+			case SRS_BASIC_FREE:
 				return MPSolver::FREE;
 			default:
 				LOG(DFATAL) << "Unknown XPRESS basis status";
@@ -693,7 +693,7 @@ namespace operations_research {
 				unique_ptr<char[]> data(new char[rows]);
 				mRstat.swap(data);
 				char * ptrToData = data.get();
-				//FIXME CHECK_STATUS(SRSgetrowbasisstatus(mLp, &ptrToData));
+				CHECK_STATUS(SRSgetrowbasisstatus(mLp, &ptrToData));
 			}
 		}
 		else
