@@ -29,9 +29,10 @@
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <!-- Except for net452 TFM see #1862 -->
-    <Content Include="../../../lib/$(AssemblyName).dll">
-      <PackagePath>lib/net452/%(Filename)%(Extension)</PackagePath>
+
+    <!-- For netframework we need to copy the native binary manually during build on Nuget consumer side. That's why we need a separate target file doing this for us. -->
+    <Content Include="$(MSBuildThisFileDirectory)\Google.OrTools.runtime.win-x64.targets">
+      <PackagePath>build/net45/%(Filename)%(Extension)</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
