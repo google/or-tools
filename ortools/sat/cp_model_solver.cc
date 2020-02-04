@@ -1557,6 +1557,12 @@ void PostsolveResponse(const int64 num_variables_in_original_model,
       response->status() != CpSolverStatus::OPTIMAL) {
     return;
   }
+
+  // If presolve was not called, the mapping model is empty.
+  if (mapping_proto.variables_size() == 0) {
+    return;
+  }
+
   // Postsolve.
   for (int i = 0; i < response->solution_size(); ++i) {
     auto* var_proto = mapping_proto.mutable_variables(postsolve_mapping[i]);
