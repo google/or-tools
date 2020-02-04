@@ -249,6 +249,8 @@ namespace operations_research {
 		// Setup the right-hand side of a constraint from its lower and upper bound.
 		static void MakeRhs(double lb, double ub, double &rhs, char &sense,
 			double &range);
+
+		std::map<int, std::vector<std::pair<int, double> > > fixedOrderCoefficientsPerConstraint;
 	};
 
 	/** init XPRESS environment */
@@ -605,6 +607,8 @@ namespace operations_research {
 		MPVariable const *const variable,
 		double new_value, double) {
 		InvalidateSolutionSynchronization();
+
+		fixedOrderCoefficientsPerConstraint[constraint->index()].push_back(std::make_pair(variable->index(), new_value));
 
 		// Changing a single coefficient in the matrix is potentially pretty
 		// slow since that coefficient has to be found in the sparse matrix
@@ -1095,9 +1099,10 @@ namespace operations_research {
 
 						// Setup left-hand side of constraint.
 						rmatbeg[nextRow] = nextNz;
-						const auto& coeffs = ct->coefficients_;
+						//const auto& coeffs = ct->coefficients_;
+						const auto& coeffs = fixedOrderCoefficientsPerConstraint[ct->index()];
 						for (auto it(coeffs.begin()); it != coeffs.end(); ++it) {
-							int const idx = it->first->index();
+							int const idx = it->first;
 							if (variable_is_extracted(idx)) {
 								DCHECK_LT(nextNz, cols);
 								DCHECK_LT(idx, cols);
