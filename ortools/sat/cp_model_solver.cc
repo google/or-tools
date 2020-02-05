@@ -525,8 +525,9 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
 
   if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinMax) {
     if (!m->GetOrCreate<SatParameters>()->add_lin_max_cuts()) return;
-    if (linearization_level < 2) return;
     if (HasEnforcementLiteral(ct)) return;
+
+    // TODO(user): Support linearization of general target expression.
     if (ct.lin_max().target().vars_size() != 1) return;
     if (ct.lin_max().target().coeffs(0) != 1) return;
 
@@ -541,35 +542,15 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
           PositiveVarExpr(GetExprFromProto(ct.lin_max().exprs(i), *mapping)));
     }
 
-    // Create and register binary z vars.
+    // Add initial big-M linear relaxation.
     // z_vars[i] == 1 <=> target = exprs[i].
-    IntegerEncoder* encoder = m->GetOrCreate<IntegerEncoder>();
-    GenericLiteralWatcher* watcher = m->GetOrCreate<GenericLiteralWatcher>();
-    const int num_exprs = exprs.size();
-    std::vector<IntegerVariable> z_vars;
-    std::vector<Literal> z_lits;
-    z_vars.reserve(num_exprs);
-    z_lits.reserve(num_exprs);
-    // TODO(user): For the case where num_exprs = 2, Create only 1 z var.
-    for (int i = 0; i < num_exprs; ++i) {
-      IntegerVariable z = m->Add(NewIntegerVariable(0, 1));
-      z_vars.push_back(z);
-      const Literal z_lit =
-          encoder->GetOrCreateLiteralAssociatedToEquality(z, IntegerValue(1));
-      z_lits.push_back(z_lit);
-      std::vector<IntegerVariable> local_vars = NegationOf(exprs[i].vars);
-      local_vars.push_back(target);
-      std::vector<IntegerValue> local_coeffs = exprs[i].coeffs;
-      local_coeffs.push_back(IntegerValue(1));
-      IntegerSumLE* upper_bound = new IntegerSumLE(
-          {z_lit}, local_vars, local_coeffs, exprs[i].offset, m);
-      upper_bound->RegisterWith(watcher);
-      m->TakeOwnership(upper_bound);
-    }
-    m->Add(ExactlyOneConstraint(z_lits));
+    const std::vector<IntegerVariable> z_vars =
+        AppendLinMaxRelaxation(target, exprs, m, relaxation);
 
-    relaxation->cut_generators.push_back(
-        CreateLinMaxCutGenerator(target, exprs, z_vars, m));
+    if (linearization_level >= 2) {
+      relaxation->cut_generators.push_back(
+          CreateLinMaxCutGenerator(target, exprs, z_vars, m));
+    }
   }
 }
 

@@ -248,6 +248,8 @@ class SchedulingConstraintHelper {
   ABSL_MUST_USE_RESULT bool PushTaskAbsence(int t);
   ABSL_MUST_USE_RESULT bool PushIntegerLiteral(IntegerLiteral bound);
   ABSL_MUST_USE_RESULT bool ReportConflict();
+  ABSL_MUST_USE_RESULT bool PushIntegerLiteralIfTaskPresent(
+      int t, IntegerLiteral bound);
 
   // Returns the underlying integer variables.
   const std::vector<IntegerVariable>& StartVars() const { return start_vars_; }

@@ -18,9 +18,9 @@
 
 #include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
+#include "ortools/sat/cumulative_energy.h"
 #include "ortools/sat/disjunctive.h"
 #include "ortools/sat/linear_constraint.h"
-#include "ortools/sat/overload_checker.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
@@ -136,10 +136,7 @@ std::function<void(Model*)> Cumulative(
     // Propagator responsible for applying the Overload Checking filtering rule.
     // It increases the minimum of the capacity variable.
     if (parameters.use_overload_checker_in_cumulative_constraint()) {
-      OverloadChecker* overload_checker =
-          new OverloadChecker(demands, capacity, helper, integer_trail);
-      overload_checker->RegisterWith(watcher);
-      model->TakeOwnership(overload_checker);
+      AddCumulativeOverloadChecker(demands, capacity, helper, model);
     }
 
     // Propagator responsible for applying the Timetable Edge finding filtering

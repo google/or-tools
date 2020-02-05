@@ -18,6 +18,7 @@
 
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
 
@@ -92,6 +93,13 @@ void AppendMaxRelaxation(IntegerVariable target,
                          const std::vector<IntegerVariable>& vars,
                          int linearization_level, Model* model,
                          LinearRelaxation* relaxation);
+
+// Adds linearization of int max constraints. Returns a vector of z vars such
+// that: z_vars[i] == 1 <=> target = exprs[i].
+// TODO(user): Support linear expression as target.
+std::vector<IntegerVariable> AppendLinMaxRelaxation(
+    IntegerVariable target, const std::vector<LinearExpression>& exprs,
+    Model* model, LinearRelaxation* relaxation);
 
 // Appends linear constraints to the relaxation. This also handles the
 // relaxation of linear constraints with enforcement literals.

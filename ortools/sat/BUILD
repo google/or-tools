@@ -742,11 +742,11 @@ cc_library(
     srcs = ["cumulative.cc"],
     hdrs = ["cumulative.h"],
     deps = [
+        ":cumulative_energy",
         ":disjunctive",
         ":integer",
         ":intervals",
         ":model",
-        ":overload_checker",
         ":pb_constraint",
         ":precedences",
         ":sat_base",
@@ -760,14 +760,15 @@ cc_library(
 )
 
 cc_library(
-    name = "overload_checker",
-    srcs = ["overload_checker.cc"],
-    hdrs = ["overload_checker.h"],
+    name = "cumulative_energy",
+    srcs = ["cumulative_energy.cc"],
+    hdrs = ["cumulative_energy.h"],
     deps = [
         ":integer",
         ":intervals",
         ":sat_base",
         ":sat_solver",
+        ":theta_tree",
         "//ortools/base",
         "//ortools/base:int_type",
         "//ortools/util:sort",

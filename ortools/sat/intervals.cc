@@ -246,7 +246,8 @@ bool SchedulingConstraintHelper::PushIntegerLiteral(IntegerLiteral bound) {
   return integer_trail_->Enqueue(bound, literal_reason_, integer_reason_);
 }
 
-bool SchedulingConstraintHelper::PushIntervalBound(int t, IntegerLiteral lit) {
+bool SchedulingConstraintHelper::PushIntegerLiteralIfTaskPresent(
+    int t, IntegerLiteral lit) {
   if (IsAbsent(t)) return true;
   AddOtherReason(t);
 
@@ -273,7 +274,13 @@ bool SchedulingConstraintHelper::PushIntervalBound(int t, IntegerLiteral lit) {
   if (!integer_trail_->Enqueue(lit, literal_reason_, integer_reason_)) {
     return false;
   }
+  return true;
+}
 
+// We also run directly the precedence propagator for this variable so that when
+// we push an interval start for example, we have a chance to push its end.
+bool SchedulingConstraintHelper::PushIntervalBound(int t, IntegerLiteral lit) {
+  if (!PushIntegerLiteralIfTaskPresent(t, lit)) return false;
   if (IsAbsent(t)) return true;
   return precedences_->PropagateOutgoingArcs(lit.var);
 }
