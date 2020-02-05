@@ -2610,8 +2610,9 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
       [this, time_limit]() { AdvanceDeterministicTime(time_limit); });
   num_consecutive_degenerate_iterations_ = 0;
   bool refactorize = false;
-  std::vector<ColIndex> bound_flip_candidates;
-  std::vector<std::pair<RowIndex, ColIndex>> to_ignore;
+
+  bound_flip_candidates_.clear();
+  pair_to_ignore_.clear();
 
   // Leaving variable.
   RowIndex leaving_row;
@@ -2693,9 +2694,9 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
       if (!feasibility_phase_) {
         // Make sure the boxed variables are dual-feasible before choosing the
         // leaving variable row.
-        MakeBoxedVariableDualFeasible(bound_flip_candidates,
+        MakeBoxedVariableDualFeasible(bound_flip_candidates_,
                                       /*update_basic_values=*/true);
-        bound_flip_candidates.clear();
+        bound_flip_candidates_.clear();
 
         // The direction_.non_zeros contains the positions for which the basic
         // variable value was changed during the previous iterations.
@@ -2734,7 +2735,7 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
     }
 
     update_row_.ComputeUpdateRow(leaving_row);
-    for (std::pair<RowIndex, ColIndex> pair : to_ignore) {
+    for (std::pair<RowIndex, ColIndex> pair : pair_to_ignore_) {
       if (pair.first == leaving_row) {
         update_row_.IgnoreUpdatePosition(pair.second);
       }
@@ -2744,7 +2745,7 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
           update_row_, cost_variation, &entering_col, &ratio));
     } else {
       GLOP_RETURN_IF_ERROR(entering_variable_.DualChooseEnteringColumn(
-          update_row_, cost_variation, &bound_flip_candidates, &entering_col,
+          update_row_, cost_variation, &bound_flip_candidates_, &entering_col,
           &ratio));
     }
 
@@ -2797,10 +2798,10 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
       VLOG(1) << "Do not pivot by " << entering_coeff
               << " because the direction is " << direction_[leaving_row];
       refactorize = true;
-      to_ignore.push_back({leaving_row, entering_col});
+      pair_to_ignore_.push_back({leaving_row, entering_col});
       continue;
     }
-    to_ignore.clear();
+    pair_to_ignore_.clear();
 
     // This test takes place after the check for optimality/feasibility because
     // when running with 0 iterations, we still want to report
