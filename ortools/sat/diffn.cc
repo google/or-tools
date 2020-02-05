@@ -33,16 +33,18 @@ namespace sat {
 void AddCumulativeRelaxation(const std::vector<IntervalVariable>& x_intervals,
                              SchedulingConstraintHelper* x,
                              SchedulingConstraintHelper* y, Model* model) {
-  std::vector<IntegerVariable> sizes;
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  std::vector<AffineExpression> sizes;
 
   int64 min_starts = kint64max;
   int64 max_ends = kint64min;
   for (int box = 0; box < y->NumTasks(); ++box) {
     IntegerVariable s_var = y->DurationVars()[box];
-    if (s_var == kNoIntegerVariable) {
-      s_var = model->Add(ConstantIntegerVariable(y->DurationMin(box).value()));
+    if (s_var == kNoIntegerVariable || integer_trail->IsFixed(s_var)) {
+      sizes.push_back(AffineExpression(y->DurationMin(box)));
+    } else {
+      sizes.push_back(AffineExpression(s_var));
     }
-    sizes.push_back(s_var);
     min_starts = std::min(min_starts, y->StartMin(box).value());
     max_ends = std::max(max_ends, y->EndMax(box).value());
   }
@@ -55,11 +57,13 @@ void AddCumulativeRelaxation(const std::vector<IntervalVariable>& x_intervals,
       model->Add(NewIntegerVariable(min_starts, max_ends));
   model->Add(IsEqualToMaxOf(max_end_var, y->EndVars()));
 
-  const IntegerVariable capacity =
-      model->Add(NewIntegerVariable(0, CapSub(max_ends, min_starts)));
-  const std::vector<int64> coeffs = {-1, -1, 1};
-  model->Add(WeightedSumGreaterOrEqual({capacity, min_start_var, max_end_var},
-                                       coeffs, 0));
+  // (max_end - min_start) >= capacity.
+  const AffineExpression capacity(
+      model->Add(NewIntegerVariable(0, CapSub(max_ends, min_starts))));
+  const std::vector<int64> coeffs = {-capacity.coeff.value(), -1, 1};
+  model->Add(
+      WeightedSumGreaterOrEqual({capacity.var, min_start_var, max_end_var},
+                                coeffs, capacity.constant.value()));
 
   model->Add(Cumulative(x_intervals, sizes, capacity, x));
 }

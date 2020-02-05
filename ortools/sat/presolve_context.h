@@ -62,6 +62,12 @@ class PresolveContext {
   bool DomainContains(int ref, int64 value) const;
   Domain DomainOf(int ref) const;
 
+  // Helpers to query the current domain of a linear expression.
+  // This doesn't check for integer overflow, but our linear expression
+  // should be such that this cannot happen (tested at validation).
+  int64 MinOf(const LinearExpressionProto& expr) const;
+  int64 MaxOf(const LinearExpressionProto& expr) const;
+
   // This function takes a positive variable reference.
   bool DomainOfVarIsIncludedIn(int var, const Domain& domain) {
     return domains[var].IsIncludedIn(domain);

@@ -60,27 +60,22 @@ namespace sat {
 // time if this would cause an overload in one of the task intervals.
 class TimeTableEdgeFinding : public PropagatorInterface {
  public:
-  TimeTableEdgeFinding(const std::vector<IntervalVariable>& interval_vars,
-                       const std::vector<IntegerVariable>& demand_vars,
-                       IntegerVariable capacity, Trail* trail,
-                       IntegerTrail* integer_trail,
-                       IntervalsRepository* intervals_repository);
+  TimeTableEdgeFinding(const std::vector<AffineExpression>& demands,
+                       AffineExpression capacity,
+                       SchedulingConstraintHelper* helper,
+                       IntegerTrail* integer_trail);
 
   bool Propagate() final;
 
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  struct TaskTime {
-    /* const */ int task_id;
-    IntegerValue time;
-    TaskTime(int task_id, IntegerValue time) : task_id(task_id), time(time) {}
-    bool operator<(TaskTime other) const { return time < other.time; }
-  };
-
   // Build the timetable and fills the mandatory_energy_before_start_min_ and
-  // mandatory_energy_before_end_max_. This method assumes that by_start_max_
-  // and by_end_min_ are sorted and up-to-date.
+  // mandatory_energy_before_end_max_.
+  //
+  // TODO(user): Share the profile building code with TimeTablingPerTask ! we do
+  // not really need the mandatory_energy_before_* vectors and can recompute the
+  // profile integral in a window efficiently during TimeTableEdgeFindingPass().
   void BuildTimeTable();
 
   // Performs a single pass of the Timetable Edge Finding filtering rule to
@@ -88,54 +83,16 @@ class TimeTableEdgeFinding : public PropagatorInterface {
   // update the end times by calling the SwitchToMirrorProblem method first.
   bool TimeTableEdgeFindingPass();
 
-  // Increases the start min of task_id with the proper explanation.
-  bool IncreaseStartMin(IntegerValue begin, IntegerValue end, int task_id,
+  // Increases the start min of task_index with the proper explanation.
+  bool IncreaseStartMin(IntegerValue begin, IntegerValue end, int task_index,
                         IntegerValue new_start);
 
-  // Adds the reason that explain the presence of the task to reason_.
-  // This method does not reset the content of reason_.
-  void AddPresenceReasonIfNeeded(int task_id);
-
-  // Configures the propagator to update the start variables of the mirrored
-  // tasks. This is needed to update the start and end times of the tasks.
-  void SwitchToMirrorProblem();
-
-  // Returns true if the task uses the resource.
-  bool IsPresent(int task_id) const;
-
-  // Returns true if the task does not use the resource.
-  bool IsAbsent(int task_id) const;
-
-  IntegerValue StartMin(int task_id) const {
-    return integer_trail_->LowerBound(start_vars_[task_id]);
-  }
-
-  IntegerValue StartMax(int task_id) const {
-    return integer_trail_->UpperBound(start_vars_[task_id]);
-  }
-
-  IntegerValue EndMin(int task_id) const {
-    return integer_trail_->LowerBound(end_vars_[task_id]);
-  }
-
-  IntegerValue EndMax(int task_id) const {
-    return integer_trail_->UpperBound(end_vars_[task_id]);
-  }
-
-  IntegerValue DemandMin(int task_id) const {
-    return integer_trail_->LowerBound(demand_vars_[task_id]);
-  }
-
-  IntegerValue DurationMin(int task_id) const {
-    return intervals_repository_->MinSize(interval_vars_[task_id]);
-  }
-
-  IntegerValue CapacityMin() const {
-    return integer_trail_->LowerBound(capacity_var_);
+  IntegerValue DemandMin(int task_index) const {
+    return integer_trail_->LowerBound(demands_[task_index]);
   }
 
   IntegerValue CapacityMax() const {
-    return integer_trail_->UpperBound(capacity_var_);
+    return integer_trail_->UpperBound(capacity_);
   }
 
   // Number of tasks.
@@ -143,47 +100,19 @@ class TimeTableEdgeFinding : public PropagatorInterface {
 
   // IntervalVariable and IntegerVariable of each tasks that must be considered
   // in this constraint.
-  std::vector<IntervalVariable> interval_vars_;
-  std::vector<IntegerVariable> start_vars_;
-  std::vector<IntegerVariable> end_vars_;
-  std::vector<IntegerVariable> demand_vars_;
-  std::vector<IntegerVariable> duration_vars_;
+  std::vector<AffineExpression> demands_;
+  const AffineExpression capacity_;
 
-  // Mirror variables
-  std::vector<IntegerVariable> mirror_start_vars_;
-  std::vector<IntegerVariable> mirror_end_vars_;
-
-  // Capacity of the resource.
-  const IntegerVariable capacity_var_;
-
-  // Reason vector.
-  std::vector<Literal> literal_reason_;
-  std::vector<IntegerLiteral> reason_;
-
-  Trail* trail_;
+  SchedulingConstraintHelper* helper_;
   IntegerTrail* integer_trail_;
-  IntervalsRepository* intervals_repository_;
-
-  // Used for fast access and to maintain the actual value of end_min since
-  // updating start_vars_[t] does not directly update end_vars_[t].
-  std::vector<IntegerValue> start_min_;
-  std::vector<IntegerValue> start_max_;
-  std::vector<IntegerValue> end_min_;
-  std::vector<IntegerValue> end_max_;
-  std::vector<IntegerValue> duration_min_;
-  std::vector<IntegerValue> demand_min_;
-
-  // Tasks sorted by start (resp. end) min (resp. max).
-  std::vector<TaskTime> by_start_min_;
-  std::vector<TaskTime> by_start_max_;
-  std::vector<TaskTime> by_end_min_;
-  std::vector<TaskTime> by_end_max_;
 
   // Start (resp. end) of the compulsory parts used to build the profile.
   std::vector<TaskTime> scp_;
   std::vector<TaskTime> ecp_;
 
-  // Energy of the free parts.
+  // Sizes and energy of the free parts. One is just the other times the
+  // minimum demand.
+  std::vector<IntegerValue> size_free_;
   std::vector<IntegerValue> energy_free_;
 
   // Energy contained in the time table before the start min (resp. end max)

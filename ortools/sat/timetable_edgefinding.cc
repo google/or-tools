@@ -20,6 +20,7 @@
 
 #include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
+#include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/logging.h"
 #include "ortools/util/sort.h"
 
@@ -27,112 +28,45 @@ namespace operations_research {
 namespace sat {
 
 TimeTableEdgeFinding::TimeTableEdgeFinding(
-    const std::vector<IntervalVariable>& interval_vars,
-    const std::vector<IntegerVariable>& demand_vars, IntegerVariable capacity,
-    Trail* trail, IntegerTrail* integer_trail,
-    IntervalsRepository* intervals_repository)
-    : num_tasks_(interval_vars.size()),
-      interval_vars_(interval_vars),
-      demand_vars_(demand_vars),
-      capacity_var_(capacity),
-      trail_(trail),
-      integer_trail_(integer_trail),
-      intervals_repository_(intervals_repository) {
-  // Cached domains.
-  start_min_.resize(num_tasks_);
-  start_max_.resize(num_tasks_);
-  end_min_.resize(num_tasks_);
-  end_max_.resize(num_tasks_);
-  duration_min_.resize(num_tasks_);
-  demand_min_.resize(num_tasks_);
-
+    const std::vector<AffineExpression>& demands, AffineExpression capacity,
+    SchedulingConstraintHelper* helper, IntegerTrail* integer_trail)
+    : num_tasks_(helper->NumTasks()),
+      demands_(demands),
+      capacity_(capacity),
+      helper_(helper),
+      integer_trail_(integer_trail) {
   // Edge finding structures.
-  by_start_min_.reserve(num_tasks_);
-  by_end_max_.reserve(num_tasks_);
   mandatory_energy_before_end_max_.resize(num_tasks_);
   mandatory_energy_before_start_min_.resize(num_tasks_);
 
   // Energy of free parts.
+  size_free_.resize(num_tasks_);
   energy_free_.resize(num_tasks_);
-
-  // Collect the variables.
-  start_vars_.resize(num_tasks_);
-  end_vars_.resize(num_tasks_);
-  mirror_start_vars_.resize(num_tasks_);
-  mirror_end_vars_.resize(num_tasks_);
-  duration_vars_.resize(num_tasks_);
-  for (int t = 0; t < num_tasks_; ++t) {
-    const IntervalVariable i = interval_vars[t];
-    start_vars_[t] = intervals_repository->StartVar(i);
-    end_vars_[t] = intervals_repository->EndVar(i);
-    mirror_start_vars_[t] = NegationOf(end_vars_[t]);
-    mirror_end_vars_[t] = NegationOf(start_vars_[t]);
-    duration_vars_[t] = intervals_repository->SizeVar(i);
-    by_start_min_.push_back(TaskTime(t, IntegerValue(0)));
-    by_start_max_.push_back(TaskTime(t, IntegerValue(0)));
-    by_end_min_.push_back(TaskTime(t, IntegerValue(0)));
-    by_end_max_.push_back(TaskTime(t, IntegerValue(0)));
-  }
 }
 
 void TimeTableEdgeFinding::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  watcher->WatchUpperBound(capacity_var_, id);
+  watcher->WatchUpperBound(capacity_.var, id);
+  helper_->WatchAllTasks(id, watcher);
   for (int t = 0; t < num_tasks_; t++) {
-    watcher->WatchIntegerVariable(start_vars_[t], id);
-    watcher->WatchIntegerVariable(end_vars_[t], id);
-    watcher->WatchLowerBound(demand_vars_[t], id);
-    if (duration_vars_[t] != kNoIntegerVariable) {
-      watcher->WatchLowerBound(duration_vars_[t], id);
-    }
-    if (!IsPresent(t) && !IsAbsent(t)) {
-      const Literal is_present =
-          intervals_repository_->IsPresentLiteral(interval_vars_[t]);
-      watcher->WatchLiteral(is_present, id);
-    }
+    watcher->WatchLowerBound(demands_[t].var, id);
   }
-}
-
-bool TimeTableEdgeFinding::IsPresent(int task_id) const {
-  if (intervals_repository_->IsOptional(interval_vars_[task_id])) {
-    const Literal is_present =
-        intervals_repository_->IsPresentLiteral(interval_vars_[task_id]);
-    return trail_->Assignment().LiteralIsTrue(is_present);
-  }
-  return true;
-}
-
-bool TimeTableEdgeFinding::IsAbsent(int task_id) const {
-  if (intervals_repository_->IsOptional(interval_vars_[task_id])) {
-    const Literal is_present =
-        intervals_repository_->IsPresentLiteral(interval_vars_[task_id]);
-    return trail_->Assignment().LiteralIsFalse(is_present);
-  }
-  return false;
 }
 
 bool TimeTableEdgeFinding::Propagate() {
   while (true) {
     const int64 old_timestamp = integer_trail_->num_enqueues();
-    // Update the start variables.
+
+    helper_->SetTimeDirection(true);
     if (!TimeTableEdgeFindingPass()) return false;
-    SwitchToMirrorProblem();
-    // Update the end variables.
+
+    helper_->SetTimeDirection(false);
     if (!TimeTableEdgeFindingPass()) return false;
-    SwitchToMirrorProblem();
+
     // Stop if no propagation.
     if (old_timestamp == integer_trail_->num_enqueues()) break;
   }
   return true;
-}
-
-void TimeTableEdgeFinding::SwitchToMirrorProblem() {
-  // Swap variables.
-  std::swap(start_vars_, mirror_start_vars_);
-  std::swap(end_vars_, mirror_end_vars_);
-  // Swap sorted vectors for incrementality.
-  std::swap(by_start_min_, by_end_max_);
-  std::swap(by_end_min_, by_start_max_);
 }
 
 void TimeTableEdgeFinding::BuildTimeTable() {
@@ -140,40 +74,49 @@ void TimeTableEdgeFinding::BuildTimeTable() {
   ecp_.clear();
 
   // Build start of compulsory part events.
-  for (int i = 0; i < num_tasks_; ++i) {
-    const int t = by_start_max_[i].task_id;
-    if (!IsPresent(t)) continue;
-    if (start_max_[t] < end_min_[t]) {
-      scp_.push_back(by_start_max_[i]);
+  for (const auto task_time :
+       ::gtl::reversed_view(helper_->TaskByDecreasingStartMax())) {
+    const int t = task_time.task_index;
+    if (!helper_->IsPresent(t)) continue;
+    if (task_time.time < helper_->EndMin(t)) {
+      scp_.push_back(task_time);
     }
   }
 
   // Build end of compulsory part events.
-  for (int i = 0; i < num_tasks_; ++i) {
-    const int t = by_end_min_[i].task_id;
-    if (!IsPresent(t)) continue;
-    if (start_max_[t] < end_min_[t]) {
-      ecp_.push_back(by_end_min_[i]);
+  for (const auto task_time : helper_->TaskByIncreasingEndMin()) {
+    const int t = task_time.task_index;
+    if (!helper_->IsPresent(t)) continue;
+    if (helper_->StartMax(t) < task_time.time) {
+      ecp_.push_back(task_time);
     }
   }
 
   DCHECK_EQ(scp_.size(), ecp_.size());
 
+  const std::vector<TaskTime>& by_decreasing_end_max =
+      helper_->TaskByDecreasingEndMax();
+  const std::vector<TaskTime>& by_start_min =
+      helper_->TaskByIncreasingStartMin();
+
   IntegerValue height = IntegerValue(0);
   IntegerValue energy = IntegerValue(0);
-  IntegerValue previous_time = by_start_min_[0].time;
 
-  int index_scp = 0;   // index of the next value in scp
-  int index_ecp = 0;   // index of the next value in ecp
-  int index_smin = 0;  // index of the next value in by_start_min_
-  int index_emax = 0;  // index of the next value in by_end_max_
+  // We don't care since at the beginning heigh is zero, and previous_time will
+  // be correct after the first iteration.
+  IntegerValue previous_time = IntegerValue(0);
 
-  while (index_emax < num_tasks_) {
+  int index_scp = 0;                // index of the next value in scp
+  int index_ecp = 0;                // index of the next value in ecp
+  int index_smin = 0;               // index of the next value in by_start_min_
+  int index_emax = num_tasks_ - 1;  // index of the next value in by_end_max_
+
+  while (index_emax >= 0) {
     // Next time point.
     // TODO(user): could be simplified with a sentinel.
-    IntegerValue time = by_end_max_[index_emax].time;
+    IntegerValue time = by_decreasing_end_max[index_emax].time;
     if (index_smin < num_tasks_) {
-      time = std::min(time, by_start_min_[index_smin].time);
+      time = std::min(time, by_start_min[index_smin].time);
     }
     if (index_scp < scp_.size()) {
       time = std::min(time, scp_[index_scp].time);
@@ -184,34 +127,33 @@ void TimeTableEdgeFinding::BuildTimeTable() {
 
     // Total amount of energy contained in the timetable until time.
     energy += (time - previous_time) * height;
+    previous_time = time;
 
     // Store the energy contained in the timetable just before those events.
-    while (index_smin < num_tasks_ && by_start_min_[index_smin].time == time) {
-      mandatory_energy_before_start_min_[by_start_min_[index_smin].task_id] =
+    while (index_smin < num_tasks_ && by_start_min[index_smin].time == time) {
+      mandatory_energy_before_start_min_[by_start_min[index_smin].task_index] =
           energy;
       index_smin++;
     }
 
     // Store the energy contained in the timetable just before those events.
-    while (index_emax < num_tasks_ && by_end_max_[index_emax].time == time) {
-      mandatory_energy_before_end_max_[by_end_max_[index_emax].task_id] =
-          energy;
-      index_emax++;
+    while (index_emax >= 0 && by_decreasing_end_max[index_emax].time == time) {
+      mandatory_energy_before_end_max_[by_decreasing_end_max[index_emax]
+                                           .task_index] = energy;
+      index_emax--;
     }
 
     // Process the starting compulsory parts.
     while (index_scp < scp_.size() && scp_[index_scp].time == time) {
-      height += demand_min_[scp_[index_scp].task_id];
+      height += DemandMin(scp_[index_scp].task_index);
       index_scp++;
     }
 
     // Process the ending compulsory parts.
     while (index_ecp < ecp_.size() && ecp_[index_ecp].time == time) {
-      height -= demand_min_[ecp_[index_ecp].task_id];
+      height -= DemandMin(ecp_[index_ecp].task_index);
       index_ecp++;
     }
-
-    previous_time = time;
   }
 }
 
@@ -219,46 +161,35 @@ bool TimeTableEdgeFinding::TimeTableEdgeFindingPass() {
   // Initialize the data structures and build the free parts.
   // --------------------------------------------------------
   for (int t = 0; t < num_tasks_; ++t) {
-    // Cache the variable bounds. Note that those values are not updated by the
-    // propagation loop.
-    start_min_[t] = StartMin(t);
-    start_max_[t] = StartMax(t);
-    end_min_[t] = EndMin(t);
-    end_max_[t] = EndMax(t);
-    demand_min_[t] = DemandMin(t);
-    // TODO(user): improve filtering for variable durations.
-    duration_min_[t] = DurationMin(t);
-
     // If the task has no mandatory part, then its free part is the task itself.
-    if (start_max_[t] >= end_min_[t]) {
-      energy_free_[t] = demand_min_[t] * duration_min_[t];
+    const IntegerValue start_max = helper_->StartMax(t);
+    const IntegerValue end_min = helper_->EndMin(t);
+    if (start_max >= end_min) {
+      size_free_[t] = helper_->DurationMin(t);
     } else {
-      energy_free_[t] =
-          demand_min_[t] * (duration_min_[t] - end_min_[t] + start_max_[t]);
+      size_free_[t] = helper_->DurationMin(t) + start_max - end_min;
     }
+    energy_free_[t] = size_free_[t] * DemandMin(t);
   }
-
-  // Update the sorted vectors.
-  // --------------------------
-  for (int i = 0; i < num_tasks_; ++i) {
-    by_start_min_[i].time = start_min_[by_start_min_[i].task_id];
-    by_start_max_[i].time = start_max_[by_start_max_[i].task_id];
-    by_end_min_[i].time = end_min_[by_end_min_[i].task_id];
-    by_end_max_[i].time = end_max_[by_end_max_[i].task_id];
-  }
-  // Likely to be already or almost sorted.
-  IncrementalSort(by_start_min_.begin(), by_start_min_.end());
-  IncrementalSort(by_start_max_.begin(), by_start_max_.end());
-  IncrementalSort(by_end_min_.begin(), by_end_min_.end());
-  IncrementalSort(by_end_max_.begin(), by_end_max_.end());
 
   BuildTimeTable();
+  const auto& by_start_min = helper_->TaskByIncreasingStartMin();
+
+  IntegerValue previous_end = kMaxIntegerValue;
 
   // Apply the Timetabling Edge Finding filtering rule.
   // --------------------------------------------------
-  for (int end_task = 0; end_task < num_tasks_; ++end_task) {
+  // The loop order is not important for correctness.
+  for (const TaskTime end_task_time : helper_->TaskByDecreasingEndMax()) {
+    const int end_task = end_task_time.task_index;
+
     // TODO(user): consider optional tasks for additional propagation.
-    if (!IsPresent(end_task) || energy_free_[end_task] == 0) continue;
+    if (!helper_->IsPresent(end_task)) continue;
+    if (energy_free_[end_task] == 0) continue;
+
+    // We only need to consider each time point once.
+    if (end_task_time.time == previous_end) continue;
+    previous_end = end_task_time.time;
 
     // Energy of the free parts contained in the interval [begin, end).
     IntegerValue energy_free_parts = IntegerValue(0);
@@ -266,46 +197,67 @@ bool TimeTableEdgeFinding::TimeTableEdgeFindingPass() {
     // Task that requires the biggest additional amount of energy to be
     // scheduled at its minimum start time in the task interval [begin, end).
     int max_task = -1;
+    IntegerValue free_energy_of_max_task_in_window(0);
     IntegerValue extra_energy_required_by_max_task = kMinIntegerValue;
 
-    for (int j = num_tasks_ - 1; j >= 0; --j) {
-      const int begin_task = by_start_min_[j].task_id;
+    // Process task by decreasing start min.
+    for (const TaskTime begin_task_time : gtl::reversed_view(by_start_min)) {
+      const int begin_task = begin_task_time.task_index;
+
       // TODO(user): consider optional tasks for additional propagation.
-      if (!IsPresent(begin_task) || energy_free_[begin_task] == 0) continue;
+      if (!helper_->IsPresent(begin_task)) continue;
+      if (energy_free_[begin_task] == 0) continue;
 
-      // The considered task interval.
-      const IntegerValue end = end_max_[end_task];
-      const IntegerValue begin = start_min_[begin_task];
+      // The considered time window. Note that we use the "cached" values so
+      // that our mandatory energy before computation is correct.
+      const IntegerValue begin = begin_task_time.time;  // Start min.
+      const IntegerValue end = end_task_time.time;      // End max.
 
-      // Not a valid task interval.
+      // Not a valid time window.
       if (end <= begin) continue;
 
-      if (end_max_[begin_task] <= end) {
+      // We consider two different cases: either the free part overlaps the
+      // end of the interval (right) or it does not (inside).
+      //
+      //                 begin  end
+      //                   v     v
+      // right:            ======|===
+      //
+      //          begin         end
+      //            v            v
+      // inside:    ==========   |
+      //
+      // In the inside case, the additional amount of energy required to
+      // schedule the task at its minimum start time is equal to the whole
+      // energy of the free part. In the right case, the additional energy is
+      // equal to the largest part of the free part that can fit in the task
+      // interval.
+      const IntegerValue end_max = helper_->EndMax(begin_task);
+      if (end_max <= end) {
         // The whole task energy is contained in the task interval.
         energy_free_parts += energy_free_[begin_task];
       } else {
-        // We consider two different cases: either the free part overlaps the
-        // end of the interval (right) or it does not (inside).
-        //
-        //                 begin  end
-        //                   v     v
-        // right:            ======|===
-        //
-        //          begin         end
-        //            v            v
-        // inside:    ==========   |
-        //
-        // In the inside case, the additional amount of energy required to
-        // schedule the task at its minimum start time is equal to the whole
-        // energy of the free part. In the right case, the additional energy is
-        // equal to the largest part of the free part that can fit in the task
-        // interval.
-        const IntegerValue extra_energy = std::min(
-            energy_free_[begin_task], demand_min_[begin_task] * (end - begin));
+        const IntegerValue demand_min = DemandMin(begin_task);
+        const IntegerValue extra_energy =
+            std::min(size_free_[begin_task], (end - begin)) * demand_min;
+
+        // This is not in the paper, but it is almost free for us to account for
+        // the free energy of this task that must be present in the window.
+        const IntegerValue free_energy_in_window =
+            std::max(IntegerValue(0),
+                     size_free_[begin_task] - (end_max - end)) *
+            demand_min;
 
         if (extra_energy > extra_energy_required_by_max_task) {
           max_task = begin_task;
           extra_energy_required_by_max_task = extra_energy;
+
+          // Account for the free energy of the old max task, and cache the
+          // new one for later.
+          energy_free_parts += free_energy_of_max_task_in_window;
+          free_energy_of_max_task_in_window = free_energy_in_window;
+        } else {
+          energy_free_parts += free_energy_in_window;
         }
       }
 
@@ -328,16 +280,20 @@ bool TimeTableEdgeFinding::TimeTableEdgeFindingPass() {
 
       // Compute the length of the mandatory subpart of max_task that should be
       // considered as available.
-      const IntegerValue mandatory_in =
-          std::max(IntegerValue(0), std::min(end, end_min_[max_task]) -
-                                        std::max(begin, start_max_[max_task]));
+      //
+      // TODO(user): Because this use updated bounds, it might be more than what
+      // we accounted for in the precomputation. This is correct but could be
+      // improved uppon.
+      const IntegerValue mandatory_in = std::max(
+          IntegerValue(0), std::min(end, helper_->EndMin(max_task)) -
+                               std::max(begin, helper_->StartMax(max_task)));
 
       // Compute the new minimum start time of max_task.
       const IntegerValue new_start =
-          end - mandatory_in - (available_energy / demand_min_[max_task]);
+          end - mandatory_in - (available_energy / DemandMin(max_task));
 
       // Push and explain only if the new start is bigger than the current one.
-      if (StartMin(max_task) < new_start) {
+      if (helper_->StartMin(max_task) < new_start) {
         if (!IncreaseStartMin(begin, end, max_task, new_start)) return false;
       }
     }
@@ -346,75 +302,55 @@ bool TimeTableEdgeFinding::TimeTableEdgeFindingPass() {
   return true;
 }
 
-void TimeTableEdgeFinding::AddPresenceReasonIfNeeded(int task_id) {
-  if (intervals_repository_->IsOptional(interval_vars_[task_id])) {
-    literal_reason_.push_back(
-        intervals_repository_->IsPresentLiteral(interval_vars_[task_id])
-            .Negated());
-  }
-}
-
-// TODO(user): generalize the explanation.
 bool TimeTableEdgeFinding::IncreaseStartMin(IntegerValue begin,
-                                            IntegerValue end, int task_id,
+                                            IntegerValue end, int task_index,
                                             IntegerValue new_start) {
-  reason_.clear();
-  literal_reason_.clear();
+  helper_->ClearReason();
+  std::vector<IntegerLiteral>* mutable_reason = helper_->MutableIntegerReason();
 
   // Capacity of the resource.
-  reason_.push_back(integer_trail_->UpperBoundAsLiteral(capacity_var_));
-
-  // Variables of the task to be pushed.
-  reason_.push_back(integer_trail_->LowerBoundAsLiteral(demand_vars_[task_id]));
-  reason_.push_back(integer_trail_->LowerBoundAsLiteral(start_vars_[task_id]));
-  reason_.push_back(integer_trail_->UpperBoundAsLiteral(end_vars_[task_id]));
-  if (duration_vars_[task_id] != kNoIntegerVariable) {
-    reason_.push_back(
-        integer_trail_->LowerBoundAsLiteral(duration_vars_[task_id]));
+  if (capacity_.var != kNoIntegerVariable) {
+    mutable_reason->push_back(
+        integer_trail_->UpperBoundAsLiteral(capacity_.var));
   }
+
+  // Variables of the task to be pushed. We do not need the end max for this
+  // task and we only need for it to begin in the time window.
+  if (demands_[task_index].var != kNoIntegerVariable) {
+    mutable_reason->push_back(
+        integer_trail_->LowerBoundAsLiteral(demands_[task_index].var));
+  }
+  helper_->AddStartMinReason(task_index, begin);
+  helper_->AddDurationMinReason(task_index);
 
   // Task contributing to the energy in the interval.
   for (int t = 0; t < num_tasks_; ++t) {
-    if (begin < end_max_[t] && start_min_[t] < end && IsPresent(t)) {
-      reason_.push_back(integer_trail_->LowerBoundAsLiteral(demand_vars_[t]));
-      reason_.push_back(integer_trail_->LowerBoundAsLiteral(start_vars_[t]));
-      reason_.push_back(integer_trail_->UpperBoundAsLiteral(end_vars_[t]));
-      if (duration_vars_[t] != kNoIntegerVariable) {
-        reason_.push_back(
-            integer_trail_->LowerBoundAsLiteral(duration_vars_[t]));
-      }
-      AddPresenceReasonIfNeeded(t);
+    if (t == task_index) continue;
+    if (!helper_->IsPresent(t)) continue;
+    if (helper_->EndMax(t) <= begin) continue;
+    if (helper_->StartMin(t) >= end) continue;
+
+    if (demands_[t].var != kNoIntegerVariable) {
+      mutable_reason->push_back(
+          integer_trail_->LowerBoundAsLiteral(demands_[t].var));
     }
+
+    // We need the reason for the energy contribution of this interval into
+    // [begin, end].
+    //
+    // TODO(user): Since we actually do not account fully for this energy, we
+    // could relax the reason more.
+    //
+    // TODO(user): This reason might not be enough in the presence of variable
+    // duration intervals where StartMax and EndMin give rise to more energy
+    // that just using duration min and these bounds. Fix.
+    helper_->AddStartMinReason(t, std::min(begin, helper_->StartMin(t)));
+    helper_->AddEndMaxReason(t, std::max(end, helper_->EndMax(t)));
+    helper_->AddDurationMinReason(t);
+    helper_->AddPresenceReason(t);
   }
 
-  // Explain the increase of the start min.
-  if (!integer_trail_->Enqueue(
-          IntegerLiteral::GreaterOrEqual(start_vars_[task_id], new_start),
-          literal_reason_, reason_)) {
-    return false;
-  }
-
-  // Check that we need to push the end min.
-  const IntegerValue new_end = new_start + duration_min_[task_id];
-  if (new_end <= end_min_[task_id]) return true;
-
-  // Build the reason to increase the end min.
-  reason_.clear();
-  reason_.push_back(integer_trail_->LowerBoundAsLiteral(start_vars_[task_id]));
-  // Only use the duration variable if it is defined.
-  if (duration_vars_[task_id] != kNoIntegerVariable) {
-    reason_.push_back(
-        integer_trail_->LowerBoundAsLiteral(duration_vars_[task_id]));
-  }
-
-  // Explain the increase of the end min.
-  if (!integer_trail_->Enqueue(
-          IntegerLiteral::GreaterOrEqual(end_vars_[task_id], new_end), {},
-          reason_)) {
-    return false;
-  }
-
-  return true;
+  return helper_->IncreaseStartMin(task_index, new_start);
 }
 
 }  // namespace sat

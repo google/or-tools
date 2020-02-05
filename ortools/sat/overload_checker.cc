@@ -23,36 +23,16 @@
 namespace operations_research {
 namespace sat {
 
-OverloadChecker::OverloadChecker(
-    const std::vector<IntervalVariable>& interval_vars,
-    const std::vector<IntegerVariable>& demand_vars, IntegerVariable capacity,
-    Trail* trail, IntegerTrail* integer_trail,
-    IntervalsRepository* intervals_repository)
-    : num_tasks_(interval_vars.size()),
-      interval_vars_(interval_vars),
-      demand_vars_(demand_vars),
-      capacity_var_(capacity),
-      trail_(trail),
-      integer_trail_(integer_trail),
-      intervals_repository_(intervals_repository) {
+OverloadChecker::OverloadChecker(const std::vector<AffineExpression>& demands,
+                                 AffineExpression capacity,
+                                 SchedulingConstraintHelper* helper,
+                                 IntegerTrail* integer_trail)
+    : num_tasks_(helper->NumTasks()),
+      demands_(demands),
+      capacity_(capacity),
+      helper_(helper),
+      integer_trail_(integer_trail) {
   CHECK_GT(num_tasks_, 1);
-  // Collect the variables.
-  start_vars_.resize(num_tasks_);
-  end_vars_.resize(num_tasks_);
-  duration_vars_.resize(num_tasks_);
-  for (int t = 0; t < num_tasks_; ++t) {
-    const IntervalVariable i = interval_vars[t];
-    start_vars_[t] = intervals_repository->StartVar(i);
-    end_vars_[t] = intervals_repository->EndVar(i);
-    duration_vars_[t] = intervals_repository->SizeVar(i);
-  }
-  // Initialize the data for the sorted tasks.
-  by_start_min_.reserve(num_tasks_);
-  by_end_max_.reserve(num_tasks_);
-  for (int t = 0; t < num_tasks_; ++t) {
-    by_start_min_.push_back(TaskTime(t, IntegerValue(0)));
-    by_end_max_.push_back(TaskTime(t, IntegerValue(0)));
-  }
   task_to_index_in_start_min_.resize(num_tasks_);
 }
 
@@ -79,169 +59,131 @@ void OverloadChecker::ResetThetaTree(int num_tasks) {
 
 void OverloadChecker::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  watcher->WatchUpperBound(capacity_var_, id);
+  helper_->WatchAllTasks(id, watcher);
+  watcher->WatchUpperBound(capacity_.var, id);
   for (int t = 0; t < num_tasks_; ++t) {
-    watcher->WatchIntegerVariable(start_vars_[t], id);
-    watcher->WatchIntegerVariable(end_vars_[t], id);
-    watcher->WatchLowerBound(demand_vars_[t], id);
-    if (duration_vars_[t] != kNoIntegerVariable) {
-      watcher->WatchLowerBound(duration_vars_[t], id);
-    }
-    if (!IsPresent(t) && !IsAbsent(t)) {
-      const Literal is_present =
-          intervals_repository_->IsPresentLiteral(interval_vars_[t]);
-      watcher->WatchLiteral(is_present, id);
-    }
+    watcher->WatchLowerBound(demands_[t].var, id);
   }
-}
-
-namespace {
-IntegerValue CeilOfDivision(IntegerValue a, IntegerValue b) {
-  return (a + b - 1) / b;
-}
-}  // namespace
-
-void OverloadChecker::AddPresenceReasonIfNeeded(int task_id) {
-  if (intervals_repository_->IsOptional(interval_vars_[task_id])) {
-    literal_reason_.push_back(
-        intervals_repository_->IsPresentLiteral(interval_vars_[task_id])
-            .Negated());
-  }
-}
-
-bool OverloadChecker::IsPresent(int task_id) const {
-  if (intervals_repository_->IsOptional(interval_vars_[task_id])) {
-    const Literal is_present =
-        intervals_repository_->IsPresentLiteral(interval_vars_[task_id]);
-    return trail_->Assignment().LiteralIsTrue(is_present);
-  }
-  return true;
-}
-
-bool OverloadChecker::IsAbsent(int task_id) const {
-  if (intervals_repository_->IsOptional(interval_vars_[task_id])) {
-    const Literal is_present =
-        intervals_repository_->IsPresentLiteral(interval_vars_[task_id]);
-    return trail_->Assignment().LiteralIsFalse(is_present);
-  }
-  return false;
 }
 
 bool OverloadChecker::Propagate() {
   // Sort the tasks by start-min and end-max. Note that we reuse the current
   // order because it is often already sorted.
-  for (int t = 0; t < num_tasks_; ++t) {
-    by_start_min_[t].time = StartMin(by_start_min_[t].task_id);
-    by_end_max_[t].time = EndMax(by_end_max_[t].task_id);
-  }
-  IncrementalSort(by_start_min_.begin(), by_start_min_.end());
-  IncrementalSort(by_end_max_.begin(), by_end_max_.end());
+  helper_->SetTimeDirection(true);
+  const std::vector<TaskTime>& by_increasing_smin =
+      helper_->TaskByIncreasingStartMin();
+  const std::vector<TaskTime>& by_decreasing_emax =
+      helper_->TaskByDecreasingEndMax();
+  CHECK_EQ(by_increasing_smin.size(), num_tasks_);
+  CHECK_EQ(by_decreasing_emax.size(), num_tasks_);
 
   // Link each task to its position in by_start_min_.
-  for (int i = 0; i < by_start_min_.size(); ++i) {
-    task_to_index_in_start_min_[by_start_min_[i].task_id] = i;
+  for (int i = 0; i < by_increasing_smin.size(); ++i) {
+    task_to_index_in_start_min_[by_increasing_smin[i].task_index] = i;
   }
 
   // Resize the theta-tree and reset all its nodes.
-  ResetThetaTree(by_start_min_.size());
+  ResetThetaTree(num_tasks_);
 
   // Maximum capacity to not exceed.
-  const IntegerValue capacity_max = integer_trail_->UpperBound(capacity_var_);
+  const IntegerValue capacity_max = integer_trail_->UpperBound(capacity_);
 
   // Build the left cuts and check for a possible overload.
-  for (int i = 0; i < by_end_max_.size(); ++i) {
-    const int task_id = by_end_max_[i].task_id;
-    const bool is_present = IsPresent(task_id);
+  for (int i = num_tasks_ - 1; i >= 0; --i) {
+    const int task_index = by_decreasing_emax[i].task_index;
+    const bool is_present = helper_->IsPresent(task_index);
 
     // Tasks with no energy have no impact in the algorithm, we skip them. Note
     // that we will temporarily add an optional task whose presence is not yet
     // decided to the Theta-tree to try to prove that it cannot be present.
-    if (DurationMin(task_id) == 0 || DemandMin(task_id) == 0 ||
-        IsAbsent(task_id)) {
+    if (helper_->DurationMin(task_index) == 0 || DemandMin(task_index) == 0 ||
+        helper_->IsAbsent(task_index)) {
       continue;
     }
 
     // Insert the task in the Theta-tree. This will compute the envelope of the
-    // left-cut ending with task task_id where the left-cut of task_id is the
-    // set of all tasks having a maximum ending time that is lower or equal than
-    // the maximum ending time of task_id.
-    const int leaf_id = task_to_index_in_start_min_[task_id];
+    // left-cut ending with task task_index where the left-cut of task_index is
+    // the set of all tasks having a maximum ending time that is lower or equal
+    // than the maximum ending time of task_index.
+    const int leaf_id = task_to_index_in_start_min_[task_index];
     {
       // Compute the energy and envelope of the task.
       // TODO(user): Deal with integer overflow.
-      const IntegerValue energy = DurationMin(task_id) * DemandMin(task_id);
-      const IntegerValue envelope = StartMin(task_id) * capacity_max + energy;
+      const IntegerValue energy =
+          helper_->DurationMin(task_index) * DemandMin(task_index);
+      const IntegerValue envelope =
+          helper_->StartMin(task_index) * capacity_max + energy;
       InsertTaskInThetaTree(leaf_id, energy, envelope);
     }
 
     // The interval with the maximum energy per unit of time.
     const int interval_start_leaf = LeftMostInvolvedLeaf();
-    const IntegerValue interval_start = by_start_min_[interval_start_leaf].time;
-    const IntegerValue interval_end = by_end_max_[i].time;
+    const IntegerValue interval_start =
+        by_increasing_smin[interval_start_leaf].time;
+    const IntegerValue interval_end = by_decreasing_emax[i].time;
     const IntegerValue interval_size = interval_end - interval_start;
 
     // Compute the minimum capacity required to provide the interval above with
     // enough energy.
     CHECK_LE(interval_start * capacity_max, node_envelopes_[1]);
-    const IntegerValue new_capacity_min = CeilOfDivision(
+    const IntegerValue new_capacity_min = CeilRatio(
         node_envelopes_[1] - interval_start * capacity_max, interval_size);
 
     // Continue if we can't propagate anything, there is two cases.
     if (is_present) {
-      if (new_capacity_min <= integer_trail_->LowerBound(capacity_var_)) {
+      if (new_capacity_min <= integer_trail_->LowerBound(capacity_)) {
         continue;
       }
     } else {
-      if (new_capacity_min <= integer_trail_->UpperBound(capacity_var_)) {
+      if (new_capacity_min <= integer_trail_->UpperBound(capacity_)) {
         RemoveTaskFromThetaTree(leaf_id);
         continue;
       }
     }
 
-    integer_reason_.clear();
-    literal_reason_.clear();
+    helper_->ClearReason();
 
     // Compute the bounds of the task interval responsible for the value of the
     // root envelope.
-    for (int j = 0; j <= i; ++j) {
-      const int t = by_end_max_[j].task_id;
+    for (int j = num_tasks_ - 1; j >= i; --j) {
+      const int t = by_decreasing_emax[j].task_index;
 
       // Do not consider tasks that are not contained in the task interval.
       if (task_to_index_in_start_min_[t] < interval_start_leaf) continue;
-      if (DurationMin(t) == 0 || DemandMin(t) == 0) continue;
-      if (!IsPresent(t) && j != i) continue;
+      if (helper_->DurationMin(t) == 0 || DemandMin(t) == 0) continue;
+      if (!helper_->IsPresent(t) && j != i) continue;
 
       // Add the task to the explanation.
-      integer_reason_.push_back(
-          IntegerLiteral::GreaterOrEqual(start_vars_[t], interval_start));
-      integer_reason_.push_back(
-          IntegerLiteral::LowerOrEqual(end_vars_[t], interval_end));
-      integer_reason_.push_back(
-          integer_trail_->LowerBoundAsLiteral(demand_vars_[t]));
-      if (duration_vars_[t] != kNoIntegerVariable) {
-        integer_reason_.push_back(
-            integer_trail_->LowerBoundAsLiteral(duration_vars_[t]));
+      helper_->AddStartMinReason(t, interval_start);
+      helper_->AddEndMaxReason(t, interval_end);
+      helper_->AddDurationMinReason(t);
+      if (demands_[t].var != kNoIntegerVariable) {
+        helper_->MutableIntegerReason()->push_back(
+            integer_trail_->LowerBoundAsLiteral(demands_[t].var));
       }
-      if (j != i || is_present) AddPresenceReasonIfNeeded(t);
+      if (j != i || is_present) helper_->AddPresenceReason(t);
     }
 
     // Current capacity of the resource.
-    integer_reason_.push_back(
-        integer_trail_->UpperBoundAsLiteral(capacity_var_));
+    if (capacity_.var != kNoIntegerVariable) {
+      helper_->MutableIntegerReason()->push_back(
+          integer_trail_->UpperBoundAsLiteral(capacity_.var));
+    }
 
     if (is_present) {
+      if (capacity_.var == kNoIntegerVariable) {
+        if (capacity_.constant >= new_capacity_min) return true;
+        return helper_->ReportConflict();
+      }
+
       // Increase the minimum capacity.
-      if (!integer_trail_->Enqueue(
-              IntegerLiteral::GreaterOrEqual(capacity_var_, new_capacity_min),
-              literal_reason_, integer_reason_)) {
+      if (!helper_->PushIntegerLiteral(
+              capacity_.GreaterOrEqual(new_capacity_min))) {
         return false;
       }
     } else {
       // The task must be absent.
-      integer_trail_->EnqueueLiteral(
-          intervals_repository_->IsPresentLiteral(interval_vars_[task_id])
-              .Negated(),
-          literal_reason_, integer_reason_);
+      if (!helper_->PushTaskAbsence(task_index)) return false;
       RemoveTaskFromThetaTree(leaf_id);
     }
   }

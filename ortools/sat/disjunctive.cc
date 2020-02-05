@@ -63,10 +63,10 @@ std::function<void(Model*)> Disjunctive(
 
     // Experiments to use the timetable only to propagate the disjunctive.
     if (/*DISABLES_CODE*/ (false)) {
-      const IntegerVariable capacity = model->Add(ConstantIntegerVariable(1));
-      std::vector<IntegerVariable> demands(vars.size(), capacity);
+      const AffineExpression one(IntegerValue(1));
+      std::vector<AffineExpression> demands(vars.size(), one);
       TimeTablingPerTask* timetable = new TimeTablingPerTask(
-          demands, capacity, model->GetOrCreate<IntegerTrail>(), helper);
+          demands, one, model->GetOrCreate<IntegerTrail>(), helper);
       timetable->RegisterWith(watcher);
       model->TakeOwnership(timetable);
       return;

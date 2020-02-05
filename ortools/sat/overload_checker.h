@@ -55,24 +55,15 @@ namespace sat {
 // timetabling propagator at least.
 class OverloadChecker : public PropagatorInterface {
  public:
-  OverloadChecker(const std::vector<IntervalVariable>& interval_vars,
-                  const std::vector<IntegerVariable>& demand_vars,
-                  IntegerVariable capacity, Trail* trail,
-                  IntegerTrail* integer_trail,
-                  IntervalsRepository* intervals_repository);
+  OverloadChecker(const std::vector<AffineExpression>& demands,
+                  AffineExpression capacity, SchedulingConstraintHelper* helper,
+                  IntegerTrail* integer_trail);
 
   bool Propagate() final;
 
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  struct TaskTime {
-    /* const */ int task_id;
-    IntegerValue time;
-    TaskTime(int task_id, IntegerValue time) : task_id(task_id), time(time) {}
-    bool operator<(TaskTime other) const { return time < other.time; }
-  };
-
   // Inserts the task at leaf_id with the given energy and envelope. The change
   // is propagated to the top of the Theta-tree by recomputing the energy and
   // the envelope of all the leaf's ancestors.
@@ -91,52 +82,20 @@ class OverloadChecker : public PropagatorInterface {
   // start time and that is involved in the value of the root node envelope.
   int LeftMostInvolvedLeaf() const;
 
-  IntegerValue StartMin(int task_id) const {
-    return integer_trail_->LowerBound(start_vars_[task_id]);
-  }
-
-  IntegerValue EndMax(int task_id) const {
-    return integer_trail_->UpperBound(end_vars_[task_id]);
-  }
-
   IntegerValue DemandMin(int task_id) const {
-    return integer_trail_->LowerBound(demand_vars_[task_id]);
+    return integer_trail_->LowerBound(demands_[task_id]);
   }
-
-  IntegerValue DurationMin(int task_id) const {
-    return intervals_repository_->MinSize(interval_vars_[task_id]);
-  }
-
-  // An optional task can be present, absent or its status still unknown. Normal
-  // tasks are always present.
-  bool IsPresent(int task_id) const;
-  bool IsAbsent(int task_id) const;
-  void AddPresenceReasonIfNeeded(int task_id);
 
   // Number of tasks.
   const int num_tasks_;
 
-  // IntervalVariable and IntegerVariable of each tasks that must be considered
-  // by this propagator.
-  std::vector<IntervalVariable> interval_vars_;
-  std::vector<IntegerVariable> start_vars_;
-  std::vector<IntegerVariable> end_vars_;
-  std::vector<IntegerVariable> demand_vars_;
-  std::vector<IntegerVariable> duration_vars_;
-
   // Capacity of the resource.
-  const IntegerVariable capacity_var_;
+  std::vector<AffineExpression> demands_;
+  const AffineExpression capacity_;
 
-  // Reason vector.
-  std::vector<Literal> literal_reason_;
-  std::vector<IntegerLiteral> integer_reason_;
-
-  Trail* trail_;
+  SchedulingConstraintHelper* helper_;
   IntegerTrail* integer_trail_;
-  IntervalsRepository* intervals_repository_;
 
-  std::vector<TaskTime> by_start_min_;
-  std::vector<TaskTime> by_end_max_;
   std::vector<int> task_to_index_in_start_min_;
 
   // The Theta-tree is a complete binary tree that stores the tasks from left to

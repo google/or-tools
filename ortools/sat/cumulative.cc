@@ -19,6 +19,7 @@
 #include "ortools/base/int_type.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/disjunctive.h"
+#include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/overload_checker.h"
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/precedences.h"
@@ -33,47 +34,46 @@ namespace sat {
 
 std::function<void(Model*)> Cumulative(
     const std::vector<IntervalVariable>& vars,
-    const std::vector<IntegerVariable>& demand_vars,
-    const IntegerVariable& capacity, SchedulingConstraintHelper* helper) {
+    const std::vector<AffineExpression>& demands, AffineExpression capacity,
+    SchedulingConstraintHelper* helper) {
   return [=](Model* model) mutable {
     if (vars.empty()) return;
 
-    IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
-    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+    auto* intervals = model->GetOrCreate<IntervalsRepository>();
+    auto* encoder = model->GetOrCreate<IntegerEncoder>();
+    auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+    auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();
 
     // Redundant constraints to ensure that the resource capacity is high enough
     // for each task. Also ensure that no task consumes more resource than what
     // is available. This is useful because the subsequent propagators do not
     // filter the capacity variable very well.
-    for (int i = 0; i < demand_vars.size(); ++i) {
+    for (int i = 0; i < demands.size(); ++i) {
       if (intervals->MaxSize(vars[i]) == 0) continue;
 
-      if (intervals->MinSize(vars[i]) > 0) {
-        if (demand_vars[i] == capacity) continue;
-        if (intervals->IsOptional(vars[i])) {
-          model->Add(ConditionalLowerOrEqual(
-              demand_vars[i], capacity, intervals->IsPresentLiteral(vars[i])));
-        } else {
-          model->Add(LowerOrEqual(demand_vars[i], capacity));
-        }
-        continue;
+      LinearConstraintBuilder builder(model, kMinIntegerValue, IntegerValue(0));
+      builder.AddTerm(demands[i], IntegerValue(1));
+      builder.AddTerm(capacity, IntegerValue(-1));
+      LinearConstraint ct = builder.Build();
+
+      std::vector<Literal> enforcement_literals;
+      if (intervals->IsOptional(vars[i])) {
+        enforcement_literals.push_back(intervals->IsPresentLiteral(vars[i]));
       }
 
-      // At this point, we know that the duration variable is not fixed.
-      const Literal size_condition =
-          encoder->GetOrCreateAssociatedLiteral(IntegerLiteral::GreaterOrEqual(
-              intervals->SizeVar(vars[i]), IntegerValue(1)));
+      // If the interval can be of size zero, it currently do not count towards
+      // the capacity. TODO(user): Change that since we have optional interval
+      // for this.
+      if (intervals->MinSize(vars[i]) == 0) {
+        enforcement_literals.push_back(encoder->GetOrCreateAssociatedLiteral(
+            IntegerLiteral::GreaterOrEqual(intervals->SizeVar(vars[i]),
+                                           IntegerValue(1))));
+      }
 
-      if (intervals->IsOptional(vars[i])) {
-        const Literal condition =
-            Literal(model->Add(NewBooleanVariable()), true);
-        model->Add(ReifiedBoolAnd(
-            {size_condition, intervals->IsPresentLiteral(vars[i])}, condition));
-        model->Add(
-            ConditionalLowerOrEqual(demand_vars[i], capacity, condition));
+      if (enforcement_literals.empty()) {
+        LoadLinearConstraint(ct, model);
       } else {
-        model->Add(
-            ConditionalLowerOrEqual(demand_vars[i], capacity, size_condition));
+        LoadConditionalLinearConstraint(enforcement_literals, ct, model);
       }
     }
 
@@ -94,8 +94,8 @@ std::function<void(Model*)> Cumulative(
       std::vector<IntervalVariable> in_disjunction;
       for (int i = 0; i < vars.size(); ++i) {
         if (intervals->MinSize(vars[i]) > 0 &&
-            2 * model->Get(LowerBound(demand_vars[i])) >
-                model->Get(UpperBound(capacity))) {
+            2 * integer_trail->LowerBound(demands[i]) >
+                integer_trail->UpperBound(capacity)) {
           in_disjunction.push_back(vars[i]);
         }
       }
@@ -120,9 +120,6 @@ std::function<void(Model*)> Cumulative(
       if (in_disjunction.size() == vars.size()) return;
     }
 
-    Trail* trail = model->GetOrCreate<Trail>();
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-
     if (helper == nullptr) {
       helper = new SchedulingConstraintHelper(vars, model);
       model->TakeOwnership(helper);
@@ -132,17 +129,16 @@ std::function<void(Model*)> Cumulative(
     // increases the minimum of the start variables, decrease the maximum of the
     // end variables, and increase the minimum of the capacity variable.
     TimeTablingPerTask* time_tabling =
-        new TimeTablingPerTask(demand_vars, capacity, integer_trail, helper);
-    time_tabling->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+        new TimeTablingPerTask(demands, capacity, integer_trail, helper);
+    time_tabling->RegisterWith(watcher);
     model->TakeOwnership(time_tabling);
 
     // Propagator responsible for applying the Overload Checking filtering rule.
     // It increases the minimum of the capacity variable.
     if (parameters.use_overload_checker_in_cumulative_constraint()) {
-      OverloadChecker* overload_checker = new OverloadChecker(
-          vars, demand_vars, capacity, trail, integer_trail, intervals);
-      overload_checker->RegisterWith(
-          model->GetOrCreate<GenericLiteralWatcher>());
+      OverloadChecker* overload_checker =
+          new OverloadChecker(demands, capacity, helper, integer_trail);
+      overload_checker->RegisterWith(watcher);
       model->TakeOwnership(overload_checker);
     }
 
@@ -150,10 +146,9 @@ std::function<void(Model*)> Cumulative(
     // rule. It increases the minimum of the start variables and decreases the
     // maximum of the end variables,
     if (parameters.use_timetable_edge_finding_in_cumulative_constraint()) {
-      TimeTableEdgeFinding* time_table_edge_finding = new TimeTableEdgeFinding(
-          vars, demand_vars, capacity, trail, integer_trail, intervals);
-      time_table_edge_finding->RegisterWith(
-          model->GetOrCreate<GenericLiteralWatcher>());
+      TimeTableEdgeFinding* time_table_edge_finding =
+          new TimeTableEdgeFinding(demands, capacity, helper, integer_trail);
+      time_table_edge_finding->RegisterWith(watcher);
       model->TakeOwnership(time_table_edge_finding);
     }
   };
@@ -161,28 +156,30 @@ std::function<void(Model*)> Cumulative(
 
 std::function<void(Model*)> CumulativeTimeDecomposition(
     const std::vector<IntervalVariable>& vars,
-    const std::vector<IntegerVariable>& demand_vars,
-    const IntegerVariable& capacity_var, SchedulingConstraintHelper* helper) {
+    const std::vector<AffineExpression>& demands, AffineExpression capacity,
+    SchedulingConstraintHelper* helper) {
   return [=](Model* model) {
-    CHECK(model->Get(IsFixed(capacity_var)));
-
     if (vars.empty()) return;
 
-    const int num_tasks = vars.size();
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+    CHECK(integer_trail->IsFixed(capacity));
+    const Coefficient fixed_capacity(
+        integer_trail->UpperBound(capacity).value());
+
+    const int num_tasks = vars.size();
     SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
     IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
     IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
 
     std::vector<IntegerVariable> start_vars;
     std::vector<IntegerVariable> end_vars;
-    std::vector<IntegerValue> demands;
+    std::vector<IntegerValue> fixed_demands;
 
     for (int t = 0; t < num_tasks; ++t) {
       start_vars.push_back(intervals->StartVar(vars[t]));
       end_vars.push_back(intervals->EndVar(vars[t]));
-      CHECK(model->Get(IsFixed(demand_vars[t])));
-      demands.push_back(integer_trail->LowerBound(demand_vars[t]));
+      CHECK(integer_trail->IsFixed(demands[t]));
+      fixed_demands.push_back(integer_trail->LowerBound(demands[t]));
     }
 
     // Compute time range.
@@ -193,15 +190,15 @@ std::function<void(Model*)> CumulativeTimeDecomposition(
       max_end = std::max(max_end, integer_trail->UpperBound(end_vars[t]));
     }
 
-    const IntegerValue capacity = integer_trail->UpperBound(capacity_var);
-
     for (IntegerValue time = min_start; time < max_end; ++time) {
       std::vector<LiteralWithCoeff> literals_with_coeff;
       for (int t = 0; t < num_tasks; ++t) {
         sat_solver->Propagate();
         const IntegerValue start_min = integer_trail->LowerBound(start_vars[t]);
         const IntegerValue end_max = integer_trail->UpperBound(end_vars[t]);
-        if (end_max <= time || time < start_min || demands[t] == 0) continue;
+        if (end_max <= time || time < start_min || fixed_demands[t] == 0) {
+          continue;
+        }
 
         // Task t consumes the resource at time if consume_condition is true.
         std::vector<Literal> consume_condition;
@@ -226,12 +223,11 @@ std::function<void(Model*)> CumulativeTimeDecomposition(
         if (sat_solver->IsModelUnsat()) return;
 
         literals_with_coeff.push_back(
-            LiteralWithCoeff(consume, Coefficient(demands[t].value())));
+            LiteralWithCoeff(consume, Coefficient(fixed_demands[t].value())));
       }
       // The profile cannot exceed the capacity at time.
       sat_solver->AddLinearConstraint(false, Coefficient(0), true,
-                                      Coefficient(capacity.value()),
-                                      &literals_with_coeff);
+                                      fixed_capacity, &literals_with_coeff);
 
       // Abort if UNSAT.
       if (sat_solver->IsModelUnsat()) return;

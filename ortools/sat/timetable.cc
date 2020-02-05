@@ -25,11 +25,11 @@ namespace operations_research {
 namespace sat {
 
 TimeTablingPerTask::TimeTablingPerTask(
-    const std::vector<IntegerVariable>& demand_vars, IntegerVariable capacity,
+    const std::vector<AffineExpression>& demands, AffineExpression capacity,
     IntegerTrail* integer_trail, SchedulingConstraintHelper* helper)
     : num_tasks_(helper->NumTasks()),
-      demand_vars_(demand_vars),
-      capacity_var_(capacity),
+      demands_(demands),
+      capacity_(capacity),
       integer_trail_(integer_trail),
       helper_(helper) {
   // Each task may create at most two profile rectangles. Such pattern appear if
@@ -74,9 +74,9 @@ TimeTablingPerTask::TimeTablingPerTask(
 void TimeTablingPerTask::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   helper_->WatchAllTasks(id, watcher);
-  watcher->WatchUpperBound(capacity_var_, id);
+  watcher->WatchUpperBound(capacity_.var, id);
   for (int t = 0; t < num_tasks_; t++) {
-    watcher->WatchLowerBound(demand_vars_[t], id);
+    watcher->WatchLowerBound(demands_[t].var, id);
   }
   // Repositories responsible for restoring the reversible values.
   watcher->RegisterReversibleClass(id, &rev_repository_int_);
@@ -428,15 +428,18 @@ bool TimeTablingPerTask::UpdateStartingTime(int task_id, IntegerValue left,
   helper_->ClearReason();
 
   AddProfileReason(left, right);
-
-  helper_->MutableIntegerReason()->push_back(
-      integer_trail_->UpperBoundAsLiteral(capacity_var_));
+  if (capacity_.var != kNoIntegerVariable) {
+    helper_->MutableIntegerReason()->push_back(
+        integer_trail_->UpperBoundAsLiteral(capacity_.var));
+  }
 
   // State of the task to be pushed.
   helper_->AddEndMinReason(task_id, left + 1);
   helper_->AddDurationMinReason(task_id, IntegerValue(1));
-  helper_->MutableIntegerReason()->push_back(
-      integer_trail_->LowerBoundAsLiteral(demand_vars_[task_id]));
+  if (demands_[task_id].var != kNoIntegerVariable) {
+    helper_->MutableIntegerReason()->push_back(
+        integer_trail_->LowerBoundAsLiteral(demands_[task_id].var));
+  }
 
   // Explain the increase of the minimum start and end times.
   return helper_->IncreaseStartMin(task_id, right);
@@ -456,20 +459,26 @@ void TimeTablingPerTask::AddProfileReason(IntegerValue left,
     helper_->AddPresenceReason(t);
     helper_->AddStartMaxReason(t, std::max(left, start_max));
     helper_->AddEndMinReason(t, std::min(right, end_min));
-    helper_->MutableIntegerReason()->push_back(
-        integer_trail_->LowerBoundAsLiteral(demand_vars_[t]));
+    if (demands_[t].var != kNoIntegerVariable) {
+      helper_->MutableIntegerReason()->push_back(
+          integer_trail_->LowerBoundAsLiteral(demands_[t].var));
+    }
   }
 }
 
 bool TimeTablingPerTask::IncreaseCapacity(IntegerValue time,
                                           IntegerValue new_min) {
   if (new_min <= CapacityMin()) return true;
+
   helper_->ClearReason();
-  helper_->MutableIntegerReason()->push_back(
-      integer_trail_->UpperBoundAsLiteral(capacity_var_));
   AddProfileReason(time, time + 1);
-  return helper_->PushIntegerLiteral(
-      IntegerLiteral::GreaterOrEqual(capacity_var_, new_min));
+  if (capacity_.var == kNoIntegerVariable) {
+    return helper_->ReportConflict();
+  }
+
+  helper_->MutableIntegerReason()->push_back(
+      integer_trail_->UpperBoundAsLiteral(capacity_.var));
+  return helper_->PushIntegerLiteral(capacity_.GreaterOrEqual(new_min));
 }
 
 }  // namespace sat

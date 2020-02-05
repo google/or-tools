@@ -17,7 +17,6 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/cleanup.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/util.h"
 

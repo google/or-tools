@@ -83,7 +83,8 @@ class FunctionSwigTestHelpers {
 
 class DelayedFunctionSwigTestHelpers {
  public:
-  DelayedFunctionSwigTestHelpers(std::function<int64(int64, int64)> fun)
+  explicit DelayedFunctionSwigTestHelpers(
+      std::function<int64(int64, int64)> fun)
       : fun_(fun) {}
 
   int64 NoOpInt64PairToInt64(int64 x, int64 y) { return fun_(x, y); }

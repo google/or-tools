@@ -257,7 +257,7 @@ class SchedulingConstraintHelper {
   }
 
   // Registers the given propagator id to be called if any of the tasks
-  // in this class change.
+  // in this class change. Note that we do not watch duration max though.
   void WatchAllTasks(int id, GenericLiteralWatcher* watcher,
                      bool watch_start_max = true,
                      bool watch_end_max = true) const;

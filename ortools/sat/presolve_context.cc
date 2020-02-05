@@ -106,6 +106,32 @@ int64 PresolveContext::MaxOf(int ref) const {
                             : -domains[PositiveRef(ref)].Min();
 }
 
+int64 PresolveContext::MinOf(const LinearExpressionProto& expr) const {
+  int64 result = expr.offset();
+  for (int i = 0; i < expr.vars_size(); ++i) {
+    const int64 coeff = expr.coeffs(i);
+    if (coeff > 0) {
+      result += coeff * MinOf(expr.vars(i));
+    } else {
+      result += coeff * MaxOf(expr.vars(i));
+    }
+  }
+  return result;
+}
+
+int64 PresolveContext::MaxOf(const LinearExpressionProto& expr) const {
+  int64 result = expr.offset();
+  for (int i = 0; i < expr.vars_size(); ++i) {
+    const int64 coeff = expr.coeffs(i);
+    if (coeff > 0) {
+      result += coeff * MaxOf(expr.vars(i));
+    } else {
+      result += coeff * MinOf(expr.vars(i));
+    }
+  }
+  return result;
+}
+
 bool PresolveContext::VariableIsNotRepresentativeOfEquivalenceClass(
     int ref) const {
   if (affine_relations_.ClassSize(PositiveRef(ref)) == 1) return true;
@@ -823,7 +849,7 @@ void PresolveContext::SubstituteVariableInObjective(
   offset = offset.MultiplicationBy(multiplier, &exact);
   CHECK(exact);
 
-  // Tricky: The objective domain is without the offset, so we need to shift it
+  // Tricky: The objective domain is without the offset, so we need to shift it.
   objective_offset += static_cast<double>(offset.Min());
   objective_domain = objective_domain.AdditionWith(Domain(-offset.Min()));
 

@@ -1461,7 +1461,7 @@ bool CoreBasedOptimizer::CoverOptimization() {
   constexpr double max_dtime_per_core = 0.5;
   const double old_time_limit = parameters_->max_deterministic_time();
   parameters_->set_max_deterministic_time(max_dtime_per_core);
-  auto cleanup = ::gtl::MakeCleanup([old_time_limit, this]() {
+  auto cleanup = ::absl::MakeCleanup([old_time_limit, this]() {
     parameters_->set_max_deterministic_time(old_time_limit);
   });
 

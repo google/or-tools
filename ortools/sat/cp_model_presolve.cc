@@ -523,6 +523,59 @@ bool CpModelPresolver::PresolveIntMax(ConstraintProto* ct) {
   return modified;
 }
 
+bool CpModelPresolver::PresolveLinMin(ConstraintProto* ct) {
+  if (context_->ModelIsUnsat()) return false;
+  // Convert to lin_max and presolve lin_max.
+  const auto copy = ct->lin_min();
+  SetToNegatedLinearExpression(copy.target(),
+                               ct->mutable_lin_max()->mutable_target());
+  for (const LinearExpressionProto& expr : copy.exprs()) {
+    LinearExpressionProto* const new_expr = ct->mutable_lin_max()->add_exprs();
+    SetToNegatedLinearExpression(expr, new_expr);
+  }
+  return PresolveLinMax(ct);
+}
+
+bool CpModelPresolver::PresolveLinMax(ConstraintProto* ct) {
+  if (context_->ModelIsUnsat()) return false;
+  if (ct->lin_max().exprs().empty()) {
+    context_->UpdateRuleStats("lin_max: no exprs");
+    return MarkConstraintAsFalse(ct);
+  }
+
+  // TODO(user): Remove duplicate expressions. This might be expensive.
+
+  // Pass 1, Compute the infered min of the target.
+  int64 infered_min = context_->MinOf(ct->lin_max().target());
+  for (const LinearExpressionProto& expr : ct->lin_max().exprs()) {
+    // TODO(user): Check if the expressions contain target.
+
+    // TODO(user): Check if the negated expression is already present and
+    // reduce inferred domain if so.
+
+    infered_min = std::max(infered_min, context_->MinOf(expr));
+  }
+
+  // Pass 2, Filter the expressions which are smaller than inferred min.
+  int new_size = 0;
+  for (int i = 0; i < ct->lin_max().exprs_size(); ++i) {
+    const LinearExpressionProto& expr = ct->lin_max().exprs(i);
+    if (context_->MaxOf(expr) >= infered_min) {
+      *ct->mutable_lin_max()->mutable_exprs(new_size) = expr;
+      new_size++;
+    }
+  }
+
+  if (new_size < ct->lin_max().exprs_size()) {
+    context_->UpdateRuleStats("lin_max: Removed exprs");
+    ct->mutable_lin_max()->mutable_exprs()->DeleteSubrange(
+        new_size, ct->lin_max().exprs_size() - new_size);
+    return true;
+  }
+
+  return false;
+}
+
 bool CpModelPresolver::PresolveIntAbs(ConstraintProto* ct) {
   CHECK_EQ(ct->enforcement_literal_size(), 0);
   if (context_->ModelIsUnsat()) return false;
@@ -3834,6 +3887,10 @@ bool CpModelPresolver::PresolveOneConstraint(int c) {
       }
     case ConstraintProto::ConstraintCase::kIntMin:
       return PresolveIntMin(ct);
+    case ConstraintProto::ConstraintCase::kLinMax:
+      return PresolveLinMax(ct);
+    case ConstraintProto::ConstraintCase::kLinMin:
+      return PresolveLinMin(ct);
     case ConstraintProto::ConstraintCase::kIntProd:
       return PresolveIntProd(ct);
     case ConstraintProto::ConstraintCase::kIntDiv:

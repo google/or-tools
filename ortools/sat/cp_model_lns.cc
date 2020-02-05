@@ -89,6 +89,11 @@ void NeighborhoodGeneratorHelper::Synchronize() {
 
 void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   // Recompute all the data in case new variables have been fixed.
+  //
+  // TODO(user): Ideally we should ignore trivially true/false constraint, but
+  // this will duplicate already existing code :-( we should probably still do
+  // at least enforcement literal and clauses? We could maybe run a light
+  // presolve?
   var_to_constraint_.assign(model_proto_.variables_size(), {});
   constraint_to_var_.assign(model_proto_.constraints_size(), {});
   for (int ct_index = 0; ct_index < model_proto_.constraints_size();
@@ -353,12 +358,13 @@ Neighborhood VariableGraphNeighborhoodGenerator::Generate(
   }
   CHECK_GT(target_size, 0) << difficulty << " " << num_active_vars;
 
-  std::uniform_int_distribution<int> random_var(0, num_active_vars - 1);
   std::vector<bool> visited_variables_set(num_model_vars, false);
   std::vector<int> relaxed_variables;
   std::vector<int> visited_variables;
 
-  const int first_var = helper_.ActiveVariables()[random_var(*random)];
+  const int first_var =
+      helper_
+          .ActiveVariables()[absl::Uniform<int>(*random, 0, num_active_vars)];
   visited_variables_set[first_var] = true;
   visited_variables.push_back(first_var);
   relaxed_variables.push_back(first_var);
@@ -411,11 +417,8 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
   std::vector<int> next_constraints;
 
   // Start by a random constraint.
-  {
-    std::uniform_int_distribution<int> random_start(0, num_constraints - 1);
-    next_constraints.push_back(random_start(*random));
-    added_constraints[next_constraints.back()] = true;
-  }
+  next_constraints.push_back(absl::Uniform<int>(*random, 0, num_constraints));
+  added_constraints[next_constraints.back()] = true;
 
   std::vector<int> random_variables;
   while (relaxed_variables.size() < target_size) {
@@ -423,9 +426,7 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
     if (next_constraints.empty()) break;
 
     // Pick a random unprocessed constraint.
-    std::uniform_int_distribution<int> random_constraint(
-        0, next_constraints.size() - 1);
-    const int i = random_constraint(*random);
+    const int i = absl::Uniform<int>(*random, 0, next_constraints.size());
     const int contraint_index = next_constraints[i];
     std::swap(next_constraints[i], next_constraints.back());
     next_constraints.pop_back();
@@ -669,9 +670,8 @@ Neighborhood ConsecutiveConstraintsRelaxationNeighborhoodGenerator::Generate(
   const int target_size =
       std::round((1.0 - difficulty) * removable_constraints.size());
 
-  std::uniform_int_distribution<int> random_var(
-      0, removable_constraints.size() - 1);
-  const int random_start_index = random_var(*random);
+  const int random_start_index =
+      absl::Uniform<int>(*random, 0, removable_constraints.size());
   std::vector<int> removed_constraints;
   removed_constraints.reserve(target_size);
   int c = random_start_index;

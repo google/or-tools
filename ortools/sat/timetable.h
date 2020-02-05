@@ -28,8 +28,8 @@ namespace sat {
 // is similar to the CumulativeTimeTable propagator of the constraint solver.
 class TimeTablingPerTask : public PropagatorInterface {
  public:
-  TimeTablingPerTask(const std::vector<IntegerVariable>& demand_vars,
-                     IntegerVariable capacity, IntegerTrail* integer_trail,
+  TimeTablingPerTask(const std::vector<AffineExpression>& demands,
+                     AffineExpression capacity, IntegerTrail* integer_trail,
                      SchedulingConstraintHelper* helper);
 
   bool Propagate() final;
@@ -89,19 +89,19 @@ class TimeTablingPerTask : public PropagatorInterface {
   void AddProfileReason(IntegerValue left, IntegerValue right);
 
   IntegerValue CapacityMin() const {
-    return integer_trail_->LowerBound(capacity_var_);
+    return integer_trail_->LowerBound(capacity_);
   }
 
   IntegerValue CapacityMax() const {
-    return integer_trail_->UpperBound(capacity_var_);
+    return integer_trail_->UpperBound(capacity_);
   }
 
   IntegerValue DemandMin(int task_id) const {
-    return integer_trail_->LowerBound(demand_vars_[task_id]);
+    return integer_trail_->LowerBound(demands_[task_id]);
   }
 
   IntegerValue DemandMax(int task_id) const {
-    return integer_trail_->UpperBound(demand_vars_[task_id]);
+    return integer_trail_->UpperBound(demands_[task_id]);
   }
 
   // Returns true if the tasks is present and has a mantatory part.
@@ -113,10 +113,10 @@ class TimeTablingPerTask : public PropagatorInterface {
   const int num_tasks_;
 
   // The demand variables of the tasks.
-  std::vector<IntegerVariable> demand_vars_;
+  std::vector<AffineExpression> demands_;
 
   // Capacity of the resource.
-  const IntegerVariable capacity_var_;
+  const AffineExpression capacity_;
 
   IntegerTrail* integer_trail_;
   SchedulingConstraintHelper* helper_;

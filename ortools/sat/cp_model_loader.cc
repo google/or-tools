@@ -1271,16 +1271,18 @@ LinearExpression GetExprFromProto(const LinearExpressionProto& expr_proto,
   return CanonicalizeExpr(expr);
 }
 
-void LoadLinMinConstraint(const ConstraintProto& ct, Model* m) {
+void LoadLinMaxConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
-  const LinearExpression min =
-      GetExprFromProto(ct.lin_min().target(), *mapping);
-  std::vector<LinearExpression> exprs;
-  exprs.reserve(ct.lin_min().exprs_size());
-  for (int i = 0; i < ct.lin_min().exprs_size(); ++i) {
-    exprs.push_back(GetExprFromProto(ct.lin_min().exprs(i), *mapping));
+  const LinearExpression max =
+      GetExprFromProto(ct.lin_max().target(), *mapping);
+  std::vector<LinearExpression> negated_exprs;
+  negated_exprs.reserve(ct.lin_max().exprs_size());
+  for (int i = 0; i < ct.lin_max().exprs_size(); ++i) {
+    negated_exprs.push_back(
+        NegationOf(GetExprFromProto(ct.lin_max().exprs(i), *mapping)));
   }
-  m->Add(IsEqualToMinOf(min, exprs));
+  // TODO(user): Consider replacing the min propagator by max.
+  m->Add(IsEqualToMinOf(NegationOf(max), negated_exprs));
 }
 
 void LoadIntMaxConstraint(const ConstraintProto& ct, Model* m) {
@@ -1312,9 +1314,12 @@ void LoadCumulativeConstraint(const ConstraintProto& ct, Model* m) {
   auto* mapping = m->GetOrCreate<CpModelMapping>();
   const std::vector<IntervalVariable> intervals =
       mapping->Intervals(ct.cumulative().intervals());
-  const IntegerVariable capacity = mapping->Integer(ct.cumulative().capacity());
-  const std::vector<IntegerVariable> demands =
-      mapping->Integers(ct.cumulative().demands());
+  const AffineExpression capacity(mapping->Integer(ct.cumulative().capacity()));
+  std::vector<AffineExpression> demands;
+  for (const IntegerVariable var :
+       mapping->Integers(ct.cumulative().demands())) {
+    demands.push_back(AffineExpression(var));
+  }
   m->Add(Cumulative(intervals, demands, capacity));
 }
 
@@ -1772,8 +1777,8 @@ bool LoadConstraint(const ConstraintProto& ct, Model* m) {
     case ConstraintProto::ConstraintProto::kIntMin:
       LoadIntMinConstraint(ct, m);
       return true;
-    case ConstraintProto::ConstraintProto::kLinMin:
-      LoadLinMinConstraint(ct, m);
+    case ConstraintProto::ConstraintProto::kLinMax:
+      LoadLinMaxConstraint(ct, m);
       return true;
     case ConstraintProto::ConstraintProto::kIntMax:
       LoadIntMaxConstraint(ct, m);

@@ -24,6 +24,8 @@
 #include <utility>
 #include <vector>
 
+#include "ortools/base/cleanup.h"
+
 #if !defined(__PORTABLE_PLATFORM__)
 #include "absl/synchronization/notification.h"
 #include "google/protobuf/text_format.h"
@@ -38,7 +40,6 @@
 #include "absl/strings/str_join.h"
 #include "absl/synchronization/mutex.h"
 #include "glog/vlog_is_on.h"
-#include "ortools/base/cleanup.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
@@ -522,22 +523,22 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
     }
   }
 
-  if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinMin) {
+  if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinMax) {
     if (!m->GetOrCreate<SatParameters>()->add_lin_max_cuts()) return;
     if (linearization_level < 2) return;
     if (HasEnforcementLiteral(ct)) return;
-    if (ct.lin_min().target().vars_size() != 1) return;
-    if (ct.lin_min().target().coeffs(0) != 1) return;
+    if (ct.lin_max().target().vars_size() != 1) return;
+    if (ct.lin_max().target().coeffs(0) != 1) return;
 
     const IntegerVariable target =
-        NegationOf(mapping->Integer(ct.lin_min().target().vars(0)));
+        mapping->Integer(ct.lin_max().target().vars(0));
     std::vector<LinearExpression> exprs;
-    exprs.reserve(ct.lin_min().exprs_size());
-    for (int i = 0; i < ct.lin_min().exprs_size(); ++i) {
+    exprs.reserve(ct.lin_max().exprs_size());
+    for (int i = 0; i < ct.lin_max().exprs_size(); ++i) {
       // Note: Cut generator requires all expressions to contain only positive
       // vars.
-      exprs.push_back(PositiveVarExpr(
-          NegationOf(GetExprFromProto(ct.lin_min().exprs(i), *mapping))));
+      exprs.push_back(
+          PositiveVarExpr(GetExprFromProto(ct.lin_max().exprs(i), *mapping)));
     }
 
     // Create and register binary z vars.
@@ -1505,7 +1506,7 @@ void QuickSolveWithHint(const CpModelProto& model_proto,
   parameters->set_max_number_of_conflicts(10);
   parameters->set_search_branching(SatParameters::HINT_SEARCH);
   parameters->set_optimize_with_core(false);
-  auto cleanup = ::gtl::MakeCleanup(
+  auto cleanup = ::absl::MakeCleanup(
       [parameters, saved_params]() { *parameters = saved_params; });
 
   // Solve decision problem.
