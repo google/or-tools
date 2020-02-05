@@ -88,7 +88,7 @@ include $(OR_ROOT)makefiles/Makefile.archive.mk
 ifeq ($(SYSTEM),unix)
 include $(OR_ROOT)makefiles/Makefile.doc.mk
 else
- Remove some rules on windows
+# Remove some rules on windows
 help_doc:
 
 endif
