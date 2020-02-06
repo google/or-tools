@@ -148,7 +148,7 @@ if(BUILD_Clp)
     REPOSITORY
       "https://github.com/Mizux/Clp.git"
     TAG
-      "stable/1.17"
+      "stable/1.17.4"
   )
 endif()
 
