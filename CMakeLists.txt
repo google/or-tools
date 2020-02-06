@@ -70,35 +70,48 @@ CMAKE_DEPENDENT_OPTION(BUILD_gflags "Build the gflags dependency Library" OFF
   "NOT BUILD_DEPS" ON)
 CMAKE_DEPENDENT_OPTION(BUILD_glog "Build the glog dependency Library" OFF
   "NOT BUILD_DEPS" ON)
+
 CMAKE_DEPENDENT_OPTION(BUILD_Protobuf "Build the Protobuf dependency Library" OFF
   "NOT BUILD_DEPS" ON)
-CMAKE_DEPENDENT_OPTION(BUILD_CoinUtils "Build the CoinUtils dependency Library" OFF
-  "NOT BUILD_DEPS" ON)
-CMAKE_DEPENDENT_OPTION(BUILD_Osi "Build the Osi dependency Library" OFF
-  "NOT BUILD_DEPS" ON)
-CMAKE_DEPENDENT_OPTION(BUILD_Clp "Build the Clp dependency Library" OFF
-  "NOT BUILD_DEPS" ON)
-CMAKE_DEPENDENT_OPTION(BUILD_Cgl "Build the Cgl dependency Library" OFF
-  "NOT BUILD_DEPS" ON)
-CMAKE_DEPENDENT_OPTION(BUILD_Cbc "Build the Cbc dependency Library" OFF
-  "NOT BUILD_DEPS" ON)
-
 message(STATUS "Build ZLIB: ${BUILD_ZLIB}")
 message(STATUS "Build abseil-cpp: ${BUILD_absl}")
 message(STATUS "Build gflags: ${BUILD_gflags}")
 message(STATUS "Build glog: ${BUILD_glog}")
 message(STATUS "Build protobuf: ${BUILD_Protobuf}")
-message(STATUS "Build CoinUtils: ${BUILD_CoinUtils}")
-message(STATUS "Build Osi: ${BUILD_Osi}")
-message(STATUS "Build Clp: ${BUILD_Clp}")
-message(STATUS "Build Cgl: ${BUILD_Cgl}")
-message(STATUS "Build Cbc: ${BUILD_Cbc}")
+
+# Optional third party solvers (enabled by default)
+option(USE_COINOR "Use the COIN-OR solver" ON)
+message(STATUS "COIN-OR support: ${USE_COINOR}")
+
+if(USE_COINOR)
+  CMAKE_DEPENDENT_OPTION(BUILD_CoinUtils "Build the CoinUtils dependency Library" OFF
+    "NOT BUILD_DEPS" ON)
+  message(STATUS "Build CoinUtils: ${BUILD_CoinUtils}")
+
+  CMAKE_DEPENDENT_OPTION(BUILD_Osi "Build the Osi dependency Library" OFF
+    "NOT BUILD_DEPS" ON)
+  message(STATUS "Build Osi: ${BUILD_Osi}")
+
+  CMAKE_DEPENDENT_OPTION(BUILD_Clp "Build the Clp dependency Library" OFF
+    "NOT BUILD_DEPS" ON)
+  message(STATUS "Build Clp: ${BUILD_Clp}")
+
+  CMAKE_DEPENDENT_OPTION(BUILD_Cgl "Build the Cgl dependency Library" OFF
+    "NOT BUILD_DEPS" ON)
+  message(STATUS "Build Cgl: ${BUILD_Cgl}")
+
+  CMAKE_DEPENDENT_OPTION(BUILD_Cbc "Build the Cbc dependency Library" OFF
+    "NOT BUILD_DEPS" ON)
+  message(STATUS "Build Cbc: ${BUILD_Cbc}")
+endif()
 
 # Optional third party solvers (disabled by default)
 option(USE_CPLEX "Use the CPLEX solver" OFF)
 message(STATUS "CPLEX support: ${USE_CPLEX}")
+
 option(USE_SCIP "Use the SCIP solver" OFF)
 message(STATUS "SCIP support: ${USE_SCIP}")
+
 option(USE_XPRESS "Use the XPRESS solver" OFF)
 message(STATUS "XPRESS support: ${USE_XPRESS}")
 

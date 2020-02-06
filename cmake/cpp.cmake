@@ -46,34 +46,38 @@ else()
   find_package(Protobuf REQUIRED)
 endif()
 
-if(BUILD_CoinUtils)
-  find_package(CoinUtils REQUIRED CONFIG)
-else()
-  find_package(CoinUtils REQUIRED)
-endif()
+if(USE_COINOR)
+  if(BUILD_CoinUtils)
+    find_package(CoinUtils REQUIRED CONFIG)
+  else()
+    find_package(CoinUtils REQUIRED)
+  endif()
 
-if(BUILD_Osi)
-  find_package(Osi REQUIRED CONFIG)
-else()
-  find_package(Osi REQUIRED)
-endif()
+  if(BUILD_Osi)
+    find_package(Osi REQUIRED CONFIG)
+  else()
+    find_package(Osi REQUIRED)
+  endif()
 
-if(BUILD_Clp)
-  find_package(Clp REQUIRED CONFIG)
-else()
-  find_package(Clp REQUIRED)
-endif()
+  if(BUILD_Clp)
+    find_package(Clp REQUIRED CONFIG)
+  else()
+    find_package(Clp REQUIRED)
+  endif()
 
-if(BUILD_Cgl)
-  find_package(Cgl REQUIRED CONFIG)
-else()
-  find_package(Cgl REQUIRED)
-endif()
+  if(BUILD_Cgl)
+    find_package(Cgl REQUIRED CONFIG)
+  else()
+    find_package(Cgl REQUIRED)
+  endif()
 
-if(BUILD_Cbc)
-  find_package(Cbc REQUIRED CONFIG)
-else()
-  find_package(Cbc REQUIRED)
+  if(BUILD_Cbc)
+    find_package(Cbc REQUIRED CONFIG)
+  else()
+    find_package(Cbc REQUIRED)
+  endif()
+
+  set(COINOR_DEPS Coin::CbcSolver Coin::OsiCbc Coin::ClpSolver Coin::OsiClp)
 endif()
 
 # Check optional Dependencies
@@ -100,9 +104,13 @@ add_library(${PROJECT_NAME} "")
 list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
   "USE_BOP" # enable BOP support
   "USE_GLOP" # enable GLOP support
-  "USE_CBC" # enable COIN-OR CBC support
-  "USE_CLP" # enable COIN-OR CLP support
   )
+if(USE_COINOR)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
+    "USE_CBC" # enable COIN-OR CBC support
+    "USE_CLP" # enable COIN-OR CLP support
+    )
+endif()
 if(USE_CPLEX)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_CPLEX")
 endif()
@@ -214,7 +222,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   ${GFLAGS_DEP}
   glog::glog
   protobuf::libprotobuf
-  Coin::CbcSolver Coin::OsiCbc Coin::ClpSolver Coin::OsiClp
+  ${COINOR_DEPS}
   Threads::Threads)
 if(WIN32)
   target_link_libraries(${PROJECT_NAME} PUBLIC psapi.lib ws2_32.lib)
