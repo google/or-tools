@@ -1,0 +1,26 @@
+name: Java MacOS CI
+
+on: [push, pull_request]
+
+jobs:
+  # Building using the github runner environement directly.
+  build:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Check cmake
+      run: cmake --version
+    - name: Swig install
+      run: brew install swig
+    - name: Check swig
+      run: swig -version
+    - name: Check java
+      run: java -version
+    - name: Configure
+      run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_JAVA=ON -DBUILD_DEPS=ON
+    - name: Build
+      run: cmake --build build --config Release --target all -v
+    - name: Test
+      run: cmake --build build --config Release --target test -v
+    - name: Install
+      run: cmake --build build --config Release --target install -v -- DESTDIR=install
