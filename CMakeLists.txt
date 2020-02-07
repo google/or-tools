@@ -64,19 +64,22 @@ option(INSTALL_BUILD_DEPS "Install build all dependencies" ON)
 include(CMakeDependentOption)
 CMAKE_DEPENDENT_OPTION(BUILD_ZLIB "Build the ZLIB dependency Library" OFF
   "NOT BUILD_DEPS" ON)
+message(STATUS "Build ZLIB: ${BUILD_ZLIB}")
+
 CMAKE_DEPENDENT_OPTION(BUILD_absl "Build the abseil-cpp dependency Library" OFF
   "NOT BUILD_DEPS" ON)
+message(STATUS "Build abseil-cpp: ${BUILD_absl}")
+
 CMAKE_DEPENDENT_OPTION(BUILD_gflags "Build the gflags dependency Library" OFF
   "NOT BUILD_DEPS" ON)
+message(STATUS "Build gflags: ${BUILD_gflags}")
+
 CMAKE_DEPENDENT_OPTION(BUILD_glog "Build the glog dependency Library" OFF
   "NOT BUILD_DEPS" ON)
+message(STATUS "Build glog: ${BUILD_glog}")
 
 CMAKE_DEPENDENT_OPTION(BUILD_Protobuf "Build the Protobuf dependency Library" OFF
   "NOT BUILD_DEPS" ON)
-message(STATUS "Build ZLIB: ${BUILD_ZLIB}")
-message(STATUS "Build abseil-cpp: ${BUILD_absl}")
-message(STATUS "Build gflags: ${BUILD_gflags}")
-message(STATUS "Build glog: ${BUILD_glog}")
 message(STATUS "Build protobuf: ${BUILD_Protobuf}")
 
 # Optional third party solvers (enabled by default)
