@@ -27,7 +27,7 @@ jobs:
     - name: Test
       run: cmake --build build --config Release --target test -v
     - name: Install
-      run: cmake --build build --config Release --target install -v
+      run: cmake --build build --config Release --target install -v -- DESTDIR=install
   build-windows:
     runs-on: windows-latest
     steps:
