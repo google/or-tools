@@ -117,7 +117,7 @@ if(WIN32)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "__WIN32__")
 endif()
 if(MSVC)
-  list(APPEND OR_TOOLS_FLAGS
+  list(APPEND OR_TOOLS_COMPILE_OPTIONS
     "/bigobj" # Allow big object
     "/DNOMINMAX"
     "/DWIN32_LEAN_AND_MEAN=1"
@@ -127,12 +127,12 @@ if(MSVC)
     )
   # Prefer /MD over /MT and add NDEBUG in Release
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    list(APPEND OR_TOOLS_FLAGS "/MDd")
+    list(APPEND OR_TOOLS_COMPILE_OPTIONS "/MDd")
   else()
-    list(APPEND OR_TOOLS_FLAGS "/MD" "/DNDEBUG")
+    list(APPEND OR_TOOLS_COMPILE_OPTIONS "/MD" "/DNDEBUG")
   endif()
   # MSVC warning suppressions
-  list(APPEND OR_TOOLS_FLAGS
+  list(APPEND OR_TOOLS_COMPILE_OPTIONS
     "/wd4005" # 'macro-redefinition'
     "/wd4018" # 'expression' : signed/unsigned mismatch
     "/wd4065" # switch statement contains 'default' but no 'case' labels
@@ -155,7 +155,7 @@ if(MSVC)
     "/wd4996" # The compiler encountered a deprecated declaration.
     )
 else()
-  list(APPEND OR_TOOLS_FLAGS "-fwrapv")
+  list(APPEND OR_TOOLS_COMPILE_OPTIONS "-fwrapv")
 endif()
 
 # Includes
