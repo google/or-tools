@@ -70,7 +70,7 @@ COPY_TYPEMAPS(uint64_t, uint64);
 
 %include "exception.i"
 
-#endif  // SWIGPYTHON
+#endif // SWIGPYTHON
 
 #if defined(SWIGJAVA) || defined(SWIGCSHARP)
 
