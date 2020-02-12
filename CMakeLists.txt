@@ -20,6 +20,9 @@ set_version(VERSION)
 
 project(ortools VERSION ${VERSION} LANGUAGES CXX)
 message(STATUS "version: ${PROJECT_VERSION}")
+message(STATUS "major: ${PROJECT_VERSION_MAJOR}")
+message(STATUS "minor: ${PROJECT_VERSION_MINOR}")
+message(STATUS "patch: ${PROJECT_VERSION_PATCH}")
 
 # Default Build Type to be Release
 if(NOT CMAKE_BUILD_TYPE)
