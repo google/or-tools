@@ -53,7 +53,13 @@ endif()
 
 # CMake will remove all '-D' prefix (i.e. -DUSE_FOO become USE_FOO)
 #get_target_property(FLAGS ortools::ortools COMPILE_DEFINITIONS)
-set(FLAGS -DUSE_BOP -DUSE_GLOP -DUSE_CBC -DUSE_CLP -DMUST_USE_RESULT)
+set(FLAGS -DUSE_BOP -DUSE_GLOP -DABSL_MUST_USE_RESULT)
+if(USE_COINOR)
+  list(APPEND FLAGS
+     "-DUSE_CBC"
+     "-DUSE_CLP"
+  )
+endif()
 list(APPEND CMAKE_SWIG_FLAGS ${FLAGS} "-I${PROJECT_SOURCE_DIR}")
 
 foreach(SUBPROJECT constraint_solver linear_solver sat graph algorithms data)
@@ -167,10 +173,11 @@ function(search_python_module MODULE_NAME)
 endfunction()
 
 # Look for python module wheel
+search_python_module(setuptools)
 search_python_module(wheel)
 
 # Main Target
-add_custom_target(bdist ALL
+add_custom_target(python_package ALL
   DEPENDS setup.py Py${PROJECT_NAME}_proto
   COMMAND ${CMAKE_COMMAND} -E remove_directory dist
   COMMAND ${PYTHON_EXECUTABLE} setup.py bdist bdist_wheel
@@ -189,7 +196,7 @@ if(BUILD_TESTING)
     set(VENV_BIN_DIR ${VENV_DIR}/bin)
   endif()
   # make a virtualenv to install our python package in it
-  add_custom_command(TARGET bdist POST_BUILD
+  add_custom_command(TARGET python_package POST_BUILD
     COMMAND ${VENV_EXECUTABLE} -p ${PYTHON_EXECUTABLE} ${VENV_DIR}
     COMMAND ${VENV_BIN_DIR}/python setup.py install
     COMMAND ${CMAKE_COMMAND} -E copy

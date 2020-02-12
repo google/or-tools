@@ -1,10 +1,4 @@
-# Setup SWIG
-find_package(SWIG REQUIRED)
-include(UseSWIG)
-
-# Setup Python
-find_package(PythonInterp REQUIRED)
-find_package(PythonLibs REQUIRED)
+# depends on cmake/python.cmake
 
 set_property(SOURCE routing.i PROPERTY CPLUSPLUS ON)
 list(APPEND CMAKE_SWIG_FLAGS "-module;pywrapcp")

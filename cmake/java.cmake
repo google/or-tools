@@ -2,14 +2,68 @@ if(NOT BUILD_JAVA)
   return()
 endif()
 
-find_package(SWIG REQUIRED)
-find_package(JAVA REQUIRED)
-find_package(JNI REQUIRED)
-
 if(NOT TARGET ortools::ortools)
   message(FATAL_ERROR "Java: missing ortools TARGET")
 endif()
 
+find_package(SWIG REQUIRED)
+include(UseSWIG)
+
+# Generate Protobuf java sources
+set(PROTO_JAVAS)
+file(GLOB_RECURSE proto_java_files RELATIVE ${PROJECT_SOURCE_DIR}
+  "ortools/constraint_solver/*.proto"
+  "ortools/linear_solver/*.proto"
+  "ortools/sat/*.proto"
+  "ortools/util/*.proto"
+  )
+list(REMOVE_ITEM proto_java_files "ortools/constraint_solver/demon_profiler.proto")
+foreach(PROTO_FILE ${proto_java_files})
+  #message(STATUS "protoc proto(java): ${PROTO_FILE}")
+  get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
+  get_filename_component(PROTO_NAME ${PROTO_FILE} NAME_WE)
+  set(PROTO_JAVA ${PROJECT_BINARY_DIR}/java/com/google/${PROTO_DIR}/${PROTO_NAME}.java)
+  #message(STATUS "protoc java: ${PROTO_JAVA}")
+  add_custom_command(
+    OUTPUT ${PROTO_JAVA}
+    COMMAND protobuf::protoc
+    "--proto_path=${PROJECT_SOURCE_DIR}"
+    "--java_out=${PROJECT_BINARY_DIR}/java"
+    ${PROTO_FILE}
+    DEPENDS ${PROTO_FILE} protobuf::protoc
+    COMMENT "Running C++ protocol buffer compiler on ${PROTO_FILE}"
+    VERBATIM)
+  list(APPEND PROTO_JAVAS ${PROTO_JAVA})
+endforeach()
+add_custom_target(Java${PROJECT_NAME}_proto DEPENDS ${PROTO_JAVAS} ortools::ortools)
+
+# Setup Java
+find_package(JAVA 1.8 REQUIRED COMPONENTS Development)
+find_package(JNI REQUIRED)
+
+# CMake will remove all '-D' prefix (i.e. -DUSE_FOO become USE_FOO)
+#get_target_property(FLAGS ortools::ortools COMPILE_DEFINITIONS)
+set(FLAGS -DUSE_BOP -DUSE_GLOP -DABSL_MUST_USE_RESULT)
+if(USE_COINOR)
+  list(APPEND FLAGS
+     "-DUSE_CBC"
+     "-DUSE_CLP"
+  )
+endif()
+list(APPEND CMAKE_SWIG_FLAGS ${FLAGS} "-I${PROJECT_SOURCE_DIR}")
+
+foreach(SUBPROJECT constraint_solver linear_solver sat graph algorithms data)
+  #add_subdirectory(ortools/${SUBPROJECT}/java)
+endforeach()
+
+# Main Target
+add_custom_target(java_package ALL
+  DEPENDS pom.xml
+  COMMAND ${CMAKE_COMMAND} -E remove_directory dist
+  COMMAND ${Java_JAVAC_EXECUTABLE} pom.xml
+  )
+
+# Test
 if(BUILD_TESTING)
   add_subdirectory(examples/java)
 endif()
