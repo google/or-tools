@@ -72,9 +72,31 @@ COPY_TYPEMAPS(uint64_t, uint64);
 
 #endif // SWIGPYTHON
 
-#if defined(SWIGJAVA) || defined(SWIGCSHARP)
 
-#endif  // defined(SWIGJAVA) || defined(SWIGCSHARP)
+#if defined(SWIGJAVA)
+// swig/java/typenames.i and swig/java/java.swg typemap C++ 'long int' as Java 'int'
+// but in C++ 'int64' aka 'int64_t' is defined as "long int" and we have
+// overload functions int/int64 in routing...
+// So we need to force C++ 'long int' to map to Java 'long' instead of 'int' reusing the
+// typemap for C++ `long long`
+// note: there is no `ulong` in java so we map both on Java `long` type.
+#if defined(SWIGWORDSIZE64)
+%define PRIMITIVE_TYPEMAP(NEW_TYPE, TYPE)
+%clear NEW_TYPE;
+%clear NEW_TYPE *;
+%clear NEW_TYPE &;
+%clear const NEW_TYPE &;
+%apply TYPE { NEW_TYPE };
+%apply TYPE * { NEW_TYPE * };
+%apply TYPE & { NEW_TYPE & };
+%apply const TYPE & { const NEW_TYPE & };
+%enddef // PRIMITIVE_TYPEMAP
+PRIMITIVE_TYPEMAP(long int, long long);
+PRIMITIVE_TYPEMAP(unsigned long int, long long);
+#undef PRIMITIVE_TYPEMAP
+#endif // defined(SWIGWORDSIZE64)
+
+#endif // defined(SWIGJAVA)
 
 // SWIG macros for explicit API declaration.
 // Usage:

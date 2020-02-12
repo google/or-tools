@@ -98,10 +98,6 @@ $(GEN_DIR)/ortools/constraint_solver/constraint_solver_java_wrap.cc: \
  -module main \
  -outdir $(GEN_PATH)$Sjava$Scom$Sgoogle$Sortools$Sconstraintsolver \
  $(SRC_DIR)$Sortools$Sconstraint_solver$Sjava$Srouting.i
-	$(SED) -i -e 's/< long long >/< int64 >/g' \
- $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_java_wrap.cc
-	$(SED) -i -e 's/< long long,long long >/< int64, int64 >/g' \
- $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_java_wrap.cc
 
 $(OBJ_DIR)/swig/constraint_solver_java_wrap.$O: \
  $(GEN_DIR)/ortools/constraint_solver/constraint_solver_java_wrap.cc \
@@ -184,8 +180,6 @@ $(GEN_DIR)/ortools/sat/sat_java_wrap.cc: \
  -module main \
  -outdir $(GEN_PATH)$Sjava$Scom$Sgoogle$Sortools$Ssat \
  $(SRC_DIR)$Sortools$Ssat$Sjava$Ssat.i
-	$(SED) -i -e 's/< long long >/< int64 >/g' \
- $(GEN_PATH)$Sortools$Ssat$Ssat_java_wrap.cc
 
 $(OBJ_DIR)/swig/sat_java_wrap.$O: \
  $(GEN_DIR)/ortools/sat/sat_java_wrap.cc \
@@ -206,8 +200,6 @@ $(GEN_DIR)/ortools/util/util_java_wrap.cc: \
  -module main \
  -outdir $(GEN_PATH)$Sjava$Scom$Sgoogle$Sortools$Sutil \
  $(SRC_DIR)$Sortools$Sutil$Sjava$Ssorted_interval_list.i
-	$(SED) -i -e 's/< long long >/< int64 >/g' \
- $(GEN_PATH)$Sortools$Sutil$Sutil_java_wrap.cc
 
 $(OBJ_DIR)/swig/util_java_wrap.$O: \
  $(GEN_DIR)/ortools/util/util_java_wrap.cc \

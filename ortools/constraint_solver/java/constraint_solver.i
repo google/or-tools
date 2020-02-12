@@ -13,9 +13,9 @@
 
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 
+
 %include "enumsimple.swg"
 %include "exception.i"
-%include "stdint.i"
 
 %include "ortools/base/base.i"
 %include "ortools/util/java/tuple_set.i"
