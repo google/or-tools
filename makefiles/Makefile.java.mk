@@ -542,7 +542,7 @@ test_java_pimpl: \
 ################
 .PHONY: clean_java # Clean Java output from previous build.
 clean_java:
-	-$(DELREC) $(GEN_PATH)$Scom
+	-$(DELREC) $(GEN_PATH)$Sjava
 	-$(DELREC) $(OBJ_DIR)$Scom
 	-$(DEL) $(CLASS_DIR)$S*.class
 	-$(DELREC) $(CLASS_DIR)
