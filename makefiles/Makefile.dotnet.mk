@@ -343,7 +343,6 @@ $(DOTNET_ORTOOLS_NATIVE_NUPKG): \
  $(SRC_DIR)/ortools/constraint_solver/csharp/NetDecisionBuilder.cs \
  $(SRC_DIR)/ortools/constraint_solver/csharp/SolverHelper.cs \
  $(SRC_DIR)/ortools/constraint_solver/csharp/ValCstPair.cs \
- $(SRC_DIR)/ortools/linear_solver/csharp/DoubleArrayHelper.cs \
  $(SRC_DIR)/ortools/linear_solver/csharp/LinearExpr.cs \
  $(SRC_DIR)/ortools/linear_solver/csharp/LinearConstraint.cs \
  $(SRC_DIR)/ortools/linear_solver/csharp/SolverHelper.cs \

@@ -17,9 +17,8 @@ using System.Runtime.InteropServices;
 using System.Collections;
 %}
 
-%include "stdint.i"
-
 %include "ortools/base/base.i"
+
 %include "ortools/util/csharp/proto.i"
 
 %import "ortools/util/csharp/sorted_interval_list.i"

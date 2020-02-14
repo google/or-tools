@@ -54,9 +54,9 @@
 %}
 
 // Convert std::vector<IndexT> to/from int arrays.
-VECTOR_AS_CSHARP_ARRAY(IndexT, int, int, CpIntVector);
+VECTOR_AS_CSHARP_ARRAY(IndexT, int, int, IntVector);
 // Convert std::vector<std::vector<IndexT>> to/from two-dimensional int arrays.
-JAGGED_MATRIX_AS_CSHARP_ARRAY(IndexT, int, int, CpIntVectorVector);
+JAGGED_MATRIX_AS_CSHARP_ARRAY(IndexT, int, int, IntVectorVector);
 
 %enddef  // DEFINE_INDEX_TYPE
 

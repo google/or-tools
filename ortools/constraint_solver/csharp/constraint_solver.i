@@ -21,7 +21,7 @@ using System.Collections.Generic;
 %}
 
 %include "enumsimple.swg"
-%include "stdint.i"
+
 %include "exception.i"
 %include "std_vector.i"
 %include "std_common.i"
@@ -132,20 +132,6 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 // instantiate the vector template, but their csharp_wrap.cc
 // files end up being compiled into the same .dll, we must name the
 // vector template differently.
-
-%template(CpIntVector) std::vector<int>;
-// IMPORTANT(corentinl) this template for vec<vec<T>> must be call BEFORE
-// we redefine typemap of vec<T> in VECTOR_AS_CSHARP_ARRAY
-%template(CpIntVectorVector) std::vector<std::vector<int> >;
-VECTOR_AS_CSHARP_ARRAY(int, int, int, CpIntVector);
-JAGGED_MATRIX_AS_CSHARP_ARRAY(int, int, int, CpIntVectorVector);
-
-%template(CpInt64Vector) std::vector<int64>;
-// IMPORTANT(corentinl) this template for vec<vec<T>> must be call BEFORE
-// we redefine typemap of vec<T> in VECTOR_AS_CSHARP_ARRAY
-%template(CpInt64VectorVector) std::vector<std::vector<int64> >;
-VECTOR_AS_CSHARP_ARRAY(int64, int64, long, CpInt64Vector);
-JAGGED_MATRIX_AS_CSHARP_ARRAY(int64, int64, long, CpInt64VectorVector);
 
 // TupleSet depends on the previous typemaps
 %include "ortools/util/csharp/tuple_set.i"
