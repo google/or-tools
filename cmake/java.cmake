@@ -38,7 +38,7 @@ endforeach()
 add_custom_target(Java${PROJECT_NAME}_proto DEPENDS ${PROTO_JAVAS} ortools::ortools)
 
 # Setup Java
-find_package(JAVA 1.8 REQUIRED COMPONENTS Development)
+find_package(Java 1.8 REQUIRED COMPONENTS Development)
 find_package(JNI REQUIRED)
 
 # CMake will remove all '-D' prefix (i.e. -DUSE_FOO become USE_FOO)
