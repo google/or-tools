@@ -65,5 +65,5 @@ add_custom_target(java_package ALL
 
 # Test
 if(BUILD_TESTING)
-  add_subdirectory(examples/java)
+  #add_subdirectory(examples/java)
 endif()
