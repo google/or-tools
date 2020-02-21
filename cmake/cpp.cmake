@@ -240,7 +240,17 @@ add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 # Generate Protobuf cpp sources
 set(PROTO_HDRS)
 set(PROTO_SRCS)
-file(GLOB_RECURSE proto_files RELATIVE ${PROJECT_SOURCE_DIR} "ortools/*.proto")
+file(GLOB_RECURSE proto_files RELATIVE ${PROJECT_SOURCE_DIR}
+  "ortools/bop/*.proto"
+  "ortools/constraint_solver/*.proto"
+  "ortools/data/*.proto"
+  "ortools/glop/*.proto"
+  "ortools/graph/*.proto"
+  "ortools/linear_solver/*.proto"
+  "ortools/sat/*.proto"
+  "ortools/util/*.proto"
+  "ortools/linear_solver/*.proto"
+  )
 
 # Get Protobuf include dir
 get_target_property(protobuf_dirs protobuf::libprotobuf INTERFACE_INCLUDE_DIRECTORIES)
