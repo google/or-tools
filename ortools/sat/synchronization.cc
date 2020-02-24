@@ -322,7 +322,6 @@ void SharedResponseManager::FillObjectiveValuesInBestResponse() {
 void SharedResponseManager::NewSolution(const CpSolverResponse& response,
                                         Model* model) {
   absl::MutexLock mutex_lock(&mutex_);
-  CHECK_NE(best_response_.status(), CpSolverStatus::INFEASIBLE);
 
   if (model_proto_.has_objective()) {
     const int64 objective_value =
@@ -338,9 +337,13 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
     }
 
     // Ignore any non-strictly improving solution.
-    // We also perform some basic checks on the inner bounds.
-    DCHECK_GE(objective_value, inner_objective_lower_bound_);
     if (objective_value > inner_objective_upper_bound_) return;
+
+    // Our inner_objective_upper_bound_ should be a globaly valid bound, until
+    // the problem become infeasible (i.e the lb > ub) in which case the bound
+    // is no longer globally valid. Here, because we have a strictly improving
+    // solution, we shouldn't be in the infeasible setting yet.
+    DCHECK_GE(objective_value, inner_objective_lower_bound_);
 
     DCHECK_LT(objective_value, best_solution_objective_value_);
     DCHECK_NE(best_response_.status(), CpSolverStatus::OPTIMAL);

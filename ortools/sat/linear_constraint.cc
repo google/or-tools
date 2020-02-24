@@ -326,5 +326,28 @@ LinearExpression PositiveVarExpr(const LinearExpression& expr) {
   return result;
 }
 
+IntegerValue GetCoefficient(const IntegerVariable var,
+                            const LinearExpression& expr) {
+  for (int i = 0; i < expr.vars.size(); ++i) {
+    if (expr.vars[i] == var) {
+      return expr.coeffs[i];
+    } else if (expr.vars[i] == NegationOf(var)) {
+      return -expr.coeffs[i];
+    }
+  }
+  return IntegerValue(0);
+}
+
+IntegerValue GetCoefficientOfPositiveVar(const IntegerVariable var,
+                                         const LinearExpression& expr) {
+  CHECK(VariableIsPositive(var));
+  for (int i = 0; i < expr.vars.size(); ++i) {
+    if (expr.vars[i] == var) {
+      return expr.coeffs[i];
+    }
+  }
+  return IntegerValue(0);
+}
+
 }  // namespace sat
 }  // namespace operations_research

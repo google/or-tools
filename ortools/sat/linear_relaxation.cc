@@ -13,8 +13,11 @@
 
 #include "ortools/sat/linear_relaxation.h"
 
+#include <vector>
+
 #include "absl/container/flat_hash_set.h"
 #include "ortools/base/iterator_adaptors.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/integer.h"
@@ -610,8 +613,8 @@ void AppendMaxRelaxation(IntegerVariable target,
 std::vector<IntegerVariable> AppendLinMaxRelaxation(
     IntegerVariable target, const std::vector<LinearExpression>& exprs,
     Model* model, LinearRelaxation* relaxation) {
-  // Case X = max(X_1, X_2, ..., X_N)
-  // Part 1: Encode X >= max(X_1, X_2, ..., X_N)
+  // We want to linearize X = max(exprs[1], exprs[2], ..., exprs[d]).
+  // Part 1: Encode X >= max(exprs[1], exprs[2], ..., exprs[d])
   for (const LinearExpression& expr : exprs) {
     LinearConstraintBuilder lc(model, kMinIntegerValue, -expr.offset);
     for (int i = 0; i < expr.vars.size(); ++i) {
@@ -622,6 +625,9 @@ std::vector<IntegerVariable> AppendLinMaxRelaxation(
   }
 
   // Part 2: Encode upper bound on X.
+
+  // Add linking constraint to the CP solver
+  // sum zi = 1 and for all i, zi => max = expr_i.
   const int num_exprs = exprs.size();
   IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
   GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
@@ -650,12 +656,52 @@ std::vector<IntegerVariable> AppendLinMaxRelaxation(
     upper_bound->RegisterWith(watcher);
     model->TakeOwnership(upper_bound);
 
-    AppendEnforcedLinearExpression({z_lit}, local_expr, kMinIntegerValue,
-                                   exprs[i].offset, *model, relaxation);
-
     CHECK(lc_exactly_one.AddLiteralTerm(z_lit, IntegerValue(1)));
   }
   model->Add(ExactlyOneConstraint(z_lits));
+
+  // For the relaxation, we use different constraints with a stronger linear
+  // relaxation as explained in the .h
+  // TODO(user): Consider passing the x_vars to this method instead of
+  // computing it here.
+  std::vector<IntegerVariable> x_vars;
+  for (int i = 0; i < num_exprs; ++i) {
+    x_vars.insert(x_vars.end(), exprs[i].vars.begin(), exprs[i].vars.end());
+  }
+  gtl::STLSortAndRemoveDuplicates(&x_vars);
+  // All expressions should only contain positive variables.
+  DCHECK(std::all_of(x_vars.begin(), x_vars.end(), [](IntegerVariable var) {
+    return VariableIsPositive(var);
+  }));
+
+  std::vector<std::vector<IntegerValue>> sum_of_max_corner_diff(
+      num_exprs, std::vector<IntegerValue>(num_exprs, IntegerValue(0)));
+
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  for (int i = 0; i < num_exprs; ++i) {
+    for (int j = 0; j < num_exprs; ++j) {
+      if (i == j) continue;
+      for (const IntegerVariable x_var : x_vars) {
+        const IntegerValue lb = integer_trail->LevelZeroLowerBound(x_var);
+        const IntegerValue ub = integer_trail->LevelZeroUpperBound(x_var);
+        const IntegerValue diff =
+            GetCoefficient(x_var, exprs[j]) - GetCoefficient(x_var, exprs[i]);
+        sum_of_max_corner_diff[i][j] += std::max(diff * lb, diff * ub);
+      }
+    }
+  }
+  for (int i = 0; i < num_exprs; ++i) {
+    LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
+    lc.AddTerm(target, IntegerValue(1));
+    for (int j = 0; j < exprs[i].vars.size(); ++j) {
+      lc.AddTerm(exprs[i].vars[j], -exprs[i].coeffs[j]);
+    }
+    for (int j = 0; j < num_exprs; ++j) {
+      CHECK(lc.AddLiteralTerm(z_lits[j],
+                              -exprs[j].offset - sum_of_max_corner_diff[i][j]));
+    }
+    relaxation->linear_constraints.push_back(lc.Build());
+  }
 
   relaxation->linear_constraints.push_back(lc_exactly_one.Build());
   return z_vars;

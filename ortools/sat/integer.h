@@ -525,7 +525,6 @@ class IntegerTrail : public SatPropagator {
  public:
   explicit IntegerTrail(Model* model)
       : SatPropagator("IntegerTrail"),
-        num_enqueues_(0),
         domains_(model->GetOrCreate<IntegerDomains>()),
         encoder_(model->GetOrCreate<IntegerEncoder>()),
         trail_(model->GetOrCreate<Trail>()) {
@@ -757,6 +756,7 @@ class IntegerTrail : public SatPropagator {
   // looking at the integer trail index is not enough because at level zero it
   // doesn't change since we directly update the "fixed" bounds.
   int64 num_enqueues() const { return num_enqueues_; }
+  int64 timestamp() const { return num_enqueues_ + num_untrails_; }
 
   // Same as num_enqueues but only count the level zero changes.
   int64 num_level_zero_enqueues() const { return num_level_zero_enqueues_; }
@@ -976,6 +976,7 @@ class IntegerTrail : public SatPropagator {
   std::vector<int> boolean_trail_index_to_integer_one_;
 
   int64 num_enqueues_ = 0;
+  int64 num_untrails_ = 0;
   int64 num_level_zero_enqueues_ = 0;
 
   std::vector<SparseBitset<IntegerVariable>*> watchers_;

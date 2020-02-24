@@ -1415,17 +1415,6 @@ CutGenerator CreateAllDifferentCutGenerator(
 }
 
 namespace {
-
-IntegerValue GetCoefficient(const IntegerVariable var,
-                            const LinearExpression& expr) {
-  for (int i = 0; i < expr.vars.size(); ++i) {
-    if (expr.vars[i] == var) {
-      return expr.coeffs[i];
-    }
-  }
-  return IntegerValue(0);
-}
-
 // Returns max((w2i - w1i)*Li, (w2i - w1i)*Ui).
 IntegerValue MaxCornerDifference(const IntegerVariable var,
                                  const IntegerValue w1_i,
@@ -1448,14 +1437,14 @@ IntegerValue MPlusCoefficient(
     const gtl::ITIVector<IntegerVariable, int>& variable_partition,
     const int max_index, const IntegerTrail& integer_trail) {
   IntegerValue coeff = exprs[max_index].offset;
-  // TODO(user): This algo is quadratic since GetCoefficient() is linear.
-  // This can be optimized (better complexity) if needed.
+  // TODO(user): This algo is quadratic since GetCoefficientOfPositiveVar()
+  // is linear. This can be optimized (better complexity) if needed.
   for (const IntegerVariable var : x_vars) {
     const int target_index = variable_partition[var];
     if (max_index != target_index) {
       coeff += MaxCornerDifference(
-          var, GetCoefficient(var, exprs[target_index]),
-          GetCoefficient(var, exprs[max_index]), integer_trail);
+          var, GetCoefficientOfPositiveVar(var, exprs[target_index]),
+          GetCoefficientOfPositiveVar(var, exprs[max_index]), integer_trail);
     }
   }
   return coeff;
@@ -1473,14 +1462,15 @@ double ComputeContribution(
   CHECK_LT(target_index, exprs.size());
   const LinearExpression& target_expr = exprs[target_index];
   const double xi_value = lp_values[xi_var];
-  const IntegerValue wt_i = GetCoefficient(xi_var, target_expr);
+  const IntegerValue wt_i = GetCoefficientOfPositiveVar(xi_var, target_expr);
   double contrib = wt_i.value() * xi_value;
   for (int expr_index = 0; expr_index < exprs.size(); ++expr_index) {
     if (expr_index == target_index) continue;
     const LinearExpression& max_expr = exprs[expr_index];
     const double z_max_value = lp_values[z_vars[expr_index]];
     const IntegerValue corner_value = MaxCornerDifference(
-        xi_var, wt_i, GetCoefficient(xi_var, max_expr), integer_trail);
+        xi_var, wt_i, GetCoefficientOfPositiveVar(xi_var, max_expr),
+        integer_trail);
     contrib += corner_value.value() * z_max_value;
   }
   return contrib;
@@ -1534,7 +1524,7 @@ CutGenerator CreateLinMaxCutGenerator(
         for (const IntegerVariable xi_var : x_vars) {
           const int input_index = variable_partition[xi_var];
           const LinearExpression& expr = exprs[input_index];
-          const IntegerValue coeff = GetCoefficient(xi_var, expr);
+          const IntegerValue coeff = GetCoefficientOfPositiveVar(xi_var, expr);
           if (coeff != IntegerValue(0)) {
             cut.AddTerm(xi_var, coeff);
           }

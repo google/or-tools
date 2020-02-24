@@ -147,6 +147,12 @@ bool PresolveContext::VariableIsUniqueAndRemovable(int ref) const {
          !keep_all_feasible_solutions;
 }
 
+bool PresolveContext::VariableIsNotUsedAnymore(int ref) const {
+  if (!ConstraintVariableGraphIsUpToDate()) return false;
+  return var_to_constraints[PositiveRef(ref)].empty() &&
+         VariableIsNotRepresentativeOfEquivalenceClass(ref);
+}
+
 bool PresolveContext::VariableWithCostIsUniqueAndRemovable(int ref) const {
   if (!ConstraintVariableGraphIsUpToDate()) return false;
   const int var = PositiveRef(ref);
@@ -359,6 +365,14 @@ void PresolveContext::StoreBooleanEqualityRelation(int ref_a, int ref_b) {
     return;
   }
 
+  const int var_a = PositiveRef(ref_a);
+  const int var_b = PositiveRef(ref_b);
+
+  if (GetAffineRelation(var_a).representative == var_b ||
+      GetAffineRelation(var_b).representative == var_a) {
+    return;
+  }
+
   // For now, we do need to add the relation ref_a == ref_b so we have a
   // proper variable usage count and propagation between ref_a and ref_b.
   //
@@ -367,24 +381,21 @@ void PresolveContext::StoreBooleanEqualityRelation(int ref_a, int ref_b) {
   // define them around.
   ConstraintProto* ct = working_model->add_constraints();
   auto* arg = ct->mutable_linear();
-  arg->add_vars(PositiveRef(ref_a));
-  arg->add_vars(PositiveRef(ref_b));
+  arg->add_vars(var_a);
+  arg->add_coeffs(1);
+  arg->add_vars(var_b);
   if (RefIsPositive(ref_a) == RefIsPositive(ref_b)) {
     // a = b
-    arg->add_coeffs(1);
     arg->add_coeffs(-1);
     arg->add_domain(0);
     arg->add_domain(0);
-    StoreAffineRelation(*ct, PositiveRef(ref_a), PositiveRef(ref_b), 1,
-                        /*offset=*/0);
+    StoreAffineRelation(*ct, var_a, var_b, /*coeff=*/1, /*offset=*/0);
   } else {
     // a = 1 - b
     arg->add_coeffs(1);
-    arg->add_coeffs(1);
     arg->add_domain(1);
     arg->add_domain(1);
-    StoreAffineRelation(*ct, PositiveRef(ref_a), PositiveRef(ref_b), -1,
-                        /*offset=*/1);
+    StoreAffineRelation(*ct, var_a, var_b, /*coeff=*/-1, /*offset=*/1);
   }
   UpdateNewConstraintsVariableUsage();
 }
@@ -480,6 +491,10 @@ void PresolveContext::InsertVarValueEncoding(int literal, int ref,
       } else {
         encoding[other_key] = NegatedRef(literal);
         // Add affine relation.
+        // TODO(user): In linear presolve, recover var-value encoding from
+        //     linear constraints like the one created below. This would be
+        //     useful in case the variable has an affine representative, and the
+        //     below constraint is rewritten.
         ConstraintProto* const ct = working_model->add_constraints();
         LinearConstraintProto* const lin = ct->mutable_linear();
         lin->add_vars(var);
@@ -578,7 +593,7 @@ bool PresolveContext::HasVarValueEncoding(int ref, int64 value, int* literal) {
   const auto& it = encoding.find(key);
   if (it != encoding.end()) {
     if (literal != nullptr) {
-      *literal = it->second;
+      *literal = GetLiteralRepresentative(it->second);
     }
     return true;
   } else {

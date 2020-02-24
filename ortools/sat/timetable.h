@@ -55,14 +55,6 @@ class TimeTablingPerTask : public PropagatorInterface {
   // variable accordingly.
   bool BuildProfile();
 
-  // Reduces the set of tasks to be considered by BuildProfile(). This is done
-  // by not considering parts of mandatory part that are overlaped by no task.
-  // The set of tasks to consider is restored to its previous state each time a
-  // backtrack occurs. This function must be called only if the by_start_max_
-  // and by_end_min_ vectors are up to date and if the profile contains no
-  // profile rectangle that can exceed the capacity of the resource.
-  void ReduceProfile();
-
   // Reverses the profile. This is needed to reuse a given profile to update
   // both the start and end times.
   void ReverseProfile();
@@ -121,25 +113,6 @@ class TimeTablingPerTask : public PropagatorInterface {
   IntegerTrail* integer_trail_;
   SchedulingConstraintHelper* helper_;
 
-  RevRepository<int> rev_repository_int_;
-  RevRepository<IntegerValue> rev_repository_integer_value_;
-
-  // Vector of tasks sorted by maximum starting (resp. minimum ending) time.
-  std::vector<TaskTime> by_start_max_;
-  std::vector<TaskTime> by_end_min_;
-
-  // Tasks contained in the range [left_start_, right_start_) of by_start_max_
-  // must be sorted and considered when building the profile. The state of these
-  // bounds is restored when a backtrack occurs.
-  int left_start_;
-  int right_start_;
-
-  // Tasks contained in the range [left_end_, right_end_) of by_end_min_ must be
-  // sorted and considered when building the profile. The state of these bounds
-  // is restored when a backtrack occurs.
-  int left_end_;
-  int right_end_;
-
   // Optimistic profile of the resource consumption over time.
   std::vector<ProfileRectangle> profile_;
   IntegerValue profile_max_height_;
@@ -160,11 +133,6 @@ class TimeTablingPerTask : public PropagatorInterface {
   std::vector<int> backward_tasks_to_sweep_;
   int forward_num_tasks_to_sweep_;
   int backward_num_tasks_to_sweep_;
-
-  // Reversible set of tasks to consider for reducing the profile. The set
-  // contains the [0, num_active_tasks_) prefix of active_tasks_.
-  std::vector<int> active_tasks_;
-  int num_active_tasks_;
 
   // Reversible set (with random access) of tasks to consider for building the
   // profile. The set contains the tasks in the [0, num_profile_tasks_) prefix

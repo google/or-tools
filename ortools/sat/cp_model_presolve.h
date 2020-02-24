@@ -36,7 +36,8 @@ namespace sat {
 //
 // The image of the mapping should be dense in [0, new_num_variables), this is
 // also CHECKed.
-void ApplyVariableMapping(const std::vector<int>& mapping, CpModelProto* proto);
+void ApplyVariableMapping(const std::vector<int>& mapping,
+                          const PresolveContext& context);
 
 // Presolves the initial content of presolved_model.
 //

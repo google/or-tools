@@ -4154,6 +4154,7 @@ void CpModelPresolver::TryToSimplifyDomain(int var) {
   CHECK(RefIsPositive(var));
   if (context_->ModelIsUnsat()) return;
   if (context_->IsFixed(var)) return;
+  if (context_->VariableIsNotUsedAnymore(var)) return;
 
   const AffineRelation::Relation r = context_->GetAffineRelation(var);
   if (r.representative != var) return;
@@ -4163,7 +4164,7 @@ void CpModelPresolver::TryToSimplifyDomain(int var) {
 
   // Special case for non-Boolean domain of size 2.
   if (domain.Size() == 2 && (domain.Min() != 0 || domain.Max() != 1)) {
-    // Shifted Boolean variable.
+    // Shifted and/or scaled Boolean variable.
     const int new_var_index = context_->NewBoolVar();
     context_->InsertVarValueEncoding(new_var_index, var, domain.Max());
     context_->UpdateRuleStats("variables: canonicalize size two domain");
@@ -4294,11 +4295,16 @@ void CpModelPresolver::PresolveToFixPoint() {
     }
 
     // Re-add to the queue the constraints that touch a variable that changed.
+    // Note that it is important to use indices in the loop below because
+    // TryToSimplifyDomain() might create new variables which will change
+    // the set of modified domains.
     //
     // TODO(user): Avoid reprocessing the constraints that changed the variables
     // with the use of timestamp.
     if (context_->ModelIsUnsat()) return;
-    for (const int v : context_->modified_domains.PositionsSetAtLeastOnce()) {
+    for (int i = 0;
+         i < context_->modified_domains.PositionsSetAtLeastOnce().size(); ++i) {
+      const int v = context_->modified_domains.PositionsSetAtLeastOnce()[i];
       if (context_->IsFixed(v)) {
         context_->ExploitFixedDomain(v);
       } else {
@@ -4787,7 +4793,7 @@ bool CpModelPresolver::Presolve() {
     mapping[i] = postsolve_mapping_->size();
     postsolve_mapping_->push_back(i);
   }
-  ApplyVariableMapping(mapping, context_->working_model);
+  ApplyVariableMapping(mapping, *context_);
 
   // Hack to display the number of deductions stored.
   if (context_->deductions.NumDeductions() > 0) {
@@ -4808,7 +4814,9 @@ bool CpModelPresolver::Presolve() {
 }
 
 void ApplyVariableMapping(const std::vector<int>& mapping,
-                          CpModelProto* proto) {
+                          const PresolveContext& context) {
+  CpModelProto* proto = context.working_model;
+
   // Remap all the variable/literal references in the constraints and the
   // enforcement literals in the variables.
   auto mapping_function = [&mapping](int* ref) {
@@ -4856,12 +4864,19 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
     auto* mutable_hint = proto->mutable_solution_hint();
     int new_size = 0;
     for (int i = 0; i < mutable_hint->vars_size(); ++i) {
-      const int ref = mutable_hint->vars(i);
-      const int image = mapping[PositiveRef(ref)];
+      const int old_ref = mutable_hint->vars(i);
+      const int64 old_value = mutable_hint->values(i);
+
+      // Note that if (old_value - r.offset) is not divisible by r.coeff, then
+      // the hint is clearly infeasible, but we still set it to a "close" value.
+      const AffineRelation::Relation r = context.GetAffineRelation(old_ref);
+      const int var = r.representative;
+      const int64 value = (old_value - r.offset) / r.coeff;
+
+      const int image = mapping[var];
       if (image >= 0) {
-        mutable_hint->set_vars(new_size,
-                               RefIsPositive(ref) ? image : NegatedRef(image));
-        mutable_hint->set_values(new_size, mutable_hint->values(i));
+        mutable_hint->set_vars(new_size, image);
+        mutable_hint->set_values(new_size, value);
         ++new_size;
       }
     }

@@ -1484,7 +1484,7 @@ void QuickSolveWithHint(const CpModelProto& model_proto,
   // Temporarily change the parameters.
   auto* parameters = model->GetOrCreate<SatParameters>();
   const SatParameters saved_params = *parameters;
-  parameters->set_max_number_of_conflicts(10);
+  parameters->set_max_number_of_conflicts(parameters->hint_conflict_limit());
   parameters->set_search_branching(SatParameters::HINT_SEARCH);
   parameters->set_optimize_with_core(false);
   auto cleanup = ::absl::MakeCleanup(
@@ -2430,7 +2430,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // TODO(user): Support solution hint, but then the first TODO will make it
   // automatic.
   if (!model_proto.has_objective() && !model_proto.has_solution_hint() &&
-      !params.enumerate_all_solutions() && !params.use_lns_only()) {
+      !params.enumerate_all_solutions() && !params.use_lns_only() &&
+      model_proto.assumptions().empty()) {
     bool is_pure_sat = true;
     for (const IntegerVariableProto& var : model_proto.variables()) {
       if (var.domain_size() != 2 || var.domain(0) < 0 || var.domain(1) > 1) {
@@ -2469,6 +2470,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   LOG_IF(INFO, log_search) << absl::StrFormat(
       "*** starting model presolve at %.2fs", wall_timer.Get());
   CpModelProto new_cp_model_proto = model_proto;  // Copy.
+
   CpModelProto mapping_proto;
   PresolveOptions options;
   options.log_info = log_search;
@@ -2476,6 +2478,20 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   options.time_limit = model->GetOrCreate<TimeLimit>();
   auto context =
       absl::make_unique<PresolveContext>(&new_cp_model_proto, &mapping_proto);
+
+  // Load the assumptions if any. For now we just fix the variables.
+  //
+  // TODO(user): Handle this properly.
+  context->InitializeNewDomains();
+  for (const int ref : model_proto.assumptions()) {
+    if (!context->SetLiteralToTrue(ref)) {
+      CpSolverResponse response;
+      response.set_status(CpSolverStatus::INFEASIBLE);
+      response.add_sufficient_assumptions_for_infeasibility(ref);
+      LOG_IF(INFO, log_search) << CpSolverResponseStats(response);
+      return response;
+    }
+  }
 
   // This function will be called before any CpSolverResponse is returned
   // to the user (at the end and in callbacks).
@@ -2654,6 +2670,14 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                                                 response.solution().end())));
   }
   LOG_IF(INFO, log_search) << CpSolverResponseStats(response);
+
+  // TODO(user): Handle this properly.
+  if (response.status() == CpSolverStatus::INFEASIBLE) {
+    // For now, just pass in all assumptions.
+    *response.mutable_sufficient_assumptions_for_infeasibility() =
+        model_proto.assumptions();
+  }
+
   return response;
 }
 

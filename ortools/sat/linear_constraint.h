@@ -188,6 +188,14 @@ LinearExpression NegationOf(const LinearExpression& expr);
 // Returns the same expression with positive variables.
 LinearExpression PositiveVarExpr(const LinearExpression& expr);
 
+// Returns the coefficient of the variable in the expression. Works in linear
+// time.
+// Note: GetCoefficient(NegationOf(var, expr)) == -GetCoefficient(var, expr).
+IntegerValue GetCoefficient(const IntegerVariable var,
+                            const LinearExpression& expr);
+IntegerValue GetCoefficientOfPositiveVar(const IntegerVariable var,
+                                         const LinearExpression& expr);
+
 }  // namespace sat
 }  // namespace operations_research
 

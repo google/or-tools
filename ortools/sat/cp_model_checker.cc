@@ -486,6 +486,12 @@ std::string ValidateCpModel(const CpModelProto& model) {
   }
   RETURN_IF_NOT_EMPTY(ValidateSearchStrategies(model));
   RETURN_IF_NOT_EMPTY(ValidateSolutionHint(model));
+  for (const int ref : model.assumptions()) {
+    if (!LiteralReferenceIsValid(model, ref)) {
+      return absl::StrCat("Invalid literal reference ", ref,
+                          " in the 'assumptions' field.");
+    }
+  }
   return "";
 }
 

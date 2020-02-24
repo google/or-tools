@@ -543,6 +543,7 @@ bool IntegerTrail::Propagate(Trail* trail) {
 }
 
 void IntegerTrail::Untrail(const Trail& trail, int literal_trail_index) {
+  ++num_untrails_;
   const int level = trail.CurrentDecisionLevel();
   for (ReversibleInterface* rev : reversible_classes_) rev->SetLevel(level);
   var_to_current_lb_interval_index_.SetLevel(level);

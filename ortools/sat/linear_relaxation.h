@@ -95,7 +95,23 @@ void AppendMaxRelaxation(IntegerVariable target,
                          LinearRelaxation* relaxation);
 
 // Adds linearization of int max constraints. Returns a vector of z vars such
-// that: z_vars[i] == 1 <=> target = exprs[i].
+// that: z_vars[l] == 1 <=> target = exprs[l].
+//
+// Consider the Lin Max constraint with d expressions and n variables in the
+// form: target = max {exprs[l] = Sum (wli * xi + bl)}. l in {1,..,d}.
+//   Li = lower bound of xi
+//   Ui = upper bound of xi.
+// Let zl be in {0,1} for all l in {1,..,d}.
+// The target = exprs[l] when zl = 1.
+//
+// The following is a valid linearization for Lin Max.
+//   target >= exprs[l], for all l in {1,..,d}
+//   target <= Sum_i(wki * xi) + Sum_l((Nkl + bl) * zl), for all k in {1,..,d}
+// Where Nkl is a large number defined as:
+//   Nkl = Sum_i(max((wli - wki)*Li, (wli - wki)*Ui))
+//       = Sum (max corner difference for variable i, target expr k, max expr l)
+// Reference: "Strong mixed-integer programming formulations for trained neural
+// networks" by Ross Anderson et. (https://arxiv.org/pdf/1811.01988.pdf).
 // TODO(user): Support linear expression as target.
 std::vector<IntegerVariable> AppendLinMaxRelaxation(
     IntegerVariable target, const std::vector<LinearExpression>& exprs,

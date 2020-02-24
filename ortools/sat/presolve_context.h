@@ -80,6 +80,9 @@ class PresolveContext {
   // Returns true if this ref only appear in one constraint.
   bool VariableIsUniqueAndRemovable(int ref) const;
 
+  // Returns true if this ref no longer appears in the model.
+  bool VariableIsNotUsedAnymore(int ref) const;
+
   // Same as VariableIsUniqueAndRemovable() except that in this case the
   // variable also appear in the objective in addition to a single constraint.
   bool VariableWithCostIsUniqueAndRemovable(int ref) const;
