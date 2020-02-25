@@ -1,12 +1,14 @@
 # Create a virtual environment with all tools installed
-# ref: https://hub.docker.com/_/alpine
-FROM alpine:edge AS env
+# ref: https://hub.docker.com/r/opensuse/tumbleweed
+FROM opensuse/tumbleweed AS env
 LABEL maintainer="mizux.dev@gmail.com"
 # Install system build dependencies
 ENV PATH=$PATH:/usr/local/bin
-RUN apk add --no-cache git build-base linux-headers cmake
+RUN zypper update -y \
+&& zypper install -y git gcc gcc-c++ cmake \
+&& zypper clean -a
+ENV CC=gcc CXX=g++
 CMD [ "/bin/sh" ]
-
 
 
 
@@ -29,9 +31,13 @@ RUN cmake --build build --target install
 
 FROM env AS python
 # Swig install
-RUN apk add --no-cache swig
+RUN zypper update -y \
+&& zypper install -y swig \
+&& zypper clean -a
 # Python install
-RUN apk add --no-cache python3-dev
+RUN zypper update -y \
+&& zypper install -y python3 python3-pip python3-devel \
+&& zypper clean -a
 # Create lib directory
 WORKDIR /home/lib
 # Bundle lib source
@@ -47,10 +53,13 @@ RUN cmake --build build --target install
 
 FROM env AS java
 # Swig install
-RUN apk add --no-cache swig
+RUN zypper update -y \
+&& zypper install -y swig \
+&& zypper clean -a
 # Java install
-ENV JAVA_HOME=/usr/lib/jvm/java-1.8-openjdk
-RUN apk add --no-cache openjdk8
+RUN zypper update -y \
+&& zypper install -y java-1_8_0-openjdk-devel \
+&& zypper clean -a
 # Create lib directory
 WORKDIR /home/lib
 # Bundle lib source
@@ -64,15 +73,18 @@ RUN cmake --build build --target install
 
 
 
+
 FROM env AS dotnet
 # Swig install
-RUN apk add --no-cache swig
-# Add dependencies for disabling invariant mode (set in base image)
-RUN apk add --no-cache wget icu-libs	libintl
-# .NET install
-RUN dotnet_sdk_version=3.1.101 \
-&& wget -O dotnet.tar.gz https://dotnetcli.azureedge.net/dotnet/Sdk/$dotnet_sdk_version/dotnet-sdk-$dotnet_sdk_version-linux-musl-x64.tar.gz \
-&& dotnet_sha512='ce386da8bc07033957fd404909fc230e8ab9e29929675478b90f400a1838223379595a4459056c6c2251ab5c722f80858b9ca536db1a2f6d1670a97094d0fe55' \
+RUN zypper update -y \
+&& zypper install -y swig \
+&& zypper clean -a
+# .Net install
+RUN zypper update -y \
+&& zypper install -y wget tar libicu-devel
+RUN dotnet_sdk_version=3.1.102 \
+&& wget -O dotnet.tar.gz https://dotnetcli.azureedge.net/dotnet/Sdk/$dotnet_sdk_version/dotnet-sdk-$dotnet_sdk_version-linux-x64.tar.gz \
+&& dotnet_sha512='9cacdc9700468a915e6fa51a3e5539b3519dd35b13e7f9d6c4dd0077e298baac0e50ad1880181df6781ef1dc64a232e9f78ad8e4494022987d12812c4ca15f29' \
 && echo "$dotnet_sha512  dotnet.tar.gz" | sha512sum -c - \
 && mkdir -p /usr/share/dotnet \
 && tar -C /usr/share/dotnet -oxzf dotnet.tar.gz \
@@ -94,7 +106,7 @@ RUN cmake --build build --target install
 
 
 # Create an install image
-FROM env AS install_cpp
+FROM env AS install
 # Copy lib from devel to prod
 COPY --from=cpp /usr/local /usr/local/
 # Copy  sample

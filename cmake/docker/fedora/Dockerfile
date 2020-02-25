@@ -1,20 +1,22 @@
 # Create a virtual environment with all tools installed
-# ref: https://hub.docker.com/_/alpine
-FROM alpine:edge AS env
+# ref: https://hub.docker.com/_/fedora
+FROM fedora:latest AS env
 LABEL maintainer="mizux.dev@gmail.com"
 # Install system build dependencies
 ENV PATH=$PATH:/usr/local/bin
-RUN apk add --no-cache git build-base linux-headers cmake
+RUN dnf -y update \
+&& dnf -y install git wget \
+&& dnf -y groupinstall "Development Tools" \
+&& dnf -y install gcc-c++ cmake \
+&& dnf clean all
 CMD [ "/bin/sh" ]
-
 
 
 
 # Add the library src to our build env
 FROM env AS cpp
 # Create lib directory
-WORKDIR /home/lib
-# Bundle lib source
+WORKDIR /home/liBundle lib source
 COPY . .
 # CMake version
 RUN cmake -version
@@ -29,9 +31,13 @@ RUN cmake --build build --target install
 
 FROM env AS python
 # Swig install
-RUN apk add --no-cache swig
+RUN dnf -y update \
+&& dnf -y install swig \
+&& dnf clean all
 # Python install
-RUN apk add --no-cache python3-dev
+RUN dnf -y update \
+&& dnf -y install python3 python3-devel \
+&& dnf clean all
 # Create lib directory
 WORKDIR /home/lib
 # Bundle lib source
@@ -47,10 +53,14 @@ RUN cmake --build build --target install
 
 FROM env AS java
 # Swig install
-RUN apk add --no-cache swig
+RUN dnf -y update \
+&& dnf -y install swig \
+&& dnf clean all
 # Java install
-ENV JAVA_HOME=/usr/lib/jvm/java-1.8-openjdk
-RUN apk add --no-cache openjdk8
+ENV JAVA_HOME=/usr/lib/jvm/jre-1.8.0-openjdk
+RUN dnf -y update \
+&& dnf -y install java-1.8.0-openjdk-devel \
+&& dnf clean all
 # Create lib directory
 WORKDIR /home/lib
 # Bundle lib source
@@ -64,20 +74,19 @@ RUN cmake --build build --target install
 
 
 
+
 FROM env AS dotnet
 # Swig install
-RUN apk add --no-cache swig
-# Add dependencies for disabling invariant mode (set in base image)
-RUN apk add --no-cache wget icu-libs	libintl
-# .NET install
-RUN dotnet_sdk_version=3.1.101 \
-&& wget -O dotnet.tar.gz https://dotnetcli.azureedge.net/dotnet/Sdk/$dotnet_sdk_version/dotnet-sdk-$dotnet_sdk_version-linux-musl-x64.tar.gz \
-&& dotnet_sha512='ce386da8bc07033957fd404909fc230e8ab9e29929675478b90f400a1838223379595a4459056c6c2251ab5c722f80858b9ca536db1a2f6d1670a97094d0fe55' \
-&& echo "$dotnet_sha512  dotnet.tar.gz" | sha512sum -c - \
-&& mkdir -p /usr/share/dotnet \
-&& tar -C /usr/share/dotnet -oxzf dotnet.tar.gz \
-&& ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet \
-&& rm dotnet.tar.gz
+RUN dnf -y update \
+&& dnf -y install swig \
+&& dnf clean all
+# .Net install
+# see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-fedora31
+RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc \
+&& wget -q -O /etc/yum.repos.d/microsoft-prod.repo https://packages.microsoft.com/config/fedora/31/prod.repo \
+&& dnf -y update \
+&& dnf -y install dotnet-sdk-3.1 \
+&& dnf clean all
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 # Create lib directory
@@ -94,7 +103,7 @@ RUN cmake --build build --target install
 
 
 # Create an install image
-FROM env AS install_cpp
+FROM env AS install
 # Copy lib from devel to prod
 COPY --from=cpp /usr/local /usr/local/
 # Copy  sample

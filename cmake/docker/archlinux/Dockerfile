@@ -1,12 +1,11 @@
 # Create a virtual environment with all tools installed
-# ref: https://hub.docker.com/_/alpine
-FROM alpine:edge AS env
+# ref: https://hub.docker.com/_/archlinux/
+FROM archlinux/base AS env
 LABEL maintainer="mizux.dev@gmail.com"
 # Install system build dependencies
 ENV PATH=$PATH:/usr/local/bin
-RUN apk add --no-cache git build-base linux-headers cmake
+RUN pacman -Syu --noconfirm git base-devel cmake
 CMD [ "/bin/sh" ]
-
 
 
 
@@ -27,11 +26,12 @@ RUN cmake --build build --target install
 
 
 
+# Add the library src to our build env
 FROM env AS python
 # Swig install
-RUN apk add --no-cache swig
+RUN pacman -Syu --noconfirm swig
 # Python install
-RUN apk add --no-cache python3-dev
+RUN pacman -Syu --noconfirm python python-pip
 # Create lib directory
 WORKDIR /home/lib
 # Bundle lib source
@@ -45,12 +45,12 @@ RUN cmake --build build --target install
 
 
 
+# Add the library src to our build env
 FROM env AS java
 # Swig install
-RUN apk add --no-cache swig
+RUN pacman -Syu --noconfirm swig
 # Java install
-ENV JAVA_HOME=/usr/lib/jvm/java-1.8-openjdk
-RUN apk add --no-cache openjdk8
+RUN pacman -Syu --noconfirm jdk-openjdk
 # Create lib directory
 WORKDIR /home/lib
 # Bundle lib source
@@ -64,22 +64,12 @@ RUN cmake --build build --target install
 
 
 
+# Add the library src to our build env
 FROM env AS dotnet
 # Swig install
-RUN apk add --no-cache swig
-# Add dependencies for disabling invariant mode (set in base image)
-RUN apk add --no-cache wget icu-libs	libintl
-# .NET install
-RUN dotnet_sdk_version=3.1.101 \
-&& wget -O dotnet.tar.gz https://dotnetcli.azureedge.net/dotnet/Sdk/$dotnet_sdk_version/dotnet-sdk-$dotnet_sdk_version-linux-musl-x64.tar.gz \
-&& dotnet_sha512='ce386da8bc07033957fd404909fc230e8ab9e29929675478b90f400a1838223379595a4459056c6c2251ab5c722f80858b9ca536db1a2f6d1670a97094d0fe55' \
-&& echo "$dotnet_sha512  dotnet.tar.gz" | sha512sum -c - \
-&& mkdir -p /usr/share/dotnet \
-&& tar -C /usr/share/dotnet -oxzf dotnet.tar.gz \
-&& ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet \
-&& rm dotnet.tar.gz
-# Trigger first run experience by running arbitrary cmd
-RUN dotnet --info
+RUN pacman -Syu --noconfirm swig
+# .Net install
+RUN pacman -Syu --noconfirm dotnet-sdk
 # Create lib directory
 WORKDIR /home/lib
 # Bundle lib source
