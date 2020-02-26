@@ -139,6 +139,11 @@ class PresolveContext {
   void StoreAffineRelation(const ConstraintProto& ct, int ref_x, int ref_y,
                            int64 coeff, int64 offset);
 
+  // Adds the fact that ref_a == ref_b.
+  //
+  // Important: This does not update the constraint<->variable graph, so
+  // ConstraintVariableGraphIsUpToDate() will be false until
+  // UpdateNewConstraintsVariableUsage() is called.
   void StoreBooleanEqualityRelation(int ref_a, int ref_b);
 
   // Stores the relation target_ref = abs(ref);
@@ -164,27 +169,26 @@ class PresolveContext {
   // Clears the "rules" statistics.
   void ClearStats();
 
-  // Gets the canonical represention of the (ref, value) pair.
-  // It makes sure var is positive, and is canonical w.r.t. the affine
-  // relations. It returns false if the value is not valid w.r.t. the domains of
-  // the variables.
-  ABSL_MUST_USE_RESULT bool GetCanonicalVarValuePair(int ref, int64 value,
-                                                     int* var,
-                                                     int64* var_value);
-
   // Inserts the given literal to encode ref == value.
   // If an encoding already exists, it adds the two implications between
   // the previous encoding and the new encoding.
+  //
+  // Important: This does not update the constraint<->variable graph, so
+  // ConstraintVariableGraphIsUpToDate() will be false until
+  // UpdateNewConstraintsVariableUsage() is called.
   void InsertVarValueEncoding(int literal, int ref, int64 value);
 
   // Gets the associated literal if it is already created. Otherwise
   // create it, add the corresponding constraints and returns it.
-  ABSL_MUST_USE_RESULT int GetOrCreateVarValueEncoding(int ref, int64 value);
+  //
+  // Important: This does not update the constraint<->variable graph, so
+  // ConstraintVariableGraphIsUpToDate() will be false until
+  // UpdateNewConstraintsVariableUsage() is called.
+  int GetOrCreateVarValueEncoding(int ref, int64 value);
 
   // Returns true if a literal attached to ref == var exists.
   // It assigns the corresponding to `literal` if non null.
-  ABSL_MUST_USE_RESULT bool HasVarValueEncoding(int ref, int64 value,
-                                                int* literal = nullptr);
+  bool HasVarValueEncoding(int ref, int64 value, int* literal = nullptr);
 
   // Stores the fact that literal implies var == value.
   // It returns true if that information is new.
@@ -269,12 +273,17 @@ class PresolveContext {
   // contains -1 so that if the objective appear in only one constraint, the
   // constraint cannot be simplified.
   const std::vector<int>& ConstraintToVars(int c) const {
+    DCHECK(ConstraintVariableGraphIsUpToDate());
     return constraint_to_vars_[c];
   }
   const absl::flat_hash_set<int>& VarToConstraints(int var) const {
+    DCHECK(ConstraintVariableGraphIsUpToDate());
     return var_to_constraints_[var];
   }
-  int IntervalUsage(int c) const { return interval_usage_[c]; }
+  int IntervalUsage(int c) const {
+    DCHECK(ConstraintVariableGraphIsUpToDate());
+    return interval_usage_[c];
+  }
 
   // For each variables, list the constraints that just enforce a lower bound
   // (resp. upper bound) on that variable. If all the constraints in which a

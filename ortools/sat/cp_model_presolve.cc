@@ -56,7 +56,7 @@ bool CpModelPresolver::RemoveConstraint(ConstraintProto* ct) {
   return true;
 }
 
-void CpModelPresolver::SyncDomainAndRemoveEmptyConstraints() {
+void CpModelPresolver::RemoveEmptyConstraints() {
   // Remove all empty constraints. Note that we need to remap the interval
   // references.
   std::vector<int> interval_mapping(context_->working_model->constraints_size(),
@@ -83,11 +83,6 @@ void CpModelPresolver::SyncDomainAndRemoveEmptyConstraints() {
           CHECK_NE(-1, *ref);
         },
         &ct_ref);
-  }
-
-  for (int i = 0; i < context_->working_model->variables_size(); ++i) {
-    FillDomainInProto(context_->DomainOf(i),
-                      context_->working_model->mutable_variables(i));
   }
 }
 
@@ -942,17 +937,6 @@ bool CpModelPresolver::CanonicalizeLinear(ConstraintProto* ct) {
     return false;
   }
 
-  // Special case. We must not touch the half implications.
-  //   literal => var ==/!= constant
-  // because in case this is fully reified, var will be shifted back, and the
-  // constraint will become a no-op.
-  if (ct->enforcement_literal_size() == 1 && ct->linear().vars_size() == 1 &&
-      context_->GetAffineRelation(PositiveRef(ct->linear().vars(0)))
-              .representative == PositiveRef(ct->enforcement_literal(0))) {
-    VLOG(2) << "Skip half-reified linear: " << ct->DebugString();
-    return false;
-  }
-
   // First regroup the terms on the same variables and sum the fixed ones.
   //
   // TODO(user): move terms in context to reuse its memory? Add a quick pass
@@ -1284,6 +1268,7 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
 
     // TODO(user): if we have l1 <=> x == value && l2 => x == value, we
     //     could rewrite the second constraint into l2 => l1.
+    context_->UpdateNewConstraintsVariableUsage();
     return false;
   }
 
@@ -4161,7 +4146,7 @@ bool CpModelPresolver::ProcessSetPPC() {
   return changed;
 }
 
-void CpModelPresolver::CanonicalizeAffineDomain(int var) {
+void CpModelPresolver::TryToSimplifyDomain(int var) {
   CHECK(RefIsPositive(var));
   if (context_->ModelIsUnsat()) return;
   if (context_->IsFixed(var)) return;
@@ -4169,6 +4154,7 @@ void CpModelPresolver::CanonicalizeAffineDomain(int var) {
 
   const AffineRelation::Relation r = context_->GetAffineRelation(var);
   if (r.representative != var) return;
+
   if (context_->VariableIsOnlyUsedInEncoding(var)) {
     // TODO(user): We can remove such variable and its constraints by:
     // - Adding proper constraints on the enforcement literals. Simple case is
@@ -4178,38 +4164,15 @@ void CpModelPresolver::CanonicalizeAffineDomain(int var) {
     context_->UpdateRuleStats("TODO variables: only used in encoding.");
   }
 
+  // Only process discrete domain.
   const Domain& domain = context_->DomainOf(var);
 
-  // Special case for non-Boolean domain of size 2. We will try to reuse the
-  // encoding literals if present.
+  // Special case for non-Boolean domain of size 2.
   if (domain.Size() == 2 && (domain.Min() != 0 || domain.Max() != 1)) {
     // Shifted and/or scaled Boolean variable.
-    const int64 var_min = context_->MinOf(var);
-    const int64 var_max = context_->MaxOf(var);
-
-    int literal;
-    if (!context_->HasVarValueEncoding(var, var_max, &literal)) {
-      literal = context_->NewBoolVar();
-    }
-
-    ConstraintProto* const ct = context_->working_model->add_constraints();
-    LinearConstraintProto* const lin = ct->mutable_linear();
-    lin->add_vars(var);
-    lin->add_coeffs(1);
-    lin->add_vars(PositiveRef(literal));
-    if (RefIsPositive(literal)) {
-      lin->add_coeffs(var_min - var_max);
-      lin->add_domain(var_min);
-      lin->add_domain(var_min);
-      context_->StoreAffineRelation(*ct, var, literal, var_max - var_min,
-                                    var_min);
-    } else {
-      lin->add_coeffs(var_max - var_min);
-      lin->add_domain(var_max);
-      lin->add_domain(var_max);
-      context_->StoreAffineRelation(*ct, var, NegatedRef(literal),
-                                    var_min - var_max, var_max);
-    }
+    const int new_var_index = context_->NewBoolVar();
+    context_->InsertVarValueEncoding(new_var_index, var, domain.Max());
+    context_->UpdateRuleStats("variables: canonicalize size two domain");
     return;
   }
 
@@ -4226,7 +4189,6 @@ void CpModelPresolver::CanonicalizeAffineDomain(int var) {
     gcd = MathUtil::GCD64(gcd, shifted_value);
     if (gcd == 1) break;
   }
-  // TODO(user): Experiment with reduction if gcd == 1 && var_min != 0.
   if (gcd == 1) return;
 
   int new_var_index;
@@ -4263,9 +4225,10 @@ void CpModelPresolver::PresolveToFixPoint() {
   {
     const int num_vars = context_->working_model->variables_size();
     for (int var = 0; var < num_vars; ++var) {
-      CanonicalizeAffineDomain(var);
+      TryToSimplifyDomain(var);
     }
   }
+  context_->UpdateNewConstraintsVariableUsage();
 
   // Limit on number of operations.
   const int64 max_num_operations =
@@ -4341,7 +4304,7 @@ void CpModelPresolver::PresolveToFixPoint() {
 
     // Re-add to the queue the constraints that touch a variable that changed.
     // Note that it is important to use indices in the loop below because
-    // CanonicalizeAffineDomain() might create new variables which will change
+    // TryToSimplifyDomain() might create new variables which will change
     // the set of modified domains.
     //
     // TODO(user): Avoid reprocessing the constraints that changed the variables
@@ -4357,10 +4320,11 @@ void CpModelPresolver::PresolveToFixPoint() {
         //
         // Important: This code is a bit brittle, because it assumes
         // PositionsSetAtLeastOnce() will not change behind our back. That
-        // should however be the case because CanonicalizeAffineDomain() will
-        // only mark as modified via AddAffineRelation a variable that is
-        // already present in the modified set.
-        CanonicalizeAffineDomain(v);
+        // should however be the case because TryToSimplifyDomain() will only
+        // mark as modified via AddAffineRelation a variable that is already
+        // present in the modified set.
+        TryToSimplifyDomain(v);
+        context_->UpdateNewConstraintsVariableUsage();
         in_queue.resize(context_->working_model->constraints_size(), false);
       }
       for (const int c : context_->VarToConstraints(v)) {
@@ -4515,12 +4479,10 @@ void CpModelPresolver::RemoveUnusedEquivalentVariables() {
     arg->add_coeffs(-r.coeff);
     arg->add_domain(r.offset);
     arg->add_domain(r.offset);
+    context_->UpdateNewConstraintsVariableUsage();
   }
 
   VLOG(1) << "num_affine_relations kept = " << num_affine_relations;
-
-  // Update the variable usage.
-  context_->UpdateNewConstraintsVariableUsage();
 }
 
 void LogInfoFromContext(const PresolveContext* context) {
@@ -4600,6 +4562,7 @@ bool CpModelPresolver::Presolve() {
 
   // If presolve is false, just run expansion.
   if (!options_.parameters.cp_model_presolve()) {
+    context_->UpdateNewConstraintsVariableUsage();
     ExpandCpModel(options_, context_);
     if (options_.log_info) LogInfoFromContext(context_);
     return true;
@@ -4658,6 +4621,7 @@ bool CpModelPresolver::Presolve() {
 
     // Call expansion.
     ExpandCpModel(options_, context_);
+    DCHECK(context_->ConstraintVariableUsageIsConsistent());
 
     // TODO(user): do that and the pure-SAT part below more than once.
     if (options_.parameters.cp_model_probing_level() > 0) {
@@ -4741,13 +4705,6 @@ bool CpModelPresolver::Presolve() {
   // Note: Removing unused equivalent variables should be done at the end.
   RemoveUnusedEquivalentVariables();
 
-  // TODO(user): Past this point the context.constraint_to_vars[] graph is not
-  // consistent and shouldn't be used. We do use var_to_constraints.size()
-  // though.
-  if (options_.time_limit == nullptr || !options_.time_limit->LimitReached()) {
-    DCHECK(context_->ConstraintVariableUsageIsConsistent());
-  }
-
   // Remove duplicate constraints.
   //
   // TODO(user): We might want to do that earlier so that our count of variable
@@ -4769,8 +4726,6 @@ bool CpModelPresolver::Presolve() {
       context_->UpdateRuleStats("removed duplicate constraints");
     }
   }
-
-  SyncDomainAndRemoveEmptyConstraints();
 
   // The strategy variable indices will be remapped in ApplyVariableMapping()
   // but first we use the representative of the affine relations for the
@@ -4823,6 +4778,12 @@ bool CpModelPresolver::Presolve() {
     }
   }
 
+  // Sync the domains.
+  for (int i = 0; i < context_->working_model->variables_size(); ++i) {
+    FillDomainInProto(context_->DomainOf(i),
+                      context_->working_model->mutable_variables(i));
+  }
+
   // Set the variables of the mapping_model.
   context_->mapping_model->mutable_variables()->CopyFrom(
       context_->working_model->variables());
@@ -4838,7 +4799,12 @@ bool CpModelPresolver::Presolve() {
     mapping[i] = postsolve_mapping_->size();
     postsolve_mapping_->push_back(i);
   }
+
+  DCHECK(context_->ConstraintVariableUsageIsConsistent());
   ApplyVariableMapping(mapping, *context_);
+
+  // Compact all non-empty constraint at the beginning.
+  RemoveEmptyConstraints();
 
   // Hack to display the number of deductions stored.
   if (context_->deductions.NumDeductions() > 0) {

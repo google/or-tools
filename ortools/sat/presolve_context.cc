@@ -418,7 +418,6 @@ void PresolveContext::StoreBooleanEqualityRelation(int ref_a, int ref_b) {
     arg->add_domain(1);
     StoreAffineRelation(*ct, var_a, var_b, /*coeff=*/-1, /*offset=*/1);
   }
-  UpdateNewConstraintsVariableUsage();
 }
 
 bool PresolveContext::StoreAbsRelation(int target_ref, int ref) {
@@ -488,48 +487,70 @@ void PresolveContext::InitializeNewDomains() {
   var_to_lb_only_constraints.resize(domains.size());
 }
 
-bool PresolveContext::GetCanonicalVarValuePair(int ref, int64 value, int* var,
-                                               int64* var_value) {
-  *var = PositiveRef(ref);
-  *var_value = RefIsPositive(ref) ? value : -value;
-
-  // Check affine relation, go back to representative if possible.
-  const AffineRelation::Relation r = GetAffineRelation(*var);
-  if (r.representative != *var) {
-    const int64 rep_value = (*var_value - r.offset) / r.coeff;
-    if (rep_value * r.coeff + r.offset != *var_value) return false;
-    *var = r.representative;
-    *var_value = rep_value;
-  }
-
-  return domains[*var].Contains(*var_value);
-}
-
 void PresolveContext::InsertVarValueEncoding(int literal, int ref,
                                              int64 value) {
-  // If the encoding already exists. Merge the previous and the new encoding
-  // literals.
-  int previous_literal;
-  if (HasVarValueEncoding(ref, value, &previous_literal)) {
-    StoreBooleanEqualityRelation(literal, previous_literal);
-    return;
-  }
-
-  int var;
-  int64 var_value;
-  CHECK(GetCanonicalVarValuePair(ref, value, &var, &var_value));
-
-  const std::pair<std::pair<int, int64>, int> insert_key =
+  const int var = PositiveRef(ref);
+  const int64 var_value = RefIsPositive(ref) ? value : -value;
+  const std::pair<std::pair<int, int64>, int> key =
       std::make_pair(std::make_pair(var, var_value), literal);
-  const auto& insert_status = encoding.insert(insert_key);
-  CHECK(insert_status.second);
-  VLOG(2) << "Insert lit(" << literal << ") <=> var(" << var
-          << ") == " << value;
-  const std::pair<int, int64> key{var, var_value};
-  eq_half_encoding[key].insert(literal);
-  AddImplyInDomain(literal, var, Domain(var_value));
-  neq_half_encoding[key].insert(NegatedRef(literal));
-  AddImplyInDomain(NegatedRef(literal), var, Domain(var_value).Complement());
+  const auto& insert = encoding.insert(key);
+  if (insert.second) {
+    if (DomainOf(var).Size() == 2) {
+      // Encode the other literal.
+      const int64 var_min = MinOf(var);
+      const int64 var_max = MaxOf(var);
+      const int64 other_value = value == var_min ? var_max : var_min;
+      const std::pair<int, int64> other_key{var, other_value};
+      auto other_it = encoding.find(other_key);
+      if (other_it != encoding.end()) {
+        // Other value in the domain was already encoded.
+        const int previous_other_literal = other_it->second;
+        if (previous_other_literal != NegatedRef(literal)) {
+          StoreBooleanEqualityRelation(literal,
+                                       NegatedRef(previous_other_literal));
+        }
+      } else {
+        encoding[other_key] = NegatedRef(literal);
+        // Add affine relation.
+        // TODO(user): In linear presolve, recover var-value encoding from
+        //     linear constraints like the one created below. This would be
+        //     useful in case the variable has an affine representative, and the
+        //     below constraint is rewritten.
+        ConstraintProto* const ct = working_model->add_constraints();
+        LinearConstraintProto* const lin = ct->mutable_linear();
+        lin->add_vars(var);
+        lin->add_coeffs(1);
+        lin->add_vars(PositiveRef(literal));
+        if (RefIsPositive(literal) == (var_value == var_max)) {
+          lin->add_coeffs(var_min - var_max);
+          lin->add_domain(var_min);
+          lin->add_domain(var_min);
+          StoreAffineRelation(*ct, var, PositiveRef(literal), var_max - var_min,
+                              var_min);
+        } else {
+          lin->add_coeffs(var_max - var_min);
+          lin->add_domain(var_max);
+          lin->add_domain(var_max);
+          StoreAffineRelation(*ct, var, PositiveRef(literal), var_min - var_max,
+                              var_max);
+        }
+      }
+    } else {
+      VLOG(2) << "Insert lit(" << literal << ") <=> var(" << var
+              << ") == " << value;
+      const std::pair<int, int64> key{var, var_value};
+      eq_half_encoding[key].insert(literal);
+      AddImplyInDomain(literal, var, Domain(var_value));
+      neq_half_encoding[key].insert(NegatedRef(literal));
+      AddImplyInDomain(NegatedRef(literal), var,
+                       Domain(var_value).Complement());
+    }
+  } else {
+    const int previous_literal = insert.first->second;
+    if (literal != previous_literal) {
+      StoreBooleanEqualityRelation(literal, previous_literal);
+    }
+  }
 }
 
 bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
@@ -586,33 +607,8 @@ bool PresolveContext::StoreLiteralImpliesVarNEqValue(int literal, int var,
 }
 
 bool PresolveContext::HasVarValueEncoding(int ref, int64 value, int* literal) {
-  int var;
-  int64 var_value;
-  if (!GetCanonicalVarValuePair(ref, value, &var, &var_value)) {
-    if (literal != nullptr) {
-      *literal = GetOrCreateConstantVar(0);
-    }
-    return true;
-  }
-
-  const Domain& domain = domains[var];
-  if (domain.Size() == 1) {
-    if (literal != nullptr) {
-      *literal = GetOrCreateConstantVar(1);
-    }
-    return true;
-  }
-
-  // A Boolean variable is always fully encoded (with itself).
-  if (domain.Size() == 2 && domain.Min() == 0 && domain.Max() == 1) {
-    if (literal != nullptr) {
-      *literal = var_value == 1 ? GetLiteralRepresentative(var)
-                                : GetLiteralRepresentative(NegatedRef(var));
-    }
-    return true;
-  }
-
-  // We know the variable is canonical w.r.t. the affine representation.
+  const int var = PositiveRef(ref);
+  const int64 var_value = RefIsPositive(ref) ? value : -value;
   const std::pair<int, int64> key{var, var_value};
   const auto& it = encoding.find(key);
   if (it != encoding.end()) {
@@ -621,42 +617,18 @@ bool PresolveContext::HasVarValueEncoding(int ref, int64 value, int* literal) {
     }
     return true;
   } else {
-    // Try to recover literal from the other one if the size of the domain is 2.
-    // At this point, the variable is not Boolean.
-    if (domains[var].Size() == 2) {
-      const int64 var_min = MinOf(var);
-      const int64 var_max = MaxOf(var);
-      // Checks if the other value is already encoded.
-      const int64 other_value = var_value == var_min ? var_max : var_min;
-      const std::pair<int, int64> other_key{var, other_value};
-      auto other_it = encoding.find(other_key);
-      if (other_it != encoding.end()) {
-        // Update the encoding map. The domain could have been reduced to size
-        // two after the creation of the first literal.
-        const int other_literal = GetLiteralRepresentative(other_it->second);
-        encoding[key] = NegatedRef(other_literal);
-        if (literal != nullptr) {
-          *literal = NegatedRef(other_literal);
-        }
-        return true;
-      }
-    }
     return false;
   }
 }
 
 int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64 value) {
-  int var;
-  int64 var_value;
-  if (!GetCanonicalVarValuePair(ref, value, &var, &var_value)) {
+  // TODO(user,user): use affine relation here.
+  const int var = PositiveRef(ref);
+  const int64 var_value = RefIsPositive(ref) ? value : -value;
+
+  // Returns the false literal if the value is not in the domain.
+  if (!domains[var].Contains(var_value)) {
     return GetOrCreateConstantVar(0);
-  }
-
-  const Domain& domain = domains[var];
-
-  // Special case for fixed domains.
-  if (domain.Size() == 1) {
-    return GetOrCreateConstantVar(1);
   }
 
   // Returns the associated literal if already present.
@@ -666,16 +638,17 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64 value) {
     return GetLiteralRepresentative(it->second);
   }
 
-  // Boolean variables.
-  if (domain.Size() == 2 && domain.Min() == 0 && domain.Max() == 1) {
-    return var_value == 1 ? GetLiteralRepresentative(var)
-                          : GetLiteralRepresentative(NegatedRef(var));
+  // Special case for fixed domains.
+  if (domains[var].Size() == 1) {
+    const int true_literal = GetOrCreateConstantVar(1);
+    encoding[key] = true_literal;
+    return true_literal;
   }
 
-  // Special case for non Boolean variables with a domains of size 2.
+  // Special case for domains of size 2.
+  const int64 var_min = MinOf(var);
+  const int64 var_max = MaxOf(var);
   if (domains[var].Size() == 2) {
-    const int64 var_min = MinOf(var);
-    const int64 var_max = MaxOf(var);
     // Checks if the other value is already encoded.
     const int64 other_value = var_value == var_min ? var_max : var_min;
     const std::pair<int, int64> other_key{var, other_value};
@@ -683,16 +656,23 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64 value) {
     if (other_it != encoding.end()) {
       // Update the encoding map. The domain could have been reduced to size
       // two after the creation of the first literal.
-      const int other_literal = GetLiteralRepresentative(other_it->second);
-      encoding[key] = NegatedRef(other_literal);
-      return NegatedRef(other_literal);
+      const int other_literal =
+          GetLiteralRepresentative(NegatedRef(other_it->second));
+      encoding[key] = other_literal;
+      return other_literal;
     }
 
-    // Create the literal. We try to have literal == true <-> var == var_max.
-    const int literal = NewBoolVar();
-    InsertVarValueEncoding(literal, var, var_max);
-    const int representative = GetLiteralRepresentative(literal);
-    return var_value == var_max ? representative : NegatedRef(representative);
+    if (var_min == 0 && var_max == 1) {
+      const int representative = GetLiteralRepresentative(var);
+      encoding[{var, 1}] = representative;
+      encoding[{var, 0}] = NegatedRef(representative);
+      return value == 1 ? representative : NegatedRef(representative);
+    } else {
+      const int literal = NewBoolVar();
+      InsertVarValueEncoding(literal, var, var_max);
+      const int representative = GetLiteralRepresentative(literal);
+      return var_value == var_max ? representative : NegatedRef(representative);
+    }
   }
 
   const int literal = NewBoolVar();

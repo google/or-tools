@@ -75,7 +75,7 @@ class CpModelPresolver {
   bool PresolveOneConstraint(int c);
 
   // Public for testing only.
-  void SyncDomainAndRemoveEmptyConstraints();
+  void RemoveEmptyConstraints();
 
  private:
   void PresolveToFixPoint();
@@ -151,7 +151,7 @@ class CpModelPresolver {
 
   void ExpandObjective();
 
-  void CanonicalizeAffineDomain(int var);
+  void TryToSimplifyDomain(int var);
 
   void MergeNoOverlapConstraints();
 
