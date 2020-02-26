@@ -2431,7 +2431,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // automatic.
   if (!model_proto.has_objective() && !model_proto.has_solution_hint() &&
       !params.enumerate_all_solutions() && !params.use_lns_only() &&
-      model_proto.assumptions().empty()) {
+      params.num_search_workers() <= 1 && model_proto.assumptions().empty()) {
     bool is_pure_sat = true;
     for (const IntegerVariableProto& var : model_proto.variables()) {
       if (var.domain_size() != 2 || var.domain(0) < 0 || var.domain(1) > 1) {

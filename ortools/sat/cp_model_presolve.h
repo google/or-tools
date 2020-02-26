@@ -151,7 +151,7 @@ class CpModelPresolver {
 
   void ExpandObjective();
 
-  void TryToSimplifyDomain(int var);
+  void CanonicalizeAffineDomain(int var);
 
   void MergeNoOverlapConstraints();
 

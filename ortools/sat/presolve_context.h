@@ -73,10 +73,6 @@ class PresolveContext {
     return domains[var].IsIncludedIn(domain);
   }
 
-  // Returns true iff the variable is not the representative of an equivalence
-  // class of size at least 2.
-  bool VariableIsNotRepresentativeOfEquivalenceClass(int ref) const;
-
   // Returns true if this ref only appear in one constraint.
   bool VariableIsUniqueAndRemovable(int ref) const;
 
@@ -86,6 +82,12 @@ class PresolveContext {
   // Same as VariableIsUniqueAndRemovable() except that in this case the
   // variable also appear in the objective in addition to a single constraint.
   bool VariableWithCostIsUniqueAndRemovable(int ref) const;
+
+  // Returns true if an integer variable is only appearing in the rhs of
+  // constraints of the form lit => var in domain. When this is the case, then
+  // we can usually remove this variable and replace these constraints with
+  // the proper constraints on the enforcement literals.
+  bool VariableIsOnlyUsedInEncoding(int ref) const;
 
   // Returns false if the new domain is empty. Sets 'domain_modified' (if
   // provided) to true iff the domain is modified otherwise does not change it.
@@ -162,6 +164,14 @@ class PresolveContext {
   // Clears the "rules" statistics.
   void ClearStats();
 
+  // Gets the canonical represention of the (ref, value) pair.
+  // It makes sure var is positive, and is canonical w.r.t. the affine
+  // relations. It returns false if the value is not valid w.r.t. the domains of
+  // the variables.
+  ABSL_MUST_USE_RESULT bool GetCanonicalVarValuePair(int ref, int64 value,
+                                                     int* var,
+                                                     int64* var_value);
+
   // Inserts the given literal to encode ref == value.
   // If an encoding already exists, it adds the two implications between
   // the previous encoding and the new encoding.
@@ -169,11 +179,12 @@ class PresolveContext {
 
   // Gets the associated literal if it is already created. Otherwise
   // create it, add the corresponding constraints and returns it.
-  int GetOrCreateVarValueEncoding(int ref, int64 value);
+  ABSL_MUST_USE_RESULT int GetOrCreateVarValueEncoding(int ref, int64 value);
 
   // Returns true if a literal attached to ref == var exists.
   // It assigns the corresponding to `literal` if non null.
-  bool HasVarValueEncoding(int ref, int64 value, int* literal = nullptr);
+  ABSL_MUST_USE_RESULT bool HasVarValueEncoding(int ref, int64 value,
+                                                int* literal = nullptr);
 
   // Stores the fact that literal implies var == value.
   // It returns true if that information is new.
@@ -257,10 +268,13 @@ class PresolveContext {
   // Important: To properly handle the objective, var_to_constraints[objective]
   // contains -1 so that if the objective appear in only one constraint, the
   // constraint cannot be simplified.
-  //
-  // TODO(user): Make this private?
-  std::vector<std::vector<int>> constraint_to_vars;
-  std::vector<absl::flat_hash_set<int>> var_to_constraints;
+  const std::vector<int>& ConstraintToVars(int c) const {
+    return constraint_to_vars_[c];
+  }
+  const absl::flat_hash_set<int>& VarToConstraints(int var) const {
+    return var_to_constraints_[var];
+  }
+  int IntervalUsage(int c) const { return interval_usage_[c]; }
 
   // For each variables, list the constraints that just enforce a lower bound
   // (resp. upper bound) on that variable. If all the constraints in which a
@@ -272,10 +286,6 @@ class PresolveContext {
   // direction.
   std::vector<absl::flat_hash_set<int>> var_to_ub_only_constraints;
   std::vector<absl::flat_hash_set<int>> var_to_lb_only_constraints;
-
-  // We maintain how many time each interval is used.
-  std::vector<std::vector<int>> constraint_to_intervals;
-  std::vector<int> interval_usage;
 
   CpModelProto* working_model = nullptr;
   CpModelProto* mapping_model = nullptr;
@@ -318,6 +328,7 @@ class PresolveContext {
   bool AddRelation(int x, int y, int c, int o, AffineRelation* repo);
 
   void AddVariableUsage(int c);
+  void UpdateLinear1Usage(const ConstraintProto& ct, int c);
 
   // Inserts an half reified var value encoding (literal => var ==/!= value).
   // It returns true if the new state is different from the old state.
@@ -346,6 +357,18 @@ class PresolveContext {
   Domain objective_domain;
   double objective_offset;
   double objective_scaling_factor;
+
+  // Constraints <-> Variables graph.
+  std::vector<std::vector<int>> constraint_to_vars_;
+  std::vector<absl::flat_hash_set<int>> var_to_constraints_;
+
+  // Number of constraints of the form [lit =>] var in domain.
+  std::vector<int> constraint_to_linear1_var_;
+  std::vector<int> var_to_num_linear1_;
+
+  // We maintain how many time each interval is used.
+  std::vector<std::vector<int>> constraint_to_intervals_;
+  std::vector<int> interval_usage_;
 
   // This regroups all the affine relations between variables. Note that the
   // constraints used to detect such relations will not be removed from the
