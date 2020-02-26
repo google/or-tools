@@ -942,6 +942,17 @@ bool CpModelPresolver::CanonicalizeLinear(ConstraintProto* ct) {
     return false;
   }
 
+  // Special case. We must not touch the half implications.
+  //   literal => var ==/!= constant
+  // because in case this is fully reified, var will be shifted back, and the
+  // constraint will become a no-op.
+  if (ct->enforcement_literal_size() == 1 && ct->linear().vars_size() == 1 &&
+      context_->GetAffineRelation(PositiveRef(ct->linear().vars(0)))
+              .representative == PositiveRef(ct->enforcement_literal(0))) {
+    VLOG(2) << "Skip half-reified linear: " << ct->DebugString();
+    return false;
+  }
+
   // First regroup the terms on the same variables and sum the fixed ones.
   //
   // TODO(user): move terms in context to reuse its memory? Add a quick pass
