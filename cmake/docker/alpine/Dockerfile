@@ -31,7 +31,7 @@ FROM env AS python
 # Swig install
 RUN apk add --no-cache swig
 # Python install
-RUN apk add --no-cache python3-dev
+RUN apk add --no-cache python3-dev py3-pip
 # Create lib directory
 WORKDIR /home/lib
 # Bundle lib source
