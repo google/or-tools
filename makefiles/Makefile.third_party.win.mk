@@ -511,7 +511,7 @@ dependencies/install/swigwin-$(SWIG_TAG)/swig.exe: dependencies/archives/swigwin
 	$(UNZIP) -q -d dependencies$Sinstall dependencies$Sarchives$Sswigwin-$(SWIG_TAG).zip
 	$(TOUCH) dependencies$Sinstall$Sswigwin-$(SWIG_TAG)$Sswig.exe
 
-SWIG_ARCHIVE:=https://superb-dca2.dl.sourceforge.net/project/swig/swigwin/swigwin-$(SWIG_TAG)/swigwin-$(SWIG_TAG).zip
+SWIG_ARCHIVE:=http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip
 
 dependencies/archives/swigwin-$(SWIG_TAG).zip:
 	$(WGET) --quiet -P dependencies$Sarchives --no-check-certificate $(SWIG_ARCHIVE)
