@@ -94,14 +94,7 @@ endif(USE_XPRESS)
 
 if (USE_SIRIUS)
 	target_include_directories(${NAME} PUBLIC
-		${SIRIUSDIR}/src/ALLOCATEUR
-		${SIRIUSDIR}/src/BRANCH_AND_BOUND
-		${SIRIUSDIR}/src/POINT_INTERIEUR
-		${SIRIUSDIR}/src/PRESOLVE
-		${SIRIUSDIR}/src/SIMPLEXE
-		${SIRIUSDIR}/src/SIMPLEXE/LU
-		${SIRIUSDIR}/src/PNE
-		${SIRIUSDIR}/src/SRS
+		${SIRIUSDIR}/includes
 	)
 	if(UNIX)
 		target_link_libraries(${NAME} PUBLIC ${SIRIUSDIR}/buildLinux/libbib_solveur.so)
