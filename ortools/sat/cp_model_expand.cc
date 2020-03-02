@@ -40,19 +40,31 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
   const ReservoirConstraintProto& reservoir = ct->reservoir();
   const int num_variables = reservoir.times_size();
 
-  auto is_optional = [&context, &reservoir](int index) {
-    if (reservoir.actives_size() == 0) return false;
-    const int literal = reservoir.actives(index);
-    return !context->IsFixed(literal);
-  };
   const int true_literal = context->GetOrCreateConstantVar(1);
-  auto active = [&reservoir, true_literal](int index) {
+
+  const auto is_always_true = [&context](int var_index) {
+    const IntegerVariableProto& var_proto =
+        context->working_model->variables(var_index);
+    return var_proto.domain_size() == 2 &&
+           var_proto.domain(0) == var_proto.domain(1) &&
+           var_proto.domain(0) == 1;
+  };
+
+  const auto is_always_false = [&context](int var_index) {
+    const IntegerVariableProto& var_proto =
+        context->working_model->variables(var_index);
+    return var_proto.domain_size() == 2 &&
+           var_proto.domain(0) == var_proto.domain(1) &&
+           var_proto.domain(0) == 0;
+  };
+
+  const auto active = [&reservoir, true_literal](int index) {
     if (reservoir.actives_size() == 0) return true_literal;
     return reservoir.actives(index);
   };
 
   // x_lesseq_y <=> (x <= y && l_x is true && l_y is true).
-  const auto add_reified_precedence = [&context, true_literal](
+  const auto add_reified_precedence = [&context, &is_always_true](
                                           int x_lesseq_y, int x, int y, int l_x,
                                           int l_y) {
     // x_lesseq_y => (x <= y) && l_x is true && l_y is true.
@@ -64,10 +76,10 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
     lesseq->mutable_linear()->add_coeffs(1);
     lesseq->mutable_linear()->add_domain(0);
     lesseq->mutable_linear()->add_domain(kint64max);
-    if (l_x != true_literal) {
+    if (!is_always_true(l_x)) {
       context->AddImplication(x_lesseq_y, l_x);
     }
-    if (l_y != true_literal) {
+    if (!is_always_true(l_y)) {
       context->AddImplication(x_lesseq_y, l_y);
     }
 
@@ -79,28 +91,14 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
     greater->mutable_linear()->add_coeffs(1);
     greater->mutable_linear()->add_domain(kint64min);
     greater->mutable_linear()->add_domain(-1);
+
     // Manages enforcement literal.
-    if (l_x == true_literal && l_y == true_literal) {
-      greater->add_enforcement_literal(NegatedRef(x_lesseq_y));
-    } else {
-      // conjunction <=> l_x && l_y && not(x_lesseq_y).
-      const int conjunction = context->NewBoolVar();
-      context->AddImplication(conjunction, NegatedRef(x_lesseq_y));
-      BoolArgumentProto* const bool_or =
-          context->working_model->add_constraints()->mutable_bool_or();
-      bool_or->add_literals(conjunction);
-      bool_or->add_literals(x_lesseq_y);
-
-      if (l_x != true_literal) {
-        context->AddImplication(conjunction, l_x);
-        bool_or->add_literals(NegatedRef(l_x));
-      }
-      if (l_y != true_literal) {
-        context->AddImplication(conjunction, l_y);
-        bool_or->add_literals(NegatedRef(l_y));
-      }
-
-      greater->add_enforcement_literal(conjunction);
+    greater->add_enforcement_literal(NegatedRef(x_lesseq_y));
+    if (!is_always_true(l_x)) {
+      greater->add_enforcement_literal(l_x);
+    }
+    if (!is_always_true(l_y)) {
+      greater->add_enforcement_literal(l_y);
     }
   };
 
@@ -117,32 +115,41 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
   if (num_positives > 0 && num_negatives > 0) {
     // Creates Boolean variables equivalent to (start[i] <= start[j]) i != j
     for (int i = 0; i < num_variables - 1; ++i) {
+      const int active_i = active(i);
+      if (is_always_false(active_i)) continue;
+
       const int time_i = reservoir.times(i);
       for (int j = i + 1; j < num_variables; ++j) {
+        const int active_j = active(j);
+        if (is_always_false(active_j)) continue;
+
         const int time_j = reservoir.times(j);
         const std::pair<int, int> p = std::make_pair(time_i, time_j);
         const std::pair<int, int> rev_p = std::make_pair(time_j, time_i);
         if (gtl::ContainsKey(precedence_cache, p)) continue;
 
         const int i_lesseq_j = context->NewBoolVar();
+        context->working_model->mutable_variables(i_lesseq_j)
+            ->set_name(absl::StrCat(i, " before ", j));
         precedence_cache[p] = i_lesseq_j;
         const int j_lesseq_i = context->NewBoolVar();
+        context->working_model->mutable_variables(j_lesseq_i)
+            ->set_name(absl::StrCat(j, " before ", i));
+
         precedence_cache[rev_p] = j_lesseq_i;
-        add_reified_precedence(i_lesseq_j, time_i, time_j, active(i),
-                               active(j));
-        add_reified_precedence(j_lesseq_i, time_j, time_i, active(j),
-                               active(i));
+        add_reified_precedence(i_lesseq_j, time_i, time_j, active_i, active_j);
+        add_reified_precedence(j_lesseq_i, time_j, time_i, active_j, active_i);
 
         // Consistency. This is redundant but should improves performance.
         auto* const bool_or =
             context->working_model->add_constraints()->mutable_bool_or();
         bool_or->add_literals(i_lesseq_j);
         bool_or->add_literals(j_lesseq_i);
-        if (is_optional(i)) {
-          bool_or->add_literals(NegatedRef(reservoir.actives(i)));
+        if (!is_always_true(active_i)) {
+          bool_or->add_literals(NegatedRef(active_i));
         }
-        if (is_optional(j)) {
-          bool_or->add_literals(NegatedRef(reservoir.actives(j)));
+        if (!is_always_true(active_j)) {
+          bool_or->add_literals(NegatedRef(active_j));
         }
       }
     }
@@ -152,11 +159,17 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
     // take place. We also have a constraint for time zero if needed
     // (added below).
     for (int i = 0; i < num_variables; ++i) {
+      const int active_i = active(i);
+      if (is_always_false(active_i)) continue;
       const int time_i = reservoir.times(i);
+
       // Accumulates demands of all predecessors.
       ConstraintProto* const level = context->working_model->add_constraints();
       for (int j = 0; j < num_variables; ++j) {
         if (i == j) continue;
+        const int active_j = active(j);
+        if (is_always_false(active_j)) continue;
+
         const int time_j = reservoir.times(j);
         level->mutable_linear()->add_vars(gtl::FindOrDieNoPrint(
             precedence_cache, std::make_pair(time_j, time_i)));
@@ -168,8 +181,8 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
           CapSub(reservoir.min_level(), demand_i));
       level->mutable_linear()->add_domain(
           CapSub(reservoir.max_level(), demand_i));
-      if (is_optional(i)) {
-        level->add_enforcement_literal(reservoir.actives(i));
+      if (!is_always_true(active_i)) {
+        level->add_enforcement_literal(active_i);
       }
     }
   } else {
@@ -179,13 +192,17 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
     auto* const sum =
         context->working_model->add_constraints()->mutable_linear();
     for (int i = 0; i < num_variables; ++i) {
+      const int active_i = active(i);
+      if (is_always_false(active_i)) continue;
+
       const int64 demand = reservoir.demands(i);
       if (demand == 0) continue;
-      if (is_optional(i)) {
-        sum->add_vars(reservoir.actives(i));
-        sum->add_coeffs(demand);
-      } else {
+
+      if (is_always_true(active_i)) {
         fixed_demand += demand;
+      } else {
+        sum->add_vars(active_i);
+        sum->add_coeffs(demand);
       }
     }
     sum->add_domain(CapSub(reservoir.min_level(), fixed_demand));
@@ -196,35 +213,45 @@ void ExpandReservoir(ConstraintProto* ct, PresolveContext* context) {
   // We need to do it only if 0 is not in [min_level..max_level].
   // Otherwise, the regular propagation will already check it.
   if (reservoir.min_level() > 0 || reservoir.max_level() < 0) {
-    auto* const initial_ct =
+    auto* const sum_at_zero =
         context->working_model->add_constraints()->mutable_linear();
     for (int i = 0; i < num_variables; ++i) {
+      const int active_i = active(i);
+      if (is_always_false(active_i)) continue;
+
       const int time_i = reservoir.times(i);
       const int lesseq_0 = context->NewBoolVar();
-      // lesseq_0 <=> (x <= 0 && lit is true).
-      context->AddImplyInDomain(lesseq_0, time_i, Domain(kint64min, 0));
-      if (active(i) == true_literal) {
-        context->AddImplyInDomain(NegatedRef(lesseq_0), time_i,
-                                  Domain(1, kint64max));
-      } else {
-        // conjunction <=> lit && not(lesseq_0).
-        const int conjunction = context->NewBoolVar();
-        context->AddImplication(conjunction, active(i));
-        context->AddImplication(conjunction, NegatedRef(lesseq_0));
-        BoolArgumentProto* const bool_or =
-            context->working_model->add_constraints()->mutable_bool_or();
-        bool_or->add_literals(NegatedRef(active(i)));
-        bool_or->add_literals(lesseq_0);
-        bool_or->add_literals(conjunction);
 
-        context->AddImplyInDomain(conjunction, time_i, Domain(1, kint64max));
+      // lesseq_0 => (time_i <= 0) && active_i is true
+      ConstraintProto* const lesseq = context->working_model->add_constraints();
+      lesseq->add_enforcement_literal(lesseq_0);
+      lesseq->mutable_linear()->add_vars(time_i);
+      lesseq->mutable_linear()->add_coeffs(1);
+      lesseq->mutable_linear()->add_domain(kint64min);
+      lesseq->mutable_linear()->add_domain(0);
+
+      if (!is_always_true(active_i)) {
+        context->AddImplication(lesseq_0, active_i);
       }
 
-      initial_ct->add_vars(lesseq_0);
-      initial_ct->add_coeffs(reservoir.demands(i));
+      // Not(lesseq_0) && active_i => (time_i >= 1)
+      ConstraintProto* const greater =
+          context->working_model->add_constraints();
+      greater->mutable_linear()->add_vars(time_i);
+      greater->mutable_linear()->add_coeffs(1);
+      greater->mutable_linear()->add_domain(1);
+      greater->mutable_linear()->add_domain(kint64max);
+      greater->add_enforcement_literal(NegatedRef(lesseq_0));
+      if (!is_always_true(active_i)) {
+        greater->add_enforcement_literal(active_i);
+      }
+
+      // Accumulate in the sum_at_zero constraint.
+      sum_at_zero->add_vars(lesseq_0);
+      sum_at_zero->add_coeffs(reservoir.demands(i));
     }
-    initial_ct->add_domain(reservoir.min_level());
-    initial_ct->add_domain(reservoir.max_level());
+    sum_at_zero->add_domain(reservoir.min_level());
+    sum_at_zero->add_domain(reservoir.max_level());
   }
 
   ct->Clear();
