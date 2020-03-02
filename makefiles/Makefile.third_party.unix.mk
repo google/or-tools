@@ -370,7 +370,6 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_examine_stack.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_failure_signal_handler.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_config.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_flags_handle.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_marshalling.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_parse.a \
