@@ -1,12 +1,8 @@
-# Can't use SWIG_COMPILE_OPTIONS property
-# see: https://gitlab.kitware.com/cmake/cmake/issues/20389
-list(APPEND CMAKE_SWIG_FLAGS -dllimport google-ortools-native)
-
 set_property(SOURCE graph.i PROPERTY CPLUSPLUS ON)
 set_property(SOURCE graph.i PROPERTY SWIG_MODULE_NAME operations_research_graph)
-set_property(SOURCE graph.i PROPERTY SWIG_COMPILE_OPTIONS
-  "-namespace" "${OR_TOOLS_DOTNET}.Graph"
-  "-dllimport" "google-ortools-native"
+set_property(SOURCE graph.i PROPERTY COMPILE_OPTIONS
+  -namespace ${OR_TOOLS_DOTNET}.Graph
+  -dllimport google-ortools-native
   )
 swig_add_library(operations_research_graph
   TYPE OBJECT

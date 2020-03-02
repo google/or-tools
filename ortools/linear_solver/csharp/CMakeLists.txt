@@ -1,10 +1,6 @@
-# Can't use SWIG_COMPILE_OPTIONS property
-# see: https://gitlab.kitware.com/cmake/cmake/issues/20389
-list(APPEND CMAKE_SWIG_FLAGS -dllimport google-ortools-native)
-
 set_property(SOURCE linear_solver.i PROPERTY CPLUSPLUS ON)
 set_property(SOURCE linear_solver.i PROPERTY SWIG_MODULE_NAME operations_research_linear_solver)
-set_property(SOURCE linear_solver.i PROPERTY SWIG_COMPILE_OPTIONS
+set_property(SOURCE linear_solver.i PROPERTY COMPILE_OPTIONS
   -namespace ${OR_TOOLS_DOTNET}.LinearSolver
   -dllimport google-ortools-native
   )
