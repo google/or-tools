@@ -175,7 +175,8 @@ message ReservoirConstraintProto {
 // For now, we ignore node indices with no incident arc. All the other nodes
 // must have exactly one incoming and one outgoing selected arc (i.e. literal at
 // true). All the selected arcs that are not self-loops must form a single
-// circuit.
+// circuit. Note that multi-arcs are allowed, but only one of them will be true
+// at the same time. Multi-self loop are disallowed though.
 message CircuitConstraintProto {
   repeated int32 tails = 3;
   repeated int32 heads = 4;

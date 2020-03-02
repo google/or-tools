@@ -132,35 +132,46 @@ int64 PresolveContext::MaxOf(const LinearExpressionProto& expr) const {
   return result;
 }
 
-// TODO(user): In some case, we could still remove var when it has some variable
-// in affine relation with it, but we need to be careful that none are used.
+bool PresolveContext::VariableIsNotRepresentativeOfEquivalenceClass(
+    int var) const {
+  DCHECK(RefIsPositive(var));
+  if (affine_relations_.ClassSize(var) == 1) return true;
+  return GetAffineRelation(var).representative != var;
+}
+
+// Tricky: If this variable is equivalent to another one (but not the
+// representative) and appear in just one constraint, then this constraint must
+// be the affine defining one. And in this case the code using this function
+// should do the proper stuff.
 bool PresolveContext::VariableIsUniqueAndRemovable(int ref) const {
   if (!ConstraintVariableGraphIsUpToDate()) return false;
   const int var = PositiveRef(ref);
   return var_to_constraints_[var].size() == 1 &&
-         affine_relations_.ClassSize(var) == 1 && !keep_all_feasible_solutions;
+         VariableIsNotRepresentativeOfEquivalenceClass(var) &&
+         !keep_all_feasible_solutions;
 }
 
-bool PresolveContext::VariableIsNotUsedAnymore(int ref) const {
-  if (!ConstraintVariableGraphIsUpToDate()) return false;
-  const int var = PositiveRef(ref);
-  return var_to_constraints_[PositiveRef(ref)].empty() &&
-         affine_relations_.ClassSize(var) == 1;
-}
-
-bool PresolveContext::VariableIsOnlyUsedInEncoding(int ref) const {
-  if (!ConstraintVariableGraphIsUpToDate()) return false;
-  const int var = PositiveRef(ref);
-  return var_to_num_linear1_[var] == var_to_constraints_[var].size();
-}
-
+// Tricky: Same remark as for VariableIsUniqueAndRemovable().
 bool PresolveContext::VariableWithCostIsUniqueAndRemovable(int ref) const {
   if (!ConstraintVariableGraphIsUpToDate()) return false;
   const int var = PositiveRef(ref);
   return !keep_all_feasible_solutions &&
          var_to_constraints_[var].contains(-1) &&
          var_to_constraints_[var].size() == 2 &&
-         affine_relations_.ClassSize(var) == 1;
+         VariableIsNotRepresentativeOfEquivalenceClass(var);
+}
+
+// Here, even if the variable is equivalent to others, if its affine defining
+// constraints where removed, then it is not needed anymore.
+bool PresolveContext::VariableIsNotUsedAnymore(int ref) const {
+  if (!ConstraintVariableGraphIsUpToDate()) return false;
+  return var_to_constraints_[PositiveRef(ref)].empty();
+}
+
+bool PresolveContext::VariableIsOnlyUsedInEncoding(int ref) const {
+  if (!ConstraintVariableGraphIsUpToDate()) return false;
+  const int var = PositiveRef(ref);
+  return var_to_num_linear1_[var] == var_to_constraints_[var].size();
 }
 
 Domain PresolveContext::DomainOf(int ref) const {
@@ -737,9 +748,10 @@ bool PresolveContext::CanonicalizeObjective() {
     const int64 coeff = it->second;
 
     // If a variable only appear in objective, we can fix it!
+    // Note that we don't care if it was in affine relation, because if none
+    // of the relations are left, then we can still fix it.
     if (!keep_all_feasible_solutions && !objective_domain_is_constraining &&
         ConstraintVariableGraphIsUpToDate() &&
-        affine_relations_.ClassSize(var) == 1 &&
         var_to_constraints_[var].size() == 1 &&
         var_to_constraints_[var].contains(-1)) {
       UpdateRuleStats("objective: variable not used elsewhere");

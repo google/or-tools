@@ -607,40 +607,68 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
             << " " << ToDouble(cut_.ub);
     return false;
   }
+  CHECK(constraint_manager_.DebugCheckConstraint(cut_));
+
+  // We will create "artificial" variables after this index that will be
+  // substitued back into LP variables afterwards. Also not that we only use
+  // positive variable indices for these new variables, so that algorithm that
+  // take their negation will not mess up the indexing.
+  const IntegerVariable first_new_var(expanded_lp_solution_.size());
+  CHECK_EQ(first_new_var.value() % 2, 0);
+
+  LinearConstraint copy_in_debug;
+  if (DEBUG_MODE) {
+    copy_in_debug = cut_;
+  }
 
   // Unlike for the knapsack cuts, it might not be always beneficial to
   // process the implied bounds even though it seems to be better in average.
   //
-  // TODO(user): Understand & investigate more. In particular, it doesn't seems
-  // like MIP solvers use implied bounds in the same way. The substitution they
-  // perform seems to be NewVar = OldVar - (lb + Binary * diff) and not just
-  // OldVar >= (lb + Binary * diff).
-  implied_bounds_processor_.ProcessUpperBoundedConstraint(expanded_lp_solution_,
-                                                          &cut_);
-
-  // TODO(user): Might be cleaner to only do that in the functions that needs
-  // this precondition below.
-  MakeAllVariablesPositive(&cut_);
+  // TODO(user): Perform more experiments, in particular with which bound we use
+  // and if we complement or not before the MIR rounding. Other solvers seems
+  // to try different complementation strategies in a "potprocessing" and we
+  // don't. Try this too.
+  std::vector<ImpliedBoundsProcessor::SlackInfo> ib_slack_infos;
+  std::vector<LinearConstraint> implied_bound_cuts;
+  implied_bounds_processor_.ProcessUpperBoundedConstraintWithSlackCreation(
+      first_new_var, expanded_lp_solution_, &cut_, &ib_slack_infos,
+      &implied_bound_cuts);
+  for (LinearConstraint& ib_cut : implied_bound_cuts) {
+    DivideByGCD(&ib_cut);
+    CHECK(constraint_manager_.DebugCheckConstraint(ib_cut));
+    constraint_manager_.AddCut(ib_cut, "IB", expanded_lp_solution_);
+  }
+  DCHECK(implied_bounds_processor_.DebugSlack(first_new_var, copy_in_debug,
+                                              cut_, ib_slack_infos));
 
   // Fills data for IntegerRoundingCut().
   //
   // Note(user): we use the current bound here, so the reasonement will only
   // produce locally valid cut if we call this at a non-root node. We could
   // use the level zero bounds if we wanted to generate a globally valid cut
-  // at another level, but we will likely not genereate a constraint violating
-  // the current lp solution in that case.
+  // at another level. For now this is only called at level zero anyway.
   tmp_lp_values_.clear();
   tmp_var_lbs_.clear();
   tmp_var_ubs_.clear();
   for (const IntegerVariable var : cut_.vars) {
-    tmp_lp_values_.push_back(expanded_lp_solution_[var]);
-    tmp_var_lbs_.push_back(integer_trail_->LowerBound(var));
-    tmp_var_ubs_.push_back(integer_trail_->UpperBound(var));
+    if (var >= first_new_var) {
+      CHECK(VariableIsPositive(var));
+      const auto& info =
+          ib_slack_infos[(var.value() - first_new_var.value()) / 2];
+      tmp_lp_values_.push_back(info.lp_value);
+      tmp_var_lbs_.push_back(info.lb);
+      tmp_var_ubs_.push_back(info.ub);
+    } else {
+      tmp_lp_values_.push_back(expanded_lp_solution_[var]);
+      tmp_var_lbs_.push_back(integer_trail_->LowerBound(var));
+      tmp_var_ubs_.push_back(integer_trail_->UpperBound(var));
+    }
   }
 
   // Add slack.
   // definition: integer_lp_[row] + slack_row == bound;
-  const IntegerVariable first_slack(expanded_lp_solution_.size());
+  const IntegerVariable first_slack(first_new_var +
+                                    IntegerVariable(2 * ib_slack_infos.size()));
   tmp_slack_rows_.clear();
   tmp_slack_bounds_.clear();
   for (const auto pair : integer_multipliers) {
@@ -650,7 +678,8 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
     if (status == glop::ConstraintStatus::FIXED_VALUE) continue;
 
     tmp_lp_values_.push_back(0.0);
-    cut_.vars.push_back(first_slack + IntegerVariable(tmp_slack_rows_.size()));
+    cut_.vars.push_back(first_slack +
+                        2 * IntegerVariable(tmp_slack_rows_.size()));
     tmp_slack_rows_.push_back(row);
     cut_.coeffs.push_back(coeff);
 
@@ -678,7 +707,7 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
   // change the activity by definition.
   double activity = 0.0;
   for (int i = 0; i < cut_.vars.size(); ++i) {
-    if (cut_.vars[i] < first_slack) {
+    if (cut_.vars[i] < first_new_var) {
       activity +=
           ToDouble(cut_.coeffs[i]) * expanded_lp_solution_[cut_.vars[i]];
     }
@@ -697,19 +726,49 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
     IntegerValue cut_ub = cut_.ub;
     bool overflow = false;
     for (int i = 0; i < cut_.vars.size(); ++i) {
+      const IntegerVariable var = cut_.vars[i];
+
       // Simple copy for non-slack variables.
-      if (cut_.vars[i] < first_slack) {
-        CHECK(VariableIsPositive(cut_.vars[i]));
+      if (var < first_new_var) {
         const glop::ColIndex col =
-            gtl::FindOrDie(mirror_lp_variable_, cut_.vars[i]);
-        tmp_dense_vector_[col] = cut_.coeffs[i];
+            gtl::FindOrDie(mirror_lp_variable_, PositiveVariable(var));
+        if (VariableIsPositive(var)) {
+          tmp_dense_vector_[col] += cut_.coeffs[i];
+        } else {
+          tmp_dense_vector_[col] -= cut_.coeffs[i];
+        }
         continue;
       }
 
-      ++num_slack;
+      // Replace slack from bound substitution.
+      if (var < first_slack) {
+        const IntegerValue multiplier = cut_.coeffs[i];
+        const int index = (var.value() - first_new_var.value()) / 2;
+        CHECK_LT(index, ib_slack_infos.size());
 
-      // Update the constraint.
-      const int slack_index = cut_.vars[i].value() - first_slack.value();
+        std::vector<std::pair<ColIndex, IntegerValue>> terms;
+        for (const std::pair<IntegerVariable, IntegerValue>& term :
+             ib_slack_infos[index].terms) {
+          terms.push_back(
+              {gtl::FindOrDie(mirror_lp_variable_,
+                              PositiveVariable(term.first)),
+               VariableIsPositive(term.first) ? term.second : -term.second});
+        }
+        if (!AddLinearExpressionMultiple(multiplier, terms,
+                                         &tmp_dense_vector_)) {
+          overflow = true;
+          break;
+        }
+        if (!AddProductTo(multiplier, -ib_slack_infos[index].offset, &cut_ub)) {
+          overflow = true;
+          break;
+        }
+        continue;
+      }
+
+      // Replace slack from LP constraints.
+      ++num_slack;
+      const int slack_index = (var.value() - first_slack.value()) / 2;
       const glop::RowIndex row = tmp_slack_rows_[slack_index];
       const IntegerValue multiplier = -cut_.coeffs[i];
       if (!AddLinearExpressionMultiple(multiplier, integer_lp_[row].terms,

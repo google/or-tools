@@ -339,6 +339,10 @@ class PresolveContext {
   void AddVariableUsage(int c);
   void UpdateLinear1Usage(const ConstraintProto& ct, int c);
 
+  // Returns true iff the variable is not the representative of an equivalence
+  // class of size at least 2.
+  bool VariableIsNotRepresentativeOfEquivalenceClass(int var) const;
+
   // Inserts an half reified var value encoding (literal => var ==/!= value).
   // It returns true if the new state is different from the old state.
   // Not that if imply_eq is false, the literal will be stored in its negated

@@ -714,14 +714,22 @@ void IntegerRoundingCutHelper::ComputeCut(
   divisors_.clear();
   adjusted_coeffs_.clear();
 
+  // Compute the maximum magnitude for non-fixed variables.
+  IntegerValue max_magnitude(0);
+  for (int i = 0; i < size; ++i) {
+    if (lower_bounds[i] == upper_bounds[i]) continue;
+    const IntegerValue magnitude = IntTypeAbs(cut->coeffs[i]);
+    max_magnitude = std::max(max_magnitude, magnitude);
+  }
+
   // Shift each variable using its lower/upper bound so that no variable can
   // change sign. We eventually do a change of variable to its negation so
   // that all variable are non-negative.
   bool overflow = false;
   change_sign_at_postprocessing_.assign(size, false);
-  IntegerValue max_magnitude(0);
   for (int i = 0; i < size; ++i) {
     if (cut->coeffs[i] == 0) continue;
+    const IntegerValue magnitude = IntTypeAbs(cut->coeffs[i]);
 
     // We might change them below.
     IntegerValue lb = lower_bounds[i];
@@ -733,10 +741,21 @@ void IntegerRoundingCutHelper::ComputeCut(
 
     // Note that since we use ToDouble() this code works fine with lb/ub at
     // min/max integer value.
+    //
+    // TODO(user): Experiments with different heuristics. Other solver also
+    // seems to try a bunch of possibilities in a "postprocess" phase once
+    // the divisor is chosen. Try that.
     {
-      if (std::abs(lp_value - ToDouble(lb)) >
-          std::abs(lp_value - ToDouble(ub))) {
-        // Change the variable sign.
+      // when the magnitude of the entry become smaller and smaller we bias
+      // towards a positive coefficient. This is because after rounding this
+      // will likely become zero instead of -divisor and we need the lp value
+      // to be really close to its bound to compensate.
+      const double lb_dist = std::abs(lp_value - ToDouble(lb));
+      const double ub_dist = std::abs(lp_value - ToDouble(ub));
+      const double bias =
+          std::max(1.0, ToDouble(max_magnitude) / ToDouble(10 * magnitude));
+      if ((bias * lb_dist > ub_dist && cut->coeffs[i] < 0) ||
+          (lb_dist > bias * ub_dist && cut->coeffs[i] > 0)) {
         change_sign_at_postprocessing_[i] = true;
         cut->coeffs[i] = -cut->coeffs[i];
         lp_value = -lp_value;
@@ -759,16 +778,13 @@ void IntegerRoundingCutHelper::ComputeCut(
       lp_value = 0.0;
     }
 
-    const IntegerValue magnitude = IntTypeAbs(cut->coeffs[i]);
     if (std::abs(lp_value) > 1e-2) {
       relevant_coeffs_.push_back(cut->coeffs[i]);
       relevant_indices_.push_back(i);
       relevant_lp_values_.push_back(lp_value);
       relevant_bound_diffs_.push_back(bound_diff);
-
       divisors_.push_back(magnitude);
     }
-    max_magnitude = std::max(max_magnitude, magnitude);
   }
 
   // TODO(user): Maybe this shouldn't be called on such constraint.
@@ -1235,6 +1251,15 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
 void ImpliedBoundsProcessor::ProcessUpperBoundedConstraint(
     const gtl::ITIVector<IntegerVariable, double>& lp_values,
     LinearConstraint* cut) const {
+  ProcessUpperBoundedConstraintWithSlackCreation(IntegerVariable(0), lp_values,
+                                                 cut, nullptr, nullptr);
+}
+
+void ImpliedBoundsProcessor::ProcessUpperBoundedConstraintWithSlackCreation(
+    IntegerVariable first_slack,
+    const gtl::ITIVector<IntegerVariable, double>& lp_values,
+    LinearConstraint* cut, std::vector<SlackInfo>* slack_infos,
+    std::vector<LinearConstraint>* implied_bound_cuts) const {
   tmp_terms_.clear();
   IntegerValue new_ub = cut->ub;
   bool changed = false;
@@ -1244,84 +1269,176 @@ void ImpliedBoundsProcessor::ProcessUpperBoundedConstraint(
 
   const int size = cut->vars.size();
   for (int i = 0; i < size; ++i) {
-    // Make sure we have a positive coefficient.
     IntegerVariable var = cut->vars[i];
     IntegerValue coeff = cut->coeffs[i];
+
+    // Starts by positive coefficient.
+    // TODO(user): Not clear this is best.
     if (coeff < 0) {
       coeff = -coeff;
       var = NegationOf(var);
     }
 
-    // Skip variable at their Lower bound in the relaxation.
-    const IntegerValue lb = integer_trail_->LevelZeroLowerBound(var);
-    if (lp_values[var] < lb.value() + 1e-6) {
-      tmp_terms_.push_back({var, coeff});
-      continue;
+    double best_bool_lp_value = 0.0;
+    double best_slack_lp_value = std::numeric_limits<double>::infinity();
+    bool best_is_positive;
+    IntegerValue best_diff;
+    IntegerVariable best_bool_var = kNoIntegerVariable;
+    IntegerVariable best_x = kNoIntegerVariable;
+
+    // Find the best implied bound to use.
+    //
+    // TODO(user): We could also use implied upper bound, it is why the code is
+    // this way so it is easy to experiment with
+    //    for (const IntegerVariable x : {var, NegationOf(var)}) {
+    // instead of just trying var.
+    for (const IntegerVariable x : {var}) {
+      const IntegerValue lb = integer_trail_->LevelZeroLowerBound(x);
+      for (const ImpliedBoundEntry& entry :
+           implied_bounds_->GetImpliedBounds(x)) {
+        // Only process entries with a Boolean variable currently part of the LP
+        // we are considering for this cut.
+        //
+        // TODO(user): the more we use cuts, the less it make sense to have a
+        // lot of small independent LPs.
+        if (!lp_vars_.contains(PositiveVariable(entry.literal_view))) {
+          continue;
+        }
+
+        // The equation is X = lb + diff * Bool + Slack where Bool is in [0, 1]
+        // and slack in [0, ub - lb].
+        const IntegerValue diff = entry.lower_bound - lb;
+        CHECK_GE(diff, 0);
+        const double bool_lp_value = entry.is_positive
+                                         ? lp_values[entry.literal_view]
+                                         : 1.0 - lp_values[entry.literal_view];
+        const double slack_lp_value =
+            lp_values[x] - ToDouble(lb) - bool_lp_value * ToDouble(diff);
+
+        // If the implied bound equation is not respected, we just add it
+        // to implied_bound_cuts, and skip the entry for now.
+        if (slack_lp_value < -1e-6) {
+          if (implied_bound_cuts != nullptr) {
+            LinearConstraint ib_cut;
+            std::vector<std::pair<IntegerVariable, IntegerValue>> terms;
+            ib_cut.lb = kMinIntegerValue;  // Not relevant.
+            ib_cut.ub = cut->ub;
+            if (entry.is_positive) {
+              // X >= Indicator * (bound - lb) + lb
+              terms.push_back({entry.literal_view, diff});
+              terms.push_back({x, IntegerValue(-1)});
+              ib_cut.ub = -lb;
+            } else {
+              // X >= -Indicator * (bound - lb) + bound
+              terms.push_back({entry.literal_view, -diff});
+              terms.push_back({x, IntegerValue(-1)});
+              ib_cut.ub = -entry.lower_bound;
+            }
+            CleanTermsAndFillConstraint(&terms, &ib_cut);
+            implied_bound_cuts->push_back(std::move(ib_cut));
+          }
+          continue;
+        }
+
+        // We look for tight implied bounds, and amongst the tightest one, we
+        // prefer larger coefficient in front of the Boolean.
+        if (slack_lp_value + 1e-4 < best_slack_lp_value ||
+            (slack_lp_value < best_slack_lp_value + 1e-4 && diff > best_diff)) {
+          best_bool_lp_value = bool_lp_value;
+          best_slack_lp_value = slack_lp_value;
+
+          best_diff = diff;
+          best_is_positive = entry.is_positive;
+          best_bool_var = entry.literal_view;
+
+          best_x = x;
+        }
+      }
     }
 
-    bool keep_original_term = true;
-    for (const ImpliedBoundEntry& entry :
-         implied_bounds_->GetImpliedBounds(var)) {
-      // Only process entries with a Boolean variable currently part of the LP
-      // we are considering for this cut.
-      //
-      // TODO(user): the more we use cuts, the less it make sense to have a lot
-      // of small independent LPs.
-      if (!lp_vars_.contains(PositiveVariable(entry.literal_view))) {
-        continue;
+    const int old_size = tmp_terms_.size();
+
+    // Shall we keep the original term ?
+    bool keep_term = false;
+    if (best_x == kNoIntegerVariable) keep_term = true;
+    if (CapProd(std::abs(coeff.value()), best_diff.value()) == kint64max) {
+      keep_term = true;
+    }
+
+    // This is when we do not add slack.
+    if (slack_infos == nullptr) {
+      // We do not want to loose anything, so we only replace if the slack lp is
+      // zero.
+      if (best_slack_lp_value > 1e-6) keep_term = true;
+
+      // Without slack, we do need the replacement to be a lower bound, and
+      // this is only the case if the coefficient is positive.
+      if ((best_x == var) != (coeff > 0)) keep_term = true;
+    }
+
+    if (keep_term) {
+      tmp_terms_.push_back({var, coeff});
+    } else {
+      // Substitute.
+      if (best_x != var) {
+        coeff = -coeff;
+        var = NegationOf(var);
       }
+      CHECK_EQ(best_x, var);
 
-      const IntegerValue diff = entry.lower_bound - lb;
-      CHECK_GE(diff, 0);
-      const double lp_value = entry.is_positive
-                                  ? lp_values[entry.literal_view]
-                                  : 1.0 - lp_values[entry.literal_view];
+      const IntegerValue lb = integer_trail_->LevelZeroLowerBound(var);
+      const IntegerValue ub = integer_trail_->LevelZeroUpperBound(var);
 
-      // Only consider "tight" implied bounds. The implied bound could be above
-      // if the relaxation of the implied relation wasn't added to the LP.
-      //
-      // TODO(user): Just generate an implied cut then?
-      if (lb.value() + lp_value * diff.value() + 1e-6 < lp_values[var]) {
-        continue;
-      }
+      SlackInfo info;
+      info.lp_value = best_slack_lp_value;
+      info.lb = 0;
+      info.ub = ub - lb;
 
-      if (CapProd(std::abs(coeff.value()), diff.value()) >= kMaxIntegerValue) {
-        VLOG(2) << "Overflow";
-        return;
-      }
-
-      if (entry.is_positive) {
-        // X >= Indicator * (bound - lb) + lb
-        tmp_terms_.push_back({entry.literal_view, coeff * diff});
+      if (best_is_positive) {
+        // X = Indicator * diff + lb + Slack
+        tmp_terms_.push_back({best_bool_var, coeff * best_diff});
         if (!AddProductTo(-coeff, lb, &new_ub)) {
           VLOG(2) << "Overflow";
           return;
         }
+        if (slack_infos != nullptr) {
+          tmp_terms_.push_back({first_slack, coeff});
+          first_slack += 2;
+
+          // slack = X - Indicator * best_diff - lb;
+          info.terms.push_back({var, IntegerValue(1)});
+          info.terms.push_back({best_bool_var, -best_diff});
+          info.offset = -lb;
+          slack_infos->push_back(info);
+        }
       } else {
-        // X >= (1 - Indicator) * (bound - lb) + lb
-        // X >= -Indicator * (bound - lb) + bound
-        tmp_terms_.push_back({entry.literal_view, -coeff * diff});
-        if (!AddProductTo(-coeff, entry.lower_bound, &new_ub)) {
+        // X = (1 - Indicator) * (diff) + lb + Slack
+        // X = -Indicator * (diff) + lb + diff + Slack
+        tmp_terms_.push_back({best_bool_var, -coeff * best_diff});
+        if (!AddProductTo(-coeff, lb + best_diff, &new_ub)) {
           VLOG(2) << "Overflow";
           return;
         }
+        if (slack_infos != nullptr) {
+          tmp_terms_.push_back({first_slack, coeff});
+          first_slack += 2;
+
+          // slack = X + Indicator * best_diff - lb - diff;
+          info.terms.push_back({var, IntegerValue(1)});
+          info.terms.push_back({best_bool_var, +best_diff});
+          info.offset = -lb - best_diff;
+          slack_infos->push_back(info);
+        }
       }
-
       changed = true;
-      keep_original_term = false;
-      VLOG(2) << "var = " << var << " (" << lp_values[var] << ") "
-              << entry.literal_view << " (" << lp_values[entry.literal_view]
-              << " == " << (entry.is_positive ? 1 : 0)
-              << ") => var >=" << entry.lower_bound << " "
-              << integer_trail_->InitialVariableDomain(var);
-      break;
     }
 
-    if (keep_original_term) {
-      tmp_terms_.push_back({var, coeff});
+    // Add all the new terms coefficient to the overflow detection to avoid
+    // issue when merging terms refering to the same variable.
+    for (int i = old_size; i < tmp_terms_.size(); ++i) {
+      overflow_detection =
+          CapAdd(overflow_detection, std::abs(tmp_terms_[i].second.value()));
     }
-    overflow_detection =
-        CapAdd(overflow_detection, std::abs(tmp_terms_.back().second.value()));
   }
 
   if (overflow_detection >= kMaxIntegerValue) {
@@ -1337,6 +1454,58 @@ void ImpliedBoundsProcessor::ProcessUpperBoundedConstraint(
   cut->lb = kMinIntegerValue;  // Not relevant.
   cut->ub = new_ub;
   CleanTermsAndFillConstraint(&tmp_terms_, cut);
+}
+
+bool ImpliedBoundsProcessor::DebugSlack(IntegerVariable first_slack,
+                                        const LinearConstraint& initial_cut,
+                                        const LinearConstraint& cut,
+                                        const std::vector<SlackInfo>& info) {
+  tmp_terms_.clear();
+  IntegerValue new_ub = cut.ub;
+  for (int i = 0; i < cut.vars.size(); ++i) {
+    // Simple copy for non-slack variables.
+    if (cut.vars[i] < first_slack) {
+      tmp_terms_.push_back({cut.vars[i], cut.coeffs[i]});
+      continue;
+    }
+
+    // Replace slack by its definition.
+    const IntegerValue multiplier = cut.coeffs[i];
+    const int index = (cut.vars[i].value() - first_slack.value()) / 2;
+    for (const std::pair<IntegerVariable, IntegerValue>& term :
+         info[index].terms) {
+      tmp_terms_.push_back({term.first, term.second * multiplier});
+    }
+    new_ub -= multiplier * info[index].offset;
+  }
+
+  LinearConstraint tmp_cut;
+  tmp_cut.lb = kMinIntegerValue;  // Not relevant.
+  tmp_cut.ub = new_ub;
+  CleanTermsAndFillConstraint(&tmp_terms_, &tmp_cut);
+  MakeAllVariablesPositive(&tmp_cut);
+
+  // We need to canonicalize the initial_cut too for comparison. Note that we
+  // only use this for debug, so we don't care too much about the memory and
+  // extra time.
+  // TODO(user): Expose CanonicalizeConstraint() from the manager.
+  LinearConstraint tmp_copy;
+  tmp_terms_.clear();
+  for (int i = 0; i < initial_cut.vars.size(); ++i) {
+    tmp_terms_.push_back({initial_cut.vars[i], initial_cut.coeffs[i]});
+  }
+  tmp_copy.lb = kMinIntegerValue;  // Not relevant.
+  tmp_copy.ub = new_ub;
+  CleanTermsAndFillConstraint(&tmp_terms_, &tmp_copy);
+  MakeAllVariablesPositive(&tmp_copy);
+
+  if (tmp_cut == tmp_copy) return true;
+
+  LOG(INFO) << first_slack;
+  LOG(INFO) << tmp_copy.DebugString();
+  LOG(INFO) << cut.DebugString();
+  LOG(INFO) << tmp_cut.DebugString();
+  return false;
 }
 
 namespace {

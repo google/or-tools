@@ -2907,31 +2907,47 @@ bool CpModelPresolver::PresolveCircuit(ConstraintProto* ct) {
     outgoing_arcs[tail].push_back(ref);
   }
 
+  // Note that it is important to reach the fixed point here:
+  // One arc at true, then all other arc at false. This is because we rely
+  // on this in case the circuit is fully specified below.
+  //
+  // TODO(user): Use a better complexity if needed.
+  bool loop_again = true;
   int num_fixed_at_true = 0;
-  for (const auto* node_to_refs : {&incoming_arcs, &outgoing_arcs}) {
-    for (const std::vector<int>& refs : *node_to_refs) {
-      if (refs.size() == 1) {
-        if (!context_->LiteralIsTrue(refs.front())) {
-          ++num_fixed_at_true;
-          if (!context_->SetLiteralToTrue(refs.front())) return true;
+  while (loop_again) {
+    loop_again = false;
+    for (const auto* node_to_refs : {&incoming_arcs, &outgoing_arcs}) {
+      for (const std::vector<int>& refs : *node_to_refs) {
+        if (refs.size() == 1) {
+          if (!context_->LiteralIsTrue(refs.front())) {
+            ++num_fixed_at_true;
+            if (!context_->SetLiteralToTrue(refs.front())) return true;
+          }
+          continue;
         }
-        continue;
-      }
 
-      // At most one true, so if there is one, mark all the other to false.
-      int num_true = 0;
-      int true_ref;
-      for (const int ref : refs) {
-        if (context_->LiteralIsTrue(ref)) {
-          ++num_true;
-          true_ref = ref;
-          break;
-        }
-      }
-      if (num_true > 0) {
+        // At most one true, so if there is one, mark all the other to false.
+        int num_true = 0;
+        int true_ref;
         for (const int ref : refs) {
-          if (ref != true_ref) {
-            if (!context_->SetLiteralToFalse(ref)) return true;
+          if (context_->LiteralIsTrue(ref)) {
+            ++num_true;
+            true_ref = ref;
+            break;
+          }
+        }
+        if (num_true > 1) {
+          return context_->NotifyThatModelIsUnsat();
+        }
+        if (num_true == 1) {
+          for (const int ref : refs) {
+            if (ref != true_ref) {
+              if (!context_->IsFixed(ref)) {
+                context_->UpdateRuleStats("circuit: set literal to false.");
+                loop_again = true;
+              }
+              if (!context_->SetLiteralToFalse(ref)) return true;
+            }
           }
         }
       }
@@ -4693,17 +4709,10 @@ bool CpModelPresolver::Presolve() {
     ExpandObjective();
   }
 
-  if (context_->ModelIsUnsat()) {
-    if (options_.log_info) LogInfoFromContext(context_);
-
-    // Set presolved_model to the simplest UNSAT problem (empty clause).
-    context_->working_model->Clear();
-    context_->working_model->add_constraints()->mutable_bool_or();
-    return true;
-  }
-
   // Note: Removing unused equivalent variables should be done at the end.
-  RemoveUnusedEquivalentVariables();
+  if (!context_->ModelIsUnsat()) {
+    RemoveUnusedEquivalentVariables();
+  }
 
   // Remove duplicate constraints.
   //
@@ -4727,6 +4736,15 @@ bool CpModelPresolver::Presolve() {
     }
   }
 
+  if (context_->ModelIsUnsat()) {
+    if (options_.log_info) LogInfoFromContext(context_);
+
+    // Set presolved_model to the simplest UNSAT problem (empty clause).
+    context_->working_model->Clear();
+    context_->working_model->add_constraints()->mutable_bool_or();
+    return true;
+  }
+
   // The strategy variable indices will be remapped in ApplyVariableMapping()
   // but first we use the representative of the affine relations for the
   // variables that are not present anymore.
@@ -4744,7 +4762,6 @@ bool CpModelPresolver::Presolve() {
       const int var = PositiveRef(ref);
 
       // Remove fixed variables.
-      if (context_->ModelIsUnsat()) return true;
       if (context_->IsFixed(var)) continue;
 
       // There is not point having a variable appear twice, so we only keep
@@ -4782,6 +4799,7 @@ bool CpModelPresolver::Presolve() {
   for (int i = 0; i < context_->working_model->variables_size(); ++i) {
     FillDomainInProto(context_->DomainOf(i),
                       context_->working_model->mutable_variables(i));
+    DCHECK_GT(context_->working_model->variables(i).domain_size(), 0);
   }
 
   // Set the variables of the mapping_model.

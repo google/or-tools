@@ -65,6 +65,38 @@ class ImpliedBoundsProcessor {
       const gtl::ITIVector<IntegerVariable, double>& lp_values,
       LinearConstraint* cut) const;
 
+  // Same as ProcessUpperBoundedConstraint() but instead of just using
+  // var >= coeff * binary + lb we use var == slack + coeff * binary + lb where
+  // slack is a new temporary variable that we create.
+  //
+  // The new slack will be such that slack_infos[(slack - first_slack) / 2]
+  // contains its definition so that we can properly handle it in the cut
+  // generation and substitute it back later.
+  struct SlackInfo {
+    // This slack is equal to sum of terms + offset.
+    std::vector<std::pair<IntegerVariable, IntegerValue>> terms;
+    IntegerValue offset;
+
+    // The slack bounds and current lp_value.
+    IntegerValue lb = IntegerValue(0);
+    IntegerValue ub = IntegerValue(0);
+    double lp_value = 0.0;
+  };
+  void ProcessUpperBoundedConstraintWithSlackCreation(
+      IntegerVariable first_slack,
+      const gtl::ITIVector<IntegerVariable, double>& lp_values,
+      LinearConstraint* cut, std::vector<SlackInfo>* slack_infos,
+      std::vector<LinearConstraint>* implied_bound_cuts) const;
+
+  // Only used for debugging.
+  //
+  // Substituting back the slack created by the function above should give
+  // exactly the same cut as the original one.
+  bool DebugSlack(IntegerVariable first_slack,
+                  const LinearConstraint& initial_cut,
+                  const LinearConstraint& cut,
+                  const std::vector<SlackInfo>& info);
+
   // Add a new variable that could be used in the new cuts.
   void AddLpVariable(IntegerVariable var) { lp_vars_.insert(var); }
 
