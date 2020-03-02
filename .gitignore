@@ -8,6 +8,7 @@ dependencies/check.log
 
 or-tools*.tar.gz
 or-tools*.zip
+*.snk
 *.a
 *.o
 *.so

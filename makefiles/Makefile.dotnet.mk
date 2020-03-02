@@ -65,7 +65,7 @@ else
 endif
 
 # All libraries and dependencies
-DOTNET_ORTOOLS_SNK := $(BIN_DIR)/or-tools.snk
+DOTNET_ORTOOLS_SNK := $(SRC_DIR)/ortools/dotnet/or-tools.snk
 DOTNET_ORTOOLS_SNK_PATH := $(subst /,$S,$(DOTNET_ORTOOLS_SNK))
 OR_TOOLS_ASSEMBLY_NAME := Google.OrTools
 OR_TOOLS_NATIVE_PROJECT_NAME := $(OR_TOOLS_ASSEMBLY_NAME).runtime.$(RUNTIME_IDENTIFIER)
@@ -298,10 +298,10 @@ $(OBJ_DIR)/swig/sorted_interval_list_csharp_wrap.$O: \
 # Signing ##
 ############
 ifneq ($(DOTNET_SNK),)
-$(DOTNET_ORTOOLS_SNK): | $(BIN_DIR)
+$(DOTNET_ORTOOLS_SNK):
 	$(COPY) $(DOTNET_SNK) $(DOTNET_ORTOOLS_SNK_PATH)
 else
-$(DOTNET_ORTOOLS_SNK): ortools/dotnet/CreateSigningKey/CreateSigningKey.csproj | $(BIN_DIR)
+$(DOTNET_ORTOOLS_SNK): ortools/dotnet/CreateSigningKey/CreateSigningKey.csproj
 	"$(DOTNET_BIN)" run --project ortools$Sdotnet$SCreateSigningKey$SCreateSigningKey.csproj $S$(DOTNET_ORTOOLS_SNK_PATH)
 endif
 

@@ -15,7 +15,7 @@
     <PackageId>Google.OrTools.runtime.osx-x64</PackageId>
 
     <!-- Signing -->
-    <AssemblyOriginatorKeyFile>../../../bin/or-tools.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>../or-tools.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
     <PublicSign>false</PublicSign>
     <DelaySign>false</DelaySign>
