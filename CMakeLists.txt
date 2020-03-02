@@ -61,6 +61,9 @@ message(STATUS "Build Java: ${BUILD_JAVA}")
 option(BUILD_DOTNET "Build .NET Library" OFF)
 message(STATUS "Build .Net: ${BUILD_DOTNET}")
 
+option(BUILD_EXAMPLES "Build examples" ON)
+message(STATUS "Build examples: ${BUILD_EXAMPLES}")
+
 #option(BUILD_DOC "Build doxygen" OFF)
 #message(STATUS "Build doxygen: ${BUILD_DOC}")
 
@@ -167,3 +170,9 @@ include(cpp)
 include(python)
 include(java)
 include(dotnet)
+
+# Since samples mix all languages we must parse them once we have included all
+# <language>.cmake files
+foreach(SAMPLES IN ITEMS algorithms graph linear_solver constraint_solver sat)
+  add_subdirectory(ortools/${SAMPLES}/samples)
+endforeach()

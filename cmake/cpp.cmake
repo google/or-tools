@@ -24,6 +24,18 @@ if(BUILD_absl)
 else()
   find_package(absl REQUIRED)
 endif()
+set(ABSL_DEPS
+  absl::base
+  absl::random_random
+  absl::raw_hash_set
+  absl::hash
+  absl::memory
+  absl::meta
+  absl::str_format
+  absl::strings
+  absl::synchronization
+  absl::any
+  )
 
 set(GFLAGS_USE_TARGET_NAMESPACE TRUE)
 if(BUILD_gflags)
@@ -83,14 +95,17 @@ endif()
 # Check optional Dependencies
 if(USE_CPLEX)
   find_package(CPLEX REQUIRED)
+  set(CPLEX_DEP CPLEX::CPLEX)
 endif()
 
 if(USE_SCIP)
   find_package(SCIP REQUIRED)
+  set(SCIP_DEP SCIP::SCIP)
 endif()
 
 if(USE_XPRESS)
   find_package(XPRESS REQUIRED)
+  set(XPRESS_DEP XPRESS::XPRESS)
 endif()
 
 # If wrapper are built, we need to have the install rpath in BINARY_DIR to package
@@ -206,32 +221,17 @@ endif()
 # Dependencies
 target_link_libraries(${PROJECT_NAME} PUBLIC
   ZLIB::ZLIB
-  absl::base
-  absl::random_random
-  absl::raw_hash_set
-  absl::hash
-  absl::memory
-  absl::meta
-  absl::str_format
-  absl::strings
-  absl::synchronization
-  absl::any
+  ${ABSL_DEPS}
   ${GFLAGS_DEP}
   glog::glog
   protobuf::libprotobuf
   ${COINOR_DEPS}
+  ${CPLEX_DEP}
+  ${SCIP_DEP}
+  ${XPRESS_DEP}
   Threads::Threads)
 if(WIN32)
   target_link_libraries(${PROJECT_NAME} PUBLIC psapi.lib ws2_32.lib)
-endif()
-if(USE_CPLEX)
-  target_link_libraries(${PROJECT_NAME} PUBLIC CPLEX::CPLEX)
-endif()
-if(USE_SCIP)
-  target_link_libraries(${PROJECT_NAME} PUBLIC SCIP::SCIP)
-endif()
-if(USE_XPRESS)
-  target_link_libraries(${PROJECT_NAME} PUBLIC XPRESS::XPRESS)
 endif()
 
 # ALIAS
@@ -302,7 +302,7 @@ add_library(${PROJECT_NAME}::proto ALIAS ${PROJECT_NAME}_proto)
 target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}::proto>)
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}::proto)
 
-foreach(SUBPROJECT
+foreach(SUBPROJECT IN ITEMS
     algorithms base bop constraint_solver data glop graph linear_solver lp_data
     port sat util)
   add_subdirectory(ortools/${SUBPROJECT})
