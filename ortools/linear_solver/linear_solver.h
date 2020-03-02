@@ -229,10 +229,6 @@ class MPSolver {
     XPRESS_LINEAR_PROGRAMMING = 101,
     XPRESS_MIXED_INTEGER_PROGRAMMING = 102,
 #endif
-#if defined(USE_XPRESS)
-	XPRESS_LINEAR_PROGRAMMING = 101,
-	XPRESS_MIXED_INTEGER_PROGRAMMING = 102,
-#endif
   };
 
   /// Create a solver with the given name and underlying solver backend.
