@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 154
+// NEXT TAG: 155
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -596,6 +596,9 @@ message SatParameters {
   // cosine(vector angle between constraints). A value of zero disable this
   // feature.
   optional double min_orthogonality_for_lp_constraints = 115 [default = 0.0];
+
+  // Max number of time we perform cut generation and resolve the LP at level 0.
+  optional int32 max_cut_rounds_at_level_zero = 154 [default = 1];
 
   // If a constraint/cut in LP is not active for that many consecutive OPTIMAL
   // solves, remove it from the LP. Note that it might be added again later if

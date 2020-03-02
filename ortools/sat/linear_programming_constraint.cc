@@ -1192,13 +1192,16 @@ bool LinearProgrammingConstraint::Propagate() {
   if (!SolveLp()) return true;
 
   // Add new constraints to the LP and resolve?
-  //
-  // TODO(user): We might want to do that more than once. Currently we rely on
-  // this beeing called again on the next IncrementalPropagate() call, but that
-  // might not always happen at level zero.
-  if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
+  const int max_cuts_rounds =
+      trail_->CurrentDecisionLevel() == 0
+          ? sat_parameters_.max_cut_rounds_at_level_zero()
+          : 1;
+  int cuts_round = 0;
+  while (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL &&
+         cuts_round < max_cuts_rounds) {
     // We wait for the first batch of problem constraints to be added before we
     // begin to generate cuts.
+    cuts_round++;
     if (!integer_lp_.empty() &&
         constraint_manager_.num_cuts() < sat_parameters_.max_num_cuts()) {
       // The "generic" cuts are currently part of this class as they are using
@@ -1238,6 +1241,7 @@ bool LinearProgrammingConstraint::Propagate() {
       if (trail_->CurrentDecisionLevel() == 0) {
         lp_at_level_zero_is_final_ = true;
       }
+      break;
     }
   }
 
