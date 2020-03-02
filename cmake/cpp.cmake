@@ -302,7 +302,7 @@ add_library(${PROJECT_NAME}::proto ALIAS ${PROJECT_NAME}_proto)
 target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}::proto>)
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}::proto)
 
-foreach(SUBPROJECT
+foreach(SUBPROJECT IN ITEMS
     algorithms base bop constraint_solver data glop graph linear_solver lp_data
     port sat util)
   add_subdirectory(ortools/${SUBPROJECT})
